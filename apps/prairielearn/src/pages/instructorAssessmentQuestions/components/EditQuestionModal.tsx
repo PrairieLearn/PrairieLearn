@@ -2,23 +2,29 @@ import { Modal } from 'react-bootstrap';
 
 import { useState } from '@prairielearn/preact-cjs/hooks';
 
+import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
+
 export function EditQuestionModal({
   question,
   showEditModal,
   onHide,
   handleUpdateQuestion,
   assessmentType,
+  questionDisplayName,
 }: {
-  question: any;
+  question: StaffAssessmentQuestionRow;
   showEditModal: boolean;
   onHide: () => void;
   handleUpdateQuestion: (updatedQuestion: any) => void;
   assessmentType: 'Homework' | 'Exam';
+  questionDisplayName: (question: StaffAssessmentQuestionRow) => string;
 }) {
-  const [autoGraded, setAutoGraded] = useState(question.max_manual_points === 0);
-
-  console.log(autoGraded);
-  console.log(question.max_manual_points === 0);
+  const [autoGraded, setAutoGraded] = useState(
+    question ? question.assessment_question.max_manual_points === 0 : true,
+  );
+  if (!question) {
+    return null;
+  }
   return (
     <Modal show={showEditModal} onHide={onHide}>
       <Modal.Header closeButton>
@@ -34,11 +40,10 @@ export function EditQuestionModal({
               id="qidInput"
               name="qid"
               aria-describedby="qidHelp"
-              value={question.qid ?? ''}
+              value={questionDisplayName(question)}
               onChange={(e) => {
                 if (question) {
-                  question.qid = (e.target as HTMLInputElement).value;
-                  question.display_name = (e.target as HTMLInputElement).value;
+                  question.question.qid = (e.target as HTMLInputElement).value;
                 }
               }}
             />
@@ -80,10 +85,12 @@ export function EditQuestionModal({
                     class="form-control"
                     id="autoPointsInput"
                     name="autoPoints"
-                    value={question.init_points}
+                    value={question.assessment_question.init_points ?? 0}
                     onChange={(e) => {
                       if (question) {
-                        question.init_points = (e.target as HTMLInputElement).valueAsNumber;
+                        question.assessment_question.init_points = (
+                          e.target as HTMLInputElement
+                        ).valueAsNumber;
                       }
                     }}
                   />
@@ -98,10 +105,12 @@ export function EditQuestionModal({
                     class="form-control"
                     id="maxAutoPointsInput"
                     name="maxAutoPoints"
-                    value={question?.max_auto_points ?? 0}
+                    value={question?.assessment_question.max_auto_points ?? 0}
                     onChange={(e) => {
                       if (question) {
-                        question.max_auto_points = (e.target as HTMLInputElement).valueAsNumber;
+                        question.assessment_question.max_auto_points = (
+                          e.target as HTMLInputElement
+                        ).valueAsNumber;
                       }
                     }}
                   />
@@ -116,10 +125,12 @@ export function EditQuestionModal({
                     class="form-control"
                     id="triesPerVariantInput"
                     name="triesPerVariant"
-                    value={question?.tries_per_variant ?? 0}
+                    value={question?.assessment_question.tries_per_variant ?? 0}
                     onChange={(e) => {
                       if (question) {
-                        question.tries_per_variant = (e.target as HTMLInputElement).valueAsNumber;
+                        question.assessment_question.tries_per_variant = (
+                          e.target as HTMLInputElement
+                        ).valueAsNumber;
                       }
                     }}
                   />
@@ -137,11 +148,13 @@ export function EditQuestionModal({
                   class="form-control"
                   id="manualPointsInput"
                   name="manualPoints"
-                  value={question?.max_manual_points ?? 0}
+                  value={question?.assessment_question.max_manual_points ?? 0}
                   onChange={(e) => {
                     if (question) {
-                      question.max_manual_points = (e.target as HTMLInputElement).valueAsNumber;
-                      question.init_points = 0;
+                      question.assessment_question.max_manual_points = (
+                        e.target as HTMLInputElement
+                      ).valueAsNumber;
+                      question.assessment_question.init_points = 0;
                     }
                   }}
                 />

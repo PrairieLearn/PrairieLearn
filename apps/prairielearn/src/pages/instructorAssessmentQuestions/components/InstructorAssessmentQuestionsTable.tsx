@@ -62,7 +62,7 @@ function EditModeButtons({
   if (!editMode) {
     return (
       <button class="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
-        <i class="fa fa-edit" aria-hidden="true"></i> Edit questions
+        <i class="fa fa-edit" aria-hidden="true" /> Edit questions
       </button>
     );
   }
@@ -74,7 +74,7 @@ function EditModeButtons({
       <input type="hidden" name="topics" value={JSON.stringify(questions)} />
       <span class="js-edit-mode-buttons">
         <button class="btn btn-sm btn-light mx-1" type="submit">
-          <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+          <i class="fa fa-save" aria-hidden="true" /> Save and sync
         </button>
         <button class="btn btn-sm btn-light" type="button" onClick={() => window.location.reload()}>
           Cancel
@@ -83,32 +83,6 @@ function EditModeButtons({
     </form>
   );
 }
-
-const emptyQuestion: StaffAssessmentQuestionRow = {
-  qid: '',
-  course_id: '',
-  course_sharing_name: '',
-  question_id: '',
-  title: '',
-  topic: {
-    number: null,
-    id: '',
-    json_comment: '',
-    course_id: '',
-    color: '',
-    description: '',
-    implicit: false,
-    name: '',
-  },
-  tags: [],
-  max_auto_points: null,
-  max_manual_points: null,
-  points_list: null,
-  init_points: null,
-  assessment_question_advance_score_perc: 0,
-  mean_question_score: null,
-  number_submissions_hist: null,
-};
 
 export function InstructorAssessmentQuestionsTable({
   course,
@@ -139,8 +113,7 @@ export function InstructorAssessmentQuestionsTable({
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] =
-    useState<StaffAssessmentQuestionRow>(emptyQuestion);
+  const [selectedQuestion, setSelectedQuestion] = useState<StaffAssessmentQuestionRow | null>(null);
   const [questionState, setQuestionState] = useState<StaffAssessmentQuestionRow[]>(questionRows);
 
   const handleResetButtonClick = (questionId: string) => {
@@ -161,13 +134,13 @@ export function InstructorAssessmentQuestionsTable({
   const handleUpdateQuestion = (updatedQuestion: StaffAssessmentQuestionRow) => {
     console.log(updatedQuestion);
     setQuestionState((prevState) =>
-      prevState.map((q) => (q.qid === updatedQuestion.qid ? updatedQuestion : q)),
+      prevState.map((q) => (q.question.qid === updatedQuestion.question.qid ? updatedQuestion : q)),
     );
     handleCloseEditModal();
   };
 
   const handleDeleteQuestion = ({ qid }: { qid: string | null }) => {
-    setQuestionState((prevState) => prevState.filter((q) => q.qid !== qid));
+    setQuestionState((prevState) => prevState.filter((q) => q.question.qid !== qid));
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -200,6 +173,13 @@ export function InstructorAssessmentQuestionsTable({
     } else {
       return '—';
     }
+  }
+
+  function questionDisplayName(question: StaffAssessmentQuestionRow) {
+    if (idsEqual(course.id, question.question.course_id)) {
+      return question.question.qid;
+    }
+    return `@${course.sharing_name}/${question.question.qid}`;
   }
 
   return (
@@ -257,7 +237,7 @@ export function InstructorAssessmentQuestionsTable({
             <tbody>
               {questionState.map((question) => {
                 return (
-                  <Fragment key={question.qid}>
+                  <Fragment key={question.question.qid}>
                     <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
                     <tr>
                       {editMode ? (
@@ -268,7 +248,7 @@ export function InstructorAssessmentQuestionsTable({
                               type="button"
                               onClick={() => handleEditQuestion(question)}
                             >
-                              <i class="fa fa-edit" aria-hidden="true"></i>
+                              <i class="fa fa-edit" aria-hidden="true" />
                             </button>
                           </td>
                           <td class="align-content-center">
@@ -277,11 +257,11 @@ export function InstructorAssessmentQuestionsTable({
                               type="button"
                               onClick={() =>
                                 handleDeleteQuestion({
-                                  qid: question.qid,
+                                  qid: question.question.qid,
                                 })
                               }
                             >
-                              <i class="fa fa-trash" aria-hidden="true"></i>
+                              <i class="fa fa-trash" aria-hidden="true" />
                             </button>
                           </td>
                         </>
@@ -297,20 +277,21 @@ export function InstructorAssessmentQuestionsTable({
                         <IssueBadge
                           urlPrefix={urlPrefix}
                           count={question.open_issue_count ?? 0}
-                          issueQid={question.qid}
+                          issueQid={question.question.qid}
                         />
                       </td>
                       <td>
-                        {question.sync_errors ? (
-                          <SyncProblemButton output={question.sync_errors} type="error" />
-                        ) : question.sync_warnings ? (
-                          <SyncProblemButton output={question.sync_warnings} type="warning" />
+                        {question.question.sync_errors ? (
+                          <SyncProblemButton output={question.question.sync_errors} type="error" />
+                        ) : question.question.sync_warnings ? (
+                          <SyncProblemButton
+                            output={question.question.sync_warnings}
+                            type="warning"
+                          />
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.course_id)
-                          ? question.qid
-                          : `@${course.sharing_name}/${question.qid}`}
+                        {questionDisplayName(question)}
                       </td>
                       <td>
                         <TopicBadge topic={question.topic} />
@@ -360,7 +341,7 @@ export function InstructorAssessmentQuestionsTable({
                         {question.other_assessments?.map((assessment) => {
                           return (
                             <div
-                              key={`${question.qid}-${assessment.assessment_id}`}
+                              key={`${question.question.qid}-${assessment.assessment_id}`}
                               class="d-inline-block me-1"
                             >
                               <AssessmentBadge
@@ -380,7 +361,7 @@ export function InstructorAssessmentQuestionsTable({
                           <Dropdown.Toggle
                             variant="secondary"
                             class="dropdown-toggle btn-xs"
-                            id={`question-actions-${question.qid}`}
+                            id={`question-actions-${question.question.qid}`}
                           >
                             Action
                           </Dropdown.Toggle>
@@ -419,9 +400,10 @@ export function InstructorAssessmentQuestionsTable({
         <EditQuestionModal
           question={selectedQuestion}
           showEditModal={showEditModal}
-          onHide={handleCloseEditModal}
           handleUpdateQuestion={handleUpdateQuestion}
           assessmentType={assessmentType}
+          questionDisplayName={questionDisplayName}
+          onHide={handleCloseEditModal}
         />
       ) : null}
     </>

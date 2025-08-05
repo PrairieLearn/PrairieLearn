@@ -121,16 +121,3 @@ export function getAssessmentContext(resLocals: Record<string, any>): StaffAsses
   const schema = StaffAssessmentContextSchema;
   return schema.parse(resLocals);
 }
-
-const RawStaffAssessmentContextSchema = z.object({
-  assessment: RawStaffAssessmentSchema.extend({
-    type: z.enum(['Exam', 'Homework']),
-  }),
-  assessment_set: RawStaffAssessmentSetSchema,
-});
-
-export function getAssessmentContext(
-  resLocals: Record<string, any>,
-): z.infer<typeof RawStaffAssessmentContextSchema> {
-  return RawStaffAssessmentContextSchema.parse(resLocals);
-}
