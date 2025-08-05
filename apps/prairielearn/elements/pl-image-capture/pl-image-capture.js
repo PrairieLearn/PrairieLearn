@@ -506,7 +506,7 @@ const MAX_ZOOM_SCALE = 5;
       capturePreview.alt = 'Captured image preview';
 
       const capturePreviewParent = document.createElement('div');
-      capturePreviewParent.className = 'js-capture-preview-div';
+      capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
       capturePreviewParent.style.transformOrigin = 'center center';
 
       capturePreviewParent.appendChild(capturePreview);
@@ -518,7 +518,6 @@ const MAX_ZOOM_SCALE = 5;
         capturePreview.addEventListener(
           'load',
           () => {
-            this.capturePreviewWidth = capturePreview.clientWidth;
             this.capturePreviewHeight = capturePreview.clientHeight;
           },
           { once: true },
@@ -574,13 +573,34 @@ const MAX_ZOOM_SCALE = 5;
             // Don't use modulo to ensure that the animated rotation direction is always clockwise.
             rotation += 90;
 
-            // If the image is rotated by 90 or 270 degrees, it must be scaled down to fit within the original dimensions. 
-            // If width > height, the scale factor is height / width (scale down longer width to match the original height)
-            // If width < height, the scale factor is width / height (scale down longer height to match the original width)
-            // Otherwise, reset the scale factor to 1.
-            const rotatedScaleFactor = rotation % 180 === 0 ? 1 : Math.min(this.capturePreviewWidth / this.capturePreviewHeight, this.capturePreviewHeight / this.capturePreviewWidth);
+            // Obtain the dimensions of the image after rotation, in case the user
+            // changed their viewport dimensions.
+            const capturePreview = this.imageCaptureDiv.querySelector('.capture-preview');
 
-            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${rotatedScaleFactor})`;
+            const photoHeight = capturePreview.clientHeight;
+
+            /**
+             * Calculate the width of the photo within the capture preview, accounting for
+             * when the maxHeight constraint results in gray bars on the sides of the image.
+             */
+            const photoWidth =
+              photoHeight * (capturePreview.naturalWidth / capturePreview.naturalHeight);
+
+            const clientHeight = capturePreview.clientHeight;
+            const clientWidth = capturePreview.clientWidth;
+
+            /**
+             * Calculate the scale factor based on the rotation and the aspect ratio.
+             *
+             * If the rotation is 0 or 180 degrees, the scale factor is 1.
+             * If the rotation is 90 or 270 degrees, the scale factor is determined by the aspect ratio of the image.
+             */
+            const scaleFactor =
+              rotation % 180 === 0
+                ? 1
+                : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
             this.imageCapturePreviewPanzoom.reset({ animate: true });
           });
 
