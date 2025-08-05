@@ -507,7 +507,7 @@ const MAX_ZOOM_SCALE = 5;
 
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
-      capturePreviewParent.style.transformOrigin = 'center center';
+      // capturePreviewParent.style.transformOrigin = 'center center';
 
       capturePreviewParent.appendChild(capturePreview);
 
@@ -570,33 +570,24 @@ const MAX_ZOOM_SCALE = 5;
               capturePreviewImg,
             });
 
-            /**
-             * The image within the capture preview div always fills the height of the div.
-             */
+            // The capture preview image always fills the entire height.
             const photoHeight = capturePreviewImg.clientHeight;
 
-            /**
-             * Compute the displayed image width inside the capture preview div, excluding
-             * any whitespace on the side that resulted from the max-height: 600px constraint.
-             */
+            // Compute the width of the capture preview image excluding any side
+            // whitespace coming from the max-height: 600px constraint.
             const photoWidth =
               photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
 
             const clientHeight = capturePreviewImg.clientHeight;
             const clientWidth = capturePreviewImg.clientWidth;
 
-            /**
-             * Rotation is strictly increasing so that the rotation animation is always in the same direction.
-             */
+            // Rotation is strictly increasing so that the rotation animation is always in the same direction.
             rotation += 90;
 
-            /**
-             * Compute the scale factor based on the rotation.
-             *
-             * - If image is parallel to the capture preview div, reset its scaling to 1.
-             * - If image is perpendicular to the capture preview div, scale it so its longest side
-             *   fits within the preview container without clipping.
-             */
+            // Compute the scale factor based on the rotation.
+            // - If image is parallel to the capture preview div, reset its scaling to 1.
+            // - If image is perpendicular to the capture preview div, scale it so its longest side
+            //   fits within the preview container without clipping.
             const scaleFactor =
               rotation % 180 === 0
                 ? 1
