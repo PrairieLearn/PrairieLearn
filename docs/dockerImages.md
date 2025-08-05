@@ -51,7 +51,7 @@ Note that the process above _will not_ cause the image above to be automatically
 
 ### Changing existing custom images
 
-In some occasion, instructors may need to update their own existing custom images, e.g., to update versions of supported packages, to install additional packages, or to change specific settings. For simple changes that are not expected to impact existing questions significantly, updating the `Dockerfile` and related files and executing steps 5-8 above may be sufficient.
+Occasionally, instructors may need to update their own existing custom images, e.g., to update versions of supported packages, to install additional packages, or to change specific settings. For simple changes that are not expected to impact existing questions significantly, updating the `Dockerfile` and related files and executing steps 5-8 above may be sufficient.
 
 In some cases, however, changes may be significant enough that [testing in a local environment](./installing.md#support-for-external-graders-and-workspaces) is strongly advisable to ensure that existing questions continue to work as expected. In this scenario, it is important to ensure that the production environment is not updated with the new image version until testing is complete. There are some approaches that can be taken to achieve this result.
 
