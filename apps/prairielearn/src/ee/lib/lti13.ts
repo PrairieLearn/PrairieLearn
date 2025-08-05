@@ -4,7 +4,8 @@ import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
-import { Issuer, type TokenSet } from 'openid-client';
+//import { Issuer, type TokenSet } from 'openid-client';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';

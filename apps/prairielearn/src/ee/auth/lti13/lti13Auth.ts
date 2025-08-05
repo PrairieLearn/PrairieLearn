@@ -4,9 +4,17 @@ import { callbackify } from 'util';
 
 import { type NextFunction, type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { Issuer, Strategy, type TokenSet } from 'openid-client';
+//import { Issuer, type TokenSet } from 'openid-client';
+import * as client from 'openid-client';
+import {
+  Strategy,
+  type AuthenticateOptions,
+  type StrategyOptionsWithRequest,
+  type VerifyFunctionWithRequest,
+} from 'openid-client/passport';
 import * as passport from 'passport';
 import { z } from 'zod';
+import { webcrypto } from 'crypto';
 
 import { cache } from '@prairielearn/cache';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -321,20 +329,46 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
     prompt: 'none',
     response_mode: 'form_post',
     failWithError: true,
-    state,
-  } as passport.AuthenticateOptions)(req, res, next);
+    //state isn't allowed, have to figure out something else to do here.
+    //state,
+  } as AuthenticateOptions)(req, res, next);
 }
 
 async function setupPassport(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
   const localPassport = new passport.Passport();
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+  //const issuer = new Issuer(lti13_instance.issuer_params);
+  //const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-  localPassport.use(
-    'lti13',
-    new Strategy(
+  const key = await webcrypto.subtle.importKey(
+    'jwk',
+    lti13_instance.keystore.keys[0],
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    true, // extractable
+    ['sign'],
+  );
+  console.log(key);
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(key),
+  );
+
+  const options: StrategyOptionsWithRequest = {
+    config: openidClientConfig,
+    //scope: 'openid email',
+    //callbackURL: lti13_instance.client_params.redirect_uris[0],
+    passReqToCallback: true,
+  };
+
+  localPassport.use('lti13', new Strategy(options, callbackify(verify)));
+  /*
       {
         client,
         passReqToCallback: true,
@@ -342,11 +376,18 @@ async function setupPassport(lti13_instance_id: string) {
       callbackify(verify),
     ),
   );
+  */
 
   return localPassport;
 }
 
-async function verify(req: Request, tokenSet: TokenSet) {
+async function verify(
+  req: Request,
+  tokenSet: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
+): Promise<VerifyFunctionWithRequest> {
+  console.log(req);
+  console.log(tokenSet);
+
   const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
