@@ -1,5 +1,13 @@
 # @prairielearn/html-ejs
 
+## 2.0.17
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [23adb05]
+  - @prairielearn/html@4.0.17
+
 ## 2.0.16
 
 ### Patch Changes

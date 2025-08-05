@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "2.1.16",
+  "version": "3.0.0",
   "type": "module",
   "repository": {
     "type": "git",

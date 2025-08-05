@@ -791,7 +791,7 @@ export class PostgresPool {
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
    */
-  async queryCursorWithClient(
+  private async queryCursorWithClient(
     client: pg.PoolClient,
     sql: string,
     params: QueryParams,
@@ -807,28 +807,17 @@ export class PostgresPool {
   /**
    * Returns an {@link CursorIterator} that can be used to iterate over the
    * results of the query in batches, which is useful for large result sets.
+   * Each row will be parsed by the given Zod schema.
    */
   async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
-  ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params);
-  }
-
-  /**
-   * Returns an {@link CursorIterator} that can be used to iterate over the
-   * results of the query in batches, which is useful for large result sets.
-   * Each row will be parsed by the given Zod schema.
-   */
-  async queryValidatedCursor<Model extends z.ZodTypeAny>(
-    sql: string,
-    params: QueryParams,
     model: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params, model);
+    return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryValidatedCursorInternal<Model extends z.ZodTypeAny>(
+  private async queryCursorInternal<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model?: Model,
@@ -920,7 +909,7 @@ export class PostgresPool {
   /**
    * Get the schema that is currently used for the search path.
    *
-   * @return schema in use (may be `null` to indicate no schema)
+   * @returns schema in use (may be `null` to indicate no schema)
    */
   getSearchSchema(): string | null {
     return this.searchSchema;
