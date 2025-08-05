@@ -825,7 +825,7 @@ function rowDragOver(event) {
 /**
  * Create a new rubric item row with default values or based on a provided rubric item.
  *
- * @param {Object|null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
+ * @param {object | null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
  */
 function addRubricItemRow(rubricItem = null) {
   const modal = document.querySelector('#rubric-settings-form');
@@ -920,7 +920,7 @@ function addRubricItemRow(rubricItem = null) {
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
  *
- * @param {Object} elements - An object of elements, with keys as element names and values as the elements themselves.
+ * @param {object} elements - An object of elements, with keys as element names and values as the elements themselves.
  */
 function ensureElementsExist(elements) {
   for (const elementName in elements) {
