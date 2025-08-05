@@ -86,10 +86,20 @@ $(function() {
         {{^editable}}
         <button 
           type="button" 
+          class="js-viewer-rotate-clockwise-button btn btn-light border"
+          title="Rotate clockwise"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Rotate clockwise"
+        >
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button 
+          type="button" 
           class="js-zoom-in-button btn btn-light border"
           title="Zoom in"
-          data-toggle="tooltip"
-          data-placement="top" 
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
           aria-label="Zoom in"
         >
           <i class="bi bi-zoom-in"></i>
@@ -98,8 +108,8 @@ $(function() {
           type="button" 
           class="js-zoom-out-button btn btn-light border"
           title="Zoom out"
-          data-toggle="tooltip"
-          data-placement="top" 
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
           aria-label="Zoom out"
         >
           <i class="bi bi-zoom-out"></i>
