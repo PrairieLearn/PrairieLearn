@@ -974,11 +974,7 @@ const MAX_ZOOM_SCALE = 5;
       this.ensureElementsExist({
         cropRotateButton,
       });
-      if (show) {
-        cropRotateButton.classList.remove('d-none');
-      } else {
-        cropRotateButton.classList.add('d-none');
-      }
+      cropRotateButton.classList.toggle('d-none', !show);
     }
 
     async startCropRotate() {
