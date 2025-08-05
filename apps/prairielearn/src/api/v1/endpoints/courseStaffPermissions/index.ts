@@ -7,6 +7,10 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  EnumCourseInstancePermissionSchema,
+  EnumCourseRoleSchema,
+} from '../../../../lib/db-types.js';
+import {
   deleteCourseInstancePermissions,
   deleteCoursePermissions,
   insertCourseInstancePermissions,
@@ -16,10 +20,6 @@ import {
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
-import {
-  EnumCourseInstancePermissionSchema,
-  EnumCourseRoleSchema,
-} from '../../../../lib/db-types.js';
 
 const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
   user: true,
