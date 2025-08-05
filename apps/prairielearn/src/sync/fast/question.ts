@@ -118,6 +118,9 @@ async function validateAndGetTags(
   );
 
   // All tags must already exist. If any of them don't, we can't do a fast sync.
+  //
+  // We could theoretically add a fast path for this and insert any missing tags.
+  // That's not yet worth the effort.
   const questionTagNames = new Set(jsonData.data.tags || []);
   const allTagsExist =
     questionTags.size === questionTagNames.size &&

@@ -28,10 +28,11 @@ import {
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
 import * as courseDB from '../sync/course-db.js';
+import { attemptFastSync, getFastSyncStrategy } from '../sync/fast/index.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { identifyChangedFiles, logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -58,6 +59,47 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
+  // Check if we can use fast sync based on what files changed
+  if (startGitHash !== endGitHash) {
+    try {
+      // TODO: it'd be nice to have a single call to `identifyChangedFiles` per sync operation,
+      // as this is slower than many operations since it hits disk.
+      const changedFiles = await identifyChangedFiles(course.path, startGitHash, endGitHash);
+      const fastSyncStrategy = getFastSyncStrategy(changedFiles);
+
+      if (fastSyncStrategy) {
+        job.info(
+          `Attempting fast sync for ${fastSyncStrategy.type.toLowerCase()}: ${fastSyncStrategy.pathPrefix}`,
+        );
+        const fastSyncSucceeded = await attemptFastSync(course, fastSyncStrategy);
+
+        if (fastSyncSucceeded) {
+          job.info('Fast sync completed successfully');
+
+          // Still need to handle chunks generation for fast sync
+          if (config.chunksGenerator) {
+            const chunkChanges = await updateChunksForCourse({
+              coursePath: course.path,
+              courseId: course.id,
+              courseData: courseData || (await courseDB.loadFullCourse(course.id, course.path)),
+              oldHash: startGitHash,
+              newHash: endGitHash,
+            });
+            logChunkChangesToJob(chunkChanges, job);
+          }
+
+          await updateCourseCommitHash(course);
+          return;
+        } else {
+          job.info('Fast sync failed, falling back to full sync');
+        }
+      }
+    } catch (error) {
+      job.info(`Fast sync check failed: ${error.message}, falling back to full sync`);
+    }
+  }
+
+  // Fall back to full sync
   const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
     course.id,
     course.path,
