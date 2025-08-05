@@ -14,7 +14,6 @@ import {
 } from 'openid-client/passport';
 import * as passport from 'passport';
 import { z } from 'zod';
-import { webcrypto } from 'crypto';
 
 import { cache } from '@prairielearn/cache';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -321,6 +320,9 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
     state = state.concat(STATE_TEST);
   }
 
+  console.log(req.method);
+  console.log(parameters);
+
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   myPassport.authenticate('lti13', {
     response_type: 'id_token',
@@ -341,7 +343,7 @@ async function setupPassport(lti13_instance_id: string) {
   //const issuer = new Issuer(lti13_instance.issuer_params);
   //const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
-  const key = await webcrypto.subtle.importKey(
+  const key = await crypto.webcrypto.subtle.importKey(
     'jwk',
     lti13_instance.keystore.keys[0],
     {
@@ -362,8 +364,8 @@ async function setupPassport(lti13_instance_id: string) {
 
   const options: StrategyOptionsWithRequest = {
     config: openidClientConfig,
-    //scope: 'openid email',
-    //callbackURL: lti13_instance.client_params.redirect_uris[0],
+    scope: 'openid email',
+    callbackURL: lti13_instance.client_params.redirect_uris[0],
     passReqToCallback: true,
   };
 
@@ -384,7 +386,8 @@ async function setupPassport(lti13_instance_id: string) {
 async function verify(
   req: Request,
   tokenSet: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
-): Promise<VerifyFunctionWithRequest> {
+) {
+  //: Promise<VerifyFunctionWithRequest> {
   console.log(req);
   console.log(tokenSet);
 

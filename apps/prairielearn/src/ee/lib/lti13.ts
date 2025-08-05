@@ -7,6 +7,7 @@ import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-f
 //import { Issuer, type TokenSet } from 'openid-client';
 import * as client from 'openid-client';
 import { z } from 'zod';
+import { webcrypto } from 'crypto';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
@@ -351,7 +352,8 @@ export async function validateLti13CourseInstance(
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: TokenSet = lti13_instance.access_tokenset;
+  //let tokenSet: TokenSet = lti13_instance.access_tokenset;
+  let tokenSet: client.TokenEndpointResponse = lti13_instance.access_tokenset;
 
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -363,6 +365,7 @@ export async function getAccessToken(lti13_instance_id: string) {
   }
 
   // Fetch the token
+  /*
   const issuer = new Issuer(lti13_instance.issuer_params);
   const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
@@ -391,9 +394,35 @@ export async function getAccessToken(lti13_instance_id: string) {
       },
     },
   );
+  */
+
+  const key = await webcrypto.subtle.importKey(
+    'jwk',
+    lti13_instance.keystore.keys[0],
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    true, // extractable
+    ['sign'],
+  );
+  console.log(key);
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(key),
+  );
+
+  tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
+    grant_type: 'client_credentials',
+    scope: TOKEN_SCOPES.join(' '),
+  });
 
   // Store the token for reuse
-  const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+  //const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+  const expires_at = Date.now();
 
   await queryAsync(sql.update_token, {
     lti13_instance_id,
