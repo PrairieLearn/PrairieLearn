@@ -32,7 +32,7 @@ Some questions may require additional customization of existing images, such as 
    docker build --platform linux/amd64 -t yourdockerhubaccount/yourimagename .
    ```
 
-   Note that the production environment used by PrairieLearn uses a `linux/amd64` platform for images. As such it is necessary that images are built using this platform, as listed in `--platform` argument in the command above. This is particularly relevant for users of ARM-based architectures such as Apple M-series processors or Windows on Arm systems, since these systems default to `linux/arm64` instead.
+   Note that the production environment used by PrairieLearn requires a `linux/amd64` platform for images. As such it is necessary that images are built using this platform, as listed in the `--platform` argument in the command above. This is particularly relevant for users of ARM-based architectures such as Apple Silicon or Windows on Arm systems, since these systems default to `linux/arm64` instead.
 
 6. Once the build process completes, push the image to the Docker Hub registry (again replacing `yourdockerhubaccount` and `yourimagename` as needed):
 
@@ -45,7 +45,7 @@ Some questions may require additional customization of existing images, such as 
 
 Note that the process above _will not_ cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to periodically update your custom image by repeating steps 5-8 above.
 
-### Changing existing custom images
+### Testing custom images
 
 Occasionally, instructors may need to update their own existing custom images, e.g., to update versions of supported packages, to install additional packages, or to change specific settings. For simple changes that are not expected to impact existing questions significantly, updating the `Dockerfile` and related files and executing steps 5-8 above may be sufficient.
 
@@ -60,7 +60,7 @@ By default, a local installation of PrairieLearn will pull the latest version of
 }
 ```
 
-Then, map this configuration file when running PrairieLearn:
+Then, map this configuration file when [running PrairieLearn](./installing.md#support-for-external-graders-and-workspaces):
 
 ```sh
 docker run -it --rm -p 3000:3000 \
