@@ -5,6 +5,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
+import { selectTagsForQuestion } from '../../models/tags.js';
 import type { QuestionJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
@@ -84,6 +85,57 @@ describe('fastSyncQuestion', () => {
       assert.equal(question.title, courseData.questions[qid].title);
     },
   );
+
+  it('syncs existing question tags with fast sync', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // Validate assumptions about test data.
+    assert.deepEqual(courseData.questions[util.QUESTION_ID].tags, ['test']);
+
+    courseData.questions[util.QUESTION_ID].tags = ['another test'];
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isTrue(await attemptFastSync(course, strategy));
+
+    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    const tags = await selectTagsForQuestion({ question_id: question.id });
+    assert.lengthOf(tags, 1);
+    assert.isTrue(tags.some((tag) => tag.name === 'another test'));
+  });
+
+  it('syncs new question tags with fast sync', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    const questionData = makeQuestion(courseData);
+    questionData.tags = ['test'];
+    courseData.questions['test-question'] = questionData;
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isTrue(await attemptFastSync(course, strategy));
+
+    const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
+    const tags = await selectTagsForQuestion({ question_id: question.id });
+    assert.lengthOf(tags, 1);
+    assert.isTrue(tags.some((tag) => tag.name === 'test'));
+  });
+
+  it('falls back to slow sync when tags do not exist', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    courseData.questions[util.QUESTION_ID].tags = ['nonexistent tag'];
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([path.join('questions', util.QUESTION_ID, 'info.json')]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
 
   it('syncs errors to question with fast sync', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();

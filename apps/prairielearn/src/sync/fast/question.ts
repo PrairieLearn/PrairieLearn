@@ -2,15 +2,22 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { callAsync, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { createAndUploadChunks } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { type Course, type Question, QuestionSchema, type Topic } from '../../lib/db-types.js';
+import {
+  type Course,
+  type Question,
+  QuestionSchema,
+  type Tag,
+  type Topic,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectInstitutionForCourse } from '../../models/institution.js';
 import { selectOptionalQuestionByUuid } from '../../models/question.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
 import { selectOptionalTopicByName } from '../../models/topics.js';
 import * as schemas from '../../schemas/index.js';
 import type { QuestionJson } from '../../schemas/index.js';
@@ -40,7 +47,7 @@ async function selectMatchingQuestion(pathPrefix: string) {
   );
 }
 
-// TODO: this is copied from `course-db.ts`; switch to a shared version?
+/** TODO: this is copied from `course-db.ts`; switch to a shared version? */
 async function isSharingEnabled(course: Course): Promise<boolean> {
   const institution = await selectInstitutionForCourse({ course_id: course.id });
   return await features.enabled('question-sharing', {
@@ -74,6 +81,7 @@ async function updateQuestion(
   question: Question,
   infoFile: infofile.InfoFile<QuestionJson>,
   topic: Topic | null,
+  tags: Tag[],
 ): Promise<Question> {
   assert(question.qid, 'Question must have a QID');
 
@@ -102,7 +110,8 @@ async function updateQuestion(
       QuestionSchema,
     );
 
-    // TODO: this will need to sync changes to tags as well.
+    const tagIds = tags.map((tag) => tag.id);
+    await callAsync('sync_question_tags', [[JSON.stringify([updatedQuestion.id, tagIds])]]);
 
     return updatedQuestion;
   }
@@ -166,92 +175,149 @@ async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Que
     // is from the file anyways).
     if (!topic && !infofile.hasErrors(jsonData)) return null;
 
-    return await updateQuestion(existingQuestion, jsonData, topic);
-  } else {
-    // One of several things could be true:
-    // - These could be files in the questions directory but not part of a question,
-    //   e.g. a bare `README.md` file in some intermediate directory.
-    // - These could be files that are part of a newly-created question. This will
-    //   probably be the case if there's a new `info.json` file present.
-
-    // Either there's a single JSON file that was added, in which case the path
-    // prefix should be the JSON file itself, or there are multiple files, in
-    // which case we'd expect to find a JSON file directly under the path prefix.
-    const jsonFilePath = await run(async () => {
-      if (pathPrefix.endsWith('.json')) {
-        // The path prefix is the JSON file itself.
-        return pathPrefix;
-      }
-
-      // The path prefix is a directory, so look for an `info.json` file in it.
-      const jsonFilePath = path.join(course.path, pathPrefix, 'info.json');
-      const jsonFileStat = await fs.stat(jsonFilePath).catch(() => null);
-
-      // Handle when the file doesn't exist or isn't actually a file.
-      if (!jsonFileStat?.isFile()) return null;
-
-      return path.join(pathPrefix, 'info.json');
-    });
-
-    if (!jsonFilePath) {
-      // We couldn't find a JSON file, and the files don't belong to an existing
-      // question. For now, we'll just bail and do a full sync.
-      //
-      // TODO: it's in theory possible to have a fast case here. For instance, if
-      // `questions/foo/bar/info.json` exists and we add `questions/foo/README.md`,
-      // that would be totally safe and in fact wouldn't require anything to sync at
-      // all. It would be ideal if we could handle this on the fast path, but this
-      // is also unlikely to frequently occur, so it's not a priority for now.
-      return null;
-    }
-
-    const jsonData = await loadAndValidateQuestionJson(course, jsonFilePath);
-
-    // If we're missing JSON data or the UUID, we can't do a fast sync.
-    if (!jsonData?.uuid) return null;
-
-    // Get the existing question by UUID, if it exists.
-    const existingQuestionByUuid = await selectOptionalQuestionByUuid({
-      course_id: course.id,
-      uuid: jsonData.uuid,
-    });
-
-    // If there is an existing question with this UUID, we'll fall back to slow
-    // sync.
-    //
-    // TODO: we could in theory handle this case in the future. Skipping for now
-    // as it's not a common scenario and would require more complex logic.
-    if (existingQuestionByUuid) return null;
-
-    const topic = await run(async () => {
-      if (!jsonData.data?.topic) return null;
-
-      return await selectOptionalTopicByName({
-        course_id: course.id,
-        name: jsonData.data?.topic,
-      });
-    });
-
     // The topic must already exist. I.f it doesn't, we can't do a fast sync.
     // The exception is when there's an error in the file, in which case we
     // don't care about syncing the topic (and in fact we don't know what it
     // is from the file anyways).
     if (!topic && !infofile.hasErrors(jsonData)) return null;
 
-    // Create a new question in the database.
-    const qid = qidFromFilePath(jsonFilePath);
-    const initialQuestion = await queryRow(
-      sql.insert_question,
-      {
-        course_id: course.id,
-        qid,
-        uuid: jsonData.uuid,
-      },
-      QuestionSchema,
-    );
+    // Construct a map of tag names to tag objects.
+    const questionTags = await run(async () => {
+      if (!jsonData.data?.tags?.length) return new Map<string, Tag>();
 
-    return await updateQuestion(initialQuestion, jsonData, topic);
+      const courseTags = await selectTagsByCourseId(course.id);
+      const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
+      return new Map(
+        jsonData.data.tags
+          ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
+          .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
+      );
+    });
+
+    // All tags must already exist. If any of them don't, we can't do a fast sync.
+    // The exception is when there's an error in the file, in which case we
+    // don't care about syncing the tags (and in fact we don't know what they
+    // are from the file anyways).
+    const questionTagNames = new Set(jsonData.data?.tags || []);
+    const allTagsExist =
+      questionTags.size === questionTagNames.size &&
+      [...questionTagNames].every((tagName) => questionTags.has(tagName));
+    if (!allTagsExist && !infofile.hasErrors(jsonData)) return null;
+
+    return await updateQuestion(
+      existingQuestion,
+      jsonData,
+      topic,
+      Array.from(questionTags.values()),
+    );
   }
+
+  // One of several things could be true:
+  // - These could be files in the questions directory but not part of a question,
+  //   e.g. a bare `README.md` file in some intermediate directory.
+  // - These could be files that are part of a newly-created question. This will
+  //   probably be the case if there's a new `info.json` file present.
+
+  // Either there's a single JSON file that was added, in which case the path
+  // prefix should be the JSON file itself, or there are multiple files, in
+  // which case we'd expect to find a JSON file directly under the path prefix.
+  const jsonFilePath = await run(async () => {
+    if (pathPrefix.endsWith('.json')) {
+      // The path prefix is the JSON file itself.
+      return pathPrefix;
+    }
+
+    // The path prefix is a directory, so look for an `info.json` file in it.
+    const jsonFilePath = path.join(course.path, pathPrefix, 'info.json');
+    const jsonFileStat = await fs.stat(jsonFilePath).catch(() => null);
+
+    // Handle when the file doesn't exist or isn't actually a file.
+    if (!jsonFileStat?.isFile()) return null;
+
+    return path.join(pathPrefix, 'info.json');
+  });
+
+  if (!jsonFilePath) {
+    // We couldn't find a JSON file, and the files don't belong to an existing
+    // question. For now, we'll just bail and do a full sync.
+    //
+    // TODO: it's in theory possible to have a fast case here. For instance, if
+    // `questions/foo/bar/info.json` exists and we add `questions/foo/README.md`,
+    // that would be totally safe and in fact wouldn't require anything to sync at
+    // all. It would be ideal if we could handle this on the fast path, but this
+    // is also unlikely to frequently occur, so it's not a priority for now.
+    return null;
+  }
+
+  const jsonData = await loadAndValidateQuestionJson(course, jsonFilePath);
+
+  // If we're missing JSON data or the UUID, we can't do a fast sync.
+  if (!jsonData?.uuid) return null;
+
+  // Get the existing question by UUID, if it exists.
+  const existingQuestionByUuid = await selectOptionalQuestionByUuid({
+    course_id: course.id,
+    uuid: jsonData.uuid,
+  });
+
+  // If there is an existing question with this UUID, we'll fall back to slow
+  // sync.
+  //
+  // TODO: we could in theory handle this case in the future. Skipping for now
+  // as it's not a common scenario and would require more complex logic.
+  if (existingQuestionByUuid) return null;
+
+  const topic = await run(async () => {
+    if (!jsonData.data?.topic) return null;
+
+    return await selectOptionalTopicByName({
+      course_id: course.id,
+      name: jsonData.data?.topic,
+    });
+  });
+
+  // The topic must already exist. I.f it doesn't, we can't do a fast sync.
+  // The exception is when there's an error in the file, in which case we
+  // don't care about syncing the topic (and in fact we don't know what it
+  // is from the file anyways).
+  if (!topic && !infofile.hasErrors(jsonData)) return null;
+
+  // Construct a map of tag names to tag objects.
+  const questionTags = await run(async () => {
+    if (!jsonData.data?.tags?.length) return new Map<string, Tag>();
+
+    const courseTags = await selectTagsByCourseId(course.id);
+    const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
+    return new Map(
+      jsonData.data.tags
+        ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
+        .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
+    );
+  });
+
+  // All tags must already exist. If any of them don't, we can't do a fast sync.
+  // The exception is when there's an error in the file, in which case we
+  // don't care about syncing the tags (and in fact we don't know what they
+  // are from the file anyways).
+  const questionTagNames = new Set(jsonData.data?.tags || []);
+  const allTagsExist =
+    questionTags.size === questionTagNames.size &&
+    [...questionTagNames].every((tagName) => questionTags.has(tagName));
+  if (!allTagsExist && !infofile.hasErrors(jsonData)) return null;
+
+  // Create a new question in the database.
+  const qid = qidFromFilePath(jsonFilePath);
+  const initialQuestion = await queryRow(
+    sql.insert_question,
+    {
+      course_id: course.id,
+      qid,
+      uuid: jsonData.uuid,
+    },
+    QuestionSchema,
+  );
+
+  return await updateQuestion(initialQuestion, jsonData, topic, Array.from(questionTags.values()));
 }
 
 export async function fastSyncQuestion(course: Course, pathPrefix: string): Promise<boolean> {
