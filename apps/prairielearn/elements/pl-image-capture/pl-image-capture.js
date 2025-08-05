@@ -485,7 +485,7 @@ const MAX_ZOOM_SCALE = 5;
      *
      * @param {string} content The inner HTML of the placeholder div.
      */
-    createJsImagePlaceholderDivHtml = (content) => {
+    createJsImagePlaceholderDivHtml(content) {
       return `
         <div class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center" style="height: 200px;">
           ${content}
