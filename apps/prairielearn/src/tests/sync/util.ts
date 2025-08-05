@@ -323,7 +323,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * Returns an array of all records in a particular database table.
  *
  * @param tableName - The name of the table to query
- * @return The rows of the given table
+ * @returns The rows of the given table
  */
 export async function dumpTable(tableName: string) {
   const res = await sqldb.queryRows(`SELECT * FROM ${tableName};`, z.record(z.string(), z.any()));

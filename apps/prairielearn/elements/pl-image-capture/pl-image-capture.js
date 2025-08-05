@@ -404,9 +404,6 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Loads the most recent submission or external image capture.
-     *
-     * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
-     * If false, load the image from the most recent submission.
      */
     async loadSubmission() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
@@ -508,8 +505,13 @@ const MAX_ZOOM_SCALE = 5;
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
+      const capturePreviewParent = document.createElement('div');
+      capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
+
+      capturePreviewParent.appendChild(capturePreview);
+
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
+      uploadedImageContainer.appendChild(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -523,11 +525,15 @@ const MAX_ZOOM_SCALE = 5;
 
       if (!this.editable) {
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
+          '.js-viewer-rotate-clockwise-button',
+        );
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
           zoomButtonsContainer,
+          viewerRotateClockwiseButton,
           zoomInButton,
           zoomOutButton,
         });
@@ -538,7 +544,9 @@ const MAX_ZOOM_SCALE = 5;
         zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
-          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+          // Initialize Panzoom on the parent of the captured image element, since
+          // the image itself may be rotated.
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
             maxScale: MAX_ZOOM_SCALE,
@@ -549,6 +557,43 @@ const MAX_ZOOM_SCALE = 5;
           });
           zoomOutButton.addEventListener('click', () => {
             this.imageCapturePreviewPanzoom.zoomOut();
+          });
+
+          let rotation = 0;
+          viewerRotateClockwiseButton.addEventListener('click', () => {
+            const capturePreviewImg = this.imageCaptureDiv.querySelector(
+              '.js-uploaded-image-container .capture-preview',
+            );
+
+            this.ensureElementsExist({
+              capturePreviewImg,
+            });
+
+            // The capture preview image always fills the entire height.
+            const photoHeight = capturePreviewImg.clientHeight;
+
+            // Compute the width of the capture preview image excluding any side
+            // whitespace coming from the max-height: 600px constraint.
+            const photoWidth =
+              photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
+
+            const clientHeight = capturePreviewImg.clientHeight;
+            const clientWidth = capturePreviewImg.clientWidth;
+
+            // Rotation is strictly increasing so that the rotation animation is always in the same direction.
+            rotation += 90;
+
+            // Compute the scale factor based on the rotation.
+            // - If image is parallel to the capture preview div, reset its scaling to 1.
+            // - If image is perpendicular to the capture preview div, scale it so its longest side
+            //   fits within the preview container without clipping.
+            const scaleFactor =
+              rotation % 180 === 0
+                ? 1
+                : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
+            this.imageCapturePreviewPanzoom.reset({ animate: true });
           });
 
           let panEnabled = false;
@@ -792,7 +837,7 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Ensures that the provided elements exist. Throws an error if any element is not present.
-     * @param {Object} containers An object wherein keys are element names and values are the elements.
+     * @param {object} elements An object wherein keys are element names and values are the elements.
      */
     ensureElementsExist(elements) {
       for (const elementName in elements) {

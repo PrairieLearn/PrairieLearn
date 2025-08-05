@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/named-locks",
-  "version": "3.0.20",
+  "version": "3.0.21",
   "type": "module",
   "repository": {
     "type": "git",

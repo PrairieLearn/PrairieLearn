@@ -10,7 +10,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 interface DesiredAssessmentModule {
   name: string;
-  // TODO: make non-nullable once we make this non-null in the database schema.
+  /** TODO: make non-nullable once we make this non-null in the database schema. */
   heading: string | null;
 }
 
