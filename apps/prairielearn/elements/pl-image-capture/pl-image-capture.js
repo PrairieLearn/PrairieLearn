@@ -544,12 +544,16 @@ const MAX_ZOOM_SCALE = 5;
         zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
+          let rotation = 0;
           // Initialize Panzoom on the parent of the captured image element, since
           // the image itself may be rotated.
           this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
             maxScale: MAX_ZOOM_SCALE,
+            setTransform: (_, { scale, x, y }) => {
+              this.imageCapturePreviewPanzoom.setStyle('transform', `rotate(${rotation}deg) scale(${scale}) translate(${x}px, ${y}px)`);    
+            }
           });
 
           zoomInButton.addEventListener('click', () => {
@@ -559,7 +563,6 @@ const MAX_ZOOM_SCALE = 5;
             this.imageCapturePreviewPanzoom.zoomOut();
           });
 
-          let rotation = 0;
           viewerRotateClockwiseButton.addEventListener('click', () => {
             const capturePreviewImg = this.imageCaptureDiv.querySelector(
               '.js-uploaded-image-container .capture-preview',
@@ -571,7 +574,9 @@ const MAX_ZOOM_SCALE = 5;
 
             // Don't use modulo to ensure that the animated rotation direction is always clockwise.
             rotation += 90;
-            capturePreviewImg.style.transform = `rotate(${rotation}deg)`;
+
+            this.imageCapturePreviewPanzoom.reset({ animate: true });
+            // capturePreviewImg.style.transform = `rotate(${rotation}deg)`;
           });
 
           let panEnabled = false;
