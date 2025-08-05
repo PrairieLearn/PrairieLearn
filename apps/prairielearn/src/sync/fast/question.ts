@@ -2,7 +2,13 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { callAsync, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import {
+  callAsync,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { createAndUploadChunks } from '../../lib/chunks.js';
@@ -77,14 +83,56 @@ async function loadAndValidateQuestionJson(
   });
 }
 
+/**
+ * Validates and retrieves the topic for a question.
+ * Returns the topic if it exists, null if no topic is specified or if the topic doesn't exist.
+ */
+async function validateAndGetTopic(
+  course: Course,
+  jsonData: infofile.InfoFile<QuestionJson>,
+): Promise<Topic | null> {
+  if (!jsonData.data?.topic) return null;
+
+  return await selectOptionalTopicByName({
+    course_id: course.id,
+    name: jsonData.data.topic,
+  });
+}
+
+/**
+ * Validates and retrieves the tags for a question. Returns `null` if any tags
+ * don't exist.
+ */
+async function validateAndGetTags(
+  course: Course,
+  jsonData: infofile.InfoFile<QuestionJson>,
+): Promise<Tag[] | null> {
+  if (!jsonData.data?.tags?.length) return [];
+
+  const courseTags = await selectTagsByCourseId(course.id);
+  const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
+  const questionTags = new Map(
+    jsonData.data.tags
+      ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
+      .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
+  );
+
+  // All tags must already exist. If any of them don't, we can't do a fast sync.
+  const questionTagNames = new Set(jsonData.data.tags || []);
+  const allTagsExist =
+    questionTags.size === questionTagNames.size &&
+    [...questionTagNames].every((tagName) => questionTags.has(tagName));
+  if (!allTagsExist) return null;
+
+  return Array.from(questionTags.values());
+}
+
 async function updateQuestion(
   question: Question,
   infoFile: infofile.InfoFile<QuestionJson>,
   topic: Topic | null,
   tags: Tag[],
 ): Promise<Question> {
-  assert(question.qid, 'Question must have a QID');
-
   if (infofile.hasErrors(infoFile)) {
     // Write the errors to the question.
     return await queryRow(
@@ -95,9 +143,13 @@ async function updateQuestion(
       },
       QuestionSchema,
     );
-  } else {
-    // Update the question's properties.
+  }
+
+  return await runInTransactionAsync(async () => {
+    assert(question.qid, 'Question must have a QID');
     assert(topic?.id, 'Topic must be defined');
+
+    // Update the question's properties.
     const updatedQuestion = await queryRow(
       sql.update_question,
       {
@@ -110,11 +162,12 @@ async function updateQuestion(
       QuestionSchema,
     );
 
+    // Update the question's tags.
     const tagIds = tags.map((tag) => tag.id);
     await callAsync('sync_question_tags', [[JSON.stringify([updatedQuestion.id, tagIds])]]);
 
     return updatedQuestion;
-  }
+  });
 }
 
 /**
@@ -160,56 +213,17 @@ async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Que
       return null;
     }
 
-    const topic = await run(async () => {
-      if (!jsonData.data?.topic) return null;
-
-      return await selectOptionalTopicByName({
-        course_id: course.id,
-        name: jsonData.data?.topic,
-      });
-    });
-
     // The topic must already exist. If it doesn't, we can't do a fast sync.
     // The exception is when there's an error in the file, in which case we
     // don't care about syncing the topic (and in fact we don't know what it
     // is from the file anyways).
+    const topic = await validateAndGetTopic(course, jsonData);
     if (!topic && !infofile.hasErrors(jsonData)) return null;
 
-    // The topic must already exist. I.f it doesn't, we can't do a fast sync.
-    // The exception is when there's an error in the file, in which case we
-    // don't care about syncing the topic (and in fact we don't know what it
-    // is from the file anyways).
-    if (!topic && !infofile.hasErrors(jsonData)) return null;
+    const tags = await validateAndGetTags(course, jsonData);
+    if (tags === null) return null;
 
-    // Construct a map of tag names to tag objects.
-    const questionTags = await run(async () => {
-      if (!jsonData.data?.tags?.length) return new Map<string, Tag>();
-
-      const courseTags = await selectTagsByCourseId(course.id);
-      const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
-      return new Map(
-        jsonData.data.tags
-          ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
-          .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
-      );
-    });
-
-    // All tags must already exist. If any of them don't, we can't do a fast sync.
-    // The exception is when there's an error in the file, in which case we
-    // don't care about syncing the tags (and in fact we don't know what they
-    // are from the file anyways).
-    const questionTagNames = new Set(jsonData.data?.tags || []);
-    const allTagsExist =
-      questionTags.size === questionTagNames.size &&
-      [...questionTagNames].every((tagName) => questionTags.has(tagName));
-    if (!allTagsExist && !infofile.hasErrors(jsonData)) return null;
-
-    return await updateQuestion(
-      existingQuestion,
-      jsonData,
-      topic,
-      Array.from(questionTags.values()),
-    );
+    return await updateQuestion(existingQuestion, jsonData, topic, tags);
   }
 
   // One of several things could be true:
@@ -267,57 +281,31 @@ async function syncQuestionJson(course: Course, pathPrefix: string): Promise<Que
   // as it's not a common scenario and would require more complex logic.
   if (existingQuestionByUuid) return null;
 
-  const topic = await run(async () => {
-    if (!jsonData.data?.topic) return null;
-
-    return await selectOptionalTopicByName({
-      course_id: course.id,
-      name: jsonData.data?.topic,
-    });
-  });
-
-  // The topic must already exist. I.f it doesn't, we can't do a fast sync.
+  // The topic must already exist. If it doesn't, we can't do a fast sync.
   // The exception is when there's an error in the file, in which case we
   // don't care about syncing the topic (and in fact we don't know what it
   // is from the file anyways).
+  const topic = await validateAndGetTopic(course, jsonData);
   if (!topic && !infofile.hasErrors(jsonData)) return null;
 
-  // Construct a map of tag names to tag objects.
-  const questionTags = await run(async () => {
-    if (!jsonData.data?.tags?.length) return new Map<string, Tag>();
-
-    const courseTags = await selectTagsByCourseId(course.id);
-    const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
-    return new Map(
-      jsonData.data.tags
-        ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
-        .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
-    );
-  });
-
-  // All tags must already exist. If any of them don't, we can't do a fast sync.
-  // The exception is when there's an error in the file, in which case we
-  // don't care about syncing the tags (and in fact we don't know what they
-  // are from the file anyways).
-  const questionTagNames = new Set(jsonData.data?.tags || []);
-  const allTagsExist =
-    questionTags.size === questionTagNames.size &&
-    [...questionTagNames].every((tagName) => questionTags.has(tagName));
-  if (!allTagsExist && !infofile.hasErrors(jsonData)) return null;
+  const tags = await validateAndGetTags(course, jsonData);
+  if (tags === null) return null;
 
   // Create a new question in the database.
   const qid = qidFromFilePath(jsonFilePath);
-  const initialQuestion = await queryRow(
-    sql.insert_question,
-    {
-      course_id: course.id,
-      qid,
-      uuid: jsonData.uuid,
-    },
-    QuestionSchema,
-  );
+  return await runInTransactionAsync(async () => {
+    const initialQuestion = await queryRow(
+      sql.insert_question,
+      {
+        course_id: course.id,
+        qid,
+        uuid: jsonData.uuid,
+      },
+      QuestionSchema,
+    );
 
-  return await updateQuestion(initialQuestion, jsonData, topic, Array.from(questionTags.values()));
+    return await updateQuestion(initialQuestion, jsonData, topic, tags);
+  });
 }
 
 export async function fastSyncQuestion(course: Course, pathPrefix: string): Promise<boolean> {
