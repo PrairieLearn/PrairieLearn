@@ -1,17 +1,24 @@
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getUserParams(user_id) {
-  const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
-  const result = await sqldb.queryOneRowAsync(query, [user_id]);
-
-  const { uid, name, uin, institution_id } = result.rows[0];
-  return { uid, name, uin, institution_id };
+async function getUserParams(user_id: string) {
+  return await sqldb.queryRow(
+    'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $user_id;',
+    { user_id },
+    z.object({
+      uid: UserSchema.shape.uid,
+      name: UserSchema.shape.name,
+      uin: UserSchema.shape.uin,
+      institution_id: UserSchema.shape.institution_id,
+    }),
+  );
 }
 
 async function usersSelectOrInsert(

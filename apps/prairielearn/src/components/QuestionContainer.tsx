@@ -65,6 +65,7 @@ export function QuestionContainer({
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
+      data-workspace-id="${variant.workspace_id}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
@@ -124,7 +125,7 @@ export function QuestionContainer({
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -709,7 +710,7 @@ function QuestionPanel({
                     data-bs-toggle="modal"
                     data-bs-target="#copyQuestionModal"
                   >
-                    <i class="fa fa-fw fa-clone"></i>
+                    <i class="fa fa-clone"></i>
                     <span class="d-none d-sm-inline">Copy question</span>
                   </button>
                 `

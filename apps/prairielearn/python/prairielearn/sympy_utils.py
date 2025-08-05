@@ -280,13 +280,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
+    def visit_Name(self, node: ast.Name) -> None:
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)

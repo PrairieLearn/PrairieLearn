@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 4.0.0
+
+### Major Changes
+
+- cd5ed49: `queryCursor` was removed, and now requires a Zod schema. `queryValidatedCursor` was renamed to `queryCursor`.
+- 2c19e43: - Remove callback-based query functions.
+  - Deprecate query functions with Zod-validated alternatives.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 3.0.0
 
 ### Major Changes
