@@ -840,8 +840,6 @@ export async function updateLti13Scores(
     { assessment_id: assessment.id },
     z.object({
       id: IdSchema,
-      user_id: IdSchema,
-      assessment_id: IdSchema,
       score_perc: z.number(),
       date: DateFromISOString,
       open: z.boolean(),

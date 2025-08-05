@@ -110,7 +110,7 @@ WITH
       LEFT JOIN groups AS g ON (g.id = ai.group_id)
       LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     WHERE
-      a.id = $assessment_id
+      ai.assessment_id = $assessment_id
       AND g.deleted_at IS NULL
       AND ai.score_perc IS NOT NULL
       AND ai.date IS NOT NULL
