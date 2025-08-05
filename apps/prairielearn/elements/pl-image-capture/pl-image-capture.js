@@ -570,30 +570,32 @@ const MAX_ZOOM_SCALE = 5;
               capturePreviewImg,
             });
 
-            // Don't use modulo to ensure that the animated rotation direction is always clockwise.
-            rotation += 90;
-
-            // Obtain the dimensions of the image after rotation, in case the user
-            // changed their viewport dimensions.
-            const capturePreview = this.imageCaptureDiv.querySelector('.capture-preview');
-
-            const photoHeight = capturePreview.clientHeight;
+            /**
+             * The image within the capture preview div always fills the height of the div.
+             */
+            const photoHeight = capturePreviewImg.clientHeight;
 
             /**
-             * Calculate the width of the photo within the capture preview, accounting for
-             * when the maxHeight constraint results in gray bars on the sides of the image.
+             * Compute the displayed image width inside the capture preview div, excluding
+             * any whitespace on the side that resulted from the max-height: 600px constraint.
              */
             const photoWidth =
-              photoHeight * (capturePreview.naturalWidth / capturePreview.naturalHeight);
+              photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
 
-            const clientHeight = capturePreview.clientHeight;
-            const clientWidth = capturePreview.clientWidth;
+            const clientHeight = capturePreviewImg.clientHeight;
+            const clientWidth = capturePreviewImg.clientWidth;
 
             /**
-             * Calculate the scale factor based on the rotation and the aspect ratio.
+             * Rotation is strictly increasing so that the rotation animation is always in the same direction.
+             */
+            rotation += 90;
+
+            /**
+             * Compute the scale factor based on the rotation.
              *
-             * If the rotation is 0 or 180 degrees, the scale factor is 1.
-             * If the rotation is 90 or 270 degrees, the scale factor is determined by the aspect ratio of the image.
+             * - If image is parallel to the capture preview div, reset its scaling to 1.
+             * - If image is perpendicular to the capture preview div, scale it so its longest side
+             *   fits within the preview container without clipping.
              */
             const scaleFactor =
               rotation % 180 === 0
