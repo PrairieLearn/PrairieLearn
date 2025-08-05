@@ -5,7 +5,6 @@ import type {
   ChatCompletionMessageParam,
   ParsedChatCompletion,
 } from 'openai/resources/chat/completions.mjs';
-import type { L } from 'vitest/dist/chunks/reporters.d.BFLkQcL6.js';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -219,7 +218,7 @@ export async function generateRubricTuningPrompt({
         - explanation: The explanation of the rubric item.
         - grader_note: The grader note of the rubric item.
         The ID you provide must be identical to the ID of the rubric item you are modifying.
-        You must return all the rubric items, modified or not, in the JSON object.
+        You must return ALL provided rubric items in the JSON object. Do NOT add new rubric items or remove existing ones.
       `
     },
   ];

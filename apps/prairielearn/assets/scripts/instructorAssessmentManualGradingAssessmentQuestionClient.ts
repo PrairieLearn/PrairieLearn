@@ -94,8 +94,6 @@ onDocumentReady(() => {
         instanceQuestionIdToIndex[row.id] = index;
       });
 
-      console.log('instanceQuestionIdToIndex', instanceQuestionIdToIndex);
-
       return instance_questions.map((row, index) => ({
         // Re-parse the row to ensure that date strings are parsed correctly
         // typeof JSON.parse(JSON.stringify(new Date())) === 'string'

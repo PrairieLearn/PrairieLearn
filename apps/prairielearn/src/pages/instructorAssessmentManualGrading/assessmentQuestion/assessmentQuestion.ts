@@ -1,3 +1,4 @@
+import archiver from 'archiver';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
@@ -25,7 +26,6 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 
 import { AssessmentQuestion as AssessmentQuestionPage } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
-import archiver from 'archiver';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -216,8 +216,6 @@ router.post(
       if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
-      // Select all submissions
-      // Acquire the AI gradings for each
       const openai = new OpenAI({
         apiKey: config.aiGradingOpenAiApiKey,
         organization: config.aiGradingOpenAiOrganization,
@@ -225,300 +223,314 @@ router.post(
 
       const assessment_question = res.locals.assessment_question as AssessmentQuestion;
 
-        const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
-          assessment_question.id,
-        );
+      const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
+        assessment_question.id,
+      );
 
-        const instanceQuestionsById: Record<string, InstanceQuestion> = {};
-        for (const instanceQuestion of instanceQuestions) {
-          instanceQuestionsById[instanceQuestion.id] = instanceQuestion;
+      const instanceQuestionsById: Record<string, InstanceQuestion> = {};
+      for (const instanceQuestion of instanceQuestions) {
+        instanceQuestionsById[instanceQuestion.id] = instanceQuestion;
+      }
+
+      // Rerun AI grading on all instance questions
+      // This will be used by the AI to identify the submissions used to tune the rubric
+      await deleteAiGradingJobs({
+        assessment_question_ids: [res.locals.assessment_question.id],
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      await aiGrade({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        mode: 'all',
+        syncGrading: true
+      });
+
+      // Retrieve all human and AI gradings.
+      const instanceQuestionsTable = await fillInstanceQuestionColumns(
+        instanceQuestions,
+        assessment_question
+      );
+
+      const aiGradingsForEachPtLevel: Record<number, string[]> = {};
+
+      for (let i = 0; i < instanceQuestionsTable.length; i++) {
+        const instanceQuestionRow = instanceQuestionsTable[i];
+        if (instanceQuestionRow.point_difference === null) {
+          continue; // Skip if no AI grading
         }
 
-        const instanceQuestionsTable = await fillInstanceQuestionColumns(
-          instanceQuestions,
-          assessment_question
-        );
+        // Add the AI grading to the corresponding point level
+        const aiPoints = instanceQuestionRow.ai_points ?? -1; // Default to -1 if null
 
-        // Rerun AI grading on all instance questions
-        // This will be used by the AI to identify the submissions used to tune the rubric
-        await deleteAiGradingJobs({
-          assessment_question_ids: [res.locals.assessment_question.id],
-          authn_user_id: res.locals.authn_user.user_id,
-        });
+        aiGradingsForEachPtLevel[aiPoints] = aiGradingsForEachPtLevel[aiPoints] || [];
+        aiGradingsForEachPtLevel[aiPoints].push(instanceQuestions[i].id);
+      }
 
-        await aiGrade({
-          question: res.locals.question,
-          course: res.locals.course,
-          course_instance_id: res.locals.course_instance.id,
-          assessment_question: res.locals.assessment_question,
-          urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
-          mode: 'all',
-          syncGrading: true
-        });
-
-        const aiGradingsForEachPtLevel: Record<number, string[]> = {};
-
-        for (let i = 0; i < instanceQuestionsTable.length; i++) {
-          const instanceQuestionRow = instanceQuestionsTable[i];
-          if (instanceQuestionRow.point_difference === null) {
-            continue; // Skip if no AI grading
-          }
-
-          // Add the AI grading to the corresponding point level
-          const aiPoints = instanceQuestionRow.ai_points ?? -1; // Default to -1 if null
-
-          aiGradingsForEachPtLevel[aiPoints] = aiGradingsForEachPtLevel[aiPoints] || [];
-          aiGradingsForEachPtLevel[aiPoints].push(instanceQuestions[i].id);
-        }
-
-        
-        // Select a total of 5 AI gradings, distributed across the point levels
-        const selectedInstanceQuestions: InstanceQuestion[] = [];
       
-        const levels = Object.keys(aiGradingsForEachPtLevel)
+      // Select a total of 5 AI gradings, distributed across the point levels
+      const selectedInstanceQuestions: InstanceQuestion[] = [];
+    
+      const levels = Object.keys(aiGradingsForEachPtLevel)
         .map(Number)
         .filter(lvl => aiGradingsForEachPtLevel[lvl].length > 0);
-        
-        const numToSelect = Math.max(5, levels.length);
+      
+      const numToSelect = Math.max(5, levels.length);
 
 
-        let idx = 0;
-        while (selectedInstanceQuestions.length < numToSelect) {
-          // If all buckets are empty, stop early
-          if (levels.every(lvl => aiGradingsForEachPtLevel[lvl].length === 0)) {
-            break;
-          }
-
-          const level = levels[idx % levels.length];
-          const bucket = aiGradingsForEachPtLevel[level];
-
-          if (bucket.length > 0) {
-            // Pull one at random from this bucket
-            const randomIndex = Math.floor(Math.random() * bucket.length);
-            const [pickedId] = bucket.splice(randomIndex, 1);
-            console.log(`Picked ID: ${pickedId} from level ${level}`);
-            selectedInstanceQuestions.push(instanceQuestionsById[pickedId]);
-          }
-
-          idx++;
+      let idx = 0;
+      while (selectedInstanceQuestions.length < numToSelect) {
+        // If all buckets are empty, stop early
+        if (levels.every(lvl => aiGradingsForEachPtLevel[lvl].length === 0)) {
+          break;
         }
 
-        const {messages: rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
-          urlPrefix: res.locals.urlPrefix,
-          selectedInstanceQuestions,
-          assessmentQuestion: res.locals.assessment_question,
-          question: res.locals.question,
-          course: res.locals.course,
-          openai
-        });
+        const level = levels[idx % levels.length];
+        const bucket = aiGradingsForEachPtLevel[level];
 
-        console.log('rubricTuningMessages', rubricTuningMessages);
-
-        const TunedRubricResponseSchema = z.object({
-          rubric_items: z.array(
-            z.object({
-              id: z.string(),
-              description: z.string(),
-              explanation: z.string(),
-              grader_note: z.string(),
-            }),
-          )
-        });
-
-        // Tune the rubric
-        const completion = await openai.chat.completions.parse({
-          messages: rubricTuningMessages,
-          model: 'o4-mini',
-          user: `course_${res.locals.course.id}`,
-          response_format: zodResponseFormat(TunedRubricResponseSchema, 'formatted_rubric'),
-        });
-        const response = completion.choices[0].message;
-        if (!response?.parsed?.rubric_items) {
-          throw new error.HttpStatusError(500, 'AI did not return a formatted rubric');          
+        if (bucket.length > 0) {
+          // Pull one at random from this bucket
+          const randomIndex = Math.floor(Math.random() * bucket.length);
+          const [pickedId] = bucket.splice(randomIndex, 1);
+          console.log(`Picked ID: ${pickedId} from level ${level}`);
+          selectedInstanceQuestions.push(instanceQuestionsById[pickedId]);
         }
 
-        const generatedRubricItems = response.parsed.rubric_items;
+        idx++;
+      }
 
-        console.log('generatedRubricItems', generatedRubricItems);
+      const {messages: rubricTuningMessages, rubric_items} = await generateRubricTuningPrompt({
+        urlPrefix: res.locals.urlPrefix,
+        selectedInstanceQuestions,
+        assessmentQuestion: res.locals.assessment_question,
+        question: res.locals.question,
+        course: res.locals.course,
+        openai
+      });
 
-        // testing value. TODO: Remove
-        // const generatedRubricItems = [
-        //   {
-        //     id: '33',
-        //     description: 'Correct',
-        //     explanation: 'The response is entirely correct and demonstrates a clear understanding of the problem.',
-        //     grader_note: 'Award full points for a completely correct response with no errors.'
-        //   },
-        //   {
-        //     id: '34',
-        //     description: 'Missing or incorrect final statement',
-        //     explanation: 'The response does not include a final statement or the final statement is incorrect.',
-        //     grader_note: 'Deduct points if the conclusion about continuity is missing or incorrect.'
-        //   },
-        //   {
-        //     id: '35',
-        //     description: 'Did not set up left-hand limit',
-        //     explanation: 'The response does not include the setup for evaluating the left-hand limit.',
-        //     grader_note: 'Deduct points if the left-hand limit is not addressed or set up.'
-        //   },
-        //   {
-        //     id: '36',
-        //     description: 'Did not set up right-hand limit',
-        //     explanation: 'The response does not include the setup for evaluating the right-hand limit.',
-        //     grader_note: 'Deduct points if the right-hand limit is not addressed or set up.'
-        //   },
-        //   {
-        //     id: '37',
-        //     description: 'Left-hand limit evaluated incorrectly',
-        //     explanation: 'The left-hand limit is evaluated but contains errors.',
-        //     grader_note: 'Deduct points if the left-hand limit is evaluated incorrectly.'
-        //   },
-        //   {
-        //     id: '38',
-        //     description: 'Right-hand limit evaluated incorrectly',
-        //     explanation: 'The right-hand limit is evaluated but contains errors.',
-        //     grader_note: 'Deduct points if the right-hand limit is evaluated incorrectly.'
-        //   },
-        //   {
-        //     id: '39',
-        //     description: 'Incorrectly evaluated the left- and right-hand limits as equivalent',
-        //     explanation: 'The response incorrectly concludes that the left- and right-hand limits are equal.',
-        //     grader_note: 'Deduct points if the response incorrectly equates the left- and right-hand limits.'
-        //   },
-        //   {
-        //     id: '40',
-        //     description: 'Incorrect limit notation',
-        //     explanation: 'The response uses incorrect notation when discussing limits.',
-        //     grader_note: 'Deduct points for incorrect or unclear limit notation.'
-        //   },
-        //   {
-        //     id: '41',
-        //     description: 'Missing or incorrect',
-        //     explanation: 'The response is missing key components or is entirely incorrect.',
-        //     grader_note: 'Deduct points for responses that lack the necessary components or are incorrect overall.'
-        //   },
-        //   {
-        //     id: '42',
-        //     description: 'Correct conclusion',
-        //     explanation: 'The response includes a correct conclusion about the continuity of the function.',
-        //     grader_note: 'Award points for a correct conclusion, even if minor errors are present elsewhere.'
-        //   },
-        //   {
-        //     id: '43',
-        //     description: 'Minor error',
-        //     explanation: 'The response contains a minor error that does not significantly impact the overall correctness.',
-        //     grader_note: 'Deduct a small number of points for minor errors.'
-        //   },
-        //   {
-        //     id: '44',
-        //     description: 'Work not shown computing limit',
-        //     explanation: 'The response does not show the work for computing the limits.',
-        //     grader_note: 'Deduct points if the work for computing limits is not shown.'
-        //   }
-        // ]
+      console.log('rubricTuningMessages', rubricTuningMessages);
 
-        // Prior to tuning the rubric, we acquire the performance of all 
-        // submissions NOT used to tune the rubric.
+      const TunedRubricResponseSchema = z.object({
+        rubric_items: z.array(
+          z.object({
+            id: z.string(),
+            description: z.string(),
+            explanation: z.string(),
+            grader_note: z.string(),
+          }),
+        )
+      });
 
-        // This simulates that we told the user to grade the reference submissions, they did,
-        // and we are now using those references to guide the grading of the rest of the submissions.
-        await deleteAiGradingJobs({
-          assessment_question_ids: [res.locals.assessment_question.id],
-          authn_user_id: res.locals.authn_user.user_id,
-        });
+      type TunedRubricResponse = z.infer<typeof TunedRubricResponseSchema>;
 
-        // Grade everything that isn't the instance questions we just used
-        const instanceQuestionsToGrade = instanceQuestionsTable.filter(
-          (iq) => !selectedInstanceQuestions.some((siq) => idsEqual(siq.id, iq.id)),
-        );
-        
-        await aiGrade({
-          question: res.locals.question,
-          course: res.locals.course,
-          course_instance_id: res.locals.course_instance.id,
-          assessment_question: res.locals.assessment_question,
-          urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
-          mode: 'selected',
-          instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
-          syncGrading: true
-        });
-
-        // Acquire statistics from doing so.
-        const file1_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
-
-        // Ensure all AI-generated rubric items are in the original rubric items list
-        const originalRubricItemIds = new Set(rubric_items.map((item) => item.id));
-        for (const item of generatedRubricItems) {
-          if (!originalRubricItemIds.has(item.id)) {
-            throw new error.HttpStatusError(400, `Unknown AI-generated rubric item ID: ${item.id}`);
-          }
-        }
-
-        // Update the rubric items in the database
-        for (const item of generatedRubricItems) {
-          // Dummy message for testing
-          // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
-          const rubricItemId = await queryRow(sql.update_rubric_item, {
-            id: item.id,
-            rubric_id: res.locals.assessment_question.manual_rubric_id,
-            description: item.description,
-            explanation: item.explanation,
-            grader_note: item.grader_note,
-          }, z.string());
-        }
-
-        // We repeat the process of grading the remaining submissions again,
-        // but with the AI-enhanced rubric.
-        await deleteAiGradingJobs({
-          assessment_question_ids: [res.locals.assessment_question.id],
-          authn_user_id: res.locals.authn_user.user_id,
-        });
-
-        await aiGrade({
-          question: res.locals.question,
-          course: res.locals.course,
-          course_instance_id: res.locals.course_instance.id,
-          assessment_question: res.locals.assessment_question,
-          urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
-          mode: 'selected',
-          instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
-          syncGrading: true
-        });
-
-        const file2_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
-
-
-        // Export the two statistics files.
-
+      // AI-generate the tuned rubric.
+      const NUM_ATTEMPTS = 3;
+      let attempt = 0;
+      let generatedRubricItems: z.infer<typeof TunedRubricResponseSchema>['rubric_items'] = [];
+      for (attempt = 0; attempt < NUM_ATTEMPTS; attempt++) {
         try {
-          // 2) set headers for a zip download
-          res.setHeader('Content-Type', 'application/zip');
-          res.setHeader(
-            'Content-Disposition',
-            'attachment; filename="all_assessment_data.zip"'
-          );
+          const completion = await openai.chat.completions.parse({
+            messages: rubricTuningMessages,
+            model: 'o4-mini',
+            user: `course_${res.locals.course.id}`,
+            response_format: zodResponseFormat(TunedRubricResponseSchema, 'formatted_rubric'),
+          });
+          const response = completion.choices[0].message;
+          if (!response?.parsed?.rubric_items) {
+            throw new error.HttpStatusError(500, 'AI did not return a formatted rubric');          
+          }
 
-          // 3) create a zip stream
-          const archive = archiver('zip', { zlib: { level: 9 } });
-          archive.pipe(res);
+          generatedRubricItems = response.parsed.rubric_items;
 
-          // 4) append both CSVs under different names
-          archive.append(file1_data,    { name: 'file1_data.csv' });
-          archive.append(file2_data,    { name: 'file2_data.csv' });
-
-          // 5) finalize and send
-          await archive.finalize();
+          // Ensure all AI-generated rubric items are in the original rubric items list
+          const originalRubricItemIds = new Set(rubric_items.map((item) => item.id));
+          for (const item of generatedRubricItems) {
+            if (!originalRubricItemIds.has(item.id)) {
+              throw new error.HttpStatusError(400, `Unknown AI-generated rubric item ID: ${item.id}`);
+            }
+          }
+          break;
         } catch (err) {
-          flash('error', 'Failed to create zip file for download.');
-          res.redirect(req.originalUrl);
+          if (err instanceof error.HttpStatusError && err.status === 400) {
+            // If the AI response is invalid, we retry
+            console.warn(`AI response invalid on attempt ${attempt + 1}:`, err.message);
+            continue;
+          }
+          throw err; // Rethrow other errors
         }
+      }
+      
+      if (attempt === NUM_ATTEMPTS) {
+        throw new error.HttpStatusError(500, 'AI failed to generate a valid rubric after multiple attempts');
+      }
 
+      // testing value. TODO: Remove
+      // const generatedRubricItems = [
+      //   {
+      //     id: '33',
+      //     description: 'Correct',
+      //     explanation: 'The response is entirely correct and demonstrates a clear understanding of the problem.',
+      //     grader_note: 'Award full points for a completely correct response with no errors.'
+      //   },
+      //   {
+      //     id: '34',
+      //     description: 'Missing or incorrect final statement',
+      //     explanation: 'The response does not include a final statement or the final statement is incorrect.',
+      //     grader_note: 'Deduct points if the conclusion about continuity is missing or incorrect.'
+      //   },
+      //   {
+      //     id: '35',
+      //     description: 'Did not set up left-hand limit',
+      //     explanation: 'The response does not include the setup for evaluating the left-hand limit.',
+      //     grader_note: 'Deduct points if the left-hand limit is not addressed or set up.'
+      //   },
+      //   {
+      //     id: '36',
+      //     description: 'Did not set up right-hand limit',
+      //     explanation: 'The response does not include the setup for evaluating the right-hand limit.',
+      //     grader_note: 'Deduct points if the right-hand limit is not addressed or set up.'
+      //   },
+      //   {
+      //     id: '37',
+      //     description: 'Left-hand limit evaluated incorrectly',
+      //     explanation: 'The left-hand limit is evaluated but contains errors.',
+      //     grader_note: 'Deduct points if the left-hand limit is evaluated incorrectly.'
+      //   },
+      //   {
+      //     id: '38',
+      //     description: 'Right-hand limit evaluated incorrectly',
+      //     explanation: 'The right-hand limit is evaluated but contains errors.',
+      //     grader_note: 'Deduct points if the right-hand limit is evaluated incorrectly.'
+      //   },
+      //   {
+      //     id: '39',
+      //     description: 'Incorrectly evaluated the left- and right-hand limits as equivalent',
+      //     explanation: 'The response incorrectly concludes that the left- and right-hand limits are equal.',
+      //     grader_note: 'Deduct points if the response incorrectly equates the left- and right-hand limits.'
+      //   },
+      //   {
+      //     id: '40',
+      //     description: 'Incorrect limit notation',
+      //     explanation: 'The response uses incorrect notation when discussing limits.',
+      //     grader_note: 'Deduct points for incorrect or unclear limit notation.'
+      //   },
+      //   {
+      //     id: '41',
+      //     description: 'Missing or incorrect',
+      //     explanation: 'The response is missing key components or is entirely incorrect.',
+      //     grader_note: 'Deduct points for responses that lack the necessary components or are incorrect overall.'
+      //   },
+      //   {
+      //     id: '42',
+      //     description: 'Correct conclusion',
+      //     explanation: 'The response includes a correct conclusion about the continuity of the function.',
+      //     grader_note: 'Award points for a correct conclusion, even if minor errors are present elsewhere.'
+      //   },
+      //   {
+      //     id: '43',
+      //     description: 'Minor error',
+      //     explanation: 'The response contains a minor error that does not significantly impact the overall correctness.',
+      //     grader_note: 'Deduct a small number of points for minor errors.'
+      //   },
+      //   {
+      //     id: '44',
+      //     description: 'Work not shown computing limit',
+      //     explanation: 'The response does not show the work for computing the limits.',
+      //     grader_note: 'Deduct points if the work for computing limits is not shown.'
+      //   }
+      // ]
+
+      // Prior to tuning the rubric, we acquire the performance of all 
+      // submissions NOT used to tune the rubric.
+
+      // This simulates that we told the user to grade the reference submissions, they did,
+      // and we are now using those references to guide the grading of the rest of the submissions.
+      await deleteAiGradingJobs({
+        assessment_question_ids: [res.locals.assessment_question.id],
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      // Grade everything but the instance questions selected for tuning the rubric to prevent
+      // ground-truth labels from contaminating the benchmark.
+      const instanceQuestionsToGrade = instanceQuestionsTable.filter(
+        (iq) => !selectedInstanceQuestions.some((siq) => idsEqual(siq.id, iq.id)),
+      );
+      
+      await aiGrade({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        mode: 'selected',
+        instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+        syncGrading: true
+      });
+
+      // Acquire performance statistics
+      const file1_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
+
+      // Update the rubric items in the database
+      for (const item of generatedRubricItems) {
+        // Dummy message for testing
+        // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
+        await queryAsync(sql.update_rubric_item, {
+          id: item.id,
+          rubric_id: res.locals.assessment_question.manual_rubric_id,
+          description: item.description,
+          explanation: item.explanation,
+          grader_note: item.grader_note,
+        });
+      }
+
+      // We repeat the process of grading the remaining submissions again,
+      // but with the AI-enhanced rubric.
+      await deleteAiGradingJobs({
+        assessment_question_ids: [res.locals.assessment_question.id],
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      await aiGrade({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        mode: 'selected',
+        instance_question_ids: instanceQuestionsToGrade.map((iq) => iq.id),
+        syncGrading: true
+      });
+
+      const file2_data = await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment);
+
+      // Export the two statistics files.
+      try {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename="all_assessment_data.zip"'
+        );
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        archive.append(file1_data,    { name: 'file1_data.csv' });
+        archive.append(file2_data,    { name: 'file2_data.csv' });
+
+        await archive.finalize();
+      } catch {
+        flash('error', 'Failed to create zip file for download.');
+        res.redirect(req.originalUrl);
+      }
     } else if (req.body.__action === 'clear_rubric') {    
       await clearRubricOptionalFields(
         res.locals.assessment_question.id,
