@@ -1,13 +1,8 @@
 from enum import Enum
-from types import FunctionType
 from typing import TypedDict
-import importlib
+import lxml.html
 
 import prairielearn as pl
-from prairielearn.html_utils import inner_html
-from lxml.etree import _Comment
-import lxml.html
-from functools import partial
 
 class GroupInfo(TypedDict):
     tag: str | None
@@ -127,9 +122,9 @@ class OrderBlockOptions:
         self.answer_options = collect_answer_options(html_element, self.grading_method)
 
 
-    def _check_options(self, html_tag: lxml.html.HtmlElement) -> None:
-        if html_tag.tag != "pl-order-blocks":
-            raise ValueError("HTML element is not a pl-order-block")
+    def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
+        if html_element.tag != "pl-order-blocks":
+            raise ValueError("HTML element is not a pl-order-blocks")
 
         required_attribs = ["answers-name"]
         optional_attribs = [
@@ -152,7 +147,7 @@ class OrderBlockOptions:
             "allow-blank",
         ]
         pl.check_attribs(
-            html_tag, required_attribs=required_attribs, optional_attribs=optional_attribs
+            html_element, required_attribs=required_attribs, optional_attribs=optional_attribs
         )
 
     def validate(self):
