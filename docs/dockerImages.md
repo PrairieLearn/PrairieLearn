@@ -15,6 +15,11 @@ Some questions may require additional customization of existing images, such as 
 
 1. Install [Docker Desktop](https://docs.docker.com/desktop/) in your environment.
 2. Create a [Docker Hub](https://hub.docker.com/) account, if you don't yet have one.
+
+   !!! warning
+
+   This step should be done by a user that will maintain a long-term association with the course in question, such as a permanent faculty member or support staff, not a teaching assistant or sessional instructor. This will simplify any future updates to custom images, if they become necessary. If multiple users are expected to get access to push these images, you may consider the use of [access tokens](https://docs.docker.com/security/access-tokens/) or [teams](https://docs.docker.com/admin/organization/manage-a-team/).
+
 3. Create a new directory to hold the information for your image. You may create it in your course repository if you wish to share this with other staff members in your course.
 4. In the directory above, create a file named [`Dockerfile`](https://docs.docker.com/reference/dockerfile/) (without an extension), and set its contents to the set of instructions to be used for the image you are creating. For example, to create a custom version of `prairielearn/workspace-vscode-python` with the `datascience` Python package, the file may look like:
 
@@ -23,14 +28,53 @@ Some questions may require additional customization of existing images, such as 
    RUN pip install datascience
    ```
 
-5. In a terminal, change to the directory that contains the `Dockerfile` above and run the following commands (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
+5. In a terminal, change to the directory that contains the `Dockerfile` above and build the new image (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
 
    ```bash
    docker build --platform linux/amd64 -t yourdockerhubaccount/yourimagename .
+   ```
+
+   !!! warning
+
+   Note that the production environment used by PrairieLearn uses a `linux/amd64` platform for images. As such it is necessary that images are built using this platform, as listed in `--platform` argument in the command above. This is particularly relevant for users of ARM-based architectures such as Apple M-series processors or Windows on Arm systems, since these systems default to `linux/arm64` instead.
+
+6. Once the build process completes, push the image to the Docker Hub registry (again replacing `yourdockerhubaccount` and `yourimagename` as needed):
+
+   ```bash
    docker push yourdockerhubaccount/yourimagename
    ```
 
-6. Change the settings for the question that needs the custom image to use the image name you set above.
-7. In your course's "Sync" page, under "Docker images", find the image name above and click on "Sync".
+7. Change the settings for the question that needs the custom image to use the image name you set above.
+8. In your course's "Sync" page, under "Docker images", find the image name above and click on "Sync".
 
-Note that the process above _will not_ cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to periodically update your custom image by repeating steps 5-7 above.
+Note that the process above _will not_ cause the image above to be automatically updated if there are changes or additional features to the original image. It is your responsibility to periodically update your custom image by repeating steps 5-8 above.
+
+### Changing existing custom images
+
+In some occasion, instructors may need to update their own existing custom images, e.g., to update versions of supported packages, to install additional packages, or to change specific settings. For simple changes that are not expected to impact existing questions significantly, updating the `Dockerfile` and related files and executing steps 5-8 above may be sufficient.
+
+In some cases, however, changes may be significant enough that [testing in a local environment](./installing.md#support-for-external-graders-and-workspaces) is strongly advisable to ensure that existing questions continue to work as expected. In this scenario, it is important to ensure that the production environment is not updated with the new image version until testing is complete. There are some approaches that can be taken to achieve this result.
+
+By default, a local installation of PrairieLearn will pull the latest version of the grader/workspace image every time it is used. However, it is possible to change PrairieLearn's configuration to use the local version of an image. This can be done by creating a `config.json` file in any directory of your choice with the following content:
+
+```json
+{
+  "externalGradingPullImagesFromDockerHub": false,
+  "workspacePullImagesFromDockerHub": false
+}
+```
+
+Then, map this configuration file when running PrairieLearn:
+
+```sh
+docker run -it --rm -p 3000:3000 \
+  -v "/path/to/config.json:/PrairieLearn/config.json" `# Replace the path with your config.json directory` \
+  `# Include all other options here...` \
+  prairielearn/prairielearn
+```
+
+!!! note
+
+    With the configuration above, the local PrairieLearn environment will use the local version of any grader or workspace image when it is needed. This means it is your responsibility to ensure the local version of any image you use is up-to-date, by calling `docker pull IMAGENAME` for any images you are using, including provided and custom images.
+
+Once the configuration above is set, you can modify the `Dockerfile` and related files, then run step 5 from the list above. You can then test the questions that use your custom image to ensure they work as expected. Once you are satisfied that the questions work as expected, proceed with steps 6-8 above. If you made any changes in your questions to account for the changes in the image, make sure your questions are properly synchronized with the production environment as well.
