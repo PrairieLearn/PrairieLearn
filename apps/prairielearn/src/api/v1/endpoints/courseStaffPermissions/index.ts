@@ -17,8 +17,8 @@ import {
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
 import {
-  EnumCourseRoleSchema,
   EnumCourseInstancePermissionSchema,
+  EnumCourseRoleSchema,
 } from '../../../../lib/db-types.js';
 
 const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
