@@ -507,6 +507,7 @@ const MAX_ZOOM_SCALE = 5;
 
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div';
+      capturePreviewParent.style.transformOrigin = 'center center';
 
       capturePreviewParent.appendChild(capturePreview);
 
@@ -517,6 +518,7 @@ const MAX_ZOOM_SCALE = 5;
         capturePreview.addEventListener(
           'load',
           () => {
+            this.capturePreviewWidth = capturePreview.clientWidth;
             this.capturePreviewHeight = capturePreview.clientHeight;
           },
           { once: true },
@@ -551,9 +553,6 @@ const MAX_ZOOM_SCALE = 5;
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
             maxScale: MAX_ZOOM_SCALE,
-            setTransform: (_, { scale, x, y }) => {
-              this.imageCapturePreviewPanzoom.setStyle('transform', `rotate(${rotation}deg) scale(${scale}) translate(${x}px, ${y}px)`);    
-            }
           });
 
           zoomInButton.addEventListener('click', () => {
@@ -575,8 +574,14 @@ const MAX_ZOOM_SCALE = 5;
             // Don't use modulo to ensure that the animated rotation direction is always clockwise.
             rotation += 90;
 
+            // If the image is rotated by 90 or 270 degrees, it must be scaled down to fit within the original dimensions. 
+            // If width > height, the scale factor is height / width (scale down longer width to match the original height)
+            // If width < height, the scale factor is width / height (scale down longer height to match the original width)
+            // Otherwise, reset the scale factor to 1.
+            const rotatedScaleFactor = rotation % 180 === 0 ? 1 : Math.min(this.capturePreviewWidth / this.capturePreviewHeight, this.capturePreviewHeight / this.capturePreviewWidth);
+
+            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${rotatedScaleFactor})`;
             this.imageCapturePreviewPanzoom.reset({ animate: true });
-            // capturePreviewImg.style.transform = `rotate(${rotation}deg)`;
           });
 
           let panEnabled = false;
