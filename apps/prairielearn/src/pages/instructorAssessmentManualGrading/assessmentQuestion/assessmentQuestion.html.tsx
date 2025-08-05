@@ -72,6 +72,7 @@ export function AssessmentQuestion({
 
       ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
+      ${compiledScriptTag('instructorAssessmentManualGradingRubricEditingPreact.tsx')}
       ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
       ${EncodedData<InstanceQuestionTableData>(
         {
@@ -151,7 +152,14 @@ export function AssessmentQuestion({
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
-        ? html`
+        ? html`<div class="mb-3">
+              <div
+                id="rubric-table-preact"
+                data-assessment-question="${JSON.stringify(assessment_question)}"
+                data-rubric-data="${JSON.stringify(rubric_data)}"
+                data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"
+              ></div>
+            </div>
             ${aiGradingStats.rubric_stats.length
               ? AssessmentQuestionRubricTable(
                   assessment_question,
@@ -172,8 +180,7 @@ export function AssessmentQuestion({
                       </div>
                     </div>
                   </div>
-                `}
-          `
+                `} `
         : ''}
 
       <form name="grading-form" method="POST">
