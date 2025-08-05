@@ -16,8 +16,6 @@ Some questions may require additional customization of existing images, such as 
 1. Install [Docker Desktop](https://docs.docker.com/desktop/) in your environment.
 2. Create a [Docker Hub](https://hub.docker.com/) account, if you don't yet have one.
 
-   !!! warning
-
    This step should be done by a user that will maintain a long-term association with the course in question, such as a permanent faculty member or support staff, not a teaching assistant or sessional instructor. This will simplify any future updates to custom images, if they become necessary. If multiple users are expected to get access to push these images, you may consider the use of [access tokens](https://docs.docker.com/security/access-tokens/) or [teams](https://docs.docker.com/admin/organization/manage-a-team/).
 
 3. Create a new directory to hold the information for your image. You may create it in your course repository if you wish to share this with other staff members in your course.
@@ -33,8 +31,6 @@ Some questions may require additional customization of existing images, such as 
    ```bash
    docker build --platform linux/amd64 -t yourdockerhubaccount/yourimagename .
    ```
-
-   !!! warning
 
    Note that the production environment used by PrairieLearn uses a `linux/amd64` platform for images. As such it is necessary that images are built using this platform, as listed in `--platform` argument in the command above. This is particularly relevant for users of ARM-based architectures such as Apple M-series processors or Windows on Arm systems, since these systems default to `linux/arm64` instead.
 
