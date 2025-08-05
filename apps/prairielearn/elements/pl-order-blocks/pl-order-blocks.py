@@ -7,7 +7,7 @@ from copy import deepcopy
 from enum import Enum
 from types import FunctionType
 from typing import TypedDict
-from order_blocks_attribute_parsing import OrderBlocksAttributes, GradingMethodType, GroupInfo, SourceBlocksOrderType, SolutionPlacementType, FeedbackType, PartialCreditType, FormatType 
+from order_blocks_options_parsing import OrderBlocksOptions, GradingMethodType, GroupInfo, SourceBlocksOrderType, SolutionPlacementType, FeedbackType, PartialCreditType, FormatType, get_graph_info
 
 import chevron
 import lxml.html
@@ -110,30 +110,32 @@ def solve_problem(
 
 def prepare(html: str, data: pl.QuestionData) -> None:
     html_element = lxml.html.fragment_fromstring(html)
-    question = OrderBlocksAttributes(html_element)
+
+    order_blocks_options = OrderBlocksOptions(html_element)
+    order_blocks_options.validate()
 
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
-    for i, answer_attribs in enumerate(question.answer_attribs):
+    for i, answer_options in enumerate(order_blocks_options.answer_options):
         answer_data_dict: OrderBlocksAnswerData = {
-            "inner_html": answer_attribs["inner_html"],
-            "indent": answer_attribs["indent"],
-            "ranking": answer_attribs["ranking"],
+            "inner_html": answer_options.inner_html,
+            "indent": answer_options.indent,
+            "ranking": answer_options.ranking,
             "index": i,
-            "tag": answer_attribs["tag"],
-            "distractor_for": answer_attribs["distractor_for"],
-            "depends": answer_attribs["depends"],  # only used with DAG grader
-            "group_info": answer_attribs["group_info"],  # only used with DAG grader
-            "distractor_feedback": answer_attribs["distractor_feedback"],
-            "ordering_feedback": answer_attribs["ordering_feedback"],
+            "tag": answer_options.tag,
+            "distractor_for": answer_options.distractor_for,
+            "depends": answer_options.depends,  # only used with DAG grader
+            "group_info": answer_options.group_info,  # only used with DAG grader
+            "distractor_feedback": answer_options.distractor_feedback,
+            "ordering_feedback": answer_options.ordering_feedback,
             "uuid": pl.get_uuid(),
         }
-        if answer_attribs["correct"]:
+        if answer_options.correct:
             correct_answers.append(answer_data_dict)
         else:
             incorrect_answers.append(answer_data_dict)
 
-    if (question.grading_method.value is not GradingMethodType.EXTERNAL.value and len(correct_answers) == 0):
+    if (order_blocks_options.grading_method.value is not GradingMethodType.EXTERNAL.value and len(correct_answers) == 0):
         raise ValueError("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
@@ -162,17 +164,17 @@ def prepare(html: str, data: pl.QuestionData) -> None:
 
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
-    if question.source_blocks_order.value == SourceBlocksOrderType.RANDOM.value:
+    if order_blocks_options.source_blocks_order.value == SourceBlocksOrderType.RANDOM.value:
         random.shuffle(all_blocks)
-    elif question.source_blocks_order.value == SourceBlocksOrderType.ORDERED.value:
+    elif order_blocks_options.source_blocks_order.value == SourceBlocksOrderType.ORDERED.value:
         all_blocks.sort(key=lambda a: a["index"])
     elif (
-        question.source_blocks_order.value
+        order_blocks_options.source_blocks_order.value
         == SourceBlocksOrderType.ALPHABETIZED.value
     ):
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
-        assert_never(question.source_blocks_order.value)
+        assert_never(order_blocks_options.source_blocks_order.value)
 
     # prep for visual pairing
     correct_tags = {block["tag"] for block in all_blocks}
@@ -203,20 +205,20 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         for distractor in distractors:
             distractor["distractor_bin"] = distractor_bin
 
-    data["params"][question.answer_name] = all_blocks
-    data["correct_answers"][question.answer_name] = correct_answers
+    data["params"][order_blocks_options.answer_name] = all_blocks
+    data["correct_answers"][order_blocks_options.answer_name] = correct_answers
 
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
     # isn't we need to change it into a solution before displaying it as such
     data_copy = deepcopy(data)
     data_copy["submitted_answers"] = {
-        question.answer_name: deepcopy(correct_answers)
+        order_blocks_options.answer_name: deepcopy(correct_answers)
     }
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
-    if data_copy["partial_scores"][question.answer_name]["score"] != 1:
-        data["correct_answers"][question.answer_name] = solve_problem(
-            correct_answers, question.grading_method
+    if data_copy["partial_scores"][order_blocks_options.answer_name]["score"] != 1:
+        data["correct_answers"][order_blocks_options.answer_name] = solve_problem(
+            correct_answers, order_blocks_options.grading_method
         )
 
 
