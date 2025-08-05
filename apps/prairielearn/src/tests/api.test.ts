@@ -470,7 +470,7 @@ describe('API', { timeout: 60_000 }, function () {
     );
 
     test.sequential(
-      'PUT to update user in staff list to an owner of a specific course with invalid role fails',
+      'PUT to update user in staff list to an owner of a specific course with empty role fails',
       async function () {
         const res = await fetch(locals.apiCourseStaffUrl, {
           method: 'PUT',
@@ -484,6 +484,24 @@ describe('API', { timeout: 60_000 }, function () {
           }),
         });
         assert.equal(res.status, 400);
+      },
+    );
+
+    test.sequential(
+      'PUT to update user in staff list to an owner of a specific course with invalid role fails',
+      async function () {
+        const res = await fetch(locals.apiCourseStaffUrl, {
+          method: 'PUT',
+          headers: {
+            'Private-Token': locals.api_token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: 'dev@example.com',
+            course_role: 'invalid',
+          }),
+        });
+        assert.equal(res.status, 404);
       },
     );
 

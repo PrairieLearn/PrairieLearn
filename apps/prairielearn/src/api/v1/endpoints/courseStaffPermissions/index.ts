@@ -16,6 +16,10 @@ import {
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
+import {
+  EnumCourseRoleSchema,
+  EnumCourseInstancePermissionSchema,
+} from '../../../../lib/db-types.js';
 
 const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
   user: true,
@@ -32,6 +36,44 @@ const sql = sqldb.loadSql(
 );
 
 const router = Router({ mergeParams: true });
+
+// Helper validation functions
+function validateCourseRole({ course_role }) {
+  if (!course_role) {
+    throw new error.HttpStatusError(400, 'Missing required field: course_role');
+  }
+
+  const validate_role = EnumCourseRoleSchema.safeParse(course_role);
+
+  if (!validate_role.success) {
+    throw new error.HttpStatusError(404, 'Role not found');
+  }
+}
+
+function validateCourseInstanceRole({ course_instance_role }) {
+  if (!course_instance_role) {
+    throw new error.HttpStatusError(400, 'Missing required field: course_instance_role');
+  }
+
+  const validate_role = EnumCourseInstancePermissionSchema.safeParse(course_instance_role);
+
+  if (!validate_role.success) {
+    throw new error.HttpStatusError(404, 'Role not found');
+  }
+}
+
+async function validateUid({ uid }) {
+  if (!uid) {
+    throw new error.HttpStatusError(400, 'Missing required field: uid');
+  }
+
+  const user = await selectOptionalUserByUid(uid);
+  if (!user) {
+    throw new error.HttpStatusError(404, 'User not found');
+  }
+
+  return user;
+}
 
 // List users with access to course
 router.get(
@@ -52,9 +94,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
-    if (!uid || !course_role) {
-      throw new error.HttpStatusError(400, 'Missing required field(s): {uid, course_role}');
+    // User can be added to staff list before being created so do not check for user existence
+    if (!uid) {
+      throw new error.HttpStatusError(400, 'Missing required field: uid');
     }
+
+    validateCourseRole({ course_role });
 
     const job = await insertCoursePermissionsByUserUid({
       course_id: req.params.course_id,
@@ -72,17 +117,8 @@ router.put(
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
-    if (!uid || !course_role) {
-      throw new error.HttpStatusError(
-        400,
-        'Missing required field(s): {uid, course_instance_role}',
-      );
-    }
-
-    const user = await selectOptionalUserByUid(uid);
-    if (!user) {
-      throw new error.HttpStatusError(404, 'User not found');
-    }
+    const user = await validateUid({ uid });
+    validateCourseRole({ course_role });
 
     await updateCoursePermissionsRole({
       course_id: req.params.course_id,
@@ -100,14 +136,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
 
-    if (!uid) {
-      throw new error.HttpStatusError(400, 'Missing required field: uid');
-    }
-
-    const user = await selectOptionalUserByUid(uid);
-    if (!user) {
-      throw new error.HttpStatusError(404, 'User not found');
-    }
+    const user = await validateUid({ uid });
 
     await deleteCoursePermissions({
       course_id: req.params.course_id,
@@ -124,17 +153,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
 
-    if (!uid || !course_instance_role) {
-      throw new error.HttpStatusError(
-        400,
-        'Missing required field(s): {uid, course_instance_role}',
-      );
-    }
-
-    const user = await selectOptionalUserByUid(uid);
-    if (!user) {
-      throw new error.HttpStatusError(404, 'User not found');
-    }
+    validateCourseInstanceRole({ course_instance_role });
+    const user = await validateUid({ uid });
 
     await insertCourseInstancePermissions({
       course_id: req.params.course_id,
@@ -153,17 +173,8 @@ router.put(
   asyncHandler(async (req, res) => {
     const { uid, course_instance_role } = req.body;
 
-    if (!uid || !course_instance_role) {
-      throw new error.HttpStatusError(
-        400,
-        'Missing required field(s): {uid, course_instance_role}',
-      );
-    }
-
-    const user = await selectOptionalUserByUid(uid);
-    if (!user) {
-      throw new error.HttpStatusError(404, 'User not found');
-    }
+    validateCourseInstanceRole({ course_instance_role });
+    const user = await validateUid({ uid });
 
     await updateCourseInstancePermissionsRole({
       course_id: req.params.course_id,
@@ -182,14 +193,7 @@ router.delete(
   asyncHandler(async (req, res) => {
     const { uid } = req.body;
 
-    if (!uid) {
-      throw new error.HttpStatusError(400, 'Missing required field: uid');
-    }
-
-    const user = await selectOptionalUserByUid(uid);
-    if (!user) {
-      throw new error.HttpStatusError(404, 'User not found');
-    }
+    const user = await validateUid({ uid });
 
     await deleteCourseInstancePermissions({
       course_id: req.params.course_id,
