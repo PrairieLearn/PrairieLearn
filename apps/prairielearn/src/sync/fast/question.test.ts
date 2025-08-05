@@ -10,6 +10,8 @@ import type { QuestionJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
 
+import { qidFromFilePath } from './question.js';
+
 import { attemptFastSync, getFastSyncStrategy } from './index.js';
 
 /**
@@ -23,6 +25,23 @@ function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
     topic: courseData.course.topics[0].name,
   };
 }
+
+describe('qidFromFilePath', () => {
+  it('should extract QID from simple question path', () => {
+    const result = qidFromFilePath('questions/foo/info.json');
+    assert.equal(result, 'foo');
+  });
+
+  it('should extract QID from nested question path', () => {
+    const result = qidFromFilePath('questions/foo/bar/info.json');
+    assert.equal(result, 'foo/bar');
+  });
+
+  it('should extract QID from deeply nested question path', () => {
+    const result = qidFromFilePath('questions/topic1/subtopic/my-question/info.json');
+    assert.equal(result, 'topic1/subtopic/my-question');
+  });
+});
 
 describe('fastSyncQuestion', () => {
   beforeAll(helperDb.before);
@@ -43,6 +62,9 @@ describe('fastSyncQuestion', () => {
       const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
       assert(strategy !== null);
       assert.isTrue(await attemptFastSync(course, strategy));
+
+      const question = await selectQuestionByQid({ course_id: course.id, qid });
+      assert.equal(question.title, courseData.questions[qid].title);
     },
   );
 
@@ -62,6 +84,9 @@ describe('fastSyncQuestion', () => {
       ]);
       assert(strategy !== null);
       assert.isTrue(await attemptFastSync(course, strategy));
+
+      const question = await selectQuestionByQid({ course_id: course.id, qid });
+      assert.equal(question.title, courseData.questions[qid].title);
     },
   );
 

@@ -62,9 +62,9 @@ async function isSharingEnabled(course: Course): Promise<boolean> {
   });
 }
 
-function qidFromFilePath(filePath: string): string {
+export function qidFromFilePath(filePath: string): string {
   const relativePath = path.relative('questions', filePath);
-  return relativePath.replace(/\.json$/, '');
+  return relativePath.replace(/\/info\.json$/, '');
 }
 
 async function loadAndValidateQuestionJson(
