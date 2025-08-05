@@ -507,7 +507,6 @@ const MAX_ZOOM_SCALE = 5;
 
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
-      // capturePreviewParent.style.transformOrigin = 'center center';
 
       capturePreviewParent.appendChild(capturePreview);
 
