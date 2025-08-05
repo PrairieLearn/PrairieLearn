@@ -381,7 +381,11 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image captured yet.</span>
+        <span class="text-muted text-center">
+          No image captured yet.
+          <br/>
+          Use a clean sheet of paper.
+        </span>
       `;
     }
 
