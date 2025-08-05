@@ -37,7 +37,9 @@ const sql = sqldb.loadSql(
 
 const router = Router({ mergeParams: true });
 
-/* Helper validation functions */
+/**
+ * Helper validation functions
+ */
 function validateCourseRole({ course_role }) {
   if (!course_role) {
     throw new error.HttpStatusError(400, 'Missing required field: course_role');
