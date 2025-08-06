@@ -1,8 +1,8 @@
 import * as crypto from 'crypto';
-import debugfn from 'debug';
 import { URL } from 'url';
 
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import debugfn from 'debug';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import * as client from 'openid-client';
 import { z } from 'zod';
@@ -18,7 +18,7 @@ import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
-import { Lti13Claim, Lti13ClaimSchema, type Lti13ClaimType } from '../../lib/lti13.js';
+import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
 import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
@@ -35,7 +35,7 @@ const STATE_TEST = '-StateTest';
 // Schema to validate OIDC, LTI
 //
 const OIDCAuthResponseSchema = z.object({
-  state: z.string().optional(),
+  state: z.string(),
   id_token: z.string(),
   // also has utf8, authenticity_token, lti_storage_target
 });
@@ -91,7 +91,7 @@ function getClaimUserAttributes({
 
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
-async function launchFlow(req: Request, res: Response, next: NextFunction) {
+async function launchFlow(req: Request, res: Response) {
   debug('launchFlow');
   debug(req.method);
   debug({ ...req.query, ...req.body });
@@ -151,19 +151,28 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
   };
 
   // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
-  let redirectTo = client.buildAuthorizationUrl(openidClientConfig, {
+  const requestParameters = {
     scope: 'openid',
     response_type: 'id_token',
     client_id: lti13_instance.client_params.client_id,
     redirect_uri: lti13_instance.client_params.redirect_uris[0],
-    login_hint: parameters.login_hint!,
-    lti_message_hint: parameters.lti_message_hint!,
+    login_hint: parameters.login_hint,
     state,
     response_mode: 'form_post',
     nonce,
     prompt: 'none',
-  });
+  };
 
+  // If these exist, they must be included back:
+  // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
+  const optionalParams = ['lti_message_hint', 'lti_deployment_id'];
+  for (const key of optionalParams) {
+    if (key in parameters) {
+      requestParameters[key] = parameters[key];
+    }
+  }
+
+  const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
   res.redirect(redirectTo.href);
   return;
 }
@@ -201,7 +210,7 @@ router.post(
     // Needed for implicit flow
     client.useIdTokenResponseType(openidClientConfig);
 
-    // URL href doesn't matter, openid-client uses the url.hash to pass properties
+    // URL href doesn't matter, openid-client only uses the url.hash to pass properties
     const url = new URL('https://example.com/');
     url.hash = new URLSearchParams(req.body).toString();
     debug(url);

@@ -1,13 +1,12 @@
+import { webcrypto } from 'crypto';
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
-//import { Issuer, type TokenSet } from 'openid-client';
 import * as client from 'openid-client';
 import { z } from 'zod';
-import { webcrypto } from 'crypto';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
@@ -352,8 +351,19 @@ export async function validateLti13CourseInstance(
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  //let tokenSet: TokenSet = lti13_instance.access_tokenset;
   let tokenSet: client.TokenEndpointResponse = lti13_instance.access_tokenset;
+
+  /*
+
+  TODO: Migration that removes previous cached tokens
+  Changes DB structure for expires_in vs expires_at and saves storing
+  {
+  access_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2NhbnZhcy5pbnN0cnVjdHVyZS5jb20iLCJzdWIiOiIxMDAwMDAwMDAwMDAwMSIsImF1ZCI6WyJodHRwczovL2NhbnZhcy50Ymtlbm55LmNvbS9sb2dpbi9vYXV0aDIvdG9rZW4iLCJjYW52YXMudGJrZW5ueS5jb20iXSwiaWF0IjoxNzU0NTEwMzcxLCJleHAiOjE3NTQ1MTM5NzEsImp0aSI6IjM5MTAwMDBiLTdlODYtNDg2MC1iNTQ5LWRlZGZkMDA0MTVjNCIsInNjb3BlcyI6Imh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvbHRpLWFncy9zY29wZS9saW5laXRlbSBodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL2x0aS1hZ3Mvc2NvcGUvc2NvcmUgaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9sdGktbnJwcy9zY29wZS9jb250ZXh0bWVtYmVyc2hpcC5yZWFkb25seSIsImNhbnZhcy5pbnN0cnVjdHVyZS5jb20iOnsiYWNjb3VudF91dWlkIjoiYWtIZERSSXhtR2xnVXVkdFZrNWtXb3Q1Z0RzaGk3eFhFY0pIWmxFVyJ9fQ.8ut0pgKOc26lQL_57q77ht_m4hT2mOL0O4Nxfc05Sz0',
+  token_type: 'bearer',
+  expires_in: 3600,
+  scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
+}
+  */
 
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -363,38 +373,6 @@ export async function getAccessToken(lti13_instance_id: string) {
   ) {
     return tokenSet.access_token;
   }
-
-  // Fetch the token
-  /*
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-  tokenSet = await client.grant(
-    {
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
-    },
-    {
-      clientAssertionPayload: {
-        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
-        //
-        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
-        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
-        //
-        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
-        //
-        // However, `openid-client` changed their behavior in the following commit:
-        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
-        //
-        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
-        // See a discussion here: https://github.com/panva/openid-client/discussions/730
-        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
-      },
-    },
-  );
-  */
 
   const key = await webcrypto.subtle.importKey(
     'jwk',
@@ -406,23 +384,50 @@ export async function getAccessToken(lti13_instance_id: string) {
     true, // extractable
     ['sign'],
   );
-  console.log(key);
+
+  const modAssertion: client.ModifyAssertionOptions = {
+    [client.modifyAssertion]: (header, payload) => {
+      // Set the KID header
+      header.kid = lti13_instance.keystore.keys[0].kid;
+
+      // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+      //
+      // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+      // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+      //
+      // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+      //
+      // However, `openid-client` changed their behavior in the following commit:
+      // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+      //
+      // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+      // See a discussion here: https://github.com/panva/openid-client/discussions/730
+      payload.aud = [
+        ...new Set(
+          [lti13_instance.issuer_params.issuer, lti13_instance.issuer_params.token_endpoint].filter(
+            Boolean,
+          ),
+        ),
+      ];
+    },
+  };
 
   const openidClientConfig = new client.Configuration(
     lti13_instance.issuer_params,
     lti13_instance.client_params.client_id,
     lti13_instance.client_params,
-    client.PrivateKeyJwt(key),
+    client.PrivateKeyJwt(key, modAssertion),
   );
 
+  // Fetch the token
   tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
-    grant_type: 'client_credentials',
     scope: TOKEN_SCOPES.join(' '),
   });
 
   // Store the token for reuse
-  //const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
-  const expires_at = Date.now();
+  const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
 
   await queryAsync(sql.update_token, {
     lti13_instance_id,
