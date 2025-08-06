@@ -99,7 +99,9 @@ export default async function ({
       );
 
       const currentTestType =
-        test_type === 'random' ? testTypeList[Math.floor(Math.random() * 3)] : test_type;
+        test_type === 'random'
+          ? testTypeList[Math.floor(Math.random() * testTypeList.length)]
+          : test_type;
       // Create a new submission for the variant.
       const { data, hasFatalIssue } = await createTestSubmissionData(
         variant,
