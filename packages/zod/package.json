@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "postgres-interval": "^4.0.2",
-    "zod": "^3.25.76"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

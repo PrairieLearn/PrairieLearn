@@ -35,7 +35,7 @@
     "tmp-promise": "^3.0.3",
     "winston": "^3.17.0",
     "winston-transport": "^4.9.0",
-    "zod": "^3.25.76"
+    "zod": "^4.0.14"
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
