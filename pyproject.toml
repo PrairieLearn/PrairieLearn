@@ -69,6 +69,11 @@ docs = [
     "ruff==0.12.7",
 ]
 
+# We only use pyproject.toml for the Python dependencies, so we don't need to
+# specify any packages / source files.
+[tool.setuptools]
+packages = []
+
 [tool.ruff]
 include = ["**/*.py"]
 
