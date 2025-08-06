@@ -121,6 +121,7 @@ export async function buildDirectory(
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
+ * @param jobId - The job ID.
  * @param rawData - The grading results
  */
 export function makeGradingResult(jobId: string, rawData: Record<string, any> | string | Buffer) {

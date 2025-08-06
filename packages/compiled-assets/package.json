@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "3.2.2",
+  "version": "3.2.3",
   "type": "module",
   "repository": {
     "type": "git",
