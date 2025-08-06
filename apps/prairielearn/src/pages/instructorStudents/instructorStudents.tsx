@@ -24,7 +24,7 @@ router.get(
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
     errorMessage: 'Access denied (must be a student data viewer)',
-    cosmeticOnly: true,
+    unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);

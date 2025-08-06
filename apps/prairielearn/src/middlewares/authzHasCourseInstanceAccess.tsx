@@ -10,5 +10,5 @@ export default createAuthzMiddleware({
     'has_student_access_with_enrollment',
   ],
   errorMessage: 'Access denied',
-  cosmeticOnly: false,
+  unauthorizedUsers: 'block',
 });
