@@ -133,7 +133,7 @@ export async function aiGrade({
     const instance_questions = all_instance_questions.filter((instance_question) => {
       if (mode === 'human_graded') {
         // Things that have been graded by a human
-        return (gradingJobMapping[instance_question.id] ?? []).find(
+        return gradingJobMapping[instance_question.id]?.some(
           (job) => job.grading_method === 'Manual',
         );
       } else if (mode === 'all') {
