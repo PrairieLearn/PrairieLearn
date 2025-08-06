@@ -179,7 +179,7 @@ export function AuthzAccessMismatch({
               ' current user '
             )}
             does
-            <OverlayTrigger overlay={<Tooltip>{errorMessage}</Tooltip>}>
+            <OverlayTrigger overlay={<Tooltip>Error message: {errorMessage}</Tooltip>}>
               <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
                 not have access
               </button>
