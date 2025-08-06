@@ -13,13 +13,12 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
-import { config } from '../../../lib/config.js';
 import { setCookie } from '../../../lib/cookie.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
-import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
+import { Lti13Claim, Lti13ClaimSchema, getOpenidClientConfig } from '../../lib/lti13.js';
 import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
@@ -88,38 +87,6 @@ function getClaimUserAttributes({
   }
 
   return { uin, uid, name, email };
-}
-
-async function getOpenidClientConfig(lti13_instance: Lti13Instance): Promise<client.Configuration> {
-  const key = await crypto.webcrypto.subtle.importKey(
-    'jwk',
-    lti13_instance.keystore.keys[0],
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256',
-    },
-    true, // extractable
-    ['sign'],
-  );
-
-  const privateKey: client.PrivateKey = {
-    key,
-    kid: lti13_instance.keystore.keys[0].kid,
-  };
-
-  const openidClientConfig = new client.Configuration(
-    lti13_instance.issuer_params,
-    lti13_instance.client_params.client_id,
-    lti13_instance.client_params,
-    client.PrivateKeyJwt(privateKey),
-  );
-
-  // Only for testing
-  if (config.devMode) {
-    client.allowInsecureRequests(openidClientConfig);
-  }
-
-  return openidClientConfig;
 }
 
 router.get('/login', asyncHandler(launchFlow));

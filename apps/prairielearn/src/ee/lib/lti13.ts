@@ -24,6 +24,7 @@ import {
   AssessmentSchema,
   DateFromISOString,
   Lti13CourseInstanceSchema,
+  type Lti13Instance,
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
@@ -192,6 +193,41 @@ export const Lti13ClaimSchema = z.discriminatedUnion(
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
+export async function getOpenidClientConfig(
+  lti13_instance: Lti13Instance,
+  options: client.ModifyAssertionOptions | undefined = undefined,
+): Promise<client.Configuration> {
+  const key = await webcrypto.subtle.importKey(
+    'jwk',
+    lti13_instance.keystore.keys[0],
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    true, // extractable
+    ['sign'],
+  );
+
+  const privateKey: client.PrivateKey = {
+    key,
+    kid: lti13_instance.keystore.keys[0].kid,
+  };
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(privateKey, options),
+  );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
+  return openidClientConfig;
+}
 
 export class Lti13Claim {
   private claims: Lti13ClaimType;
@@ -363,22 +399,6 @@ export async function getAccessToken(lti13_instance_id: string) {
     return tokenSet.access_token;
   }
 
-  const key = await webcrypto.subtle.importKey(
-    'jwk',
-    lti13_instance.keystore.keys[0],
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256',
-    },
-    true, // extractable
-    ['sign'],
-  );
-
-  const privateKey: client.PrivateKey = {
-    key,
-    kid: lti13_instance.keystore.keys[0].kid,
-  };
-
   const modAssertion: client.ModifyAssertionOptions = {
     [client.modifyAssertion]: (_header, payload) => {
       // Canvas requires the `aud` claim the be (or contain) the token endpoint:
@@ -405,17 +425,7 @@ export async function getAccessToken(lti13_instance_id: string) {
     },
   };
 
-  const openidClientConfig = new client.Configuration(
-    lti13_instance.issuer_params,
-    lti13_instance.client_params.client_id,
-    lti13_instance.client_params,
-    client.PrivateKeyJwt(privateKey, modAssertion),
-  );
-
-  // Only for testing
-  if (config.devMode) {
-    client.allowInsecureRequests(openidClientConfig);
-  }
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance, modAssertion);
 
   // Fetch the token
   tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
