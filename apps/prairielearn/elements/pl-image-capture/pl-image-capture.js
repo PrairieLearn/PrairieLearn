@@ -150,6 +150,8 @@ const MAX_ZOOM_SCALE = 5;
       const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
       const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
 
+      const useFullImageButton = this.imageCaptureDiv.querySelector('.js-use-full-image-button');
+
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
@@ -158,6 +160,7 @@ const MAX_ZOOM_SCALE = 5;
         rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
+        useFullImageButton,
       });
 
       cropRotateButton.addEventListener('click', () => {
@@ -190,6 +193,10 @@ const MAX_ZOOM_SCALE = 5;
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
+      });
+
+      useFullImageButton.addEventListener('click', () => {
+        this.selectFullImage();
       });
     }
 
@@ -1232,6 +1239,33 @@ const MAX_ZOOM_SCALE = 5;
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    async selectFullImage() {
+      this.ensureCropperExists();
+
+      const cropperImage = this.cropper.getCropperImage();
+      const cropperSelection = this.cropper.getCropperSelection();
+      const cropperCanvas = this.cropper.getCropperCanvas();
+
+      this.ensureElementsExist({
+        cropperImage,
+        cropperSelection,
+        cropperCanvas,
+      });
+
+      cropperImage.$resetTransform();
+
+      // Select the entire captured image.
+      cropperSelection
+        .$change(0, 0, cropperCanvas.clientWidth, cropperCanvas.clientHeight)
+        .$render();
+
+      // Center the image in the cropper.
+      cropperImage.$center('contain');
+
+      // Save the selection to the hidden input field.
+      await this.saveCropperSelectionToHiddenInput();
     }
   }
 
