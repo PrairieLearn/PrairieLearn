@@ -240,7 +240,7 @@ export default tseslint.config([
       'unicorn/no-negated-condition': 'off', // 150+ violations
       'unicorn/prefer-global-this': 'off', // 150+ violations
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
-      // 20 - 100 violations //
+      // 20 - 100 violations
       'unicorn/prefer-spread': 'off',
       'unicorn/prefer-number-properties': 'off',
       'unicorn/prefer-switch': 'off',
