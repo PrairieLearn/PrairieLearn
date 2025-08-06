@@ -85,15 +85,21 @@ export async function updateGradingJobAfterGrading({
   v2_score,
 }: {
   grading_job_id: string;
-  received_time?: Date | null; // null => no change
-  start_time?: Date | null; // null => no change
-  finish_time?: Date | null; // null => now()
-  submitted_answer?: Submission['submitted_answer'] | null; // null => no change
+  /** null => no change */
+  received_time?: Date | null;
+  /** null => no change */
+  start_time?: Date | null;
+  /** null => now() */
+  finish_time?: Date | null;
+  /** null => no change */
+  submitted_answer?: Submission['submitted_answer'] | null;
   format_errors?: Submission['format_errors'];
   gradable: Submission['gradable'];
   broken: Submission['broken'];
-  params?: Submission['params'] | null; // null => no change
-  true_answer?: Submission['true_answer'] | null; // null => no change
+  /** null => no change */
+  params?: Submission['params'] | null;
+  /** null => no change */
+  true_answer?: Submission['true_answer'] | null;
   feedback?: Submission['feedback'];
   partial_scores?: Submission['partial_scores'];
   score?: Submission['score'];
