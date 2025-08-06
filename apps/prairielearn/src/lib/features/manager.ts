@@ -172,7 +172,6 @@ export class FeatureManager<FeatureName extends string> {
    * Enables the feature for the given context.
    *
    * @param name The name of the feature.
-   * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {

@@ -131,7 +131,7 @@ export function CourseRequestsTable({
                             aria-expanded="false"
                             aria-controls="course-requests-job-list-${row.id}"
                           >
-                            <i class="fa fa-angle-up fa-fw expand-icon"></i>
+                            <i class="fa fa-angle-up expand-icon"></i>
                             Show Jobs
                           </button>
                         `
