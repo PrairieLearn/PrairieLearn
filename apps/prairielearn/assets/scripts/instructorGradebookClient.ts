@@ -7,6 +7,7 @@ import {
   type GradebookRow,
   type InstructorGradebookData,
 } from '../../src/pages/instructorGradebook/instructorGradebook.types.js';
+import { getStudentDetailUrl } from '../../src/lib/client/url.js';
 
 onDocumentReady(() => {
   const { urlPrefix, csvFilename, csrfToken, hasCourseInstancePermissionEdit, courseAssessments } =
@@ -113,7 +114,7 @@ onDocumentReady(() => {
         formatter: (name: string | null, row: GradebookRow) => {
           if (!name) return '';
           return html`
-            <a href="${urlPrefix}/instance_admin/studentDetail/${row.user_id}"> ${name} </a>
+            <a href="${getStudentDetailUrl(urlPrefix, row.user_id)}"> ${name} </a>
           `.toString();
         },
       },

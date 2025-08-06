@@ -25,6 +25,7 @@ import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './instructorStudents.shared.js';
+import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -39,9 +40,16 @@ interface StudentsCardProps {
   courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
   timezone: string;
+  urlPrefix: string;
 }
 
-function StudentsCard({ course, courseInstance, students, timezone }: StudentsCardProps) {
+function StudentsCard({
+  course,
+  courseInstance,
+  students,
+  timezone,
+  urlPrefix,
+}: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -91,7 +99,11 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
       columnHelper.accessor((row) => row.user.name, {
         id: 'user_name',
         header: 'Name',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => (
+          <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+            {info.getValue() || '—'}
+          </a>
+        ),
       }),
       columnHelper.accessor((row) => row.user.email, {
         id: 'user_email',
@@ -226,6 +238,7 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
+  urlPrefix,
 }: {
   search: string;
 } & StudentsCardProps) => {
@@ -236,6 +249,7 @@ export const InstructorStudents = ({
         courseInstance={courseInstance}
         students={students}
         timezone={timezone}
+        urlPrefix={urlPrefix}
       />
     </NuqsAdapter>
   );

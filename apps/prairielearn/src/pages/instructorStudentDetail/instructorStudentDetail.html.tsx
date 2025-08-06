@@ -141,6 +141,7 @@ export function InstructorStudentDetail({
                             label: computeLabel(row),
                             assessment_id: row.assessment.id,
                           }}
+                          hideLink
                         />
                       </td>
                       <td class="align-middle">

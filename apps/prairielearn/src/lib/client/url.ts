@@ -32,3 +32,7 @@ export function getAssessmentInstanceUrl({
 
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
+
+export function getStudentDetailUrl(urlPrefix: string, user_id: string): string {
+  return `${urlPrefix}/instance_admin/student/${user_id}`;
+}
