@@ -10,7 +10,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { saveSubmission } from '../lib/grading.js';
-import { type TestType, createTestSubmissionData } from '../lib/question-testing.js';
+import { type TestType, createTestSubmissionData, testTypeList } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
@@ -28,7 +28,7 @@ export const specs: AdministratorQuerySpecs = {
     },
     {
       name: 'test_type',
-      description: 'Type of submission to generate ("correct", "incorrect", "invalid" or "random")',
+      description: `Type of submission to generate (${testTypeList.map((type) => `"${type}"`).join(', ')} or "random")`,
       default: 'random',
     },
   ],
@@ -47,8 +47,7 @@ const columns = [
   'test_type',
   'submission_id',
 ] as const;
-type ResultRow = Record<(typeof columns)[number], string | number>;
-const testTypes = ['correct', 'incorrect', 'invalid'] as const;
+type ResultRow = Record<(typeof columns)[number], string | number | null>;
 
 const InstanceQuestionQuerySchema = z.object({
   instance_question: InstanceQuestionSchema,
@@ -100,7 +99,7 @@ export default async function ({
       );
 
       const currentTestType =
-        test_type === 'random' ? testTypes[Math.floor(Math.random() * 3)] : test_type;
+        test_type === 'random' ? testTypeList[Math.floor(Math.random() * 3)] : test_type;
       // Create a new submission for the variant.
       const { data, hasFatalIssue } = await createTestSubmissionData(
         variant,
