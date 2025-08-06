@@ -17,8 +17,8 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config.js';
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import { config } from '../../lib/config.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
