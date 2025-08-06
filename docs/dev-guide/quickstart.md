@@ -5,6 +5,15 @@ This page describes how to run, test, and develop PrairieLearn. Ensure that you 
 - Natively, by following the [running natively](installingNative.md) guide
 - Via Docker, by following the [running via Docker](installingLocal.md) guide
 
+## Additional dependencies
+
+First, install additional dependencies for development. These are needed for tests, typechecking, and building the documentation.
+
+```sh
+make python-deps-dev
+make python-deps-docs # optional
+```
+
 ## Development server
 
 Run the server in development mode to automatically restart when changes are detected:
@@ -39,7 +48,6 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
 If you want to preview the documentation, run:
 
 ```sh
-make python-deps-docs
 make preview-docs
 ```
 
@@ -50,8 +58,6 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
-make python-deps-core
-make python-deps-docs
 make test
 ```
 
