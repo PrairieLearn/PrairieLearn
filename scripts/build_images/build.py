@@ -7,7 +7,7 @@ import sys
 import tempfile
 from typing import Literal, cast, get_args
 
-from utils import (
+from build_images.utils import (
     buildx_builder,
     get_current_platform,
     get_env_or_exit,

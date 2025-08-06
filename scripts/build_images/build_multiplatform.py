@@ -1,9 +1,9 @@
 import os
 import tempfile
 
-from build import build_images
-from combine import combine_images_from_metadata_dir
-from utils import (
+from build_images.build import build_images
+from build_images.combine import combine_images_from_metadata_dir
+from build_images.utils import (
     buildx_builder,
     get_current_platform,
     get_env_or_exit,
