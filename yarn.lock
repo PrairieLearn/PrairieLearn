@@ -3849,8 +3849,8 @@ __metadata:
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
     "@tanstack/table-core": "npm:^8.21.3"
-    "@trpc/client": "npm:^11.4.3"
-    "@trpc/server": "npm:^11.4.3"
+    "@trpc/client": "npm:^11.4.4"
+    "@trpc/server": "npm:^11.4.4"
     "@types/archiver": "npm:^6.0.3"
     "@types/async": "npm:^3.2.24"
     "@types/blocked": "npm:^1.3.4"
@@ -5355,22 +5355,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trpc/client@npm:^11.4.3":
-  version: 11.4.3
-  resolution: "@trpc/client@npm:11.4.3"
+"@trpc/client@npm:^11.4.4":
+  version: 11.4.4
+  resolution: "@trpc/client@npm:11.4.4"
   peerDependencies:
-    "@trpc/server": 11.4.3
+    "@trpc/server": 11.4.4
     typescript: ">=5.7.2"
-  checksum: 10c0/7ce11fc99f9238a2dad4755f320516f9afb4bce3f1b38508b076a88dfa2d8f340f2576b8b8a9a3fc06bb7073638d8cc29154bcc061a208c2a3a6b17b718cefd2
+  checksum: 10c0/718aeb8b5d01af95958c87d03d5746d58e5a204dc6cc30700135ec9a6f2096f0b7031065d2ffd52fe76d08badce846772390147d19e143725459e78c5d00eb27
   languageName: node
   linkType: hard
 
-"@trpc/server@npm:^11.4.3":
-  version: 11.4.3
-  resolution: "@trpc/server@npm:11.4.3"
+"@trpc/server@npm:^11.4.4":
+  version: 11.4.4
+  resolution: "@trpc/server@npm:11.4.4"
   peerDependencies:
     typescript: ">=5.7.2"
-  checksum: 10c0/3d3fd2a52cb36de5a02c3454d66ac5c739ba53442546aa9a06c79e277951a31827f21b9c135f551c98a197d28f1d6c87aba590dc08c98c15b8ba7a4b9a7653d2
+  checksum: 10c0/94fefaa3538a9c4fe9995dea2563b32d43e7af51014c55ce041282cf008fe3925aa46607c49a68ebe4899cc884a12e96a9f2650c4e744e8aad6d87d09d1ccbba
   languageName: node
   linkType: hard
 
