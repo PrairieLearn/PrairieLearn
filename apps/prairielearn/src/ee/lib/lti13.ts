@@ -354,18 +354,6 @@ export async function getAccessToken(lti13_instance_id: string) {
 
   let tokenSet: client.TokenEndpointResponse = lti13_instance.access_tokenset;
 
-  /*
-
-  TODO: Migration that removes previous cached tokens
-  Changes DB structure for expires_in vs expires_at and saves storing
-  {
-  access_token: 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwczovL2NhbnZhcy5pbnN0cnVjdHVyZS5jb20iLCJzdWIiOiIxMDAwMDAwMDAwMDAwMSIsImF1ZCI6WyJodHRwczovL2NhbnZhcy50Ymtlbm55LmNvbS9sb2dpbi9vYXV0aDIvdG9rZW4iLCJjYW52YXMudGJrZW5ueS5jb20iXSwiaWF0IjoxNzU0NTEwMzcxLCJleHAiOjE3NTQ1MTM5NzEsImp0aSI6IjM5MTAwMDBiLTdlODYtNDg2MC1iNTQ5LWRlZGZkMDA0MTVjNCIsInNjb3BlcyI6Imh0dHBzOi8vcHVybC5pbXNnbG9iYWwub3JnL3NwZWMvbHRpLWFncy9zY29wZS9saW5laXRlbSBodHRwczovL3B1cmwuaW1zZ2xvYmFsLm9yZy9zcGVjL2x0aS1hZ3Mvc2NvcGUvc2NvcmUgaHR0cHM6Ly9wdXJsLmltc2dsb2JhbC5vcmcvc3BlYy9sdGktbnJwcy9zY29wZS9jb250ZXh0bWVtYmVyc2hpcC5yZWFkb25seSIsImNhbnZhcy5pbnN0cnVjdHVyZS5jb20iOnsiYWNjb3VudF91dWlkIjoiYWtIZERSSXhtR2xnVXVkdFZrNWtXb3Q1Z0RzaGk3eFhFY0pIWmxFVyJ9fQ.8ut0pgKOc26lQL_57q77ht_m4hT2mOL0O4Nxfc05Sz0',
-  token_type: 'bearer',
-  expires_in: 3600,
-  scope: 'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem https://purl.imsglobal.org/spec/lti-ags/scope/score https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly'
-}
-  */
-
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
   if (
