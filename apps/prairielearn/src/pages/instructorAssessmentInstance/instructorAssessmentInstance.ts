@@ -9,6 +9,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type InstanceLogEntry,
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
@@ -58,17 +59,13 @@ router.get(
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
-      {
-        assessment_instance_id: res.locals.assessment_instance.id,
-      },
+      { assessment_instance_id: res.locals.assessment_instance.id },
       AssessmentInstanceStatsSchema,
     );
 
     const dateDurationResult = await sqldb.queryRow(
       sql.select_date_formatted_duration,
-      {
-        assessment_instance_id: res.locals.assessment_instance.id,
-      },
+      { assessment_instance_id: res.locals.assessment_instance.id },
       DateDurationResultSchema,
     );
     const assessment_instance_date_formatted =
@@ -77,9 +74,7 @@ router.get(
 
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions,
-      {
-        assessment_instance_id: res.locals.assessment_instance.id,
-      },
+      { assessment_instance_id: res.locals.assessment_instance.id },
       InstanceQuestionRowSchema,
     );
 
@@ -115,7 +110,7 @@ router.get(
       );
       const fingerprintNumbers = new Map();
       let i = 1;
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<InstanceLogEntry>({
         header: true,
         columns: [
           'Time',

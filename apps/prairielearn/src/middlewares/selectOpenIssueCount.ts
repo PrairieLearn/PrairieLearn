@@ -6,13 +6,11 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
-  const count = await sqldb.queryRow(
+  const result = await sqldb.queryRow(
     sql.select_open_issue_count,
-    {
-      course_id: res.locals.course.id,
-    },
+    { course_id: res.locals.course.id },
     z.number(),
   );
-  res.locals.navbarOpenIssueCount = count;
+  res.locals.navbarOpenIssueCount = result;
   next();
 });

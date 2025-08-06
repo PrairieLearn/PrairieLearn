@@ -1,5 +1,11 @@
 # @prairielearn/preact-cjs
 
+## 1.1.1
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 1.1.0
 
 ### Minor Changes

@@ -167,7 +167,7 @@ export async function insertSubmission({
 /**
  * Save a new submission to a variant into the database.
  *
- * @param submission - The submission to save (should not have an id property yet).
+ * @param submissionData - The submission to save (should not have an id property yet).
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
