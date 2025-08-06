@@ -27,7 +27,7 @@ const SubmissionForGradingJobSchema = z.object({
 
 let namespace: Namespace;
 
-// This module MUST be initialized after socket-server
+/** This module MUST be initialized after socket-server */
 export function init() {
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);

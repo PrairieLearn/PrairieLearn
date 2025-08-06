@@ -19,7 +19,7 @@ interface SideNavTabInfo {
    * For all other navPages, only the current navPage must be in activePages.
    *
    * If not specified, activeSubPages will be checked on all pages.
-   **/
+   */
   checkActiveSubPageForPages?: NavPage[];
   /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
   activeSubPages: NavSubPage[];
@@ -37,7 +37,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['getting_started'],
       urlSuffix: '/course_admin/getting_started',
-      iconClasses: 'fa fa-tasks fa-fw',
+      iconClasses: 'fa fa-tasks',
       tabLabel: 'Getting Started',
       htmlSuffix: ({
         navbarCompleteGettingStartedTasksCount,
@@ -55,7 +55,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['instances'],
       urlSuffix: '/course_admin/instances',
-      iconClasses: 'fas fa-chalkboard-teacher fa-fw',
+      iconClasses: 'fas fa-chalkboard-teacher',
       tabLabel: 'Course instances',
     },
     {
@@ -63,7 +63,7 @@ const sideNavPagesTabs = {
       checkActiveSubPageForPages: ['course_admin'],
       activeSubPages: ['questions'],
       urlSuffix: '/course_admin/questions',
-      iconClasses: 'fa fa-question fa-fw',
+      iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
@@ -71,7 +71,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['issues'],
       urlSuffix: '/course_admin/issues',
-      iconClasses: 'fas fa-bug fa-fw',
+      iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: ({ navbarOpenIssueCount }) =>
         IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true, class: 'ms-auto' }),
@@ -80,7 +80,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['staff'],
       urlSuffix: '/course_admin/staff',
-      iconClasses: 'fas fa-users fa-fw',
+      iconClasses: 'fas fa-users',
       tabLabel: 'Staff',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
@@ -88,7 +88,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['syncs'],
       urlSuffix: '/course_admin/syncs',
-      iconClasses: 'fas fa-sync-alt fa-fw',
+      iconClasses: 'fas fa-sync-alt',
       tabLabel: 'Sync',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
@@ -97,7 +97,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/course_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
+      iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
       tabTooltip: 'Course files',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
@@ -106,7 +106,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'sharing'],
       urlSuffix: '/course_admin/settings',
-      iconClasses: 'fas fa-cog fa-fw',
+      iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
       tabTooltip: 'Course settings',
     },
@@ -117,14 +117,14 @@ const sideNavPagesTabs = {
       checkActiveSubPageForPages: ['instance_admin'],
       activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
-      iconClasses: 'fa fa-list fa-fw',
+      iconClasses: 'fa fa-list',
       tabLabel: 'Assessments',
     },
     {
       activePages: ['instance_admin'],
       activeSubPages: ['gradebook'],
       urlSuffix: '/instance_admin/gradebook',
-      iconClasses: 'fas fa-balance-scale fa-fw',
+      iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
       renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
@@ -132,7 +132,7 @@ const sideNavPagesTabs = {
       activePages: ['instance_admin'],
       activeSubPages: ['students'],
       urlSuffix: '/instance_admin/students',
-      iconClasses: 'fas fa-users-line fa-fw',
+      iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',
       renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
@@ -140,7 +140,7 @@ const sideNavPagesTabs = {
       activePages: ['instance_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
+      iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
       tabTooltip: 'Course instance files',
     },
@@ -148,7 +148,7 @@ const sideNavPagesTabs = {
       activePages: ['instance_admin'],
       activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
-      iconClasses: 'fas fa-school-flag fa-fw',
+      iconClasses: 'fas fa-school-flag',
       tabLabel: 'Integrations',
       renderCondition: () => isEnterprise(),
     },
@@ -156,7 +156,7 @@ const sideNavPagesTabs = {
       activePages: ['instance_admin'],
       activeSubPages: ['settings', 'access', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
-      iconClasses: 'fas fa-cog fa-fw',
+      iconClasses: 'fas fa-cog',
       tabLabel: 'Settings',
       tabTooltip: 'Course instance settings',
     },
