@@ -47,7 +47,7 @@ Note that the process above _will not_ cause the image above to be automatically
 
 ### Testing custom images locally
 
-For simple custom images that only include one or two extra packages or libraries, the steps above should be sufficient to ensure that the image works as expected, testing them in production itself. Similarly, simple changes like updating package versions can be achieved by updating the files from step 4 above, then re-running steps 5-8.
+For simple custom images that only include one or two extra packages or libraries, following the steps above and testing the image in production may be sufficient to ensure that it works as expected. Similarly, simple changes like updating package versions can be achieved by updating the files from step 4 above, then re-running steps 5-8.
 
 However, for more complex images or more elaborate changes to existing custom images, it is advisable to test the image in a [local PrairieLearn environment](./installing.md#support-for-external-graders-and-workspaces) before pushing it to the production environment. In this scenario, it is important to ensure that the updated version of the image is restricted to the local environment, and that the production environment is not updated with the new image version until testing is complete. While avoiding an image sync (step 8 above) is often enough to prevent this, this may be difficult to ensure in practice, especially if multiple users are working on the same course.
 
