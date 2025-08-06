@@ -71,7 +71,7 @@ export async function getTimezoneByName(name: string): Promise<Timezone> {
 
 export function formatTimezone(tz: Timezone): string {
   return `(UTC
-    ${`${tz.utc_offset.hours ?? '00'}:${
+    ${`${tz.utc_offset.hours || '00'}:${
       tz.utc_offset.minutes
         ? tz.utc_offset.minutes > 0
           ? tz.utc_offset.minutes
