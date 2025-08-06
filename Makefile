@@ -13,9 +13,12 @@ venv-setup:
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
 # performance the first time things run:
 # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
+
+# After building, we clean up the empty build directory.
 python-deps-core: venv-setup
 	@uv pip install . --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install .
+	@rm -rf build
 python-deps-dev: venv-setup
 	@uv pip install --group dev --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install --group dev
@@ -24,7 +27,7 @@ python-deps-docs: venv-setup
 		.venv/bin/python3 -m pip install --group dev
 deps:
 	@yarn
-	@$(MAKE) python-deps build
+	@$(MAKE) python-deps-core build
 
 migrate:
 	@yarn migrate
