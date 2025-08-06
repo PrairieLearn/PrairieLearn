@@ -445,7 +445,6 @@ export default tseslint.config([
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
-      'unicorn/prefer-module': 'off',
     },
   },
   {
