@@ -13,14 +13,17 @@ import {
 } from '@prairielearn/postgres';
 
 import { generateAssessmentAiGradingStatsCSV } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { benchmarkRubricTuning, deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { type Assessment } from '../../../lib/db-types.js';
+import { type Assessment, type Course, type CourseInstance } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
+import { config } from '../../../lib/config.js';
+import OpenAI from 'openai';
+import archiver from 'archiver';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -160,6 +163,105 @@ router.post(
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
+    } else if( req.body.__action === 'tune_all_rubrics') {
+      
+      // TODO: This is redundant logic - move this to a common place.
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+        throw new HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+      const openai = new OpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+
+      const assessment = res.locals.assessment as Assessment;
+
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      // AI grading runs only on manually graded questions.
+      const manuallyGradedRows = assessmentQuestionRows.filter(
+        (row) => row.assessment_question.max_manual_points,
+      );
+
+      if (manuallyGradedRows.length === 0) {
+        flash('warning', 'No manually graded assessment questions found for AI grading.');
+        res.redirect(req.originalUrl);
+      }
+      let index = 0;
+      let failedQuestions: {
+        id: string;
+        index: number;
+      }[] = [];
+      
+      let allData: {
+        index: number;
+        file1_data: string;
+        file2_data: string;
+      }[] = [];
+       
+      for (const row of manuallyGradedRows.slice(0, 5)) {
+        try {
+          console.log(`Benchmarking rubric tuning for assessment question ${index + 1}`)
+          const {
+            file1_data,
+            file2_data
+          } = await benchmarkRubricTuning({
+            assessment,
+            assessment_question: row.assessment_question,
+            course: res.locals.course as Course,
+            course_instance: res.locals.course_instance as CourseInstance,
+            question: row.question,
+            urlPrefix: res.locals.urlPrefix,
+            authn_user_id: res.locals.authn_user.user_id,
+            openai
+          });
+
+          allData.push({
+            index: index + 1,
+            file1_data,
+            file2_data
+          });
+        } catch (err) {
+          console.error('Error tuning rubric:', err);
+          failedQuestions.push({id: row.assessment_question.id, index });
+        } finally {
+          index++;
+        }
+      }
+
+      // Export all the statistics files to a zip.
+      console.log(`Failed to tune rubrics for questions: ${JSON.stringify(failedQuestions)}`);
+      try {
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader(
+          'Content-Disposition',
+          'attachment; filename="all_assessment_data.zip"'
+        );
+
+        const archive = archiver('zip', { zlib: { level: 9 } });
+        archive.pipe(res);
+
+        for (const {index, file1_data, file2_data} of allData) {
+          archive.append(file1_data, { name: `aq_${index}_file1_data.csv` });
+          archive.append(file2_data, { name: `aq_${index}_file2_data.csv` });
+        }
+
+        await archive.finalize();
+      } catch {
+        flash('error', 'Failed to create zip file for download.');
+        res.redirect(req.originalUrl);
+      }
     } else if (req.body.__action === 'export_ai_grading_statistics') {
       if (!res.locals.is_administrator) {
         throw new HttpStatusError(403, 'Access denied');

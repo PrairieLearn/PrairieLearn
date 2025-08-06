@@ -92,6 +92,10 @@ export function ManualGradingAssessment({
               <input type="hidden" name="__action" value="delete_ai_grading_data" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             </form>
+            <form method="POST" id="tune-all-rubrics">
+              <input type="hidden" name="__action" value="tune_all_rubrics" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            </form>
           `
         : ''}
       <div class="card mb-4">
@@ -121,6 +125,15 @@ export function ManualGradingAssessment({
                 >
                   <i class="bi bi-stars" aria-hidden="true"></i>
                   AI grade all questions
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light grading-tag-button"
+                  name="tune-all-rubrics-button"
+                  onclick="$('#tune-all-rubrics').submit();"
+                  aria-label="Tune all rubrics"
+                >
+                  Tune all rubrics
                 </button>
                 <button
                   type="button"
