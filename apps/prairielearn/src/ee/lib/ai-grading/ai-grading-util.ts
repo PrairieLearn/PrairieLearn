@@ -7,16 +7,22 @@ import type {
 } from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
 import {
+  callAsync,
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
+  type AssessmentQuestion,
+  AssessmentQuestionSchema,
   type Course,
+  GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -30,10 +36,13 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
+
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
@@ -171,22 +180,208 @@ export async function generatePrompt({
   return { messages };
 }
 
+export async function generateRubricTuningPrompt({
+  urlPrefix,
+  selectedInstanceQuestions,
+  assessmentQuestion,
+  question,
+  course,
+  openai
+}: {
+  urlPrefix: string;
+  selectedInstanceQuestions: InstanceQuestion[];
+  assessmentQuestion: AssessmentQuestion;
+  question: Question;
+  course: Course;
+  openai: OpenAI;
+}) {
+  const rubric_items = await selectRubricForGrading(assessmentQuestion.id);
+  const rubricItemsJSON = rubric_items.map((item) => ({
+    id: item.id,
+    description: item.description,
+    explanation: item.explanation,
+    grader_note: item.grader_note,
+    points: item.points,
+  }));
+
+  const messages: ChatCompletionMessageParam[] = [
+    {
+      role: 'system',
+      content: `
+        You are an AI rubric calibration tool in an AI grading platform. 
+        In the explanation and grader notes fields, enhance this rubric. You may also modify the description, though don't change it significantly. 
+        Use the sample submissions provided to clarify the rubric and enhance its meaning. 
+        You are provided the correct rubric items and the AI-selected rubric items, which you must optimize.
+        Return the adjusted rubric items as a JSON object with the following fields:
+        - id: The ID of the rubric item.
+        - description: The description of the rubric item.
+        - explanation: The explanation of the rubric item.
+        - grader_note: The grader note of the rubric item.
+        The ID you provide must be identical to the ID of the rubric item you are modifying.
+        You must return ALL provided rubric items in the JSON object. Do NOT add new rubric items or remove existing ones.
+      `
+    },
+  ];
+
+  const question_course = await getQuestionCourse(question, course);
+
+  let questionPromptAdded = false;
+  let index = 0;
+
+  const gradingJobMapping = await selectGradingJobsInfo(selectedInstanceQuestions);
+
+  for (const instanceQuestion of selectedInstanceQuestions) {
+    const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+
+    const locals = {
+      ...buildQuestionUrls(urlPrefix, variant, question, instanceQuestion),
+      questionRenderContext: 'ai_grading',
+    };
+    // Get question html
+    const questionModule = questionServers.getModule(question.type);
+    const render_question_results = await questionModule.render(
+      { question: true, submissions: false, answer: false },
+      variant,
+      question,
+      null,
+      [],
+      question_course,
+      locals,
+    );
+    if (render_question_results.courseIssues.length > 0) {
+      logger.info(render_question_results.courseIssues.toString());
+      logger.error('Errors occurred while AI grading, see output for details');
+      throw new Error(
+        'Errors occurred while AI grading, see output for details. Please check the logs for more information.',
+      );
+    }
+
+    const questionPrompt = render_question_results.data.questionHtml;
+    if (!questionPromptAdded) {
+      messages.push({
+        role: 'user',
+        content: `Question prompt: \n${questionPrompt}\n`
+      });
+
+      messages.push({
+        role: 'system',
+        content: 'Here are the rubric items: ' + JSON.stringify(rubricItemsJSON, null, 2)
+      });
+
+      messages.push({
+        role: 'system',
+        content: 'Here are some sample responses to the question, along with correct rubric items and what the AI selected:'
+      });
+      questionPromptAdded = true;
+    }
+
+    let submission_embedding = await selectEmbeddingForSubmission(submission.id);
+    if (!submission_embedding) {
+      submission_embedding = await generateSubmissionEmbedding({
+        course,
+        question,
+        instance_question: instanceQuestion,
+        urlPrefix,
+        openai,
+      });
+    }
+
+    const submission_text = submission_embedding.submission_text;
+    
+    const submissionMessage = await generateSubmissionMessage({
+      submission_text,
+      submitted_answer: submission.submitted_answer,
+      forGrading: false
+    });
+
+    messages.push({
+      role: 'user',
+      content: `Sample submission #${index} response:`
+    });
+    messages.push(submissionMessage);
+
+    messages.push({
+      role: 'user',
+      content: `Sample submission #${index} selected rubric items:`
+    });
+
+    const grading_jobs = gradingJobMapping[instanceQuestion.id] ?? [];
+
+    const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
+    const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
+
+    if (!manualGradingJob || !aiGradingJob) {
+      throw new Error(
+        `No manual or AI grading job found for instance question ${instanceQuestion.id}.`
+      );
+    }
+
+
+    const aiRubricItems = aiGradingJob.rubric_items;
+    const aiRubricItemsJSON = aiRubricItems.map((item) => ({
+      id: item.id,
+      description: item.description
+    }));
+    messages.push({
+      role: 'user',
+        content: `AI-selected rubric items for submission #${index}: ${JSON.stringify(aiRubricItemsJSON, null, 2)}`,
+      });
+
+    const manualRubricItems = await selectRubricGradingItems(manualGradingJob.manual_rubric_grading_id);
+    const manualRubricItemsJSON = manualRubricItems.map((item) => ({
+      id: item.id,
+      description: item.description
+    }));
+    messages.push({
+      role: 'user',
+      content: `Correct rubric items for submission #${index}: ${JSON.stringify(manualRubricItemsJSON, null, 2)}`,
+    });
+
+    index++;
+  }
+
+  messages.push({
+    role: 'user',
+    content: 'Please adjust the rubric items based on the provided sample submissions and responses.'
+  });
+  return {messages, rubric_items};
+}
+
+export async function clearRubricOptionalFields(assessmentQuestionId: string, rubricId: string) {
+  const rubric_items = await selectRubricForGrading(assessmentQuestionId);
+
+  for (const rubric_item of rubric_items) {
+    await queryAsync(sql.update_rubric_item, {
+      id: rubric_item.id,
+      rubric_id: rubricId,
+      description: rubric_item.description,
+      explanation: '',
+      grader_note: '',
+    });
+  }
+}
+
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  forGrading = true
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  /** Determines if additional messages used for grading student submissions are included. */
+  forGrading?: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (forGrading) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response: \n<response>\n',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -249,10 +444,12 @@ function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (forGrading) {
+    message_content.push({
+      type: 'text',
+      text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    });
+  }
 
   return {
     role: 'user',
@@ -445,4 +642,66 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteAiGradingJobs({
+  assessment_question_ids,
+  authn_user_id,
+}: {
+  assessment_question_ids: string[];
+  authn_user_id: string;
+}) {
+  // TODO: revisit this before general availability of AI grading. This implementation
+  // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
+  // correctly in call cases; see the TODOs in the SQL query for more details.
+  //
+  // TODO: we should add locking here. Specifically, we should process each
+  // assessment instance + instance question one at a time in separate
+  // transactions so that we don't need to lock all relevant assessment instances
+  // and assessment questions at once.
+  const iqs = await runInTransactionAsync(async () => {
+    const iqs = await queryRows(
+      sql.delete_ai_grading_jobs,
+      {
+        authn_user_id,
+        assessment_question_ids,
+      },
+      z.object({
+        id: IdSchema,
+        assessment_instance_id: IdSchema,
+        max_points: AssessmentQuestionSchema.shape.max_points,
+        max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+        max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+        points: InstanceQuestionSchema.shape.points,
+        score_perc: InstanceQuestionSchema.shape.score_perc,
+        auto_points: InstanceQuestionSchema.shape.auto_points,
+        manual_points: InstanceQuestionSchema.shape.manual_points,
+        most_recent_manual_grading_job: GradingJobSchema.nullable(),
+      }),
+    );
+
+    for (const iq of iqs) {
+      await callAsync('assessment_instances_grade', [
+        iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        100, // credit
+        false, // only_log_if_score_updated
+        true, // allow_decrease
+      ]);
+    }
+
+    return iqs;
+  });
+
+  // Important: this is done outside of the above transaction so that we don't
+  // hold a database connection open while we do network calls.
+  //
+  // This is here for consistency with other assessment score updating code. We
+  // shouldn't hit this for the vast majority of assessments.
+  for (const iq of iqs) {
+    await ltiOutcomes.updateScore(iq.assessment_instance_id);
+  }
+
+  return iqs;
 }

@@ -144,6 +144,14 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
+            <form method="POST" id="tune-rubric">
+              <input type="hidden" name="__action" value="tune_rubric" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="clear-rubric">
+              <input type="hidden" name="__action" value="clear_rubric" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
@@ -308,6 +316,24 @@ export function AssessmentQuestion({
                           onclick="$('#ai-grading-all').submit();"
                         >
                           Grade all
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#tune-rubric').submit();"
+
+                          data-bs-toggle="tooltip"
+                          data-bs-placement="top"
+                          title="Tune the rubric based on AI grading results, and acquire comparative statistics. Assumes that the rubric is in its original state."
+                        >
+                          Tune rubric
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#clear-rubric').submit();"
+                        >
+                          Clear rubric
                         </button>
 
                         <hr class="dropdown-divider" />

@@ -12,6 +12,12 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { generateAssessmentAiGradingStatsCSV } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { type Assessment } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
@@ -37,12 +43,14 @@ router.get(
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
       ManualGradingAssessment({
         resLocals: res.locals,
         questions,
         courseStaff,
         num_open_instances,
+        aiGradingEnabled,
       }),
     );
   }),
@@ -102,6 +110,85 @@ router.post(
           });
         }
       });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'ai_grade_all') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const assessment = res.locals.assessment as Assessment;
+
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      // AI grading runs only on manually graded questions.
+      const manuallyGradedRows = assessmentQuestionRows.filter(
+        (row) => row.assessment_question.max_manual_points,
+      );
+
+      if (manuallyGradedRows.length === 0) {
+        flash('warning', 'No manually graded assessment questions found for AI grading.');
+        res.redirect(req.originalUrl);
+      }
+
+      for (const row of manuallyGradedRows) {
+        try {
+          await aiGrade({
+            question: row.question,
+            course: res.locals.course,
+            course_instance_id: assessment.course_instance_id,
+            assessment_question: row.assessment_question,
+            urlPrefix: res.locals.urlPrefix,
+            authn_user_id: res.locals.authn_user.user_id,
+            user_id: res.locals.user.user_id,
+            mode: 'all',
+          });
+        } catch {
+          flash(
+            'error',
+            `AI grading failed for assessment question ${row.assessment_question.id}.`,
+          );
+          res.redirect(req.originalUrl);
+          return;
+        }
+      }
+      flash('success', 'AI grading successfully initiated.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'export_ai_grading_statistics') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
+      res.send(await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment));
+    } else if (req.body.__action === 'delete_ai_grading_data') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const assessment = res.locals.assessment as Assessment;
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      await deleteAiGradingJobs({
+        assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      flash('success', 'AI grading data deleted successfully.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
