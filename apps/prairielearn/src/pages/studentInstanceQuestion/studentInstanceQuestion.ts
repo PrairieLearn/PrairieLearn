@@ -26,6 +26,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
+router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
   // Because this router is mounted a general path, its middleware will also
   // be run for sub-routes like `submissions/:submission_id/file/:filename`
@@ -42,7 +43,6 @@ router.use((req, res, next) => {
 
   clientFingerprint(req, res, next);
 });
-router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
