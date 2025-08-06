@@ -241,6 +241,7 @@ export async function selectAndAuthzVariant(options: {
 /**
  * Locks the variant before a grading operation can proceed. If the variant is
  * associated to an assessment instance, lock the assessment instance instead.
+ * Assumes that the caller is already within a transaction.
  */
 export async function lockVariant({ variant_id }: { variant_id: string }) {
   const locked = await queryRow(
