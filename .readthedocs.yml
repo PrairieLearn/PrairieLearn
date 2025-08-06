@@ -15,4 +15,5 @@ mkdocs:
 
 python:
   install:
-    - requirements: docs/requirements.txt
+    - requirements: pyproject.toml
+      dependency-groups: [docs]

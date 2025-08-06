@@ -13,9 +13,15 @@ venv-setup:
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
 # performance the first time things run:
 # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
-python-deps: venv-setup
-	@uv pip install -r requirements.txt --compile-bytecode --python .venv || \
-		.venv/bin/python3 -m pip install -r requirements.txt
+python-deps-core: venv-setup
+	@uv pip install . --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install .
+python-deps-dev: venv-setup
+	@uv pip install --group dev --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install --group dev
+python-deps-docs: venv-setup
+	@uv pip install --group dev --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install --group dev
 deps:
 	@yarn
 	@$(MAKE) python-deps build
@@ -137,18 +143,10 @@ changeset:
 
 lint-docs: lint-d2 lint-links lint-markdown
 
-prepare-docs-venv:
-	@if uv --version >/dev/null 2>&1; then \
-		uv venv --python-preference only-system /tmp/pldocs/venv; \
-		uv pip install -r docs/requirements.txt --python /tmp/pldocs/venv; \
-	else \
-		python3 -m venv /tmp/pldocs/venv; \
-		/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt; \
-	fi
-build-docs: prepare-docs-venv
-	@/tmp/pldocs/venv/bin/mkdocs build --strict
-preview-docs: prepare-docs-venv
-	@/tmp/pldocs/venv/bin/mkdocs serve
+build-docs: venv-setup
+	@.venv/bin/mkdocs build --strict
+preview-docs: venv-setup
+	@.venv/bin/mkdocs serve
 
 format-d2:
 	@d2 fmt docs/**/*.d2

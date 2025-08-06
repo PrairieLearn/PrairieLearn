@@ -4,7 +4,7 @@ Since PrairieLearn executes your question code in an environment that is not ful
 
 ## General information
 
-All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/requirements.txt). The only packages guaranteed to be installed are those listed in the requirements file.
+All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`pyproject.toml`](https://github.com/PrairieLearn/PrairieLearn/blob/master/pyproject.toml). The only packages guaranteed to be installed are those listed in the dependencies section of the pyproject.toml file.
 
 To run a command line version of this Python environment, you may start it with the following command:
 
@@ -48,13 +48,13 @@ PrairieLearn downloads all of its Python packages from the [Python Package Index
 ![SciPy release page](scipy_version.png)
 Example for SciPy. The newest release as of writing this guide is `1.6.1`.
 
-### Add the library to `requirements.txt`
+### Add the library to `pyproject.toml`
 
-A list of the Python libraries that PrairieLearn uses is stored in a file called `requirements.txt`. Note that there are different `requirements.txt` files for different environments:
+A list of the Python libraries that PrairieLearn uses is stored in the `pyproject.toml` file. Note that there are different dependency files for different environments:
 
-- The `requirements.txt` file in the root directory is used in the question runtime environment, which mostly affects `server.py` in individual questions and custom elements.
-- External graders, like the [Python grader](../python-grader/index.md) or the [C/C++ grader](../c-grader/index.md), have their own versions of `requirements.txt` in the `graders` directory.
-- [Workspaces](../workspaces/index.md), like the Jupyterlab or VSCode environments, have their own versions of `requirements.txt` in the `workspaces` directory.
+- The `pyproject.toml` file in the root directory is used in the question runtime environment, which mostly affects `server.py` in individual questions and custom elements.
+- External graders, like the [Python grader](../python-grader/index.md) or the [C/C++ grader](../c-grader/index.md), have their own set of dependencies in `requirements.txt` in the `graders` directory.
+- [Workspaces](../workspaces/index.md), like the Jupyterlab or VSCode environments, have their own set of dependencies in `requirements.txt` in the `workspaces` directory.
 
 Then, create a fork and a new branch, and update the file(s) you wish to modify. In each file you wish to update, add the new library and version on a new line in the format `library==version`, taking care to maintain alphabetical order in the file:
 

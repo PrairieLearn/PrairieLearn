@@ -11,8 +11,8 @@ RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 # Ensures that running Python in the container will use the correct Python version.
 ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
 
-# We copy `requirements.txt` and the `Makefile` since we need to install Python dependencies.
-COPY --parents requirements.txt Makefile /PrairieLearn/
+# We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
+COPY --parents pyproject.toml Makefile /PrairieLearn/
 
 RUN PIP_NO_CACHE_DIR=1 make python-deps
 
