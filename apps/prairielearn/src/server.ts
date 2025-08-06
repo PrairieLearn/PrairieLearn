@@ -349,18 +349,9 @@ export async function initExpress(): Promise<Express> {
     if (req.path === '/pl/webhooks/stripe') return next();
 
     // Limit to 5MB of JSON
-    //bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
-    next();
+    bodyParser.json({ limit: 5 * 1024 * 1024 })(req, res, next);
   });
-  app.use((req, res, next) => {
-    // LTI 1.3 oauth requires the raw body, so we avoid using the body parser
-    // for that route.
-    const regex = new RegExp('/pl/lti13_instance/\d+/auth/callback');
-    if (regex.test(req.path)) return next();
-
-    bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 })(req, res, next);
-    //next();
-  });
+  app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
