@@ -55,7 +55,7 @@ function resetRubricImportFormListeners() {
       importRubricSettingsPopoverForm,
     });
 
-    importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+    importRubricSettingsPopoverForm.addEventListener('submit', async (event) => {
       const { file_upload_max_bytes } = decodeData('rubric-settings-data');
 
       event.preventDefault();
@@ -75,22 +75,9 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      // Read the rubric JSON file content
-      const reader = new FileReader();
-
-      reader.onerror = () => {
-        alert('Error reading file content.');
-        return;
-      };
-
-      reader.onload = () => {
-        const fileContent = reader.result;
-
-        if (typeof fileContent !== 'string') {
-          alert('Error reading file content.');
-          return;
-        }
-
+      // Read the rubric JSON file content using modern blob API
+      try {
+        const fileContent = await fileData.text();
         if (fileContent.trim() === '') {
           return;
         }
@@ -188,10 +175,9 @@ function resetRubricImportFormListeners() {
 
         // Close the popover
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
-      };
-
-      // eslint-disable-next-line unicorn/prefer-blob-reading-methods
-      reader.readAsText(fileData);
+      } catch {
+        alert('Error reading file content.');
+      }
     });
 
     importRubricButton.addEventListener(

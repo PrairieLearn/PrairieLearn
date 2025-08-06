@@ -291,6 +291,10 @@ export default tseslint.config([
       // Duplicated rules
       'unicorn/no-this-assignment': 'off',
       'unicorn/prefer-module': 'off',
+      'unicorn/no-static-only-class': 'off',
+
+      // https://github.com/PrairieLearn/PrairieLearn/pull/12545/files#r2252069292
+      'unicorn/no-for-loop': 'off',
 
       // Sometimes, an if/else is more readable than a ternary.
       'unicorn/prefer-ternary': 'off',
