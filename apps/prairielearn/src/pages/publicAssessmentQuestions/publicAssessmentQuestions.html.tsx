@@ -1,15 +1,16 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
 } from '../../components/AssessmentQuestions.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
-import { TopicBadge } from '../../components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
-import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
+import { renderHtml } from '../../lib/preact-html.js';
+import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({
   resLocals,
@@ -24,7 +25,7 @@ export function PublicAssessmentQuestions({
   assessment_set: AssessmentSet;
   course: Course;
   course_instance_id: string;
-  questions: AssessmentQuestionRow[];
+  questions: StaffAssessmentQuestionRow[];
 }) {
   return PageLayout({
     resLocals,
@@ -45,6 +46,7 @@ export function PublicAssessmentQuestions({
               urlPrefix: resLocals.urlPrefix,
               course_id: course.id,
               course_instance_id,
+              course,
             })}
           </div>
         `
@@ -65,13 +67,15 @@ function AssessmentQuestionsTable({
   urlPrefix,
   course_id,
   course_instance_id,
+  course,
 }: {
-  questions: AssessmentQuestionRow[];
+  questions: StaffAssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;
+  course: Course;
 }) {
-  const nTableCols = 4;
+  const nTableCols = 5;
   return html`
     <div class="table-responsive">
       <table class="table table-sm table-hover">
@@ -87,23 +91,36 @@ function AssessmentQuestionsTable({
         <tbody>
           ${questions.map((question) => {
             return html`
-              ${AssessmentQuestionHeaders(question, nTableCols)}
+              ${renderHtml(
+                <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />,
+              )}
               <tr>
                 <td>
                   <a
-                    href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
+                    href="${urlPrefix}/public/course/${course_id}/question/${question.question
+                      .id}/preview"
                   >
-                    ${AssessmentQuestionNumber(question)}${question.title}
+                    ${renderHtml(
+                      <AssessmentQuestionNumber
+                        alternativeGroup={question.alternative_group}
+                        alternativeGroupSize={question.alternative_group_size}
+                        assessmentQuestion={question.assessment_question}
+                      />,
+                    )}${question.question.title}
                   </a>
                 </td>
-                <td>@${question.course_sharing_name}/${question.qid}</td>
-                <td>${TopicBadge(question.topic)}</td>
-                <td>${TagBadgeList(question.tags)}</td>
+                <td>@${course.sharing_name}/${question.question.qid}</td>
+                <td>${TopicBadgeHtml(question.topic)}</td>
+                <td>${renderHtml(<TagBadgeList tags={question.tags} />)}</td>
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
-                        return AssessmentBadge({
-                          assessment,
+                        return AssessmentBadgeHtml({
+                          assessment: {
+                            assessment_id: assessment.assessment_id,
+                            color: assessment.assessment_set_color,
+                            label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                          },
                           plainUrlPrefix: urlPrefix,
                           course_instance_id,
                           publicURL: true,

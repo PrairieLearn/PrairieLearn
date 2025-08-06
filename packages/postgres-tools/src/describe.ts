@@ -111,9 +111,7 @@ async function describeWithPool(
 
     const foreignKeyConstraintResults = await pool.queryAsync(
       sql.get_foreign_key_constraints_for_table,
-      {
-        oid: table.oid,
-      },
+      { oid: table.oid },
     );
 
     const referenceResults = await pool.queryAsync(sql.get_references_for_table, {

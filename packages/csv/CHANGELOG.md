@@ -1,5 +1,12 @@
 # @prairielearn/csv
 
+## 2.0.17
+
+### Patch Changes
+
+- 7e9fbf0: Require type parameter for stringifyStream
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 2.0.16
 
 ### Patch Changes

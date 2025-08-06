@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { renderHtml } from '../lib/preact-html.js';
 
 export function Scorebar({
@@ -9,11 +11,14 @@ export function Scorebar({
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  class?: string;
+  class: string;
 }) {
   if (score == null) return '';
   return (
-    <div class={`progress border border-success ${className}`} style={{ minWidth, maxWidth }}>
+    <div
+      class={clsx('progress', 'border', 'border-success', className)}
+      style={{ minWidth, maxWidth }}
+    >
       <div
         class="progress-bar bg-success"
         style={{ width: `${Math.floor(Math.min(100, score))}%` }}
