@@ -2,7 +2,7 @@ import json
 import os
 from collections import defaultdict
 
-from build_images.utils import get_env_or_exit, print_and_run_command
+from utils import get_env_or_exit, print_and_run_command
 
 
 def combine_images_from_metadata_dir(

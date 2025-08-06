@@ -1,15 +1,16 @@
 import os
 import tempfile
 
-from build_images.build import build_images
-from build_images.combine import combine_images_from_metadata_dir
-from build_images.utils import (
+from combine import combine_images_from_metadata_dir
+from utils import (
     buildx_builder,
     get_current_platform,
     get_env_or_exit,
     local_registry,
     print_and_run_command,
 )
+
+from .build import build_images
 
 # The container name for the local Docker registry.
 REGISTRY_NAME = "prairielearn-registry"
