@@ -48,42 +48,8 @@ $(function() {
           </div>
         </div>
       </div>
+      {{^editable}}
       <div class="js-uploaded-image-container-top-buttons position-absolute top-0 end-0 m-2 d-none">
-        {{#editable}}
-        <div class="js-uploaded-image-deletion-dialog">
-          <button 
-            type="button" 
-            class="js-open-deletion-dialog-button btn btn-danger"
-            title="Delete uploaded image"
-            data-toggle="tooltip"
-            data-placement="top" 
-            data-trigger="hover"
-            aria-label="Delete uploaded image"
-          >
-            <i class="bi bi-trash-fill"></i>
-          </button>
-          <div class="js-uploaded-image-deletion-confirmation-dialog d-none align-items-center gap-2 p-2 bg-black bg-opacity-75 rounded flex-wrap">
-            <span class="text-white me-2">Are you sure? This is permanent.</span>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-              <button 
-                type="button" 
-                class="js-confirm-delete-uploaded-image-button btn btn-danger"
-                aria-label="Delete image permanently"
-              >
-                Delete
-              </button>
-              <button 
-                type="button" 
-                class="js-cancel-delete-uploaded-image-button btn btn-secondary"
-                aria-label="Cancel"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-        {{/editable}}
-        {{^editable}}
         <button 
           type="button" 
           class="js-viewer-rotate-clockwise-button btn btn-light border"
@@ -114,30 +80,30 @@ $(function() {
         >
           <i class="bi bi-zoom-out"></i>
         </button>
-        {{/editable}}
       </div>
+      {{/editable}}
     </div>
-
     {{#editable}}
     <div class="d-flex gap-2 flex-wrap p-2 justify-content-end border-top">
       <button
         type="button"
-        class="js-crop-rotate-button btn btn-secondary d-none"
+        class="js-crop-rotate-button btn btn-sm btn-secondary d-none"
       >
         <i class="bi bi-crop me-1"></i>
         Crop/rotate
       </button>
-      <button
-        type="button"
-        class="js-capture-with-local-camera-button btn btn-info"
-      >
-        <i class="bi bi-camera-fill me-1"></i>
-        <span>Use webcam</span>
-      </button>
-      {{#mobile_capture_enabled}}
+      <div class="js-retake-side-by-side d-flex gap-2 flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="js-capture-with-local-camera-button btn btn-sm btn-info"
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          <span>Use webcam</span>
+        </button>
+        {{#mobile_capture_enabled}}
         <button 
           type="button" 
-          class="js-capture-with-mobile-device-button btn btn-info"
+          class="js-capture-with-mobile-device-button btn btn-sm btn-info"
           data-bs-toggle="popover"
           data-bs-container="body"
           data-bs-html="true"
@@ -172,10 +138,87 @@ $(function() {
           <i class="bi bi-qr-code-scan me-1"></i>
           <span>Use phone</span>
         </button>
-      {{/mobile_capture_enabled}}
+        {{/mobile_capture_enabled}}
+      </div>
+      <div class="js-retake-dropdown dropdown d-none">
+        <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+          Retake...
+        </button>
+        <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
+          <button
+            type="button"
+            class="js-capture-with-local-camera-button-dropdown dropdown-item btn btn-sm"
+          >
+            <i class="bi bi-camera-fill me-1"></i>
+            <span>Use webcam</span>
+          </button>
+          {{#mobile_capture_enabled}}
+            <button 
+              type="button" 
+              class="js-capture-with-mobile-device-button-dropdown dropdown-item btn btn-sm"
+              data-bs-toggle="popover"
+              data-bs-container="body"
+              data-bs-html="true"
+              data-bs-placement="auto"
+              data-bs-title="Capture with mobile device"
+              data-bs-content='
+              <div class="w-100 d-flex flex-column align-items-center">
+                {{#external_image_capture_available}}
+                  <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center border" style="width:200px;height:200px">
+                    <div class="spinning-wheel spinner-border">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                  <p class="text-muted mb-0">
+                    Scan the QR code with your mobile device to capture an image of your work. 
+                  </p>
+                {{/external_image_capture_available}}
+                {{^external_image_capture_available}}
+                  <p class="text-muted mb-0">
+                    Mobile device capture is not available in this environment.
+                  </p>
+                  <p class="text-muted mb-0 mt-3">
+                    It will be available once the question is deployed to production.
+                  </p>
+                  <p class="text-muted mb-0 mt-3">
+                    For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+                  </p>
+                {{/external_image_capture_available}}
+              </div>
+              '
+            >
+              <i class="bi bi-qr-code-scan me-1"></i>
+              <span>Use phone</span>
+            </button>
+          {{/mobile_capture_enabled}}
+        </ul>
+      </div>
+      <button
+        type="button"
+        class="js-delete-captured-image-button btn btn-sm btn-danger d-none"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-title="Confirm deletion"
+        data-bs-content='
+        <div class="w-100">
+          <p class="text-muted">
+            Are you sure? This will delete your image permanently.
+          </p>
+          <div class="d-flex justify-content-end gap-2">
+            <button id="confirm-delete-{{uuid}}" class="btn btn-danger btn-sm">Delete</button>
+            <button id="cancel-delete-{{uuid}}" class="btn btn-secondary btn-sm">Cancel</button>
+          </div>
+        </div>
+        '
+      >
+        <i class="bi bi-trash-fill me-1"></i>
+        <span>Delete</span>
+      </button>
     </div>
-    {{/editable}}
   </div>
+  {{/editable}}
   {{#editable}}
   <div class="js-local-camera-capture-container d-none flex-column">
     <div class="position-relative border-bottom">
@@ -191,7 +234,7 @@ $(function() {
       </div>
     </div>
     <div class="d-flex p-2 gap-2 justify-content-end align-items-center flex-wrap">
-      <p class="js-local-camera-instructions text-muted my-0 me-auto">
+      <p class="js-local-camera-instructions text-muted my-0 me-auto text-sm">
         Make sure your photo is clear, well-lit, and shows all your work legibly. 
         <br/>
         Later, you can crop or rotate the image as needed.
@@ -199,13 +242,13 @@ $(function() {
       <div class="d-flex align-items-center gap-2">
         <button 
           type="button"
-          class="js-cancel-local-camera-button btn btn-secondary"
+          class="js-cancel-local-camera-button btn btn-secondary btn-sm"
         >
           Cancel
         </button>
         <button 
           type="button"
-          class="js-capture-local-camera-image-button btn btn-info" 
+          class="js-capture-local-camera-image-button btn btn-info btn-sm" 
           disabled
         >
           <i class="bi bi-camera-fill me-1"></i>

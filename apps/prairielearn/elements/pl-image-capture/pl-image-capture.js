@@ -70,20 +70,32 @@ const MAX_ZOOM_SCALE = 5;
         '.js-capture-with-mobile-device-button',
       );
 
-      if (!captureWithMobileDeviceButton) {
-        throw new Error('Capture with mobile device button not found in image capture element');
-      }
+      const captureWithMobileDeviceButtonDropdown = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-mobile-device-button-dropdown',
+      );
+
+      this.ensureElementsExist({
+        captureWithMobileDeviceButton,
+        captureWithMobileDeviceButtonDropdown
+      });
 
       captureWithMobileDeviceButton.addEventListener('inserted.bs.popover', () => {
         this.generateQrCode();
       });
+
+      captureWithMobileDeviceButtonDropdown.addEventListener('inserted.bs.popover', () => {
+        this.generateQrCode();
+      });
+
     }
 
     createLocalCameraCaptureListeners() {
       const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
         '.js-capture-with-local-camera-button',
       );
-
+      const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-local-camera-button-dropdown',
+      );
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
       );
@@ -95,12 +107,17 @@ const MAX_ZOOM_SCALE = 5;
 
       this.ensureElementsExist({
         captureWithLocalCameraButton,
+        captureWithLocalCameraButtonDropdown,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
         applyChangesButton,
       });
 
       captureWithLocalCameraButton.addEventListener('click', () => {
+        this.startLocalCameraCapture();
+      });
+
+      captureWithLocalCameraButtonDropdown.addEventListener('click', () => {
         this.startLocalCameraCapture();
       });
 
@@ -195,97 +212,55 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
-    /**
-     * Whether or not to show the deletion dialog for the uploaded image, which contains the
-     * open confirmation dialog button and the confirmation dialog.
-     *
-     * @param {boolean} showDialogs If true, shows the deletion dialog. Otherwise, hides it.
-     */
-    setShowDeletionDialog(showDialogs) {
-      const uploadedImageDeletionDialog = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-deletion-dialog',
+    setShowDeletionButton(showDeletionButton) {
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
       );
       this.ensureElementsExist({
-        uploadedImageDeletionDialog,
+        deleteCapturedImageButton,
       });
-      if (showDialogs) {
-        // Show the deletion dialog
-        uploadedImageDeletionDialog.classList.remove('d-none');
-      } else {
-        // Hide the deletion dialog
-        uploadedImageDeletionDialog.classList.add('d-none');
-      }
+      deleteCapturedImageButton.classList.toggle('d-none', !showDeletionButton);
     }
 
-    /**
-     * Whether or not to show the confirm deletion dialog for the uploaded image.
-     *
-     * @param {boolean} showDialog If true, shows the deletion confirmation dialog. Otherwise, shows the button to open the confirmation dialog.
-     */
-    setShowDeletionConfirmationDialog(showDialog) {
-      const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
-        '.js-open-deletion-dialog-button',
-      );
-      const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-deletion-confirmation-dialog',
+    confirmImageDeletion() {
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
       );
 
-      if (showDialog) {
-        // Hide the open deletion dialog button
-        openDeletionDialogButton.classList.remove('d-flex');
-        openDeletionDialogButton.classList.add('d-none');
+      this.ensureElementsExist({
+        uploadedImageContainer,
+      });
+    
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: null,
+        originalCapture: true,
+      });
 
-        // Show the deletion confirmation dialog
-        uploadedImageDeletionConfirmationDialog.classList.remove('d-none');
-        uploadedImageDeletionConfirmationDialog.classList.add('d-flex');
-      } else {
-        // Show the open deletion dialog button
-        openDeletionDialogButton.classList.remove('d-none');
-        openDeletionDialogButton.classList.add('d-flex');
+      this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
-        // Hide the deletion confirmation dialog
-        uploadedImageDeletionConfirmationDialog.classList.remove('d-flex');
-        uploadedImageDeletionConfirmationDialog.classList.add('d-none');
-      }
+      this.setShowDeletionButton(false);
+
+      this.setCaptureChangedFlag(true);
     }
 
     /**
      * Manages the deletion UI for the uploaded image.
      */
     createDeletionListeners() {
-      const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
-        '.js-open-deletion-dialog-button',
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
       );
-      const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-deletion-confirmation-dialog',
-      );
-      const confirmDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
-        '.js-confirm-delete-uploaded-image-button',
-      );
-      const cancelDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
-        '.js-cancel-delete-uploaded-image-button',
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
       );
 
       this.ensureElementsExist({
-        openDeletionDialogButton,
-        uploadedImageDeletionConfirmationDialog,
-        confirmDeleteUploadedImageButton,
-        cancelDeleteUploadedImageButton,
+        deleteCapturedImageButton,
+        uploadedImageContainer
       });
+      const popover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
 
-      openDeletionDialogButton.addEventListener('click', () => {
-        this.setShowDeletionConfirmationDialog(true);
-      });
-
-      confirmDeleteUploadedImageButton.addEventListener('click', () => {
-        const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-          '.js-uploaded-image-container',
-        );
-
-        this.ensureElementsExist({
-          uploadedImageContainer,
-        });
-
+      const confirmDeletion = () => {
         this.loadCapturePreviewFromDataUrl({
           dataUrl: null,
           originalCapture: true,
@@ -293,14 +268,87 @@ const MAX_ZOOM_SCALE = 5;
 
         this.setNoCaptureAvailableYetState(uploadedImageContainer);
 
-        this.setShowDeletionConfirmationDialog(false);
+        this.setShowDeletionButton(false);
 
         this.setCaptureChangedFlag(true);
+
+        popover.hide();
+      }
+
+      const cancelDeletion = () => {
+        popover.hide(); 
+      }
+
+      deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        const cancelDeletionButton = document.querySelector(`#cancel-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+          cancelDeletionButton,
+        });
+        confirmDeletionButton.addEventListener('click', confirmDeletion, { once: true });
+        cancelDeletionButton.addEventListener('click', cancelDeletion, { once: true });
       });
 
-      cancelDeleteUploadedImageButton.addEventListener('click', () => {
-        this.setShowDeletionConfirmationDialog(false);
+      deleteCapturedImageButton.addEventListener('hide.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        const cancelDeletionButton = document.querySelector(`#cancel-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+          cancelDeletionButton,
+        });
+        confirmDeletionButton.removeEventListener('click', confirmDeletion);
+        cancelDeletionButton.removeEventListener('click', cancelDeletion);
       });
+
+      // const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
+      //   '.js-open-deletion-dialog-button',
+      // );
+      // const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
+      //   '.js-uploaded-image-deletion-confirmation-dialog',
+      // );
+      // const confirmDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
+      //   '.js-confirm-delete-uploaded-image-button',
+      // );
+      // const cancelDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
+      //   '.js-cancel-delete-uploaded-image-button',
+      // );
+
+      // this.ensureElementsExist({
+      //   openDeletionDialogButton,
+      //   uploadedImageDeletionConfirmationDialog,
+      //   confirmDeleteUploadedImageButton,
+      //   cancelDeleteUploadedImageButton,
+      // });
+
+      // openDeletionDialogButton.addEventListener('click', () => {
+      //   this.setShowDeletionButton(true);
+      // });
+
+      // confirmDeleteUploadedImageButton.addEventListener('click', () => {
+        // const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        //   '.js-uploaded-image-container',
+        // );
+
+        // this.ensureElementsExist({
+        //   uploadedImageContainer,
+        // });
+
+        // this.loadCapturePreviewFromDataUrl({
+        //   dataUrl: null,
+        //   originalCapture: true,
+        // });
+
+        // this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+        // this.setShowDeletionButton(false);
+
+        // this.setCaptureChangedFlag(true);
+      // });
+
+      // cancelDeleteUploadedImageButton.addEventListener('click', () => {
+      //   this.setShowDeletionButton(false);
+      // });
     }
 
     /**
@@ -571,9 +619,9 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       if (dataUrl && !hiddenCaptureInput.value) {
-        this.setCaptureButtonText(true);
+        this.setShowRetakeDropdown(true);
       } else if (!dataUrl) {
-        this.setCaptureButtonText(false);
+        this.setShowRetakeDropdown(false);
       }
 
       if (dataUrl) {
@@ -584,38 +632,26 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Sets the capture button text to indicate whether the user is retaking a photo or not.
+     * TODO Document this
      *
-     * @param {boolean} showRetakeText If true, the button text will indicate that the user is retaking a photo. Otherwise, it will show the default text.
+     * @param {boolean} showRetakeText
      */
-    setCaptureButtonText(showRetakeText) {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
-      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
+    setShowRetakeDropdown(showRetakeDropdown) {
+      const retakeSideBySideDiv = this.imageCaptureDiv.querySelector('.js-retake-side-by-side');
+      const retakeDropdownDiv = this.imageCaptureDiv.querySelector('.js-retake-dropdown');
+      
       this.ensureElementsExist({
-        captureWithLocalCameraButtonSpan,
+        retakeSideBySideDiv,
+        retakeDropdownDiv,
       });
-      captureWithLocalCameraButtonSpan.innerHTML = showRetakeText
-        ? 'Retake with webcam'
-        : 'Use webcam';
 
-      if (!this.mobile_capture_enabled) {
-        return;
+      if (showRetakeDropdown) {
+        retakeSideBySideDiv.classList.add('d-none');
+        retakeDropdownDiv.classList.remove('d-none');
+      } else {
+        retakeSideBySideDiv.classList.remove('d-none');
+        retakeDropdownDiv.classList.add('d-none');
       }
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
-      const captureWithMobileDeviceButtonSpan =
-        captureWithMobileDeviceButton?.querySelector('span');
-
-      this.ensureElementsExist({
-        captureWithMobileDeviceButtonSpan,
-      });
-
-      captureWithMobileDeviceButtonSpan.innerHTML = showRetakeText
-        ? 'Retake with phone'
-        : 'Use phone';
     }
 
     /**
@@ -666,25 +702,18 @@ const MAX_ZOOM_SCALE = 5;
           { once: true },
         );
       }
-      const uploadedImageContainerTopButtons = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container-top-buttons',
-      );
       
-      this.ensureElementsExist({
-        uploadedImageContainerTopButtons,
-      });
-
-      uploadedImageContainerTopButtons.classList.remove('d-none');
-
       if (this.editable) {
-        this.setShowDeletionDialog(dataUrl ? true : false);
-        if (dataUrl) {
-          this.setShowDeletionConfirmationDialog(false);
-        }
+        this.setShowDeletionButton(dataUrl ? true : false);
       } else {
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
         const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
           '.js-viewer-rotate-clockwise-button',
+        );
+
+        // TODO: Revert naming
+        const uploadedImageContainerTopButtons = this.imageCaptureDiv.querySelector(
+          '.js-uploaded-image-container-top-buttons',
         );
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
@@ -692,9 +721,12 @@ const MAX_ZOOM_SCALE = 5;
         this.ensureElementsExist({
           zoomButtonsContainer,
           viewerRotateClockwiseButton,
+          uploadedImageContainerTopButtons,
           zoomInButton,
           zoomOutButton,
         });
+        uploadedImageContainerTopButtons.classList.remove('d-none');
+
 
         if (!this.imageCapturePreviewPanzoom) {
           // Initialize Panzoom on the parent of the captured image element, since
