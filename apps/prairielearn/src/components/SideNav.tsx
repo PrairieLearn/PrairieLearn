@@ -19,7 +19,7 @@ interface SideNavTabInfo {
    * For all other navPages, only the current navPage must be in activePages.
    *
    * If not specified, activeSubPages will be checked on all pages.
-   **/
+   */
   checkActiveSubPageForPages?: NavPage[];
   /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
   activeSubPages: NavSubPage[];
