@@ -17,10 +17,10 @@
   }
 
   class PLFileUpload {
+    maxFileSizeMB = 5;
+
     constructor(uuid, options) {
       // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
-      // eslint-disable-next-line unicorn/prefer-class-fields
-      this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
