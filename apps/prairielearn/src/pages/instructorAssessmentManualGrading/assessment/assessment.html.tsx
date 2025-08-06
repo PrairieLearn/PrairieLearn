@@ -80,8 +80,8 @@ export function ManualGradingAssessment({
         <input type="hidden" name="__action" value="ai_grade_assessment_all" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
-      <form method="POST" id="generate-embeddings">
-        <input type="hidden" name="__action" value="generate_embeddings" />
+      <form method="POST" id="generate-submissions">
+        <input type="hidden" name="__action" value="generate_submissions" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
       <div class="card mb-4">
@@ -101,10 +101,10 @@ export function ManualGradingAssessment({
           <button
             type="button"
             class="btn btn-sm btn-light grading-tag-button"
-            name="generate-embeddings"
-            onclick="$('#generate-embeddings').submit();"
+            name="generate-submissions"
+            onclick="$('#generate-submissions').submit();"
           >
-            Generate embeddings
+          Generate submission data
           </button>
         </div>
 

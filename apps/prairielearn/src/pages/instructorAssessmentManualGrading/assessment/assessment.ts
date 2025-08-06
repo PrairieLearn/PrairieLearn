@@ -14,13 +14,16 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { compareAiErrorRecognitionAndHumanGrading, generateErrorEmbedding, selectInstanceQuestionsForAssessmentQuestion, selectLastVariantAndSubmission, selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { aiEvaluateSubmission, selectInstanceQuestionsForAssessmentQuestion, selectLastVariantAndSubmission, selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { config } from '../../../lib/config.js';
-import { type Assessment, type AssessmentQuestion, type RubricItem } from '../../../lib/db-types.js';
+import { type Assessment, type AssessmentQuestion, type Course, type RubricItem } from '../../../lib/db-types.js';
+import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectCourseById } from '../../../models/course.js';
 import { selectQuestionById } from '../../../models/question.js';
+import * as questionServers from '../../../question-servers/index.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
@@ -138,21 +141,18 @@ router.post(
         });
       }
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'generate_embeddings') {
-      interface AssessmentQuestionEmbedding {
+    } else if (req.body.__action === 'generate_submissions') {
+      interface SubmissionEvaluation {
         instance_question_id: string;
         assessment_question_id: string;
         link_to_instance_question: string;
-        error_description: string;
-        embedding: number[];
         question_content: string;
+        answer: string;
         images: string[];
-        prompt: any; // Adjust type as needed
+        /** Adjust type as needed */
+        prompt: any; 
         rubric_items: RubricItem[];
-        errorRecognitionComparison: {
-          consistent: boolean;
-          explanation: string;
-        }
+        ai_response: any;
       }
 
       if (!config.aiGradingOpenAiApiKey) {
@@ -168,89 +168,135 @@ router.post(
       });
     
       const assessment = res.locals.assessment as Assessment;
-      const assessment_questions = (await selectAssessmentQuestions(
-        assessment.id,
-      )) as AssessmentQuestion[];
+      const assessment_question_rows = (await selectAssessmentQuestions(
+        { assessment_id: assessment.id }
+      ));
 
-      if (!assessment_questions) {
+      if (!assessment_question_rows) {
         return;
       }
       const START_INDEX = 0; 
 
-      const assessmentEmbeddingData = {};
+      const assessmentSubmissionData = {};
 
-      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 40;
-      const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 50;
+      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 10;
+      const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
       const PARALLEL_LIMIT = 20;
 
       // For testing only - to work with the JSON directly and more easily.
       const INCLUDE_LONG_DATA = true;
 
-      for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_questions.length); i++) {
-        const assessment_question = assessment_questions[i];
+      const answers = {
+        1.1: '-10-2sqrt(3)',
+        1.2: '5/sqrt(26) or 5sqrt(26)/26',
+        2: `
+          Limit as x approaches 0^{-} is 24
+          Limit as x approaches 0^{+} is 2
+          Thus, the function is not continuous at x = 0.
+        `,
+        3.1: '3/4',
+        3.2: '-infinity',
+        4.1: `
+          e^{\theta}\tan\theta + e^{\theta}\sec^2\theta - 1.
+        `,
+        4.2: `
+          2\ln\lvert x\rvert - \frac{3^{x}}{\ln 3} + \frac{4}{5}x^{\frac{5}{4}} + C
+        `,
+        4.3: '(9pi/2)-1',
+        4.4: '5cos(sin(5x+1))',
+        5.0: '2x-2',
+        6.0: '1/32',
+        7.0: '2',
+        8.0: '10,000',
+        9.0: `
+          \frac{1}{2}\ln(10)-\frac{1}{2}\ln(5)
+        `,
+        10.0: `
+          \sum_{i=1}^{12}\Bigl(\tfrac{2i}{3} + \tfrac{i^2}{9}\Bigr)^{\frac{1}{3}}
+        `,
+        11.0: '36u^2',
+        12.0: '\int_{0}^{1}\bigl(\pi(2 - x^3)^2 - \pi(2 - x^2)^2\bigr)\,dx',
+        20.0: '-(\sqrt[3]{x})^2 \,\sin\bigl(\sqrt[3]{x}\bigr)\;\cdot\;\frac{1}{3x^{2/3}}',
+        21.0: '-78 miles/hour'
+      }
+      
+      const aqNumberToOriginalNumber: Record<number, number> = {
+        0: 1.1,
+        1: 1.2,
+        2: 2,
+        3: 3.1,
+        4: 3.2,
+        5: 4.1,
+        6: 4.2,
+        7: 4.3,
+        8: 4.4,
+        9: 5.0,
+        10: 6.0,
+        11: 7.0,
+        12: 8.0,
+        13: 9.0,
+        14: 10.0,
+        15: 11.0,
+        16: 12.0,
+        17: 20.0,
+        18: 21.0,
+      };
+
+
+      for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_question_rows.length); i++) {
+        const assessment_question_row = assessment_question_rows[i];
+        const assessment_question = assessment_question_row.assessment_question;
         const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
           assessment_question.id,
         )).slice(0, MAX_INSTANCE_QUESTIONS_TO_PROCESS);
 
-        const question = await selectQuestionById(assessment_question.question_id);
-        if (!question) {
-          continue;
-        }
-
+        const question = assessment_question_row.question;
+        const course = await selectCourseById(question.course_id);
         let j = 0;
 
-        const aqEmbeddingData: AssessmentQuestionEmbedding[] = await async.mapLimit(all_instance_questions, PARALLEL_LIMIT, async (instance_question) => {
+        const submissionEvaluationData: SubmissionEvaluation[] = await async.mapLimit(all_instance_questions, PARALLEL_LIMIT, async (instance_question) => {
           console.log(`Processing instance question ${j} of ${all_instance_questions.length} for assessment question ${assessment_question.id}`);
-          const {submission} = await selectLastVariantAndSubmission(instance_question.id);
-          const rubric_items = await selectRubricGradingItems(submission.manual_rubric_grading_id);
 
           const {
-            embedding,
+            rubric_items,
+            messages,
             completionContent,
             questionPrompt,
-            promptImageUrls,
-            messages
-          } = await generateErrorEmbedding({
-            course: res.locals.course,
+            promptImageUrls
+          } = await aiEvaluateSubmission({
             question,
+            question_answer: answers[aqNumberToOriginalNumber[i]],
             instance_question,
+            course,
             urlPrefix: res.locals.urlPrefix,
             openai
-          })
+          });
 
-          const errorRecognitionComparison = await compareAiErrorRecognitionAndHumanGrading({
-            course: res.locals.course,
-            humanSelectedRubricItems: rubric_items,
-            aiRecognizedErrors: completionContent,
-            openai
-          })
-
-          const embeddingData: AssessmentQuestionEmbedding = {
+          const submissionEvaluation: SubmissionEvaluation = {
             instance_question_id: instance_question.id,
             assessment_question_id: assessment_question.id,
             link_to_instance_question: `${config.serverCanonicalHost}/pl/course_instance/${res.locals.course_instance.id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`,
-            error_description: completionContent || '',
-            embedding: INCLUDE_LONG_DATA ? embedding : [],
             question_content: INCLUDE_LONG_DATA ? questionPrompt : '',
             images: INCLUDE_LONG_DATA ? promptImageUrls : [],
             prompt: INCLUDE_LONG_DATA ? messages : [],
             rubric_items,
-            errorRecognitionComparison
-          }
+            ai_response: completionContent,
+            answer: answers[aqNumberToOriginalNumber[i]]
+          };
 
           j++;
-          return embeddingData;
+          return submissionEvaluation;
         });
 
-        assessmentEmbeddingData[assessment_question.id] = aqEmbeddingData;
+        assessmentSubmissionData[assessment_question.id] = submissionEvaluationData;
       }
 
       // Download the embeddings as a JSON file
-      const jsonContent = JSON.stringify(assessmentEmbeddingData, null, 2);
+      const jsonContent = JSON.stringify(assessmentSubmissionData, null, 2);
       res.setHeader('Content-Type', 'application/json');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="assessment_embeddings_${assessment.id}.json"`,
+        `attachment; filename="assessment_submissions_${assessment.id}.json"`,
       );
       return res.send(jsonContent);
 
