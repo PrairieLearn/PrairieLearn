@@ -9,6 +9,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type InstanceLogEntry,
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
@@ -109,7 +110,7 @@ router.get(
       );
       const fingerprintNumbers = new Map();
       let i = 1;
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<InstanceLogEntry>({
         header: true,
         columns: [
           'Time',

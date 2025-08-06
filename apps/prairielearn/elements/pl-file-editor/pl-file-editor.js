@@ -110,7 +110,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
-  /** @type HTMLElement */
+  /** @type {HTMLElement} */
   const preview = this.element.find('.preview')[0];
   let shadowRoot = preview.shadowRoot;
   if (!shadowRoot) {

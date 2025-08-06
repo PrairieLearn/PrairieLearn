@@ -1,5 +1,19 @@
 # @prairielearn/opentelemetry
 
+## 3.0.0
+
+### Major Changes
+
+- a7d1ad9: Always configure `NodeTracerProvider`, even when `openTelemetryEnabled === false`.
+
+  This change is being made to ensure that Sentry's request isolation works correctly, as it relies on the `NodeTracerProvider` being set up.
+
+- 423ab32: Upgrade to v2 of the OpenTelemetry packages
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 2.1.16
 
 ### Patch Changes
