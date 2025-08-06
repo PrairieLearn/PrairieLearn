@@ -374,11 +374,13 @@ export async function getAccessToken(lti13_instance_id: string) {
     ['sign'],
   );
 
-  const modAssertion: client.ModifyAssertionOptions = {
-    [client.modifyAssertion]: (header, payload) => {
-      // Set the KID header
-      header.kid = lti13_instance.keystore.keys[0].kid;
+  const privateKey: client.PrivateKey = {
+    key,
+    kid: lti13_instance.keystore.keys[0].kid,
+  };
 
+  const modAssertion: client.ModifyAssertionOptions = {
+    [client.modifyAssertion]: (_header, payload) => {
       // Canvas requires the `aud` claim the be (or contain) the token endpoint:
       // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
       // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
@@ -407,7 +409,7 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.issuer_params,
     lti13_instance.client_params.client_id,
     lti13_instance.client_params,
-    client.PrivateKeyJwt(key, modAssertion),
+    client.PrivateKeyJwt(privateKey, modAssertion),
   );
 
   // Only for testing

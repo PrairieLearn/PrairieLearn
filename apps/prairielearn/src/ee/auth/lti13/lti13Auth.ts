@@ -90,6 +90,38 @@ function getClaimUserAttributes({
   return { uin, uid, name, email };
 }
 
+async function getOpenidClientConfig(lti13_instance: Lti13Instance): Promise<client.Configuration> {
+  const key = await crypto.webcrypto.subtle.importKey(
+    'jwk',
+    lti13_instance.keystore.keys[0],
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    true, // extractable
+    ['sign'],
+  );
+
+  const privateKey: client.PrivateKey = {
+    key,
+    kid: lti13_instance.keystore.keys[0].kid,
+  };
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(privateKey),
+  );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
+  return openidClientConfig;
+}
+
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
 async function launchFlow(req: Request, res: Response) {
@@ -117,31 +149,7 @@ async function launchFlow(req: Request, res: Response) {
 
   const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-  const key = await crypto.webcrypto.subtle.importKey(
-    'jwk',
-    lti13_instance.keystore.keys[0],
-    {
-      name: 'RSASSA-PKCS1-v1_5',
-      hash: 'SHA-256',
-    },
-    true, // extractable
-    ['sign'],
-  );
-
-  const openidClientConfig = new client.Configuration(
-    lti13_instance.issuer_params,
-    lti13_instance.client_params.client_id,
-    lti13_instance.client_params,
-    client.PrivateKeyJwt(key),
-  );
-
-  // Needed for implicit flow
-  client.useIdTokenResponseType(openidClientConfig);
-
-  // Only for testing
-  if (config.devMode) {
-    client.allowInsecureRequests(openidClientConfig);
-  }
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance);
 
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
@@ -195,31 +203,10 @@ router.post(
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const key = await crypto.webcrypto.subtle.importKey(
-      'jwk',
-      lti13_instance.keystore.keys[0],
-      {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: 'SHA-256',
-      },
-      true, // extractable
-      ['sign'],
-    );
-
-    const openidClientConfig = new client.Configuration(
-      lti13_instance.issuer_params,
-      lti13_instance.client_params.client_id,
-      lti13_instance.client_params,
-      client.PrivateKeyJwt(key),
-    );
+    const openidClientConfig = await getOpenidClientConfig(lti13_instance);
 
     // Needed for implicit flow
     client.useIdTokenResponseType(openidClientConfig);
-
-    // Only for testing
-    if (config.devMode) {
-      client.allowInsecureRequests(openidClientConfig);
-    }
 
     // URL href doesn't matter, openid-client only uses the url.hash to pass properties
     const url = new URL('https://example.com/');
