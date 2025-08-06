@@ -2,12 +2,12 @@ import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/bro
 import { html } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.js';
+import { getStudentDetailUrl } from '../../src/lib/client/url.js';
 import {
   type AssessmentInstanceScoreResult,
   type GradebookRow,
   type InstructorGradebookData,
 } from '../../src/pages/instructorGradebook/instructorGradebook.types.js';
-import { getStudentDetailUrl } from '../../src/lib/client/url.js';
 
 onDocumentReady(() => {
   const { urlPrefix, csvFilename, csrfToken, hasCourseInstancePermissionEdit, courseAssessments } =

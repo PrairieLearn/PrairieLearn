@@ -20,12 +20,12 @@ import {
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './instructorStudents.shared.js';
-import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -122,7 +122,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone],
+    [timezone, urlPrefix],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
