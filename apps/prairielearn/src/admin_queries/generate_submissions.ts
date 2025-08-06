@@ -9,7 +9,8 @@ import {
   QuestionSchema,
   UserSchema,
 } from '../lib/db-types.js';
-import { type TestType, createTestSubmission } from '../lib/question-testing.js';
+import { saveSubmission } from '../lib/grading.js';
+import { type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
@@ -19,7 +20,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 
 export const specs: AdministratorQuerySpecs = {
   description:
-    'Creates a random submission for each assessment instance in an assessment. Assessment instances must already exist and be open.',
+    'Creates a random submission for each assessment instance in an assessment. Assessment instances must already exist and be open. Submission is saved, but not graded.',
   params: [
     {
       name: 'assessment_id',
@@ -101,7 +102,7 @@ export default async function ({
       const currentTestType =
         test_type === 'random' ? testTypes[Math.floor(Math.random() * 3)] : test_type;
       // Create a new submission for the variant.
-      const submission_id = await createTestSubmission(
+      const { data, hasFatalIssue } = await createTestSubmissionData(
         variant,
         question,
         assessmentCourse,
@@ -109,6 +110,21 @@ export default async function ({
         user.user_id,
         user.user_id,
       );
+      const { submission_id } = hasFatalIssue
+        ? { submission_id: null } // If there is a fatal issue on test, we don't save the submission.
+        : await saveSubmission(
+            {
+              ...data,
+              auth_user_id: user.user_id,
+              user_id: user.user_id,
+              variant_id: variant.id,
+              submitted_answer: data.raw_submitted_answer,
+              credit: 100,
+            },
+            variant,
+            question,
+            assessmentCourse,
+          );
 
       return {
         course_instance_id: assessment.course_instance_id,
