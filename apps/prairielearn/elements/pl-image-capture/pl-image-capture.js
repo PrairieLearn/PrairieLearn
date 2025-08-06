@@ -42,6 +42,8 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
 
+      this.viewerRotation = 0;
+
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
@@ -494,6 +496,52 @@ const MAX_ZOOM_SCALE = 5;
       this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
+    viewerZoomIn() {
+      this.imageCapturePreviewPanzoom.zoomIn();
+    }
+
+    viewerZoomOut() {
+      this.imageCapturePreviewPanzoom.zoomOut();
+    }
+
+    viewerRotateClockwise() {
+      const capturePreviewImg = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreviewImg,
+      });
+
+      // The capture preview image always fills the entire height.
+      const photoHeight = capturePreviewImg.clientHeight;
+
+      // Compute the width of the capture preview image excluding any side
+      // whitespace coming from the max-height: 600px constraint.
+      const photoWidth =
+        photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
+
+      const clientHeight = capturePreviewImg.clientHeight;
+      const clientWidth = capturePreviewImg.clientWidth;
+
+      // Rotation is strictly increasing so that the rotation animation is always in the same direction.
+      this.viewerRotation += 90;
+
+      // Compute the scale factor based on the rotation.
+      // - If image is parallel to the capture preview div, reset its scaling to 1.
+      // - If image is perpendicular to the capture preview div, scale it so its longest side
+      //   fits within the preview container without clipping.
+      const scaleFactor =
+        this.viewerRotation % 180 === 0
+          ? 1
+          : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+      capturePreviewImg.style.transform = `rotate(${this.viewerRotation}deg) scale(${scaleFactor})`;
+      this.imageCapturePreviewPanzoom.reset({ animate: true });
+    }
+
+
+
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container',
@@ -528,6 +576,9 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       if (!this.editable) {
+        const capturePreviewContainer = this.imageCaptureDiv.querySelector(
+          '.js-capture-preview-container',
+        );
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
         const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
           '.js-viewer-rotate-clockwise-button',
@@ -540,6 +591,7 @@ const MAX_ZOOM_SCALE = 5;
           viewerRotateClockwiseButton,
           zoomInButton,
           zoomOutButton,
+          capturePreviewContainer
         });
 
         // Display the zoom buttons only when the image is not editable to
@@ -557,47 +609,39 @@ const MAX_ZOOM_SCALE = 5;
           });
 
           zoomInButton.addEventListener('click', () => {
-            this.imageCapturePreviewPanzoom.zoomIn();
+            this.viewerZoomIn();  
           });
           zoomOutButton.addEventListener('click', () => {
-            this.imageCapturePreviewPanzoom.zoomOut();
+            this.viewerZoomOut();
+          });
+          viewerRotateClockwiseButton.addEventListener('click', () => {
+            this.viewerRotateClockwise();
           });
 
-          let rotation = 0;
-          viewerRotateClockwiseButton.addEventListener('click', () => {
-            const capturePreviewImg = this.imageCaptureDiv.querySelector(
-              '.js-uploaded-image-container .capture-preview',
-            );
+          let hovered = false;
+          capturePreviewContainer.addEventListener('mouseenter', () => {
+            hovered = true;
+          });
+          capturePreviewContainer.addEventListener('mouseleave', () => {
+            hovered = false;
+          });
 
-            this.ensureElementsExist({
-              capturePreviewImg,
-            });
-
-            // The capture preview image always fills the entire height.
-            const photoHeight = capturePreviewImg.clientHeight;
-
-            // Compute the width of the capture preview image excluding any side
-            // whitespace coming from the max-height: 600px constraint.
-            const photoWidth =
-              photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
-
-            const clientHeight = capturePreviewImg.clientHeight;
-            const clientWidth = capturePreviewImg.clientWidth;
-
-            // Rotation is strictly increasing so that the rotation animation is always in the same direction.
-            rotation += 90;
-
-            // Compute the scale factor based on the rotation.
-            // - If image is parallel to the capture preview div, reset its scaling to 1.
-            // - If image is perpendicular to the capture preview div, scale it so its longest side
-            //   fits within the preview container without clipping.
-            const scaleFactor =
-              rotation % 180 === 0
-                ? 1
-                : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
-
-            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
-            this.imageCapturePreviewPanzoom.reset({ animate: true });
+          document.addEventListener('keydown', (event) => {
+            if (!hovered) {
+              return;
+            }
+            if (event.key === 'f') {
+              event.preventDefault();
+              this.viewerZoomIn();
+            }
+            if (event.key === 'g') {
+              event.preventDefault();
+              this.viewerZoomOut();
+            }
+            if (event.key === 'r') {
+              event.preventDefault();
+              this.viewerRotateClockwise();
+            }
           });
 
           let panEnabled = false;
