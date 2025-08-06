@@ -76,6 +76,81 @@ function getClaimUserAttributes({
   return { uin, uid, name, email };
 }
 
+class PLStrategy extends Strategy {
+  shouldInitiateAuthRequest<TOptions extends AuthenticateOptions>(
+    req: Request,
+    currentUrl: URL,
+    // @ts-ignore
+    options: TOptions,
+  ): boolean {
+    console.log('shouldInitiateAuthRequest');
+    console.log(req.method);
+    const parameters = { ...req.query, ...req.body };
+    console.log(parameters);
+    const action = !['code', 'error', 'response', 'id_token'].some((key) => key in parameters);
+    console.log(action);
+    return action;
+  }
+
+  authorizationRequestParams<Toptions extends AuthenticateOptions>(
+    req: Request,
+    // @ts-ignore
+    options: any,
+  ): URLSearchParams | Record<string, string> | undefined {
+    let params = new URLSearchParams();
+
+    if (options?.scope) {
+      if (Array.isArray(options?.scope) && options.scope.length) {
+        params.set('scope', options.scope.join(' '));
+      } else if (typeof options?.scope === 'string' && options.scope.length) {
+        params.set('scope', options.scope);
+      }
+    }
+
+    if (options?.prompt) {
+      params.set('prompt', options.prompt);
+    }
+
+    if (options?.loginHint) {
+      params.set('login_hint', options.loginHint);
+    }
+
+    if (options?.idTokenHint) {
+      params.set('id_token_hint', options.idTokenHint);
+    }
+
+    if (options?.lti_message_hint) {
+      params.set('lti_message_hint', options.lti_message_hint);
+    }
+
+    if (options?.response_type) {
+      params.set('response_type', options.response_type);
+    }
+
+    if (options?.response_mode) {
+      params.set('response_mode', options.response_mode);
+    }
+
+    /*
+    if (options?.resource) {
+      setResource(params, options.resource);
+    }
+
+    if (options?.authorizationDetails) {
+      setAuthorizationDetails(params, options.authorizationDetails);
+    }
+      */
+
+    if (options?.callbackURL) {
+      params.set('redirect_uri', new URL(options.callbackURL).href);
+    }
+
+    //params.set('state', 'foofoofoo');
+
+    return params;
+  }
+}
+
 // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 // Can be POST or GET
 router.get('/login', asyncHandler(launchFlow));
@@ -244,7 +319,7 @@ export default router;
 // Schema to validate OIDC, LTI
 //
 const OIDCAuthResponseSchema = z.object({
-  state: z.string(),
+  state: z.string().optional(),
   id_token: z.string(),
   // also has utf8, authenticity_token, lti_storage_target
 });
@@ -264,6 +339,9 @@ const OIDCLaunchFlowSchema = z.object({
 //
 
 async function authenticate(req: Request, res: Response): Promise<any> {
+  console.log('authenticate');
+  console.log(req.body);
+
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   OIDCAuthResponseSchema.passthrough().parse(req.body);
 
@@ -320,17 +398,14 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
     state = state.concat(STATE_TEST);
   }
 
-  console.log(req.method);
-  console.log(parameters);
-
   const myPassport = await setupPassport(req.params.lti13_instance_id);
   myPassport.authenticate('lti13', {
     response_type: 'id_token',
     lti_message_hint: parameters.lti_message_hint,
-    login_hint: parameters.login_hint,
+    loginHint: parameters.login_hint,
     prompt: 'none',
     response_mode: 'form_post',
-    failWithError: true,
+    // No longer in code failWithError: true,
     //state isn't allowed, have to figure out something else to do here.
     //state,
   } as AuthenticateOptions)(req, res, next);
@@ -353,7 +428,7 @@ async function setupPassport(lti13_instance_id: string) {
     true, // extractable
     ['sign'],
   );
-  console.log(key);
+  //console.log(key);
 
   const openidClientConfig = new client.Configuration(
     lti13_instance.issuer_params,
@@ -364,12 +439,12 @@ async function setupPassport(lti13_instance_id: string) {
 
   const options: StrategyOptionsWithRequest = {
     config: openidClientConfig,
-    scope: 'openid email',
+    scope: 'openid',
     callbackURL: lti13_instance.client_params.redirect_uris[0],
     passReqToCallback: true,
   };
 
-  localPassport.use('lti13', new Strategy(options, callbackify(verify)));
+  localPassport.use('lti13', new PLStrategy(options, callbackify(verify)));
   /*
       {
         client,
@@ -388,7 +463,8 @@ async function verify(
   tokenSet: client.TokenEndpointResponse & client.TokenEndpointResponseHelpers,
 ) {
   //: Promise<VerifyFunctionWithRequest> {
-  console.log(req);
+  console.log('verify');
+  console.log(req.body);
   console.log(tokenSet);
 
   const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
