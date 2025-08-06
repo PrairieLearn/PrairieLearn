@@ -39,6 +39,7 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
 If you want to preview the documentation, run:
 
 ```sh
+make python-deps-docs
 make preview-docs
 ```
 
@@ -49,6 +50,8 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
+make python-deps-core
+make python-deps-docs
 make test
 ```
 

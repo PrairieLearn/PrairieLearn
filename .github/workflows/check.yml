@@ -112,7 +112,10 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
       - name: Install Python dependencies
-        run: make python-deps
+        run: |
+          make python-deps-core
+          make python-deps-dev
+          make python-deps-docs
 
       - name: Set up Node
         uses: actions/setup-node@v4
