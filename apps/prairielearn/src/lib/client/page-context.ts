@@ -1,7 +1,8 @@
 import { z } from 'zod';
 
-import { NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { run } from '@prairielearn/run';
+
+import { NavbarTypeSchema } from '../../components/Navbar.types.js';
 
 import {
   RawStaffAssessmentSchema,
