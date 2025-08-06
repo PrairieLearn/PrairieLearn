@@ -13,6 +13,7 @@ import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
+import { config } from '../../../lib/config.js';
 import { setCookie } from '../../../lib/cookie.js';
 import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
@@ -137,6 +138,11 @@ async function launchFlow(req: Request, res: Response) {
   // Needed for implicit flow
   client.useIdTokenResponseType(openidClientConfig);
 
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
   if ('test' in parameters) {
@@ -209,6 +215,11 @@ router.post(
 
     // Needed for implicit flow
     client.useIdTokenResponseType(openidClientConfig);
+
+    // Only for testing
+    if (config.devMode) {
+      client.allowInsecureRequests(openidClientConfig);
+    }
 
     // URL href doesn't matter, openid-client only uses the url.hash to pass properties
     const url = new URL('https://example.com/');

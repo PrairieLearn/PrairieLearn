@@ -17,6 +17,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import {
   AssessmentInstanceSchema,
@@ -420,6 +421,11 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.client_params,
     client.PrivateKeyJwt(key, modAssertion),
   );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
 
   // Fetch the token
   tokenSet = await client.clientCredentialsGrant(openidClientConfig, {

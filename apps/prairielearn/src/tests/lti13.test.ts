@@ -463,7 +463,7 @@ describe('LTI 1.3', () => {
       res.send(
         JSON.stringify({
           access_token: ACCESS_TOKEN,
-          stenotype: 'bearer',
+          token_type: 'bearer',
           expires_in: 3600,
           scope: req.body.scope,
         }),
