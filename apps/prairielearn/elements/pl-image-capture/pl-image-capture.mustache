@@ -49,7 +49,7 @@ $(function() {
         </div>
       </div>
       {{^editable}}
-      <div class="js-uploaded-image-container-top-buttons position-absolute top-0 end-0 m-2 d-none">
+      <div class="js-zoom-buttons position-absolute top-0 end-0 m-2 d-none">
         <button 
           type="button" 
           class="js-viewer-rotate-clockwise-button btn btn-light border"
@@ -92,7 +92,7 @@ $(function() {
         <i class="bi bi-crop me-1"></i>
         Crop/rotate
       </button>
-      <div class="js-retake-side-by-side d-flex gap-2 flex-wrap justify-content-end">
+      <div class="js-capture-buttons-horizontal d-flex gap-2 flex-wrap justify-content-end">
         <button
           type="button"
           class="js-capture-with-local-camera-button btn btn-sm btn-info"
@@ -140,14 +140,14 @@ $(function() {
         </button>
         {{/mobile_capture_enabled}}
       </div>
-      <div class="js-retake-dropdown dropdown d-none">
+      <div class="js-capture-buttons-dropdown dropdown d-none">
         <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
           Retake...
         </button>
         <ul class="dropdown-menu" aria-labelledby="dropdownMenuButton1">
           <button
             type="button"
-            class="js-capture-with-local-camera-button-dropdown dropdown-item btn btn-sm"
+            class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
           >
             <i class="bi bi-camera-fill me-1"></i>
             <span>Use webcam</span>
@@ -155,7 +155,7 @@ $(function() {
           {{#mobile_capture_enabled}}
             <button 
               type="button" 
-              class="js-capture-with-mobile-device-button-dropdown dropdown-item btn btn-sm"
+              class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
               data-bs-toggle="popover"
               data-bs-container="body"
               data-bs-html="true"

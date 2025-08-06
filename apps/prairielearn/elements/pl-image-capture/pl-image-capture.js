@@ -66,36 +66,56 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     createExternalCaptureListeners() {
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
+      const mobileCaptureButtons = this.getMobileCaptureOptionButtons();
+      
+      for (const captureButton of mobileCaptureButtons) {
+        captureButton.addEventListener('inserted.bs.popover', () => {
+          this.generateQrCode();
+        });
+      }
+    }
 
+    getLocalCaptureOptionButtons() {
+      const captureWithLocalCameraButtonHorizontal = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-horizontal .js-capture-with-local-camera-button',
+      );
+      const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-dropdown .js-capture-with-local-camera-button',
+      );
+      
+      this.ensureElementsExist({
+        captureWithLocalCameraButtonHorizontal,
+        captureWithLocalCameraButtonDropdown
+      });
+
+      return [
+        captureWithLocalCameraButtonHorizontal,
+        captureWithLocalCameraButtonDropdown
+      ];
+    }
+
+    getMobileCaptureOptionButtons() {
+      const captureWithMobileDeviceButtonHorizontal = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-horizontal .js-capture-with-mobile-device-button',
+      );
       const captureWithMobileDeviceButtonDropdown = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button-dropdown',
+        '.js-capture-buttons-dropdown .js-capture-with-mobile-device-button',
       );
 
       this.ensureElementsExist({
-        captureWithMobileDeviceButton,
+        captureWithMobileDeviceButtonHorizontal,
         captureWithMobileDeviceButtonDropdown
       });
 
-      captureWithMobileDeviceButton.addEventListener('inserted.bs.popover', () => {
-        this.generateQrCode();
-      });
-
-      captureWithMobileDeviceButtonDropdown.addEventListener('inserted.bs.popover', () => {
-        this.generateQrCode();
-      });
-
+      return [
+        captureWithMobileDeviceButtonHorizontal,
+        captureWithMobileDeviceButtonDropdown
+      ];
     }
 
     createLocalCameraCaptureListeners() {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
-      const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button-dropdown',
-      );
+      const localCaptureOptionButtons = this.getLocalCaptureOptionButtons();
+
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
       );
@@ -106,20 +126,16 @@ const MAX_ZOOM_SCALE = 5;
       const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
 
       this.ensureElementsExist({
-        captureWithLocalCameraButton,
-        captureWithLocalCameraButtonDropdown,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
         applyChangesButton,
       });
 
-      captureWithLocalCameraButton.addEventListener('click', () => {
-        this.startLocalCameraCapture();
-      });
-
-      captureWithLocalCameraButtonDropdown.addEventListener('click', () => {
-        this.startLocalCameraCapture();
-      });
+      for (const button of localCaptureOptionButtons) {
+        button.addEventListener('click', () => {
+          this.startLocalCameraCapture();
+        });
+      }
 
       captureLocalCameraImageButton.addEventListener('click', () => {
         this.handleCaptureImage();
@@ -300,55 +316,6 @@ const MAX_ZOOM_SCALE = 5;
         confirmDeletionButton.removeEventListener('click', confirmDeletion);
         cancelDeletionButton.removeEventListener('click', cancelDeletion);
       });
-
-      // const openDeletionDialogButton = this.imageCaptureDiv.querySelector(
-      //   '.js-open-deletion-dialog-button',
-      // );
-      // const uploadedImageDeletionConfirmationDialog = this.imageCaptureDiv.querySelector(
-      //   '.js-uploaded-image-deletion-confirmation-dialog',
-      // );
-      // const confirmDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
-      //   '.js-confirm-delete-uploaded-image-button',
-      // );
-      // const cancelDeleteUploadedImageButton = this.imageCaptureDiv.querySelector(
-      //   '.js-cancel-delete-uploaded-image-button',
-      // );
-
-      // this.ensureElementsExist({
-      //   openDeletionDialogButton,
-      //   uploadedImageDeletionConfirmationDialog,
-      //   confirmDeleteUploadedImageButton,
-      //   cancelDeleteUploadedImageButton,
-      // });
-
-      // openDeletionDialogButton.addEventListener('click', () => {
-      //   this.setShowDeletionButton(true);
-      // });
-
-      // confirmDeleteUploadedImageButton.addEventListener('click', () => {
-        // const uploadedImageContainer = this.imageCaptureDiv.querySelector(
-        //   '.js-uploaded-image-container',
-        // );
-
-        // this.ensureElementsExist({
-        //   uploadedImageContainer,
-        // });
-
-        // this.loadCapturePreviewFromDataUrl({
-        //   dataUrl: null,
-        //   originalCapture: true,
-        // });
-
-        // this.setNoCaptureAvailableYetState(uploadedImageContainer);
-
-        // this.setShowDeletionButton(false);
-
-        // this.setCaptureChangedFlag(true);
-      // });
-
-      // cancelDeleteUploadedImageButton.addEventListener('click', () => {
-      //   this.setShowDeletionButton(false);
-      // });
     }
 
     /**
@@ -504,13 +471,11 @@ const MAX_ZOOM_SCALE = 5;
           },
         );
 
-        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-          '.js-capture-with-mobile-device-button',
-        );
-
-        if (captureWithMobileDeviceButton) {
-          // Dismiss the QR code popover if it is open.
-          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
+        const mobileDeviceCaptureOptionButtons = this.getLocalCaptureOptionButtons();
+        
+        // Dismiss the QR code popover if it is open.
+        for (const captureButton of mobileDeviceCaptureOptionButtons) {
+          const popover = bootstrap.Popover.getInstance(captureButton);
           if (popover) {
             popover.hide();
           }
@@ -637,21 +602,16 @@ const MAX_ZOOM_SCALE = 5;
      * @param {boolean} showRetakeText
      */
     setShowRetakeDropdown(showRetakeDropdown) {
-      const retakeSideBySideDiv = this.imageCaptureDiv.querySelector('.js-retake-side-by-side');
-      const retakeDropdownDiv = this.imageCaptureDiv.querySelector('.js-retake-dropdown');
-      
+      const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector('.js-capture-buttons-horizontal');
+      const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector('.js-capture-buttons-dropdown');
+
       this.ensureElementsExist({
-        retakeSideBySideDiv,
-        retakeDropdownDiv,
+        captureButtonsHorizontalDiv,
+        captureButtonsDropdownDiv,
       });
 
-      if (showRetakeDropdown) {
-        retakeSideBySideDiv.classList.add('d-none');
-        retakeDropdownDiv.classList.remove('d-none');
-      } else {
-        retakeSideBySideDiv.classList.remove('d-none');
-        retakeDropdownDiv.classList.add('d-none');
-      }
+      captureButtonsHorizontalDiv.classList.toggle('d-none', showRetakeDropdown);
+      captureButtonsDropdownDiv.classList.toggle('d-none', !showRetakeDropdown);
     }
 
     /**
@@ -711,21 +671,16 @@ const MAX_ZOOM_SCALE = 5;
           '.js-viewer-rotate-clockwise-button',
         );
 
-        // TODO: Revert naming
-        const uploadedImageContainerTopButtons = this.imageCaptureDiv.querySelector(
-          '.js-uploaded-image-container-top-buttons',
-        );
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
           zoomButtonsContainer,
           viewerRotateClockwiseButton,
-          uploadedImageContainerTopButtons,
           zoomInButton,
           zoomOutButton,
         });
-        uploadedImageContainerTopButtons.classList.remove('d-none');
+        zoomButtonsContainer.classList.remove('d-none');
 
 
         if (!this.imageCapturePreviewPanzoom) {
