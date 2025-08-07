@@ -364,16 +364,17 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
   };
 
-  const effectiveResult = await sqldb.queryZeroOrOneRowAsync(
+  const effectiveResult = await sqldb.queryOptionalRow(
     sql.select_authz_data,
     effectiveParams,
+    SelectAuthzDataSchema,
   );
 
   // If the authn user were denied access, then we would return an error. Here,
   // we simply return (without error). This allows the authn user to keep access
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
-  if (effectiveResult.rowCount === 0) {
+  if (effectiveResult === null) {
     debug('effective user was denied access');
 
     res.locals.authz_data.user = user;
@@ -414,7 +415,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_preview &&
-    effectiveResult.rows[0].permissions_course.has_course_permission_preview
+    effectiveResult.permissions_course.has_course_permission_preview
   ) {
     clearOverrideCookies(res, overrides);
 
@@ -433,7 +434,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_view &&
-    effectiveResult.rows[0].permissions_course.has_course_permission_view
+    effectiveResult.permissions_course.has_course_permission_view
   ) {
     clearOverrideCookies(res, overrides);
 
@@ -452,7 +453,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_edit &&
-    effectiveResult.rows[0].permissions_course.has_course_permission_edit
+    effectiveResult.permissions_course.has_course_permission_edit
   ) {
     clearOverrideCookies(res, overrides);
 
@@ -471,7 +472,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   // all override cookies and return with error
   if (
     !res.locals.authz_data.authn_has_course_permission_own &&
-    effectiveResult.rows[0].permissions_course.has_course_permission_own
+    effectiveResult.permissions_course.has_course_permission_own
   ) {
     clearOverrideCookies(res, overrides);
 
@@ -491,7 +492,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // remove all override cookies and return with error
     if (
       !res.locals.authz_data.authn_has_course_instance_permission_view &&
-      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view
+      effectiveResult.permissions_course_instance.has_course_instance_permission_view
     ) {
       clearOverrideCookies(res, overrides);
 
@@ -511,7 +512,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // remove all override cookies and return with error
     if (
       !res.locals.authz_data.authn_has_course_instance_permission_edit &&
-      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit
+      effectiveResult.permissions_course_instance.has_course_instance_permission_edit
     ) {
       clearOverrideCookies(res, overrides);
 
@@ -533,7 +534,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // with error
     if (
       user.uid !== res.locals.authn_user.uid && // effective uid is not the same as authn uid
-      effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment && // effective user is enrolled with access
+      effectiveResult.permissions_course_instance.has_student_access_with_enrollment && // effective user is enrolled with access
       !user_with_requested_uid_has_instructor_access_to_course_instance && // effective user is not an instructor (i.e., is a student)
       !res.locals.authz_data.authn_has_course_instance_permission_edit
     ) {
@@ -564,9 +565,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     // as a student without enrolling in their own course.
     if (
       !idsEqual(user.user_id, res.locals.authn_user.user_id) &&
-      !effectiveResult.rows[0].permissions_course.has_course_permission_preview &&
-      !effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view &&
-      !effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment
+      !effectiveResult.permissions_course.has_course_permission_preview &&
+      !effectiveResult.permissions_course_instance.has_course_instance_permission_view &&
+      !effectiveResult.permissions_course_instance.has_student_access_with_enrollment
     ) {
       clearOverrideCookies(res, overrides);
 
@@ -584,27 +585,27 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   res.locals.authz_data.user = user;
   res.locals.authz_data.is_administrator = is_administrator;
-  res.locals.authz_data.course_role = effectiveResult.rows[0].permissions_course.course_role;
+  res.locals.authz_data.course_role = effectiveResult.permissions_course.course_role;
   res.locals.authz_data.has_course_permission_preview =
-    effectiveResult.rows[0].permissions_course.has_course_permission_preview;
+    effectiveResult.permissions_course.has_course_permission_preview;
   res.locals.authz_data.has_course_permission_view =
-    effectiveResult.rows[0].permissions_course.has_course_permission_view;
+    effectiveResult.permissions_course.has_course_permission_view;
   res.locals.authz_data.has_course_permission_edit =
-    effectiveResult.rows[0].permissions_course.has_course_permission_edit;
+    effectiveResult.permissions_course.has_course_permission_edit;
   res.locals.authz_data.has_course_permission_own =
-    effectiveResult.rows[0].permissions_course.has_course_permission_own;
+    effectiveResult.permissions_course.has_course_permission_own;
 
   if (isCourseInstance) {
     res.locals.authz_data.course_instance_role =
-      effectiveResult.rows[0].permissions_course_instance.course_instance_role;
+      effectiveResult.permissions_course_instance.course_instance_role;
     res.locals.authz_data.has_course_instance_permission_view =
-      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_view;
+      effectiveResult.permissions_course_instance.has_course_instance_permission_view;
     res.locals.authz_data.has_course_instance_permission_edit =
-      effectiveResult.rows[0].permissions_course_instance.has_course_instance_permission_edit;
+      effectiveResult.permissions_course_instance.has_course_instance_permission_edit;
     res.locals.authz_data.has_student_access =
-      effectiveResult.rows[0].permissions_course_instance.has_student_access;
+      effectiveResult.permissions_course_instance.has_student_access;
     res.locals.authz_data.has_student_access_with_enrollment =
-      effectiveResult.rows[0].permissions_course_instance.has_student_access_with_enrollment;
+      effectiveResult.permissions_course_instance.has_student_access_with_enrollment;
 
     if (!idsEqual(user.user_id, res.locals.authn_user.user_id)) {
       res.locals.authz_data.user_with_requested_uid_has_instructor_access_to_course_instance =
@@ -630,8 +631,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.user = res.locals.authz_data.user;
   res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
-  res.locals.authz_data.mode = effectiveResult.rows[0].mode;
-  res.locals.authz_data.mode_reason = effectiveResult.rows[0].mode_reason;
+  res.locals.authz_data.mode = effectiveResult.mode;
+  res.locals.authz_data.mode_reason = effectiveResult.mode_reason;
   res.locals.req_date = req_date;
 }
 
