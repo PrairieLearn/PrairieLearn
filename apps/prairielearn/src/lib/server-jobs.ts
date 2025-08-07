@@ -117,7 +117,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   async exec(
     file: string,
-    args: string[] = [],
+    args: string[],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
