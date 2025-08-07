@@ -9,20 +9,41 @@ import { type NextFunction, type Request, type Response } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { type PageContext, getPageContext } from '../lib/client/page-context.js';
+import { getPageContext } from '../lib/client/page-context.js';
 import { Hydrate } from '../lib/preact.js';
 
-import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
+import {
+  AuthzAccessMismatch,
+  type CheckablePermissionKeys,
+  PERMISSIONS_META,
+} from './AuthzAccessMismatch.js';
+
+function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
+  const descriptions = permissionKeys.map((key) => {
+    const permission = PERMISSIONS_META.find((p) => p.key === key);
+    return permission?.label.toLowerCase() || key.toString().replace(/_/g, ' ');
+  });
+
+  if (descriptions.length === 1) {
+    return descriptions[0];
+  } else if (descriptions.length === 2) {
+    return descriptions.join(' or ');
+  } else {
+    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
+  }
+}
+
+function getErrorExplanation(permissionKeys: CheckablePermissionKeys[]): string {
+  return `This page requires ${getPermissionDescription(permissionKeys)} permissions.`;
+}
 
 export const createAuthzMiddleware =
   ({
     oneOfPermissions,
-    errorMessage,
     errorExplanation,
     unauthorizedUsers,
   }: {
-    oneOfPermissions: (keyof PageContext['authz_data'])[];
-    errorMessage: string;
+    oneOfPermissions: CheckablePermissionKeys[];
     errorExplanation?: string;
     unauthorizedUsers: 'passthrough' | 'block';
   }) =>
@@ -59,8 +80,7 @@ export const createAuthzMiddleware =
           content: (
             <Hydrate>
               <AuthzAccessMismatch
-                errorMessage={errorMessage}
-                errorExplanation={errorExplanation}
+                errorExplanation={errorExplanation ?? getErrorExplanation(oneOfPermissions)}
                 oneOfPermissionKeys={oneOfPermissions}
                 authzData={authzData}
                 authnUser={pageContext.authn_user}
@@ -78,5 +98,5 @@ export const createAuthzMiddleware =
       return;
     }
 
-    next(new HttpStatusError(403, errorMessage));
+    next(new HttpStatusError(403, errorExplanation ?? getErrorExplanation(oneOfPermissions)));
   };

@@ -4,9 +4,31 @@ import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContext } from '../lib/client/page-context.js';
 import type { StaffUser } from '../lib/client/safe-db-types.js';
 
+// These keys can be used as part of permission checks.
+export type CheckablePermissionKeys = Extract<
+  | 'is_administrator'
+  | 'has_course_permission_preview'
+  | 'has_course_permission_view'
+  | 'has_course_permission_edit'
+  | 'has_course_permission_own'
+  | 'has_student_access'
+  | 'has_student_access_with_enrollment'
+  | 'has_course_instance_permission_view'
+  | 'has_course_instance_permission_edit'
+  | 'course_role'
+  | 'course_instance_role',
+  keyof PageContext['authz_data']
+>;
+
+// These keys are used to show users diagnostic information about their permissions.
+type DiagnosticPermissionKeys = Extract<
+  CheckablePermissionKeys | 'course_role' | 'course_instance_role',
+  keyof PageContext['authz_data']
+>;
+
 interface PermissionMeta {
   label: string;
-  key: keyof PageContext['authz_data'];
+  key: DiagnosticPermissionKeys;
   type: 'boolean' | 'string';
 }
 
@@ -15,50 +37,10 @@ interface PermissionData extends PermissionMeta {
   authnValue: boolean | string;
 }
 
-const PermissionsMeta = [
+export const PERMISSIONS_META = [
   {
     label: 'Administrator',
     key: 'is_administrator',
-    type: 'boolean',
-  },
-  {
-    label: 'Course preview',
-    key: 'has_course_permission_preview',
-    type: 'boolean',
-  },
-  {
-    label: 'Course view',
-    key: 'has_course_permission_view',
-    type: 'boolean',
-  },
-  {
-    label: 'Course edit',
-    key: 'has_course_permission_edit',
-    type: 'boolean',
-  },
-  {
-    label: 'Course own',
-    key: 'has_course_permission_own',
-    type: 'boolean',
-  },
-  {
-    label: 'Student access',
-    key: 'has_student_access',
-    type: 'boolean',
-  },
-  {
-    label: 'Enrollment student access',
-    key: 'has_student_access_with_enrollment',
-    type: 'boolean',
-  },
-  {
-    label: 'Course instance view',
-    key: 'has_course_instance_permission_view',
-    type: 'boolean',
-  },
-  {
-    label: 'Course instance edit',
-    key: 'has_course_instance_permission_edit',
     type: 'boolean',
   },
   {
@@ -67,26 +49,51 @@ const PermissionsMeta = [
     type: 'string',
   },
   {
+    label: 'Course previewer',
+    key: 'has_course_permission_preview',
+    type: 'boolean',
+  },
+  {
+    label: 'Course viewer',
+    key: 'has_course_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Course editor',
+    key: 'has_course_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Course owner',
+    key: 'has_course_permission_own',
+    type: 'boolean',
+  },
+  {
     label: 'Course instance role',
     key: 'course_instance_role',
     type: 'string',
   },
+  {
+    label: 'Student data viewer',
+    key: 'has_course_instance_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Student data editor',
+    key: 'has_course_instance_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Student access',
+    key: 'has_student_access',
+    type: 'boolean',
+  },
+  {
+    label: 'Enrolled student access',
+    key: 'has_student_access_with_enrollment',
+    type: 'boolean',
+  },
 ] satisfies PermissionMeta[];
-
-function getPermissionDescription(permissionKeys: (keyof PageContext['authz_data'])[]): string {
-  const descriptions = permissionKeys.map((key) => {
-    const permission = PermissionsMeta.find((p) => p.key === key);
-    return permission?.label.toLowerCase() || key.toString().replace(/_/g, ' ');
-  });
-
-  if (descriptions.length === 1) {
-    return descriptions[0];
-  } else if (descriptions.length === 2) {
-    return descriptions.join(' or ');
-  } else {
-    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
-  }
-}
 
 function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
@@ -136,21 +143,23 @@ function clearEffectiveUserCookies() {
 }
 
 export function AuthzAccessMismatch({
-  errorMessage: _errorMessage,
   errorExplanation,
   oneOfPermissionKeys,
   authzData,
   authnUser,
   authzUser,
 }: {
-  errorMessage: string;
+  /**
+   * A sentence-like description of why the user can't access the page. If not provided,
+   * one will be generated from `oneOfPermissionKeys`.
+   */
   errorExplanation?: string;
-  oneOfPermissionKeys: (keyof PageContext['authz_data'])[];
+  oneOfPermissionKeys: CheckablePermissionKeys[];
   authzData: PageContext['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
-  const permissions: PermissionData[] = PermissionsMeta.map((permission) => {
+  const permissions: PermissionData[] = PERMISSIONS_META.map((permission) => {
     return {
       authnValue:
         authzData[`authn_${permission.key}`] ?? (permission.type === 'string' ? '' : false),
@@ -171,12 +180,12 @@ export function AuthzAccessMismatch({
   return (
     <main id="content" class="container">
       <div class="card mb-4">
-        <div class="card-header bg-danger text-white">Insufficient access</div>
+        <div class="card-header bg-danger text-white">
+          <h1>Effective user has insufficient access</h1>
+        </div>
         <div class="card-body">
-          <h2 class="mb-3 h4">Effective user has insufficient access</h2>
+          <p>{errorExplanation}</p>
           <p>
-            {errorExplanation ||
-              `This page requires ${getPermissionDescription(oneOfPermissionKeys)} permissions.`}{' '}
             The current effective user{' '}
             {authzUser ? (
               <strong>
@@ -195,11 +204,11 @@ export function AuthzAccessMismatch({
           <details class="mb-3">
             <summary>View permission differences</summary>
             <div class="mt-3">
-              <h6>One of these permissions is required</h6>
+              <h3 class="h6">One of these permissions is required</h3>
               <PermissionsTable permissions={oneOfPermissions} />
               {otherPermissions.length > 0 && (
                 <>
-                  <h6>Other permission differences</h6>
+                  <h3 class="h6">Other permission differences</h3>
                   <PermissionsTable permissions={otherPermissions} />
                 </>
               )}

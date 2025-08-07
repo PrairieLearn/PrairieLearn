@@ -48,8 +48,6 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_own'],
-    errorMessage: 'Access denied',
-    errorExplanation: 'This page requires course owner access.',
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {

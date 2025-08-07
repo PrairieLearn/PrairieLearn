@@ -9,7 +9,6 @@ export default createAuthzMiddleware({
     // Effective user is enrolled in the course instance.
     'has_student_access_with_enrollment',
   ],
-  errorMessage: 'Access denied',
   errorExplanation: 'This page requires course instance access.',
   unauthorizedUsers: 'block',
 });

@@ -19,8 +19,6 @@ router.get(
   '/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_view'],
-    errorMessage: 'Access denied',
-    errorExplanation: 'This page requires course view access.',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {

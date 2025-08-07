@@ -93,8 +93,6 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
-    errorMessage: 'Requires course preview permissions',
-    // errorExplanation: 'This page requires course preview access.',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async function (req, res) {
@@ -156,8 +154,6 @@ router.get(
   '/qid/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
-    errorMessage: 'Requires course preview permissions',
-    errorExplanation: 'This page requires course preview access.',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
