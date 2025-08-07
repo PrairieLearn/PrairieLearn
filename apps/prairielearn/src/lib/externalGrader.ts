@@ -193,7 +193,7 @@ export async function processGradingResult(content: any): Promise<void> {
 
     if (gradable) {
       // We only care about the score if it is gradable.
-      if (typeof content.grading.score === 'undefined') {
+      if (content.grading.score === undefined) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score was not provided.',

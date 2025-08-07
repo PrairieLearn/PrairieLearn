@@ -42,11 +42,11 @@ onDocumentReady(async () => {
 
       // Add tab name tooltips
       sideNavButtons.forEach((button) => {
-        button.setAttribute('data-bs-toggle', 'tooltip');
+        button.dataset.bsToggle = 'tooltip';
       });
 
       // Update the side nav toggler button tooltip and icon
-      sideNavTogglerButton.setAttribute('data-bs-title', 'Expand side nav');
+      sideNavTogglerButton.dataset.bsTitle = 'Expand side nav';
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-left', 'bi-arrow-bar-right');
 
       // Bootstrap does not update aria-label when data-bs-title changes, so we update it explicitly
@@ -57,11 +57,11 @@ onDocumentReady(async () => {
 
       // Remove tab name tooltips
       sideNavButtons.forEach((button) => {
-        button.removeAttribute('data-bs-toggle');
+        delete button.dataset.bsToggle;
       });
 
       // Update the side nav toggler button tooltip and icon
-      sideNavTogglerButton.setAttribute('data-bs-title', 'Collapse side nav');
+      sideNavTogglerButton.dataset.bsTitle = 'Collapse side nav';
       sideNavTogglerIcon.classList.replace('bi-arrow-bar-right', 'bi-arrow-bar-left');
 
       // Bootstrap does not update aria-label when data-bs-title changes, so we update it explicitly
@@ -99,14 +99,14 @@ onDocumentReady(async () => {
       appContainerDiv.classList.add('mobile-collapsed');
 
       // Update the side nav mobile toggler button tooltip and icon
-      sideNavMobileButton.setAttribute('data-bs-title', 'Expand side nav');
+      sideNavMobileButton.dataset.bsTitle = 'Expand side nav';
       sideNavMobileButton.setAttribute('aria-label', 'Expand side nav');
     } else {
       // Expand the side nav
       appContainerDiv.classList.remove('mobile-collapsed');
 
       // Update the side nav mobile toggler button tooltip and icon
-      sideNavMobileButton.setAttribute('data-bs-title', 'Collapse side nav');
+      sideNavMobileButton.dataset.bsTitle = 'Collapse side nav';
       sideNavMobileButton.setAttribute('aria-label', 'Collapse side nav');
     }
 

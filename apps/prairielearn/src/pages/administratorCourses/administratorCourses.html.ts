@@ -307,7 +307,7 @@ function CourseUpdateColumn({
 }) {
   return html`
     <td class="align-middle">
-      ${typeof href !== 'undefined'
+      ${href !== undefined
         ? html`<a href="${href}">${course[column_name]}</a>`
         : course[column_name]}
       <button

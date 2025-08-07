@@ -55,8 +55,9 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
   rewriter
     .on('a, button', {
       element(el) {
+        if (!(el instanceof HTMLElement)) return;
         if (el.hasAttribute('aria-label')) return;
-        const title = el.getAttribute('data-bs-title') ?? el.getAttribute('title');
+        const title = el.dataset.bsTitle ?? el.getAttribute('title');
         if (title) {
           el.setAttribute('aria-label', title);
         }
@@ -226,7 +227,7 @@ const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
     const info = fs.readJsonSync(infoPath);
-    const relativePath = dir.substring(questionsPath.length + 1);
+    const relativePath = dir.slice(Math.max(0, questionsPath.length + 1));
     return {
       path: dir,
       relativePath,
@@ -246,12 +247,12 @@ const course = {
 const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
-const unsupportedQuestions = ['element/fileEditor', 'element/codeDocumentation'];
+const unsupportedQuestions = new Set(['element/fileEditor', 'element/codeDocumentation']);
 
-const accessibilitySkip = [
+const accessibilitySkip = new Set([
   // Extremely large question
   'element/dataframe',
-];
+]);
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
@@ -268,7 +269,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function (context) {
-      if (unsupportedQuestions.includes(relativePath)) {
+      if (unsupportedQuestions.has(relativePath)) {
         context.skip();
       }
       const question = {
@@ -325,7 +326,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       await validateHtml(questionHtml);
 
       // Validate accessibility
-      if (!accessibilitySkip.includes(relativePath)) {
+      if (!accessibilitySkip.has(relativePath)) {
         await validateAxe(questionHtml);
       }
 

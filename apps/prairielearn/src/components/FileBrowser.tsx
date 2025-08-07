@@ -215,7 +215,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
     // and LiveScript/Lasso, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
     let language: string | undefined = undefined;
-    const extension = path.extname(paths.workingPath).substring(1);
+    const extension = path.extname(paths.workingPath).slice(1);
     if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
       language = extension;
     } else {

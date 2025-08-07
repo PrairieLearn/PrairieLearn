@@ -51,7 +51,7 @@ export class FeatureManager<FeatureName extends string> {
 
   constructor(features: readonly FeatureName[]) {
     features.forEach((feature) => {
-      if (!feature.match(/^[a-z0-9:_-]+$/)) {
+      if (!/^[a-z0-9:_-]+$/.test(feature)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });

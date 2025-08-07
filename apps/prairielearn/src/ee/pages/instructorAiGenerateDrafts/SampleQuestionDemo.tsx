@@ -83,7 +83,7 @@ export function SampleQuestionDemo({
     }
 
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
-      const responseNum = parseFloat(userInputResponse);
+      const responseNum = Number.parseFloat(userInputResponse);
 
       const rtol = prompt.rtol;
       const atol = prompt.atol;
@@ -202,7 +202,7 @@ export function SampleQuestionDemo({
               }
 
               // Regular text
-              return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
+              return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
             })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput

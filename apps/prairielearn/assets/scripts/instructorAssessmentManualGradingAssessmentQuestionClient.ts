@@ -536,7 +536,7 @@ function updatePointsPopoverHandlers(this: Element) {
 function updateGradingTagButton() {
   $('.grading-tag-button').prop(
     'disabled',
-    !$('#grading-table').bootstrapTable('getSelections').length,
+    $('#grading-table').bootstrapTable('getSelections').length === 0,
   );
 }
 

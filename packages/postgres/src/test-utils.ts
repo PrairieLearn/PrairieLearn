@@ -73,7 +73,7 @@ async function createDatabase(
         max: 10,
         idleTimeoutMillis: 30000,
         errorOnUnusedParameters: true,
-        ...(options.poolConfig ?? {}),
+        ...options.poolConfig,
       },
       (err) => {
         throw err;

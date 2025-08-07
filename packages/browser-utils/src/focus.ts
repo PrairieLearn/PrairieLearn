@@ -14,7 +14,7 @@ const FOCUSABLE_SELECTOR = [
   .join(',');
 
 function isElement(object: Element) {
-  return typeof object?.nodeType !== 'undefined';
+  return object?.nodeType !== undefined;
 }
 
 function isVisible(element: Element) {
@@ -49,7 +49,7 @@ function isDisabled(element: Element) {
     return true;
   }
 
-  if (typeof (element as any).disabled !== 'undefined') {
+  if ((element as any).disabled !== undefined) {
     return (element as any).disabled;
   }
 

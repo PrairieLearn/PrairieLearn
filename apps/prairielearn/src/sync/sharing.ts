@@ -87,9 +87,9 @@ export async function checkInvalidSharingSetDeletions(
   );
 
   const invalidSharingSetDeletions: string[] = [];
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
   sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames.includes(sharingSet)) {
+    if (!sharingSetNames.has(sharingSet)) {
       invalidSharingSetDeletions.push(sharingSet);
     }
   });
@@ -108,13 +108,13 @@ export function checkInvalidSharingSetAdditions(
   logger: ServerJobLogger,
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
 
   for (const qid in courseData.questions) {
     const question = courseData.questions[qid];
     const questionSharingSets = question.data?.sharingSets || [];
     questionSharingSets.forEach((sharingSet) => {
-      if (!sharingSetNames.includes(sharingSet)) {
+      if (!sharingSetNames.has(sharingSet)) {
         if (!invalidSharingSetAdditions[qid]) {
           invalidSharingSetAdditions[qid] = [];
         }

@@ -3568,8 +3568,8 @@ export function fakeMiddleName() {
 
 export function fakeExampleEmail({ firstName, lastName }: { firstName: string; lastName: string }) {
   const domain = exampleDomainList[Math.floor(Math.random() * exampleDomainList.length)];
-  firstName = firstName.toLowerCase().replace(/[^a-z]/g, '');
-  lastName = lastName.toLowerCase().replace(/[^a-z]/g, '');
+  firstName = firstName.toLowerCase().replaceAll(/[^a-z]/g, '');
+  lastName = lastName.toLowerCase().replaceAll(/[^a-z]/g, '');
   const patterns = [
     `${firstName}.${lastName}@${domain}`,
     `${firstName[0]}${lastName}@${domain}`,

@@ -71,7 +71,7 @@ export function getCheckedSignedTokenData(
   if (options.maxAge != null) {
     let tokenDate;
     try {
-      tokenDate = new Date(parseInt(tokenDateString, 36));
+      tokenDate = new Date(Number.parseInt(tokenDateString, 36));
     } catch {
       debug(`getCheckedSignedTokenData(): FAIL - could not parse date: ${tokenDateString}`);
       return null;

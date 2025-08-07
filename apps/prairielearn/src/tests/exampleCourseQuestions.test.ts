@@ -70,7 +70,7 @@ describe('Auto-test questions in exampleCourse', () => {
         questionsWithIncorrectTopics.push(qid);
       }
     }
-    if (questionsWithIncorrectTopics.length) {
+    if (questionsWithIncorrectTopics.length > 0) {
       const qids = questionsWithIncorrectTopics.map((qid) => `"${qid}"`).join(', ');
       throw new Error(`The following template questions have incorrect topics: ${qids}`);
     }

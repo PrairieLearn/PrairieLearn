@@ -71,7 +71,7 @@ async function describeWithPool(
 
   // Get the names of the tables and filter out any ignored tables
   const tablesRes = await pool.queryAsync(sql.get_tables, []);
-  const tables = tablesRes.rows.filter((table) => ignoreTables.indexOf(table.name) === -1);
+  const tables = tablesRes.rows.filter((table) => !ignoreTables.includes(table.name));
 
   // Transform ignored columns into a map from table names to arrays
   // of column names
@@ -102,7 +102,7 @@ async function describeWithPool(
     });
 
     const columns = columnResults.rows.filter((row) => {
-      return (ignoreColumns[table.name] || []).indexOf(row.name) === -1;
+      return !(ignoreColumns[table.name] || []).includes(row.name);
     });
 
     const indexResults = await pool.queryAsync(sql.get_indexes_for_table, {
@@ -120,7 +120,7 @@ async function describeWithPool(
 
     // Filter out references from ignored tables
     const references = referenceResults.rows.filter((row) => {
-      return ignoreTables.indexOf(row.table) === -1;
+      return !ignoreTables.includes(row.table);
     });
 
     const checkConstraintResults = await pool.queryAsync(sql.get_check_constraints_for_table, {
@@ -141,7 +141,7 @@ async function describeWithPool(
 
   // Filter ignored enums
   const rows = enumsRes.rows.filter((row) => {
-    return ignoreEnums.indexOf(row.name) === -1;
+    return !ignoreEnums.includes(row.name);
   });
 
   rows.forEach((row) => {
@@ -221,18 +221,18 @@ export function formatDatabaseDescription(
     }
 
     if (table.indexes.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('indexes\n', chalk.underline);
       output.tables[tableName] += table.indexes
         .map((row) => {
-          const using = row.indexdef.substring(row.indexdef.indexOf('USING '));
+          const using = row.indexdef.slice(Math.max(0, row.indexdef.indexOf('USING ')));
           let rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
           // Primary indexes are implicitly unique, so we don't need to
           // capture that explicitly.
           if (row.isunique && !row.isprimary) {
-            if (!row.constraintdef || row.constraintdef.indexOf('UNIQUE') === -1) {
+            if (!row.constraintdef || !row.constraintdef.includes('UNIQUE')) {
               // Some unique indexes don't include the UNIQUE constraint
               // as part of the constraint definition, so we need to capture
               // that manually.
@@ -247,7 +247,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.checkConstraints.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('check constraints\n', chalk.underline);
@@ -262,7 +262,7 @@ export function formatDatabaseDescription(
           //
           // The second replace handles all other lines: we want to collapse
           // all leading whitespace into a single space.
-          const def = row.def.replace(/\(\n/g, '(').replace(/\n\s*/g, ' ');
+          const def = row.def.replaceAll('(\n', '(').replaceAll(/\n\s*/g, ' ');
 
           let rowText = formatText(`    ${row.name}:`, chalk.bold);
           rowText += formatText(` ${def}`, chalk.green);
@@ -272,7 +272,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.foreignKeyConstraints.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('foreign-key constraints\n', chalk.underline);
@@ -286,7 +286,7 @@ export function formatDatabaseDescription(
     }
 
     if (table.references.length > 0) {
-      if (output.tables[tableName].length !== 0) {
+      if (output.tables[tableName].length > 0) {
         output.tables[tableName] += '\n\n';
       }
       output.tables[tableName] += formatText('referenced by\n', chalk.underline);

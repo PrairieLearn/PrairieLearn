@@ -27,7 +27,7 @@ const MATCH_HTML = /[&><\u2028\u2029]/g;
  * @returns A JSON string with HTML-sensitive characters escaped.
  */
 function escapeJsonForHtml(value: any): string {
-  return superjson.stringify(value).replace(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
+  return superjson.stringify(value).replaceAll(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
 }
 
 /**

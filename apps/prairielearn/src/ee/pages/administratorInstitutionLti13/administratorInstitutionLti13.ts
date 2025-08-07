@@ -66,7 +66,7 @@ router.get(
     let paramInstance: Lti13Instance | undefined;
 
     // Handle the / (no id passed case)
-    if (typeof req.params.unsafe_lti13_instance_id === 'undefined') {
+    if (req.params.unsafe_lti13_instance_id === undefined) {
       if (lti13Instances.length > 0) {
         return res.redirect(
           `/pl/administrator/institution/${institution.id}/lti13/${lti13Instances[0].id}`,

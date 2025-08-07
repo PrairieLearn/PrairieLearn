@@ -66,7 +66,9 @@ export async function sync(
   });
 
   const newTags = await run(async () => {
-    if (!tagsToCreate.length && !tagsToUpdate.length && !tagsToDelete.length) return [];
+    if (tagsToCreate.length === 0 && tagsToUpdate.length === 0 && tagsToDelete.length === 0) {
+      return [];
+    }
 
     return await runInTransactionAsync(async () => {
       const insertedTags = await run(async () => {

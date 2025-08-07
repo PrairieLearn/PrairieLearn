@@ -100,7 +100,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
       try {
         const match = path.match(containerPathRegex);
         if (!match) throw new Error(`Could not match path: ${path}`);
-        const workspace_id = parseInt(match[1]);
+        const workspace_id = Number.parseInt(match[1]);
         let workspace_url_rewrite = workspaceUrlRewriteCache.get(workspace_id);
         if (workspace_url_rewrite == null) {
           const sql =

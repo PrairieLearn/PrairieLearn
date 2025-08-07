@@ -75,9 +75,9 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol =
-    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
-    1;
+  const showAdvanceScorePercCol = questionRows.some(
+    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+  );
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 

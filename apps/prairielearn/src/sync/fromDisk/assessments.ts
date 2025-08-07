@@ -312,14 +312,14 @@ function parseSharedQuestionReference(qid) {
   if (firstSlash === -1) {
     // No QID, invalid question reference. An error will be recorded when trying to locate this question
     return {
-      sharing_name: qid.substring(1, qid.length),
+      sharing_name: qid.slice(1),
       qid: '',
     };
   }
 
   return {
-    sharing_name: qid.substring(1, firstSlash),
-    qid: qid.substring(firstSlash + 1, qid.length),
+    sharing_name: qid.slice(1, firstSlash),
+    qid: qid.slice(firstSlash + 1),
   };
 }
 

@@ -371,7 +371,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
       );
     });
     it('should have the correct instance_question auto_points', function () {
-      if (typeof locals.expectedResult?.instance_question_auto_points !== 'undefined') {
+      if (locals.expectedResult?.instance_question_auto_points !== undefined) {
         assert(locals.instance_question);
         assert.approximately(
           locals.instance_question?.auto_points,
@@ -381,7 +381,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
       }
     });
     it('should have the correct instance_question manual_points', function () {
-      if (typeof locals.expectedResult?.instance_question_manual_points !== 'undefined') {
+      if (locals.expectedResult?.instance_question_manual_points !== undefined) {
         assert(locals.instance_question);
         assert.approximately(
           locals.instance_question?.manual_points,

@@ -23,7 +23,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
   }
 
   function setIndentation(block, indentation) {
@@ -59,9 +59,9 @@ window.PLOrderBlocks = function (uuid, options) {
       );
       if (!block.classList.contains('pl-order-blocks-selected')) {
         const moveBetweenOptionsOrDropzone = (options) => {
-          if (options && inDropzone(block) && optionsBlocks.length) {
+          if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
-          } else if (!options && !inDropzone(block) && dropzoneBlocks.length) {
+          } else if (!options && !inDropzone(block) && dropzoneBlocks.length > 0) {
             dropzoneBlocks[0].focus();
           }
         };
@@ -191,10 +191,10 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!$(answerObj).hasClass('info-fixed')) {
         var answerText = answerObj.getAttribute('string');
         var answerUuid = answerObj.getAttribute('uuid');
-        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
+        var answerDistractorBin = answerObj.dataset.distractorBin;
         var answerIndent = null;
         if (enableIndentation) {
-          answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
+          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
@@ -221,7 +221,7 @@ window.PLOrderBlocks = function (uuid, options) {
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
     const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
-      leftDiff += parseInt(currentIndent);
+      leftDiff += Number.parseInt(currentIndent);
     }
 
     // limit leftDiff to be in within the bounds of the drag and drop box
@@ -236,9 +236,8 @@ window.PLOrderBlocks = function (uuid, options) {
     let indicator = document.getElementById('indicator-' + uuid);
     if (!indicator) {
       indicator = document.createElement('li');
-      indicator.classList.add('pl-order-blocks-pairing-indicator');
-      indicator.classList.add('bg-info-subtle');
-      indicator.setAttribute('data-distractor-bin', uuid);
+      indicator.classList.add('pl-order-blocks-pairing-indicator', 'bg-info-subtle');
+      indicator.dataset.distractorBin = uuid;
       indicator.id = 'indicator-' + uuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
@@ -257,7 +256,7 @@ window.PLOrderBlocks = function (uuid, options) {
       Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
-    const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
+    const getDistractorBin = (block) => block.dataset.distractorBin;
     const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
     for (const binUuid of distractorBins) {
@@ -276,10 +275,10 @@ window.PLOrderBlocks = function (uuid, options) {
       // there aren't pairing indicators in the dropzone
       return;
     }
-    const binUuid = block.getAttribute('data-distractor-bin');
+    const binUuid = block.dataset.distractorBin;
     const containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
     const containingIndicatorUuid = containingIndicator
-      ? containingIndicator.getAttribute('data-distractor-bin')
+      ? containingIndicator.dataset.distractorBin
       : null;
 
     if (!binUuid && containingIndicatorUuid) {

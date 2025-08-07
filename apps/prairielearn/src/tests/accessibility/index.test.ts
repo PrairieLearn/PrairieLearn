@@ -49,12 +49,13 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
   // the actual behavior at runtime.
   rewriter.on('a, button', {
     element(el) {
+      if (!(el instanceof HTMLElement)) return;
       // This is slightly different than what we do at runtime. In practice, we'll
       // only add an `aria-label` if the element is empty. But here, we can't
       // inspect the element's children, so we'll only use the presence of an
       // `aria-label` attribute to determine if we should add one.
       if (el.hasAttribute('aria-label')) return;
-      const title = el.getAttribute('data-bs-title');
+      const title = el.dataset.bsTitle;
       if (title) {
         el.setAttribute('aria-label', title);
       }
@@ -110,7 +111,7 @@ async function checkPage(url: string) {
     result.messages = result.messages.filter((m) => {
       // This doesn't appear to be an actual issue and isn't flagged by
       // other tools like https://validator.w3.org/nu.
-      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+      if (/<tt> element is not permitted as content under <(small|strong)>/.test(m.message)) {
         return false;
       }
 
