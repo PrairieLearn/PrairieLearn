@@ -4,7 +4,7 @@
 }
 
 body:has(div.app-container) {
-  overflow-y: unset !important;
+  overflow-y: hidden !important;
 }
 
 /* Styles when the side nav is hidden */
