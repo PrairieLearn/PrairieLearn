@@ -4,6 +4,7 @@ import { setTimeout as sleep } from 'timers/promises';
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import debugfn from 'debug';
 import type { Request } from 'express';
+import type { JWK } from 'jose';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
 import * as client from 'openid-client';
@@ -198,11 +199,19 @@ export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#L
 
 export async function getOpenidClientConfig(
   lti13_instance: Lti13Instance,
-  options: client.ModifyAssertionOptions | undefined = undefined,
+  options?: client.ModifyAssertionOptions,
 ): Promise<client.Configuration> {
+  let keyFromKeyStore: JWK;
+  try {
+    // Use the latest added key for signing (last element of array)
+    keyFromKeyStore = lti13_instance.keystore.keys.at(-1);
+  } catch {
+    throw new HttpStatusError(403, 'LTI 1.3 configuration error: unable to load key');
+  }
+
   const key = await webcrypto.subtle.importKey(
     'jwk',
-    lti13_instance.keystore.keys[0],
+    keyFromKeyStore,
     {
       name: 'RSASSA-PKCS1-v1_5',
       hash: 'SHA-256',
@@ -213,8 +222,9 @@ export async function getOpenidClientConfig(
 
   const privateKey: client.PrivateKey = {
     key,
-    kid: lti13_instance.keystore.keys[0].kid,
+    kid: keyFromKeyStore.kid,
   };
+  debug(`getOpenidClientConfig: using key with kid ${keyFromKeyStore.kid}`);
 
   const openidClientConfig = new client.Configuration(
     lti13_instance.issuer_params,
