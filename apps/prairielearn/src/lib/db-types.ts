@@ -37,9 +37,14 @@ export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
 // *******************************************************************************
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
+// *******************************************************************************
+// Sproc schemas. These should be alphabetized by their corresponding sproc name.
+// *******************************************************************************
 
 // Result of assessments_format_for_question sproc
-export const AssessmentsFormatForQuestionSchema = z.array(
+export const SprocAssessmentsFormatForQuestionSchema = z.array(
   z.object({
     label: z.string(),
     assessment_id: IdSchema,
@@ -50,7 +55,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
 );
 
 // Result of check_assessment_access sproc
-const AuthzAssessmentAccessRuleSchema = z.object({
+const SprocCheckAssessmentAccessSchema = z.object({
   credit: z.union([z.string(), z.literal('None')]),
   time_limit_min: z.union([z.string(), z.literal('—')]),
   start_date: z.union([z.string(), z.literal('—')]),
@@ -60,7 +65,7 @@ const AuthzAssessmentAccessRuleSchema = z.object({
 });
 
 // Result of authz_assessment sproc
-export const AuthzAssessmentSchema = z.object({
+export const SprocAuthzAssessmentSchema = z.object({
   authorized: z.boolean(),
   exam_access_end: DateFromISOString.nullable(),
   credit: z.number().nullable(),
@@ -72,11 +77,11 @@ export const AuthzAssessmentSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   active: z.boolean(),
   next_active_time: z.string().nullable(),
-  access_rules: z.array(AuthzAssessmentAccessRuleSchema),
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
 });
 
 // Result of authz_assessment_instance sproc
-export const AuthzAssessmentInstanceSchema = z.object({
+export const SprocAuthzAssessmentInstanceSchema = z.object({
   authorized: z.boolean(),
   authorized_edit: z.boolean(),
   exam_access_end: DateFromISOString.nullable(),
@@ -90,31 +95,31 @@ export const AuthzAssessmentInstanceSchema = z.object({
   show_closed_assessment_score: z.boolean(),
   active: z.boolean(),
   next_active_time: z.string().nullable(),
-  access_rules: z.array(AuthzAssessmentAccessRuleSchema),
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
 });
 
 // Result of authz_course sproc
-export const PermissionsCourseSchema = z.object({
+export const SprocAuthzCourseSchema = z.object({
   course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
   has_course_permission_own: z.boolean(),
   has_course_permission_edit: z.boolean(),
   has_course_permission_view: z.boolean(),
   has_course_permission_preview: z.boolean(),
 });
-export type PermissionsCourse = z.infer<typeof PermissionsCourseSchema>;
+export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
 // Result of authz_course_instance sproc
-export const PermissionsCourseInstanceSchema = z.object({
+export const SprocAuthzCourseInstanceSchema = z.object({
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
   has_student_access: z.boolean(),
   has_student_access_with_enrollment: z.boolean(),
 });
-export type PermissionsCourseInstance = z.infer<typeof PermissionsCourseInstanceSchema>;
+export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
 // Result of tags_for_question sproc
-export const TagsForQuestionSchema = z.array(
+export const SprocTagsForQuestionSchema = z.array(
   z.object({
     name: z.string(),
     id: IdSchema,
@@ -124,13 +129,11 @@ export const TagsForQuestionSchema = z.array(
 );
 
 // Result of instance_questions_next_allowed_grade sproc
-export const NextAllowedGradeSchema = z.object({
+export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_left_ms: z.coerce.number(),
   allow_grade_interval: z.string(),
 });
-
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
 
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding

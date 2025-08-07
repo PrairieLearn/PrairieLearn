@@ -16,8 +16,8 @@ import {
   EnumModeReasonSchema,
   EnumModeSchema,
   InstitutionSchema,
-  PermissionsCourseInstanceSchema,
-  PermissionsCourseSchema,
+  SprocAuthzCourseInstanceSchema,
+  SprocAuthzCourseSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
@@ -49,8 +49,8 @@ const SelectAuthzDataSchema = z.object({
   course: CourseSchema,
   institution: InstitutionSchema,
   course_instance: CourseInstanceSchema.nullable(),
-  permissions_course: PermissionsCourseSchema,
-  permissions_course_instance: PermissionsCourseInstanceSchema,
+  permissions_course: SprocAuthzCourseSchema,
+  permissions_course_instance: SprocAuthzCourseInstanceSchema,
 });
 
 const SelectUserSchema = z.object({

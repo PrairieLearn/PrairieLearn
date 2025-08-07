@@ -16,9 +16,9 @@ import {
   type Course,
   IdSchema,
   IntervalSchema,
-  NextAllowedGradeSchema,
   type Question,
   QuestionSchema,
+  SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -348,7 +348,7 @@ export async function gradeVariant(
     const resultNextAllowed = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
-      NextAllowedGradeSchema,
+      SprocInstanceQuestionsNextAllowedGradeSchema,
     );
     if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }

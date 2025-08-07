@@ -9,9 +9,9 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AuthzAssessmentInstanceSchema,
   FileSchema,
   GroupSchema,
+  SprocAuthzAssessmentInstanceSchema,
   UserSchema,
 } from '../lib/db-types.js';
 
@@ -28,7 +28,7 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   instance_role: z.string(),
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: AuthzAssessmentInstanceSchema,
+  authz_result: SprocAuthzAssessmentInstanceSchema,
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
