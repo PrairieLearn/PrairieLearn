@@ -26,7 +26,6 @@ pytest-cov==6.2.1
 pytest-repeat==0.9.4
 pytest-github-actions-annotate-failures==0.3.0
 pytest==8.4.1
-recommonmark==0.7.1
 regex==2025.7.34
 ruff==0.12.7
 schemdraw==0.21
