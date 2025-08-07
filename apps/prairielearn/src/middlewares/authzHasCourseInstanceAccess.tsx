@@ -10,5 +10,6 @@ export default createAuthzMiddleware({
     'has_student_access_with_enrollment',
   ],
   errorMessage: 'Access denied',
+  errorExplanation: 'This page requires course instance access.',
   unauthorizedUsers: 'block',
 });

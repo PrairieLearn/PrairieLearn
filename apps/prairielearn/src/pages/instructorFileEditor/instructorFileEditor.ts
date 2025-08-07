@@ -41,7 +41,8 @@ router.get(
   '/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_edit'],
-    errorMessage: 'Requires "Editor" permissions',
+    errorMessage: 'Access denied',
+    errorExplanation: 'This page requires course editor access.',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {

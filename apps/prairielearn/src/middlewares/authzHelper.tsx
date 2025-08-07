@@ -18,10 +18,12 @@ export const createAuthzMiddleware =
   ({
     oneOfPermissions,
     errorMessage,
+    errorExplanation,
     unauthorizedUsers,
   }: {
     oneOfPermissions: (keyof PageContext['authz_data'])[];
     errorMessage: string;
+    errorExplanation?: string;
     unauthorizedUsers: 'passthrough' | 'block';
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
@@ -39,8 +41,11 @@ export const createAuthzMiddleware =
     );
 
     if (effectiveAccess) {
-      return next();
-    } else if (authenticatedAccess && !req.cookies.pl_test_user) {
+      next();
+      return;
+    }
+
+    if (authenticatedAccess && !req.cookies.pl_test_user) {
       const pageContext = getPageContext(res.locals);
 
       res.status(403).send(
@@ -55,6 +60,7 @@ export const createAuthzMiddleware =
             <Hydrate>
               <AuthzAccessMismatch
                 errorMessage={errorMessage}
+                errorExplanation={errorExplanation}
                 oneOfPermissionKeys={oneOfPermissions}
                 authzData={authzData}
                 authnUser={pageContext.authn_user}
@@ -68,8 +74,9 @@ export const createAuthzMiddleware =
     }
 
     if (unauthorizedUsers === 'passthrough') {
-      return next();
+      next();
+      return;
     }
 
-    return next(new HttpStatusError(403, errorMessage));
+    next(new HttpStatusError(403, errorMessage));
   };

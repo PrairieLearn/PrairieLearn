@@ -24,7 +24,8 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
-    errorMessage: 'Access denied (must be a student data viewer)',
+    errorMessage: 'Access denied',
+    errorExplanation: 'This page requires student data view access.',
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {

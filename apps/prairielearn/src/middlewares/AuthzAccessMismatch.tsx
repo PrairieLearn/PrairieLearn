@@ -1,6 +1,4 @@
 import _ from 'lodash';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContext } from '../lib/client/page-context.js';
@@ -75,7 +73,22 @@ const PermissionsMeta = [
   },
 ] satisfies PermissionMeta[];
 
-const PermissionsTable = ({ permissions }: { permissions: PermissionData[] }) => {
+function getPermissionDescription(permissionKeys: (keyof PageContext['authz_data'])[]): string {
+  const descriptions = permissionKeys.map((key) => {
+    const permission = PermissionsMeta.find((p) => p.key === key);
+    return permission?.label.toLowerCase() || key.toString().replace(/_/g, ' ');
+  });
+
+  if (descriptions.length === 1) {
+    return descriptions[0];
+  } else if (descriptions.length === 2) {
+    return descriptions.join(' or ');
+  } else {
+    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
+  }
+}
+
+function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
     <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
       <thead>
@@ -112,35 +125,35 @@ const PermissionsTable = ({ permissions }: { permissions: PermissionData[] }) =>
       </tbody>
     </table>
   );
-};
+}
+function clearEffectiveUserCookies() {
+  removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
+  removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
+  removeCookieClient(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
+  removeCookieClient(['pl_requested_date', 'pl2_requested_date']);
+  setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+  window.location.reload();
+}
 
 export function AuthzAccessMismatch({
-  errorMessage,
+  errorMessage: _errorMessage,
+  errorExplanation,
   oneOfPermissionKeys,
   authzData,
   authnUser,
   authzUser,
 }: {
   errorMessage: string;
+  errorExplanation?: string;
   oneOfPermissionKeys: (keyof PageContext['authz_data'])[];
   authzData: PageContext['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
-  const clearEffectiveUserCookies = () => {
-    removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
-    removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
-    removeCookieClient(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookieClient(['pl_requested_date', 'pl2_requested_date']);
-    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    window.location.reload();
-  };
-
   const permissions: PermissionData[] = PermissionsMeta.map((permission) => {
     return {
       authnValue:
-        (authzData as any)['authn_' + permission.key] ??
-        (permission.type === 'string' ? '' : false),
+        authzData[`authn_${permission.key}`] ?? (permission.type === 'string' ? '' : false),
       value: authzData[permission.key] ?? (permission.type === 'string' ? '' : false),
       ...permission,
     };
@@ -162,40 +175,20 @@ export function AuthzAccessMismatch({
         <div class="card-body">
           <h2 class="mb-3 h4">Effective user has insufficient access</h2>
           <p>
-            The
+            {errorExplanation ||
+              `This page requires ${getPermissionDescription(oneOfPermissionKeys)} permissions.`}{' '}
+            The current effective user{' '}
             {authzUser ? (
-              <OverlayTrigger
-                overlay={
-                  <Tooltip>
-                    {authzUser.name} ({authzUser.uid})
-                  </Tooltip>
-                }
-              >
-                <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                  current effective user
-                </button>
-              </OverlayTrigger>
+              <strong>
+                {authzUser.name} ({authzUser.uid})
+              </strong>
             ) : (
-              ' current user '
-            )}
-            does
-            <OverlayTrigger overlay={<Tooltip>Error message: {errorMessage}</Tooltip>}>
-              <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                not have access
-              </button>
-            </OverlayTrigger>
-            to this page, but
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  {authnUser.name} ({authnUser.uid})
-                </Tooltip>
-              }
-            >
-              <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                your account
-              </button>
-            </OverlayTrigger>
+              <strong>your account</strong>
+            )}{' '}
+            does not have access to this page, but your account{' '}
+            <strong>
+              {authnUser.name} ({authnUser.uid})
+            </strong>{' '}
             does.
           </p>
 
