@@ -31,25 +31,6 @@ const router = Router({ mergeParams: true });
 
 const STATE_TEST = '-StateTest';
 
-//
-// Schema to validate OIDC, LTI
-//
-const OIDCAuthResponseSchema = z.object({
-  state: z.string(),
-  id_token: z.string(),
-  // also has utf8, authenticity_token, lti_storage_target
-});
-
-const OIDCLaunchFlowSchema = z.object({
-  iss: z.string(),
-  login_hint: z.string(),
-  lti_message_hint: z.string().optional(),
-  lti_deployment_id: z.string().optional(),
-  client_id: z.string().optional(),
-  target_link_uri: z.string(),
-  // also has canvas_environment, canvas_region, lti_storage_target
-});
-
 function getClaimUserAttributes({
   claim,
   lti13_instance,
@@ -88,6 +69,16 @@ function getClaimUserAttributes({
 
   return { uin, uid, name, email };
 }
+
+const OIDCLaunchFlowSchema = z.object({
+  iss: z.string(),
+  login_hint: z.string(),
+  lti_message_hint: z.string().optional(),
+  lti_deployment_id: z.string().optional(),
+  client_id: z.string().optional(),
+  target_link_uri: z.string(),
+  // also has canvas_environment, canvas_region, lti_storage_target
+});
 
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
@@ -144,19 +135,25 @@ async function launchFlow(req: Request, res: Response) {
     prompt: 'none',
   };
 
-  // If these exist, they must be included back:
+  // If these parameters were offered, they must be included back:
   // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
-  const optionalParams = ['lti_message_hint', 'lti_deployment_id'];
-  for (const key of optionalParams) {
+  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
     if (key in parameters) {
       requestParameters[key] = parameters[key];
     }
   }
+  debug(requestParameters);
 
   const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
   res.redirect(redirectTo.href);
   return;
 }
+
+const OIDCAuthResponseSchema = z.object({
+  state: z.string(),
+  id_token: z.string(),
+  // also has utf8, authenticity_token, lti_storage_target
+});
 
 router.post(
   '/callback',
