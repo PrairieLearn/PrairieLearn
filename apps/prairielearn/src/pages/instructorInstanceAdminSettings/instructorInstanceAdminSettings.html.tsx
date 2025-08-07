@@ -18,6 +18,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath,
   availableTimezones,
   origHash,
+  instanceGHLink,
   canEdit,
 }: {
   resLocals: Record<string, any>;
@@ -27,6 +28,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   availableTimezones: Timezone[];
   origHash: string;
+  instanceGHLink: string | null;
   canEdit: boolean;
 }) {
   return PageLayout({
@@ -71,6 +73,9 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
+              ${instanceGHLink
+                ? html`<a target="_blank" href="${instanceGHLink}">view on GitHub</a>`
+                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"

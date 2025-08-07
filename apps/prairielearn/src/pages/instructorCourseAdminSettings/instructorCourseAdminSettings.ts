@@ -12,6 +12,7 @@ import { flash } from '@prairielearn/flash';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
@@ -28,6 +29,17 @@ router.get(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
     const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
+
+    let courseGHLink: string | null = null;
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
+      courseGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/`;
+    } else if (res.locals.course.repository) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        courseGHLink = `${githubPrefix}/tree/${res.locals.course.branch}`;
+      }
+    }
 
     let origHash = '';
     if (courseInfoExists) {
@@ -60,6 +72,7 @@ router.get(
         courseInfoExists,
         availableTimezones,
         origHash,
+        courseGHLink,
       }),
     );
   }),
