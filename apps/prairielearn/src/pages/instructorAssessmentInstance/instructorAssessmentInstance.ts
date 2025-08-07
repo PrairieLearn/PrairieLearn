@@ -55,7 +55,6 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
-    errorExplanation: 'This page requires student data view access.',
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res, _next) => {
@@ -104,7 +103,6 @@ router.get(
   '/:filename',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
-    errorExplanation: 'This page requires student data view access.',
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
