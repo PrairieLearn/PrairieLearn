@@ -103,17 +103,20 @@ export async function generatePrompt({
       }
       rubric_info += '\n';
     }
-    messages.push({
-      role: 'system',
-      content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
-        (example_submissions.length > 0
-          ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : ''),
-    }, {
-      role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
-    });
+    messages.push(
+      {
+        role: 'system',
+        content:
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          (example_submissions.length > 0
+            ? ' I will provide some example student responses and their corresponding selected rubric items.'
+            : ''),
+      },
+      {
+        role: 'system',
+        content: `Here are the rubric items:\n\n${rubric_info}`,
+      },
+    );
   } else {
     messages.push({
       role: 'system',

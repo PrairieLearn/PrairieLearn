@@ -47,7 +47,7 @@ export function HeadContents(titleOptions: TitleOptions) {
   `;
 }
 
-// e.g. "hello_world" => "Hello World"
+/** e.g. "hello_world" => "Hello World" */
 function displayFriendlyPage(page: string) {
   return page
     .toLowerCase()

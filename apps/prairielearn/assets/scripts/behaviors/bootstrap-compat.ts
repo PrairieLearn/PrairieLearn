@@ -1,5 +1,6 @@
 import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
+// eslint-disable-next-line no-console
 console.log('Enabling Bootstrap compatibility layer.');
 
 // The following list of attributes was compiled from the Bootstrap 4 docs:

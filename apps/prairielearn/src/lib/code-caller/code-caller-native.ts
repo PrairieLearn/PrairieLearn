@@ -69,30 +69,29 @@ export interface ErrorData {
 
 export type CodeCallerError = Error & { data?: ErrorData };
 
-/**
-  Internal state machine
-  ======================
+/*
+Internal state machine
+======================
 
-  The list of internal states and the possible transitions are:
+The list of internal states and the possible transitions are:
 
-  CREATED: Child process is not yet started.
-    -> WAITING, EXITED
+CREATED: Child process is not yet started.
+  -> WAITING, EXITED
 
-  WAITING: Child process is running but no call is active, everything is healthy.
-    -> IN_CALL, RESTARTING, EXITING, EXITED
+WAITING: Child process is running but no call is active, everything is healthy.
+  -> IN_CALL, RESTARTING, EXITING, EXITED
 
-  IN_CALL: A call is currently running.
-    -> WAITING, EXITING, EXITED
+IN_CALL: A call is currently running.
+  -> WAITING, EXITING, EXITED
 
-  RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
-    -> WAITING, EXITING
+RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
+  -> WAITING, EXITING
 
-  EXITING: The child process is being terminated.
-    -> EXITED
+EXITING: The child process is being terminated.
+  -> EXITED
 
-  EXITED: The child process has exited.
-    -> none
-
+EXITED: The child process has exited.
+  -> none
 */
 
 export class CodeCallerNative implements CodeCaller {

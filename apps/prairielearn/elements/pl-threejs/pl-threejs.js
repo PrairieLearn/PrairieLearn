@@ -66,7 +66,7 @@ function PLThreeJS(options) {
   this.bodyGroup.add(this.bodyObjectGroup);
 
   // lights
-  this.scene.add(new THREE.AmbientLight(0xAAAAAA)); //ambient
+  this.scene.add(new THREE.AmbientLight(0xaaaaaa)); //ambient
   this.spaceGroup.add(this.makeLights()); // directional
 
   // shadows
@@ -564,7 +564,7 @@ PLThreeJS.prototype.onResize = function () {
 
 PLThreeJS.prototype.makeLights = function () {
   function makeLight(p) {
-    var light = new THREE.DirectionalLight(0xFFFFFF, 0.5);
+    var light = new THREE.DirectionalLight(0xffffff, 0.5);
     light.castShadow = true;
     light.position.copy(p);
     return light;
@@ -588,7 +588,7 @@ PLThreeJS.prototype.makeScreen = function () {
     plane.position.set(0, 0, -5);
     part.add(plane);
 
-    var grid = new THREE.GridHelper(10, 10, 0xDDDDDD, 0xDDDDDD);
+    var grid = new THREE.GridHelper(10, 10, 0xdddddd, 0xdddddd);
     grid.position.set(0, 0, -5);
     grid.quaternion.setFromEuler(new THREE.Euler(Math.PI / 2, 0, 0, 'XYZ'));
     grid.transparent = true;
@@ -620,15 +620,15 @@ PLThreeJS.prototype.makeFrame = function () {
     if (whichAxis === 'x' || whichAxis === 'X') {
       geometry.rotateZ(Math.PI / 2);
       geometry.translate(0.5, 0, 0);
-      material.color = new THREE.Color(0xFF0000);
+      material.color = new THREE.Color(0xff0000);
     } else if (whichAxis === 'y' || whichAxis === 'Y') {
       geometry.rotateX(Math.PI);
       geometry.translate(0, 0.5, 0);
-      material.color = new THREE.Color(0x00FF00);
+      material.color = new THREE.Color(0x00ff00);
     } else if (whichAxis === 'z' || whichAxis === 'Z') {
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0, 0.5);
-      material.color = new THREE.Color(0x0000FF);
+      material.color = new THREE.Color(0x0000ff);
     } else {
       throw "argument to whichAxis() must be 'x', 'y', or 'z'";
     }

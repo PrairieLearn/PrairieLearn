@@ -90,6 +90,9 @@ export function emitExternalImageCapture({
  * Prevents cross-site scripting and directory traversal attacks.
  *
  * @param msg - The message to validate.
+ * @param msg.variant_id - The variant ID.
+ * @param msg.variant_token - The variant token.
+ * @param msg.file_name - The file name.
  *
  * @returns true if the message is valid, false otherwise.
  */

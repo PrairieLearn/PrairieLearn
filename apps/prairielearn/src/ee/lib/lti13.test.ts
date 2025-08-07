@@ -55,7 +55,10 @@ function productApi(req: Request, res: Response) {
   if (page > 1) {
     links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
   }
-  links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`, `<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+  links.push(
+    `<${baseUrl}?page=1&limit=${limit}>; rel="first"`,
+    `<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`,
+  );
 
   res.set('Link', links.join(', '));
 

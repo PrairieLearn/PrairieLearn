@@ -1,3 +1,5 @@
+import crypto from 'node:crypto';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -113,6 +115,11 @@ router.post(
 
 export default router;
 
-function randomString() {
-  return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
+/** Generates a cryptographically secure random alphanumeric string. */
+function randomString(length = 32) {
+  // Each byte is two hex characters, so we need Math.ceil(length / 2)
+  return crypto
+    .randomBytes(Math.ceil(length / 2))
+    .toString('hex')
+    .slice(0, length);
 }

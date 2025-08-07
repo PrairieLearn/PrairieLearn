@@ -170,7 +170,7 @@ interface QuestionUrls {
  * @param variant The variant object for this question.
  * @param question The question.
  * @param instance_question The instance question.
- * @return An object containing the named URLs.
+ * @returns An object containing the named URLs.
  */
 export function buildQuestionUrls(
   urlPrefix: string,

@@ -55,7 +55,7 @@ function resetRubricImportFormListeners() {
       importRubricSettingsPopoverForm,
     });
 
-    importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+    importRubricSettingsPopoverForm.addEventListener('submit', async (event) => {
       const { file_upload_max_bytes } = decodeData('rubric-settings-data');
 
       event.preventDefault();
@@ -75,22 +75,8 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      // Read the rubric JSON file content
-      const reader = new FileReader();
-
-      reader.onerror = () => {
-        alert('Error reading file content.');
-        return;
-      };
-
-      reader.onload = () => {
-        const fileContent = reader.result;
-
-        if (typeof fileContent !== 'string') {
-          alert('Error reading file content.');
-          return;
-        }
-
+      try {
+        const fileContent = await fileData.text();
         if (fileContent.trim() === '') {
           return;
         }
@@ -188,10 +174,9 @@ function resetRubricImportFormListeners() {
 
         // Close the popover
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
-      };
-
-      // eslint-disable-next-line unicorn/prefer-blob-reading-methods
-      reader.readAsText(fileData);
+      } catch {
+        alert('Error reading file content.');
+      }
     });
 
     importRubricButton.addEventListener(
@@ -829,7 +814,7 @@ function rowDragOver(event) {
 /**
  * Create a new rubric item row with default values or based on a provided rubric item.
  *
- * @param {Object|null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
+ * @param {object | null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
  */
 function addRubricItemRow(rubricItem = null) {
   const modal = document.querySelector('#rubric-settings-form');
@@ -924,7 +909,7 @@ function addRubricItemRow(rubricItem = null) {
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
  *
- * @param {Object} elements - An object of elements, with keys as element names and values as the elements themselves.
+ * @param {object} elements - An object of elements, with keys as element names and values as the elements themselves.
  */
 function ensureElementsExist(elements) {
   for (const elementName in elements) {

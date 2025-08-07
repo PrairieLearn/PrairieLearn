@@ -8,6 +8,7 @@ import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
@@ -88,6 +89,7 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      jsdoc,
       'react-hooks': reactHooks,
       vitest,
       'jsx-a11y-x': jsxA11yX,
@@ -105,6 +107,23 @@ export default tseslint.config([
     },
 
     settings: {
+      jsdoc: {
+        exemptDestructuredRootsFromChecks: true,
+        contexts: [
+          // We don't want to require documentation of a 'locals' (res.locals) variable
+          // AST Parser: https://github.com/es-joy/jsdoccomment
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionDeclaration',
+          },
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionExpression',
+          },
+          'ArrowFunctionExpression',
+          'TSDeclareFunction',
+        ],
+      },
       'jsx-a11y-x': {
         attributes: {
           for: ['for'],
@@ -145,6 +164,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-console': ['error', { allow: ['warn', 'error', 'table', 'trace'] }],
       'no-duplicate-imports': 'error',
 
       // Enforce alphabetical order of import specifiers within each import group.
@@ -268,10 +288,15 @@ export default tseslint.config([
       // Duplicated from other lint rules
       'unicorn/no-this-assignment': 'off',
       'unicorn/prefer-module': 'off',
+      'unicorn/no-static-only-class': 'off',
+
+      // https://github.com/PrairieLearn/PrairieLearn/pull/12545/files#r2252069292
+      'unicorn/no-for-loop': 'off',
 
       // Conflicts with prettier
       'unicorn/template-indent': 'off',
       'unicorn/no-nested-ternary': 'off',
+      'unicorn/number-literal-case': 'off',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
@@ -384,7 +409,7 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -394,6 +419,38 @@ export default tseslint.config([
           message: 'module.exports should not be used in TypeScript files',
         },
       ],
+      ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/convert-to-jsdoc-comments': [
+        'error',
+        {
+          enforceJsdocLineStyle: 'single',
+          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
+          contextsBeforeAndAfter: ['TSPropertySignature'],
+          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
+        },
+      ],
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      // Potential future rules:
+      // 'jsdoc/informative-docs': ['error'],
+      // 'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
+      'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    files: ['**/*.js'],
+    rules: {
+      ...jsdoc.configs['flat/recommended-typescript-flavor-error'].rules,
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/tag-lines': 'off',
     },
   },
   {
@@ -409,7 +466,12 @@ export default tseslint.config([
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
-      'unicorn/prefer-module': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
+    rules: {
+      'no-console': 'off',
     },
   },
   {
