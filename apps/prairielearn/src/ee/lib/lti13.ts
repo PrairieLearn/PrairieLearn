@@ -1,10 +1,13 @@
+import { webcrypto } from 'crypto';
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
+import debugfn from 'debug';
 import type { Request } from 'express';
+import type { JWK } from 'jose';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
-import { Issuer, type TokenSet } from 'openid-client';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -17,11 +20,13 @@ import {
 } from '@prairielearn/postgres';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
+import { config } from '../../lib/config.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   DateFromISOString,
   Lti13CourseInstanceSchema,
+  type Lti13Instance,
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
@@ -31,6 +36,7 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
 
+const debug = debugfn('prairielearn:lti13');
 const sql = loadSqlEquiv(import.meta.url);
 
 // Scope list at
@@ -191,6 +197,50 @@ export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
 export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
 
+export async function getOpenidClientConfig(
+  lti13_instance: Lti13Instance,
+  options?: client.ModifyAssertionOptions,
+): Promise<client.Configuration> {
+  let keyFromKeyStore: JWK;
+  try {
+    // Use the latest added key for signing (last element of array)
+    keyFromKeyStore = lti13_instance.keystore.keys.at(-1);
+  } catch {
+    throw new HttpStatusError(403, 'LTI 1.3 configuration error: unable to load key');
+  }
+
+  const key = await webcrypto.subtle.importKey(
+    'jwk',
+    keyFromKeyStore,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256',
+    },
+    true, // extractable
+    ['sign'],
+  );
+
+  const privateKey: client.PrivateKey = {
+    key,
+    kid: keyFromKeyStore.kid,
+  };
+  debug(`getOpenidClientConfig: using key with kid ${keyFromKeyStore.kid}`);
+
+  const openidClientConfig = new client.Configuration(
+    lti13_instance.issuer_params,
+    lti13_instance.client_params.client_id,
+    lti13_instance.client_params,
+    client.PrivateKeyJwt(privateKey, options),
+  );
+
+  // Only for testing
+  if (config.devMode) {
+    client.allowInsecureRequests(openidClientConfig);
+  }
+
+  return openidClientConfig;
+}
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;
@@ -350,7 +400,7 @@ export async function validateLti13CourseInstance(
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: TokenSet = lti13_instance.access_tokenset;
+  let tokenSet: client.TokenEndpointResponse = lti13_instance.access_tokenset;
 
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
@@ -358,41 +408,52 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
+    debug('getAccessToken: returning cached key');
     return tokenSet.access_token;
   }
 
-  // Fetch the token
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+  const modAssertion: client.ModifyAssertionOptions = {
+    [client.modifyAssertion]: (_header, payload) => {
+      // Canvas requires the `aud` claim the be (or contain) the token endpoint:
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
+      // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
+      //
+      // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
+      // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
+      //
+      // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
+      //
+      // However, `openid-client` changed their behavior in the following commit:
+      // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
+      //
+      // There wasn't a justification provided and this seems to deviate from the OIDC spec.
+      // See a discussion here: https://github.com/panva/openid-client/discussions/730
+      payload.aud = [
+        ...new Set(
+          [lti13_instance.issuer_params.issuer, lti13_instance.issuer_params.token_endpoint].filter(
+            Boolean,
+          ),
+        ),
+      ];
 
-  tokenSet = await client.grant(
-    {
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
+      // FUTURE WORK: Tool SHOULD include the deployment ID as part of the JWT to request a token.
+      // https://www.imsglobal.org/spec/lti/v1p3/#deployment-id
+      // payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     },
-    {
-      clientAssertionPayload: {
-        // Canvas requires the `aud` claim the be (or contain) the token endpoint:
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/client_credentials_provider.rb#L26-L29
-        // https://github.com/instructure/canvas-lms/blob/995169713440bd8305854d440b336911a734c38f/lib/canvas/oauth/asymmetric_client_credentials_provider.rb#L24
-        //
-        // From what we can tell, the OIDC spec requires this as well, see "private key jwt"
-        // here: https://openid.net/specs/openid-connect-core-1_0.html#rfc.section.9
-        //
-        // "The Audience SHOULD be the URL of the Authorization Server's Token Endpoint."
-        //
-        // However, `openid-client` changed their behavior in the following commit:
-        // https://github.com/panva/openid-client/commit/0b05217e7f283b75fd93c27c0f8c647f37501a33
-        //
-        // There wasn't a justification provided and this seems to deviate from the OIDC spec.
-        // See a discussion here: https://github.com/panva/openid-client/discussions/730
-        aud: [...new Set([issuer.issuer, issuer.token_endpoint].filter(Boolean))],
-      },
-    },
-  );
+  };
+
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance, modAssertion);
+
+  // Fetch the token
+  tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
+    scope: TOKEN_SCOPES.join(' '),
+  });
+
+  debug('getAccessToken');
+  debug(tokenSet);
 
   // Store the token for reuse
-  const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+  const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
 
   await queryAsync(sql.update_token, {
     lti13_instance_id,
