@@ -17,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const SelectAndAuthzAssessmentSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
+  assessment_module: AssessmentModuleSchema.nullable(),
   authz_result: AuthzAssessmentSchema,
   assessment_label: z.string(),
 });

@@ -18,7 +18,7 @@ const SelectAndAuthSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
   tags: TagsForQuestionSchema.nullable(),
-  open_issue_count: z.string(),
+  open_issue_count: z.coerce.number(),
 });
 
 const SelectAndAuthWithCourseInstanceSchema = z.object({
@@ -26,7 +26,7 @@ const SelectAndAuthWithCourseInstanceSchema = z.object({
   topic: TopicSchema,
   tags: TagsForQuestionSchema.nullable(),
   assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  open_issue_count: z.string(),
+  open_issue_count: z.coerce.number(),
 });
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
