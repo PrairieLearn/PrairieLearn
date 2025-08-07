@@ -11,12 +11,10 @@ export type CheckablePermissionKeys = Extract<
   | 'has_course_permission_view'
   | 'has_course_permission_edit'
   | 'has_course_permission_own'
-  | 'has_student_access'
-  | 'has_student_access_with_enrollment'
   | 'has_course_instance_permission_view'
   | 'has_course_instance_permission_edit'
-  | 'course_role'
-  | 'course_instance_role',
+  | 'has_student_access'
+  | 'has_student_access_with_enrollment',
   keyof PageContext['authz_data']
 >;
 
@@ -169,7 +167,7 @@ export function AuthzAccessMismatch({
   });
 
   const [oneOfPermissions, allOtherPermissions] = _.partition(permissions, (permission) =>
-    oneOfPermissionKeys.includes(permission.key),
+    (oneOfPermissionKeys as string[]).includes(permission.key),
   );
 
   // Only show the permissions that are different between authn and authz
