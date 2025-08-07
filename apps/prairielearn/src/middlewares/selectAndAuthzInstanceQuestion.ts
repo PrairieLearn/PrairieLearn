@@ -12,6 +12,7 @@ import {
   AssessmentSetSchema,
   FileSchema,
   GroupSchema,
+  IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
@@ -23,12 +24,12 @@ import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../li
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionInfoSchema = z.object({
-  id: z.number(),
+  id: IdSchema,
   prev_instance_question: z.object({
-    id: z.number().nullable(),
+    id: IdSchema.nullable(),
   }),
   next_instance_question: z.object({
-    id: z.number().nullable(),
+    id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
   question_number: z.string(),
