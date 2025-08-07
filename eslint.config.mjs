@@ -260,6 +260,7 @@ export default tseslint.config([
       'unicorn/no-negated-condition': 'off', // 150+ violations
       'unicorn/prefer-global-this': 'off', // 150+ violations
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
+
       // 20 - 100 violations
       'unicorn/prefer-spread': 'off',
       'unicorn/prefer-number-properties': 'off',
@@ -272,6 +273,7 @@ export default tseslint.config([
       'unicorn/consistent-function-scoping': 'off',
       'unicorn/consistent-assert': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
+
       // TODO:
       'unicorn/prefer-string-replace-all': 'off',
       'unicorn/prefer-string-slice': 'off',
@@ -297,7 +299,6 @@ export default tseslint.config([
           'unicorn/prefer-add-event-listener',
         ].map((k) => [k, 'off']),
       ),
-      // 20 - 100 violations //
 
       // TODO:
       'unicorn/prefer-event-target': 'off',
