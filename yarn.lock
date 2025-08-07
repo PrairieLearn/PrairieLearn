@@ -2355,6 +2355,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@mathjax/mathjax-newcm-font@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "@mathjax/mathjax-newcm-font@npm:4.0.0"
+  checksum: 10c0/a1bb226df0240591b831885f614ff699278dbe9489b38bbf3d18e742e2c283edf10aae856328af84f8c7856a2b0a1b78e18807b8b078afc88786928235f7c6c7
+  languageName: node
+  linkType: hard
+
 "@napi-rs/wasm-runtime@npm:^0.2.11":
   version: 0.2.11
   resolution: "@napi-rs/wasm-runtime@npm:0.2.11"
@@ -3628,7 +3635,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^3.2.4"
     isomorphic-dompurify: "npm:^2.26.0"
     marked: "npm:^16.1.1"
-    mathjax: "npm:^3.2.2"
+    mathjax: "npm:^4.0.0"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.9.2"
     vitest: "npm:^3.2.4"
@@ -3642,7 +3649,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@vitest/coverage-v8": "npm:^3.2.4"
     marked: "npm:^16.1.1"
-    mathjax: "npm:^3.2.2"
+    mathjax: "npm:^4.0.0"
     tsx: "npm:^4.20.3"
     typescript: "npm:^5.9.2"
     vitest: "npm:^3.2.4"
@@ -3975,7 +3982,7 @@ __metadata:
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.1.0"
     marked: "npm:^16.1.1"
-    mathjax: "npm:^3.2.2"
+    mathjax: "npm:^4.0.0"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.0.7"
@@ -12471,10 +12478,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mathjax@npm:^3.2.2":
-  version: 3.2.2
-  resolution: "mathjax@npm:3.2.2"
-  checksum: 10c0/26c8557f948d1ef76ce2b0bc1ad66128c9a78a7e4f3d96587f90b23dd25cfbf14c9b58a1c75a7d8d35f92b72bab054eab61873443babe646b7bfd6b40bb717e6
+"mathjax@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "mathjax@npm:4.0.0"
+  dependencies:
+    "@mathjax/mathjax-newcm-font": "npm:^4.0.0"
+  checksum: 10c0/8e91d59bb070420bd4c8e032cdd98f518b7e331621611021f15ff49a93df20ee300ac0f403bd6cb9c8bdbddb3a279344c412af16e47d9b4c3c328a72012636e2
   languageName: node
   linkType: hard
 
