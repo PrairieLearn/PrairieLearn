@@ -67,7 +67,7 @@ const MAX_ZOOM_SCALE = 5;
 
     createExternalCaptureListeners() {
       const mobileCaptureButtons = this.getMobileCaptureOptionButtons();
-      
+
       for (const captureButton of mobileCaptureButtons) {
         captureButton.addEventListener('inserted.bs.popover', () => {
           this.generateQrCode();
@@ -82,16 +82,13 @@ const MAX_ZOOM_SCALE = 5;
       const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
         '.js-capture-buttons-dropdown .js-capture-with-local-camera-button',
       );
-      
+
       this.ensureElementsExist({
         captureWithLocalCameraButtonHorizontal,
-        captureWithLocalCameraButtonDropdown
+        captureWithLocalCameraButtonDropdown,
       });
 
-      return [
-        captureWithLocalCameraButtonHorizontal,
-        captureWithLocalCameraButtonDropdown
-      ];
+      return [captureWithLocalCameraButtonHorizontal, captureWithLocalCameraButtonDropdown];
     }
 
     getMobileCaptureOptionButtons() {
@@ -104,13 +101,10 @@ const MAX_ZOOM_SCALE = 5;
 
       this.ensureElementsExist({
         captureWithMobileDeviceButtonHorizontal,
-        captureWithMobileDeviceButtonDropdown
+        captureWithMobileDeviceButtonDropdown,
       });
 
-      return [
-        captureWithMobileDeviceButtonHorizontal,
-        captureWithMobileDeviceButtonDropdown
-      ];
+      return [captureWithMobileDeviceButtonHorizontal, captureWithMobileDeviceButtonDropdown];
     }
 
     createLocalCameraCaptureListeners() {
@@ -246,7 +240,7 @@ const MAX_ZOOM_SCALE = 5;
       this.ensureElementsExist({
         uploadedImageContainer,
       });
-    
+
       this.loadCapturePreviewFromDataUrl({
         dataUrl: null,
         originalCapture: true,
@@ -272,7 +266,7 @@ const MAX_ZOOM_SCALE = 5;
 
       this.ensureElementsExist({
         deleteCapturedImageButton,
-        uploadedImageContainer
+        uploadedImageContainer,
       });
       const popover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
 
@@ -289,11 +283,11 @@ const MAX_ZOOM_SCALE = 5;
         this.setCaptureChangedFlag(true);
 
         popover.hide();
-      }
+      };
 
       const cancelDeletion = () => {
-        popover.hide(); 
-      }
+        popover.hide();
+      };
 
       deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
         const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
@@ -472,7 +466,7 @@ const MAX_ZOOM_SCALE = 5;
         );
 
         const mobileDeviceCaptureOptionButtons = this.getLocalCaptureOptionButtons();
-        
+
         // Dismiss the QR code popover if it is open.
         for (const captureButton of mobileDeviceCaptureOptionButtons) {
           const popover = bootstrap.Popover.getInstance(captureButton);
@@ -504,7 +498,7 @@ const MAX_ZOOM_SCALE = 5;
           ${content}
         </div>
       `;
-    };
+    }
 
     /**
      * Updates the uploaded image container to display that no image has been captured yet.
@@ -596,14 +590,13 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    /**
-     * TODO Document this
-     *
-     * @param {boolean} showRetakeText
-     */
     setShowRetakeDropdown(showRetakeDropdown) {
-      const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector('.js-capture-buttons-horizontal');
-      const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector('.js-capture-buttons-dropdown');
+      const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-horizontal',
+      );
+      const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
+        '.js-capture-buttons-dropdown',
+      );
 
       this.ensureElementsExist({
         captureButtonsHorizontalDiv,
@@ -667,7 +660,7 @@ const MAX_ZOOM_SCALE = 5;
           { once: true },
         );
       }
-      
+
       if (this.editable) {
         this.setShowDeletionButton(dataUrl ? true : false);
       } else {
@@ -686,7 +679,6 @@ const MAX_ZOOM_SCALE = 5;
           zoomOutButton,
         });
         zoomButtonsContainer.classList.remove('d-none');
-
 
         if (!this.imageCapturePreviewPanzoom) {
           // Initialize Panzoom on the parent of the captured image element, since
