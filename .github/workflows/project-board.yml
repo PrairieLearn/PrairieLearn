@@ -7,7 +7,7 @@ jobs:
   add-to-project:
     name: Add pull request to project
     runs-on: ubuntu-latest
-    if: contains('["miguelaenlle", "mwest1066", "mylesw27", "nwalters512", "reteps"]', github.triggering_actor)
+    if: contains('["miguelaenlle", "mwest1066", "mylesw27", "nwalters512", "reteps"]', github.actor)
     steps:
       - uses: actions/add-to-project@v1.0.2
         with:
