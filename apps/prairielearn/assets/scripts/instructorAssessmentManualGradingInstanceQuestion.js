@@ -75,7 +75,6 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      // Read the rubric JSON file content using modern blob API
       try {
         const fileContent = await fileData.text();
         if (fileContent.trim() === '') {
