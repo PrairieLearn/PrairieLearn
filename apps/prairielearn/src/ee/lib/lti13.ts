@@ -2,6 +2,7 @@ import { webcrypto } from 'crypto';
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
+import debugfn from 'debug';
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
@@ -34,6 +35,7 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
 
+const debug = debugfn('prairielearn:lti13');
 const sql = loadSqlEquiv(import.meta.url);
 
 // Scope list at
@@ -396,6 +398,7 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
+    debug('getAccessToken: returning cached key');
     return tokenSet.access_token;
   }
 
@@ -422,6 +425,10 @@ export async function getAccessToken(lti13_instance_id: string) {
           ),
         ),
       ];
+
+      // FUTURE WORK: Tool SHOULD include the deployment ID as part of the JWT to request a token.
+      // https://www.imsglobal.org/spec/lti/v1p3/#deployment-id
+      // payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id']
     },
   };
 
@@ -431,6 +438,9 @@ export async function getAccessToken(lti13_instance_id: string) {
   tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
     scope: TOKEN_SCOPES.join(' '),
   });
+
+  debug('getAccessToken');
+  debug(tokenSet);
 
   // Store the token for reuse
   const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();

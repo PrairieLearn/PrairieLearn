@@ -47,7 +47,7 @@ const OIDCLaunchFlowSchema = z.object({
   lti_deployment_id: z.string().optional(),
   client_id: z.string().optional(),
   target_link_uri: z.string(),
-  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
+  // also has canvas_environment, canvas_region, lti_storage_target
 });
 
 function getClaimUserAttributes({
@@ -176,9 +176,9 @@ router.post(
     client.useIdTokenResponseType(openidClientConfig);
 
     // URL href doesn't matter, openid-client only uses the url.hash to pass properties
+    // into client.implicitAuthentication
     const url = new URL('https://example.com/');
     url.hash = new URLSearchParams(req.body).toString();
-    debug(url);
 
     const IDToken = await client.implicitAuthentication(
       openidClientConfig,
@@ -212,6 +212,7 @@ router.post(
     };
     await queryAsync(sql.verify_upsert, params);
 
+    debug(lti13_claims);
     // If we get here, auth succeeded and lti13_claims is populated
 
     // Put the LTI 1.3 claims in the session
