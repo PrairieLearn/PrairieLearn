@@ -140,19 +140,19 @@ $(function() {
         </button>
         {{/mobile_capture_enabled}}
       </div>
-      <div class="js-capture-buttons-dropdown dropdown d-none">
-        <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="retake-photo-button" data-bs-toggle="dropdown" aria-expanded="false">
-          Retake...
-        </button>
-        <ul class="dropdown-menu" aria-labelledby="retake-photo-button">
-          <button
-            type="button"
-            class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
-          >
-            <i class="bi bi-camera-fill me-1"></i>
-            <span>Use webcam</span>
+      {{#mobile_capture_enabled}}
+        <div class="js-capture-buttons-dropdown dropdown d-none">
+          <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="retake-photo-button" data-bs-toggle="dropdown" aria-expanded="false">
+            Retake...
           </button>
-          {{#mobile_capture_enabled}}
+          <ul class="dropdown-menu" aria-labelledby="retake-photo-button">
+            <button
+              type="button"
+              class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
+            >
+              <i class="bi bi-camera-fill me-1"></i>
+              <span>Use webcam</span>
+            </button>
             <button 
               type="button" 
               class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
@@ -190,9 +190,9 @@ $(function() {
               <i class="bi bi-qr-code-scan me-1"></i>
               <span>Use phone</span>
             </button>
-          {{/mobile_capture_enabled}}
-        </ul>
-      </div>
+          </ul>
+        </div>
+      {{/mobile_capture_enabled}}
       <button
         type="button"
         class="js-delete-captured-image-button btn btn-sm btn-danger d-none"

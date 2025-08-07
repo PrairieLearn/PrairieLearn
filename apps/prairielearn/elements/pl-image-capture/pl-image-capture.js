@@ -112,25 +112,41 @@ const MAX_ZOOM_SCALE = 5;
       });
     }
 
-    /** Get the local capture buttons in the horizontal and dropdown button layouts */
+    /** Retrieve the local capture button elements for the horizontal and dropdown layouts. */
     getUseLocalCaptureButtons() {
+      const useLocalCaptureButtons = [];
+
       const captureWithLocalCameraButtonHorizontal = this.imageCaptureDiv.querySelector(
         '.js-capture-buttons-horizontal .js-capture-with-local-camera-button',
-      );
-      const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-dropdown .js-capture-with-local-camera-button',
       );
 
       this.ensureElementsExist({
         captureWithLocalCameraButtonHorizontal,
-        captureWithLocalCameraButtonDropdown,
       });
 
-      return [captureWithLocalCameraButtonHorizontal, captureWithLocalCameraButtonDropdown];
+      useLocalCaptureButtons.push(captureWithLocalCameraButtonHorizontal);
+
+      if (this.mobile_capture_enabled) {
+        const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-dropdown .js-capture-with-local-camera-button',
+        );
+
+        this.ensureElementsExist({
+          captureWithLocalCameraButtonDropdown
+        });
+
+        useLocalCaptureButtons.push(captureWithLocalCameraButtonDropdown);
+      }
+
+      return useLocalCaptureButtons;
     }
 
-    /** Get the mobile capture buttons in the horizontal and dropdown button layouts */
+    /** Retrieve the mobile capture button elements for the horizontal and dropdown layouts. */
     getMobileCaptureButtons() {
+      if (!this.mobile_capture_enabled) {
+        throw new Error('Mobile capture is not enabled, cannot get mobile capture buttons');
+      }
+
       const captureWithMobileDeviceButtonHorizontal = this.imageCaptureDiv.querySelector(
         '.js-capture-buttons-horizontal .js-capture-with-mobile-device-button',
       );
@@ -267,6 +283,7 @@ const MAX_ZOOM_SCALE = 5;
         deleteCapturedImageButton,
         uploadedImageContainer,
       });
+      
       const popover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
 
       const confirmDeletion = () => {
@@ -507,7 +524,7 @@ const MAX_ZOOM_SCALE = 5;
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
 
       const placeholderMessage = `
-        <span class="text-muted text-center small">
+        <span class="small text-muted text-center">
           No image captured yet.
           <br/>
           Use a clean sheet of paper.
@@ -573,10 +590,10 @@ const MAX_ZOOM_SCALE = 5;
         hiddenCaptureInput,
       });
 
-      if (dataUrl && !hiddenCaptureInput.value && this.mobile_capture_enabled) {
-        this.setShowRetakeDropdown(true);
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.setIsRetaking(true);
       } else if (!dataUrl) {
-        this.setShowRetakeDropdown(false);
+        this.setIsRetaking(false);
       }
 
       if (dataUrl) {
@@ -586,25 +603,37 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    setShowRetakeDropdown(showRetakeDropdown) {
-      const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-horizontal',
-      );
-      const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-dropdown',
-      );
+    /** */
+    setIsRetaking(isRetaking) {
+      if (this.mobile_capture_enabled) {
+        const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal',
+        );
+        const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-dropdown',
+        );
 
-      this.ensureElementsExist({
-        captureButtonsHorizontalDiv,
-        captureButtonsDropdownDiv,
-      });
+        this.ensureElementsExist({
+          captureButtonsHorizontalDiv,
+          captureButtonsDropdownDiv,
+        });
 
-      if (showRetakeDropdown) {
-        captureButtonsHorizontalDiv.classList.replace('d-flex', 'd-none');
+        if (isRetaking) {
+          captureButtonsHorizontalDiv.classList.replace('d-flex', 'd-none');
+        } else {
+          captureButtonsHorizontalDiv.classList.replace('d-none', 'd-flex');
+        }
+        captureButtonsDropdownDiv.classList.toggle('d-none', !isRetaking);
       } else {
-        captureButtonsHorizontalDiv.classList.replace('d-none', 'd-flex');
+        const captureWithLocalCameraButtonHorizontalSpan = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal .js-capture-with-local-camera-button span',
+        );
+        this.ensureElementsExist({
+          captureWithLocalCameraButtonHorizontalSpan  
+        });
+        captureWithLocalCameraButtonHorizontalSpan.innerHTML = isRetaking ? 
+          'Retake with webcam' : 'Use webcam';
       }
-      captureButtonsDropdownDiv.classList.toggle('d-none', !showRetakeDropdown);
     }
 
     /**
