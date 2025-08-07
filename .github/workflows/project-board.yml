@@ -2,7 +2,9 @@
 # Open-source contributors should not worry about this workflow.
 name: 'Project Board'
 on:
+  # TODO: switch to `pull_request_target` once we have verified that it works.
   pull_request:
+    types: [opened]
 jobs:
   add-to-project:
     name: Add pull request to project
