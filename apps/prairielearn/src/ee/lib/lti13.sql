@@ -118,7 +118,10 @@ WITH
   -- For each user, select the instance with the highest score for each assessment
   -- Similar to the gradebook code
 SELECT DISTINCT
-  ON (cai.user_id, cai.assessment_id) cai.*,
+  ON (cai.user_id, cai.assessment_id) cai.id,
+  cai.score_perc,
+  cai.date,
+  cai.open,
   to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub) AS user
 FROM
   course_assessment_instances AS cai
