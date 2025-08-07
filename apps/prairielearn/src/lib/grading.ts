@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
@@ -84,7 +85,7 @@ export async function insertSubmission({
   client_fingerprint_id?: string | null;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     // Select the variant, while updating the variant's `params` and
     // `correct_answer`, which is permitted to change during the `parse` phase
@@ -265,7 +266,7 @@ async function selectSubmissionForGrading(
   check_submission_id: string | null,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     const variantData = await sqldb.queryOptionalRow(
       sql.select_variant_data,

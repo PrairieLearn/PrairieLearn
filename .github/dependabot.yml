@@ -81,9 +81,6 @@ updates:
       # We're not ready to jump to the latest version of `numpy` yet.
       - dependency-name: 'numpy'
         versions: ['>=2']
-      # The most recent versions no longer support Python 3.10.
-      - dependency-name: 'sphinx'
-        versions: ['>=8.2.0']
     groups:
       all-patch-minor:
         update-types:
