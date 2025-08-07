@@ -22,10 +22,8 @@ export function registerReactFragment(component: ComponentType<any>, nameOverrid
 
 onDocumentReady(() => {
   observe('.js-react-fragment', {
+    constructor: HTMLElement,
     async add(el) {
-      if (!(el instanceof HTMLElement)) {
-        throw new Error('js-react-fragment element must be an HTMLElement');
-      }
       const componentName = el.dataset.component;
       if (!componentName) {
         throw new Error('js-react-fragment element must have a data-component attribute');

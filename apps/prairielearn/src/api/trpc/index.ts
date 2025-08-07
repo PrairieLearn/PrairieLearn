@@ -7,7 +7,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { courseFilesRouter } from './routers/course-files/index.js';
 import { createContext } from './trpc.js';
 
-export { courseFilesRouter } from './routers/course-files/index.js';
+export { courseFilesRouter };
 export type CourseFilesRouter = typeof courseFilesRouter;
 
 const router = Router();

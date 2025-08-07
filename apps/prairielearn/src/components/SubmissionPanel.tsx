@@ -275,42 +275,44 @@ function SubmissionStatusBadge({
   let autoGradingBadge: HtmlValue = null;
 
   if (
-    (assessment_question && instance_question
+    assessment_question && instance_question
       ? assessment_question.max_manual_points ||
         instance_question.manual_points ||
         instance_question.requires_manual_grading
-      : question.grading_method === 'Manual') &&
-    isLatestSubmission // The manual grading status only applies to the latest submission
+      : question.grading_method === 'Manual'
   ) {
-    if (!instance_question || instance_question.requires_manual_grading) {
-      if (!submission.gradable && !assessment_question?.max_auto_points) {
-        manualGradingBadge = html`
-          <span class="badge text-bg-danger">invalid, not gradable</span><br />
-        `;
+    // The manual grading status only applies to the latest submission
+    if (isLatestSubmission) {
+      if (!instance_question || instance_question.requires_manual_grading) {
+        if (!submission.gradable && !assessment_question?.max_auto_points) {
+          manualGradingBadge = html`
+            <span class="badge text-bg-danger">invalid, not gradable</span><br />
+          `;
+        } else {
+          manualGradingBadge = html`
+            <span class="badge text-bg-secondary">manual grading: waiting for grading</span><br />
+          `;
+        }
       } else {
+        const manualPoints = instance_question.manual_points ?? 0;
+        const manual_percentage = assessment_question?.max_points
+          ? Math.floor(
+              (manualPoints * 100) /
+                (assessment_question.max_manual_points || assessment_question.max_points),
+            ) + '%'
+          : (manualPoints > 0 ? '+' : '') +
+            manualPoints +
+            (Math.abs(manualPoints) > 1 ? ' pts' : ' pt');
+        const badgeType =
+          manualPoints <= 0
+            ? 'text-bg-danger'
+            : manualPoints >= (assessment_question?.max_manual_points ?? 0)
+              ? 'text-bg-success'
+              : 'text-bg-warning';
         manualGradingBadge = html`
-          <span class="badge text-bg-secondary">manual grading: waiting for grading</span><br />
+          <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
         `;
       }
-    } else {
-      const manualPoints = instance_question.manual_points ?? 0;
-      const manual_percentage = assessment_question?.max_points
-        ? Math.floor(
-            (manualPoints * 100) /
-              (assessment_question.max_manual_points || assessment_question.max_points),
-          ) + '%'
-        : (manualPoints > 0 ? '+' : '') +
-          manualPoints +
-          (Math.abs(manualPoints) > 1 ? ' pts' : ' pt');
-      const badgeType =
-        manualPoints <= 0
-          ? 'text-bg-danger'
-          : manualPoints >= (assessment_question?.max_manual_points ?? 0)
-            ? 'text-bg-success'
-            : 'text-bg-warning';
-      manualGradingBadge = html`
-        <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
-      `;
     }
   }
 

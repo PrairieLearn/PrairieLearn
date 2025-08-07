@@ -28,21 +28,19 @@ export default ESLintUtils.RuleCreator.withoutDocs({
         clientNames.forEach((clientName) => awsClientImports.add(clientName));
       },
       NewExpression(node) {
-        if (
-          node.callee.type === 'Identifier' &&
-          awsClientImports.has(node.callee.name) &&
-          node.arguments.length === 0
+        if (node.callee.type === 'Identifier' && awsClientImports.has(node.callee.name)) {
           // We're constructing an AWS client. Ensure that the call has at
           // least one argument corresponding to a config object.
-        ) {
-          context.report({
-            node,
-            messageId: 'missingConfig',
-            data: {
-              clientName: node.callee.name,
-            },
-          });
-          return;
+          if (node.arguments.length === 0) {
+            context.report({
+              node,
+              messageId: 'missingConfig',
+              data: {
+                clientName: node.callee.name,
+              },
+            });
+            return;
+          }
         }
       },
     };

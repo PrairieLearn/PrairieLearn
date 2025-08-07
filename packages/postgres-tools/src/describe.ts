@@ -182,7 +182,7 @@ export async function describeDatabase(
 
 export function formatDatabaseDescription(
   description: DatabaseDescription,
-  options: { coloredOutput: boolean } = { coloredOutput: true },
+  options = { coloredOutput: true },
 ): { tables: Record<string, string>; enums: Record<string, string> } {
   const output = {
     tables: {} as Record<string, string>,
@@ -231,15 +231,13 @@ export function formatDatabaseDescription(
           let rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
           // Primary indexes are implicitly unique, so we don't need to
           // capture that explicitly.
-          if (
-            row.isunique &&
-            !row.isprimary &&
-            (!row.constraintdef || !row.constraintdef.includes('UNIQUE'))
-          ) {
-            // Some unique indexes don't include the UNIQUE constraint
-            // as part of the constraint definition, so we need to capture
-            // that manually.
-            rowText += formatText(' UNIQUE', chalk.green);
+          if (row.isunique && !row.isprimary) {
+            if (!row.constraintdef || !row.constraintdef.includes('UNIQUE')) {
+              // Some unique indexes don't include the UNIQUE constraint
+              // as part of the constraint definition, so we need to capture
+              // that manually.
+              rowText += formatText(' UNIQUE', chalk.green);
+            }
           }
           rowText += row.constraintdef ? formatText(` ${row.constraintdef}`, chalk.green) : '';
           rowText += using ? formatText(` ${using}`, chalk.green) : '';

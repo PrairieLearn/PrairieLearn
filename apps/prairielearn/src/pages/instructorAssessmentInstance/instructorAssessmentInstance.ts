@@ -123,9 +123,11 @@ router.get(
           'Data',
         ],
         transform(record) {
-          if (record.client_fingerprint && !fingerprintNumbers.get(record.client_fingerprint.id)) {
-            fingerprintNumbers.set(record.client_fingerprint.id, i);
-            i++;
+          if (record.client_fingerprint) {
+            if (!fingerprintNumbers.get(record.client_fingerprint.id)) {
+              fingerprintNumbers.set(record.client_fingerprint.id, i);
+              i++;
+            }
           }
           return [
             record.date_iso8601,

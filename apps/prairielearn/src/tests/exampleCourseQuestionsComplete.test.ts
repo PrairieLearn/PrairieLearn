@@ -26,8 +26,10 @@ const findQuestionDirectories = (dir: string): string[] => {
   const questionDirs: string[] = [];
   const entries = fs.readdirSync(dir, { withFileTypes: true, recursive: true });
   for (const entry of entries) {
-    if (entry.isDirectory() && fs.existsSync(join(entry.parentPath, entry.name, 'info.json'))) {
-      questionDirs.push(join(entry.parentPath, entry.name));
+    if (entry.isDirectory()) {
+      if (fs.existsSync(join(entry.parentPath, entry.name, 'info.json'))) {
+        questionDirs.push(join(entry.parentPath, entry.name));
+      }
     }
   }
   return questionDirs;
@@ -53,7 +55,6 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
   rewriter
     .on('a, button', {
       element(el) {
-        if (!(el instanceof HTMLElement)) return;
         if (el.hasAttribute('aria-label')) return;
         const title = el.dataset.bsTitle ?? el.getAttribute('title');
         if (title) {
@@ -225,7 +226,7 @@ const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
     const info = fs.readJsonSync(infoPath);
-    const relativePath = dir.slice(questionsPath.length + 1);
+    const relativePath = dir.slice(Math.max(0, questionsPath.length + 1));
     return {
       path: dir,
       relativePath,

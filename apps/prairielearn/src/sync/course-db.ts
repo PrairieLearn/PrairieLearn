@@ -974,14 +974,13 @@ async function validateQuestion({
     }
   }
 
-  if (
-    question.externalGradingOptions?.timeout &&
-    question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout
-  ) {
-    warnings.push(
-      `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
-    );
-    question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+  if (question.externalGradingOptions?.timeout) {
+    if (question.externalGradingOptions.timeout > config.externalGradingMaximumTimeout) {
+      warnings.push(
+        `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
+      );
+      question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
   }
 
   return { warnings, errors };

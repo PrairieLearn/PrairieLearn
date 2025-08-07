@@ -253,6 +253,8 @@ export default tseslint.config([
       'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages
       'unicorn/prefer-type-error': 'off',
       'unicorn/prevent-abbreviations': 'off',
+      'unicorn/prefer-export-from': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252265000
+      'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations

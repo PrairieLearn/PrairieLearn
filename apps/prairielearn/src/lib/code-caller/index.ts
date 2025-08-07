@@ -15,8 +15,7 @@ import * as load from '../load.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
-import { type CodeCaller } from './code-caller-shared.js';
-export { FunctionMissingError, type CodeCaller } from './code-caller-shared.js';
+import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -235,3 +234,5 @@ export async function withCodeCaller<T>(
     return fnResult as T;
   }
 }
+
+export { FunctionMissingError, type CodeCaller };
