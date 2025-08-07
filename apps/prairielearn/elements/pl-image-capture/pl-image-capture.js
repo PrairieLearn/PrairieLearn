@@ -132,7 +132,7 @@ const MAX_ZOOM_SCALE = 5;
         );
 
         this.ensureElementsExist({
-          captureWithLocalCameraButtonDropdown
+          captureWithLocalCameraButtonDropdown,
         });
 
         useLocalCaptureButtons.push(captureWithLocalCameraButtonDropdown);
@@ -283,7 +283,7 @@ const MAX_ZOOM_SCALE = 5;
         deleteCapturedImageButton,
         uploadedImageContainer,
       });
-      
+
       const popover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
 
       const confirmDeletion = () => {
@@ -629,10 +629,11 @@ const MAX_ZOOM_SCALE = 5;
           '.js-capture-buttons-horizontal .js-capture-with-local-camera-button span',
         );
         this.ensureElementsExist({
-          captureWithLocalCameraButtonHorizontalSpan  
+          captureWithLocalCameraButtonHorizontalSpan,
         });
-        captureWithLocalCameraButtonHorizontalSpan.innerHTML = isRetaking ? 
-          'Retake with webcam' : 'Use webcam';
+        captureWithLocalCameraButtonHorizontalSpan.innerHTML = isRetaking
+          ? 'Retake with webcam'
+          : 'Use webcam';
       }
     }
 
