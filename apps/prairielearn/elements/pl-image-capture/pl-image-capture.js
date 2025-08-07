@@ -514,7 +514,7 @@ const MAX_ZOOM_SCALE = 5;
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
       if (imagePlaceholderDiv) {
         imagePlaceholderDiv.innerHTML = `
-          <span class="text-muted text-center">
+          <span class="text-muted text-center small">
             No image captured yet.
             <br/>
             Use a clean sheet of paper.
@@ -522,7 +522,7 @@ const MAX_ZOOM_SCALE = 5;
         `;
       } else {
         uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
-          <span class="text-muted text-center">
+          <span class="text-muted text-center small">
             No image captured yet.
             <br/>
             Use a clean sheet of paper.
@@ -583,7 +583,7 @@ const MAX_ZOOM_SCALE = 5;
         hiddenCaptureInput,
       });
 
-      if (dataUrl && !hiddenCaptureInput.value) {
+      if (dataUrl && !hiddenCaptureInput.value && this.mobile_capture_enabled) {
         this.setShowRetakeDropdown(true);
       } else if (!dataUrl) {
         this.setShowRetakeDropdown(false);
@@ -610,8 +610,13 @@ const MAX_ZOOM_SCALE = 5;
         captureButtonsDropdownDiv,
       });
 
-      captureButtonsHorizontalDiv.classList.toggle('d-none', showRetakeDropdown);
-      captureButtonsDropdownDiv.classList.toggle('d-none', !showRetakeDropdown);
+      if (showRetakeDropdown) {
+        captureButtonsHorizontalDiv.classList.replace('d-flex', 'd-none');
+        captureButtonsDropdownDiv.classList.replace('d-none', 'd-flex');
+      } else {
+        captureButtonsHorizontalDiv.classList.replace('d-none', 'd-flex');
+        captureButtonsDropdownDiv.classList.replace('d-flex', 'd-none');
+      }
     }
 
     /**
