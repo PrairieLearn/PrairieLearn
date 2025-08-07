@@ -87,7 +87,7 @@ $(function() {
     <div class="d-flex gap-2 flex-wrap p-2 justify-content-end border-top">
       <button
         type="button"
-        class="js-crop-rotate-button btn btn-sm btn-secondary d-none"
+        class="js-crop-rotate-button btn btn-secondary btn-sm d-none"
       >
         <i class="bi bi-crop me-1"></i>
         Crop/rotate
@@ -117,18 +117,18 @@ $(function() {
                   <span class="visually-hidden">Loading...</span>
                 </div>
               </div>
-              <p class="text-muted mb-0">
+              <p class="small text-muted mb-0">
                 Scan the QR code with your mobile device to capture an image of your work. 
               </p>
             {{/external_image_capture_available}}
             {{^external_image_capture_available}}
-              <p class="text-muted mb-0">
+              <p class="small text-muted mb-0">
                 Mobile device capture is not available in this environment.
               </p>
-              <p class="text-muted mb-0 mt-3">
+              <p class="small text-muted mb-0 mt-3">
                 It will be available once the question is deployed to production.
               </p>
-              <p class="text-muted mb-0 mt-3">
+              <p class="small text-muted mb-0 mt-3">
                 For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
               </p>
             {{/external_image_capture_available}}
@@ -234,7 +234,7 @@ $(function() {
       </div>
     </div>
     <div class="d-flex p-2 gap-2 justify-content-end align-items-center flex-wrap">
-      <p class="js-local-camera-instructions text-muted my-0 me-auto text-sm">
+      <p class="js-local-camera-instructions text-muted my-0 me-auto small">
         Make sure your photo is clear, well-lit, and shows all your work legibly. 
         <br/>
         Later, you can crop or rotate the image as needed.
@@ -266,7 +266,7 @@ $(function() {
     </div>
     <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
       <div class="d-flex align-items-center gap-2">
-        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
+        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1 small">
           Rotation: 
         </label>
         <input 
@@ -283,20 +283,20 @@ $(function() {
       <div class="d-flex align-items-center gap-2">
         <button 
           type="button"
-          class="js-rotate-clockwise-button btn btn-light border"
+          class="js-rotate-clockwise-button btn btn-light border btn-sm"
           title="Rotate clockwise"
-          data-toggle="tooltip"
-          data-placement="top" 
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
           aria-label="Rotate clockwise"
         >
           <i class="bi bi-arrow-clockwise"></i>
         </button>
         <button 
           type="button"
-          class="js-rotate-counterclockwise-button btn btn-light border"
+          class="js-rotate-counterclockwise-button btn btn-light border btn-sm"
           title="Rotate counterclockwise"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Rotate counterclockwise"
         >
           <i class="bi bi-arrow-counterclockwise"></i>
@@ -306,8 +306,8 @@ $(function() {
           type="button"
           class="js-flip-horizontal-button btn btn-light border"
           title="Flip horizontally"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Flip horizontally"
         >
           <i class="bi bi-symmetry-vertical"></i>
@@ -316,8 +316,8 @@ $(function() {
           type="button"
           class="js-flip-vertical-button btn btn-light border"
           title="Flip vertically"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Flip vertically"
         >
           <i class="bi bi-symmetry-horizontal"></i>
@@ -326,13 +326,13 @@ $(function() {
       <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
         <button 
           type="button"
-          class="js-cancel-crop-rotate-button btn btn-secondary"
+          class="js-cancel-crop-rotate-button btn btn-secondary btn-sm"
         >
           Cancel
         </button>
         <button 
           type="button" 
-          class="js-apply-changes-button btn btn-info"
+          class="js-apply-changes-button btn btn-info btn-sm"
         >
           <i class="bi bi-check2 me-1"></i>
           Apply changes
