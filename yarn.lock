@@ -1078,23 +1078,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/types@npm:3.862.0":
+"@aws-sdk/types@npm:3.862.0, @aws-sdk/types@npm:^3.222.0":
   version: 3.862.0
   resolution: "@aws-sdk/types@npm:3.862.0"
   dependencies:
     "@smithy/types": "npm:^4.3.2"
     tslib: "npm:^2.6.2"
   checksum: 10c0/d8e13eadde27c29e39d8effa861a3dc8ef43fba6ecb9772e3461619a76897873c8d4355be89aa5090294d1f17e1a6697834f0bbf6a7f73902a77fe00b1fbe5c2
-  languageName: node
-  linkType: hard
-
-"@aws-sdk/types@npm:^3.222.0":
-  version: 3.840.0
-  resolution: "@aws-sdk/types@npm:3.840.0"
-  dependencies:
-    "@smithy/types": "npm:^4.3.1"
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/292d38f5087c3aa925addd890f8ae2bf650282c2cf4997d971a341dc0249dfca7ce02d69a4af09da2562b78a4232232d2a3b88105f34f66aee608d52aac238d1
   languageName: node
   linkType: hard
 
@@ -5043,15 +5033,6 @@ __metadata:
     "@smithy/util-stream": "npm:^4.2.4"
     tslib: "npm:^2.6.2"
   checksum: 10c0/994743c7a04e3e1b5136c3be98c3882ab9169d39143530c11553062934887b6b9b7d32de035a15f7ff0f7e6b5db6106ab3e71dc62beb473da9313ff6b8b24a37
-  languageName: node
-  linkType: hard
-
-"@smithy/types@npm:^4.3.1":
-  version: 4.3.1
-  resolution: "@smithy/types@npm:4.3.1"
-  dependencies:
-    tslib: "npm:^2.6.2"
-  checksum: 10c0/8b350562b9ed4ff97465025b4ae77a34bb07b9d47fb6f9781755aac9401b0355a63c2fef307393e2dae3fa0277149dd7d83f5bc2a63d4ad3519ea32fd56b5cda
   languageName: node
   linkType: hard
 
@@ -10504,18 +10485,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.1.1, fs-extra@npm:^11.2.0":
-  version: 11.3.0
-  resolution: "fs-extra@npm:11.3.0"
-  dependencies:
-    graceful-fs: "npm:^4.2.0"
-    jsonfile: "npm:^6.0.1"
-    universalify: "npm:^2.0.0"
-  checksum: 10c0/5f95e996186ff45463059feb115a22fb048bdaf7e487ecee8a8646c78ed8fdca63630e3077d4c16ce677051f5e60d3355a06f3cd61f3ca43f48cc58822a44d0a
-  languageName: node
-  linkType: hard
-
-"fs-extra@npm:^11.3.1":
+"fs-extra@npm:^11.1.1, fs-extra@npm:^11.2.0, fs-extra@npm:^11.3.1":
   version: 11.3.1
   resolution: "fs-extra@npm:11.3.1"
   dependencies:
