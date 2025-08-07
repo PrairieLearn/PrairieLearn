@@ -18,7 +18,7 @@
     "@prairielearn/marked-mathjax": "workspace:^",
     "isomorphic-dompurify": "^2.26.0",
     "marked": "^16.1.1",
-    "mathjax": "^3.2.2"
+    "mathjax": "^4.0.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
