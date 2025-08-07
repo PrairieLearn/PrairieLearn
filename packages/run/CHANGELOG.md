@@ -1,5 +1,11 @@
 # @prairielearn/run
 
+## 1.0.13
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 1.0.12
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 4.0.0
 
 ### Major Changes

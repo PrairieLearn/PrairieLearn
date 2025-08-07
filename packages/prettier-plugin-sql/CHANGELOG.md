@@ -1,5 +1,11 @@
 # @prairielearn/prettier-plugin-sql
 
+## 2.1.9
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 2.1.8
 
 ### Patch Changes
