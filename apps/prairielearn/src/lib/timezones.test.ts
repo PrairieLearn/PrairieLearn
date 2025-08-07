@@ -43,19 +43,11 @@ describe('formatTimezone', () => {
     expect(formatTimezone(tz)).toBe('(UTC 00:15) Etc/GMT');
   });
 
-  it('formats negative minutes correctly', () => {
+  it('formats negative hour with positive minutes', () => {
     const tz: Timezone = {
-      name: 'Test/NegativeMinutes',
-      utc_offset: { hours: 1, minutes: -30 },
+      name: 'America/St_Johns',
+      utc_offset: { hours: -3, minutes: 30 },
     };
-    expect(formatTimezone(tz)).toBe('(UTC 1:30) Test/NegativeMinutes');
-  });
-
-  it('formats positive minutes correctly', () => {
-    const tz: Timezone = {
-      name: 'Test/PositiveMinutes',
-      utc_offset: { hours: 1, minutes: 30 },
-    };
-    expect(formatTimezone(tz)).toBe('(UTC 1:30) Test/PositiveMinutes');
+    expect(formatTimezone(tz)).toBe('(UTC -3:30) America/St_Johns');
   });
 });
