@@ -128,12 +128,12 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
-    const gradingJobMapping = await selectGradingJobsInfo(all_instance_questions);
+    const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
       if (mode === 'human_graded') {
         // Things that have been graded by a human
-        return gradingJobMapping[instance_question.id]?.some(
+        return instanceQuestionGradingJobs[instance_question.id]?.some(
           (job) => job.grading_method === 'Manual',
         );
       } else if (mode === 'all') {
@@ -161,9 +161,9 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
-      const grading_jobs = gradingJobMapping[instance_question.id] ?? [];
-      const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-      const should_update_score = !manualGradingJob;
+      const shoudUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
+        (job) => job.grading_method === 'Manual',
+      );
 
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
@@ -257,7 +257,7 @@ export async function aiGrade({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            if (should_update_score) {
+            if (shoudUpdateScore) {
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -362,7 +362,7 @@ export async function aiGrade({
           if (response.parsed) {
             const score = response.parsed.score;
 
-            if (should_update_score) {
+            if (shoudUpdateScore) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
