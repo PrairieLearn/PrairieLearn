@@ -1,5 +1,16 @@
 # @prairielearn/migrations
 
+## 3.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/named-locks@3.0.22
+  - @prairielearn/postgres@4.0.1
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/error@2.0.18
+
 ## 3.0.21
 
 ### Patch Changes
