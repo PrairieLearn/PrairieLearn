@@ -481,8 +481,8 @@ onDocumentReady(() => {
 
   document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
     checkbox.addEventListener('change', (e) => {
-      rubricFilterState[(e.target as HTMLInputElement).value] =
-        !rubricFilterState[(e.target as HTMLInputElement).value];
+      if (!(e.target instanceof HTMLInputElement)) return;
+      rubricFilterState[e.target.value] = e.target.checked;
       const rubricFilterItems = Object.entries(rubricFilterState)
         .filter(([_, value]) => value)
         .map(([key]) => key);
