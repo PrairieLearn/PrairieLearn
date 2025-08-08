@@ -31,7 +31,7 @@ WITH
   rubric_grading_to_items AS (
     SELECT
       rgi.rubric_grading_id,
-      ri.*
+      ri.id AS rubric_item_id
     FROM
       rubric_grading_items AS rgi
       JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
@@ -40,9 +40,9 @@ WITH
     SELECT
       ls.instance_question_id,
       COALESCE(
-        json_agg(to_jsonb(rgti)) FILTER (
+        json_agg(to_jsonb(rgti.rubric_item_id)) FILTER (
           WHERE
-            rgti.id IS NOT NULL
+            rgti.rubric_item_id IS NOT NULL
         ),
         '[]'::json
       ) AS rubric_items

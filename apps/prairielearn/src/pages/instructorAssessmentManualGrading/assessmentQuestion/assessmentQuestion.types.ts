@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
   AssessmentQuestionSchema,
+  IdSchema,
   InstanceQuestionSchema,
-  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 
@@ -16,7 +16,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
-  rubric_grading_items: z.array(RubricItemSchema),
+  rubric_grading_items: z.array(IdSchema),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
