@@ -10,8 +10,14 @@ const enableAccordionFind = () => {
   }
   const accordions = [...document.querySelectorAll('.accordion-collapse.collapse')];
   accordions.forEach((item) => {
-    item.hidden = 'until-found';
+    const shouldStartExpanded = item.classList.contains('show');
+
+    if (!shouldStartExpanded) {
+      item.hidden = 'until-found';
+    }
+
     const collapse = new bootstrap.Collapse(item, { toggle: false });
+
     // Manually toggle if a match is found
     item.onbeforematch = (_e) => collapse.toggle();
 
