@@ -58,7 +58,7 @@ export async function createTestSubmissionData(
   test_type: TestType,
   user_id: string,
   authn_user_id: string,
-) {
+): Promise<{ data: questionServers.TestResultData; hasFatalIssue: boolean }> {
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.test) {
     throw new Error('Question type does not support testing, must be Freeform');
