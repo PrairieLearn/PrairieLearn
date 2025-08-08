@@ -131,7 +131,7 @@ ORDER BY
   cai.user_id,
   cai.assessment_id,
   cai.score_perc DESC,
-  cai.id;
+  cai.id DESC;
 
 -- BLOCK select_assessment_in_lti13_course_instance
 SELECT
