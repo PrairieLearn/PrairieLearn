@@ -70,7 +70,7 @@ export function InstructorAssessmentSettings({
                 <a
                   class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
                   target="_blank"
-                  rel="noopener"
+                  rel="noreferrer"
                   href="${assessmentGHLink}"
                 >
                   <i class="bi bi-github"></i>
