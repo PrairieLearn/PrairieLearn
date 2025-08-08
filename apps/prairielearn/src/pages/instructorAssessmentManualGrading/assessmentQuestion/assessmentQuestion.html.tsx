@@ -16,7 +16,6 @@ import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
-// import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTable.html.js';
 import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTableV2.html.js';
 
 export function AssessmentQuestion({

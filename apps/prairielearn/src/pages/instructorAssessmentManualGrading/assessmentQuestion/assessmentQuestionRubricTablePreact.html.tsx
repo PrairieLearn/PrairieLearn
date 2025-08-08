@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import type { AssessmentQuestion, RubricItem } from '../../../lib/db-types.js';
@@ -21,12 +21,12 @@ export function AssessmentQuestionRubricTable({
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats;
 }) {
+  console.log('Rendering');
   const showAiGradingStats = true; // TODO: change to use enabled and mode
 
   // Define states
   const [editMode, setEditMode] = useState(false);
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubric_data?.rubric_items ?? []);
-  console.log(rubricItems);
   const [nextNewId, setNextNewId] = useState<number>(1);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points,
@@ -34,6 +34,7 @@ export function AssessmentQuestionRubricTable({
   const [startingPoints, setStartingPoints] = useState<number>(rubric_data?.starting_points ?? 0);
   const [minPoints, setMinPoints] = useState<number>(rubric_data?.min_points ?? 0);
   const [maxExtraPoints, SetMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
+  const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -66,12 +67,9 @@ export function AssessmentQuestionRubricTable({
   const onAddItem = () => {
     setRubricItems((prev) => [
       ...prev,
+      // Only initialize these parameters to be consistent with current new row behavior
       {
-        id: undefined,
         points: 1,
-        description: '',
-        explanation: '',
-        grader_note: '',
         always_show_to_students: true,
       },
     ]);
@@ -82,6 +80,26 @@ export function AssessmentQuestionRubricTable({
     setRubricItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  /**
+   * Update current dragged row index
+   * @param idx
+   */
+  function rowDragStart(idx: number) {
+    setDraggedIdx(idx);
+  }
+  function rowDragOver(overIdx: number) {
+    console.log(`Dragging ${draggedIdx} over ${overIdx}`);
+    if (draggedIdx === null || draggedIdx === overIdx) return;
+    setRubricItems((items) => {
+      const newItems = [...items];
+      [newItems[draggedIdx], newItems[overIdx]] = [newItems[overIdx], newItems[draggedIdx]];
+      return newItems;
+    });
+    setDraggedIdx(overIdx);
+  }
+
+  // Do we need moving up and down?
+  // These don't seem to exist in the JS for the current rubric edit panel
   const moveUp = (idx: number) => {
     if (idx === 0) return;
     setRubricItems((prev) => {
@@ -90,7 +108,6 @@ export function AssessmentQuestionRubricTable({
       return next;
     });
   };
-
   const moveDown = (idx: number) => {
     setRubricItems((prev) => {
       if (idx >= prev.length - 1) return prev;
@@ -189,6 +206,8 @@ export function AssessmentQuestionRubricTable({
         moveUp={moveUp}
         moveDown={moveDown}
         onRowChange={onRowChange}
+        rowDragStart={rowDragStart}
+        rowDragOver={rowDragOver}
       />
 
       {/* Warnings */}
@@ -349,6 +368,8 @@ function RubricTable({
   moveUp,
   moveDown,
   onRowChange,
+  rowDragStart,
+  rowDragOver,
 }: {
   items: RubricItemData[];
   editMode: boolean;
@@ -360,6 +381,8 @@ function RubricTable({
   moveUp: (idx: number) => void;
   moveDown: (idx: number) => void;
   onRowChange: (idx: number, patch: Partial<RubricItem>) => void;
+  rowDragStart: (idx: number) => void;
+  rowDragOver: (idx: number) => void;
 }) {
   return (
     <div class="table-responsive">
@@ -389,6 +412,8 @@ function RubricTable({
               moveUp={() => moveUp(idx)}
               moveDown={() => moveDown(idx)}
               onChange={(patch) => onRowChange(idx, patch)}
+              rowDragStart={() => rowDragStart(idx)}
+              rowDragOver={() => rowDragOver(idx)}
             />
           ))}
         </tbody>
@@ -418,6 +443,8 @@ function RubricRow({
   moveUp,
   moveDown,
   onChange,
+  rowDragStart,
+  rowDragOver,
 }: {
   idx: number;
   item: RubricItemData;
@@ -429,10 +456,22 @@ function RubricRow({
   moveUp: () => void;
   moveDown: () => void;
   onChange: (patch: Partial<RubricItem>) => void;
+  rowDragStart: () => void;
+  rowDragOver: () => void;
 }) {
   return (
     <tr>
       <td class="text-nowrap align-middle">
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost"
+          disabled={!editMode}
+          draggable
+          onDragStart={rowDragStart}
+          onDragOver={rowDragOver}
+        >
+          <i class="fas fa-arrows-up-down"></i>
+        </button>
         <button
           type="button"
           class="btn btn-sm btn-ghost"
