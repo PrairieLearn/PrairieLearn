@@ -41,11 +41,13 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
+      this.imageEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
+        this.enhanceImageListeners();
         return;
       }
 
@@ -1232,6 +1234,43 @@ const MAX_ZOOM_SCALE = 5;
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    async enhanceImage() {
+      if (this.editable) {
+        throw new Error('Image enhancement is not allowed while the image is editable.');
+      }
+      if (!this.imageCapturePreviewPanzoom) {
+        return;
+      }
+
+      const capturePreview = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
+      this.ensureElementsExist({
+        capturePreview
+      });
+
+      if (this.isEnhanced) {
+        capturePreview.style.filter = '';
+        this.isEnhanced = false;
+      } else {
+        capturePreview.style.filter = 'grayscale(1) contrast(1.5) saturate(30%)';
+        this.isEnhanced = true;
+      }
+
+    }
+
+    enhanceImageListeners() {
+      const enhanceImageButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
+
+      this.ensureElementsExist({
+        enhanceImageButton,
+      });
+
+      enhanceImageButton.addEventListener('click', () => {
+        this.enhanceImage();
+      });
     }
   }
 
