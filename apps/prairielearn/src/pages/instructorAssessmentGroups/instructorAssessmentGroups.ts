@@ -37,7 +37,7 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_view'],
-    unauthorizedUsers: 'passthrough',
+    unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
     const prefix = assessmentFilenamePrefix(
