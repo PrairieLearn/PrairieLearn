@@ -510,12 +510,7 @@ function rubricFilterHtml(rubric_data: RubricData | null): string {
             ${rubric_data.rubric_items.map(
               (item) => html`
                 <label class="dropdown-item dropdown-item-marker"
-                  ><input
-                    type="checkbox"
-                    class="js-rubric-item-filter"
-                    value="${item.id}"
-                    id="filter-rubric-item-${item.id}"
-                  />
+                  ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
                   <span>${item.description}</span></label
                 >
               `,
