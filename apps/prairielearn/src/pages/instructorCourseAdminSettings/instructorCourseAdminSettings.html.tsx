@@ -63,7 +63,9 @@ export function InstructorCourseAdminSettings({
             <div class="mb-3">
               <label class="form-label" for="short_name">Short Name</label>
               ${courseGHLink
-                ? html`<a target="_blank" href="${courseGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${courseGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"

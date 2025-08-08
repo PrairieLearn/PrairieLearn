@@ -74,7 +74,9 @@ export function InstructorInstanceAdminSettings({
             <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
               ${instanceGHLink
-                ? html`<a target="_blank" href="${instanceGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${instanceGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"
