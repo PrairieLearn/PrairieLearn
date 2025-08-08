@@ -1,5 +1,4 @@
 import {
-  type AccessorKeyColumnDef,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -82,24 +81,29 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
-  const columns = useMemo<AccessorKeyColumnDef<StudentRow, any>[]>(
+  const columns = useMemo(
     () => [
-      columnHelper.accessor('user.uid', {
+      columnHelper.accessor((row) => row.user.uid, {
+        id: 'user_uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor('user.name', {
+      columnHelper.accessor((row) => row.user.name, {
+        id: 'user_name',
         header: 'Name',
         cell: (info) => info.getValue() || '—',
       }),
-      columnHelper.accessor('user.email', {
+      columnHelper.accessor((row) => row.user.email, {
+        id: 'user_email',
         header: 'Email',
         cell: (info) => info.getValue() || '—',
       }),
-      columnHelper.accessor('enrollment.created_at', {
+      columnHelper.accessor((row) => row.enrollment.created_at, {
+        id: 'enrollment_created_at',
         header: 'Enrolled on',
         cell: (info) => {
-          const date = new Date(info.getValue());
+          const date = info.getValue();
+          if (date == null) return '—';
           return (
             <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
           );
@@ -109,9 +113,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
     [timezone],
   );
 
-  const allColumnIds = columns
-    .filter((col) => col.accessorKey)
-    .map((col) => col.accessorKey.replace('.', '_'));
+  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
