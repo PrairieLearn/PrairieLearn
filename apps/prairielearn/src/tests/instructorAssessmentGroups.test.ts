@@ -33,7 +33,7 @@ describe('Instructor group controls', () => {
   let group2RowId: string | undefined;
 
   test.sequential('has group-based homework assessment', async () => {
-    assessment_id = await queryRow(sql.select_group_work_assessment, {}, IdSchema);
+    assessment_id = await queryRow(sql.select_group_work_assessment, IdSchema);
     instructorAssessmentGroupsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
   });
 

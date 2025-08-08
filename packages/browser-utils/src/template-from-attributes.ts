@@ -13,7 +13,6 @@ type AttributeMap = Record<string, string>;
  * @param source The element to copy attributes from
  * @param target The element to copy attributes into
  * @param attributes A map of attributes to copy from `source` to `target`
- * @param param.debug If true, logs debug information to the console
  */
 export function templateFromAttributes(
   source: HTMLElement,
