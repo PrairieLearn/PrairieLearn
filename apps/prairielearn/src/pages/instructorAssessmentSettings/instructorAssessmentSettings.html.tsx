@@ -61,8 +61,23 @@ export function InstructorAssessmentSettings({
         content: publicLink,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
+          ${assessmentGHLink
+            ? html`
+                <a
+                  class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
+                  target="_blank"
+                  rel="noopener"
+                  href="${assessmentGHLink}"
+                >
+                  <i class="bi bi-github"></i>
+                  <span class="d-none d-sm-inline">View on GitHub</span>
+                </a>
+              `
+            : ''}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">
@@ -70,11 +85,6 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
-              ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}" rel="noreferrer">
-                    view on GitHub
-                  </a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
