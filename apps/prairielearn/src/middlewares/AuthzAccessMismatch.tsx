@@ -140,6 +140,11 @@ function clearEffectiveUserCookies() {
   window.location.reload();
 }
 
+function formatUser(user: StaffUser) {
+  if (!user.name) return user.uid;
+  return `${user.name} (${user.uid})`;
+}
+
 export function AuthzAccessMismatch({
   errorExplanation,
   oneOfPermissionKeys,
@@ -184,18 +189,8 @@ export function AuthzAccessMismatch({
         <div class="card-body">
           <p>{errorExplanation}</p>
           <p>
-            The current effective user{' '}
-            {authzUser ? (
-              <strong>
-                {authzUser.name} ({authzUser.uid})
-              </strong>
-            ) : (
-              <strong>your account</strong>
-            )}{' '}
-            does not have access to this page, but your account{' '}
-            <strong>
-              {authnUser.name} ({authnUser.uid})
-            </strong>{' '}
+            The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>} does
+            not have access to this page, but your account <strong>{formatUser(authnUser)}</strong>{' '}
             does.
           </p>
 
