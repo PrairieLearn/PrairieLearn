@@ -48,7 +48,6 @@ router.get(
   '/:unsafe_lti13_course_instance_id?',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_instance_permission_edit'],
-    errorMessage: 'Access denied (must be a student data editor)',
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {

@@ -32,7 +32,6 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
       content: (
         <Hydrate>
           <AuthzAccessMismatch
-            errorMessage="Requires either course preview access or student data view access"
             oneOfPermissionKeys={[
               'has_course_permission_preview',
               'has_course_instance_permission_view',

@@ -93,7 +93,6 @@ router.get(
   '/',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
-    errorMessage: 'Requires "Previewer" permissions',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async function (req, res) {
@@ -155,7 +154,6 @@ router.get(
   '/qid/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_preview'],
-    errorMessage: 'Requires "Previewer" permissions',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
