@@ -104,6 +104,15 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
+    // The way that `bootstrap-table` applies options over defaults is bad: when combining
+    // arrays, it treats them as objects with keys and merges them. So, if the default
+    // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
+    //
+    // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
+    // this cannot have fewer than 5 buttons defined. We can optionally put dummy elements
+    // at the end of the array as paddings if we need to have fewer buttons.
+    //
+    // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
     buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
@@ -494,31 +503,30 @@ onDocumentReady(() => {
 });
 
 function rubricFilterHtml(rubric_data: RubricData | null): string {
-  return rubric_data
-    ? html`
-        <div class="btn-group">
-          <button
-            type="button"
-            class="btn btn-secondary dropdown-toggle"
-            data-bs-toggle="dropdown"
-            name="rubric-item-filter"
-            data-bs-auto-close="outside"
-          >
-            <i class="fas fa-filter"></i> Filter by rubric items
-          </button>
-          <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
-            ${rubric_data.rubric_items.map(
-              (item) => html`
-                <label class="dropdown-item dropdown-item-marker"
-                  ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
-                  <span>${item.description}</span></label
-                >
-              `,
-            )}
-          </div>
-        </div>
-      `.toString()
-    : '';
+  if (!rubric_data) return '';
+  return html`
+    <div class="btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="rubric-item-filter"
+        data-bs-auto-close="outside"
+      >
+        <i class="fas fa-filter"></i> Filter by rubric items
+      </button>
+      <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+        ${rubric_data.rubric_items.map(
+          (item) => html`
+            <label class="dropdown-item dropdown-item-marker"
+              ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
+              <span>${item.description}</span></label
+            >
+          `,
+        )}
+      </div>
+    </div>
+  `.toString();
 }
 
 function generateAiGraderName(
