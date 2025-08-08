@@ -1,9 +1,11 @@
-import type { IncomingMessage, ServerResponse } from 'http';
-import path from 'path';
-import { exit } from 'process';
+import type { IncomingMessage, ServerResponse } from 'node:http';
+import path from 'node:path';
+import { exit } from 'node:process';
+import util from 'node:util';
 
 import debounce from 'debounce';
 import picomatch from 'picomatch';
+import stripAnsi from 'strip-ansi';
 import {
   type ConfigEnv,
   type Connect,
@@ -16,7 +18,27 @@ import {
 
 const env: ConfigEnv = { command: 'serve', mode: '' };
 
-const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginExpressConfig> => {
+/**
+ * Attempt to format an error for display to the user. Currently only ESBuild
+ * transform errors are special-cased: they'll be formatted with the error
+ * location and a frame indicating where the error is. All other errors are
+ * formatted with {@link util.inspect}.
+ */
+function formatError(err: any) {
+  if (
+    !((err as any) instanceof Error) ||
+    !err.message?.includes('Transform failed with') ||
+    !err.frame ||
+    !err.loc
+  ) {
+    return util.inspect(err);
+  }
+
+  const location = `${err.loc.file}:${err.loc.line}:${err.loc.column}`;
+  return [location, err.frame].map((s) => s.trim()).join('\n');
+}
+
+async function getPluginConfig(server: ViteDevServer): Promise<VitePluginExpressConfig> {
   // Ugly type hack to get the plugin config
   const plugin = server.config.plugins.find((p) => p.name === PLUGIN_NAME) as unknown as {
     config: (...args: any[]) => UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig };
@@ -34,7 +56,7 @@ const getPluginConfig = async (server: ViteDevServer): Promise<VitePluginExpress
 
   console.error('Please setup VitePluginExpress in your vite.config.ts first');
   exit(1);
-};
+}
 
 function recursivelyGetImporters(
   moduleNode: ModuleNode,
@@ -50,7 +72,7 @@ function recursivelyGetImporters(
   return visited;
 }
 
-const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFunction> => {
+async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFunction> {
   const config = await getPluginConfig(server);
   const logger = server.config.logger;
 
@@ -62,31 +84,20 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
       throw new Error('VitePluginExpress can only be used with a runnable dev environment');
     }
 
-    let appModule: any;
-    try {
-      // We use `runner.import(...)` instead of `ssrLoadModule(...)` because a)
-      // the latter will be deprecated soon and b) `runner.import(...)` will
-      // automatically produce correct stack traces that account for code
-      // transformations done by Vite.
-      appModule = await server.environments.ssr.runner.import(config.appPath);
-    } catch (err: any) {
-      if (err?.message?.includes('Transform failed with')) {
-        // This is a syntax error, and Vite has already logged it. It's recoverable
-        // if the user fixes the syntax error.
-        return null;
-      }
+    console.trace('_loadApp called');
 
-      // We don't know what happened, so we'll just rethrow the error and allow
-      // the process to die.
-      throw err;
-    }
+    // We use `runner.import(...)` instead of `ssrLoadModule(...)` because a)
+    // the latter will be deprecated soon and b) `runner.import(...)` will
+    // automatically produce correct stack traces that account for code
+    // transformations done by Vite.
+    const appModule = await server.environments.ssr.runner.import(config.appPath);
 
     if (appModule) {
       _mostRecentAppModule = appModule;
     }
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    const app = await appModule[config.exportName!];
+    const app = appModule[config.exportName!];
     if (!app) {
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
         timestamp: true,
@@ -99,7 +110,7 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   if (config.initAppOnBoot) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     server.httpServer!.once('listening', async () => {
-      await _loadApp(config);
+      await _loadApp(config).catch(() => {});
     });
   }
 
@@ -110,7 +121,9 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   const fullRestartPathMatchers = fullRestartPaths.map((p) => picomatch(p));
   server.watcher.add(fullRestartPaths);
 
-  const debouncedLoadApp = debounce(async () => await _loadApp(config), 500, { immediate: true });
+  const debouncedLoadApp = debounce(async () => await _loadApp(config).catch(() => {}), 500, {
+    immediate: true,
+  });
   const debouncedRestart = debounce(() => server.restart(), 500, { immediate: true });
 
   function needsFullRestart(file: string): boolean {
@@ -171,20 +184,18 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
   };
 
   return async function (req: IncomingMessage, res: ServerResponse): Promise<void> {
-    const app = await _loadApp(config);
-    if (!app) return;
-
-    app.use((err: unknown, _req: typeof req, _res: typeof res, next: Connect.NextFunction) => {
-      if (err instanceof Error) {
-        server.ssrFixStacktrace(err);
-      }
-
-      next(err);
+    const app = await _loadApp(config).catch((err) => {
+      const formattedError = formatError(err);
+      logger.error(formattedError);
+      res.writeHead(500, { 'Content-Type': 'text/plain' });
+      res.end(stripAnsi(formattedError));
+      return null;
     });
+    if (!app) return;
 
     app(req, res);
   };
-};
+}
 
 const PLUGIN_NAME = 'vite-plugin-express';
 

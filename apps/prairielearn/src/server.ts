@@ -2530,7 +2530,12 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    logger.error('Error initializing PrairieLearn server:', err);
+    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
+    // do a better job.
+    if (!isHMR) {
+      logger.error('Error initializing PrairieLearn server:', err);
+    }
+
     throw err;
   }
 

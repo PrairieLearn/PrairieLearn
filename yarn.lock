@@ -4185,6 +4185,7 @@ __metadata:
     "@types/picomatch": "npm:^4.0.0"
     debounce: "npm:^2.2.0"
     picomatch: "npm:^4.0.2"
+    strip-ansi: "npm:^7.1.0"
     typescript: "npm:^5.8.3"
     vite: "npm:^7.0.6"
   languageName: unknown
