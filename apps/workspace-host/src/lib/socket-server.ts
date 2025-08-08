@@ -13,5 +13,6 @@ export function init() {
 }
 
 export async function close() {
-  await client?.quit();
+  // If quitting fails, proceed anyways.
+  await client?.quit().catch(() => {});
 }

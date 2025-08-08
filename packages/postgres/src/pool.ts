@@ -895,7 +895,7 @@ export class PostgresPool {
    *
    * @param schema The schema name to use (can be "null" to unset the search path)
    */
-  async setSearchSchema(schema: string) {
+  async setSearchSchema(schema: string | null) {
     if (schema == null) {
       this.searchSchema = schema;
       return;
