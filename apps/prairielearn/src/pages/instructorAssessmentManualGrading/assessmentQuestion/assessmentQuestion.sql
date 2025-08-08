@@ -45,7 +45,7 @@ WITH
             rgti.rubric_item_id IS NOT NULL
         ),
         '[]'::json
-      ) AS rubric_items
+      ) AS rubric_ids
     FROM
       latest_submissions AS ls
       LEFT JOIN rubric_grading_to_items AS rgti ON ls.manual_rubric_grading_id = rgti.rubric_grading_id
@@ -67,7 +67,7 @@ SELECT
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
   ((iq.id % 21317) * 45989) % 3767 as iq_stable_order,
-  COALESCE(ri.rubric_items, '[]'::json) AS rubric_grading_items
+  COALESCE(ri.rubric_ids, '[]'::json) AS rubric_grading_items
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
