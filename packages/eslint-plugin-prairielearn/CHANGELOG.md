@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.2
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 2.2.1
 
 ### Patch Changes
