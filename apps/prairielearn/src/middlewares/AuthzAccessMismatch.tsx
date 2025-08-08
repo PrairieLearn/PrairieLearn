@@ -200,17 +200,14 @@ export function AuthzAccessMismatch({
           </p>
 
           <details class="mb-3">
-            <summary>View permission differences</summary>
-            <div class="mt-3">
-              <h3 class="h6">One of these permissions is required</h3>
-              <PermissionsTable permissions={oneOfPermissions} />
-              {otherPermissions.length > 0 && (
-                <>
-                  <h3 class="h6">Other permission differences</h3>
-                  <PermissionsTable permissions={otherPermissions} />
-                </>
-              )}
-            </div>
+            <summary>View missing permissions</summary>
+            <PermissionsTable permissions={oneOfPermissions} />
+            {otherPermissions.length > 0 && (
+              <details>
+                <summary>Other permission differences</summary>
+                <PermissionsTable permissions={otherPermissions} />
+              </details>
+            )}
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
