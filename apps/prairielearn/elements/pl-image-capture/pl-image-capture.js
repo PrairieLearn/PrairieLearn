@@ -67,7 +67,8 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Add popovers and listeners to the mobile capture buttons
+     * Add the popovers and listeners to the mobile capture buttons in the
+     * horizontal and dropdown layouts.
      */
     prepareMobileCaptureButtons() {
       const mobileCaptureButtons = this.getMobileCaptureButtons();
@@ -76,6 +77,7 @@ const MAX_ZOOM_SCALE = 5;
         $(mobileCaptureButton).popover({
           title: 'Capture with mobile device',
           placement: 'auto',
+          container: 'body',
           html: true,
           content: `
               <div class="w-100 d-flex flex-column align-items-center">
@@ -99,7 +101,8 @@ const MAX_ZOOM_SCALE = 5;
                     It will be available once the question is deployed to production.
                   </p>
                   <p class="small text-muted mb-0 mt-3">
-                    For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+                    For setup instructions to enable mobile capture locally, refer to the 
+                    <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
                   </p>
                 `
                 }
@@ -628,9 +631,9 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       if (dataUrl && !hiddenCaptureInput.value) {
-        this.setIsRetaking(true);
+        this.updateCaptureButtons(true);
       } else if (!dataUrl) {
-        this.setIsRetaking(false);
+        this.updateCaptureButtons(false);
       }
 
       if (dataUrl) {
@@ -640,8 +643,12 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    /** */
-    setIsRetaking(isRetaking) {
+    /**
+     * Update the capture button layout and text based on if the user is retaking the image.
+     *
+     * @param {boolean} isRetaking - Whether the user is retaking the image.
+     */
+    updateCaptureButtons(isRetaking) {
       if (this.mobile_capture_enabled) {
         const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
           '.js-capture-buttons-horizontal',
