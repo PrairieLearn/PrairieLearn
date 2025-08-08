@@ -46,7 +46,7 @@ export interface ServerJobLogger {
 
 export interface ServerJob extends ServerJobLogger {
   fail(msg: string): never;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
+  exec(file: string, args: string[], options: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
