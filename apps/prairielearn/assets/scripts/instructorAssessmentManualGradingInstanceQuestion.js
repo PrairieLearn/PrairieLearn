@@ -1,3 +1,4 @@
+/* eslint-disable no-alert */
 import ClipboardJS from 'clipboard';
 import qs from 'qs';
 

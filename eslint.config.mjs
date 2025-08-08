@@ -38,7 +38,6 @@ const NO_RESTRICTED_SYNTAX = [
 ];
 
 export default tseslint.config([
-  js.configs.recommended,
   tseslint.configs.stylistic,
   tseslint.configs.strict,
   {
@@ -149,10 +148,36 @@ export default tseslint.config([
     },
 
     rules: {
+      ...js.configs.all.rules,
+      'arrow-body-style': 'off', // TODO: Consider enabling this
+      'array-callback-return': 'off',
+      'capitalized-comments': 'off',
+      camelcase: 'off',
+      'class-methods-use-this': 'off',
+      'consistent-this': 'off',
+      'consistent-return': 'off', // TODO: Consider enabling this
+      complexity: 'off',
       curly: ['error', 'multi-line', 'consistent'],
+      'default-case': 'off', // TODO: Consider enabling this
+      'dot-notation': 'off', // TODO: Consider enabling this
       eqeqeq: ['error', 'smart'],
+      'func-names': 'off', // TODO: Consider enabling this
+      'func-style': 'off',
+      'guard-for-in': 'off',
       'handle-callback-err': 'error',
+      'id-length': 'off',
+      'init-declarations': 'off', // TODO: Consider enabling this
+      'logical-assignment-operators': 'off', // TODO: Consider enabling this
+      'no-bitwise': 'off',
+      'no-empty-function': 'off', // TODO: Consider enabling this
+      'no-implicit-coercion': 'off', // TODO: Consider enabling this
+      'no-invalid-this': 'off', // TODO: Consider enabling this
+      'no-lonely-if': 'off', // TODO: Consider enabling this
+      'no-negated-condition': 'off',
+      'no-new': 'off', // TODO: Consider enabling this
       'no-template-curly-in-string': 'error',
+      'no-promise-executor-return': 'off',
+      'no-redeclare': 'off',
       'no-restricted-globals': [
         'error',
         // These are not available in ES modules.
@@ -160,10 +185,53 @@ export default tseslint.config([
         '__dirname',
       ],
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
+      'no-shadow': 'off',
+      'no-unmodified-loop-condition': 'off',
+      'no-unneeded-ternary': 'off', // TODO: Consider enabling this
+      'no-useless-assignment': 'off', // TODO: Consider enabling this
+      'no-useless-concat': 'off', // TODO: Consider enabling this
+      'no-useless-constructor': 'off',
+      'no-useless-return': 'off', // TODO: Consider enabling this
       'object-shorthand': 'error',
+      'one-var': ['off', 'never'], // TODO: Consider enabling this
+      'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'prefer-destructuring': 'off', // TODO: Consider enabling this
+      'prefer-named-capture-group': 'off',
+      'prefer-object-has-own': 'off', // TODO: Consider enabling this
+      'prefer-template': 'off',
+      'new-cap': 'off',
+      'no-await-in-loop': 'off',
       'no-console': ['error', { allow: ['warn', 'error', 'table', 'trace'] }],
+      'no-continue': 'off',
       'no-duplicate-imports': 'error',
+      'no-else-return': 'off',
+      'no-eq-null': 'off', // TODO: Consider enabling this
+      'no-inline-comments': 'off',
+      'no-loop-func': 'off',
+      'no-nested-ternary': 'off',
+      'no-magic-numbers': 'off',
+      'no-param-reassign': 'off',
+      'no-plusplus': 'off', // TODO: Consider enabling this
+      'no-ternary': 'off',
+      'no-underscore-dangle': 'off',
+      'no-use-before-define': 'off',
+      'no-warning-comments': 'off',
+      'no-undef': 'off',
+      'no-undef-init': 'off', // TODO: Consider enabling this
+      'no-undefined': 'off',
+      'no-unused-vars': 'off',
+      'max-classes-per-file': 'off',
+      'max-depth': 'off',
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'max-params': 'off',
+      'max-statements': 'off',
+      radix: ['error', 'as-needed'],
+      'require-atomic-updates': 'off',
+      'require-await': 'off', // TODO: Consider enabling this
+      'require-unicode-regexp': 'off',
+      'sort-vars': 'off',
 
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
@@ -175,6 +243,7 @@ export default tseslint.config([
           memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
         },
       ],
+      'sort-keys': 'off',
 
       'import-x/order': [
         'error',
@@ -222,7 +291,7 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect as errors.
       ...Object.fromEntries(
-        Object.keys(reactYouMightNotNeedAnEffect.configs['recommended'].rules ?? {}).map(
+        Object.keys(reactYouMightNotNeedAnEffect.configs.recommended.rules ?? {}).map(
           (ruleName) => [ruleName, 'error'],
         ),
       ),

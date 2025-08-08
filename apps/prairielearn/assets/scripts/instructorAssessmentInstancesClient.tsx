@@ -793,7 +793,7 @@ onDocumentReady(() => {
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {
-    let time_limit_list: Record<string, any> = new Object();
+    let time_limit_list: Record<string, any> = {};
     let remaining_time_min = 0;
     let remaining_time_max = 0;
     let has_open_instance = false;

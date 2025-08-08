@@ -58,7 +58,7 @@ export async function makeVariant(
   if (options.variant_seed != null) {
     variant_seed = options.variant_seed;
   } else {
-    variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
+    variant_seed = Math.floor(Math.random() * 2 ** 32).toString(36);
   }
 
   const questionModule = questionServers.getModule(question.type);

@@ -122,7 +122,7 @@ export function setupExpressErrorHandler(
 function getStatusCodeFromResponse(error: MiddlewareError): number {
   const statusCode =
     error.status || error.statusCode || error.status_code || error.output?.statusCode;
-  return statusCode ? parseInt(statusCode as string, 10) : 500;
+  return statusCode ? parseInt(statusCode as string) : 500;
 }
 
 /** Returns true if response code is internal server error */

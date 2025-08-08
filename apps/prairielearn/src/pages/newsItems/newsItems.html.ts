@@ -35,7 +35,7 @@ export function NewsItems({
     },
     options: {
       pageNote:
-        (newsItemNotificationCount ?? 0 > 0) ? `${newsItemNotificationCount} Unread` : undefined,
+        (newsItemNotificationCount ?? 0) > 0 ? `${newsItemNotificationCount} Unread` : undefined,
     },
     content: html`
       <div class="card mb-4">

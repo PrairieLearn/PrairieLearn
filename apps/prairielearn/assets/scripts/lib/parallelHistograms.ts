@@ -188,6 +188,6 @@ function calculate_max(data: Data[]) {
     }
   }
 
-  max = max * 1.1;
+  max *= 1.1;
   return max;
 }
