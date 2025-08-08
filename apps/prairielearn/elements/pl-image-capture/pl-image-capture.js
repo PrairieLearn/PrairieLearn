@@ -50,8 +50,9 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       if (this.mobile_capture_enabled) {
-        this.createExternalCaptureListeners();
+        this.prepareMobileCaptureButtons();
       }
+
       this.createLocalCameraCaptureListeners();
 
       this.loadSubmission();
@@ -65,10 +66,46 @@ const MAX_ZOOM_SCALE = 5;
       this.createApplyChangesListeners();
     }
 
-    createExternalCaptureListeners() {
+    /**
+     * Add popovers and listeners to the mobile capture buttons
+     */
+    prepareMobileCaptureButtons() {
       const mobileCaptureButtons = this.getMobileCaptureButtons();
 
       for (const mobileCaptureButton of mobileCaptureButtons) {
+        $(mobileCaptureButton).popover({
+          title: 'Capture with mobile device',
+          placement: 'auto',
+          html: true,
+          content: `
+              <div class="w-100 d-flex flex-column align-items-center">
+                ${
+                  this.mobile_capture_enabled
+                    ? `
+                  <div id="qr-code-${this.uuid}" class="qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
+                    <div class="spinning-wheel spinner-border">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                  <p class="small text-muted mb-0">
+                    Scan the QR code with your mobile device to capture an image of your work. 
+                  </p>
+                `
+                    : `
+                  <p class="small text-muted mb-0">
+                    Mobile device capture is not available in this environment.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    It will be available once the question is deployed to production.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+                  </p>
+                `
+                }
+              </div>
+            `,
+        });
         mobileCaptureButton.addEventListener('inserted.bs.popover', () => {
           this.generateQrCode();
         });

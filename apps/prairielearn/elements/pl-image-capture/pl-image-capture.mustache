@@ -104,36 +104,6 @@ $(function() {
         <button 
           type="button" 
           class="js-capture-with-mobile-device-button btn btn-info btn-sm"
-          data-bs-toggle="popover"
-          data-bs-container="body"
-          data-bs-html="true"
-          data-bs-placement="auto"
-          data-bs-title="Capture with mobile device"
-          data-bs-content='
-          <div class="w-100 d-flex flex-column align-items-center">
-            {{#external_image_capture_available}}
-              <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center border" style="width:200px;height:200px">
-                <div class="spinning-wheel spinner-border">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-              <p class="small text-muted mb-0">
-                Scan the QR code with your mobile device to capture an image of your work. 
-              </p>
-            {{/external_image_capture_available}}
-            {{^external_image_capture_available}}
-              <p class="small text-muted mb-0">
-                Mobile device capture is not available in this environment.
-              </p>
-              <p class="small text-muted mb-0 mt-3">
-                It will be available once the question is deployed to production.
-              </p>
-              <p class="small text-muted mb-0 mt-3">
-                For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
-              </p>
-            {{/external_image_capture_available}}
-          </div>
-          '
         >
           <i class="bi bi-qr-code-scan me-1"></i>
           <span>Use phone</span>
@@ -142,54 +112,35 @@ $(function() {
       </div>
       {{#mobile_capture_enabled}}
         <div class="js-capture-buttons-dropdown dropdown d-none">
-          <button class="btn btn-sm btn-info dropdown-toggle" type="button" id="retake-photo-button" data-bs-toggle="dropdown" aria-expanded="false">
+          <button 
+            id="retake-photo-button" 
+            type="button" 
+            class="btn btn-sm btn-info dropdown-toggle" 
+            aria-expanded="false" 
+            data-bs-toggle="dropdown" 
+            data-bs-auto-close="outside"
+          >
             Retake...
           </button>
           <ul class="dropdown-menu" aria-labelledby="retake-photo-button">
-            <button
-              type="button"
-              class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
-            >
-              <i class="bi bi-camera-fill me-1"></i>
-              <span>Use webcam</span>
-            </button>
-            <button 
-              type="button" 
-              class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
-              data-bs-toggle="popover"
-              data-bs-container="body"
-              data-bs-html="true"
-              data-bs-placement="auto"
-              data-bs-title="Capture with mobile device"
-              data-bs-content='
-              <div class="w-100 d-flex flex-column align-items-center">
-                {{#external_image_capture_available}}
-                  <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center border" style="width:200px;height:200px">
-                    <div class="spinning-wheel spinner-border">
-                      <span class="visually-hidden">Loading...</span>
-                    </div>
-                  </div>
-                  <p class="text-muted mb-0">
-                    Scan the QR code with your mobile device to capture an image of your work. 
-                  </p>
-                {{/external_image_capture_available}}
-                {{^external_image_capture_available}}
-                  <p class="text-muted mb-0">
-                    Mobile device capture is not available in this environment.
-                  </p>
-                  <p class="text-muted mb-0 mt-3">
-                    It will be available once the question is deployed to production.
-                  </p>
-                  <p class="text-muted mb-0 mt-3">
-                    For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
-                  </p>
-                {{/external_image_capture_available}}
-              </div>
-              '
-            >
-              <i class="bi bi-qr-code-scan me-1"></i>
-              <span>Use phone</span>
-            </button>
+            <li>
+              <button
+                type="button"
+                class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-camera-fill me-1"></i>
+                <span>Use webcam</span>
+              </button>
+            </li>
+            <li>
+              <button 
+                type="button" 
+                class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-qr-code-scan me-1"></i>
+                <span>Use phone</span>
+              </button>
+            </li>
           </ul>
         </div>
       {{/mobile_capture_enabled}}
