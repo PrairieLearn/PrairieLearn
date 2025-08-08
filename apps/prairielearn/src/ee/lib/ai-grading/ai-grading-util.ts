@@ -37,8 +37,8 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
-export const OPEN_AI_TEMPERATURE = 0.2;
+export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
+export const OPEN_AI_TEMPERATURE = 1;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -541,7 +541,10 @@ export async function aiEvaluateSubmission({
     },
     {
       role: 'user',
-      content: 'Does the student\'s final response equal the correct answer exactly, and is it mathematically equivalent? Only evaluate their final response(s), nothing more. Return only a boolean value, true if the answer is correct, false otherwise. Lean towards returning false.'
+      content: `
+        Does the student\'s final response equal the correct answer exactly, 
+        and is it mathematically equivalent? Only evaluate their final response(s), nothing more. 
+        Return only a boolean value, true if the answer is correct, false otherwise. Lean towards returning false.`
     }
   ];
 

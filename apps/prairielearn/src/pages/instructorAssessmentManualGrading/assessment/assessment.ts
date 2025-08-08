@@ -182,9 +182,10 @@ router.post(
       const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 10;
       const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
       const PARALLEL_LIMIT = 20;
+      const INSTANCE_QUESTIONS_TO_TEST = ['7677', '8456', '8038', '8518'];
 
       // For testing only - to work with the JSON directly and more easily.
-      const INCLUDE_LONG_DATA = true;
+      const INCLUDE_LONG_DATA = false;
 
       const answers = {
         1.1: '-10-2sqrt(3)',
@@ -242,13 +243,16 @@ router.post(
         18: 21.0,
       };
 
-
       for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_question_rows.length); i++) {
         const assessment_question_row = assessment_question_rows[i];
         const assessment_question = assessment_question_row.assessment_question;
-        const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
+        let all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
           assessment_question.id,
         )).slice(0, MAX_INSTANCE_QUESTIONS_TO_PROCESS);
+
+        all_instance_questions = all_instance_questions.filter((instance_question) =>
+          INSTANCE_QUESTIONS_TO_TEST.includes(instance_question.id)
+        );
 
         const question = assessment_question_row.question;
         const course = await selectCourseById(question.course_id);
