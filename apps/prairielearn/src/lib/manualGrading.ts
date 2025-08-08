@@ -124,7 +124,8 @@ export async function nextUngradedInstanceQuestionUrl(
 
 /**
  * Selects a variety of rubric data for a given assessment question.
- * Also renders the selected rubric items with the submission data.
+ * If a submission is provided, the rubric items are rendered
+ * as Mustache templates with the submission's data.
  */
 export async function selectRubricData({
   assessment_question,
