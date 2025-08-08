@@ -33,6 +33,7 @@ const MAX_ZOOM_SCALE = 5;
       this.editable = options.editable;
 
       this.external_image_capture_url = options.external_image_capture_url;
+      this.external_image_capture_available = options.external_image_capture_available;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
@@ -82,7 +83,7 @@ const MAX_ZOOM_SCALE = 5;
           content: `
               <div class="w-100 d-flex flex-column align-items-center">
                 ${
-                  this.mobile_capture_enabled
+                  this.external_image_capture_available
                     ? `
                   <div id="qr-code-${this.uuid}" class="qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
                     <div class="spinning-wheel spinner-border">
