@@ -84,8 +84,6 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
       throw new Error('VitePluginExpress can only be used with a runnable dev environment');
     }
 
-    console.trace('_loadApp called');
-
     // We use `runner.import(...)` instead of `ssrLoadModule(...)` because a)
     // the latter will be deprecated soon and b) `runner.import(...)` will
     // automatically produce correct stack traces that account for code
