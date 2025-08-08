@@ -1,5 +1,7 @@
+import async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import OpenAI from 'openai';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -12,9 +14,19 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { aiEvaluateSubmission, selectInstanceQuestionsForAssessmentQuestion, selectLastVariantAndSubmission, selectRubricGradingItems } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { config } from '../../../lib/config.js';
+import { type Assessment, type AssessmentQuestion, type Course, type RubricItem } from '../../../lib/db-types.js';
+import { buildQuestionUrls } from '../../../lib/question-render.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import { selectCourseById } from '../../../models/course.js';
+import { selectQuestionById } from '../../../models/question.js';
+import * as questionServers from '../../../question-servers/index.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
+
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -103,6 +115,192 @@ router.post(
         }
       });
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'ai_grade_assessment_all') {
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_questions = (await selectAssessmentQuestions(
+        assessment.id,
+      )) as AssessmentQuestion[];
+
+      if (!assessment_questions) {
+        return;
+      }
+      const START_INDEX = 1; 
+      for (let i = START_INDEX; i < assessment_questions.length; i++) {
+        const assessment_question = assessment_questions[i];
+        const question = await selectQuestionById(assessment_question.question_id);
+
+        await aiGrade({
+          question,
+          course: res.locals.course,
+          course_instance_id: assessment.course_instance_id,
+          assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all'
+        });
+      }
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'generate_submissions') {
+      interface SubmissionEvaluation {
+        instance_question_id: string;
+        assessment_question_id: string;
+        link_to_instance_question: string;
+        question_content: string;
+        answer: string;
+        images: string[];
+        /** Adjust type as needed */
+        prompt: any; 
+        rubric_items: RubricItem[];
+        ai_response: any;
+      }
+
+      if (!config.aiGradingOpenAiApiKey) {
+        throw new HttpStatusError(
+          400,
+          'AI cluster generation is not available.',
+        );
+      }
+
+      const openai = new OpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+    
+      const assessment = res.locals.assessment as Assessment;
+      const assessment_question_rows = (await selectAssessmentQuestions(
+        { assessment_id: assessment.id }
+      ));
+
+      if (!assessment_question_rows) {
+        return;
+      }
+      const START_INDEX = 0; 
+
+      const assessmentSubmissionData = {};
+
+      const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 10;
+      const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
+      const PARALLEL_LIMIT = 20;
+
+      // For testing only - to work with the JSON directly and more easily.
+      const INCLUDE_LONG_DATA = true;
+
+      const answers = {
+        1.1: '-10-2sqrt(3)',
+        1.2: '5/sqrt(26) or 5sqrt(26)/26',
+        2: `
+          Limit as x approaches 0^{-} is 24
+          Limit as x approaches 0^{+} is 2
+          Thus, the function is not continuous at x = 0.
+        `,
+        3.1: '3/4',
+        3.2: '-infinity',
+        4.1: `
+          e^{\theta}\tan\theta + e^{\theta}\sec^2\theta - 1.
+        `,
+        4.2: `
+          2\ln\lvert x\rvert - \frac{3^{x}}{\ln 3} + \frac{4}{5}x^{\frac{5}{4}} + C
+        `,
+        4.3: '(9pi/2)-1',
+        4.4: '5cos(sin(5x+1))',
+        5.0: '2x-2',
+        6.0: '1/32',
+        7.0: '2',
+        8.0: '10,000',
+        9.0: `
+          \frac{1}{2}\ln(10)-\frac{1}{2}\ln(5)
+        `,
+        10.0: `
+          \sum_{i=1}^{12}\Bigl(\tfrac{2i}{3} + \tfrac{i^2}{9}\Bigr)^{\frac{1}{3}}
+        `,
+        11.0: '36u^2',
+        12.0: '\int_{0}^{1}\bigl(\pi(2 - x^3)^2 - \pi(2 - x^2)^2\bigr)\,dx',
+        20.0: '-(\sqrt[3]{x})^2 \,\sin\bigl(\sqrt[3]{x}\bigr)\;\cdot\;\frac{1}{3x^{2/3}}',
+        21.0: '-78 miles/hour'
+      }
+      
+      const aqNumberToOriginalNumber: Record<number, number> = {
+        0: 1.1,
+        1: 1.2,
+        2: 2,
+        3: 3.1,
+        4: 3.2,
+        5: 4.1,
+        6: 4.2,
+        7: 4.3,
+        8: 4.4,
+        9: 5.0,
+        10: 6.0,
+        11: 7.0,
+        12: 8.0,
+        13: 9.0,
+        14: 10.0,
+        15: 11.0,
+        16: 12.0,
+        17: 20.0,
+        18: 21.0,
+      };
+
+
+      for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_question_rows.length); i++) {
+        const assessment_question_row = assessment_question_rows[i];
+        const assessment_question = assessment_question_row.assessment_question;
+        const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
+          assessment_question.id,
+        )).slice(0, MAX_INSTANCE_QUESTIONS_TO_PROCESS);
+
+        const question = assessment_question_row.question;
+        const course = await selectCourseById(question.course_id);
+        let j = 0;
+
+        const submissionEvaluationData: SubmissionEvaluation[] = await async.mapLimit(all_instance_questions, PARALLEL_LIMIT, async (instance_question) => {
+          console.log(`Processing instance question ${j} of ${all_instance_questions.length} for assessment question ${assessment_question.id}`);
+
+          const {
+            rubric_items,
+            messages,
+            completionContent,
+            questionPrompt,
+            promptImageUrls
+          } = await aiEvaluateSubmission({
+            question,
+            question_answer: answers[aqNumberToOriginalNumber[i]],
+            instance_question,
+            course,
+            urlPrefix: res.locals.urlPrefix,
+            openai
+          });
+
+          const submissionEvaluation: SubmissionEvaluation = {
+            instance_question_id: instance_question.id,
+            assessment_question_id: assessment_question.id,
+            link_to_instance_question: `${config.serverCanonicalHost}/pl/course_instance/${res.locals.course_instance.id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`,
+            question_content: INCLUDE_LONG_DATA ? questionPrompt : '',
+            images: INCLUDE_LONG_DATA ? promptImageUrls : [],
+            prompt: INCLUDE_LONG_DATA ? messages : [],
+            rubric_items,
+            ai_response: completionContent,
+            answer: answers[aqNumberToOriginalNumber[i]]
+          };
+
+          j++;
+          return submissionEvaluation;
+        });
+
+        assessmentSubmissionData[assessment_question.id] = submissionEvaluationData;
+      }
+
+      // Download the embeddings as a JSON file
+      const jsonContent = JSON.stringify(assessmentSubmissionData, null, 2);
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader(
+        'Content-Disposition',
+        `attachment; filename="assessment_submissions_${assessment.id}.json"`,
+      );
+      return res.send(jsonContent);
+
+      // return res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
