@@ -85,7 +85,7 @@ const MAX_ZOOM_SCALE = 5;
                 ${
                   this.external_image_capture_available
                     ? `
-                  <div id="qr-code-${this.uuid}" class="qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
+                  <div class="qr-code-${this.uuid} qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
                     <div class="spinning-wheel spinner-border">
                       <span class="visually-hidden">Loading...</span>
                     </div>
@@ -455,21 +455,27 @@ const MAX_ZOOM_SCALE = 5;
       this.selectedContainerName = containerName;
     }
 
+    /**
+     * Generate the QR code for external image capture and insert it into
+     * any QR code divs associated with the image capture element.
+     */
     generateQrCode() {
       if (!this.external_image_capture_url) {
         return;
       }
 
-      const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
+      const qrCodes = document.querySelectorAll(`.qr-code-${this.uuid}`);
 
-      if (!qrCode) {
+      if (!qrCodes) {
         throw new Error('QR code element not found.');
       }
 
-      qrCode.innerHTML = new QRCode({
-        content: this.external_image_capture_url,
-        container: 'svg-viewbox',
-      }).svg();
+      for (const qrCode of qrCodes) {
+        qrCode.innerHTML = new QRCode({
+          content: this.external_image_capture_url,
+          container: 'svg-viewbox',
+        }).svg();
+      }
     }
 
     /**
