@@ -62,6 +62,12 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
+    .on('button[data-bs-toggle="tab"]', {
+      element(el) {
+        if (el.hasAttribute('role')) return;
+        el.setAttribute('role', 'tab');
+      },
+    })
     .on('.pl-drawing-button img', {
       element(el) {
         const src = el.getAttribute('src');
@@ -187,7 +193,8 @@ const validateHtml = async (html: string) => {
 
 const validateAxe = async (html: string) => {
   const virtualConsole = new VirtualConsole();
-  const jsdom = new JSDOM(html, {
+  const rewrittenHtml = await rewriteValidatorFalsePositives(html);
+  const jsdom = new JSDOM(rewrittenHtml, {
     virtualConsole,
   });
 
