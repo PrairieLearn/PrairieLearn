@@ -23,7 +23,7 @@ export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSche
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.record(z.any()).array(),
-  columns: z.string().array(),
+  columns: z.string().array().readonly(),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
