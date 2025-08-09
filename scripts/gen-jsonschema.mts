@@ -4,7 +4,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { ConfigSchema as GraderHostConfigSchema } from '../apps/grader-host/src/lib/config.js';
 import {

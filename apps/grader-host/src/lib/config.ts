@@ -1,6 +1,6 @@
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { GetQueueUrlCommand, SQSClient } from '@aws-sdk/client-sqs';
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import {
   ConfigLoader,

@@ -1,6 +1,5 @@
 import { type JSONSchemaType } from 'ajv';
-import { type ZodType } from 'zod/v4';
-import * as z from 'zod/v4';
+import { type ZodType, z } from 'zod/v4';
 
 import { type AssessmentJson, AssessmentJsonSchema } from './infoAssessment.js';
 import { type CourseJson, CourseJsonSchema } from './infoCourse.js';
