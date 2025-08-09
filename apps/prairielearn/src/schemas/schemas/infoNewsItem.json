@@ -7,8 +7,11 @@
   "required": ["uuid", "title", "visible_to_students"],
   "properties": {
     "comment": {
-      "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -36,7 +39,8 @@
           "type": "string"
         },
         {
-          "type": "array"
+          "type": "array",
+          "items": {}
         },
         {
           "type": "object",
