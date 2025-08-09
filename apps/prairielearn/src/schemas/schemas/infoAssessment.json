@@ -208,8 +208,7 @@
           "type": "boolean",
           "default": false
         }
-      },
-      "$id": "GroupRoleJsonSchema"
+      }
     },
     "AssessmentAccessRuleJsonSchema": {
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
@@ -285,8 +284,7 @@
           "type": "boolean",
           "default": true
         }
-      },
-      "$id": "AssessmentAccessRuleJsonSchema"
+      }
     },
     "ZoneAssessmentJsonSchema": {
       "type": "object",
@@ -364,8 +362,7 @@
             "type": "string"
           }
         }
-      },
-      "$id": "ZoneAssessmentJsonSchema"
+      }
     },
     "ZoneQuestionJsonSchema": {
       "type": "object",
@@ -482,8 +479,7 @@
             "type": "string"
           }
         }
-      },
-      "$id": "ZoneQuestionJsonSchema"
+      }
     },
     "QuestionAlternativeJsonSchema": {
       "type": "object",
@@ -564,15 +560,13 @@
           "type": "number",
           "minimum": 0
         }
-      },
-      "$id": "QuestionAlternativeJsonSchema"
+      }
     },
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
       "default": 0,
-      "minimum": 0,
-      "$id": "PointsSingleJsonSchema"
+      "minimum": 0
     },
     "PointsListJsonSchema": {
       "description": "An array of point values.",
@@ -580,26 +574,22 @@
       "minItems": 1,
       "items": {
         "$ref": "#/definitions/PointsSingleJsonSchema"
-      },
-      "$id": "PointsListJsonSchema"
+      }
     },
     "QuestionIdJsonSchema": {
       "description": "Question ID (directory name of the question).",
-      "type": "string",
-      "$id": "QuestionIdJsonSchema"
+      "type": "string"
     },
     "ForceMaxPointsJsonSchema": {
       "description": "Whether to force this question to be awarded maximum points on a regrade.",
       "type": "boolean",
-      "default": false,
-      "$id": "ForceMaxPointsJsonSchema"
+      "default": false
     },
     "AdvanceScorePercJsonSchema": {
       "description": "Minimum score percentage to unlock access to subsequent questions.",
       "type": "number",
       "minimum": 0,
-      "maximum": 100,
-      "$id": "AdvanceScorePercJsonSchema"
+      "maximum": 100
     },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
@@ -616,8 +606,7 @@
           "additionalProperties": {},
           "properties": {}
         }
-      ],
-      "$id": "CommentJsonSchema"
+      ]
     }
   }
 }

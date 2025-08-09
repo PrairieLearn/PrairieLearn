@@ -47,6 +47,7 @@ function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
 ) {
+  console.log(assessmentInfoFile);
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
@@ -351,6 +352,7 @@ export async function sync(
   questionIds: Record<string, any>,
 ) {
   const assessments = courseInstanceData.assessments;
+  console.log(assessments);
 
   // We only check exam UUIDs if the course instance is accessible. This allows
   // us to delete the legacy `exams` table without producing sync warnings for
