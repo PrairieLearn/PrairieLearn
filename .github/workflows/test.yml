@@ -155,6 +155,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: core
       - name: Install core Python dependencies
         run: make python-deps-core
 
