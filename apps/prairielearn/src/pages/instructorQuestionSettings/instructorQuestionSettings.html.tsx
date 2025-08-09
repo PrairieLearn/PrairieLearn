@@ -132,7 +132,9 @@ export function InstructorQuestionSettings({
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
               ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${questionGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"

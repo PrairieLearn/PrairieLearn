@@ -1,5 +1,13 @@
 # @prairielearn/html-ejs
 
+## 2.0.18
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
 ## 2.0.17
 
 ### Patch Changes

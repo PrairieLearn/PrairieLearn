@@ -77,5 +77,5 @@ export function formatTimezone(tz: Timezone): string {
           ? tz.utc_offset.minutes
           : tz.utc_offset.minutes * -1
         : '00'
-    }) ${tz.name}`} `;
+    }) ${tz.name}`}`;
 }

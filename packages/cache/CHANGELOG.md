@@ -1,5 +1,14 @@
 # @prairielearn/cache
 
+## 2.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/sentry@4.0.1
+
 ## 2.0.21
 
 ### Patch Changes
