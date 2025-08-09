@@ -208,7 +208,6 @@
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
-      "id": "CommentJsonSchema",
       "anyOf": [
         {
           "type": "string"
@@ -228,7 +227,6 @@
     "ColorJsonSchema": {
       "description": "A color name.",
       "type": "string",
-      "id": "ColorJsonSchema",
       "enum": [
         "red1",
         "red2",

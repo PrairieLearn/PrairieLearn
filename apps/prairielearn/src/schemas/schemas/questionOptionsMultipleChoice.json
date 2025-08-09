@@ -42,7 +42,6 @@
   "definitions": {
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
-      "id": "CommentJsonSchema",
       "anyOf": [
         {
           "type": "string"
