@@ -56,7 +56,8 @@
           "additionalProperties": {},
           "properties": {}
         }
-      ]
+      ],
+      "$id": "CommentJsonSchema"
     }
   }
 }

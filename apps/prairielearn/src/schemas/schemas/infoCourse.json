@@ -222,7 +222,8 @@
           "additionalProperties": {},
           "properties": {}
         }
-      ]
+      ],
+      "$id": "CommentJsonSchema"
     },
     "ColorJsonSchema": {
       "description": "A color name.",
@@ -259,7 +260,8 @@
         "gray1",
         "gray2",
         "gray3"
-      ]
+      ],
+      "$id": "ColorJsonSchema"
     }
   }
 }

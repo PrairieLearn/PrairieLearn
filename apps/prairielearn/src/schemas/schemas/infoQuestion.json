@@ -344,7 +344,8 @@
           "additionalProperties": {},
           "properties": {}
         }
-      ]
+      ],
+      "$id": "CommentJsonSchema"
     }
   }
 }
