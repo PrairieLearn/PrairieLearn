@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/cache",
-  "version": "2.0.20",
+  "version": "2.0.22",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -12,10 +12,10 @@
     "@prairielearn/sentry": "workspace:^",
     "ioredis": "^5.7.0",
     "lru-cache": "^11.1.0",
-    "zod": "^4.0.14"
+    "zod": "^4.0.16"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   }
 }

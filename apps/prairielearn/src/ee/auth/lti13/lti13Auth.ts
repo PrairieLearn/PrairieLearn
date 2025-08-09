@@ -255,6 +255,7 @@ const OIDCLaunchFlowSchema = z.looseObject({
 //
 // Helper functions
 //
+
 async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   OIDCAuthResponseSchema.parse(req.body);

@@ -90,7 +90,8 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
 
-/** Builds the URL of an instance question tagged to be manually graded for a particular
+/**
+ * Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
  *
  * @param urlPrefix - URL prefix for the current course instance.
@@ -179,7 +180,8 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   });
 }
 
-/** Builds the locals object for rubric grading data. Can be called with any object that contains a
+/**
+ * Builds the locals object for rubric grading data. Can be called with any object that contains a
  * `manual_rubric_grading_id` field, typically a submission or grading job. Updates the object
  * in-place by adding a `rubric_grading` value, as well as the rendered version of the manual
  * feedback.
@@ -201,7 +203,8 @@ export async function populateManualGradingData(submission: Record<string, any>)
   }
 }
 
-/** Updates the rubric settings for an assessment question.
+/**
+ * Updates the rubric settings for an assessment question.
  *
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param use_rubric - Indicates if a rubric should be used for manual grading.
@@ -337,7 +340,8 @@ export async function updateAssessmentQuestionRubric(
   });
 }
 
-/** Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
+/**
+ * Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
  *
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param authn_user_id - The user_id of the logged in user.
@@ -368,7 +372,8 @@ async function recomputeInstanceQuestions(
   });
 }
 
-/** Creates a new grading object for a specific rubric.
+/**
+ * Creates a new grading object for a specific rubric.
  *
  * @param rubric_id - ID of the rubric (typically retrieved from the assessment question).
  * @param max_points - number of points assigned as the maximum number of points to the assessment question.
@@ -453,7 +458,8 @@ const InstanceQuestionScoreInputSchema = z.object({
 });
 type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
 
-/** Manually updates the score of an instance question.
+/**
+ * Manually updates the score of an instance question.
  * @param assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
  * @param instance_question_id - The ID of the instance question to be updated. May or may not be safe.
  * @param submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.

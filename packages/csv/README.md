@@ -49,7 +49,7 @@ import { createWriteStream } from 'node:fs';
 
 const data = Array.from(new Array(100_000), (_, i) => ({ id: i }));
 const output = createWriteStream('numbers.csv');
-stringifyNonblocking(data, {
+stringifyNonblocking<{ id: number }>(data, {
   header: true,
   columns: [{ key: 'id', header: 'ID' }],
 }).pipe(output);
