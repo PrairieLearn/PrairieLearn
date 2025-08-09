@@ -76,7 +76,7 @@ test-prairielearn-docker-smoke-tests: start-support
 	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
-test-python: venv-setup
+test-python: python-deps
 	@python3 -m pytest
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
@@ -101,7 +101,7 @@ lint-js:
 lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
-lint-python: venv-setup
+lint-python: python-deps
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
 # Lint HTML files, and the build output of the docs
@@ -127,7 +127,7 @@ format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
-format-python: venv-setup
+format-python: python-deps
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
@@ -138,7 +138,7 @@ typecheck-scripts:
 	@yarn tsc -p scripts
 typecheck-js:
 	@yarn turbo run build
-typecheck-python: venv-setup
+typecheck-python: python-deps
 	@yarn pyright
 
 changeset:
@@ -147,9 +147,9 @@ changeset:
 
 lint-docs: lint-d2 lint-links lint-markdown
 
-build-docs: venv-setup
+build-docs: python-deps
 	@.venv/bin/mkdocs build --strict
-preview-docs: venv-setup
+preview-docs: python-deps
 	@.venv/bin/mkdocs serve
 
 format-d2:
