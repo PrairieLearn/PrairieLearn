@@ -9,6 +9,9 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
+export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -376,6 +379,30 @@ export const AssessmentSetSchema = z.object({
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
+export const AuditEventSchema = z.object({
+  action: EnumAuditEventActionSchema,
+  action_detail: z.string().nullable(),
+  agent_authn_user_id: IdSchema.nullable(),
+  agent_user_id: IdSchema.nullable(),
+  assessment_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  context: z.record(z.string(), z.any()),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString,
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  new_row: z.record(z.string(), z.any()).nullable(),
+  old_row: z.record(z.string(), z.any()).nullable(),
+  row_id: IdSchema,
+  subject_user_id: IdSchema.nullable(),
+  table_name: z.string(),
+});
+export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
+// This table is getting deprecated in favor of the audit_event table.
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
