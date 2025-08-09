@@ -56,6 +56,7 @@ export function InstructorCourseAdminSettings({
                   class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
                   target="_blank"
                   rel="noreferrer"
+                  aria-label="View on GitHub"
                   href="${courseGHLink}"
                 >
                   <i class="bi bi-github"></i>
