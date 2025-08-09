@@ -493,7 +493,7 @@ onDocumentReady(() => {
         {
           filterAlgorithm: (row: InstanceQuestionRow, filters: { rubricFilterItems: string[] }) => {
             return filters.rubricFilterItems.every((item_id) =>
-              row.rubric_grading_items.includes(item_id),
+              row.rubric_grading_ids.includes(item_id),
             );
           },
         },
