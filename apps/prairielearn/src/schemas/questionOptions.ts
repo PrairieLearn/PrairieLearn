@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { QuestionCalculationOptionsJsonSchema } from './questionOptionsCalculation.js';
 import { QuestionCheckboxOptionsJsonSchema } from './questionOptionsCheckbox.js';

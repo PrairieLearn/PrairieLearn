@@ -1,12 +1,6 @@
-import { type ZodSchema, z } from 'zod';
+import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
-
-function uniqueArray<T extends ZodSchema>(schema: T) {
-  return z.array(schema).refine((items) => new Set(items).size === items.length, {
-    message: 'All items must be unique, no duplicate values allowed',
-  });
-}
 
 export const GroupRoleJsonSchema = z
   .object({
@@ -28,13 +22,16 @@ export const GroupRoleJsonSchema = z
   })
   .describe(
     'A custom role for use in group assessments that allows control over certain permissions.',
-  );
+  )
+  .meta({
+    id: 'GroupRoleJsonSchema',
+  });
 
 export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
@@ -44,7 +41,13 @@ export const AssessmentAccessRuleJsonSchema = z
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
       .optional(),
-    role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
+    role: z
+      .enum(['Student', 'TA', 'Instructor'])
+      .describe('DEPRECATED -- do not use.')
+      .optional()
+      .meta({
+        deprecated: true,
+      }),
     uids: z
       .array(z.string())
       .describe(
@@ -88,10 +91,13 @@ export const AssessmentAccessRuleJsonSchema = z
       .optional()
       .default(true),
   })
-  .strict()
+
   .describe(
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
-  );
+  )
+  .meta({
+    id: 'AssessmentAccessRuleJsonSchema',
+  });
 
 export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
 
@@ -99,29 +105,44 @@ export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
   .describe('A single point value.')
-  .default(0);
+  .default(0)
+  .meta({
+    id: 'PointsSingleJsonSchema',
+  });
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
   .min(1)
-  .describe('An array of point values.');
+  .describe('An array of point values.')
+  .meta({
+    id: 'PointsListJsonSchema',
+  });
 
 export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
 
 export const QuestionIdJsonSchema = z
   .string()
-  .describe('Question ID (directory name of the question).');
+  .describe('Question ID (directory name of the question).')
+  .meta({
+    id: 'QuestionIdJsonSchema',
+  });
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
   .default(false)
-  .describe('Whether to force this question to be awarded maximum points on a regrade.');
+  .describe('Whether to force this question to be awarded maximum points on a regrade.')
+  .meta({
+    id: 'ForceMaxPointsJsonSchema',
+  });
 
 export const AdvanceScorePercJsonSchema = z
   .number()
   .gte(0)
   .lte(100)
-  .describe('Minimum score percentage to unlock access to subsequent questions.');
+  .describe('Minimum score percentage to unlock access to subsequent questions.')
+  .meta({
+    id: 'AdvanceScorePercJsonSchema',
+  });
 
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
@@ -150,6 +171,8 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+}).meta({
+  id: 'QuestionAlternativeJsonSchema',
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -186,71 +209,97 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional()
-    .default([]),
-  canView: uniqueArray(z.string())
+    .default([])
+    .meta({
+      uniqueItems: true,
+    }),
+  canView: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
     .optional()
-    .default([]),
+    .default([])
+    .meta({
+      uniqueItems: true,
+    }),
+}).meta({
+  id: 'ZoneQuestionJsonSchema',
 });
 
-export const ZoneAssessmentJsonSchema = z.object({
-  title: z
-    .string()
-    .describe('Zone title, displayed to the students at the top of the question list for the zone.')
-    .optional(),
-  comment: CommentJsonSchema.optional(),
-  // Do we need to allow for additional keys?
-  comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
-  maxPoints: z
-    .number()
-    .describe(
-      'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
-    )
-    .optional(),
-  numberChoose: z
-    .number()
-    .int()
-    .gte(0)
-    .describe('Number of questions to choose from this zone.')
-    .optional(),
-  bestQuestions: z
-    .number()
-    .int()
-    .gte(0)
-    .describe(
-      'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
-    )
-    .optional(),
-  questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
-  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
-  gradeRateMinutes: z
-    .number()
-    .gte(0)
-    .describe(
-      'Minimum amount of time (in minutes) between graded submissions to the same question.',
-    )
-    .optional(),
-  canSubmit: uniqueArray(z.string())
-    .describe(
-      'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
-    )
-    .optional(),
-  canView: uniqueArray(z.string())
-    .describe(
-      'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
-    )
-    .optional(),
-});
+export const ZoneAssessmentJsonSchema = z
+  .object({
+    title: z
+      .string()
+      .describe(
+        'Zone title, displayed to the students at the top of the question list for the zone.',
+      )
+      .optional(),
+    comment: CommentJsonSchema.optional(),
+    // Do we need to allow for additional keys?
+    comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.').meta({
+      deprecated: true,
+    }),
+    maxPoints: z
+      .number()
+      .describe(
+        'Only this many of the points that are awarded for answering questions in this zone will count toward the total points.',
+      )
+      .optional(),
+    numberChoose: z
+      .number()
+      .int()
+      .gte(0)
+      .describe('Number of questions to choose from this zone.')
+      .optional(),
+    bestQuestions: z
+      .number()
+      .int()
+      .gte(0)
+      .describe(
+        'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
+      )
+      .optional(),
+    questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
+    advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+    gradeRateMinutes: z
+      .number()
+      .gte(0)
+      .describe(
+        'Minimum amount of time (in minutes) between graded submissions to the same question.',
+      )
+      .optional(),
+    canSubmit: z
+      .array(z.string())
+      .describe(
+        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+      )
+      .optional()
+      .meta({
+        uniqueItems: true,
+      }),
+    canView: z
+      .array(z.string())
+      .describe(
+        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+      )
+      .optional()
+      .meta({
+        uniqueItems: true,
+      }),
+  })
+  .meta({
+    id: 'ZoneAssessmentJsonSchema',
+  });
 
 export const AssessmentJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -353,18 +402,26 @@ export const AssessmentJsonSchema = z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
-    canSubmit: uniqueArray(z.string())
+    canSubmit: z
+      .array(z.string())
       .describe(
-        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+        'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
       )
       .optional()
-      .default([]),
-    canView: uniqueArray(z.string())
+      .default([])
+      .meta({
+        uniqueItems: true,
+      }),
+    canView: z
+      .array(z.string())
       .describe(
-        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+        'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
       )
       .optional()
-      .default([]),
+      .default([])
+      .meta({
+        uniqueItems: true,
+      }),
     studentGroupCreate: z
       .boolean()
       .describe('Whether students can create groups.')
@@ -407,8 +464,11 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
   })
-  .strict()
-  .describe('Configuration data for an assessment.');
+
+  .describe('Configuration data for an assessment.')
+  .meta({
+    title: 'Assessment info',
+  });
 
 export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 export type AssessmentJsonInput = z.input<typeof AssessmentJsonSchema>;

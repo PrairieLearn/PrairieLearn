@@ -1,15 +1,21 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "postgresqlUser": {
       "type": "string",
       "default": "postgres"
     },
     "postgresqlPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "postgresqlDatabase": {
       "type": "string",
@@ -29,8 +35,8 @@
     },
     "cacheType": {
       "type": "string",
-      "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "none",
+      "enum": ["none", "redis", "memory"]
     },
     "cacheKeyPrefix": {
       "type": "string",
@@ -45,8 +51,15 @@
       "default": false
     },
     "cacheImageRegistry": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "awsRegion": {
       "type": "string",
@@ -61,8 +74,15 @@
       "default": "localhost"
     },
     "sentryDsn": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryEnvironment": {
       "type": "string",
@@ -161,8 +181,15 @@
       "default": 104857600
     },
     "workspaceLogsS3Bucket": {
-      "type": ["string", "null"],
-      "default": "workspace-logs"
+      "default": "workspace-logs",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceStartTimeoutSec": {
       "type": "number",

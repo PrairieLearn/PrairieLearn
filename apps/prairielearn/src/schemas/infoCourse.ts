@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
 
@@ -35,7 +35,10 @@ export const ColorJsonSchema = z
     'gray2',
     'gray3',
   ])
-  .describe('A color name.');
+  .describe('A color name.')
+  .meta({
+    id: 'ColorJsonSchema',
+  });
 
 export type ColorJson = z.infer<typeof ColorJsonSchema>;
 export const TopicJsonSchema = z
@@ -87,11 +90,14 @@ export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
 export type AssessmentSetJsonInput = z.input<typeof AssessmentSetJsonSchema>;
 
 export const CourseOptionsJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
       .describe('[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.')
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     devModeFeatures: z
       .union([
@@ -103,13 +109,13 @@ export const CourseOptionsJsonSchema = z
       .describe('Feature flags to enable/disable in development mode.')
       .optional(),
   })
-  .strict()
+
   .describe('Options for this course.');
 
 export type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 
 export const CourseJsonSchema = z
-  .object({
+  .strictObject({
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
@@ -152,8 +158,11 @@ export const CourseJsonSchema = z
       .describe('Sharing sets')
       .optional(),
   })
-  .strict()
-  .describe('The specification file for a course.');
+
+  .describe('The specification file for a course.')
+  .meta({
+    title: 'Course information',
+  });
 
 export type CourseJson = z.infer<typeof CourseJsonSchema>;
 export type CourseJsonInput = z.input<typeof CourseJsonSchema>;
