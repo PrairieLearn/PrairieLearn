@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 3.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 3.0.0
 
 ### Major Changes
