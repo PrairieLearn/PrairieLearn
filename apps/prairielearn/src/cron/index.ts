@@ -379,8 +379,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   logger.verbose('cron: ' + job.name + ' job was not recently run', {
     cronUuid,
   });
-  const params = { name: job.name };
-  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  await sqldb.queryAsync(sql.update_cron_job_time, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
   logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
   await runJob(job, cronUuid);

@@ -402,7 +402,6 @@ describe('accessibility', () => {
 
     const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
       IdSchema,
     );
 
