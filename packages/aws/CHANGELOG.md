@@ -1,5 +1,11 @@
 # @prairielearn/aws
 
+## 2.0.18
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
 ## 2.0.17
 
 ### Patch Changes
