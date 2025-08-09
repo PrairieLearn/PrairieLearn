@@ -32,6 +32,7 @@ dependencies = [
     "pygraphviz==1.14",
     "pyquaternion==0.9.9",
     "regex==2025.7.34",
+    "requests==2.32.4",
     "schemdraw==0.21",
     "scikit-learn==1.7.1",
     "scipy==1.15.3",
