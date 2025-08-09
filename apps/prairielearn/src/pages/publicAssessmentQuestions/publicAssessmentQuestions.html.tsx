@@ -122,7 +122,7 @@ function AssessmentQuestionsTable({
                             label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
                           },
                           plainUrlPrefix: urlPrefix,
-                          course_instance_id,
+                          courseInstanceId: course_instance_id,
                           publicURL: true,
                         });
                       })

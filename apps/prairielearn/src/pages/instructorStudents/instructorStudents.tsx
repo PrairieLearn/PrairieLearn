@@ -78,6 +78,7 @@ router.get(
                 timezone={course.display_timezone}
                 courseInstance={courseInstance}
                 course={course}
+                urlPrefix={urlPrefix}
               />
             </Hydrate>
           </>
