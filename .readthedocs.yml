@@ -9,10 +9,9 @@ build:
     pre_build:
       - curl -fsSL https://d2lang.com/install.sh | sh -s --
       - cp $HOME/.local/bin/d2 $READTHEDOCS_VIRTUALENV_PATH/bin/d2
+    install:
+      - pip install -U pip
+      - pip install --group docs
 
 mkdocs:
   configuration: mkdocs.yml
-
-python:
-  install:
-    - requirements: docs/requirements.txt

@@ -65,7 +65,7 @@ plugins:
         - scripts/**
         - overrides/**
         - mkdocstrings/**
-        - requirements.txt
+        - pyproject.toml
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
