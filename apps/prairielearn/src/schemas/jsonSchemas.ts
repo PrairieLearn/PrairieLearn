@@ -42,7 +42,6 @@ export const prairielearnZodToJsonSchema = (schema: ZodType<any>) => {
       // https://github.com/colinhacks/zod/issues/5078#issuecomment-3170435125
       if ('id' in ctx.jsonSchema) {
         ctx.jsonSchema.$id = ctx.jsonSchema.id;
-        // delete ctx.jsonSchema.id;
         ctx.jsonSchema.id = undefined;
       }
     },
