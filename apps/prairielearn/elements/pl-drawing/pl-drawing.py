@@ -384,6 +384,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if preview_mode:
         return
 
+    load_extensions(data)
+
     try:
         data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
         if (
@@ -404,6 +406,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
     if prev:
         return
+
+    load_extensions(data)
 
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
