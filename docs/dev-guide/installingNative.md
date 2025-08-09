@@ -164,10 +164,7 @@ Most of these prerequisites can be installed using the package manager of your O
   ```sh
   yarn
   make build
-  make python-deps-core
-  # Optional:
-  # make python-deps-docs
-  # make python-deps-dev
+  make python-deps
   ```
 
 - Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):

@@ -155,7 +155,7 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
-      - name: Install Python dependencies
+      - name: Install core Python dependencies
         run: make python-deps-core
 
       - name: Set up Turborepo cache

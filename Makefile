@@ -19,15 +19,16 @@ python-deps-core: venv-setup
 	@uv pip install . --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install .
 	@rm -rf build
-python-deps-dev: venv-setup
-	@uv pip install --group dev --compile-bytecode --python .venv || \
-		.venv/bin/python3 -m pip install --group dev
 python-deps-docs: venv-setup
 	@uv pip install --group docs --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install --group docs
+python-deps-dev: venv-setup
+	@uv pip install --group dev --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install --group dev
+python-deps: python-deps-core python-deps-dev python-deps-docs
 deps:
 	@yarn
-	@$(MAKE) python-deps-core build
+	@$(MAKE) python-deps build
 
 migrate:
 	@yarn migrate
