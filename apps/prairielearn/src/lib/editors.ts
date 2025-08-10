@@ -109,7 +109,7 @@ export function getUniqueNames({
   longName = 'New',
 }: {
   shortNames: string[];
-  longNames: (string | null)[];
+  longNames: string[];
   /**
    * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
    * Long name is matched case-sensitively
@@ -145,7 +145,7 @@ export function getUniqueNames({
     return numberOfMostRecentCopy;
   }
 
-  function getNumberLongName(oldLongNames: (string | null)[]): number {
+  function getNumberLongName(oldLongNames: string[]): number {
     let numberOfMostRecentCopy = 1;
     // longName is a copy of oldLongName if:
     // it matches exactly, or
@@ -557,7 +557,7 @@ function getNamesForCopy(
   oldShortName: string,
   shortNames: string[],
   oldLongName: string | null,
-  longNames: (string | null)[],
+  longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
     const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));

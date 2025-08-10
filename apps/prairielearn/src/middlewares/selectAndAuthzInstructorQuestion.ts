@@ -33,7 +33,7 @@ export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
   typeof SelectAndAuthWithCourseInstanceSchema
 >;
 
-export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthWithCourseInstanceSchema>;
+export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema>;
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {
