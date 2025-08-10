@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "3.0.19",
+  "version": "3.0.20",
   "type": "module",
   "repository": {
     "type": "git",
@@ -38,7 +38,7 @@
     "set-cookie-parser": "^2.7.1",
     "source-map-support": "^0.5.21",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "vitest": "^3.2.4"
   }
 }

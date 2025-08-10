@@ -248,6 +248,7 @@ export default tseslint.config([
       'unicorn/no-null': 'off',
       'unicorn/no-useless-undefined': 'off', // Explicit undefined is more readable than implicit undefined
       'unicorn/prefer-code-point': 'off',
+      'unicorn/prefer-dom-node-dataset': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2261095992
       'unicorn/prefer-string-raw': 'off', // We don't use `String.raw` in our codebase
       'unicorn/prefer-ternary': 'off', // if/else can be more readable than a ternary
       'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages

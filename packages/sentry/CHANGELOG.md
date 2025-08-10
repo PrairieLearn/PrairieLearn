@@ -1,5 +1,17 @@
 # @prairielearn/sentry
 
+## 4.0.2
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 4.0.0
 
 ### Major Changes
