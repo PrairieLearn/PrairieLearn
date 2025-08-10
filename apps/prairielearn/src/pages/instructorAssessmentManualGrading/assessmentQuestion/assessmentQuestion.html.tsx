@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   compiledScriptTag,

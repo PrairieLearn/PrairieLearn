@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -15,6 +15,7 @@ import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
+  TagSchema,
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
@@ -29,6 +30,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   qid: QuestionSchema.shape.qid,
   question_title: QuestionSchema.shape.title,
   topic: TopicSchema,
+  question_tags: z.array(TagSchema.shape.name),
   question_id: IdSchema,
   assessment_question_number: z.string(),
   alternative_group_number: AlternativeGroupSchema.shape.number,
@@ -37,7 +39,7 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   start_new_zone: z.boolean(),
   start_new_alternative_group: z.boolean(),
 });
-type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
+export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename,

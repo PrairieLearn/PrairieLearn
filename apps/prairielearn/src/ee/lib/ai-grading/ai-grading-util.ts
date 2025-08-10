@@ -346,9 +346,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion(
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     InstanceQuestionSchema,
   );
 }
@@ -358,9 +356,7 @@ export async function selectRubricGradingItems(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_grading_items,
-    {
-      manual_rubric_grading_id,
-    },
+    { manual_rubric_grading_id },
     RubricItemSchema,
   );
 }
@@ -432,9 +428,7 @@ export async function selectRubricForGrading(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_for_grading,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     RubricItemSchema,
   );
 }

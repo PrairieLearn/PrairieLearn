@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QRCodeModal } from '../../components/QRCodeModal.html.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseInstance } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -18,6 +18,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath,
   availableTimezones,
   origHash,
+  instanceGHLink,
   canEdit,
 }: {
   resLocals: Record<string, any>;
@@ -27,6 +28,7 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
   availableTimezones: Timezone[];
   origHash: string;
+  instanceGHLink: string | null;
   canEdit: boolean;
 }) {
   return PageLayout({
@@ -71,6 +73,11 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
+              ${instanceGHLink
+                ? html`<a target="_blank" href="${instanceGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
+                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -128,6 +135,7 @@ export function InstructorInstanceAdminSettings({
                 <a
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                   target="_blank"
+                  rel="noreferrer"
                   >tz database</a
                 >. It's best to use a city-based timezone that has the same times as you.
               </small>

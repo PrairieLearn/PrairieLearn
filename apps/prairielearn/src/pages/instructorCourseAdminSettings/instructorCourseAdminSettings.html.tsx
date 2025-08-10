@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
@@ -14,6 +14,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists,
   availableTimezones,
   origHash,
+  courseGHLink,
 }: {
   resLocals: Record<string, any>;
   aiQuestionGenerationEnabled: boolean;
@@ -22,6 +23,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
   origHash: string;
+  courseGHLink: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -60,6 +62,11 @@ export function InstructorCourseAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="short_name">Short Name</label>
+              ${courseGHLink
+                ? html`<a target="_blank" href="${courseGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
+                : ''}
               <input
                 type="text"
                 class="form-control"
@@ -125,6 +132,7 @@ export function InstructorCourseAdminSettings({
                 <a
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
                   target="_blank"
+                  rel="noreferrer"
                   >tz database</a
                 >. It's best to use a city-based timezone that has the same times as you.
               </small>

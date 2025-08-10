@@ -30,37 +30,80 @@ $(function() {
       data-skip-unload-check="true"
       disabled
     />
+    <input 
+      class="js-hidden-capture-changed-flag"
+      type="hidden"
+      name="{{file_name}}_changed"
+      value="false"
+      disabled
+    />
     {{/editable}}
-    <div class="js-uploaded-image-container">
-      <div
-        class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
-      >
-        <div class="spinning-wheel spinner-border">
-          <span class="visually-hidden">Loading...</span>
+    <div class="position-relative">
+      <div class="js-uploaded-image-container position-relative">
+        <div
+          class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
+        >
+          <div class="spinning-wheel spinner-border">
+            <span class="visually-hidden">Loading...</span>
+          </div>
         </div>
       </div>
+      {{^editable}}
+      <div class="js-zoom-buttons position-absolute top-0 end-0 m-2 d-none">
+        <button 
+          type="button" 
+          class="js-viewer-rotate-clockwise-button btn btn-light border"
+          title="Rotate clockwise"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Rotate clockwise"
+        >
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-zoom-in-button btn btn-light border"
+          title="Zoom in"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          aria-label="Zoom in"
+        >
+          <i class="bi bi-zoom-in"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-zoom-out-button btn btn-light border"
+          title="Zoom out"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          aria-label="Zoom out"
+        >
+          <i class="bi bi-zoom-out"></i>
+        </button>
+      </div>
+      {{/editable}}
     </div>
 
     {{#editable}}
     <div class="d-flex gap-2 flex-wrap p-2 justify-content-end border-top">
       <button
         type="button"
-        class="js-crop-rotate-button btn btn-secondary d-none"
+        class="js-crop-rotate-button btn btn-secondary btn-sm d-none"
       >
         <i class="bi bi-crop me-1"></i>
         Crop/rotate
       </button>
       <button
         type="button"
-        class="js-capture-with-local-camera-button btn btn-info"
+        class="js-capture-with-local-camera-button btn btn-info btn-sm"
       >
         <i class="bi bi-camera-fill me-1"></i>
-        Use webcam
+        <span>Use webcam</span>
       </button>
       {{#mobile_capture_enabled}}
         <button 
           type="button" 
-          class="js-capture-with-mobile-device-button btn btn-info"
+          class="js-capture-with-mobile-device-button btn btn-info btn-sm"
           data-bs-toggle="popover"
           data-bs-container="body"
           data-bs-html="true"
@@ -74,18 +117,18 @@ $(function() {
                   <span class="visually-hidden">Loading...</span>
                 </div>
               </div>
-              <p class="text-muted mb-0">
+              <p class="small text-muted mb-0">
                 Scan the QR code with your mobile device to capture an image of your work. 
               </p>
             {{/external_image_capture_available}}
             {{^external_image_capture_available}}
-              <p class="text-muted mb-0">
+              <p class="small text-muted mb-0">
                 Mobile device capture is not available in this environment.
               </p>
-              <p class="text-muted mb-0 mt-3">
+              <p class="small text-muted mb-0 mt-3">
                 It will be available once the question is deployed to production.
               </p>
-              <p class="text-muted mb-0 mt-3">
+              <p class="small text-muted mb-0 mt-3">
                 For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
               </p>
             {{/external_image_capture_available}}
@@ -93,7 +136,7 @@ $(function() {
           '
         >
           <i class="bi bi-qr-code-scan me-1"></i>
-          Use phone
+          <span>Use phone</span>
         </button>
       {{/mobile_capture_enabled}}
     </div>
@@ -114,7 +157,7 @@ $(function() {
       </div>
     </div>
     <div class="d-flex p-2 gap-2 justify-content-end align-items-center flex-wrap">
-      <p class="js-local-camera-instructions text-muted my-0 me-auto">
+      <p class="js-local-camera-instructions text-muted my-0 me-auto small">
         Make sure your photo is clear, well-lit, and shows all your work legibly. 
         <br/>
         Later, you can crop or rotate the image as needed.
@@ -122,56 +165,22 @@ $(function() {
       <div class="d-flex align-items-center gap-2">
         <button 
           type="button"
-          class="js-cancel-local-camera-button btn btn-secondary"
+          class="js-cancel-local-camera-button btn btn-secondary btn-sm"
         >
           Cancel
         </button>
         <button 
           type="button"
-          class="js-capture-local-camera-image-button btn btn-info" 
+          class="js-capture-local-camera-image-button btn btn-info btn-sm" 
           disabled
         >
           <i class="bi bi-camera-fill me-1"></i>
           Capture image
         </button>
       </div>
-    </div>
-  </div>
-  <div class="js-local-camera-confirmation-container d-none d-flex flex-column">
-    <canvas
-      class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom"
-      autoplay
-      playsinline
-    >
-    </canvas>
-    <div class="d-flex gap-2 p-2 justify-content-end align-items-center flex-wrap">
-      <p class="text-muted my-0 me-auto">
-        Make sure your photo is clear, well-lit, and shows all your work legibly. 
-        <br/>
-        Later, you can crop or rotate the image as needed.
-      </p>
-      <div class="d-flex align-items-center gap-2">
-        <button 
-          type="button"
-          class="js-cancel-local-camera-confirmation-button btn btn-secondary"
-        >
-          Cancel
-        </button>
-        <button 
-          type="button"
-          class="js-retake-local-camera-image-button btn btn-secondary"
-        >
-          <i class="bi bi-arrow-counterclockwise me-1"></i>
-          Retake
-        </button>
-        <button 
-          type="button" 
-          class="js-confirm-local-camera-image-button btn btn-info"
-        >
-          <i class="bi bi-check2 me-1"></i>
-          Use image
-        </button>
-      </div>
+      <canvas
+        class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom d-none"
+      >
     </div>
   </div>
   <div class="js-crop-rotate-container d-none">
@@ -180,7 +189,7 @@ $(function() {
     </div>
     <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
       <div class="d-flex align-items-center gap-2">
-        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1">
+        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1 small">
           Rotation: 
         </label>
         <input 
@@ -197,20 +206,20 @@ $(function() {
       <div class="d-flex align-items-center gap-2">
         <button 
           type="button"
-          class="js-rotate-clockwise-button btn btn-light border"
+          class="js-rotate-clockwise-button btn btn-light border btn-sm"
           title="Rotate clockwise"
-          data-toggle="tooltip"
-          data-placement="top" 
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
           aria-label="Rotate clockwise"
         >
           <i class="bi bi-arrow-clockwise"></i>
         </button>
         <button 
           type="button"
-          class="js-rotate-counterclockwise-button btn btn-light border"
+          class="js-rotate-counterclockwise-button btn btn-light border btn-sm"
           title="Rotate counterclockwise"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Rotate counterclockwise"
         >
           <i class="bi bi-arrow-counterclockwise"></i>
@@ -220,8 +229,8 @@ $(function() {
           type="button"
           class="js-flip-horizontal-button btn btn-light border"
           title="Flip horizontally"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Flip horizontally"
         >
           <i class="bi bi-symmetry-vertical"></i>
@@ -230,8 +239,8 @@ $(function() {
           type="button"
           class="js-flip-vertical-button btn btn-light border"
           title="Flip vertically"
-          data-toggle="tooltip"
-          data-placement="top"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
           aria-label="Flip vertically"
         >
           <i class="bi bi-symmetry-horizontal"></i>
@@ -240,13 +249,13 @@ $(function() {
       <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
         <button 
           type="button"
-          class="js-cancel-crop-rotate-button btn btn-secondary"
+          class="js-cancel-crop-rotate-button btn btn-secondary btn-sm"
         >
           Cancel
         </button>
         <button 
           type="button" 
-          class="js-apply-changes-button btn btn-info"
+          class="js-apply-changes-button btn btn-info btn-sm"
         >
           <i class="bi bi-check2 me-1"></i>
           Apply changes

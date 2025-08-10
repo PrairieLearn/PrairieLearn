@@ -76,7 +76,7 @@ async function getImageManifest(
   });
 
   if (manifestResponse.status === 404) {
-    console.log(`No manifest found for ${image}:${reference}`);
+    core.info(`No manifest found for ${image}:${reference}`);
     return null;
   }
 
@@ -87,7 +87,7 @@ async function getImageManifest(
     // access permissions at all, and when we go to read the manifest, it fails
     // with an authorization error instead of a 404. We'll treat authorization
     // errors as if the image does not exist.
-    console.log(`Authorization error when reading manifest for ${image}:${reference}, skipping...`);
+    core.info(`Authorization error when reading manifest for ${image}:${reference}, skipping...`);
     return null;
   }
 
@@ -255,7 +255,7 @@ function logSizeReport(changedImages: ChangedImage[]) {
     const size = delta
       ? `${formattedOldSize} -> ${formattedNewSize} (${formattedDelta})`
       : formattedNewSize;
-    console.log(`${image.name}:${image.newTag} (${image.platform}): ${size}`);
+    core.info(`${image.name}:${image.newTag} (${image.platform}): ${size}`);
   });
 }
 
@@ -313,5 +313,5 @@ async function main() {
 
 main().catch((err) => {
   console.error(err);
-  core.setFailed(err.message);
+  core.setFailed(err);
 });

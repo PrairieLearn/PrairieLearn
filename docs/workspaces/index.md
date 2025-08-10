@@ -237,7 +237,7 @@ PrairieLearn provides and maintains the following workspace images:
 
 ## Custom workspace images
 
-You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+You can [build custom workspace images](../dockerImages.md#custom-variations-of-maintained-images) if you need to install specific dependencies for use by students that are not present in the default version of the images above. If you want to use a specific browser-based editor not supported above, you may also create and build your own custom workspace image.
 
 If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 

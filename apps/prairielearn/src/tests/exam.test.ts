@@ -2,6 +2,8 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { SubmissionSchema } from '../lib/db-types.js';
+
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -804,8 +806,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
     helperQuestion.checkAssessmentScore(locals);
     describe('check the submission is not gradable', function () {
       it('should succeed', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_last_submission, []);
-        const submission = result.rows[0];
+        const submission = await sqldb.queryRow(sql.select_last_submission, SubmissionSchema);
         assert.isFalse(submission.gradable);
       });
     });
@@ -1842,7 +1843,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             helperQuestion.checkQuestionStats(locals);
             helperQuestion.checkAssessmentScore(locals);
           } else {
-            throw Error('unknown action: ' + questionTest.action);
+            throw new Error('unknown action: ' + questionTest.action);
           }
         });
       });

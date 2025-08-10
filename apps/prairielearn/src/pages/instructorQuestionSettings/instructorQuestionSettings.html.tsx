@@ -2,14 +2,14 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { TagBadgeList } from '../../components/TagBadge.html.js';
-import { TagDescription } from '../../components/TagDescription.html.js';
-import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { TopicDescription } from '../../components/TopicDescription.html.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagBadgeList } from '../../components/TagBadge.js';
+import { TagDescription } from '../../components/TagDescription.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
+import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -96,7 +96,7 @@ export function InstructorQuestionSettings({
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
+      ${compiledScriptTag('instructorQuestionSettingsClient.tsx')}
       <style>
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
@@ -132,7 +132,9 @@ export function InstructorQuestionSettings({
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
               ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${questionGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"
@@ -194,14 +196,14 @@ export function InstructorQuestionSettings({
                                     data-name="${topic.name}"
                                     data-description="${topic.implicit
                                       ? ''
-                                      : TopicDescription(topic)}"
+                                      : renderHtml(<TopicDescription topic={topic} />)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
                               })}
                             </select>
                           `
-                        : TopicBadge(resLocals.topic)}
+                        : TopicBadgeHtml(resLocals.topic)}
                     </td>
                   </tr>
                   <tr>
@@ -235,7 +237,7 @@ export function InstructorQuestionSettings({
                                 : ''}
                             </select>
                           `
-                        : TagBadgeList(resLocals.tags)}
+                        : renderHtml(<TagBadgeList tags={resLocals.tags} />)}
                     </td>
                   </tr>
                   ${shouldShowAssessmentsList
@@ -635,7 +637,7 @@ function DeleteQuestionModal({
                   <li class="list-group-item">
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
-                      AssessmentBadge({
+                      AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
                         course_instance_id: a_with_q.course_instance_id,
                         assessment,

@@ -47,7 +47,7 @@ WITH
       cai.user_id,
       cai.assessment_id,
       cai.score_perc DESC,
-      cai.id
+      cai.id DESC
   ),
   user_ids AS (
     -- Select all users that:

@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QRCodeModal } from '../../components/QRCodeModal.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -71,7 +71,9 @@ export function InstructorAssessmentSettings({
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
               ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${assessmentGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"

@@ -1,5 +1,43 @@
 # @prairielearn/migrations
 
+## 3.0.23
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/named-locks@3.0.22
+  - @prairielearn/postgres@4.0.1
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/error@2.0.18
+
+## 3.0.21
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [cd5ed49]
+- Updated dependencies [2c19e43]
+- Updated dependencies [23adb05]
+  - @prairielearn/postgres@4.0.0
+  - @prairielearn/named-locks@3.0.21
+  - @prairielearn/logger@2.0.18
+  - @prairielearn/error@2.0.17
+
+## 3.0.20
+
+### Patch Changes
+
+- Updated dependencies [b911b61]
+  - @prairielearn/postgres@3.0.0
+  - @prairielearn/named-locks@3.0.20
+
 ## 3.0.19
 
 ### Patch Changes

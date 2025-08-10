@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
@@ -13,6 +13,8 @@ import {
   CourseSchema,
   IdSchema,
   QuestionSchema,
+  TagSchema,
+  TopicSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -28,9 +30,11 @@ export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend(
   course_instance_id: IdSchema,
   qid: QuestionSchema.shape.qid,
   question_title: QuestionSchema.shape.title,
+  question_topic: TopicSchema.shape.name,
+  question_tags: z.array(TagSchema.shape.name),
   assessment_question_number: z.string(),
 });
-type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
+export type AssessmentQuestionStatsRow = z.infer<typeof AssessmentQuestionStatsRowSchema>;
 
 export function InstructorQuestionStatistics({
   questionStatsCsvFilename,

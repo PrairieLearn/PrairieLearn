@@ -116,6 +116,14 @@ async function addUserToRepo(
 /**
  * Starts a new server job to create a course GitHub repo, add it to the database, and then sync it locally.
  * @param options Options for creating the course, should contain the following keys:
+ * @param options.short_name - The short name of the course.
+ * @param options.title - The title of the course.
+ * @param options.institution_id - The institution ID of the course.
+ * @param options.display_timezone - The display timezone of the course.
+ * @param options.path - The path of the course.
+ * @param options.repo_short_name - The short name of the repository.
+ * @param options.github_user - The GitHub username of the instructor.
+ * @param options.course_request_id - The course request ID.
  * @param authn_user Authenticated user that is creating the course.
  */
 export async function createCourseRepoJob(
@@ -255,7 +263,7 @@ export async function createCourseRepoJob(
     if (syncResult.status !== 'complete') {
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.
-      throw Error('Sync failed on brand new course repository');
+      throw new Error('Sync failed on brand new course repository');
     }
 
     // If we have chunks enabled, then create associated chunks for the new course
