@@ -57,6 +57,12 @@ export async function initWithLock(directories: string[], project: string) {
   logger.verbose('Starting DB schema migration');
 
   const oldSchema = sqldb.defaultPool.getSearchSchema();
+  // Each postgres pool uses a unique schema every time the server starts up.
+  // After that code runs, the default schema is set to that schema instead of public, which
+  // causes the 'create_migrations_table' query to fail.
+  //
+  // We'll set the default schema to public before running the migrations, and then restore it
+  // after the migrations are run.
   await sqldb.defaultPool.setSearchSchema('public');
   try {
     // Create the migrations table if needed
