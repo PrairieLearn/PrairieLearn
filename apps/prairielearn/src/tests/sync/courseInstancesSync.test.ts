@@ -317,7 +317,7 @@ describe('Course instance syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and long name of the course instance and re-sync
-    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    const newCourseInstance = structuredClone(originalCourseInstance);
     newCourseInstance.courseInstance.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
     newCourseInstance.courseInstance.longName = 'changed long name';
     courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
@@ -337,8 +337,9 @@ describe('Course instance syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the course instance, add an error and re-sync
-    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    const newCourseInstance = structuredClone(originalCourseInstance);
     newCourseInstance.courseInstance.uuid = '7902a94b-b025-4a33-9987-3b8196581bd2';
+    // @ts-expect-error we are intentionally breaking the type
     delete newCourseInstance.courseInstance.longName; // will make the course instance broken
     courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
     await util.overwriteAndSyncCourseData(courseData, courseDir);

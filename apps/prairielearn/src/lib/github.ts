@@ -263,7 +263,7 @@ export async function createCourseRepoJob(
     if (syncResult.status !== 'complete') {
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.
-      throw Error('Sync failed on brand new course repository');
+      throw new Error('Sync failed on brand new course repository');
     }
 
     // If we have chunks enabled, then create associated chunks for the new course
