@@ -54,7 +54,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
 
 export function getContentDir(fullPath: string, parentDir: string): string {
   const path_exploded = path.normalize(fullPath).split(path.sep);
-  const content_dir_idx = path_exploded.findIndex((x) => x === parentDir);
+  const content_dir_idx = path_exploded.indexOf(parentDir);
   return path_exploded.slice(content_dir_idx + 1).join(path.sep);
 }
 
