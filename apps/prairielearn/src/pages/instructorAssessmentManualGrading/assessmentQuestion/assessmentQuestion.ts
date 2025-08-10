@@ -329,19 +329,23 @@ router.post(
       const body = RubricModificationPostBodySchema.parse(
         qs.parse(qs.stringify(req.body), { parseArrays: false }),
       );
-      console.log(body);
-      // await manualGrading.updateAssessmentQuestionRubric(
-      //   res.locals.assessment_question.id,
-      //   body.use_rubric,
-      //   body.replace_auto_points,
-      //   body.starting_points,
-      //   body.min_points,
-      //   body.max_extra_points,
-      //   Object.values(body.rubric_item), // rubric items
-      //   body.tag_for_manual_grading,
-      //   res.locals.authn_user.user_id,
-      // );
-      res.redirect(req.originalUrl);
+      try {
+        console.log(body);
+        // await manualGrading.updateAssessmentQuestionRubric(
+        //   res.locals.assessment_question.id,
+        //   body.use_rubric,
+        //   body.replace_auto_points,
+        //   body.starting_points,
+        //   body.min_points,
+        //   body.max_extra_points,
+        //   Object.values(body.rubric_item), // rubric items
+        //   body.tag_for_manual_grading,
+        //   res.locals.authn_user.user_id,
+        // );
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
