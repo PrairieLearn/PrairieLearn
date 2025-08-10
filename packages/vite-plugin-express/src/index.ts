@@ -100,6 +100,7 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
         timestamp: true,
       });
+      // eslint-disable-next-line unicorn/no-process-exit
       process.exit(1);
     }
     return app;

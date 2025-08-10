@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.1.5",
+  "version": "3.1.6",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
@@ -9,10 +9,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.858.0",
-    "@aws-sdk/client-secrets-manager": "^3.858.0",
+    "@aws-sdk/client-ec2": "^3.862.0",
+    "@aws-sdk/client-secrets-manager": "^3.862.0",
     "@prairielearn/aws-imds": "workspace:^",
-    "fs-extra": "^11.3.0",
+    "fs-extra": "^11.3.1",
     "lodash": "^4.17.21",
     "zod": "^3.25.76"
   },

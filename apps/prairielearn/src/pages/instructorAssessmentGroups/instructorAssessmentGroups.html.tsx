@@ -80,8 +80,8 @@ export function InstructorAssessmentGroups({
               ? html`
                   ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
                   ${RandomAssessmentGroupsModal({
-                    groupMin: groupConfigInfo.minimum ? groupConfigInfo.minimum : 2,
-                    groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
+                    groupMin: groupConfigInfo.minimum ?? 2,
+                    groupMax: groupConfigInfo.maximum ?? 5,
                     csrfToken: resLocals.__csrf_token,
                   })}
                   ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
