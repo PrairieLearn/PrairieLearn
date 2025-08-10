@@ -149,9 +149,7 @@ async function prepareGroup() {
   // Get exam assessment URL using ids from database
   const assessmentId = await queryRow(
     sql.select_assessment,
-    {
-      assessment_tid: GROUP_WORK_EXAM_TID,
-    },
+    { assessment_tid: GROUP_WORK_EXAM_TID },
     IdSchema,
   );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
@@ -242,7 +240,6 @@ async function prepareGroup() {
   // Check there is now one assessment instance in database
   const assessmentInstanceResult = await queryRow(
     sql.select_all_assessment_instance,
-    [],
     AssessmentInstanceSchema,
   );
   assert.equal(assessmentInstanceResult.group_id, '1');

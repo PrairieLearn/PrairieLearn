@@ -7,7 +7,7 @@ import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AuthzAssessmentSchema,
+  SprocAuthzAssessmentSchema,
 } from '../lib/db-types.js';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
@@ -17,8 +17,8 @@ const sql = loadSqlEquiv(import.meta.url);
 const SelectAndAuthzAssessmentSchema = z.object({
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  assessment_module: AssessmentModuleSchema,
-  authz_result: AuthzAssessmentSchema,
+  assessment_module: AssessmentModuleSchema.nullable(),
+  authz_result: SprocAuthzAssessmentSchema,
   assessment_label: z.string(),
 });
 

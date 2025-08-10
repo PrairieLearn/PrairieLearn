@@ -6,9 +6,9 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  AssessmentsFormatForQuestionSchema,
   QuestionSchema,
-  TagsForQuestionSchema,
+  SprocAssessmentsFormatForQuestionSchema,
+  SprocTagsForQuestionSchema,
   TopicSchema,
 } from '../lib/db-types.js';
 
@@ -17,16 +17,16 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const SelectAndAuthSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: TagsForQuestionSchema.nullable(),
-  open_issue_count: z.string(),
+  tags: SprocTagsForQuestionSchema.nullable(),
+  open_issue_count: z.coerce.number(),
 });
 
 const SelectAndAuthWithCourseInstanceSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: TagsForQuestionSchema.nullable(),
-  assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  open_issue_count: z.string(),
+  tags: SprocTagsForQuestionSchema.nullable(),
+  assessments: SprocAssessmentsFormatForQuestionSchema.nullable(),
+  open_issue_count: z.coerce.number(),
 });
 
 export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<

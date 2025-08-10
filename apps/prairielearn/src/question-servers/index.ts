@@ -1,6 +1,11 @@
-import { type EffectiveQuestionType, type QuestionServer, type QuestionType } from './types.js';
+import type { Question } from '../lib/db-types.js';
+
+import { type QuestionServer } from './types.js';
 
 export * from './types.js';
+
+type QuestionType = Question['type'];
+export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 const questionModules = {
   Calculation: await import('./calculation-subprocess.js'),
@@ -14,10 +19,12 @@ const effectiveQuestionTypes = {
   MultipleChoice: 'Calculation',
   MultipleTrueFalse: 'Calculation',
   Freeform: 'Freeform',
-} satisfies Record<QuestionType, EffectiveQuestionType>;
+} satisfies Record<NonNullable<QuestionType>, EffectiveQuestionType>;
 
 export function getEffectiveQuestionType(type: QuestionType): EffectiveQuestionType {
-  if (type in effectiveQuestionTypes) {
+  if (!type) {
+    throw new Error('Question type is required');
+  } else if (type in effectiveQuestionTypes) {
     return effectiveQuestionTypes[type];
   } else {
     throw new Error('Unknown question type: ' + type);

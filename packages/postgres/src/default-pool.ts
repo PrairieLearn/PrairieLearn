@@ -16,20 +16,16 @@ export { defaultPool, type CursorIterator, type QueryParams };
 // documentation from the `PostgresPool` class. We mirror the documentation
 // here for *async methods* in VSCode intellisense.
 
-export const init = defaultPool.init.bind(defaultPool);
 /**
  * Creates a new connection pool and attempts to connect to the database.
  */
 export const initAsync = defaultPool.initAsync.bind(defaultPool);
-export const close = defaultPool.close.bind(defaultPool);
 /**
  * Closes the connection pool.
  */
 export const closeAsync = defaultPool.closeAsync.bind(defaultPool);
 /**
- * Gets a new client from the connection pool. If `err` is not null
- * then `client` and `done` are undefined. If `err` is null then
- * `client` is valid and can be used. The caller MUST call `done()` to
+ * Gets a new client from the connection pool. The caller MUST call `release()` to
  * release the client, whether or not errors occurred while using
  * `client`. The client can call `done(truthy_value)` to force
  * destruction of the client, but this should not be used except in
@@ -73,18 +69,18 @@ export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultP
  * will be committed otherwise.
  */
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-export const query = defaultPool.query.bind(defaultPool);
 /**
  * Executes a query with the specified parameters.
  *
- * @deprecated Use {@link queryRows} instead. If you don't need to parse the result, use `z.unknown()`.
+ * Using the return value of this function directly is not recommended. Instead, use
+ * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
  */
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 /**
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead. If you don't need to parse the result, use `z.unknown()`.
+ * @deprecated Use {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
@@ -95,74 +91,81 @@ export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
  */
 export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters.
+ * Calls the given sproc with the specified parameters.
  *
  * @deprecated Use {@link callRows} instead.
  */
 export const callAsync = defaultPool.callAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Errors if the
- * function does not return exactly one row.
+ * Calls the given sproc with the specified parameters. Errors if the
+ * sproc does not return exactly one row.
  *
  * @deprecated Use {@link callRow} instead.
  */
 export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
 /**
- * Calls the given function with the specified parameters. Errors if the
- * function returns more than one row.
+ * Calls the given sproc with the specified parameters. Errors if the
+ * sproc returns more than one row.
  *
  * @deprecated Use {@link callOptionalRow} instead.
  */
 export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
+ * Calls a sproc with the specified parameters using a specific client.
  */
 export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function does not return exactly one row.
+ * Calls a sproc with the specified parameters using a specific client.
+ * Errors if the sproc does not return exactly one row.
  */
 export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
 /**
- * Calls a function with the specified parameters using a specific client.
- * Errors if the function returns more than one row.
+ * Calls a sproc with the specified parameters using a specific client.
+ * Errors if the sproc returns more than one row.
  */
 export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
+/**
+ * Executes a query with the specified parameters. Returns an array of rows
+ * that conform to the given Zod schema.
+ *
+ * If the query returns a single column, the return value will be a list of column values.
+ */
 export const queryRows = defaultPool.queryRows.bind(defaultPool);
 /**
- * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
- * the given Zod schema. If the query doesn't return exactly one row, an error
- * is thrown.
+ * Executes a query with the specified parameters. Returns exactly one row that conforms to the given Zod schema.
+ *
+ * If the query returns a single column, the return value will be the column value itself.
  */
 export const queryRow = defaultPool.queryRow.bind(defaultPool);
 /**
- * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
- * (if any) with the given Zod schema. Returns either null or a single row, and
- * errors otherwise.
+ * Executes a query with the specified parameters. Returns either null or a
+ * single row that conforms to the given Zod schema, and errors otherwise.
+ *
+ * If the query returns a single column, the return value will be the column value itself.
  */
 export const queryOptionalRow = defaultPool.queryOptionalRow.bind(defaultPool);
+/**
+ * Calls the given sproc with the specified parameters.
+ * Errors if the sproc does not return anything.
+ */
 export const callRows = defaultPool.callRows.bind(defaultPool);
+/**
+ * Calls the given sproc with the specified parameters.
+ * Returns exactly one row from the sproc that conforms to the given Zod schema.
+ */
 export const callRow = defaultPool.callRow.bind(defaultPool);
+/**
+ * Calls the given sproc with the specified parameters. Returns either null
+ * or a single row that conforms to the given Zod schema.
+ */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
-/**
- * Returns a {@link Cursor} for the given query. The cursor can be used to
- * read results in batches, which is useful for large result sets.
- */
-export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
-/**
- * Returns an {@link CursorIterator} that can be used to iterate over the
- * results of the query in batches, which is useful for large result sets.
- *
- * @deprecated Use {@link queryValidatedCursor} instead.
- */
-export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
  * Each row will be parsed by the given Zod schema.
  */
-export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);
+export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
 /**
  * Set the schema to use for the search path.
  *
@@ -172,10 +175,9 @@ export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
 /**
  * Get the schema that is currently used for the search path.
  *
- * @return schema in use (may be `null` to indicate no schema)
+ * @returns schema in use (may be `null` to indicate no schema)
  */
 export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
-export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
 /**
  * Generate, set, and return a random schema name.
  *

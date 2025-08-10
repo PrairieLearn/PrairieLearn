@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
 import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
@@ -18,6 +19,7 @@ import {
   NextAllowedGradeSchema,
   type Question,
   QuestionSchema,
+  SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -84,7 +86,7 @@ export async function insertSubmission({
   client_fingerprint_id?: string | null;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     // Select the variant, while updating the variant's `params` and
     // `correct_answer`, which is permitted to change during the `parse` phase
@@ -167,7 +169,7 @@ export async function insertSubmission({
 /**
  * Save a new submission to a variant into the database.
  *
- * @param submission - The submission to save (should not have an id property yet).
+ * @param submissionData - The submission to save (should not have an id property yet).
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
@@ -265,7 +267,7 @@ async function selectSubmissionForGrading(
   check_submission_id: string | null,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     const variantData = await sqldb.queryOptionalRow(
       sql.select_variant_data,
@@ -347,7 +349,7 @@ export async function gradeVariant(
     const resultNextAllowed = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
-      NextAllowedGradeSchema,
+      SprocInstanceQuestionsNextAllowedGradeSchema,
     );
     if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }

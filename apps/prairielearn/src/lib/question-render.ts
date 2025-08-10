@@ -172,13 +172,14 @@ interface QuestionUrls {
  * @param variant The variant object for this question.
  * @param question The question.
  * @param instance_question The instance question.
- * @return An object containing the named URLs.
+ * @returns An object containing the named URLs.
  */
 export function buildQuestionUrls(
   urlPrefix: string,
   variant: Variant,
   question: Question,
   instance_question: InstanceQuestion | null,
+  publicQuestionPreview = false,
 ): QuestionUrls {
   let urls: QuestionUrls;
 
@@ -233,7 +234,11 @@ export function buildQuestionUrls(
   }
 
   if (variant.workspace_id) {
-    urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    if (publicQuestionPreview) {
+      urls.workspaceUrl = `/pl/public/workspace/${variant.workspace_id}`;
+    } else {
+      urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    }
   }
 
   return urls;
@@ -526,7 +531,13 @@ export async function getAndRenderVariant(
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
+  const urls = buildQuestionUrls(
+    urlPrefix,
+    variant,
+    question,
+    instance_question ?? null,
+    publicQuestionPreview,
+  );
   Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 

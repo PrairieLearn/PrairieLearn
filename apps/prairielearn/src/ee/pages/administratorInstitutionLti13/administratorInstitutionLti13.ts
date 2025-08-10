@@ -24,6 +24,7 @@ const lti13_instance_defaults = {
   uid_attr: 'email',
   uin_attr: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
   email_attr: 'email',
+  require_linked_lti_user: false,
 };
 
 router.get(
@@ -32,9 +33,7 @@ router.get(
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
-      {
-        institution_id: req.params.institution_id,
-      },
+      { institution_id: req.params.institution_id },
       Lti13InstanceSchema,
     );
 
@@ -215,6 +214,7 @@ router.post(
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
         email_attribute: req.body.email_attribute,
+        require_linked_lti_user: !!req.body.require_linked_lti_user,
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });

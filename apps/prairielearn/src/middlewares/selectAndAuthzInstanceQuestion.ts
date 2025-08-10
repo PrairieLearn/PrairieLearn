@@ -10,12 +10,13 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  AuthzAssessmentInstanceSchema,
   FileSchema,
   GroupSchema,
+  IdSchema,
   InstanceQuestionSchema,
-  NextAllowedGradeSchema,
   QuestionSchema,
+  SprocAuthzAssessmentInstanceSchema,
+  SprocInstanceQuestionsNextAllowedGradeSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
@@ -23,12 +24,12 @@ import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../li
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const InstanceQuestionInfoSchema = z.object({
-  id: z.number(),
+  id: IdSchema,
   prev_instance_question: z.object({
-    id: z.number().nullable(),
+    id: IdSchema.nullable(),
   }),
   next_instance_question: z.object({
-    id: z.number().nullable(),
+    id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
   question_number: z.string(),
@@ -49,7 +50,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
   instance_question: z.object({
-    ...NextAllowedGradeSchema.shape,
+    ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
     ...InstanceQuestionSchema.shape,
   }),
   instance_question_info: InstanceQuestionInfoSchema,
@@ -57,10 +58,11 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   question: QuestionSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
-  authz_result: AuthzAssessmentInstanceSchema,
+  authz_result: SprocAuthzAssessmentInstanceSchema,
   assessment_instance_label: z.string(),
   file_list: z.array(FileSchema),
 });
+
 export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema>;
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {

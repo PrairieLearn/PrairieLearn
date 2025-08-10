@@ -492,9 +492,10 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callRow(
-    'sync_assessments',
-    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
-    z.any(),
-  );
+  await sqldb.callAsync('sync_assessments', [
+    assessmentParams,
+    courseId,
+    courseInstanceId,
+    config.checkSharingOnSync,
+  ]);
 }
