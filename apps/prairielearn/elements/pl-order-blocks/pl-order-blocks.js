@@ -191,7 +191,7 @@ window.PLOrderBlocks = function (uuid, options) {
       if (!$(answerObj).hasClass('info-fixed')) {
         var answerText = answerObj.getAttribute('string');
         var answerUuid = answerObj.getAttribute('uuid');
-        var answerDistractorBin = answerObj.dataset.distractorBin;
+        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
@@ -237,7 +237,7 @@ window.PLOrderBlocks = function (uuid, options) {
     if (!indicator) {
       indicator = document.createElement('li');
       indicator.classList.add('pl-order-blocks-pairing-indicator', 'bg-info-subtle');
-      indicator.dataset.distractorBin = uuid;
+      indicator.setAttribute('data-distractor-bin', uuid);
       indicator.id = 'indicator-' + uuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
@@ -256,7 +256,7 @@ window.PLOrderBlocks = function (uuid, options) {
       Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
-    const getDistractorBin = (block) => block.dataset.distractorBin;
+    const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
     const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
     for (const binUuid of distractorBins) {
@@ -275,10 +275,10 @@ window.PLOrderBlocks = function (uuid, options) {
       // there aren't pairing indicators in the dropzone
       return;
     }
-    const binUuid = block.dataset.distractorBin;
+    const binUuid = block.getAttribute('data-distractor-bin');
     const containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
     const containingIndicatorUuid = containingIndicator
-      ? containingIndicator.dataset.distractorBin
+      ? containingIndicator.getAttribute('data-distractor-bin')
       : null;
 
     if (!binUuid && containingIndicatorUuid) {

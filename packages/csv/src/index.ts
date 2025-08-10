@@ -1,8 +1,8 @@
-import { Stringifier, type Options as StringifierOptions } from 'csv-stringify';
+import { Stringifier, type Options as StringifierOptions, stringify } from 'csv-stringify';
 import multipipe from 'multipipe';
 import { type Handler as TransformHandler, transform } from 'stream-transform';
 
-export { stringify, Stringifier } from 'csv-stringify';
+export { stringify, Stringifier };
 
 export interface StringifyNonblockingOptions extends StringifierOptions {
   batchSize?: number;
