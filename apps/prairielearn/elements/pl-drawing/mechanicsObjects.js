@@ -35,7 +35,7 @@ mechanicsObjects.Spring = fabric.util.createClass(fabric.Object, {
     this.top = this.y1;
     this.originY = 'center';
     this.originX = 'left';
-    this.length = Math.sqrt((this.y2 - this.y1) ** 2 + (this.x2 - this.x1) ** 2);
+    this.length = Math.hypot(this.y2 - this.y1, this.x2 - this.x1);
     this.width = this.length;
     this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
     this.angle = (180 / Math.PI) * this.angleRad;
@@ -115,7 +115,7 @@ mechanicsObjects.Coil = fabric.util.createClass(fabric.Object, {
     this.top = this.y1;
     this.originY = 'center';
     this.originX = 'left';
-    this.length = Math.sqrt((this.y2 - this.y1) ** 2 + (this.x2 - this.x1) ** 2);
+    this.length = Math.hypot(this.y2 - this.y1, this.x2 - this.x1);
     this.h = this.height / 2;
     this.width = this.length;
     this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
@@ -195,7 +195,7 @@ mechanicsObjects.Rod = fabric.util.createClass(fabric.Object, {
       this.top = this.y1;
       this.angleRad = Math.atan2(this.y2 - this.y1, this.x2 - this.x1);
       this.angle = (180 / Math.PI) * this.angleRad;
-      this.length = Math.sqrt((this.y2 - this.y1) ** 2 + (this.x2 - this.x1) ** 2);
+      this.length = Math.hypot(this.y2 - this.y1, this.x2 - this.x1);
       this.width = this.length;
       this.dirty = true;
     };
@@ -266,7 +266,7 @@ mechanicsObjects.CollarRod = fabric.util.createClass(fabric.Object, {
     const w2 = this.w2;
     const h1 = this.h1;
     const h2 = this.h2;
-    const len = Math.sqrt((this.y2 - this.y1) ** 2 + (this.x2 - this.x1) ** 2);
+    const len = Math.hypot(this.y2 - this.y1, this.x2 - this.x1);
 
     const rA = $V([0, 0]); // this is the position given by (left,top)
     const rB = rA.add($V([len, 0]));
@@ -1115,7 +1115,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     // Forward vector
     let fwdx = x2 - x1;
     let fwdy = y2 - y1;
-    const fwdlen = Math.sqrt(fwdx ** 2 + fwdy ** 2);
+    const fwdlen = Math.hypot(fwdx, fwdy);
     fwdx /= fwdlen; // normalize
     fwdy /= fwdlen;
 
@@ -2085,7 +2085,7 @@ mechanicsObjects.byType['pl-dimensions'] = class extends PLDrawingBaseElement {
     options.left = p1d.e(1);
     options.top = p1d.e(2);
     options.angle = Math.atan2(p2d.e(2) - p1d.e(2), p2d.e(1) - p1d.e(1)) * (180.0 / Math.PI);
-    options.width = Math.sqrt((p2d.e(2) - p1d.e(2)) ** 2 + (p2d.e(1) - p1d.e(1)) ** 2);
+    options.width = Math.hypot(p2d.e(2) - p1d.e(2), p2d.e(1) - p1d.e(1));
 
     const obj = new mechanicsObjects.Arrow(options);
     obj.selectable = false;
@@ -2703,7 +2703,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
           const dy = c2.top - obj.top;
           const dx = c2.left - obj.left;
           subObj.startAngle = Math.atan2(dy, dx);
-          subObj.radius = Math.sqrt(dx ** 2 + dy ** 2);
+          subObj.radius = Math.hypot(dx, dy);
           submittedAnswer.updateObject(subObj);
         },
         function () {
@@ -2718,7 +2718,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
         const dy = c2.top - obj.top;
         const dx = c2.left - obj.left;
         obj.startAngle = Math.atan2(dy, dx);
-        obj.radius = Math.sqrt(dx ** 2 + dy ** 2);
+        obj.radius = Math.hypot(dx, dy);
         obj.dirty = true;
 
         c3.left = c1.left + Math.cos(obj.endAngle) * obj.radius;
@@ -2736,7 +2736,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
           const dy = c3.top - obj.top;
           const dx = c3.left - obj.left;
           subObj.endAngle = Math.atan2(dy, dx);
-          subObj.radius = Math.sqrt(dx ** 2 + dy ** 2);
+          subObj.radius = Math.hypot(dx, dy);
           submittedAnswer.updateObject(subObj);
         },
         function () {
@@ -2751,7 +2751,7 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
         const dy = c3.top - obj.top;
         const dx = c3.left - obj.left;
         obj.endAngle = Math.atan2(dy, dx);
-        obj.radius = Math.sqrt(dx ** 2 + dy ** 2);
+        obj.radius = Math.hypot(dx, dy);
         obj.dirty = true;
 
         c2.left = c1.left + Math.cos(obj.startAngle) * obj.radius;
@@ -3716,7 +3716,7 @@ mechanicsObjects.byType['pl-capacitor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     const gap = options.interval;
     const theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
-    const d = Math.sqrt((options.y2 - options.y1) ** 2 + (options.x2 - options.x1) ** 2);
+    const d = Math.hypot(options.y2 - options.y1, options.x2 - options.x1);
 
     // Start and end positons for the capacitor supporting lines
     // which removes the distance between capacitor plates (gap)
@@ -3821,7 +3821,7 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     const gap = options.interval;
     const theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
-    const d = Math.sqrt((options.y2 - options.y1) ** 2 + (options.x2 - options.x1) ** 2);
+    const d = Math.hypot(options.y2 - options.y1, options.x2 - options.x1);
 
     // Start and end positons for the battery supporting lines
     // which removes the distance between battery plates (gap)
@@ -3913,7 +3913,7 @@ mechanicsObjects.byType['pl-battery'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     const theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
-    const d = Math.sqrt((options.y2 - options.y1) ** 2 + (options.x2 - options.x1) ** 2);
+    const d = Math.hypot(options.y2 - options.y1, options.x2 - options.x1);
     const gap = options.interval;
 
     // Start and end positons for the resistor supporting lines
@@ -3989,7 +3989,7 @@ mechanicsObjects.byType['pl-resistor'] = class extends PLDrawingBaseElement {
 mechanicsObjects.byType['pl-inductor'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     const theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
-    const d = Math.sqrt((options.y2 - options.y1) ** 2 + (options.x2 - options.x1) ** 2);
+    const d = Math.hypot(options.y2 - options.y1, options.x2 - options.x1);
     const gap = options.interval;
 
     // Start and end positons for the inductor supporting lines
@@ -4063,7 +4063,7 @@ mechanicsObjects.byType['pl-switch'] = class extends PLDrawingBaseElement {
   static generate(canvas, options) {
     const gap = options.interval;
     const theta = Math.atan2(options.y2 - options.y1, options.x2 - options.x1);
-    const d = Math.sqrt((options.y2 - options.y1) ** 2 + (options.x2 - options.x1) ** 2);
+    const d = Math.hypot(options.y2 - options.y1, options.x2 - options.x1);
 
     // Start and end positons for the switch supporting lines
     // which removes the region (gap) that will be filled with the switch
