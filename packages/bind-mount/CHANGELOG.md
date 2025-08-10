@@ -1,5 +1,11 @@
 # @prairielearn/bind-mount
 
+## 1.1.10
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 1.1.9
 
 ### Patch Changes

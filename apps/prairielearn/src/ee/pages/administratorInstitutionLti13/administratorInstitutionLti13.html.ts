@@ -47,7 +47,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap"> ${i.name ?? `#${i.id}`} </span>
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;

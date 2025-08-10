@@ -311,7 +311,7 @@ export async function updateAssessmentQuestionRubric(
       // Update rubric items. Start by soft-deleting rubric items that are no longer active.
       await sqldb.queryAsync(sql.delete_rubric_items, {
         rubric_id: new_rubric_id,
-        active_rubric_items: rubric_items.map((item) => item.id).filter((id) => id),
+        active_rubric_items: rubric_items.map((item) => item.id).filter(Boolean),
       });
 
       rubric_items.sort((a, b) => a.order - b.order);
