@@ -188,12 +188,12 @@
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
         node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
-        node.dataset.value = value;
+        node.setAttribute('data-value', value);
       });
     }
 
     static value(domNode) {
-      return domNode.dataset.value;
+      return domNode.getAttribute('data-value');
     }
   }
   MathFormula.blotName = 'formula';

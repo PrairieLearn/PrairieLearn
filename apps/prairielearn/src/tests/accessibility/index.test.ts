@@ -55,7 +55,7 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
       // inspect the element's children, so we'll only use the presence of an
       // `aria-label` attribute to determine if we should add one.
       if (el.hasAttribute('aria-label')) return;
-      const title = el.dataset.bsTitle;
+      const title = el.getAttribute('data-bs-title');
       if (title) {
         el.setAttribute('aria-label', title);
       }

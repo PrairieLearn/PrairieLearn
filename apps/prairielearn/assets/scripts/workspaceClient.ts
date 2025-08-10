@@ -15,8 +15,8 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
 }
 
 onDocumentReady(function () {
-  const socketToken = document.body.dataset.socketToken;
-  const workspaceId = document.body.dataset.workspaceId;
+  const socketToken = document.body.getAttribute('data-socket-token');
+  const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
     document.body,
     'data-heartbeat-interval-sec',
