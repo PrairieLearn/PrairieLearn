@@ -55,9 +55,8 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
   rewriter
     .on('a, button', {
       element(el) {
-        if (!(el instanceof HTMLElement)) return;
         if (el.hasAttribute('aria-label')) return;
-        const title = el.dataset.bsTitle ?? el.getAttribute('title');
+        const title = el.getAttribute('data-bs-title') ?? el.getAttribute('title');
         if (title) {
           el.setAttribute('aria-label', title);
         }

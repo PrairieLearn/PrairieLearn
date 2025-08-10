@@ -49,7 +49,6 @@ async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM 
   // the actual behavior at runtime.
   rewriter.on('a, button', {
     element(el) {
-      if (!(el instanceof HTMLElement)) return;
       // This is slightly different than what we do at runtime. In practice, we'll
       // only add an `aria-label` if the element is empty. But here, we can't
       // inspect the element's children, so we'll only use the presence of an
