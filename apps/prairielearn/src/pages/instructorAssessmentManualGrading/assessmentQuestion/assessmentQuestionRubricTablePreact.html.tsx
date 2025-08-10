@@ -21,7 +21,6 @@ export function AssessmentQuestionRubricTable({
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats;
 }) {
-  console.log('Rendering');
   const showAiGradingStats = true; // TODO: change to use enabled and mode
 
   // Define states
@@ -82,13 +81,12 @@ export function AssessmentQuestionRubricTable({
 
   /**
    * Update current dragged row index
-   * @param idx
+   * @param idx The current index of the row that is being dragged
    */
   function rowDragStart(idx: number) {
     setDraggedIdx(idx);
   }
   function rowDragOver(overIdx: number) {
-    console.log(`Dragging ${draggedIdx} over ${overIdx}`);
     if (draggedIdx === null || draggedIdx === overIdx) return;
     setRubricItems((items) => {
       const newItems = [...items];
@@ -126,15 +124,23 @@ export function AssessmentQuestionRubricTable({
   };
 
   const onSave = async () => {
+    const inputs =
+      document.getElementById('rubric-editing')?.querySelectorAll<HTMLInputElement>('input') ?? [];
+    for (const input of inputs) {
+      if (!input.reportValidity()) {
+        return;
+      }
+    }
+
     const payload = {
       __csrf_token,
       __action: 'modify_rubric_settings',
       use_rubric: 'true',
       modified_at: rubric_data?.modified_at?.toString() ?? '',
-      replace_auto_points: String(replaceAutoPoints),
-      starting_points: String(startingPoints),
-      min_points: String(minPoints),
-      max_extra_points: String(maxExtraPoints),
+      replace_auto_points: replaceAutoPoints,
+      starting_points: startingPoints,
+      min_points: minPoints,
+      max_extra_points: maxExtraPoints,
       rubric_items: rubricItems.map((it, idx) => ({
         id: it.id,
         order: idx,
@@ -155,7 +161,14 @@ export function AssessmentQuestionRubricTable({
       }
     });
 
-    const res = await fetch('', { method: 'POST', body });
+    const postUrl = window.location.pathname + window.location.search;
+
+    const res = await fetch(postUrl, {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
     if (!res.ok) {
       alert(`Save failed: ${res.statusText}`);
       return;
@@ -164,7 +177,7 @@ export function AssessmentQuestionRubricTable({
   };
 
   return (
-    <div class="card overflow-hidden p-2 mb-3">
+    <div id="rubric-editing" class="card overflow-hidden p-2 mb-3">
       {/* Settings */}
       <div class="card mb-2 mt-1">
         <button
@@ -214,12 +227,7 @@ export function AssessmentQuestionRubricTable({
       {pointsWarnings.map((warning) => (
         <div key={warning} class="alert alert-warning alert-dismissable fade show" role="alert">
           {warning}
-          <button
-            type="button"
-            class="btn-close"
-            data-bs-dismiss="alert"
-            aria-label="Close"
-          ></button>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
         </div>
       ))}
 

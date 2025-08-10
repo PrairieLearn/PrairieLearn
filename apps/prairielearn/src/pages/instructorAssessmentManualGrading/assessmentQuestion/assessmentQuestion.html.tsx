@@ -153,10 +153,11 @@ export function AssessmentQuestion({
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`<div class="mb-3">
               <div
-                id="rubric-table-preact"
+                id="rubric-editing-preact"
                 data-assessment-question="${JSON.stringify(assessment_question)}"
                 data-rubric-data="${JSON.stringify(rubric_data)}"
                 data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"
+                data-csrf-token="${__csrf_token}"
               ></div>
             </div>
             ${aiGradingStats.rubric_stats.length
