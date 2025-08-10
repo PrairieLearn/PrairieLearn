@@ -37,6 +37,7 @@ const createMiddleware = async (server: ViteDevServer): Promise<Connect.HandleFu
     let app = appModule[config.exportName!];
     if (!app) {
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`);
+      // eslint-disable-next-line unicorn/no-process-exit
       process.exit(1);
     } else {
       // some app may be created with a function returning a promise
