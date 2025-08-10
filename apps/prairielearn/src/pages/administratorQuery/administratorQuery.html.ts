@@ -250,7 +250,7 @@ function shouldRenderColumn(columns: string[], col: string) {
   ) {
     return false;
   }
-  if (/^_sortval_/.test(col)) {
+  if (col.startsWith('_sortval_')) {
     return false;
   }
   return true;
