@@ -16,7 +16,6 @@ import {
   type Course,
   IdSchema,
   IntervalSchema,
-  NextAllowedGradeSchema,
   type Question,
   QuestionSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
