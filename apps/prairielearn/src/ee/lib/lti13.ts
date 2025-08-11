@@ -388,17 +388,19 @@ export async function validateLti13CourseInstance(
 }
 
 export async function getAccessToken(lti13_instance_id: string) {
+  debug('getAccessToken');
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: client.TokenEndpointResponse = lti13_instance.access_tokenset;
+  let tokenSet: client.TokenEndpointResponse | null = lti13_instance.access_tokenset;
 
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
   if (
+    tokenSet &&
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
-    debug('getAccessToken: returning cached key');
+    debug('getAccessToken: returning cached token');
     return tokenSet.access_token;
   }
 
@@ -438,9 +440,6 @@ export async function getAccessToken(lti13_instance_id: string) {
   tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
     scope: TOKEN_SCOPES.join(' '),
   });
-
-  debug('getAccessToken');
-  debug(tokenSet);
 
   // Store the token for reuse
   const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
