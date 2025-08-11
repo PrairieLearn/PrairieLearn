@@ -4,7 +4,9 @@ import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-gradin
 import type { AssessmentQuestion, RubricItem } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 
-type RubricItemData = Partial<RubricItem & { num_submissions: number | null }>;
+type RubricItemData = Partial<
+  RubricItem & { num_submissions: number | null; disagreement_count: number | null }
+>;
 
 export function AssessmentQuestionRubricTable({
   assessment_question,
@@ -15,7 +17,7 @@ export function AssessmentQuestionRubricTable({
   aiGradingStats,
 }: {
   assessment_question: AssessmentQuestion;
-  rubric_data: RubricData | null | undefined;
+  rubric_data: RubricData | null;
   __csrf_token: string;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;

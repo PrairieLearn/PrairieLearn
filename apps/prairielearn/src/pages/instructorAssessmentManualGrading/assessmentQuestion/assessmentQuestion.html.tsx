@@ -31,7 +31,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  rubric_data: RubricData | undefined | null;
+  rubric_data: RubricData | null;
 }) {
   const {
     number_in_alternative_group,
