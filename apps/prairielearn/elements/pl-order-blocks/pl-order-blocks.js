@@ -282,7 +282,7 @@ window.PLOrderBlocks = function (uuid, options) {
     const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
     const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
-    for (let binUuid of distractorBins) {
+    for (const binUuid of distractorBins) {
       const blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
       const indicator = getOrCreateIndicator(binUuid, blocks[0]);
       const innerList = indicator.getElementsByClassName('inner-list')[0];
