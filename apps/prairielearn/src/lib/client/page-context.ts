@@ -12,6 +12,7 @@ import {
 } from './safe-db-types.js';
 
 const RawPageContextSchema = z.object({
+  __csrf_token: z.string(),
   authz_data: z.object({
     has_course_instance_permission_edit: z.boolean(),
     has_course_instance_permission_view: z.boolean(),
