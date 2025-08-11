@@ -73,7 +73,8 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await assets.init();
 
       debug('before(): start server');
-      const httpServer = await server.startServer();
+      const app = await server.initExpress();
+      const httpServer = await server.startServer(app);
 
       debug('before(): initialize socket server');
       socketServer.init(httpServer);
