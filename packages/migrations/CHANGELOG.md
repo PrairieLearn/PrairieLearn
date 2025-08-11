@@ -1,5 +1,11 @@
 # @prairielearn/migrations
 
+## 3.0.23
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
 ## 3.0.22
 
 ### Patch Changes

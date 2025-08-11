@@ -466,7 +466,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array(count * testTypeList.length).keys()) {
+    for (const iter of Array.from({ length: count * testTypeList.length }).keys()) {
       const type = testTypeList[iter % testTypeList.length];
       const testIterationIndex = Math.floor(iter / testTypeList.length) + 1;
       job.verbose(`Test ${testIterationIndex}, type ${type}`);

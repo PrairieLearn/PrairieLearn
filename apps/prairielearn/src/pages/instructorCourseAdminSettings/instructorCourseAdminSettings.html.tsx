@@ -14,6 +14,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists,
   availableTimezones,
   origHash,
+  courseGHLink,
 }: {
   resLocals: Record<string, any>;
   aiQuestionGenerationEnabled: boolean;
@@ -22,6 +23,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
   origHash: string;
+  courseGHLink: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -60,6 +62,11 @@ export function InstructorCourseAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="short_name">Short Name</label>
+              ${courseGHLink
+                ? html`<a target="_blank" href="${courseGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
+                : ''}
               <input
                 type="text"
                 class="form-control"

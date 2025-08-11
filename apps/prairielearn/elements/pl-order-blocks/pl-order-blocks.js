@@ -185,14 +185,14 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setAnswer() {
-    var answerObjs = $(dropzoneElementId).children();
-    var studentAnswers = [];
+    const answerObjs = $(dropzoneElementId).children();
+    const studentAnswers = [];
     for (const answerObj of answerObjs) {
       if (!$(answerObj).hasClass('info-fixed')) {
-        var answerText = answerObj.getAttribute('string');
-        var answerUuid = answerObj.getAttribute('uuid');
-        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
-        var answerIndent = null;
+        const answerText = answerObj.getAttribute('string');
+        const answerUuid = answerObj.getAttribute('uuid');
+        const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
+        let answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
@@ -207,7 +207,7 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    var textfieldName = '#' + uuid + '-input';
+    const textfieldName = '#' + uuid + '-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
@@ -243,7 +243,7 @@ window.PLOrderBlocks = function (uuid, options) {
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
       if (createAt) {
-        createAt.insertAdjacentElement('beforebegin', indicator);
+        createAt.before(indicator);
       } else {
         $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
       }
@@ -266,7 +266,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const innerList = indicator.getElementsByClassName('inner-list')[0];
 
       for (const block of blocks) {
-        innerList.insertAdjacentElement('beforeend', block);
+        innerList.append(block);
       }
     }
   }
@@ -283,12 +283,12 @@ window.PLOrderBlocks = function (uuid, options) {
       : null;
 
     if (!binUuid && containingIndicatorUuid) {
-      containingIndicator.insertAdjacentElement('afterend', block);
+      containingIndicator.after(block);
     } else if (binUuid !== containingIndicatorUuid) {
       const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
-      properIndicatorList.insertAdjacentElement('beforeend', block);
+      properIndicatorList.append(block);
     }
   }
 
