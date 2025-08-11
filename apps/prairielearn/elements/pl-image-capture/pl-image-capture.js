@@ -1241,7 +1241,7 @@ const MAX_ZOOM_SCALE = 5;
      */
     async enhanceHandwriting() {
       if (this.editable) {
-        throw new Error('Handwriting enhancement is not allowed while the image is editable.');
+        throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
       }
       if (!this.imageCapturePreviewPanzoom) {
         return;
@@ -1265,7 +1265,9 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     handwritingEnhancementListeners() {
-      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector('.js-enhance-handwriting-button');
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector(
+        '.js-enhance-handwriting-button',
+      );
 
       this.ensureElementsExist({
         enhanceHandwritingButton,
