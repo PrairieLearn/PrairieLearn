@@ -24,12 +24,10 @@ RUN apk update \
 COPY requirements.txt /
 RUN uv venv --seed && uv pip install --no-cache-dir -r requirements.txt
 
-COPY run.sh /
-
 # Anything that needs to be run post-install
 # TODO Not clear yet how to make the grader run subprocess as a less privileged user
 # RUN useradd ag
-RUN chmod +x /run.sh
+COPY --chmod=755 run.sh /run.sh
 
 # Add serverFilesCourse to Python path
 # TODO do we need to copy anything here?
