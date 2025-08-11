@@ -167,7 +167,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -483,7 +483,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).reverse();
+    const reverseFolders = idSplit.slice(0, -1).toReversed();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -613,7 +613,7 @@ function getNamesForCopy(
   const baseLongName = getBaseLongName(oldLongName);
   const numberShortName = getNumberShortName(baseShortName, shortNames);
   const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
   return {
     shortName: `${baseShortName}_copy${number}`,
     longName: `${baseLongName} (copy ${number})`,
@@ -1129,11 +1129,12 @@ async function updateInfoAssessmentFilesForTargetCourse(
     delete infoJson['shareSourcePublicly'];
     infoJson['allowAccess'] = [];
 
-    // Rewrite the question IDs to include the course sharing name,
-    // or to point to the new path if the question was copied
     function shouldAddSharingPrefix(qid: string) {
       return qid && qid[0] !== '@' && questionsToImport.has(qid);
     }
+
+    // Rewrite the question IDs to include the course sharing name,
+    // or to point to the new path if the question was copied
     for (const zone of infoJson.zones) {
       for (const question of zone.questions) {
         if (question.id) {

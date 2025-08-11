@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
@@ -93,6 +95,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
+  // eslint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -109,7 +112,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return The express "app" object that was created.
+ * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
@@ -1999,7 +2002,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
     res.locals.error_id = Array.from({ length: 12 })
       .map(() => chars[Math.floor(Math.random() * chars.length)])
@@ -2232,7 +2235,7 @@ if (esMain(import.meta) && config.startServer) {
         (time, stack) => {
           const msg = `BLOCKED-AT: Blocked for ${time}ms`;
           logger.verbose(msg, { time, stack });
-          console.log(msg + '\n' + stack.join('\n'));
+          console.warn(msg + '\n' + stack.join('\n'));
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds
@@ -2241,7 +2244,7 @@ if (esMain(import.meta) && config.startServer) {
         (time) => {
           const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
           logger.verbose(msg, { time });
-          console.log(msg);
+          console.warn(msg);
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds

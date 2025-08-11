@@ -1,5 +1,19 @@
 # @prairielearn/postgres-tools
 
+## 2.0.23
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 2.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/postgres@4.0.1
+
 ## 2.0.21
 
 ### Patch Changes
