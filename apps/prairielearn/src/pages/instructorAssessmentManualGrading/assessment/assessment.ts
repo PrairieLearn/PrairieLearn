@@ -15,6 +15,7 @@ import {
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -25,10 +26,11 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {

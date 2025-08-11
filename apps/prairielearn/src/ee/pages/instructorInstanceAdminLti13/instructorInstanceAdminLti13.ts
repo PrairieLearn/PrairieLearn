@@ -22,6 +22,7 @@ import {
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   Lti13CombinedInstanceSchema,
@@ -45,11 +46,11 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_edit'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
-    }
-
     const instances = await queryRows(
       sql.select_combined_lti13_instances,
       { course_instance_id: res.locals.course_instance.id },
