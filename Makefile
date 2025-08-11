@@ -32,6 +32,8 @@ refresh-workspace-hosts-dev:
 
 dev: start-support
 	@yarn dev
+dev-vite: start-support
+	@yarn dev-vite
 dev-bun:
 	@yarn dev-bun
 dev-workspace-host: start-support
