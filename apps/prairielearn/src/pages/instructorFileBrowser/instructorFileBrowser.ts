@@ -19,7 +19,6 @@ router.get(
   '/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_view'],
-    errorMessage: 'Requires "Viewer" permissions',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {

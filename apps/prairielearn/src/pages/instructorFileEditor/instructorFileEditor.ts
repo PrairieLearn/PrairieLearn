@@ -41,7 +41,6 @@ router.get(
   '/*',
   createAuthzMiddleware({
     oneOfPermissions: ['has_course_permission_edit'],
-    errorMessage: 'Requires "Editor" permissions',
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {

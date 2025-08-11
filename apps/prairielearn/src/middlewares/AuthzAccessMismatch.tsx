@@ -1,14 +1,32 @@
 import _ from 'lodash';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContext } from '../lib/client/page-context.js';
 import type { StaffUser } from '../lib/client/safe-db-types.js';
 
+// These keys can be used as part of permission checks.
+export type CheckablePermissionKeys = Extract<
+  | 'is_administrator'
+  | 'has_course_permission_preview'
+  | 'has_course_permission_view'
+  | 'has_course_permission_edit'
+  | 'has_course_permission_own'
+  | 'has_course_instance_permission_view'
+  | 'has_course_instance_permission_edit'
+  | 'has_student_access'
+  | 'has_student_access_with_enrollment',
+  keyof PageContext['authz_data']
+>;
+
+// These keys are used to show users diagnostic information about their permissions.
+type DiagnosticPermissionKeys = Extract<
+  CheckablePermissionKeys | 'course_role' | 'course_instance_role',
+  keyof PageContext['authz_data']
+>;
+
 interface PermissionMeta {
   label: string;
-  key: keyof PageContext['authz_data'];
+  key: DiagnosticPermissionKeys;
   type: 'boolean' | 'string';
 }
 
@@ -17,50 +35,10 @@ interface PermissionData extends PermissionMeta {
   authnValue: boolean | string;
 }
 
-const PermissionsMeta = [
+export const PERMISSIONS_META = [
   {
     label: 'Administrator',
     key: 'is_administrator',
-    type: 'boolean',
-  },
-  {
-    label: 'Course preview',
-    key: 'has_course_permission_preview',
-    type: 'boolean',
-  },
-  {
-    label: 'Course view',
-    key: 'has_course_permission_view',
-    type: 'boolean',
-  },
-  {
-    label: 'Course edit',
-    key: 'has_course_permission_edit',
-    type: 'boolean',
-  },
-  {
-    label: 'Course own',
-    key: 'has_course_permission_own',
-    type: 'boolean',
-  },
-  {
-    label: 'Student access',
-    key: 'has_student_access',
-    type: 'boolean',
-  },
-  {
-    label: 'Enrollment student access',
-    key: 'has_student_access_with_enrollment',
-    type: 'boolean',
-  },
-  {
-    label: 'Course instance view',
-    key: 'has_course_instance_permission_view',
-    type: 'boolean',
-  },
-  {
-    label: 'Course instance edit',
-    key: 'has_course_instance_permission_edit',
     type: 'boolean',
   },
   {
@@ -69,13 +47,53 @@ const PermissionsMeta = [
     type: 'string',
   },
   {
+    label: 'Course previewer',
+    key: 'has_course_permission_preview',
+    type: 'boolean',
+  },
+  {
+    label: 'Course viewer',
+    key: 'has_course_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Course editor',
+    key: 'has_course_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Course owner',
+    key: 'has_course_permission_own',
+    type: 'boolean',
+  },
+  {
     label: 'Course instance role',
     key: 'course_instance_role',
     type: 'string',
   },
+  {
+    label: 'Student data viewer',
+    key: 'has_course_instance_permission_view',
+    type: 'boolean',
+  },
+  {
+    label: 'Student data editor',
+    key: 'has_course_instance_permission_edit',
+    type: 'boolean',
+  },
+  {
+    label: 'Student access',
+    key: 'has_student_access',
+    type: 'boolean',
+  },
+  {
+    label: 'Enrolled student access',
+    key: 'has_student_access_with_enrollment',
+    type: 'boolean',
+  },
 ] satisfies PermissionMeta[];
 
-const PermissionsTable = ({ permissions }: { permissions: PermissionData[] }) => {
+function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
     <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
       <thead>
@@ -112,42 +130,49 @@ const PermissionsTable = ({ permissions }: { permissions: PermissionData[] }) =>
       </tbody>
     </table>
   );
-};
+}
+function clearEffectiveUserCookies() {
+  removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
+  removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
+  removeCookieClient(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
+  removeCookieClient(['pl_requested_date', 'pl2_requested_date']);
+  setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+  window.location.reload();
+}
+
+function formatUser(user: StaffUser) {
+  if (!user.name) return user.uid;
+  return `${user.name} (${user.uid})`;
+}
 
 export function AuthzAccessMismatch({
-  errorMessage,
+  errorExplanation,
   oneOfPermissionKeys,
   authzData,
   authnUser,
   authzUser,
 }: {
-  errorMessage: string;
-  oneOfPermissionKeys: (keyof PageContext['authz_data'])[];
+  /**
+   * A sentence-like description of why the user can't access the page. If not provided,
+   * one will be generated from `oneOfPermissionKeys`.
+   */
+  errorExplanation?: string;
+  oneOfPermissionKeys: CheckablePermissionKeys[];
   authzData: PageContext['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
-  const clearEffectiveUserCookies = () => {
-    removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
-    removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
-    removeCookieClient(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookieClient(['pl_requested_date', 'pl2_requested_date']);
-    setCookieClient(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    window.location.reload();
-  };
-
-  const permissions: PermissionData[] = PermissionsMeta.map((permission) => {
+  const permissions: PermissionData[] = PERMISSIONS_META.map((permission) => {
     return {
       authnValue:
-        (authzData as any)['authn_' + permission.key] ??
-        (permission.type === 'string' ? '' : false),
+        authzData[`authn_${permission.key}`] ?? (permission.type === 'string' ? '' : false),
       value: authzData[permission.key] ?? (permission.type === 'string' ? '' : false),
       ...permission,
     };
   });
 
   const [oneOfPermissions, allOtherPermissions] = _.partition(permissions, (permission) =>
-    oneOfPermissionKeys.includes(permission.key),
+    (oneOfPermissionKeys as string[]).includes(permission.key),
   );
 
   // Only show the permissions that are different between authn and authz
@@ -158,59 +183,26 @@ export function AuthzAccessMismatch({
   return (
     <main id="content" class="container">
       <div class="card mb-4">
-        <div class="card-header bg-danger text-white">Insufficient access</div>
+        <div class="card-header bg-danger text-white">
+          <h1>Effective user has insufficient access</h1>
+        </div>
         <div class="card-body">
-          <h2 class="mb-3 h4">Effective user has insufficient access</h2>
+          <p>{errorExplanation}</p>
           <p>
-            The
-            {authzUser ? (
-              <OverlayTrigger
-                overlay={
-                  <Tooltip>
-                    {authzUser.name} ({authzUser.uid})
-                  </Tooltip>
-                }
-              >
-                <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                  current effective user
-                </button>
-              </OverlayTrigger>
-            ) : (
-              ' current user '
-            )}
-            does
-            <OverlayTrigger overlay={<Tooltip>Error message: {errorMessage}</Tooltip>}>
-              <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                not have access
-              </button>
-            </OverlayTrigger>
-            to this page, but
-            <OverlayTrigger
-              overlay={
-                <Tooltip>
-                  {authnUser.name} ({authnUser.uid})
-                </Tooltip>
-              }
-            >
-              <button type="button" class="btn btn-link link-secondary p-0 mx-1 align-baseline">
-                your account
-              </button>
-            </OverlayTrigger>
+            The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>} does
+            not have access to this page, but your account <strong>{formatUser(authnUser)}</strong>{' '}
             does.
           </p>
 
           <details class="mb-3">
-            <summary>View permission differences</summary>
-            <div class="mt-3">
-              <h6>One of these permissions is required</h6>
-              <PermissionsTable permissions={oneOfPermissions} />
-              {otherPermissions.length > 0 && (
-                <>
-                  <h6>Other permission differences</h6>
-                  <PermissionsTable permissions={otherPermissions} />
-                </>
-              )}
-            </div>
+            <summary class="mb-1">View missing permissions</summary>
+            <PermissionsTable permissions={oneOfPermissions} />
+            {otherPermissions.length > 0 && (
+              <details>
+                <summary class="mb-1">Other permission differences</summary>
+                <PermissionsTable permissions={otherPermissions} />
+              </details>
+            )}
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
