@@ -348,7 +348,7 @@ ${given_cp_and_cip.join(',\n')}
       });
 
       if (req.body.course_instance_id) {
-        if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
+        if (!course_instances.some((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
           throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
@@ -389,7 +389,7 @@ ${given_cp_and_cip.join(',\n')}
       });
 
       if (req.body.course_instance_id) {
-        if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
+        if (!course_instances.some((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
           throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
