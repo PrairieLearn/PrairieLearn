@@ -92,6 +92,8 @@ SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
+SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
+SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -240,6 +242,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "ordering-feedback",
                 ],
             )
         elif grading_method is GradingMethodType.DAG:
@@ -419,7 +422,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
     # isn't we need to change it into a solution before displaying it as such
     data_copy = deepcopy(data)
-    data_copy["submitted_answers"] = {answer_name: correct_answers}
+    data_copy["submitted_answers"] = {answer_name: deepcopy(correct_answers)}
     data_copy["partial_scores"] = {}
     grade(element_html, data_copy)
     if data_copy["partial_scores"][answer_name]["score"] != 1:
@@ -551,6 +554,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 "distractor_feedback": attempt.get("distractor_feedback", ""),
+                "ordering_feedback": attempt.get("ordering_feedback", ""),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
@@ -712,7 +716,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     for block in blocks
                     if block["inner_html"] == answer["inner_html"]
                 )
-            answer["distractor_feedback"] = matching_block["distractor_feedback"]
+            answer["distractor_feedback"] = matching_block.get(
+                "distractor_feedback", ""
+            )
+            answer["ordering_feedback"] = matching_block.get("ordering_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
