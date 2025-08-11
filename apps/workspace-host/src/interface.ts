@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -804,7 +806,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   try {
     await fs.access(workspaceJobPath);
   } catch (err) {
-    throw Error('Could not access workspace files.', { cause: err });
+    throw new Error('Could not access workspace files.', { cause: err });
   }
 
   await fs.chown(

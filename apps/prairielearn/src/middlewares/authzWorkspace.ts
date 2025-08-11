@@ -20,19 +20,21 @@ import { checkStudentAssessmentAccess } from './studentAssessmentAccess.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const SelectAuthDataFromWorkspaceSchema = z.object({
+  variant_id: IdSchema,
+  question_id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  course_id: IdSchema,
+});
+
 export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: false }) {
   return asyncHandler(async (req, res, next) => {
     // We rely on having res.locals.workspace_id already set to the correct value here
     const result = await sqldb.queryOptionalRow(
       sql.select_auth_data_from_workspace,
       { workspace_id: res.locals.workspace_id },
-      z.object({
-        variant_id: IdSchema,
-        question_id: IdSchema,
-        instance_question_id: IdSchema.nullable(),
-        course_instance_id: IdSchema.nullable(),
-        course_id: IdSchema,
-      }),
+      SelectAuthDataFromWorkspaceSchema,
     );
 
     if (!result) {

@@ -368,7 +368,7 @@ export function identifyChunksFromChangedFiles(
       const assessmentsIndex = pathComponents.indexOf('assessments');
       const clientFilesAssessmentIndex = pathComponents.indexOf('clientFilesAssessment');
 
-      if (clientFilesCourseInstanceIndex >= 0) {
+      if (clientFilesCourseInstanceIndex !== -1) {
         // Let's validate that the preceeding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
@@ -390,8 +390,8 @@ export function identifyChunksFromChangedFiles(
       // `clientFilesCourseInstance` directories inside of `clientFileAssessment`
       // for some strange reason.
       if (
-        assessmentsIndex >= 0 &&
-        clientFilesAssessmentIndex >= 0 &&
+        assessmentsIndex !== -1 &&
+        clientFilesAssessmentIndex !== -1 &&
         clientFilesAssessmentIndex > assessmentsIndex
       ) {
         // We probably care about this file - let's validate that by

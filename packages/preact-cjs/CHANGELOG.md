@@ -1,5 +1,11 @@
 # @prairielearn/preact-cjs
 
+## 1.1.2
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 1.1.1
 
 ### Patch Changes

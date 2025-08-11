@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/browser-utils",
-  "version": "2.2.11",
+  "version": "2.2.12",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "sideEffects": false
 }
