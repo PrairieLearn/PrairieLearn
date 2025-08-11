@@ -232,7 +232,7 @@ export function InstructorInstanceAdminSettings({
           </form>
         </div>
         ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
-          ? CopyCourseInstanceForm({
+          ? CourseInstanceActions({
               csrfToken: resLocals.__csrf_token,
               shortName: resLocals.course_instance.short_name,
               enrollmentCount,
@@ -302,7 +302,7 @@ function EditConfiguration({
   }
 }
 
-function CopyCourseInstanceForm({
+function CourseInstanceActions({
   csrfToken,
   shortName,
   enrollmentCount,
