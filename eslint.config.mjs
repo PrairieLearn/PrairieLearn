@@ -8,10 +8,12 @@ import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
+import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
 import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
+import eslintPluginUnicorn from 'eslint-plugin-unicorn';
 import youDontNeedLodashUnderscore from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -87,12 +89,14 @@ export default tseslint.config([
     plugins: {
       'import-x': importX,
       'no-floating-promise': noFloatingPromise,
+      jsdoc,
       'react-hooks': reactHooks,
       vitest,
       'jsx-a11y-x': jsxA11yX,
       'you-dont-need-lodash-underscore': youDontNeedLodashUnderscore,
       'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       ...eslintReact.configs['recommended-typescript'].plugins,
+      unicorn: eslintPluginUnicorn,
       '@prairielearn': prairielearn,
       '@html-eslint': html,
       '@stylistic': stylistic,
@@ -103,6 +107,23 @@ export default tseslint.config([
     },
 
     settings: {
+      jsdoc: {
+        exemptDestructuredRootsFromChecks: true,
+        contexts: [
+          // We don't want to require documentation of a 'locals' (res.locals) variable
+          // AST Parser: https://github.com/es-joy/jsdoccomment
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionDeclaration',
+          },
+          {
+            comment: 'JsdocBlock:not(:has(JsdocTag[tag="param"][name="locals"]))',
+            context: 'FunctionExpression',
+          },
+          'ArrowFunctionExpression',
+          'TSDeclareFunction',
+        ],
+      },
       'jsx-a11y-x': {
         attributes: {
           for: ['for'],
@@ -143,6 +164,7 @@ export default tseslint.config([
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
       'object-shorthand': 'error',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'no-console': ['error', { allow: ['warn', 'error', 'table', 'trace'] }],
       'no-duplicate-imports': 'error',
 
       // Enforce alphabetical order of import specifiers within each import group.
@@ -184,6 +206,17 @@ export default tseslint.config([
       'jsx-a11y-x/anchor-ambiguous-text': 'error',
       'jsx-a11y-x/lang': 'error',
       'jsx-a11y-x/no-aria-hidden-on-focusable': 'error',
+      // Bootstrap turns some elements into interactive elements.
+      'jsx-a11y-x/no-noninteractive-element-to-interactive-role': [
+        'error',
+        {
+          ul: ['listbox', 'menu', 'menubar', 'radiogroup', 'tablist', 'tree', 'treegrid', 'role'],
+          ol: ['listbox', 'menu', 'menubar', 'radiogroup', 'tablist', 'tree', 'treegrid'],
+          li: ['menuitem', 'option', 'row', 'tab', 'treeitem'],
+          table: ['grid'],
+          td: ['gridcell'],
+        },
+      ],
 
       // Use the recommended rules for react-hooks
       'react-hooks/rules-of-hooks': 'error',
@@ -202,6 +235,100 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
+
+      ...eslintPluginUnicorn.configs.recommended.rules,
+      // We don't have specific rules for null/undefined, so we'll disable these.
+      'unicorn/no-null': 'off', // 1k+ violations
+      'unicorn/no-useless-undefined': 'off', // 15 violations
+
+      // We don't enforce specific styles for filenames.
+      'unicorn/filename-case': 'off', // 500+ violations
+
+      // We don't use `String.raw` in our codebase yet.
+      'unicorn/prefer-string-raw': 'off', // 300+ violations
+
+      // These rules don't provide much value.
+      'unicorn/prevent-abbreviations': 'off',
+      'unicorn/no-array-callback-reference': 'off',
+      'unicorn/no-hex-escape': 'off',
+
+      // These rules have many violations. Decisions about enabling the rules have been deferred.
+      'unicorn/no-await-expression-member': 'off', // 400+ violations
+      'unicorn/no-array-for-each': 'off', // 300+ violations
+      'unicorn/catch-error-name': 'off', // 200+ violations
+      'unicorn/switch-case-braces': 'off', // 200+ violations
+      'unicorn/no-negated-condition': 'off', // 150+ violations
+      'unicorn/prefer-global-this': 'off', // 150+ violations
+      'unicorn/prefer-node-protocol': 'off', // 100+ violations
+
+      // 20 - 100 violations
+      'unicorn/prefer-spread': 'off',
+      'unicorn/prefer-number-properties': 'off',
+      'unicorn/prefer-switch': 'off',
+      'unicorn/prefer-query-selector': 'off',
+      'unicorn/escape-case': 'off',
+      'unicorn/import-style': 'off',
+      'unicorn/numeric-separators-style': 'off',
+      'unicorn/explicit-length-check': 'off',
+      'unicorn/consistent-function-scoping': 'off',
+      'unicorn/consistent-assert': 'off',
+      'unicorn/text-encoding-identifier-case': 'off',
+
+      // TODO:
+      'unicorn/prefer-string-replace-all': 'off',
+      'unicorn/prefer-string-slice': 'off',
+      'unicorn/prefer-dom-node-dataset': 'off',
+      'unicorn/no-zero-fractions': 'off',
+      ...Object.fromEntries(
+        [
+          'unicorn/prefer-code-point',
+          'unicorn/prefer-type-error',
+          'unicorn/prefer-set-has',
+          'unicorn/prefer-at',
+          'unicorn/prefer-includes',
+          'unicorn/number-literal-case',
+          'unicorn/prefer-single-call',
+          'unicorn/prefer-regexp-test',
+          'unicorn/prefer-export-from',
+          'unicorn/prefer-dom-node-append',
+          'unicorn/prefer-dom-node-text-content',
+          'unicorn/no-useless-fallback-in-spread',
+          'unicorn/no-typeof-undefined',
+          'unicorn/no-lonely-if',
+          'unicorn/prefer-top-level-await',
+          'unicorn/prefer-add-event-listener',
+        ].map((k) => [k, 'off']),
+      ),
+
+      // TODO:
+      'unicorn/prefer-event-target': 'off',
+      'unicorn/no-object-as-default-parameter': 'off',
+
+      // False positives
+      'unicorn/no-array-method-this-argument': 'off',
+      'unicorn/error-message': 'off',
+      'unicorn/throw-new-error': 'off',
+
+      // Duplicated rules
+      'unicorn/no-this-assignment': 'off',
+      'unicorn/prefer-module': 'off',
+      'unicorn/no-static-only-class': 'off',
+
+      // https://github.com/PrairieLearn/PrairieLearn/pull/12545/files#r2252069292
+      'unicorn/no-for-loop': 'off',
+
+      // Sometimes, an if/else is more readable than a ternary.
+      'unicorn/prefer-ternary': 'off',
+
+      // Sometimes, an array reduce is more readable.
+      'unicorn/no-array-reduce': 'off',
+
+      // Conflicts with prettier
+      'unicorn/template-indent': 'off',
+      'unicorn/no-nested-ternary': 'off',
+
+      // We use anonymous default exports for all of our pages.
+      'unicorn/no-anonymous-default-export': 'off',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
@@ -314,7 +441,7 @@ export default tseslint.config([
     },
   },
   {
-    files: ['**/*.ts'],
+    files: ['**/*.{ts,tsx}'],
     rules: {
       'no-restricted-syntax': [
         'error',
@@ -324,6 +451,38 @@ export default tseslint.config([
           message: 'module.exports should not be used in TypeScript files',
         },
       ],
+      ...jsdoc.configs['flat/recommended-typescript-error'].rules,
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/convert-to-jsdoc-comments': [
+        'error',
+        {
+          enforceJsdocLineStyle: 'single',
+          contexts: ['FunctionDeclaration', 'TSDeclareFunction'],
+          contextsBeforeAndAfter: ['TSPropertySignature'],
+          allowedPrefixes: ['@ts-', 'istanbul ', 'c8 ', 'v8 ', 'eslint', 'prettier-', 'global'],
+        },
+      ],
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      // Potential future rules:
+      // 'jsdoc/informative-docs': ['error'],
+      // 'jsdoc/require-hyphen-before-param-description': ['error', 'never'],
+      'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    files: ['**/*.js'],
+    rules: {
+      ...jsdoc.configs['flat/recommended-typescript-flavor-error'].rules,
+      'jsdoc/require-param-description': 'off',
+      'jsdoc/check-line-alignment': 'error',
+      'jsdoc/require-asterisk-prefix': 'error',
+      'jsdoc/require-jsdoc': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/tag-lines': 'off',
     },
   },
   {
@@ -339,6 +498,12 @@ export default tseslint.config([
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
+    files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
+    rules: {
+      'no-console': 'off',
     },
   },
   {

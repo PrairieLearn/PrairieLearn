@@ -206,7 +206,7 @@ jobs:
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: .vitest-reports
           pattern: blob-report-*

@@ -35,8 +35,10 @@ import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
+  AssessmentSchema,
   type Course,
   type CourseInstance,
+  CourseInstanceSchema,
   type Question,
   type User,
 } from './db-types.js';
@@ -165,7 +167,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -481,7 +483,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).reverse();
+    const reverseFolders = idSplit.slice(0, -1).toReversed();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -611,7 +613,7 @@ function getNamesForCopy(
   const baseLongName = getBaseLongName(oldLongName);
   const numberShortName = getNumberShortName(baseShortName, shortNames);
   const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
   return {
     shortName: `${baseShortName}_copy${number}`,
     longName: `${baseLongName} (copy ${number})`,
@@ -952,10 +954,13 @@ export class CourseInstanceCopyEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -966,7 +971,7 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
-    if (oldNamesShort.includes(shortName) || oldNamesLong.includes(longName)) {
+    if (oldNamesShort.includes(shortName) || (longName && oldNamesLong.includes(longName))) {
       const names = getNamesForCopy(
         this.course_instance.short_name,
         oldNamesShort,
@@ -1124,11 +1129,12 @@ async function updateInfoAssessmentFilesForTargetCourse(
     delete infoJson['shareSourcePublicly'];
     infoJson['allowAccess'] = [];
 
-    // Rewrite the question IDs to include the course sharing name,
-    // or to point to the new path if the question was copied
     function shouldAddSharingPrefix(qid: string) {
       return qid && qid[0] !== '@' && questionsToImport.has(qid);
     }
+
+    // Rewrite the question IDs to include the course sharing name,
+    // or to point to the new path if the question was copied
     for (const zone of infoJson.zones) {
       for (const question of zone.questions) {
         if (question.id) {
@@ -1285,10 +1291,13 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_course_instances_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = result.rows.map((row) => row.long_name);
+    const oldNamesLong = await sqldb.queryRows(
+      sql.select_course_instances_with_course,
+      { course_id: this.course.id },
+      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
+      // course instances, which should always have a non-null long name.
+      z.string(),
+    );
 
     debug('Get all existing short names');
     const oldNamesShort = await getExistingShortNames(
@@ -1745,10 +1754,14 @@ export class QuestionRenameEditor extends Editor {
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
-      question_id: this.question.id,
-    });
-    const assessments = result.rows;
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      { question_id: this.question.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
 
     const pathsToAdd = [oldPath, newPath];
 
@@ -1756,6 +1769,11 @@ export class QuestionRenameEditor extends Editor {
       `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
     );
     for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
       const infoPath = path.join(
         this.course.path,
         'courseInstances',

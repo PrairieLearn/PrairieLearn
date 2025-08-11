@@ -55,7 +55,7 @@ router.get(
       { name: feature },
       FeatureGrantRowSchema,
     );
-    const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
+    const institutions = await queryRows(sql.select_institutions, InstitutionSchema);
 
     res.send(
       AdministratorFeature({
@@ -87,7 +87,7 @@ const AddFeatureGrantModalParamsSchema = z.object({
 type AddFeatureGrantModalParams = z.infer<typeof AddFeatureGrantModalParamsSchema>;
 
 async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
-  const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
+  const institutions = await queryRows(sql.select_institutions, InstitutionSchema);
   const courses = params.institution_id
     ? await queryRows(
         sql.select_courses_for_institution,

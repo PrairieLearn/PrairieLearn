@@ -1,5 +1,17 @@
 # @prairielearn/zod
 
+## 1.3.5
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.3.4
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 1.3.3
 
 ### Patch Changes

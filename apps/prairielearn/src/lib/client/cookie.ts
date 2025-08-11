@@ -33,8 +33,10 @@ export function setCookieClient(names: OldAndNewCookieNames, value: string) {
   Cookies.set(names[1], value);
 }
 
-// When removing cookies, we need to remove the cookies both with and without
-// an explicit domain.
+/**
+ * When removing cookies, we need to remove the cookies both with and without
+ * an explicit domain.
+ */
 export function removeCookieClient(names: OldAndNewCookieNames) {
   if (!OldCookies || !Cookies) {
     throw new Error('Cannot be used outside a browser environment');

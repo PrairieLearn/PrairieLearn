@@ -13,7 +13,6 @@ type AttributeMap = Record<string, string>;
  * @param source The element to copy attributes from
  * @param target The element to copy attributes into
  * @param attributes A map of attributes to copy from `source` to `target`
- * @param param.debug If true, logs debug information to the console
  */
 export function templateFromAttributes(
   source: HTMLElement,
@@ -46,7 +45,7 @@ export function templateFromAttributes(
         }
       } else if (targetElement instanceof HTMLSelectElement) {
         const i = Array.from(targetElement.options).findIndex((o) => o.value === attributeValue);
-        if (i >= 0) {
+        if (i !== -1) {
           targetElement.selectedIndex = i;
           // Manually trigger a 'change' event. This does not trigger
           // automatically when we change properties like 'checked'.

@@ -18,7 +18,7 @@ const schemaNameOverrides = {
 };
 
 const customSchemas = ['IdSchema', 'IntervalSchema'];
-const unusedSchemas = ['AssessmentsFormatForQuestionSchema', 'JsonCommentSchema', 'QueryRunSchema'];
+const unusedSchemas = ['JsonCommentSchema'];
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
@@ -100,6 +100,7 @@ describe('Database Schema Sync Test', () => {
         schemaName.endsWith('Schema') &&
         !usedSchemas.has(schemaName) &&
         !schemaName.startsWith('Enum') &&
+        !schemaName.startsWith('Sproc') &&
         !customSchemas.includes(schemaName) &&
         !unusedSchemas.includes(schemaName),
     );
