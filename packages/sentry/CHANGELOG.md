@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 4.0.2
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
 ## 4.0.1
 
 ### Patch Changes

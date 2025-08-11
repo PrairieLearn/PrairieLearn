@@ -137,11 +137,10 @@ function PLThreeJS(options) {
 
   // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class Font {
+    isFont = true;
+    type = 'Font';
+
     constructor(data) {
-      this.isFont = true;
-
-      this.type = 'Font';
-
       this.data = data;
     }
 
