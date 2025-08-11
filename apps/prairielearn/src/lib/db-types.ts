@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { string, z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
@@ -143,6 +143,20 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
+
+export const AiClusterSchema = z.object({
+  assessment_question_id: IdSchema,
+  cluster_name: z.string(),
+  id: IdSchema
+});
+export type AiCluster = z.infer<typeof AiClusterSchema>;
+
+export const AiClusterAssignmentSchema = z.object({
+  ai_cluster_id: IdSchema,
+  id: IdSchema,
+  instance_question_id:  IdSchema,
+})
+export type AiClusterAssignment = z.infer<typeof AiClusterAssignmentSchema>;
 
 export const AdministratorSchema = z.object({
   id: IdSchema,

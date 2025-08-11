@@ -76,11 +76,48 @@ export function ManualGradingAssessment({
         assessmentId: resLocals.assessment.id,
         urlPrefix: resLocals.urlPrefix,
       })}
+      <form method="POST" id="ai-grading-all">
+        <input type="hidden" name="__action" value="ai_grade_assessment_all" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+      <form method="POST" id="generate-clusters">
+        <input type="hidden" name="__action" value="generate_clusters" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+      <form method="POST" id="export-clusters">
+        <input type="hidden" name="__action" value="export_clusters" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white align-items-center d-flex w-100 gap-2">
           <h1>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
           </h1>
+          <div class="flex-1"></div>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="ai-grade-all-questions"
+            onclick="$('#ai-grading-all').submit();"
+          >
+            AI grade all questions
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="generate-clusters"
+            onclick="$('#generate-clusters').submit();"
+          >
+          Generate clusters
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="export-clusters"
+            onclick="$('#export-clusters').submit();"
+          >
+          Export clusters
+          </button>
         </div>
 
         <div class="table-responsive">
