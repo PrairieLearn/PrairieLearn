@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
