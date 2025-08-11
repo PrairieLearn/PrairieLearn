@@ -22,7 +22,7 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -39,6 +39,7 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
+  authzData: PageContext['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
@@ -47,6 +48,7 @@ interface StudentsCardProps {
 }
 
 function StudentsCard({
+  authzData,
   course,
   courseInstance,
   students: initialStudents,
@@ -197,7 +199,11 @@ function StudentsCard({
               students={students}
               table={table}
             />
-            <Button variant="light" onClick={() => setShowInvite(true)}>
+            <Button
+              variant="light"
+              disabled={!authzData.has_course_instance_permission_edit}
+              onClick={() => setShowInvite(true)}
+            >
               Invite student
             </Button>
           </div>
@@ -249,15 +255,26 @@ function StudentsCard({
         show={showInvite}
         onHide={() => setShowInvite(false)}
         onSubmit={async (uid) => {
-          const body = new URLSearchParams({ uid, __csrf_token: csrfToken });
-          const res = await fetch('invite', {
+          const body = new URLSearchParams({
+            __action: 'invite_by_uid',
+            uid,
+            __csrf_token: csrfToken,
+          });
+          const res = await fetch(window.location.pathname, {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             credentials: 'same-origin',
             body,
           });
           if (!res.ok) {
-            throw new Error('Failed to invite');
+            let message = 'Failed to invite';
+            try {
+              const data = await res.json();
+              if (typeof data?.error === 'string') message = data.error;
+            } catch {
+              void 0;
+            }
+            throw new Error(message);
           }
           await refetch();
           setShowInvite(false);
@@ -271,6 +288,7 @@ function StudentsCard({
  * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
  */
 export const InstructorStudents = ({
+  authzData,
   search,
   students,
   timezone,
@@ -278,6 +296,7 @@ export const InstructorStudents = ({
   course,
   csrfToken,
 }: {
+  authzData: PageContext['authz_data'];
   search: string;
 } & StudentsCardProps) => {
   const queryClient = new QueryClient();
@@ -285,6 +304,7 @@ export const InstructorStudents = ({
     <NuqsAdapter search={search}>
       <QueryClientProvider client={queryClient}>
         <StudentsCard
+          authzData={authzData}
           course={course}
           courseInstance={courseInstance}
           students={students}

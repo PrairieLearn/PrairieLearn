@@ -1,5 +1,5 @@
 import { useState } from 'preact/compat';
-import { Modal } from 'react-bootstrap';
+import { Alert, Modal } from 'react-bootstrap';
 
 export function InviteStudentModal({
   show,
@@ -12,14 +12,28 @@ export function InviteStudentModal({
 }) {
   const [uid, setUid] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
-    <Modal show={show} backdrop="static" onHide={onHide}>
+    <Modal
+      show={show}
+      backdrop="static"
+      onHide={() => {
+        setError(null);
+        onHide();
+      }}
+    >
       <Modal.Header closeButton>
         <Modal.Title>Invite student</Modal.Title>
       </Modal.Header>
+
       <form onSubmit={(e) => e.preventDefault()}>
         <Modal.Body>
+          {error && (
+            <Alert variant="danger" dismissible onClose={() => setError(null)}>
+              {error}
+            </Alert>
+          )}
           <div class="mb-3">
             <label for="invite-uid" class="form-label">
               UID
@@ -48,7 +62,11 @@ export function InviteStudentModal({
             onClick={async () => {
               try {
                 setSubmitting(true);
+                setError(null);
                 await onSubmit(uid.trim());
+              } catch (e) {
+                const message = e instanceof Error ? e.message : 'Failed to invite';
+                setError(message);
               } finally {
                 setSubmitting(false);
               }

@@ -12,8 +12,10 @@ export default asyncHandler(async (req, res, next) => {
   };
 
   res.locals.__csrf_token = generateSignedToken(tokenData, config.secretKey);
+  console.log('CSRF token generation', res.locals.__csrf_token);
 
   if (req.method === 'POST') {
+    console.log('CSRF token check', res.locals.__csrf_token, req.body.__csrf_token);
     // NOTE: If you are trying to debug a "CSRF Fail" in a form with file
     // upload, you may have forgotten to special-case the file upload path.
     // Search for "upload.single('file')" in server.js, for example.

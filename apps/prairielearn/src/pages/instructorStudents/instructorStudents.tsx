@@ -39,24 +39,32 @@ router.get(
 );
 
 router.post(
-  '/invite',
+  '/',
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
-      throw new HttpStatusError(403, 'Access denied (must be an instructor)');
+      res.status(403).json({ error: 'Access denied (must be an instructor)' });
+      return;
     }
+
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
-    const BodySchema = z.object({ uid: z.string().min(1) });
-    const body = BodySchema.parse(req.body);
+    try {
+      const BodySchema = z.object({
+        uid: z.string().min(1),
+        __action: z.literal('invite_by_uid'),
+      });
+      const body = BodySchema.parse(req.body);
 
-    // Insert or update invitation by UID
-    await queryAsync(sql.insert_invite_by_uid, {
-      course_instance_id: courseInstance.id,
-      uid: body.uid,
-    });
+      await queryAsync(sql.insert_invite_by_uid, {
+        course_instance_id: courseInstance.id,
+        uid: body.uid,
+      });
 
-    res.json({ ok: true });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(400).json({ error: err.message });
+    }
   }),
 );
 
@@ -115,6 +123,7 @@ router.get(
             />
             <Hydrate fullHeight>
               <InstructorStudents
+                authzData={authz_data}
                 students={students}
                 search={search}
                 timezone={course.display_timezone}
