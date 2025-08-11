@@ -21,8 +21,6 @@ onDocumentReady(() => {
       assessment_question={assessment_question}
       rubric_data={rubric_data}
       __csrf_token={__csrf_token}
-      aiGradingEnabled={true}
-      aiGradingMode={true}
       aiGradingStats={aiGradingStats}
     />,
     rubricTable,

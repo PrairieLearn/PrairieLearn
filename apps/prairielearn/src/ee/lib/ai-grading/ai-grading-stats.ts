@@ -34,10 +34,8 @@ export interface AiGradingGeneralStats {
   submission_point_count: number;
   submission_rubric_count: number;
   mean_error: number | null;
-  rubric_stats: {
-    rubric_item: RubricItem;
-    disagreement_count: number;
-  }[];
+  /** Mapping from rubric item id to disagreement count */
+  rubric_stats: Record<string, number>;
 }
 
 /**
@@ -155,14 +153,11 @@ export async function calculateAiGradingStats(
           testPointResults.map((item) => item.ai_points),
         )
       : null,
-    rubric_stats: [],
+    rubric_stats: {},
   };
   for (const rubric_item of rubric_items) {
     const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
-    stats.rubric_stats.push({
-      rubric_item,
-      disagreement_count,
-    });
+    stats.rubric_stats[rubric_item.id] = disagreement_count;
   }
   return stats;
 }

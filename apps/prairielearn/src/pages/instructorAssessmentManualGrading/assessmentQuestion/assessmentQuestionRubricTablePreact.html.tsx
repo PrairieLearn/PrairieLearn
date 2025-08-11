@@ -5,29 +5,34 @@ import type { AssessmentQuestion, RubricItem } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 
 type RubricItemData = Partial<
-  RubricItem & { num_submissions: number | null; disagreement_count: number | null }
+  RubricItem & { num_submissions: number; disagreement_count: number | null }
 >;
 
 export function AssessmentQuestionRubricTable({
   assessment_question,
   rubric_data,
   __csrf_token,
-  aiGradingEnabled,
-  aiGradingMode,
   aiGradingStats,
 }: {
   assessment_question: AssessmentQuestion;
   rubric_data: RubricData | null;
   __csrf_token: string;
-  aiGradingEnabled: boolean;
-  aiGradingMode: boolean;
-  aiGradingStats: AiGradingGeneralStats;
+  aiGradingStats: AiGradingGeneralStats | null;
 }) {
-  const showAiGradingStats = true; // TODO: change to use enabled and mode
+  const showAiGradingStats = aiGradingStats ? true : false;
+  const rubricItemsWithSelectionCount = rubric_data?.rubric_items ?? [];
+  const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
+  const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
+    ...itemA,
+    disagreement_count:
+      itemA.id in rubricItemsWithDisagreementCount
+        ? rubricItemsWithDisagreementCount[itemA.id]
+        : null,
+  }));
 
   // Define states
   const [editMode, setEditMode] = useState(false);
-  const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubric_data?.rubric_items ?? []);
+  const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [nextNewId, setNextNewId] = useState<number>(1);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points,
@@ -210,12 +215,7 @@ export function AssessmentQuestionRubricTable({
         items={rubricItems}
         editMode={editMode}
         showAiGradingStats={showAiGradingStats}
-        submissionCount={aiGradingStats.submission_rubric_count}
-        disagreements={
-          new Map(
-            aiGradingStats.rubric_stats.map((s) => [s.rubric_item.id, s.disagreement_count || 0]),
-          )
-        }
+        submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
         onAddItem={onAddItem}
         onDelete={onDelete}
         moveUp={moveUp}
@@ -372,7 +372,6 @@ function RubricTable({
   editMode,
   showAiGradingStats,
   submissionCount,
-  disagreements,
   onAddItem,
   onDelete,
   moveUp,
@@ -385,7 +384,6 @@ function RubricTable({
   editMode: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
-  disagreements: Map<string, number>;
   onAddItem: () => void;
   onDelete: (idx: number) => void;
   moveUp: (idx: number) => void;
@@ -405,27 +403,36 @@ function RubricTable({
             <td>Detailed explanation</td>
             <td>Grader note</td>
             <td>Show to students</td>
-            {showAiGradingStats && <td>AI agreement</td>}
+            {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
           </tr>
         </thead>
         <tbody>
-          {items.map((it, idx) => (
-            <RubricRow
-              key={it.id ?? `row-${idx}`}
-              idx={idx}
-              item={it}
-              editMode={editMode}
-              showAiGradingStats={showAiGradingStats}
-              submissionCount={submissionCount}
-              disagreementCount={disagreements.get(it.id ?? '')}
-              onDelete={() => onDelete(idx)}
-              moveUp={() => moveUp(idx)}
-              moveDown={() => moveDown(idx)}
-              onChange={(patch) => onRowChange(idx, patch)}
-              rowDragStart={() => rowDragStart(idx)}
-              rowDragOver={() => rowDragOver(idx)}
-            />
-          ))}
+          {items.length ? (
+            items.map((it, idx) => (
+              <RubricRow
+                key={it.id ?? `row-${idx}`}
+                idx={idx}
+                item={it}
+                editMode={editMode}
+                showAiGradingStats={showAiGradingStats}
+                submissionCount={submissionCount}
+                onDelete={() => onDelete(idx)}
+                moveUp={() => moveUp(idx)}
+                moveDown={() => moveDown(idx)}
+                onChange={(patch) => onRowChange(idx, patch)}
+                rowDragStart={() => rowDragStart(idx)}
+                rowDragOver={() => rowDragOver(idx)}
+              />
+            ))
+          ) : (
+            <tr>
+              <td colSpan={7}>
+                <em>
+                  This question does not have any rubric items. Click "Add item" below to add some.
+                </em>
+              </td>
+            </tr>
+          )}
         </tbody>
       </table>
 
@@ -448,7 +455,6 @@ function RubricRow({
   editMode,
   showAiGradingStats,
   submissionCount,
-  disagreementCount,
   onDelete,
   moveUp,
   moveDown,
@@ -461,7 +467,6 @@ function RubricRow({
   editMode: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
-  disagreementCount?: number;
   onDelete: () => void;
   moveUp: () => void;
   moveDown: () => void;
@@ -480,7 +485,7 @@ function RubricRow({
           onDragStart={rowDragStart}
           onDragOver={rowDragOver}
         >
-          <i class="fas fa-arrows-up-down"></i>
+          <i class="fas fa-arrows-up-down" />
         </button>
         <button
           type="button"
@@ -590,22 +595,32 @@ function RubricRow({
         </div>
       </td>
 
-      {showAiGradingStats && (
+      {showAiGradingStats ? (
         <td class="align-middle">
           {submissionCount === 0 ? (
             <span>&mdash;</span>
-          ) : disagreementCount === undefined ? (
+          ) : item.disagreement_count === undefined || item.disagreement_count === null ? (
             <span>New</span>
-          ) : disagreementCount ? (
+          ) : item.disagreement_count ? (
             <>
               <i class="bi bi-x-square-fill text-danger" />{' '}
               <span class="text-muted">
-                ({disagreementCount}/{submissionCount} disagree)
+                ({item.disagreement_count}/{submissionCount} disagree)
               </span>
             </>
           ) : (
             <i class="bi bi-check-square-fill text-success" />
           )}
+        </td>
+      ) : (
+        <td class="text-nowrap align-middle">
+          {item.num_submissions === undefined
+            ? 'New'
+            : !item.num_submissions
+              ? 'No'
+              : item.num_submissions === 1
+                ? '1 submission'
+                : `${item.num_submissions} submissions`}
         </td>
       )}
     </tr>

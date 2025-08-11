@@ -150,16 +150,17 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
+      <div class="mb-3">
+        <div
+          id="rubric-editing-preact"
+          data-assessment-question="${JSON.stringify(assessment_question)}"
+          data-rubric-data="${JSON.stringify(rubric_data)}"
+          data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"
+          data-csrf-token="${__csrf_token}"
+        ></div>
+      </div>
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
-        ? html`<div class="mb-3">
-              <div
-                id="rubric-editing-preact"
-                data-assessment-question="${JSON.stringify(assessment_question)}"
-                data-rubric-data="${JSON.stringify(rubric_data)}"
-                data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"
-                data-csrf-token="${__csrf_token}"
-              ></div>
-            </div>
+        ? html`
             ${aiGradingStats.rubric_stats.length
               ? AssessmentQuestionRubricTable(
                   assessment_question,
@@ -180,7 +181,8 @@ export function AssessmentQuestion({
                       </div>
                     </div>
                   </div>
-                `} `
+                `}
+          `
         : ''}
 
       <form name="grading-form" method="POST">
