@@ -424,7 +424,7 @@ function computeHypotenuseLength(): SampleQuestionVariant {
   const leg_b = Math.floor(Math.random() * 10) + 1;
 
   // Compute the hypotenuse using the Pythagorean theorem
-  const hypotenuse = Math.sqrt(leg_a ** 2 + leg_b ** 2);
+  const hypotenuse = Math.hypot(leg_a, leg_b);
 
   return {
     answerType: 'number',

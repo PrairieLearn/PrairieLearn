@@ -55,7 +55,7 @@ function resetRubricImportFormListeners() {
       importRubricSettingsPopoverForm,
     });
 
-    importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+    importRubricSettingsPopoverForm.addEventListener('submit', async (event) => {
       const { file_upload_max_bytes } = decodeData('rubric-settings-data');
 
       event.preventDefault();
@@ -75,22 +75,8 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      // Read the rubric JSON file content
-      const reader = new FileReader();
-
-      reader.onerror = () => {
-        alert('Error reading file content.');
-        return;
-      };
-
-      reader.onload = () => {
-        const fileContent = reader.result;
-
-        if (typeof fileContent !== 'string') {
-          alert('Error reading file content.');
-          return;
-        }
-
+      try {
+        const fileContent = await fileData.text();
         if (fileContent.trim() === '') {
           return;
         }
@@ -188,9 +174,9 @@ function resetRubricImportFormListeners() {
 
         // Close the popover
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
-      };
-
-      reader.readAsText(fileData);
+      } catch {
+        alert('Error reading file content.');
+      }
     });
 
     importRubricButton.addEventListener(
@@ -297,7 +283,7 @@ function resetRubricExportFormListeners() {
     a.download = exportFileName;
     document.body.appendChild(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     URL.revokeObjectURL(url);
   });
 }
@@ -500,7 +486,7 @@ function checkRubricItemTotals() {
   const maxPointsInput = form.querySelector('[name="max_extra_points"]');
   const jsNegativeGradingInput = form.querySelector('.js-negative-grading');
   if (!minPointsInput || !maxPointsInput || !jsNegativeGradingInput) {
-    throw Error('Missing a required input');
+    throw new Error('Missing a required input');
   }
 
   const minPoints = Number(minPointsInput.value ?? 0);
@@ -746,7 +732,7 @@ function enableRubricItemLongTextField(container) {
   input.setAttribute('maxlength', 10000);
   input.textContent = button.dataset.currentValue || '';
 
-  container.insertBefore(input, button);
+  button.before(input);
   label?.remove();
   button.remove();
   input.focus();

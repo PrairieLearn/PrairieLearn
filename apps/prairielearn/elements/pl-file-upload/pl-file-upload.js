@@ -17,9 +17,10 @@
   }
 
   class PLFileUpload {
+    // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
+    maxFileSizeMB = 5;
+
     constructor(uuid, options) {
-      // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
-      this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
@@ -65,7 +66,7 @@
           const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
             new RegExp(f[0], 'i').test(n),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
           }
         });
@@ -262,7 +263,7 @@
         const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
           new RegExp(f[0], 'i').test(n.name),
         );
-        if (matchingRegex >= 0) {
+        if (matchingRegex !== -1) {
           this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
         }
       });
@@ -456,7 +457,7 @@
           const matchingRegex = this.requiredFilesRegex.findIndex(
             (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
             matchedRegexFiles.push(n);
             return true;
@@ -509,7 +510,7 @@
     isBinary(decodedFileContents) {
       var nulIdx = decodedFileContents.indexOf('\0');
       var fileLength = decodedFileContents.length;
-      return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+      return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
     }
 
     /**

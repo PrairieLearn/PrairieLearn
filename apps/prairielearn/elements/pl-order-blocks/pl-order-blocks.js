@@ -243,7 +243,7 @@ window.PLOrderBlocks = function (uuid, options) {
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
       if (createAt) {
-        createAt.insertAdjacentElement('beforebegin', indicator);
+        createAt.before(indicator);
       } else {
         $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
       }
@@ -266,7 +266,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const innerList = indicator.getElementsByClassName('inner-list')[0];
 
       for (const block of blocks) {
-        innerList.insertAdjacentElement('beforeend', block);
+        innerList.append(block);
       }
     }
   }
@@ -283,12 +283,12 @@ window.PLOrderBlocks = function (uuid, options) {
       : null;
 
     if (!binUuid && containingIndicatorUuid) {
-      containingIndicator.insertAdjacentElement('afterend', block);
+      containingIndicator.after(block);
     } else if (binUuid !== containingIndicatorUuid) {
       const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
-      properIndicatorList.insertAdjacentElement('beforeend', block);
+      properIndicatorList.append(block);
     }
   }
 
