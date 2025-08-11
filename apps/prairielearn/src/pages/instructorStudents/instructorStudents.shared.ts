@@ -1,10 +1,9 @@
 import z from 'zod';
 
-import { StaffUserSchema } from '../../lib/client/safe-db-types.js';
-import { EnrollmentSchema } from '../../lib/db-types.js';
+import { StaffEnrollmentSchema, StaffUserSchema } from '../../lib/client/safe-db-types.js';
 
 export const StudentRowSchema = z.object({
-  enrollment: EnrollmentSchema,
+  enrollment: StaffEnrollmentSchema,
   user: StaffUserSchema,
 });
 
