@@ -418,8 +418,7 @@ export async function generateErrorEmbedding({
 
   // Extract all images
   const promptImageUrls: string[] = [];
-  if (submissionMessage && submissionMessage.content) {
-    for (const part of submissionMessage.content) {
+  for (const part of submissionMessage?.content ?? []) {
       if (typeof part === 'object' && part.type === 'image_url') {
         promptImageUrls.push(part.image_url.url);
       }
