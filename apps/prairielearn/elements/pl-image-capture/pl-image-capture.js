@@ -41,13 +41,13 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
-      this.textEnhanced = false;
+      this.handwritingEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
-        this.textEnhancementListeners();
+        this.handwritingEnhancementListeners();
         return;
       }
 
@@ -1236,9 +1236,9 @@ const MAX_ZOOM_SCALE = 5;
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
 
-    async enhanceText() {
+    async enhanceHandwriting() {
       if (this.editable) {
-        throw new Error('Text enhancement is not allowed while the image is editable.');
+        throw new Error('Handwriting enhancement is not allowed while the image is editable.');
       }
       if (!this.imageCapturePreviewPanzoom) {
         return;
@@ -1251,24 +1251,24 @@ const MAX_ZOOM_SCALE = 5;
         capturePreview,
       });
 
-      if (this.textEnhanced) {
+      if (this.handwritingEnhanced) {
         capturePreview.style.filter = '';
-        this.textEnhanced = false;
+        this.handwritingEnhanced = false;
       } else {
         capturePreview.style.filter = 'grayscale(1) contrast(2)';
-        this.textEnhanced = true;
+        this.handwritingEnhanced = true;
       }
     }
 
-    textEnhancementListeners() {
-      const enhanceTextButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
+    handwritingEnhancementListeners() {
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
 
       this.ensureElementsExist({
-        enhanceTextButton,
+        enhanceHandwritingButton,
       });
 
-      enhanceTextButton.addEventListener('click', () => {
-        this.enhanceText();
+      enhanceHandwritingButton.addEventListener('click', () => {
+        this.enhanceHandwriting();
       });
     }
   }
