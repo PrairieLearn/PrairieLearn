@@ -1,6 +1,6 @@
 -- BLOCK select_course_instance_enrollments
 SELECT 
-    *,
+    to_jsonb(e.*) AS enrollment,
     u.uid as user_uid
 FROM 
     enrollments as e
