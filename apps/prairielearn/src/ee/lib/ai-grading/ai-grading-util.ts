@@ -175,7 +175,7 @@ export async function generatePrompt({
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
-function generateSubmissionMessage({
+export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
   is_grading = true,
@@ -462,7 +462,11 @@ export async function generateErrorEmbedding({
   };
 }
 
-export async function aiEvaluateSubmission({
+/** 
+ * Given a question, the AI returns whether or not the student-provided final answer is correct. 
+ * Specifically for handwritten submissions captured with pl-image-capture.
+ */
+export async function aiEvaluateFinalAnswer({
   question,
   question_answer,
   instance_question,
@@ -492,20 +496,7 @@ export async function aiEvaluateSubmission({
     course,
     locals,
   );
-
-  const render_question_results = await questionModule.render(
-    { question: true, submissions: false, answer: false },
-    variant,
-    question,
-    null,
-    [],
-    course,
-    locals,
-  );
   const submission_text = render_submission_results.data.submissionHtmls[0];
-  const questionPrompt = render_question_results.data.questionHtml;
-
-  const rubric_items = await selectRubricGradingItems(submission.manual_rubric_grading_id);
 
   const submissionMessage = generateSubmissionMessage({
     submission_text,
@@ -562,21 +553,12 @@ export async function aiEvaluateSubmission({
   });
 
   const completionContent = completion.choices[0].message.parsed;
-  // const completionContent = {
-  //   correct: false
-  // };
 
   if (!completionContent) {
     throw new Error('No completion content returned from OpenAI.');
   }
 
-  return {
-    rubric_items,
-    messages,
-    completionContent,
-    questionPrompt,
-    promptImageUrls
-  }
+  return completionContent.correct;
 }
 
 export function parseAiRubricItems({

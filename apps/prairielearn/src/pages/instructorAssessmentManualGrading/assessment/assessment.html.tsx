@@ -80,8 +80,12 @@ export function ManualGradingAssessment({
         <input type="hidden" name="__action" value="ai_grade_assessment_all" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
-      <form method="POST" id="generate-submissions">
-        <input type="hidden" name="__action" value="generate_submissions" />
+      <form method="POST" id="generate-clusters">
+        <input type="hidden" name="__action" value="generate_clusters" />
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+      </form>
+      <form method="POST" id="export-clusters">
+        <input type="hidden" name="__action" value="export_clusters" />
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       </form>
       <div class="card mb-4">
@@ -101,10 +105,18 @@ export function ManualGradingAssessment({
           <button
             type="button"
             class="btn btn-sm btn-light grading-tag-button"
-            name="generate-submissions"
-            onclick="$('#generate-submissions').submit();"
+            name="generate-clusters"
+            onclick="$('#generate-clusters').submit();"
           >
-          Generate submission data
+          Generate clusters
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light grading-tag-button"
+            name="export-clusters"
+            onclick="$('#export-clusters').submit();"
+          >
+          Export clusters
           </button>
         </div>
 
