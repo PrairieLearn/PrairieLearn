@@ -1,12 +1,13 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.js';
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseInstance } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -20,6 +21,7 @@ export function InstructorInstanceAdminSettings({
   origHash,
   instanceGHLink,
   canEdit,
+  enrollmentCount,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
@@ -30,7 +32,9 @@ export function InstructorInstanceAdminSettings({
   origHash: string;
   instanceGHLink: string | null;
   canEdit: boolean;
+  enrollmentCount: number;
 }) {
+  const repo = resLocals.course.repository || '';
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -232,6 +236,8 @@ export function InstructorInstanceAdminSettings({
           ? CopyCourseInstanceForm({
               csrfToken: resLocals.__csrf_token,
               shortName: resLocals.course_instance.short_name,
+              enrollmentCount,
+              repo,
             })
           : ''}
       </div>
@@ -301,9 +307,13 @@ function EditConfiguration({
 function CopyCourseInstanceForm({
   csrfToken,
   shortName,
+  enrollmentCount,
+  repo,
 }: {
   csrfToken: string;
   shortName: string;
+  enrollmentCount: number;
+  repo: string;
 }) {
   return html`
     <div class="card-footer d-flex flex-wrap align-items-center">
@@ -326,19 +336,14 @@ function CopyCourseInstanceForm({
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
-      ${Modal({
-        id: 'deleteCourseInstanceModal',
-        title: 'Delete course instance',
-        body: html`
-          <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
-        `,
-        footer: html`
-          <input type="hidden" name="__action" value="delete_course_instance" />
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger">Delete</button>
-        `,
-      })}
+      ${hydrateHtml(
+        <DeleteCourseInstanceModal
+          shortName={shortName}
+          enrolledCount={enrollmentCount}
+          repo={repo}
+          csrfToken={csrfToken}
+        />,
+      )}
     </div>
   `;
 }
