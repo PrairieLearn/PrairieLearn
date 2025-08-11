@@ -138,19 +138,19 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['file_view', 'file_edit'],
-      urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit',
-      tabLabel: 'Instance files',
-      tabTooltip: 'Course instance files',
-    },
-    {
-      activePages: ['instance_admin'],
       activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
       iconClasses: 'fas fa-school-flag',
       tabLabel: 'Integrations',
       renderCondition: () => isEnterprise(),
+    },
+    {
+      activePages: ['instance_admin'],
+      activeSubPages: ['file_view', 'file_edit'],
+      urlSuffix: '/instance_admin/file_view',
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Instance files',
+      tabTooltip: 'Course instance files',
     },
     {
       activePages: ['instance_admin'],
