@@ -73,9 +73,9 @@ export class DockerName {
 
     // @ symbol is more important
     let separatorPos;
-    if (digestPos >= 0) {
+    if (digestPos !== -1) {
       separatorPos = digestPos;
-    } else if (colonPos >= 0) {
+    } else if (colonPos !== -1) {
       separatorPos = colonPos;
     }
 

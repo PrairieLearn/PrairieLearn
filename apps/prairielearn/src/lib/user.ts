@@ -12,7 +12,7 @@ export function parseUidsString(uidsString: string, limit: number): string[] {
     uidsString
       .split(/[\s,;]+/)
       .map((uid) => uid.trim())
-      .filter((uid) => uid),
+      .filter(Boolean),
   );
 
   if (limit != null && uids.size > limit) {
