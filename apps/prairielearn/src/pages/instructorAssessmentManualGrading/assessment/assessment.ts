@@ -135,6 +135,7 @@ router.post(
       if (manuallyGradedRows.length === 0) {
         flash('warning', 'No manually graded assessment questions found for AI grading.');
         res.redirect(req.originalUrl);
+        return;
       }
 
       for (const row of manuallyGradedRows) {
