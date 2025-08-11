@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -11,7 +12,9 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import Button from 'react-bootstrap/Button';
 
+import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import {
   NuqsAdapter,
@@ -23,6 +26,7 @@ import type { StaffCourseInstanceContext } from '../../lib/client/page-context.j
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
+import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { type StudentRow } from './instructorStudents.shared.js';
 
@@ -39,9 +43,16 @@ interface StudentsCardProps {
   courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
   timezone: string;
+  csrfToken: string;
 }
 
-function StudentsCard({ course, courseInstance, students, timezone }: StudentsCardProps) {
+function StudentsCard({
+  course,
+  courseInstance,
+  students: initialStudents,
+  timezone,
+  csrfToken,
+}: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -81,6 +92,19 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
+  const { data: students, refetch } = useQuery<StudentRow[]>({
+    queryKey: ['instructor-students', courseInstance.id],
+    queryFn: async () => {
+      const res = await fetch('data.json', { credentials: 'same-origin' });
+      if (!res.ok) throw new Error('Failed to fetch students');
+      return res.json();
+    },
+    enabled: false,
+    initialData: initialStudents,
+  });
+
+  const [showInvite, setShowInvite] = useState(false);
+
   const columns = useMemo(
     () => [
       columnHelper.accessor((row) => row.user.uid, {
@@ -97,6 +121,11 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
         id: 'user_email',
         header: 'Email',
         cell: (info) => info.getValue() || '—',
+      }),
+      columnHelper.accessor((row) => row.enrollment.status, {
+        id: 'enrollment_status',
+        header: 'Status',
+        cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
       }),
       columnHelper.accessor((row) => row.enrollment.created_at, {
         id: 'enrollment_created_at',
@@ -161,13 +190,16 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between">
           <div>Students</div>
-          <div>
+          <div class="d-flex gap-2">
             <DownloadButton
               course={course}
               courseInstance={courseInstance}
               students={students}
               table={table}
             />
+            <Button variant="light" onClick={() => setShowInvite(true)}>
+              Invite student
+            </Button>
           </div>
         </div>
       </div>
@@ -213,6 +245,24 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
           <StudentsTable table={table} />
         </div>
       </div>
+      <InviteStudentModal
+        show={showInvite}
+        onHide={() => setShowInvite(false)}
+        onSubmit={async (uid) => {
+          const body = new URLSearchParams({ uid, __csrf_token: csrfToken });
+          const res = await fetch('invite', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            credentials: 'same-origin',
+            body,
+          });
+          if (!res.ok) {
+            throw new Error('Failed to invite');
+          }
+          await refetch();
+          setShowInvite(false);
+        }}
+      />
     </div>
   );
 }
@@ -226,17 +276,22 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
+  csrfToken,
 }: {
   search: string;
 } & StudentsCardProps) => {
+  const queryClient = new QueryClient();
   return (
     <NuqsAdapter search={search}>
-      <StudentsCard
-        course={course}
-        courseInstance={courseInstance}
-        students={students}
-        timezone={timezone}
-      />
+      <QueryClientProvider client={queryClient}>
+        <StudentsCard
+          course={course}
+          courseInstance={courseInstance}
+          students={students}
+          timezone={timezone}
+          csrfToken={csrfToken}
+        />
+      </QueryClientProvider>
     </NuqsAdapter>
   );
 };
