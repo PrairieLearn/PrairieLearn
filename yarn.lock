@@ -3846,6 +3846,7 @@ __metadata:
     "@sa11y/format": "npm:^7.3.1"
     "@smithy/types": "npm:^4.3.2"
     "@socket.io/redis-adapter": "npm:^8.3.0"
+    "@tanstack/react-query": "npm:^5.59.20"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
     "@tanstack/table-core": "npm:^8.21.3"
@@ -5283,6 +5284,24 @@ __metadata:
   peerDependencies:
     eslint: ">=9.0.0"
   checksum: 10c0/00c75290823340d2234d29a56caad0f66117bcc9e9ad0d8b830f19cfeb522fe5e0fb4828d1bf3cc29eda68095682d0c43e6eb8c17cd282a4872f972cf605cdbd
+  languageName: node
+  linkType: hard
+
+"@tanstack/query-core@npm:5.83.1":
+  version: 5.83.1
+  resolution: "@tanstack/query-core@npm:5.83.1"
+  checksum: 10c0/3eeacf678fcf9803585f1be74979548a33c7f659b8d5f33c1e3b3834ef3b9f3401070b2e2d38bbaa9c6e5a3c359baaa3828078e38007b7c99fb8c9f1e3911142
+  languageName: node
+  linkType: hard
+
+"@tanstack/react-query@npm:^5.59.20":
+  version: 5.84.2
+  resolution: "@tanstack/react-query@npm:5.84.2"
+  dependencies:
+    "@tanstack/query-core": "npm:5.83.1"
+  peerDependencies:
+    react: ^18 || ^19
+  checksum: 10c0/491914f8c61c5bb83e1eece53b33552d0d490ba9f122add35ae3078f10f675a6b0786c2e1d5940ccb9acf490d28c525d56893576c237090c22bfc70ef2ee0f3f
   languageName: node
   linkType: hard
 
