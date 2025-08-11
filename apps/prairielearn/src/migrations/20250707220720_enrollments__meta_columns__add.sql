@@ -16,23 +16,29 @@ ALTER TABLE enrollments
 ADD COLUMN pending_uid TEXT;
 
 ALTER TABLE enrollments
+ADD COLUMN pending_sub TEXT;
+
+ALTER TABLE enrollments
+ADD COLUMN pending_lti13_instance_id BIGINT;
+
+ALTER TABLE enrollments
 ALTER COLUMN user_id
 DROP NOT NULL;
 
--- Forbid impossible states: invited + lti_synced, rejected + lti_synced , blocked + lti_synced
+-- Forbid impossible states: rejected + lti_synced, blocked + lti_synced
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_impossible_synced CHECK (
   NOT (
-    status IN ('invited', 'rejected', 'blocked')
+    status IN ('rejected', 'blocked')
     AND lti_synced
   )
 );
 
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_user_id_null_only_if_invited CHECK (
-  -- To reject an invitation, you will need to sign in as the user and then reject the invitation.
-  -- So user_id can be NULL only if status is 'invited'.
-  (user_id IS NULL) = (status = 'invited')
+ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected CHECK (
+  -- If a user is invited or rejected an invitation, we don't link them to a user to avoid PII leakage.
+  -- Further discussion: https://github.com/PrairieLearn/PrairieLearn/issues/12198#issuecomment-3161792357
+  (status IN ('invited', 'rejected')) = (user_id IS NULL)
 );
 
 -- Require exactly one of user_id and pending_uid to be NULL.
@@ -46,6 +52,24 @@ ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
     user_id IS NOT NULL
     AND pending_uid IS NULL
   )
+);
+
+-- If you are in the 'joined' state, you must have a user_id, and you cannot have any pending_* columns.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
+  (status = 'joined') = (user_id IS NOT NULL AND pending_uid IS NULL AND pending_sub IS NULL AND pending_lti13_instance_id IS NULL)
+);
+
+-- pending_sub + pending_lti13_instance_id need to be set/unset together.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_pending_sub_lti13_instance_id_both_or_both_not_null CHECK (
+  (pending_sub IS NULL) = (pending_lti13_instance_id IS NULL)
+);
+
+-- pending_sub + pending_lti13_instance_id <-> status = 'invited' and lti_synced = true.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
+  (status = 'invited' AND lti_synced = TRUE) = (pending_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL)
 );
 
 -- pending_uid+course_instance_id must be unique.
