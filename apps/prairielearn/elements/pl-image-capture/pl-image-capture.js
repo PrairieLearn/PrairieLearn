@@ -1237,7 +1237,7 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Enhances handwriting in the captured image by applying a black-and-white and contrast filter.
+     * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
      */
     async enhanceHandwriting() {
       if (this.editable) {
@@ -1265,7 +1265,7 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     handwritingEnhancementListeners() {
-      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector('.js-enhance-handwriting-button');
 
       this.ensureElementsExist({
         enhanceHandwritingButton,
