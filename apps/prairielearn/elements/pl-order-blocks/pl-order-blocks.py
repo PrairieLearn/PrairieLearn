@@ -66,6 +66,7 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
+    ordering_feedback: str | None
     uuid: str
 
 
@@ -86,6 +87,10 @@ PL_ANSWER_INDENT_DEFAULT = -1
 ALLOW_BLANK_DEFAULT = False
 INDENTION_DEFAULT = False
 INLINE_DEFAULT = False
+ANSWER_INDENT_DEFAULT = None
+DISTRACTOR_FEEDBACK_DEFAULT = None
+ORDERING_FEEDBACK_DEFAULT = None
+DISTRACTOR_FOR_DEFAULT = None
 MAX_INDENTION_DEFAULT = 4
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
@@ -257,26 +262,45 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "ordering-feedback",
                 ],
             )
 
         is_correct = pl.get_boolean_attrib(
             html_tags, "correct", PL_ANSWER_CORRECT_DEFAULT
         )
-        answer_indent = pl.get_integer_attrib(html_tags, "indent", None)
+        answer_indent = pl.get_integer_attrib(
+            html_tags, "indent", ANSWER_INDENT_DEFAULT
+        )
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
         distractor_feedback = pl.get_string_attrib(
-            html_tags, "distractor-feedback", None
+            html_tags, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
+        )
+        ordering_feedback = pl.get_string_attrib(
+            html_tags, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
         )
 
-        distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+        distractor_for = pl.get_string_attrib(
+            html_tags, "distractor-for", DISTRACTOR_FOR_DEFAULT
+        )
+
         if distractor_for is not None and is_correct:
             raise ValueError(
                 "The distractor-for attribute may only be used on blocks with correct=false."
             )
 
+        if ordering_feedback is not None and not is_correct:
+            raise ValueError(
+                "The ordering-feedback attribute may only be used on blocks with correct=true."
+            )
+
         tag, depends = get_graph_info(html_tags)
+        if SPEC_CHAR.intersection(tag):
+            raise ValueError(
+                f'<pl-answer tag="{tag}"> tag attribute may not contain special characters: "{SPEC_CHAR_STR}"'
+            )
+
         if is_correct:
             if tag in used_tags:
                 raise ValueError(
@@ -308,6 +332,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
+            "ordering_feedback": ordering_feedback,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -746,8 +771,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
     data["submitted_answers"][answer_name] = student_answer
-    if answer_raw_name in data["submitted_answers"]:
-        del data["submitted_answers"][answer_raw_name]
+    data["submitted_answers"].pop(answer_raw_name, None)
 
 
 def construct_feedback(
@@ -869,6 +893,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 block["badge_type"] = "text-bg-success"
                 block["icon"] = "fa-check"
                 block["distractor_feedback"] = ""
+                block["ordering_feedback"] = ""
 
             if first_wrong is not None:
                 student_answer[first_wrong]["badge_type"] = "text-bg-danger"
