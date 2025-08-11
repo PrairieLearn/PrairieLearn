@@ -26,7 +26,9 @@ python-deps-docs: venv-setup
 python-deps-dev: venv-setup
 	@uv pip install --group dev --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install --group dev
-python-deps: python-deps-core python-deps-dev python-deps-docs
+python-deps: venv-setup
+	@uv pip install . --group docs --group dev --compile-bytecode --python .venv || \
+		.venv/bin/python3 -m pip install . --group docs --group dev
 deps:
 	@yarn
 	@$(MAKE) python-deps build
