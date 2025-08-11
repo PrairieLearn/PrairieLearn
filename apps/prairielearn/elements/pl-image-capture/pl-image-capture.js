@@ -1236,6 +1236,9 @@ const MAX_ZOOM_SCALE = 5;
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
 
+    /**
+     * Enhances handwriting in the captured image by applying a black-and-white and contrast filter.
+     */
     async enhanceHandwriting() {
       if (this.editable) {
         throw new Error('Handwriting enhancement is not allowed while the image is editable.');
@@ -1247,6 +1250,7 @@ const MAX_ZOOM_SCALE = 5;
       const capturePreview = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .capture-preview',
       );
+
       this.ensureElementsExist({
         capturePreview,
       });
