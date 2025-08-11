@@ -3,9 +3,7 @@ import numpy.linalg as la
 
 
 def not_allowed(*args, **kwargs):
-    raise RuntimeError(
-        "Calling sympy.series is not allowed in this question. You can still use sympy to compute derivatives"
-    )
+    raise RuntimeError("Usage of this function is not allowed in this question.")
 
 
 # set up parameters
