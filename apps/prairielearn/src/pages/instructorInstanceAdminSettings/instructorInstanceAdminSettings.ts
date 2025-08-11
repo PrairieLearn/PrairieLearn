@@ -39,19 +39,11 @@ router.get(
       { course_id: res.locals.course.id },
       z.string(),
     );
-    // Enrollment count for this course instance (excluding instructors) for deletion warning modal
-    let enrollmentCount = 0;
-    try {
-      const rows = await sqldb.queryRows(
-        sql.select_enrollment_count,
-        { course_instance_id: res.locals.course_instance.id },
-        z.object({ enrollment_count: z.number() }),
-      );
-      // Expect exactly one row
-      if (rows[0]) enrollmentCount = rows[0].enrollment_count;
-    } catch {
-      // Leave as 0 if query fails; not critical to block page render
-    }
+    const enrollmentCount = await sqldb.queryRow(
+      sql.select_enrollment_count,
+      { course_instance_id: res.locals.course_instance.id },
+      z.number(),
+    );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
@@ -104,7 +96,7 @@ router.get(
         origHash,
         instanceGHLink,
         canEdit,
-  enrollmentCount,
+        enrollmentCount,
       }),
     );
   }),

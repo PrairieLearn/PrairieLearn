@@ -1,4 +1,6 @@
-import { useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'preact/hooks';
+
+import type { Course, CourseInstance } from '../lib/db-types.js';
 
 export function DeleteCourseInstanceModal({
   shortName,
@@ -6,26 +8,55 @@ export function DeleteCourseInstanceModal({
   repo,
   csrfToken,
 }: {
-  shortName: string;
+  shortName: CourseInstance['short_name'];
   enrolledCount: number;
-  repo: string;
+  repo: Course['repository'];
   csrfToken: string;
 }) {
   const [step, setStep] = useState(1);
   const [checks, setChecks] = useState({
     impact: false,
-    recovery: false,
     irreversible: false,
+    recovery: false,
   });
-  const [typed, setTyped] = useState('');
+  const [confirmationText, setConfirmationText] = useState('');
 
   const allChecked = Object.values(checks).every(Boolean);
-  const canContinue = step === 1 ? allChecked : typed === shortName;
+  const canContinue = step === 1 ? allChecked : confirmationText === shortName;
 
   const labelId = 'deleteCourseInstanceModalLabel';
 
+  // Reset state whenever the Bootstrap modal fully hides (after fade animation)
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const el = modalRef.current;
+    if (!el) return;
+
+    const handleHidden = () => {
+      setStep(1);
+      setChecks({ impact: false, recovery: false, irreversible: false });
+      setConfirmationText('');
+    };
+
+    // Bootstrap dispatches 'hidden.bs.modal' after the hide transition completes
+    el.addEventListener('hidden.bs.modal', handleHidden);
+    return () => {
+      el.removeEventListener('hidden.bs.modal', handleHidden);
+    };
+  }, []);
+
+  // Focus the confirmation text input when moving to the second step.
+  const confirmationTextRef = useRef<HTMLInputElement | null>(null);
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+    if (step === 2) {
+      confirmationTextRef.current?.focus();
+    }
+  }, [step]);
+
   return (
     <div
+      ref={modalRef}
       class="modal fade"
       id="deleteCourseInstanceModal"
       tabIndex={-1}
@@ -58,25 +89,9 @@ export function DeleteCourseInstanceModal({
                       }
                     />
                     <label class="form-check-label" for="impact">
-                      I understand this will impact <strong>{enrolledCount}</strong> enrolled
-                      students. Students will lose access to all course materials, their submission
-                      history, and grades.
-                    </label>
-                  </div>
-                  <div class="form-check mb-2">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="recovery"
-                      checked={checks.recovery}
-                      onChange={(e) =>
-                        setChecks((c) => ({ ...c, recovery: e.currentTarget.checked }))
-                      }
-                    />
-                    <label class="form-check-label" for="recovery">
-                      I understand data recovery requires manual Git operations. Course data can
-                      only be recovered through manual Git operations on the repository:{' '}
-                      <code>{repo}</code>
+                      I understand this will impact <strong>{enrolledCount}</strong> enrolled{' '}
+                      {enrolledCount === 1 ? 'student' : 'students'}. They will lose access to all
+                      assessment instances and grades.
                     </label>
                   </div>
                   <div class="form-check mb-3">
@@ -90,40 +105,63 @@ export function DeleteCourseInstanceModal({
                       }
                     />
                     <label class="form-check-label" for="irreversible">
-                      I understand this action is irreversible through the LMS. There is no "undo"
-                      button. Once deleted, the course instance cannot be restored through the
-                      interface.
+                      I understand deletion has no "undo" button. Once deleted, the course instance
+                      cannot be restored through the PrairieLearn web interface.
+                    </label>
+                  </div>
+                  <div class="form-check mb-2">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      id="recovery"
+                      checked={checks.recovery}
+                      onChange={(e) =>
+                        setChecks((c) => ({ ...c, recovery: e.currentTarget.checked }))
+                      }
+                    />
+                    <label class="form-check-label" for="recovery">
+                      I understand data recovery requires manual Git operations on the course
+                      repository.
                     </label>
                   </div>
                 </div>
               )}
               {step === 2 && (
                 <div>
-                  <h5>Recovery information</h5>
-                  <ul class="mb-3">
-                    <li>
-                      Access the Git repository: <code>{repo}</code>
-                    </li>
-                    <li>Use Git commands to restore the course data from commit history</li>
-                    <li>Manually recreate the course instance in PrairieLearn</li>
-                    <li>Re-import course materials and student data if needed</li>
-                  </ul>
-                  <div class="mb-3">
+                  <div class="card text-bg-light mb-3">
+                    <div class="card-body">
+                      <h3 class="h5 card-title">Recovery information</h3>
+                      <p>If you need to recover this course instance, you will need to:</p>
+                      <ol class="mb-0">
+                        <li>
+                          Access the Git repository{' '}
+                          {repo ? (
+                            <>
+                              (<code>{repo}</code>)
+                            </>
+                          ) : null}
+                        </li>
+                        <li>
+                          Use Git commands to restore the course instance from the commit history
+                        </li>
+                        <li>Commit your changes</li>
+                        <li>Sync your changes to PrairieLearn</li>
+                      </ol>
+                    </div>
+                  </div>
+                  <div>
                     <label htmlFor="confirmShortName" class="form-label">
-                      Type <strong>{shortName}</strong> to confirm deletion
+                      Type <strong>{shortName}</strong> to confirm deletion:
                     </label>
                     <input
+                      ref={confirmationTextRef}
                       id="confirmShortName"
                       name="confirmShortName"
                       class="form-control"
-                      value={typed}
+                      value={confirmationText}
                       autoComplete="off"
-                      aria-describedby="confirmShortNameHelp"
-                      onInput={(e) => setTyped(e.currentTarget.value)}
+                      onInput={(e) => setConfirmationText(e.currentTarget.value)}
                     />
-                    <small id="confirmShortNameHelp" class="form-text text-muted">
-                      This safeguard prevents accidental deletion.
-                    </small>
                   </div>
                 </div>
               )}

@@ -14,4 +14,4 @@ FROM
   enrollments AS e
 WHERE
   e.course_instance_id = $course_instance_id
-  AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
+  AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id);
