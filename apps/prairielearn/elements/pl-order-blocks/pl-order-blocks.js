@@ -1,5 +1,3 @@
-/* eslint-env jquery, browser */
-
 window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
@@ -348,8 +346,6 @@ window.PLOrderBlocks = function (uuid, options) {
       // update the location of the placeholder as the item is dragged
       const placeholder = ui.placeholder;
       const leftDiff = calculateIndent(ui, placeholder.parent());
-      // placeholder[0].setAttribute('aria-selected', 'true');
-      // placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
       setIndentation(placeholder[0], leftDiff);
 
@@ -361,8 +357,6 @@ window.PLOrderBlocks = function (uuid, options) {
     stop(event, ui) {
       // when the user stops interacting with the list
       const leftDiff = calculateIndent(ui, ui.item.parent());
-      // ui.item[0].setAttribute('aria-selected', 'false');
-      // ui.item[0].style.marginLeft = leftDiff + 'px';
       setIndentation(ui.item[0], leftDiff);
       setAnswer();
 
