@@ -20,6 +20,7 @@ export function AssessmentQuestionRubricTable({
   aiGradingStats: AiGradingGeneralStats | null;
 }) {
   const showAiGradingStats = aiGradingStats ? true : false;
+  const wasUsingRubric = rubric_data ? true : false;
   const rubricItemsWithSelectionCount = rubric_data?.rubric_items ?? [];
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
   const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
@@ -214,6 +215,7 @@ export function AssessmentQuestionRubricTable({
       <RubricTable
         items={rubricItems}
         editMode={editMode}
+        wasUsingRubric={wasUsingRubric}
         showAiGradingStats={showAiGradingStats}
         submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
         onAddItem={onAddItem}
@@ -235,6 +237,10 @@ export function AssessmentQuestionRubricTable({
 
       {/* Footer actions */}
       <div class="text-end mt-2">
+        {/* TODO: add action for this button */}
+        <button type="button" class="btn btn-link btn-sm me-auto">
+          Disable rubric
+        </button>
         {!editMode ? (
           <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
             Edit rubric
@@ -370,6 +376,7 @@ function SettingsPanel({
 function RubricTable({
   items,
   editMode,
+  wasUsingRubric,
   showAiGradingStats,
   submissionCount,
   onAddItem,
@@ -382,6 +389,7 @@ function RubricTable({
 }: {
   items: RubricItemData[];
   editMode: boolean;
+  wasUsingRubric: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
   onAddItem: () => void;
@@ -428,7 +436,14 @@ function RubricTable({
             <tr>
               <td colSpan={7}>
                 <em>
-                  This question does not have any rubric items. Click "Add item" below to add some.
+                  This question does not have any rubric items. Click "Add item" below to add some
+                  {wasUsingRubric && (
+                    <>
+                      , or select <strong>Disable rubric</strong> below to switch back to manual
+                      grade input
+                    </>
+                  )}
+                  .
                 </em>
               </td>
             </tr>
