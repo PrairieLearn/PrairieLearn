@@ -195,11 +195,11 @@ export function AuthzAccessMismatch({
           </p>
 
           <details class="mb-3">
-            <summary>View missing permissions</summary>
+            <summary class="mb-1">View missing permissions</summary>
             <PermissionsTable permissions={oneOfPermissions} />
             {otherPermissions.length > 0 && (
               <details>
-                <summary>Other permission differences</summary>
+                <summary class="mb-1">Other permission differences</summary>
                 <PermissionsTable permissions={otherPermissions} />
               </details>
             )}
