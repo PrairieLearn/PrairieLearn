@@ -41,13 +41,13 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
-      this.imageEnhanced = false;
+      this.textEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
-        this.enhanceImageListeners();
+        this.textEnhancementListeners();
         return;
       }
 
@@ -1236,9 +1236,9 @@ const MAX_ZOOM_SCALE = 5;
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
 
-    async enhanceImage() {
+    async enhanceText() {
       if (this.editable) {
-        throw new Error('Image enhancement is not allowed while the image is editable.');
+        throw new Error('Text enhancement is not allowed while the image is editable.');
       }
       if (!this.imageCapturePreviewPanzoom) {
         return;
@@ -1248,28 +1248,27 @@ const MAX_ZOOM_SCALE = 5;
         '.js-uploaded-image-container .capture-preview',
       );
       this.ensureElementsExist({
-        capturePreview
+        capturePreview,
       });
 
-      if (this.isEnhanced) {
+      if (this.textEnhanced) {
         capturePreview.style.filter = '';
-        this.isEnhanced = false;
+        this.textEnhanced = false;
       } else {
-        capturePreview.style.filter = 'grayscale(1) contrast(1.5) saturate(30%)';
-        this.isEnhanced = true;
+        capturePreview.style.filter = 'grayscale(1) contrast(2)';
+        this.textEnhanced = true;
       }
-
     }
 
-    enhanceImageListeners() {
-      const enhanceImageButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
+    textEnhancementListeners() {
+      const enhanceTextButton = this.imageCaptureDiv.querySelector('.js-enhance-button');
 
       this.ensureElementsExist({
-        enhanceImageButton,
+        enhanceTextButton,
       });
 
-      enhanceImageButton.addEventListener('click', () => {
-        this.enhanceImage();
+      enhanceTextButton.addEventListener('click', () => {
+        this.enhanceText();
       });
     }
   }
