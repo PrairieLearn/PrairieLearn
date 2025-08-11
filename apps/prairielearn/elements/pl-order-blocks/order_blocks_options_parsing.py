@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import TypedDict
 import lxml.html
+from lxml.etree import _Comment
 
 import prairielearn as pl
 
@@ -54,7 +55,7 @@ LCS_GRADABLE_TYPES = frozenset([
 ])
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED 
-MAX_INDENTION_DEFAULT = 4;
+MAX_INDENTION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ANSWER_CORRECT_DEFAULT = True
@@ -100,7 +101,7 @@ class OrderBlockOptions:
     html_element: lxml.html.HtmlElement
     ) -> None:
         self._check_options(html_element)
-        self.answer_name = pl.get_string_attrib(html_element, "answers-name")
+        self.answers_name = pl.get_string_attrib(html_element, "answers-name")
         self.weight = pl.get_integer_attrib(html_element, "weight", None)
         self.grading_method = pl.get_enum_attrib( html_element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT)
         self.allow_blank = pl.get_boolean_attrib( html_element, "allow-blank", ALLOW_BLANK_DEFAULT)
@@ -113,9 +114,9 @@ class OrderBlockOptions:
         self.solution_header = pl.get_string_attrib(html_element, "solution-header", SOLUTION_HEADER_DEFAULT)
         self.solution_placement = pl.get_enum_attrib(html_element, "solution-placement", SolutionPlacementType, SOLUTION_PLACEMENT_DEFAULT)
         self.max_indent = pl.get_integer_attrib(html_element, "max-indent", MAX_INDENTION_DEFAULT)
-        self.partial_credit_type = pl.get_enum_attrib(html_element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT)
-        self.feedback_type = pl.get_enum_attrib(html_element, "feedback", FeedbackType, FEEDBACK_DEFAULT)
-        self.format_type = pl.get_enum_attrib(html_element, "format", FormatType, FormatType.DEFAULT)
+        self.partial_credit = pl.get_enum_attrib(html_element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT)
+        self.feedback = pl.get_enum_attrib(html_element, "feedback", FeedbackType, FEEDBACK_DEFAULT)
+        self.format = pl.get_enum_attrib(html_element, "format", FormatType, FormatType.DEFAULT)
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
 
@@ -157,7 +158,7 @@ class OrderBlockOptions:
     def _validate_order_blocks_options(self) -> None:
         if (
             self.grading_method not in LCS_GRADABLE_TYPES
-            and self.partial_credit_type != PARTIAL_CREDIT_DEFAULT
+            and self.partial_credit != PARTIAL_CREDIT_DEFAULT
         ):
             raise ValueError(
                 "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
@@ -166,14 +167,14 @@ class OrderBlockOptions:
         if (
             self.grading_method is not GradingMethodType.DAG
             and self.grading_method is not GradingMethodType.RANKING
-            and self.feedback_type is not FeedbackType.NONE
+            and self.feedback is not FeedbackType.NONE
         ):
             raise ValueError(
-                f"feedback type {self.feedback_type.value} is not available with the {self.grading_method.value} grading-method."
+                f"feedback type {self.feedback.value} is not available with the {self.grading_method.value} grading-method."
             )
 
         if (
-            self.format_type is FormatType.DEFAULT
+            self.format is FormatType.DEFAULT
             and self.code_language is not None
         ):
             raise ValueError('code-language attribute may only be used with format="code"')
@@ -231,7 +232,7 @@ class OrderBlockOptions:
                 used_tags.append(answer_options.group_info["tag"])
                 used_groups.append(answer_options.group_info)
 
-            if self.format_type is FormatType.CODE:
+            if self.format is FormatType.CODE:
                 answer_options.inner_html = (
                     "<pl-code"
                     + (
