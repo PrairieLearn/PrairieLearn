@@ -144,7 +144,7 @@ export async function updateWorkspaceDiskUsage(
 
   // We'll compute the size for all versions of the workspace so that we don't need
   // to separately store the size for each version.
-  const version = Number.parseInt(workspace.version, 10);
+  const version = Number.parseInt(workspace.version);
 
   let totalSize = 0;
   for (let i = 1; i <= version; i++) {

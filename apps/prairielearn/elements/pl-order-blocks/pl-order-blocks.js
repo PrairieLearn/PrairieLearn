@@ -207,14 +207,14 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setAnswer() {
-    var answerObjs = $(dropzoneElementId).children();
-    var studentAnswers = [];
+    const answerObjs = $(dropzoneElementId).children();
+    const studentAnswers = [];
     for (const answerObj of answerObjs) {
       if (!$(answerObj).hasClass('info-fixed')) {
-        var answerText = answerObj.getAttribute('string');
-        var answerUuid = answerObj.getAttribute('uuid');
-        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
-        var answerIndent = null;
+        const answerText = answerObj.getAttribute('string');
+        const answerUuid = answerObj.getAttribute('uuid');
+        const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
+        let answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
@@ -229,7 +229,7 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    var textfieldName = '#' + uuid + '-input';
+    const textfieldName = '#' + uuid + '-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
