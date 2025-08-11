@@ -541,7 +541,7 @@ export async function aiEvaluateSubmission({
     {
       role: 'user',
       content: `
-        Does the student\'s final response equal the correct answer exactly, 
+        Does the student's final response equal the correct answer exactly, 
         and is it mathematically equivalent? Only evaluate their final response(s), nothing more. 
         Return only a boolean value, true if the answer is correct, false otherwise. Lean towards returning false.`
     }
