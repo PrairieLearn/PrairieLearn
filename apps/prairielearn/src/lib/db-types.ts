@@ -797,7 +797,11 @@ export const Lti13InstanceSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   issuer_params: z.any().nullable(),
-  keystore: z.any().nullable(),
+  keystore: z
+    .object({
+      keys: z.record(z.string(), z.any()).array(),
+    })
+    .nullable(),
   name_attribute: z.string().nullable(),
   name: z.string(),
   platform: z.string(),
