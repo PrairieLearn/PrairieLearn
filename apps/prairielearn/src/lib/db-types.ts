@@ -547,6 +547,8 @@ export const EnrollmentSchema = z.object({
   id: IdSchema,
   lti_synced: z.boolean(),
   pending_uid: z.string().nullable(),
+  pending_sub: z.string().nullable(),
+  pending_lti13_instance_id: IdSchema.nullable(),
   status: EnumEnrollmentStatusSchema,
   user_id: IdSchema.nullable(),
 });
@@ -1170,7 +1172,7 @@ export const SubmissionSchema = z.object({
   params: z.record(z.string(), z.any()).nullable(),
   partial_scores: z.record(z.string(), z.any()).nullable(),
   raw_submitted_answer: z.record(z.string(), z.any()).nullable(),
-  regradable: z.boolean().nullable(),
+  regradable: z.boolean().default(false),
   score: z.number().nullable(),
   submitted_answer: z.record(z.string(), z.any()).nullable(),
   true_answer: z.record(z.string(), z.any()).nullable(),
