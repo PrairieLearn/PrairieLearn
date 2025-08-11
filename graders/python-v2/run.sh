@@ -21,28 +21,18 @@ export MERGE_DIR=$JOB_DIR'/run'
 
 # now set up the stuff so that our run.sh can work
 mkdir $MERGE_DIR
+mkdir $MERGE_DIR/test_student
 mkdir $OUT_DIR
 
-mv $STUDENT_DIR/* $MERGE_DIR
-mv $TEST_DIR/* $MERGE_DIR
+mv $STUDENT_DIR/* $MERGE_DIR/test_student/
+# TODO this has some pretty hardcoded assumptions about file names. Discuss in meeting
+# what the best way to change this is
+mv $TEST_DIR/* $MERGE_DIR/test_student/
+mv $MERGE_DIR/test_student/test_student.py $MERGE_DIR/test_student.py
 
 # Do not allow ag user to modify, rename, or delete any existing files
 #chmod -R 755 "$MERGE_DIR"
 #chmod 1777 "$MERGE_DIR"
-
-# Create directory without sticky bit for deletable files
-# export FILENAMES_DIR=$MERGE_DIR'/filenames'
-# mkdir $FILENAMES_DIR
-# chmod 777 $FILENAMES_DIR
-# mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $JOB_DIR/data/data.json $FILENAMES_DIR
-
-# # Leading and trailing code are optional -- check if they exist before we move them.
-# if [[ -f "$MERGE_DIR/leading_code.py" ]]; then
-#     mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
-# fi
-# if [[ -f "$MERGE_DIR/trailing_code.py" ]]; then
-#     mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
-# fi
 
 ##########################
 # RUN
@@ -50,21 +40,11 @@ mv $TEST_DIR/* $MERGE_DIR
 
 echo "[run] starting autograder"
 
-# randomly generate the name of the results file, so that someone can't guess and write to it
-# write it to a file that is then deleted, so that it can't get picked up by the student
-#SECRET_NAME=$MERGE_DIR/$(uuidgen)
-#echo -n "$SECRET_NAME" > $FILENAMES_DIR/output-fname.txt
-#chmod +r $FILENAMES_DIR/output-fname.txt
-
 # run the autograder as a limited user called ag
 # TODO pass in the ag user id as a CLI option
 #su -c "python3 $MERGE_DIR/pl_main.py" ag
-uv run pytest -p pl-grader "$MERGE_DIR"
+uv run pytest -p pl-grader --color=no "$MERGE_DIR"
 
-
-# remove any "fake" results.json files if they exist
-#rm -f $MERGE_DIR/results.json
-#rm -f $OUT_DIR/results.json
 # TODO change the default output name
 mv "$MERGE_DIR/autograder_results.json" "$OUT_DIR/results.json"
 
