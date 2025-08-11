@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/preact-cjs",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "commonjs",
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.2"
   },
   "sideEffects": [
     "./dist/debug.js",

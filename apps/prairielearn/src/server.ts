@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
@@ -2009,7 +2011,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
     res.locals.error_id = Array.from({ length: 12 })
       .map(() => chars[Math.floor(Math.random() * chars.length)])

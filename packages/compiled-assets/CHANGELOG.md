@@ -1,5 +1,19 @@
 # @prairielearn/compiled-assets
 
+## 3.2.5
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.2.4
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
 ## 3.2.3
 
 ### Patch Changes
