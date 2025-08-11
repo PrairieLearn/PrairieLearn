@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 
-import type { Course, CourseInstance } from '../lib/db-types.js';
+import type { CourseInstance } from '../lib/db-types.js';
 
 export function DeleteCourseInstanceModal({
   shortName,
   enrolledCount,
-  repo,
   csrfToken,
 }: {
   shortName: CourseInstance['short_name'];
   enrolledCount: number;
-  repo: Course['repository'];
   csrfToken: string;
 }) {
   const [step, setStep] = useState(1);
@@ -64,7 +62,7 @@ export function DeleteCourseInstanceModal({
       aria-labelledby={labelId}
       aria-hidden="true"
     >
-      <div class="modal-dialog modal-lg" role="document">
+      <div class="modal-dialog" role="document">
         <div class="modal-content">
           <div class="modal-header">
             <h2 class="modal-title h4" id={labelId}>
@@ -78,6 +76,9 @@ export function DeleteCourseInstanceModal({
             <div class="modal-body">
               {step === 1 && (
                 <div>
+                  <div role="alert" class="alert alert-warning mb-3">
+                    Bad things will happen if you don't read this!
+                  </div>
                   <div class="form-check mb-2">
                     <input
                       class="form-check-input"
@@ -89,9 +90,9 @@ export function DeleteCourseInstanceModal({
                       }
                     />
                     <label class="form-check-label" for="impact">
-                      I understand this will impact <strong>{enrolledCount}</strong> enrolled{' '}
-                      {enrolledCount === 1 ? 'student' : 'students'}. They will lose access to all
-                      assessment instances and grades.
+                      I understand that <strong>{enrolledCount}</strong> enrolled{' '}
+                      {enrolledCount === 1 ? 'student' : 'students'} will lose access to this course
+                      instance.
                     </label>
                   </div>
                   <div class="form-check mb-3">
@@ -105,8 +106,8 @@ export function DeleteCourseInstanceModal({
                       }
                     />
                     <label class="form-check-label" for="irreversible">
-                      I understand deletion has no "undo" button. Once deleted, the course instance
-                      cannot be restored through the PrairieLearn web interface.
+                      I understand that once deleted, this course instance cannot be restored
+                      through the PrairieLearn web interface.
                     </label>
                   </div>
                   <div class="form-check mb-2">
@@ -133,18 +134,11 @@ export function DeleteCourseInstanceModal({
                       <h3 class="h5 card-title">Recovery information</h3>
                       <p>If you need to recover this course instance, you will need to:</p>
                       <ol class="mb-0">
-                        <li>
-                          Access the Git repository{' '}
-                          {repo ? (
-                            <>
-                              (<code>{repo}</code>)
-                            </>
-                          ) : null}
-                        </li>
+                        <li>Access the course's Git repository</li>
                         <li>
                           Use Git commands to restore the course instance from the commit history
                         </li>
-                        <li>Commit your changes</li>
+                        <li>Push your changes</li>
                         <li>Sync your changes to PrairieLearn</li>
                       </ol>
                     </div>

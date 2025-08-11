@@ -34,7 +34,6 @@ export function InstructorInstanceAdminSettings({
   canEdit: boolean;
   enrollmentCount: number;
 }) {
-  const repo = resLocals.course.repository || '';
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -237,7 +236,6 @@ export function InstructorInstanceAdminSettings({
               csrfToken: resLocals.__csrf_token,
               shortName: resLocals.course_instance.short_name,
               enrollmentCount,
-              repo,
             })
           : ''}
       </div>
@@ -308,12 +306,10 @@ function CopyCourseInstanceForm({
   csrfToken,
   shortName,
   enrollmentCount,
-  repo,
 }: {
   csrfToken: string;
   shortName: string;
   enrollmentCount: number;
-  repo: string;
 }) {
   return html`
     <div class="card-footer d-flex flex-wrap align-items-center">
@@ -340,7 +336,6 @@ function CopyCourseInstanceForm({
         <DeleteCourseInstanceModal
           shortName={shortName}
           enrolledCount={enrollmentCount}
-          repo={repo}
           csrfToken={csrfToken}
         />,
       )}
