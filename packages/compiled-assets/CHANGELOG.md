@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.2.5
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
 ## 3.2.4
 
 ### Patch Changes

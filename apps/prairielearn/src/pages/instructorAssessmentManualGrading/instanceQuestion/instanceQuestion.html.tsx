@@ -10,7 +10,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -198,8 +198,7 @@ function ConflictGradingJobModal({
                 <div><strong>Existing score and feedback</strong></div>
                 <div class="mb-2">
                   ${formatDateYMDHM(
-                    // The modified_at value may have come from a non-validated query
-                    DateFromISOString.parse(resLocals.instance_question.modified_at),
+                    resLocals.instance_question.modified_at,
                     resLocals.course_instance.display_timezone,
                   )},
                   by ${lastGraderName}

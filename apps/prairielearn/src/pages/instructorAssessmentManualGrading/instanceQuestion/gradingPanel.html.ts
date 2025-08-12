@@ -65,7 +65,7 @@ export function GradingPanel({
       <input
         type="hidden"
         name="modified_at"
-        value="${DateFromISOString.parse(resLocals.instance_question.modified_at).toISOString()}"
+        value="${resLocals.instance_question.modified_at.toISOString()}"
       />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
