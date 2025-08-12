@@ -1,40 +1,63 @@
-import { type Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useMemo, useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
-import { EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
-import type { StudentRow } from '../instructorStudents.shared.js';
+import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
+import { STATUS_VALUES } from '../instructorStudents.shared.js';
 
-const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
+export function StatusColumnFilter({
+  columnId,
+  enrollmentStatusFilter,
+  setEnrollmentStatusFilter,
+}: {
+  columnId: string;
+  enrollmentStatusFilter: EnumEnrollmentStatus[];
+  setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
+}) {
+  const [mode, setModeQuery] = useState<'include' | 'exclude'>('include');
 
-export function StatusColumnFilter({ column }: { column: Column<StudentRow, unknown> }) {
-  const [mode, setMode] = useState<'include' | 'exclude'>('include');
-  const [selected, setSelected] = useState<string[]>([]);
+  // Derive UI-selected checkboxes from URL state
+  const selected = useMemo(() => {
+    const included = enrollmentStatusFilter;
+    if (mode === 'exclude') {
+      if (included.length === 0) return STATUS_VALUES; // edge: include none -> exclude all in UI
+      // Excluded in UI are those NOT in the included list
+      return STATUS_VALUES.filter((s) => !included.includes(s));
+    }
+    return included;
+  }, [mode, enrollmentStatusFilter]);
 
-  const computeEffectiveIncluded = (m: 'include' | 'exclude', sel: string[]) =>
-    m === 'exclude' ? STATUS_VALUES.filter((s) => !sel.includes(s)) : sel;
+  const computeEffectiveIncluded = (m: 'include' | 'exclude', sel: EnumEnrollmentStatus[]) => {
+    if (m === 'exclude') {
+      // No selections -> include all (no filter)
+      if (sel.length === 0) return STATUS_VALUES;
+      return STATUS_VALUES.filter((s) => !sel.includes(s));
+    }
+    // Include mode: selections are the included list; empty -> no filter
+    return sel;
+  };
 
-  const toggleSelected = (status: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(status)) next.delete(status);
-      else next.add(status);
-      const nextArray = Array.from(next);
-      column.setFilterValue(computeEffectiveIncluded(mode, nextArray));
-      return nextArray;
-    });
+  const apply = (newMode: 'include' | 'exclude', newSelected: EnumEnrollmentStatus[]) => {
+    const effective = computeEffectiveIncluded(newMode, newSelected);
+    setModeQuery(newMode);
+    setEnrollmentStatusFilter(effective);
+  };
+
+  const toggleSelected = (status: EnumEnrollmentStatus) => {
+    const set = new Set(selected);
+    if (set.has(status)) set.delete(status);
+    else set.add(status);
+    apply(mode === 'exclude' ? 'exclude' : 'include', Array.from(set));
   };
 
   const clear = () => {
-    setSelected([]);
-    column.setFilterValue([]);
+    // Clear resets to no selections; for exclude mode this becomes include all (no-op filter)
+    apply(mode === 'exclude' ? 'exclude' : 'include', []);
   };
 
   const switchMode = (newMode: 'include' | 'exclude') => {
-    setMode(newMode);
-    column.setFilterValue(computeEffectiveIncluded(newMode, selected));
+    apply(newMode, selected);
   };
 
   return (
@@ -42,7 +65,7 @@ export function StatusColumnFilter({ column }: { column: Column<StudentRow, unkn
       <Dropdown.Toggle
         variant="link"
         class="text-muted p-0 ms-2"
-        id={`filter-${column.id}`}
+        id={`filter-${columnId}`}
         aria-label="Filter status"
         title="Filter status"
       >

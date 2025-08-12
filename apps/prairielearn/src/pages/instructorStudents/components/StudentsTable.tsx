@@ -9,6 +9,7 @@ import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import { type JSX, type ThHTMLAttributes, useEffect, useRef, useState } from 'preact/compat';
 
+import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
 import { StatusColumnFilter } from './StatusColumnFilter.js';
@@ -87,7 +88,15 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({ table }: { table: Table<StudentRow> }) {
+export function StudentsTable({
+  table,
+  enrollmentStatusFilter,
+  setEnrollmentStatusFilter,
+}: {
+  table: Table<StudentRow>;
+  enrollmentStatusFilter: EnumEnrollmentStatus[];
+  setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
+}) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
@@ -301,7 +310,11 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                           </button>
 
                           {header.column.id === 'enrollment_status' && canFilter && (
-                            <StatusColumnFilter column={header.column} />
+                            <StatusColumnFilter
+                              columnId={header.column.id}
+                              enrollmentStatusFilter={enrollmentStatusFilter}
+                              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+                            />
                           )}
                         </div>
                         {tableRect?.width &&

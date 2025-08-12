@@ -1,6 +1,5 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
@@ -10,7 +9,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
 import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
@@ -29,7 +28,7 @@ import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { StudentsTable } from './components/StudentsTable.js';
-import { type StudentRow } from './instructorStudents.shared.js';
+import { STATUS_VALUES, type StudentRow } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -100,7 +99,21 @@ function StudentsCard({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+    'status',
+    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault([]),
+  );
+
+  // The individual column filters are the source of truth, and this is derived from them.
+  const columnFilters = useMemo(() => {
+    return [
+      {
+        id: 'enrollment_status',
+        value: enrollmentStatusFilter,
+      },
+    ];
+  }, [enrollmentStatusFilter]);
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
   const { data: students } = useQuery<StudentRow[]>({
@@ -124,7 +137,7 @@ function StudentsCard({
         uid,
         __csrf_token: csrfToken,
       });
-      const res = await fetch(window.location.pathname, {
+      const res = await fetch(window.location.href, {
         method: 'POST',
         body,
       });
@@ -171,10 +184,10 @@ function StudentsCard({
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
-        filterFn: (row, columnId, filterValues) => {
-          if (filterValues == null) return true;
+        filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const current: string = row.getValue(columnId);
+          const current = row.getValue(columnId);
+          if (typeof current !== 'string') return false;
           return filterValues.includes(current);
         },
       }),
@@ -194,7 +207,7 @@ function StudentsCard({
       }),
       columnHelper.accessor((row) => row.enrollment.created_at, {
         id: 'enrollment_created_at',
-        header: 'Enrolled on',
+        header: 'Enrolled',
         cell: (info) => {
           const date = info.getValue();
           if (date == null) return '—';
@@ -232,7 +245,6 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -312,7 +324,11 @@ function StudentsCard({
           </div>
         </div>
         <div class="flex-grow-1">
-          <StudentsTable table={table} />
+          <StudentsTable
+            table={table}
+            enrollmentStatusFilter={enrollmentStatusFilter}
+            setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+          />
         </div>
       </div>
       <InviteStudentModal
