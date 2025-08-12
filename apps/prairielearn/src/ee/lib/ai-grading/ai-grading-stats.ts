@@ -236,7 +236,7 @@ export function meanError(actual: number[], predicted: number[]): number {
   return Math.round(mean * 100) / 100;
 }
 
-interface AiGradingPerformanceStats {
+interface AiGradingPerformanceStatsRow {
   assessmentQuestionId: string;
   truePositives: number;
   trueNegatives: number;
@@ -250,7 +250,7 @@ interface AiGradingPerformanceStats {
 
 type AiGradingAQPerformanceStatsQuestionRow = {
   questionNumber: number;
-} & AiGradingPerformanceStats;
+} & AiGradingPerformanceStatsRow;
 
 /**
  * Safely divide two numbers, returning 0 if the denominator is 0.
@@ -265,7 +265,7 @@ function safeDivide(numerator: number, denominator: number): number {
  */
 export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
   perQuestion: AiGradingAQPerformanceStatsQuestionRow[];
-  total: AiGradingPerformanceStats;
+  total: AiGradingPerformanceStatsRow;
 }> {
   const assessmentQuestionRows = await selectAssessmentQuestions({
     assessment_id: assessment.id,
@@ -378,9 +378,10 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     });
   }
 
-  const totalAccuracy =
-    (totals.truePositives + totals.trueNegatives) /
-    (totals.truePositives + totals.trueNegatives + totals.falsePositives + totals.falseNegatives);
+  const totalAccuracy = safeDivide(
+    totals.truePositives + totals.trueNegatives,
+    totals.truePositives + totals.trueNegatives + totals.falsePositives + totals.falseNegatives,
+  );
 
   const totalPrecision = safeDivide(
     totals.truePositives,
@@ -394,7 +395,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
 
   const totalF1Score = safeDivide(2 * (totalPrecision * totalRecall), totalPrecision + totalRecall);
 
-  const total: AiGradingPerformanceStats = {
+  const total: AiGradingPerformanceStatsRow = {
     assessmentQuestionId: 'Totals',
     truePositives: totals.truePositives,
     trueNegatives: totals.trueNegatives,

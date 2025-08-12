@@ -52,7 +52,7 @@ router.get(
         questions,
         courseStaff,
         num_open_instances,
-        adminFeaturesEnabled: aiGradingEnabled && res.locals.is_administrator
+        adminFeaturesEnabled: aiGradingEnabled && res.locals.is_administrator,
       }),
     );
   }),
