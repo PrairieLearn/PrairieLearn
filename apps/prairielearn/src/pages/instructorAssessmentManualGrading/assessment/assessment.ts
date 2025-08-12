@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
@@ -12,7 +13,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { generateAssessmentAiGradingStatsCSV } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -51,7 +52,7 @@ router.get(
         questions,
         courseStaff,
         num_open_instances,
-        aiGradingEnabled,
+        adminFeaturesEnabled: aiGradingEnabled && res.locals.is_administrator,
       }),
     );
   }),
@@ -163,29 +164,23 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      res.attachment('assessment_statistics.csv')
-       const stats = await generateAssessmentAiGradingStats(assessment);
-  stringify(
-    [...stats.perQuestion, stats.total], {
-      header: true,
-      columns: [
-        'assessment_question_id',
-        'questionNumber',
-        'truePositives',
-        'trueNegatives',
-        'falsePositives',
-        'falseNegatives',
-        'accuracy',
-        'precision',
-        'recall',
-        'f1score',
-      ]
-    }
-  )
-
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
-      res.send(await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment));
+      const stats = await generateAssessmentAiGradingStats(res.locals.assessment as Assessment);
+      res.attachment('assessment_statistics.csv');
+      stringify([...stats.perQuestion, stats.total], {
+        header: true,
+        columns: [
+          'assessmentQuestionId',
+          'questionNumber',
+          'truePositives',
+          'trueNegatives',
+          'falsePositives',
+          'falseNegatives',
+          'accuracy',
+          'precision',
+          'recall',
+          'f1score',
+        ],
+      }).pipe(res);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

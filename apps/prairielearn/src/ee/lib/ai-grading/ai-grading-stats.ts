@@ -2,7 +2,6 @@ import assert from 'node:assert';
 
 import { z } from 'zod';
 
-import { stringify } from '@prairielearn/csv'
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
@@ -15,7 +14,6 @@ import {
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 
-;
 import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
@@ -239,6 +237,7 @@ export function meanError(actual: number[], predicted: number[]): number {
 }
 
 interface AiGradingPerformanceStats {
+  assessmentQuestionId: string;
   truePositives: number;
   trueNegatives: number;
   falsePositives: number;
@@ -249,9 +248,8 @@ interface AiGradingPerformanceStats {
   f1score: number;
 }
 
-type AiGradingAQPerformanceStatsRow = {
-  assessment_question_id: string;
-  number: number;
+type AiGradingAQPerformanceStatsQuestionRow = {
+  questionNumber: number;
 } & AiGradingPerformanceStats;
 
 /**
@@ -266,7 +264,7 @@ function safeDivide(numerator: number, denominator: number): number {
  * matrix elements (TP, FP, TN, FN), accuracy, precision, recall, and F1 score per question and overall.
  */
 export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
-  perQuestion: AiGradingAQPerformanceStatsRow[];
+  perQuestion: AiGradingAQPerformanceStatsQuestionRow[];
   total: AiGradingPerformanceStats;
 }> {
   const assessmentQuestionRows = await selectAssessmentQuestions({
@@ -277,6 +275,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     return {
       perQuestion: [],
       total: {
+        assessmentQuestionId: 'Totals',
         accuracy: 0,
         truePositives: 0,
         trueNegatives: 0,
@@ -289,7 +288,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     };
   }
 
-  const rows: AiGradingAQPerformanceStatsRow[] = [];
+  const rows: AiGradingAQPerformanceStatsQuestionRow[] = [];
 
   const totals = {
     truePositives: 0,
@@ -366,8 +365,8 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     const f1score = safeDivide(2 * (precision * recall), precision + recall);
 
     rows.push({
-      assessment_question_id: questionRow.assessment_question.id,
-      number: i + 1,
+      assessmentQuestionId: questionRow.assessment_question.id,
+      questionNumber: i + 1,
       truePositives: confusionMatrix.truePositives,
       trueNegatives: confusionMatrix.trueNegatives,
       falsePositives: confusionMatrix.falsePositives,
@@ -396,6 +395,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
   const totalF1Score = safeDivide(2 * (totalPrecision * totalRecall), totalPrecision + totalRecall);
 
   const total: AiGradingPerformanceStats = {
+    assessmentQuestionId: 'Totals',
     truePositives: totals.truePositives,
     trueNegatives: totals.trueNegatives,
     falsePositives: totals.falsePositives,
