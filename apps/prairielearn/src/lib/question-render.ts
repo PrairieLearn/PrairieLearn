@@ -575,9 +575,6 @@ export async function getAndRenderVariant(
     resultLocals.showTrueAnswer = true;
   }
 
-  const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
-  resultLocals.effectiveQuestionType = effectiveQuestionType;
-
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
@@ -618,7 +615,7 @@ export async function getAndRenderVariant(
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,
       questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
-      effectiveQuestionType,
+      effectiveQuestionType: 'Calculation',
       course,
       courseInstance: course_instance,
       variant: {
