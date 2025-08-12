@@ -72,7 +72,7 @@ export function AssessmentQuestionRubricTable({
   }, [totalPositive, totalNegative, maxPoints, minPoints]);
 
   // Handlers
-  const onAddItem = () => {
+  const addRubricItemRow = () => {
     setRubricItems((prev) => [
       ...prev,
       // Only initialize these parameters to be consistent with current new row behavior
@@ -84,7 +84,7 @@ export function AssessmentQuestionRubricTable({
     setNextNewId(nextNewId + 1);
   };
 
-  const onDelete = (idx: number) => {
+  const deleteRow = (idx: number) => {
     setRubricItems((prev) => prev.filter((_, i) => i !== idx));
   };
 
@@ -124,7 +124,7 @@ export function AssessmentQuestionRubricTable({
     });
   };
 
-  const onRowChange = (idx: number, patch: Partial<RubricItem>) => {
+  const updateRubricItem = (idx: number, patch: Partial<RubricItem>) => {
     setRubricItems((prev) => {
       const next = prev.slice();
       next[idx] = { ...next[idx], ...patch };
@@ -132,7 +132,7 @@ export function AssessmentQuestionRubricTable({
     });
   };
 
-  const onSave = async () => {
+  const submitSettings = async () => {
     const inputs =
       document.getElementById('rubric-editing')?.querySelectorAll<HTMLInputElement>('input') ?? [];
     for (const input of inputs) {
@@ -219,10 +219,10 @@ export function AssessmentQuestionRubricTable({
         wasUsingRubric={wasUsingRubric}
         showAiGradingStats={showAiGradingStats}
         submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-        onDelete={onDelete}
+        deleteRow={deleteRow}
         moveUp={moveUp}
         moveDown={moveDown}
-        onRowChange={onRowChange}
+        updateRubricItem={updateRubricItem}
         rowDragStart={rowDragStart}
         rowDragOver={rowDragOver}
       />
@@ -238,7 +238,7 @@ export function AssessmentQuestionRubricTable({
           type="button"
           class="btn btn-sm btn-secondary"
           disabled={!editMode}
-          onClick={onAddItem}
+          onClick={addRubricItemRow}
         >
           Add item
         </button>
@@ -269,7 +269,7 @@ export function AssessmentQuestionRubricTable({
             <button type="button" class="btn btn-secondary me-2" onClick={() => setEditMode(false)}>
               Cancel
             </button>
-            <button type="button" class="btn btn-primary" onClick={onSave}>
+            <button type="button" class="btn btn-primary" onClick={submitSettings}>
               Save
             </button>
           </>
@@ -398,10 +398,10 @@ function RubricTable({
   wasUsingRubric,
   showAiGradingStats,
   submissionCount,
-  onDelete,
+  deleteRow,
   moveUp,
   moveDown,
-  onRowChange,
+  updateRubricItem,
   rowDragStart,
   rowDragOver,
 }: {
@@ -410,10 +410,10 @@ function RubricTable({
   wasUsingRubric: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
-  onDelete: (idx: number) => void;
+  deleteRow: (idx: number) => void;
   moveUp: (idx: number) => void;
   moveDown: (idx: number) => void;
-  onRowChange: (idx: number, patch: Partial<RubricItem>) => void;
+  updateRubricItem: (idx: number, patch: Partial<RubricItem>) => void;
   rowDragStart: (idx: number) => void;
   rowDragOver: (idx: number) => void;
 }) {
@@ -441,10 +441,10 @@ function RubricTable({
                 editMode={editMode}
                 showAiGradingStats={showAiGradingStats}
                 submissionCount={submissionCount}
-                onDelete={() => onDelete(idx)}
+                deleteRow={() => deleteRow(idx)}
                 moveUp={() => moveUp(idx)}
                 moveDown={() => moveDown(idx)}
-                onChange={(patch) => onRowChange(idx, patch)}
+                onChange={(patch) => updateRubricItem(idx, patch)}
                 rowDragStart={() => rowDragStart(idx)}
                 rowDragOver={() => rowDragOver(idx)}
               />
@@ -476,7 +476,7 @@ function RubricRow({
   editMode,
   showAiGradingStats,
   submissionCount,
-  onDelete,
+  deleteRow,
   moveUp,
   moveDown,
   onChange,
@@ -488,7 +488,7 @@ function RubricRow({
   editMode: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
-  onDelete: () => void;
+  deleteRow: () => void;
   moveUp: () => void;
   moveDown: () => void;
   onChange: (patch: Partial<RubricItem>) => void;
@@ -530,7 +530,7 @@ function RubricRow({
           type="button"
           class="btn btn-sm btn-ghost text-danger"
           disabled={!editMode}
-          onClick={onDelete}
+          onClick={deleteRow}
           aria-label="Delete"
         >
           <i class="fas fa-trash text-danger" />
