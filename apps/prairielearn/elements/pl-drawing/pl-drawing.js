@@ -139,7 +139,7 @@ window.PLDrawingApi = {
   restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
       this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
-      const newObj = JSON.parse(JSON.stringify(obj));
+      const newObj = structuredClone(obj);
       this.createElement(canvas, newObj, submittedAnswer);
     }
   },
@@ -241,7 +241,7 @@ window.PLDrawingApi = {
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
-      var obj = e.target;
+      const obj = e.target;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
