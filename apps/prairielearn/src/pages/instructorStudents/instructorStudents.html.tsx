@@ -172,6 +172,14 @@ function StudentsCard({
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
+        filterFn: (row, columnId, filterValue) => {
+          if (filterValue == null) return true;
+          if (Array.isArray(filterValue)) {
+            if (filterValue.length === 0) return true;
+            return filterValue.includes(row.getValue(columnId));
+          }
+          return row.getValue(columnId) === filterValue;
+        },
       }),
       columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
