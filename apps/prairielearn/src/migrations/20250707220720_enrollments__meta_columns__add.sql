@@ -37,6 +37,7 @@ ADD CONSTRAINT enrollments_impossible_synced CHECK (
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected CHECK (
   -- If a user is invited or rejected an invitation, we don't link them to a user to avoid PII leakage.
+  -- A user in any other state must have a user_id.
   -- Further discussion: https://github.com/PrairieLearn/PrairieLearn/issues/12198#issuecomment-3161792357
   (status IN ('invited', 'rejected')) = (user_id IS NULL)
 );
@@ -83,6 +84,6 @@ ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
   )
 );
 
--- pending_uid+course_instance_id must be unique.
+-- pending_uid + course_instance_id must be unique.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_pending_uid_course_instance_id_key UNIQUE (pending_uid, course_instance_id);
