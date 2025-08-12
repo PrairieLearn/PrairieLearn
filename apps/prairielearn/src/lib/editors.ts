@@ -561,7 +561,7 @@ function getNamesForCopy(
   longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
-    const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
+    const found = oldname.match(/^(.*)_copy[0-9]+$/);
     if (found) {
       return found[1];
     } else {
@@ -572,7 +572,7 @@ function getNamesForCopy(
   function getBaseLongName(oldname: string | null): string {
     if (typeof oldname !== 'string') return 'Unknown';
     debug(oldname);
-    const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
+    const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
     debug(found);
     if (found) {
       return found[1];

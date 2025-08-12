@@ -12,6 +12,7 @@
   "scripts": {
     "dev": "yarn workspace @prairielearn/prairielearn dev",
     "dev-bun": "yarn workspace @prairielearn/prairielearn dev:bun",
+    "dev-vite": "yarn workspace @prairielearn/prairielearn dev:vite",
     "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
     "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
     "grader-host-start": "yarn workspace @prairielearn/grader-host start",

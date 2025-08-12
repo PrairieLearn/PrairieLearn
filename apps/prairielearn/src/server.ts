@@ -55,7 +55,7 @@ import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
@@ -68,6 +68,7 @@ import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
@@ -623,11 +624,8 @@ export async function initExpress(): Promise<Express> {
       async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
     ),
     function (req: Request, res: Response, next: NextFunction) {
-      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
+      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
     },
   ]);
@@ -656,9 +654,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
     },
@@ -698,9 +693,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
     },
@@ -2025,12 +2017,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-
 let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
-export async function startServer() {
-  const app = await initExpress();
-
+export async function startServer(app: express.Express) {
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -2082,6 +2072,13 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
+
+  // When using Vite in development, it is responsible for the server.
+  if (DEV_EXECUTION_MODE === 'hmr') {
+    return server;
+  }
+
+  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2152,8 +2149,15 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (esMain(import.meta) && config.startServer) {
+const isHMR = DEV_EXECUTION_MODE === 'hmr';
+
+if (isHMR && isServerPending()) {
+  throw new Error('The server was restarted, but it was not fully initialized.');
+}
+
+if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
+    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     // For backwards compatibility, we'll default to trying to load config
@@ -2482,9 +2486,10 @@ if (esMain(import.meta) && config.startServer) {
     }
 
     logger.verbose('Starting server...');
-    const server = await startServer();
+    app = await initExpress();
+    const httpServer = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2518,12 +2523,13 @@ if (esMain(import.meta) && config.startServer) {
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    logger.error('Error initializing PrairieLearn server:', err);
+    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
+    // do a better job.
+    if (!isHMR) {
+      logger.error('Error initializing PrairieLearn server:', err);
+    }
+
     throw err;
-  }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 
   // SIGTERM can be used to gracefully shut down the process. This signal
@@ -2574,4 +2580,38 @@ if (esMain(import.meta) && config.startServer) {
       process.exit(0);
     }
   });
+
+  setServerState('initialized');
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode) {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  }
+} else if (isHMR && isServerInitialized()) {
+  // We need to re-initialize the server when we are running in HMR mode.
+  await socketServer.close();
+  app = await initExpress();
+  const httpServer = await startServer(app);
+  await socketServer.init(httpServer);
 }
+
+/**
+ * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
+ * function when it wants to perform a full restart of the server. Anything that
+ * creates long-lived resources (e.g. connection or worker pools) should be
+ * cleaned up here.
+ */
+export async function close() {
+  // These are run in the opposite order in which they're initialized/started.
+  await cron.stop();
+  await serverJobs.stop();
+  await socketServer.close();
+  await cache.close();
+  await assets.close();
+  await codeCaller.finish();
+  load.close();
+  await stopBatchedMigrations();
+  await namedLocks.close();
+  await sqldb.closeAsync();
+}
+
+export const viteExpressApp = app;
