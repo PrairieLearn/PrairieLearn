@@ -418,6 +418,12 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const user_id = await sqldb.queryRow(
+      'SELECT user_id FROM users WHERE uid = $uid',
+      { uid: 'dev@example.com' },
+      IdSchema,
+    );
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -425,6 +431,7 @@ describe('accessibility', () => {
       news_item_id,
       assessment_id,
       question_id,
+      user_id,
     };
 
     await sqldb.queryOneRowAsync(
