@@ -136,8 +136,8 @@ function StudentsCard({
     mutationFn: async (uid: string): Promise<void> => {
       const body = new URLSearchParams({
         __action: 'invite_by_uid',
-        uid,
         __csrf_token: csrfToken,
+        uid,
       });
       const res = await fetch(window.location.href, {
         method: 'POST',
@@ -149,7 +149,7 @@ function StudentsCard({
           const data = await res.json();
           if (typeof data?.error === 'string') message = data.error;
         } catch {
-          // ignore parse errors
+          // ignore parse errors, and just use the default message
         }
         throw new Error(message);
       }

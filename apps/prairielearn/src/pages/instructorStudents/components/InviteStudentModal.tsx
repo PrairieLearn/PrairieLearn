@@ -6,8 +6,6 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-const UidSchema = z.string().email('Enter a valid UID');
-
 export function InviteStudentModal({
   show,
   onHide,
@@ -18,14 +16,14 @@ export function InviteStudentModal({
   onSubmit: (uid: string) => Promise<void> | void;
 }) {
   const FormSchema = z.object({
-    uid: UidSchema,
+    uid: z.string().email('Enter a valid UID'),
   });
 
   const {
     register,
     handleSubmit,
     watch,
-    setError: setFieldError,
+    setError,
     clearErrors,
     reset,
 
@@ -62,14 +60,14 @@ export function InviteStudentModal({
       const isEnrolled = eligibilityData.status === 'joined';
       const isPending = eligibilityData.status === 'invited' && !eligibilityData.lti_synced;
       if (isEnrolled) {
-        setFieldError('uid', { type: 'server', message: 'This student is already enrolled' });
+        setError('uid', { type: 'server', message: 'This student is already enrolled' });
       } else if (isPending) {
-        setFieldError('uid', { type: 'server', message: 'This student has a pending invitation' });
+        setError('uid', { type: 'server', message: 'This student has a pending invitation' });
       } else {
         clearErrors('uid');
       }
     }
-  }, [eligibilityData, loading, clearErrors, setFieldError]);
+  }, [eligibilityData, loading, clearErrors, setError]);
 
   const onClose = () => {
     clearErrors();
@@ -91,7 +89,7 @@ export function InviteStudentModal({
             reset();
           } catch (e) {
             const message = e instanceof Error ? e.message : 'Failed to invite';
-            setFieldError('root', { type: 'server', message });
+            setError('root', { type: 'server', message });
           }
         })}
       >

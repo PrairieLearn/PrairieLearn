@@ -1,4 +1,4 @@
-import type { JSX } from 'preact';
+import clsx from 'clsx';
 
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
 
@@ -28,11 +28,11 @@ function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-export function EnrollmentStatusIcon({ status }: EnrollmentStatusIconProps): JSX.Element {
+export function EnrollmentStatusIcon({ status }: EnrollmentStatusIconProps) {
   const iconClass = getIconClass(status);
   return (
     <span class="d-inline-flex align-items-center gap-1">
-      <i class={`bi ${iconClass}`} aria-hidden="true" />
+      <i class={clsx('bi', iconClass)} aria-hidden="true" />
       <span>{capitalize(status)}</span>
     </span>
   );

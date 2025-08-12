@@ -17,47 +17,32 @@ export function StatusColumnFilter({
 }) {
   const [mode, setModeQuery] = useState<'include' | 'exclude'>('include');
 
-  // Derive UI-selected checkboxes from URL state
-  const selected = useMemo(() => {
-    const included = enrollmentStatusFilter;
-    if (mode === 'exclude') {
-      if (included.length === 0) return STATUS_VALUES; // edge: include none -> exclude all in UI
-      // Excluded in UI are those NOT in the included list
-      return STATUS_VALUES.filter((s) => !included.includes(s));
-    }
-    return included;
-  }, [mode, enrollmentStatusFilter]);
+  const selected = useMemo(
+    () => computeSelected(mode, new Set(enrollmentStatusFilter)),
+    [mode, enrollmentStatusFilter],
+  );
 
-  const computeEffectiveIncluded = (m: 'include' | 'exclude', sel: EnumEnrollmentStatus[]) => {
-    if (m === 'exclude') {
-      // No selections -> include all (no filter)
-      if (sel.length === 0) return STATUS_VALUES;
-      return STATUS_VALUES.filter((s) => !sel.includes(s));
+  const computeSelected = (mode: 'include' | 'exclude', selected: Set<EnumEnrollmentStatus>) => {
+    if (mode === 'include') {
+      return selected;
     }
-    // Include mode: selections are the included list; empty -> no filter
-    return sel;
+    return new Set(STATUS_VALUES.filter((s) => !selected.has(s)));
   };
 
-  const apply = (newMode: 'include' | 'exclude', newSelected: EnumEnrollmentStatus[]) => {
-    const effective = computeEffectiveIncluded(newMode, newSelected);
+  const apply = (newMode: 'include' | 'exclude', newSelected: Set<EnumEnrollmentStatus>) => {
+    const selected = computeSelected(newMode, newSelected);
     setModeQuery(newMode);
-    setEnrollmentStatusFilter(effective);
+    setEnrollmentStatusFilter(Array.from(selected));
   };
 
   const toggleSelected = (status: EnumEnrollmentStatus) => {
     const set = new Set(selected);
-    if (set.has(status)) set.delete(status);
-    else set.add(status);
-    apply(mode === 'exclude' ? 'exclude' : 'include', Array.from(set));
-  };
-
-  const clear = () => {
-    // Clear resets to no selections; for exclude mode this becomes include all (no-op filter)
-    apply(mode === 'exclude' ? 'exclude' : 'include', []);
-  };
-
-  const switchMode = (newMode: 'include' | 'exclude') => {
-    apply(newMode, selected);
+    if (set.has(status)) {
+      set.delete(status);
+    } else {
+      set.add(status);
+    }
+    apply(mode, set);
   };
 
   return (
@@ -70,7 +55,7 @@ export function StatusColumnFilter({
         title="Filter status"
       >
         <i
-          class={clsx('bi', selected.length > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          class={clsx('bi', selected.size > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
           aria-hidden="true"
         />
       </Dropdown.Toggle>
@@ -78,7 +63,11 @@ export function StatusColumnFilter({
         <div class="p-3">
           <div class="d-flex align-items-center justify-content-between mb-2">
             <div class="fw-semibold">Status</div>
-            <button type="button" class="btn btn-link btn-sm text-decoration-none" onClick={clear}>
+            <button
+              type="button"
+              class="btn btn-link btn-sm text-decoration-none"
+              onClick={() => apply(mode, new Set())}
+            >
               Clear
             </button>
           </div>
@@ -87,14 +76,14 @@ export function StatusColumnFilter({
             <button
               type="button"
               class={clsx('btn', mode === 'include' ? 'btn-primary' : 'btn-outline-secondary')}
-              onClick={() => switchMode('include')}
+              onClick={() => apply('include', selected)}
             >
               Include
             </button>
             <button
               type="button"
               class={clsx('btn', mode === 'exclude' ? 'btn-primary' : 'btn-outline-secondary')}
-              onClick={() => switchMode('exclude')}
+              onClick={() => apply('exclude', selected)}
             >
               Exclude
             </button>
@@ -102,7 +91,7 @@ export function StatusColumnFilter({
 
           <div class="list-group list-group-flush">
             {STATUS_VALUES.map((status) => {
-              const checked = selected.includes(status);
+              const checked = selected.has(status);
               return (
                 <div key={status} class="list-group-item d-flex align-items-center gap-3">
                   <input
