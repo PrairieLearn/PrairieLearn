@@ -200,18 +200,22 @@ export async function getOpenidClientConfig(
   lti13_instance: Lti13Instance,
   options?: client.ModifyAssertionOptions,
 ): Promise<client.Configuration> {
-  const keystore: jose.JSONWebKeySet | null = lti13_instance.keystore;
-  if (keystore === null) {
-    throw new HttpStatusError(403, 'LTI 1.3 configuration error: unable to load key');
+  const keystore = lti13_instance.keystore as jose.JSONWebKeySet | null | undefined;
+  if (!keystore || !Array.isArray(keystore.keys) || keystore.keys.length === 0) {
+    throw new HttpStatusError(403, 'LTI 1.3 configuration error: no keys available in keystore');
   }
 
-  const keyFromKeyStore: jose.JWK | undefined = keystore.keys.at(-1);
+  const keyFromKeyStore = keystore.keys.at(-1);
   if (!keyFromKeyStore) {
     throw new HttpStatusError(403, 'LTI 1.3 configuration error: unable to load key');
   }
 
   const privateKey: client.PrivateKey = {
-    key: (await jose.importJWK(keyFromKeyStore)) as client.CryptoKey,
+    // Provide alg explicitly to avoid import failures when JWKs omit `alg`
+    key: (await jose.importJWK(
+      keyFromKeyStore,
+      keyFromKeyStore.alg ?? 'RS256',
+    )) as client.CryptoKey,
     kid: keyFromKeyStore.kid,
   };
   debug(`getOpenidClientConfig: using key with kid ${keyFromKeyStore.kid}`);
