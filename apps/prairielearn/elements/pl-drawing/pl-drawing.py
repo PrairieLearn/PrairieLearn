@@ -379,11 +379,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         showscore = pl.get_boolean_attrib(
             element, "show-score", SHOW_SCORE_DEFAULT
         )
-        if showscore:
-            html_params["correct"] = data["partial_scores"][name]["feedback"]["correct"]
-            html_params["partial"] = data["partial_scores"][name]["feedback"]["partial"]
-            html_params["incorrect"] = data["partial_scores"][name]["feedback"]["incorrect"]
-
+        if showscore and name in data["partial_scores"]:
+            feedback = data["partial_scores"][name].get("feedback", {})
+            html_params["correct"] = feedback.get("correct", False)
+            html_params["partial"] = feedback.get("partial", False)
+            html_params["incorrect"] = feedback.get("incorrect", False)
     return chevron.render(template, html_params).strip()
 
 
