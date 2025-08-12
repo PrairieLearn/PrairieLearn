@@ -82,6 +82,7 @@ export function AssessmentQuestion({
           maxAutoPoints: assessment_question.max_auto_points,
           csrfToken: __csrf_token,
           aiGradingMode,
+          rubric_data,
         },
         'instance-question-table-data',
       )}

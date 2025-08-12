@@ -48,6 +48,9 @@ router.get(
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question: res.locals.assessment_question,
+    });
     res.send(
       AssessmentQuestion({
         resLocals: res.locals,

@@ -124,14 +124,15 @@ export async function nextUngradedInstanceQuestionUrl(
 
 /**
  * Selects a variety of rubric data for a given assessment question.
- * Also renders the selected rubric items with the submission data.
+ * If a submission is provided, the rubric items are rendered
+ * as Mustache templates with the submission's data.
  */
 export async function selectRubricData({
   assessment_question,
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission: Submission;
+  submission?: Submission;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -145,25 +146,27 @@ export async function selectRubricData({
     RubricDataSchema,
   );
 
-  // Render rubric items: description, explanation and grader note
-  const mustache_data = {
-    correct_answers: submission?.true_answer ?? {},
-    params: submission?.params ?? {},
-    submitted_answers: submission?.submitted_answer,
-  };
+  if (submission) {
+    // Render rubric items: description, explanation and grader note
+    const mustache_data = {
+      correct_answers: submission?.true_answer ?? {},
+      params: submission?.params ?? {},
+      submitted_answers: submission?.submitted_answer,
+    };
 
-  await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = await markdownToHtml(
-      mustache.render(item.description || '', mustache_data),
-      { inline: true },
-    );
-    item.explanation_rendered = await markdownToHtml(
-      mustache.render(item.explanation || '', mustache_data),
-    );
-    item.grader_note_rendered = await markdownToHtml(
-      mustache.render(item.grader_note || '', mustache_data),
-    );
-  });
+    await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
+      item.description_rendered = await markdownToHtml(
+        mustache.render(item.description || '', mustache_data),
+        { inline: true },
+      );
+      item.explanation_rendered = await markdownToHtml(
+        mustache.render(item.explanation || '', mustache_data),
+      );
+      item.grader_note_rendered = await markdownToHtml(
+        mustache.render(item.grader_note || '', mustache_data),
+      );
+    });
+  }
 
   return rubric_data;
 }
