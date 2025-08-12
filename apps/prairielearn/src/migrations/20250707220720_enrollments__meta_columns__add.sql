@@ -58,7 +58,8 @@ ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
 -- If you are in the 'joined' state, you must have a user_id, and you cannot have any pending_* columns.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
-  (status != 'joined') OR (
+  (status != 'joined')
+  OR (
     user_id IS NOT NULL
     AND pending_uid IS NULL
     AND pending_sub IS NULL
