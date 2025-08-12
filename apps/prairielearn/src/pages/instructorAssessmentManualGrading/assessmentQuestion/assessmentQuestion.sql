@@ -28,27 +28,21 @@ WITH
       iq.id,
       s.date DESC
   ),
-  rubric_grading_to_items AS (
-    SELECT
-      rgi.rubric_grading_id,
-      ri.id AS rubric_item_id
-    FROM
-      rubric_grading_items AS rgi
-      JOIN rubric_items AS ri ON rgi.rubric_item_id = ri.id
-  ),
   rubric_items_agg AS (
     SELECT
       ls.instance_question_id,
       COALESCE(
-        json_agg(to_jsonb(rgti.rubric_item_id)) FILTER (
+        json_agg(rgi.rubric_item_id) FILTER (
           WHERE
-            rgti.rubric_item_id IS NOT NULL
+            rgi.rubric_item_id IS NOT NULL
         ),
         '[]'::json
       ) AS rubric_grading_item_ids
     FROM
       latest_submissions AS ls
-      LEFT JOIN rubric_grading_to_items AS rgti ON ls.manual_rubric_grading_id = rgti.rubric_grading_id
+      LEFT JOIN rubric_grading_items AS rgi ON (
+        rgi.rubric_grading_id = ls.manual_rubric_grading_id
+      )
     GROUP BY
       ls.instance_question_id
   )
