@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
-import { DateFromISOString, type Issue, type User } from '../../../lib/db-types.js';
+import { type Issue, type User } from '../../../lib/db-types.js';
 
 import {
   AutoPointsSection,

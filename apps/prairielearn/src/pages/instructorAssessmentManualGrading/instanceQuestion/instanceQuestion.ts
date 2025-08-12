@@ -152,11 +152,12 @@ router.get(
           }
         }
 
-        const formattedPrompt = (
-          await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2))
-        )
-          .replaceAll('\\n', '\n')
-          .trimStart();
+        const formattedPrompt =
+          promptForGradingJob !== null
+            ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
+                .replaceAll('\\n', '\n')
+                .trimStart()
+            : '';
 
         aiGradingInfo = {
           submissionManuallyGraded,
