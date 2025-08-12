@@ -21,7 +21,7 @@ const effectiveQuestionTypes = {
   Freeform: 'Freeform',
 } satisfies Record<NonNullable<QuestionType>, EffectiveQuestionType>;
 
-export function getEffectiveQuestionType(type: QuestionType): EffectiveQuestionType {
+function getEffectiveQuestionType(type: QuestionType): EffectiveQuestionType {
   if (!type) {
     throw new Error('Question type is required');
   } else if (type in effectiveQuestionTypes) {
