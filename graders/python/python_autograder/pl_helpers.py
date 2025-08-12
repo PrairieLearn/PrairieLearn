@@ -23,7 +23,7 @@ class GradingSkipped(Exception):  # noqa: N818
 
 
 def extract_ipynb_contents(f: IO[str], ipynb_key: str) -> str:
-    from IPython.core.interactiveshell import InteractiveShell  # type: ignore
+    from IPython.core.interactiveshell import InteractiveShell
     from nbformat import read  # type: ignore
 
     """
