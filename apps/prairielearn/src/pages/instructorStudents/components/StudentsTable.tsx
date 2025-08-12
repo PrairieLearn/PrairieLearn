@@ -256,7 +256,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
                         role="columnheader"
                       >
-                        <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center justify-content-between gap-2">
                           <button
                             class="text-nowrap flex-grow-1 text-start"
                             style={{

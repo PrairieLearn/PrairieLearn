@@ -1,32 +1,41 @@
 import { type Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import type { JSX } from 'preact';
+import { useState } from 'preact/compat';
 import Dropdown from 'react-bootstrap/Dropdown';
 
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
 const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 
-export function StatusColumnFilter({
-  column,
-}: {
-  column: Column<StudentRow, unknown>;
-}): JSX.Element {
-  const current = (column.getFilterValue() ?? []) as string[];
-  const isAllSelected = current.length === 0;
+export function StatusColumnFilter({ column }: { column: Column<StudentRow, unknown> }) {
+  const [mode, setMode] = useState<'include' | 'exclude'>('include');
+  const [selected, setSelected] = useState<string[]>([]);
 
-  const toggleValue = (value: string) => {
-    const selected = new Set(current);
-    if (selected.has(value)) {
-      selected.delete(value);
-    } else {
-      selected.add(value);
-    }
-    column.setFilterValue(Array.from(selected));
+  const computeEffectiveIncluded = (m: 'include' | 'exclude', sel: string[]) =>
+    m === 'exclude' ? STATUS_VALUES.filter((s) => !sel.includes(s)) : sel;
+
+  const toggleSelected = (status: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      const nextArray = Array.from(next);
+      column.setFilterValue(computeEffectiveIncluded(mode, nextArray));
+      return nextArray;
+    });
   };
 
-  const clearAll = () => column.setFilterValue([]);
+  const clear = () => {
+    setSelected([]);
+    column.setFilterValue([]);
+  };
+
+  const switchMode = (newMode: 'include' | 'exclude') => {
+    setMode(newMode);
+    column.setFilterValue(computeEffectiveIncluded(newMode, selected));
+  };
 
   return (
     <Dropdown align="end">
@@ -37,40 +46,58 @@ export function StatusColumnFilter({
         aria-label="Filter status"
         title="Filter status"
       >
-        <i class="bi bi-funnel" aria-hidden="true" />
+        <i
+          class={clsx('bi', selected.length > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          aria-hidden="true"
+        />
       </Dropdown.Toggle>
-      <Dropdown.Menu class="p-2" style={{ minWidth: '16rem' }}>
-        <button
-          type="button"
-          class={clsx('dropdown-item d-flex align-items-center gap-2', isAllSelected && 'active')}
-          onClick={clearAll}
-        >
-          <input class="form-check-input" type="checkbox" checked={isAllSelected} readOnly />
-          <span>All statuses</span>
-        </button>
-        <Dropdown.Divider />
-        {STATUS_VALUES.map((value) => {
-          const checked = current.includes(value);
-          return (
+      <Dropdown.Menu class="p-0">
+        <div class="p-3">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <div class="fw-semibold">Status</div>
+            <button type="button" class="btn btn-link btn-sm text-decoration-none" onClick={clear}>
+              Clear
+            </button>
+          </div>
+
+          <div class="btn-group w-100 mb-2" role="group" aria-label="Include or exclude statuses">
             <button
-              key={value}
               type="button"
-              class="dropdown-item d-flex align-items-center gap-2"
-              onClick={() => toggleValue(value)}
+              class={clsx('btn', mode === 'include' ? 'btn-primary' : 'btn-outline-secondary')}
+              onClick={() => switchMode('include')}
             >
-              <input class="form-check-input" type="checkbox" checked={checked} readOnly />
-              <span style={{ textTransform: 'capitalize' }}>{value}</span>
+              Include
             </button>
-          );
-        })}
-        {!isAllSelected && (
-          <>
-            <Dropdown.Divider />
-            <button type="button" class="dropdown-item" onClick={clearAll}>
-              Clear filter
+            <button
+              type="button"
+              class={clsx('btn', mode === 'exclude' ? 'btn-primary' : 'btn-outline-secondary')}
+              onClick={() => switchMode('exclude')}
+            >
+              Exclude
             </button>
-          </>
-        )}
+          </div>
+
+          <div class="list-group list-group-flush">
+            {STATUS_VALUES.map((status) => {
+              const checked = selected.includes(status);
+              return (
+                <div key={status} class="list-group-item d-flex align-items-center gap-3">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    checked={checked}
+                    id={`status-${status}`}
+                    readOnly
+                    onChange={() => toggleSelected(status)}
+                  />
+                  <label class="form-check-label" for={`status-${status}`}>
+                    <EnrollmentStatusIcon status={status} />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </Dropdown.Menu>
     </Dropdown>
   );

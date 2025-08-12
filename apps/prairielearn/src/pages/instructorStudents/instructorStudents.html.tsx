@@ -12,8 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
-import Button from 'react-bootstrap/Button';
+import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -44,9 +43,9 @@ interface StudentsCardProps {
   authzData: PageContext['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  csrfToken: string;
   students: StudentRow[];
   timezone: string;
-  csrfToken: string;
 }
 
 function StudentsCard({
@@ -172,13 +171,11 @@ function StudentsCard({
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
-        filterFn: (row, columnId, filterValue) => {
-          if (filterValue == null) return true;
-          if (Array.isArray(filterValue)) {
-            if (filterValue.length === 0) return true;
-            return filterValue.includes(row.getValue(columnId));
-          }
-          return row.getValue(columnId) === filterValue;
+        filterFn: (row, columnId, filterValues) => {
+          if (filterValues == null) return true;
+          if (filterValues.length === 0) return true;
+          const current: string = row.getValue(columnId);
+          return filterValues.includes(current);
         },
       }),
       columnHelper.accessor((row) => row.user?.email, {
@@ -332,6 +329,7 @@ function StudentsCard({
 /**
  * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
  */
+
 export const InstructorStudents = ({
   authzData,
   search,
@@ -363,5 +361,4 @@ export const InstructorStudents = ({
     </NuqsAdapter>
   );
 };
-
 InstructorStudents.displayName = 'InstructorStudents';
