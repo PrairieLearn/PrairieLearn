@@ -294,27 +294,22 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'modify_rubric_settings') {
-      console.log(req.body);
-      // const body = RubricModificationPostBodySchema.parse(
-      //   qs.parse(qs.stringify(req.body), { parseArrays: false }),
-      // );
-      // try {
-
-      //   await manualGrading.updateAssessmentQuestionRubric(
-      //     res.locals.assessment_question.id,
-      //     body.use_rubric,
-      //     body.replace_auto_points,
-      //     body.starting_points,
-      //     body.min_points,
-      //     body.max_extra_points,
-      //     Object.values(body.rubric_item), // rubric items
-      //     body.tag_for_manual_grading,
-      //     res.locals.authn_user.user_id,
-      //   );
-      //   res.redirect(req.originalUrl);
-      // } catch (err) {
-      //   res.status(500).send({ err: String(err) });
-      // }
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment_question.id,
+          req.body.use_rubric,
+          req.body.replace_auto_points,
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          req.body.rubric_items,
+          false,
+          res.locals.authn_user.user_id,
+        );
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

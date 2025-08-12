@@ -132,19 +132,22 @@ export function AssessmentQuestionRubricTable({
     });
   };
 
-  const submitSettings = async () => {
-    const inputs =
-      document.getElementById('rubric-editing')?.querySelectorAll<HTMLInputElement>('input') ?? [];
-    for (const input of inputs) {
-      if (!input.reportValidity()) {
-        return;
+  const submitSettings = async (use_rubric: boolean) => {
+    if (use_rubric) {
+      const inputs =
+        document.getElementById('rubric-editing')?.querySelectorAll<HTMLInputElement>('input') ??
+        [];
+      for (const input of inputs) {
+        if (!input.reportValidity()) {
+          return;
+        }
       }
     }
 
     const payload = {
       __csrf_token,
       __action: 'modify_rubric_settings',
-      use_rubric: 'true',
+      use_rubric,
       modified_at: rubric_data?.modified_at?.toString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
@@ -178,10 +181,14 @@ export function AssessmentQuestionRubricTable({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    const data = (await res.json().catch(() => ({ err: `Error: ${res.statusText}` }))) ?? {};
-    if (data.err) {
-      setSettingsError(data.err);
-      return;
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({ err: `Error: ${res.statusText}` }))) ?? {};
+      if (data.err) {
+        return setSettingsError(data.err);
+      }
+    }
+    if (res.redirected) {
+      window.location.replace(res.url);
     }
   };
 
@@ -208,6 +215,7 @@ export function AssessmentQuestionRubricTable({
                         <input
                           class="form-check-input"
                           type="radio"
+                          disabled={!editMode}
                           checked={!replaceAutoPoints}
                           onChange={() => setReplaceAutoPoints(false)}
                         />
@@ -222,6 +230,7 @@ export function AssessmentQuestionRubricTable({
                         <input
                           class="form-check-input"
                           type="radio"
+                          disabled={!editMode}
                           checked={replaceAutoPoints}
                           onChange={() => setReplaceAutoPoints(true)}
                         />
@@ -242,6 +251,7 @@ export function AssessmentQuestionRubricTable({
                     <input
                       class="form-check-input"
                       type="radio"
+                      disabled={!editMode}
                       checked={startingPoints === 0}
                       onChange={() => setStartingPoints(0)}
                     />
@@ -253,6 +263,7 @@ export function AssessmentQuestionRubricTable({
                     <input
                       class="form-check-input"
                       type="radio"
+                      disabled={!editMode}
                       checked={startingPoints !== 0}
                       onChange={() => setStartingPoints(assessment_question.max_manual_points ?? 0)}
                     />
@@ -268,6 +279,7 @@ export function AssessmentQuestionRubricTable({
                   <input
                     class="form-control"
                     type="number"
+                    disabled={!editMode}
                     value={minPoints}
                     onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
                   />
@@ -279,6 +291,7 @@ export function AssessmentQuestionRubricTable({
                   <input
                     class="form-control"
                     type="number"
+                    disabled={!editMode}
                     value={maxExtraPoints}
                     onInput={(e: any) => SetMaxExtraPoints(Number(e.currentTarget.value))}
                   />
@@ -370,8 +383,11 @@ export function AssessmentQuestionRubricTable({
 
       {/* Footer actions */}
       <div class="text-end mt-2">
-        {/* TODO: add action for this button */}
-        <button type="button" class="btn btn-link btn-sm me-auto">
+        <button
+          type="button"
+          class="btn btn-link btn-sm me-auto"
+          onClick={() => submitSettings(false)}
+        >
           Disable rubric
         </button>
         {!editMode ? (
@@ -383,7 +399,7 @@ export function AssessmentQuestionRubricTable({
             <button type="button" class="btn btn-secondary me-2" onClick={() => setEditMode(false)}>
               Cancel
             </button>
-            <button type="button" class="btn btn-primary" onClick={submitSettings}>
+            <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
               Save
             </button>
           </>
@@ -432,7 +448,7 @@ function RubricRow({
         </button>
         <button
           type="button"
-          class="btn btn-sm btn-ghost"
+          class="visually-hidden"
           disabled={!editMode}
           aria-label="Move up"
           onClick={moveUp}
@@ -441,7 +457,7 @@ function RubricRow({
         </button>
         <button
           type="button"
-          class="btn btn-sm btn-ghost"
+          class="visually-hidden"
           disabled={!editMode}
           aria-label="Move down"
           onClick={moveDown}

@@ -16,7 +16,6 @@ import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
-import { AssessmentQuestionRubricTable } from './assessmentQuestionRubricTableV2.html.js';
 
 export function AssessmentQuestion({
   resLocals,
@@ -150,6 +149,24 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
+      ${aiGradingEnabled &&
+      aiGradingMode &&
+      aiGradingStats &&
+      Object.keys(aiGradingStats.rubric_stats).length === 0
+        ? html`
+            <div class="card mb-3">
+              <div class="card-body">
+                <div>Submission count: ${aiGradingStats.submission_point_count}</div>
+                <div>
+                  Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
+                  <small class="text-muted">/${assessment_question.max_manual_points}</small>
+                  points
+                </div>
+              </div>
+            </div>
+          `
+        : ''}
+
       <div class="mb-3">
         <div
           id="rubric-editing-preact"
@@ -159,31 +176,6 @@ export function AssessmentQuestion({
           data-csrf-token="${__csrf_token}"
         ></div>
       </div>
-      ${aiGradingEnabled && aiGradingMode && aiGradingStats
-        ? html`
-            ${aiGradingStats.rubric_stats.length
-              ? AssessmentQuestionRubricTable(
-                  assessment_question,
-                  rubric_data,
-                  resLocals.__csrf_token,
-                  aiGradingEnabled,
-                  aiGradingMode,
-                  aiGradingStats,
-                )
-              : html`
-                  <div class="card mb-3">
-                    <div class="card-body">
-                      <div>Submission count: ${aiGradingStats.submission_point_count}</div>
-                      <div>
-                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
-                        <small class="text-muted">/${assessment_question.max_manual_points}</small>
-                        points
-                      </div>
-                    </div>
-                  </div>
-                `}
-          `
-        : ''}
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />
