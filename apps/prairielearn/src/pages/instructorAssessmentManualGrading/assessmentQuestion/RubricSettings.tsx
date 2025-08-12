@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricItem } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 
@@ -134,10 +134,9 @@ export function RubricSettings({
 
   const submitSettings = async (use_rubric: boolean) => {
     if (use_rubric) {
-      const inputs =
-        document.getElementById('rubric-editing')?.querySelectorAll<HTMLInputElement>('input') ??
-        [];
-      for (const input of inputs) {
+      const required =
+        document.querySelectorAll<HTMLInputElement>('#rubric-editing input[required]') ?? [];
+      for (const input of Array.from(required)) {
         if (!input.reportValidity()) {
           return;
         }

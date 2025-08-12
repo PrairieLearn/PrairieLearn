@@ -300,10 +300,10 @@ router.post(
           false,
           res.locals.authn_user.user_id,
         );
+        res.redirect(req.originalUrl);
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }
-      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

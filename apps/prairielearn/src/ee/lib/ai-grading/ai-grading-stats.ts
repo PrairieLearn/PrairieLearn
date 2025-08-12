@@ -16,7 +16,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import type { WithAIGradingStats } from './types.js';
+import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
@@ -29,14 +29,6 @@ const GradingJobInfoSchema = z.object({
   rubric_items: z.array(RubricItemSchema),
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
-
-export interface AiGradingGeneralStats {
-  submission_point_count: number;
-  submission_rubric_count: number;
-  mean_error: number | null;
-  /** Mapping from rubric item id to disagreement count */
-  rubric_stats: Record<string, number>;
-}
 
 /**
  * Fills in missing columns for manual grading assessment question page.

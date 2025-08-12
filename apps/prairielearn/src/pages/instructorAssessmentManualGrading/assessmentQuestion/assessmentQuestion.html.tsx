@@ -5,7 +5,7 @@ import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpen
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
