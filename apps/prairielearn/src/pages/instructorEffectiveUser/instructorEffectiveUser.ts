@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { clearCookie, setCookie } from '../../lib/cookie.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { CourseRolesSchema, InstructorEffectiveUser } from './instructorEffectiveUser.html.js';
 
@@ -14,19 +15,13 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview', 'has_course_instance_permission_view'],
+    errorExplanation:
+      'This page requires either course preview access or student data view access.',
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (
-      !(
-        res.locals.authz_data.authn_has_course_permission_preview ||
-        res.locals.authz_data.authn_has_course_instance_permission_view
-      )
-    ) {
-      throw new HttpStatusError(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      );
-    }
-
     const courseRoles = await queryRow(
       sql.select,
       {
