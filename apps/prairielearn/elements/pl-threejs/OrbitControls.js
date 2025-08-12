@@ -325,7 +325,7 @@ class OrbitControls extends THREE.EventDispatcher {
     }
 
     function getZoomScale() {
-      return Math.pow(0.95, scope.zoomSpeed);
+      return 0.95 ** scope.zoomSpeed;
     }
 
     function rotateLeft(angle) {
@@ -592,7 +592,7 @@ class OrbitControls extends THREE.EventDispatcher {
       const dx = pointers[0].pageX - pointers[1].pageX;
       const dy = pointers[0].pageY - pointers[1].pageY;
 
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      const distance = Math.hypot(dx, dy);
 
       dollyStart.set(0, distance);
     }
@@ -657,11 +657,11 @@ class OrbitControls extends THREE.EventDispatcher {
       const dx = event.pageX - position.x;
       const dy = event.pageY - position.y;
 
-      const distance = Math.sqrt(dx * dx + dy * dy);
+      const distance = Math.hypot(dx, dy);
 
       dollyEnd.set(0, distance);
 
-      dollyDelta.set(0, Math.pow(dollyEnd.y / dollyStart.y, scope.zoomSpeed));
+      dollyDelta.set(0, (dollyEnd.y / dollyStart.y) ** scope.zoomSpeed);
 
       dollyOut(dollyDelta.y);
 

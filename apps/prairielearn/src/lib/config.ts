@@ -12,6 +12,12 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
+// We don't compare against 'test' since we use the 'MODE' environment variable
+// for running a subset of our tests.
+const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
+const IS_VITE = (import.meta as any).env?.MODE === 'development';
+export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',

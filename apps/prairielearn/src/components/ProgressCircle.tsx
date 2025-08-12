@@ -3,11 +3,11 @@ import { html } from '@prairielearn/html';
 export function ProgressCircle({
   value,
   maxValue,
-  className,
+  class: className = '',
 }: {
   value: number;
   maxValue: number;
-  className?: string;
+  class?: string;
 }) {
   // The progress circle has radius of 8px, so its circumference is 2 * PI * 8px.
   const progressCircleCircumference = 2 * Math.PI * 8;
@@ -43,7 +43,7 @@ export function ProgressCircle({
     width="20px"
     height="20px"
     viewBox="0 0 20 20"
-    class="${className ?? ''}"
+    class="${className}"
   >
     <circle
       cx="10px"

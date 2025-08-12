@@ -18,9 +18,9 @@ import {
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import {
-  AssessmentInstanceSchema,
   AssessmentSchema,
   DateFromISOString,
+  IdSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
   UserSchema,
@@ -335,9 +335,7 @@ export async function validateLti13CourseInstance(
 ): Promise<boolean> {
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
-    {
-      course_instance_id: resLocals.course_instance.id,
-    },
+    { course_instance_id: resLocals.course_instance.id },
     z.boolean(),
   );
 
@@ -587,6 +585,8 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Node fetch response object
  */
 export async function fetchRetry(
@@ -657,13 +657,11 @@ export async function fetchRetry(
 
 /**
  * Pagination wrapper around fetchRetry
- *
- * @param input
- * @param opts
- * @param incomingfetchRetryOpts
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
@@ -839,13 +837,13 @@ export async function updateLti13Scores(
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    {
-      assessment_id: assessment.id,
-    },
-    AssessmentInstanceSchema.extend({
-      score_perc: z.number(), // not .nullable() from SQL query
-      date: DateFromISOString, // not .nullable() from SQL query
-      users: UserWithLti13SubSchema.array(),
+    { assessment_id: assessment.id },
+    z.object({
+      id: IdSchema,
+      score_perc: z.number(),
+      date: DateFromISOString,
+      open: z.boolean(),
+      user: UserWithLti13SubSchema,
     }),
   );
 
@@ -865,73 +863,72 @@ export async function updateLti13Scores(
   };
 
   for (const assessment_instance of assessment_instances) {
-    for (const user of assessment_instance.users) {
-      // Get/Refresh the token in the main loop in case it expires during the run.
-      const token = await getAccessToken(instance.lti13_instance.id);
+    // Get/Refresh the token in the main loop in case it expires during the run.
+    const token = await getAccessToken(instance.lti13_instance.id);
 
-      const ltiUser = memberships.lookup(user);
-      const isCourseStaff = courseStaffUids.has(user.uid);
+    const user = assessment_instance.user;
+    const ltiUser = memberships.lookup(user);
+    const isCourseStaff = courseStaffUids.has(user.uid);
 
-      // User not found in LTI, reporting only
-      if (ltiUser === null) {
-        job.info(
-          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
-            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
-        );
-        counts.not_sent++;
-        continue;
-      }
+    // User not found in LTI, reporting only
+    if (ltiUser === null) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
 
-      // User is not a student in LTI, reporting only
-      if (!ltiUser.roles.includes(STUDENT_ROLE)) {
-        job.info(
-          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
-            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
-        );
-        counts.not_sent++;
-        continue;
-      }
+    // User is not a student in LTI, reporting only
+    if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
 
-      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
+    job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
 
-      const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
+    const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
 
-      /*
+    /*
        https://www.imsglobal.org/spec/lti-ags/v2p0#score-service-media-type-and-schema
        Canvas has extensions we could use described at
        https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       */
-      const score: Lti13Score = {
-        timestamp,
-        scoreGiven: assessment_instance.score_perc,
-        scoreMaximum: 100,
-        activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
-        gradingProgress: 'FullyGraded',
-        userId: ltiUser.user_id,
-        submission: {
-          startedAt: assessment_instance.date,
-          submittedAt: submittedAt ?? undefined,
-        },
-      };
+    const score: Lti13Score = {
+      timestamp,
+      scoreGiven: assessment_instance.score_perc,
+      scoreMaximum: 100,
+      activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
+      gradingProgress: 'FullyGraded',
+      userId: ltiUser.user_id,
+      submission: {
+        startedAt: assessment_instance.date,
+        submittedAt: submittedAt ?? undefined,
+      },
+    };
 
-      try {
-        await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-type': 'application/vnd.ims.lis.v1.score+json',
-          },
-          body: JSON.stringify(score),
-        });
-        counts.success++;
-      } catch (error) {
-        counts.error++;
-        job.warn(`\t${error.message}`);
-        if (error instanceof AugmentedError && error.data.body) {
-          job.verbose(error.data.body);
-        }
+    try {
+      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-type': 'application/vnd.ims.lis.v1.score+json',
+        },
+        body: JSON.stringify(score),
+      });
+      counts.success++;
+    } catch (error) {
+      counts.error++;
+      job.warn(`\t${error.message}`);
+      if (error instanceof AugmentedError && error.data.body) {
+        job.verbose(error.data.body);
       }
     }
   }
