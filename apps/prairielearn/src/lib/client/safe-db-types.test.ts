@@ -8,6 +8,7 @@ import {
   StaffAssessmentSetSchema,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
+  StaffInstitutionSchema,
   StaffUserSchema,
   StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentSchema,
@@ -270,6 +271,12 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   status: 'joined',
 };
 
+const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -362,5 +369,11 @@ describe('safe-db-types schemas', () => {
     const parsed = StudentAssessmentSetSchema.parse({ ...minimalStudentAssessmentSet, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentAssessmentSet);
+  });
+
+  it('parses valid StaffInstitution and drops extra fields', () => {
+    const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffInstitution);
   });
 });

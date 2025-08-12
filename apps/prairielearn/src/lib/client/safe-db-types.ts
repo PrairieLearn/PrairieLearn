@@ -1,6 +1,7 @@
 import { type z } from 'zod';
 
 import {
+  InstitutionSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
@@ -192,6 +193,15 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
 });
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
+
+/** Institutions */
+export const RawStaffInstitutionSchema = InstitutionSchema.pick({
+  id: true,
+  long_name: true,
+  short_name: true,
+});
+export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
+export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
 
 /** Questions */
 export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();

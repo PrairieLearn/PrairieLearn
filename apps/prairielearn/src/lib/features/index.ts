@@ -18,6 +18,7 @@ const featureNames = [
   'enhanced-navigation-user-toggle',
   // Can be applied to any context.
   'enhanced-navigation',
+  'enrollment-management',
 ] as const;
 
 const features = new FeatureManager(featureNames);

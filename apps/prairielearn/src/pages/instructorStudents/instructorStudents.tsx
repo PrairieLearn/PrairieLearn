@@ -13,6 +13,7 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -134,10 +135,11 @@ router.get(
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
     const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
-    const { course_instance: courseInstance, course } = getCourseInstanceContext(
-      res.locals,
-      'instructor',
-    );
+    const {
+      course_instance: courseInstance,
+      course,
+      institution,
+    } = getCourseInstanceContext(res.locals, 'instructor');
 
     const search = getUrl(req).search;
 
@@ -153,6 +155,14 @@ router.get(
       );
       return;
     }
+
+    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
+    const enrollmentManagementEnabled =
+      (await features.enabled('enrollment-management', {
+        institution_id: institution.id,
+        course_id: course.id,
+        course_instance_id: courseInstance.id,
+      })) && authz_data.is_administrator;
 
     const students = await queryRows(
       sql.select_students,
@@ -187,6 +197,7 @@ router.get(
             />
             <Hydrate fullHeight>
               <InstructorStudents
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 authzData={authz_data}
                 students={students}

@@ -43,6 +43,7 @@ interface StudentsCardProps {
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
+  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
 }
@@ -51,6 +52,7 @@ function StudentsCard({
   authzData,
   course,
   courseInstance,
+  enrollmentManagementEnabled,
   students: initialStudents,
   timezone,
   csrfToken,
@@ -274,14 +276,16 @@ function StudentsCard({
               students={students}
               table={table}
             />
-            <Button
-              variant="light"
-              disabled={!authzData.has_course_instance_permission_edit}
-              onClick={() => setShowInvite(true)}
-            >
-              <i class="bi bi-person-plus me-2" />
-              Invite student
-            </Button>
+            {enrollmentManagementEnabled && (
+              <Button
+                variant="light"
+                disabled={!authzData.has_course_instance_permission_edit}
+                onClick={() => setShowInvite(true)}
+              >
+                <i class="bi bi-person-plus me-2" />
+                Invite student
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -353,6 +357,7 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
+  enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
 }: {
@@ -369,6 +374,7 @@ export const InstructorStudents = ({
           authzData={authzData}
           course={course}
           courseInstance={courseInstance}
+          enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}

@@ -11,6 +11,7 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
 
@@ -100,6 +101,7 @@ const RawStaffCourseInstanceContextSchema = z.object({
       short_name: z.string(),
     })
     .brand('StaffCourse'),
+  institution: StaffInstitutionSchema,
 });
 export const StaffCourseInstanceContextSchema =
   RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();
