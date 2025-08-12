@@ -198,34 +198,148 @@ export function AssessmentQuestionRubricTable({
           <div class="card-title mb-0 me-auto d-flex align-items-center">Rubric settings</div>
         </button>
         <div id="rubric-setting" class="collapse p-2">
-          <SettingsPanel
-            assessment_question={assessment_question}
-            replaceAutoPoints={replaceAutoPoints}
-            setReplaceAutoPoints={setReplaceAutoPoints}
-            startingPoints={startingPoints}
-            setStartingPoints={setStartingPoints}
-            minPoints={minPoints}
-            setMinPoints={setMinPoints}
-            maxExtraPoints={maxExtraPoints}
-            SetMaxExtraPoints={SetMaxExtraPoints}
-          />
+          <div>
+            {!!assessment_question.max_auto_points && (
+              <>
+                <div class="row">
+                  <div class="col-12 col-lg-6">
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          checked={!replaceAutoPoints}
+                          onChange={() => setReplaceAutoPoints(false)}
+                        />
+                        Apply rubric to manual points (out of{' '}
+                        {assessment_question.max_manual_points}, keep auto points)
+                      </label>
+                    </div>
+                  </div>
+                  <div class="col-12 col-lg-6">
+                    <div class="form-check">
+                      <label class="form-check-label">
+                        <input
+                          class="form-check-input"
+                          type="radio"
+                          checked={replaceAutoPoints}
+                          onChange={() => setReplaceAutoPoints(true)}
+                        />
+                        Apply rubric to total points (out of {assessment_question.max_points},
+                        ignore auto points)
+                      </label>
+                    </div>
+                  </div>
+                </div>
+                <hr />
+              </>
+            )}
+
+            <div class="row">
+              <div class="col-12 col-lg-6">
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      checked={startingPoints === 0}
+                      onChange={() => setStartingPoints(0)}
+                    />
+                    Positive grading (start at zero, add points)
+                  </label>
+                </div>
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input
+                      class="form-check-input"
+                      type="radio"
+                      checked={startingPoints !== 0}
+                      onChange={() => setStartingPoints(assessment_question.max_manual_points ?? 0)}
+                    />
+                    Negative grading (start at {assessment_question.max_manual_points}, subtract
+                    penalties)
+                  </label>
+                </div>
+              </div>
+
+              <div class="mb-3 col-6 col-lg-3">
+                <label class="form-label">
+                  Minimum rubric score
+                  <input
+                    class="form-control"
+                    type="number"
+                    value={minPoints}
+                    onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
+                  />
+                </label>
+              </div>
+              <div class="mb-3 col-6 col-lg-3">
+                <label class="form-label">
+                  Maximum extra credit
+                  <input
+                    class="form-control"
+                    type="number"
+                    value={maxExtraPoints}
+                    onInput={(e: any) => SetMaxExtraPoints(Number(e.currentTarget.value))}
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Rubric table */}
-      <RubricTable
-        items={rubricItems}
-        editMode={editMode}
-        wasUsingRubric={wasUsingRubric}
-        showAiGradingStats={showAiGradingStats}
-        submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-        deleteRow={deleteRow}
-        moveUp={moveUp}
-        moveDown={moveDown}
-        updateRubricItem={updateRubricItem}
-        rowDragStart={rowDragStart}
-        rowDragOver={rowDragOver}
-      />
+      <div class="table-responsive">
+        <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
+          <thead>
+            <tr class="table-light fw-bold">
+              <td style="width:1px" />
+              <td>Points</td>
+              <td>Description</td>
+              <td>Detailed explanation</td>
+              <td>Grader note</td>
+              <td>Show to students</td>
+              {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
+            </tr>
+          </thead>
+          <tbody>
+            {rubricItems.length ? (
+              rubricItems.map((it, idx) => (
+                <RubricRow
+                  key={it.id ?? `row-${idx}`}
+                  idx={idx}
+                  item={it}
+                  editMode={editMode}
+                  showAiGradingStats={showAiGradingStats}
+                  submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
+                  deleteRow={() => deleteRow(idx)}
+                  moveUp={() => moveUp(idx)}
+                  moveDown={() => moveDown(idx)}
+                  rowDragStart={() => rowDragStart(idx)}
+                  rowDragOver={() => rowDragOver(idx)}
+                  updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                />
+              ))
+            ) : (
+              <tr>
+                <td colSpan={7}>
+                  <em>
+                    This question does not have any rubric items. Click "Add item" below to add some
+                    {wasUsingRubric && (
+                      <>
+                        , or select <strong>Disable rubric</strong> below to switch back to manual
+                        grade input
+                      </>
+                    )}
+                    .
+                  </em>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {pointsWarnings.map((warning) => (
         <div key={warning} class="alert alert-warning alert-dismissable fade show" role="alert">
@@ -279,198 +393,6 @@ export function AssessmentQuestionRubricTable({
   );
 }
 
-function SettingsPanel({
-  assessment_question,
-  replaceAutoPoints,
-  setReplaceAutoPoints,
-  startingPoints,
-  setStartingPoints,
-  minPoints,
-  setMinPoints,
-  maxExtraPoints,
-  SetMaxExtraPoints,
-}: {
-  assessment_question: AssessmentQuestion;
-  replaceAutoPoints: boolean;
-  setReplaceAutoPoints: (v: boolean) => void;
-  startingPoints: number;
-  setStartingPoints: (v: number) => void;
-  minPoints: number;
-  setMinPoints: (v: number) => void;
-  maxExtraPoints: number;
-  SetMaxExtraPoints: (v: number) => void;
-}) {
-  return (
-    <div>
-      {!!assessment_question.max_auto_points && (
-        <>
-          <div class="row">
-            <div class="col-12 col-lg-6">
-              <div class="form-check">
-                <label class="form-check-label">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    checked={!replaceAutoPoints}
-                    onChange={() => setReplaceAutoPoints(false)}
-                  />
-                  Apply rubric to manual points (out of {assessment_question.max_manual_points},
-                  keep auto points)
-                </label>
-              </div>
-            </div>
-            <div class="col-12 col-lg-6">
-              <div class="form-check">
-                <label class="form-check-label">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    checked={replaceAutoPoints}
-                    onChange={() => setReplaceAutoPoints(true)}
-                  />
-                  Apply rubric to total points (out of {assessment_question.max_points}, ignore auto
-                  points)
-                </label>
-              </div>
-            </div>
-          </div>
-          <hr />
-        </>
-      )}
-
-      <div class="row">
-        <div class="col-12 col-lg-6">
-          <div class="form-check">
-            <label class="form-check-label">
-              <input
-                class="form-check-input"
-                type="radio"
-                checked={startingPoints === 0}
-                onChange={() => setStartingPoints(0)}
-              />
-              Positive grading (start at zero, add points)
-            </label>
-          </div>
-          <div class="form-check">
-            <label class="form-check-label">
-              <input
-                class="form-check-input"
-                type="radio"
-                checked={startingPoints !== 0}
-                onChange={() => setStartingPoints(assessment_question.max_manual_points ?? 0)}
-              />
-              Negative grading (start at {assessment_question.max_manual_points}, subtract
-              penalties)
-            </label>
-          </div>
-        </div>
-
-        <div class="mb-3 col-6 col-lg-3">
-          <label class="form-label">
-            Minimum rubric score
-            <input
-              class="form-control"
-              type="number"
-              value={minPoints}
-              onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
-            />
-          </label>
-        </div>
-        <div class="mb-3 col-6 col-lg-3">
-          <label class="form-label">
-            Maximum extra credit
-            <input
-              class="form-control"
-              type="number"
-              value={maxExtraPoints}
-              onInput={(e: any) => SetMaxExtraPoints(Number(e.currentTarget.value))}
-            />
-          </label>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function RubricTable({
-  items,
-  editMode,
-  wasUsingRubric,
-  showAiGradingStats,
-  submissionCount,
-  deleteRow,
-  moveUp,
-  moveDown,
-  updateRubricItem,
-  rowDragStart,
-  rowDragOver,
-}: {
-  items: RubricItemData[];
-  editMode: boolean;
-  wasUsingRubric: boolean;
-  showAiGradingStats: boolean;
-  submissionCount: number;
-  deleteRow: (idx: number) => void;
-  moveUp: (idx: number) => void;
-  moveDown: (idx: number) => void;
-  updateRubricItem: (idx: number, patch: Partial<RubricItem>) => void;
-  rowDragStart: (idx: number) => void;
-  rowDragOver: (idx: number) => void;
-}) {
-  return (
-    <div class="table-responsive">
-      <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
-        <thead>
-          <tr class="table-light fw-bold">
-            <td style="width:1px" />
-            <td>Points</td>
-            <td>Description</td>
-            <td>Detailed explanation</td>
-            <td>Grader note</td>
-            <td>Show to students</td>
-            {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
-          </tr>
-        </thead>
-        <tbody>
-          {items.length ? (
-            items.map((it, idx) => (
-              <RubricRow
-                key={it.id ?? `row-${idx}`}
-                idx={idx}
-                item={it}
-                editMode={editMode}
-                showAiGradingStats={showAiGradingStats}
-                submissionCount={submissionCount}
-                deleteRow={() => deleteRow(idx)}
-                moveUp={() => moveUp(idx)}
-                moveDown={() => moveDown(idx)}
-                onChange={(patch) => updateRubricItem(idx, patch)}
-                rowDragStart={() => rowDragStart(idx)}
-                rowDragOver={() => rowDragOver(idx)}
-              />
-            ))
-          ) : (
-            <tr>
-              <td colSpan={7}>
-                <em>
-                  This question does not have any rubric items. Click "Add item" below to add some
-                  {wasUsingRubric && (
-                    <>
-                      , or select <strong>Disable rubric</strong> below to switch back to manual
-                      grade input
-                    </>
-                  )}
-                  .
-                </em>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
 function RubricRow({
   item,
   editMode,
@@ -479,7 +401,7 @@ function RubricRow({
   deleteRow,
   moveUp,
   moveDown,
-  onChange,
+  updateRubricItem,
   rowDragStart,
   rowDragOver,
 }: {
@@ -491,7 +413,7 @@ function RubricRow({
   deleteRow: () => void;
   moveUp: () => void;
   moveDown: () => void;
-  onChange: (patch: Partial<RubricItem>) => void;
+  updateRubricItem: (patch: Partial<RubricItem>) => void;
   rowDragStart: () => void;
   rowDragOver: () => void;
 }) {
@@ -512,8 +434,8 @@ function RubricRow({
           type="button"
           class="btn btn-sm btn-ghost"
           disabled={!editMode}
-          onClick={moveUp}
           aria-label="Move up"
+          onClick={moveUp}
         >
           <i class="fas fa-arrow-up" />
         </button>
@@ -521,8 +443,8 @@ function RubricRow({
           type="button"
           class="btn btn-sm btn-ghost"
           disabled={!editMode}
-          onClick={moveDown}
           aria-label="Move down"
+          onClick={moveDown}
         >
           <i class="fas fa-arrow-down" />
         </button>
@@ -530,8 +452,8 @@ function RubricRow({
           type="button"
           class="btn btn-sm btn-ghost text-danger"
           disabled={!editMode}
-          onClick={deleteRow}
           aria-label="Delete"
+          onClick={deleteRow}
         >
           <i class="fas fa-trash text-danger" />
         </button>
@@ -543,11 +465,11 @@ function RubricRow({
           class="form-control"
           style="width:4rem"
           step="any"
-          required
           disabled={!editMode}
           value={item.points}
-          onInput={(e: any) => onChange({ points: Number(e.currentTarget.value) })}
           aria-label="Points"
+          required
+          onInput={(e: any) => updateRubricItem({ points: Number(e.currentTarget.value) })}
         />
       </td>
 
@@ -555,13 +477,13 @@ function RubricRow({
         <input
           type="text"
           class="form-control"
-          required
           disabled={!editMode}
           maxlength={100}
           style="min-width:15rem"
           value={item.description}
-          onInput={(e: any) => onChange({ description: e.currentTarget.value })}
           aria-label="Description"
+          required
+          onInput={(e: any) => updateRubricItem({ description: e.currentTarget.value })}
         />
       </td>
 
@@ -572,8 +494,8 @@ function RubricRow({
           maxlength={10000}
           style="min-width:15rem"
           value={item.explanation ?? ''}
-          onInput={(e: any) => onChange({ explanation: e.currentTarget.value })}
           aria-label="Explanation"
+          onInput={(e: any) => updateRubricItem({ explanation: e.currentTarget.value })}
         />
       </td>
 
@@ -584,8 +506,8 @@ function RubricRow({
           maxlength={10000}
           style="min-width:15rem"
           value={item.grader_note ?? ''}
-          onInput={(e: any) => onChange({ grader_note: e.currentTarget.value })}
           aria-label="Grader note"
+          onInput={(e: any) => updateRubricItem({ grader_note: e.currentTarget.value })}
         />
       </td>
 
@@ -597,7 +519,7 @@ function RubricRow({
               class="form-check-input"
               disabled={!editMode}
               checked={item.always_show_to_students}
-              onChange={() => onChange({ always_show_to_students: true })}
+              onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
             Always
           </label>
@@ -609,7 +531,7 @@ function RubricRow({
               class="form-check-input"
               disabled={!editMode}
               checked={!item.always_show_to_students}
-              onChange={() => onChange({ always_show_to_students: false })}
+              onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
             If selected
           </label>
