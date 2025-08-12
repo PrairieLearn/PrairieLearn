@@ -94,7 +94,7 @@ export async function close() {
   // Close any remaining client connections.
   io.engine.close();
 
-  // Shut down the Redis clients.
-  await pub?.quit();
-  await sub?.quit();
+  // Shut down the Redis clients. If this fails, ignore it and proceed.
+  await pub?.quit().catch(() => {});
+  await sub?.quit().catch(() => {});
 }
