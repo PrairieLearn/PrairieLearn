@@ -21,7 +21,7 @@ import {
 function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
   const descriptions = permissionKeys.map((key) => {
     const permission = PERMISSIONS_META.find((p) => p.key === key);
-    return permission?.label.toLowerCase() || key.toString().replace(/_/g, ' ');
+    return permission?.label.toLowerCase() || key.toString().replaceAll(/_/, ' ');
   });
 
   if (descriptions.length === 1) {
