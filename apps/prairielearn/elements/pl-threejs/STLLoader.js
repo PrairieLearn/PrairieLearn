@@ -255,14 +255,18 @@ class STLLoader extends THREE.Loader {
           const text = result[0];
 
           while ((result = patternNormal.exec(text)) !== null) {
-            normal.x = parseFloat(result[1]);
-            normal.y = parseFloat(result[2]);
-            normal.z = parseFloat(result[3]);
+            normal.x = Number.parseFloat(result[1]);
+            normal.y = Number.parseFloat(result[2]);
+            normal.z = Number.parseFloat(result[3]);
             normalCountPerFace++;
           }
 
           while ((result = patternVertex.exec(text)) !== null) {
-            vertices.push(parseFloat(result[1]), parseFloat(result[2]), parseFloat(result[3]));
+            vertices.push(
+              Number.parseFloat(result[1]),
+              Number.parseFloat(result[2]),
+              Number.parseFloat(result[3]),
+            );
             normals.push(normal.x, normal.y, normal.z);
             vertexCountPerFace++;
             endVertex++;

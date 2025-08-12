@@ -291,7 +291,7 @@ router.post(
         res.status(500).send({ err: String(err) });
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
-      const actionPrompt = body.__action.substring(9);
+      const actionPrompt = body.__action.slice(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
