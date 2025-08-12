@@ -159,7 +159,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   return (
     <div class="card d-flex flex-column h-100">
       <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center justify-content-between gap-2">
           <div>Students</div>
           <div>
             <DownloadButton
