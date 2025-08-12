@@ -26,7 +26,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
@@ -41,6 +41,9 @@ export function GradingPanel({
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
+  if (!submission || !resLocals.submission) {
+    throw new Error('Submission is missing');
+  }
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;

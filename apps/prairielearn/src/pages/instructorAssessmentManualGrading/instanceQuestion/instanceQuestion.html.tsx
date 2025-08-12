@@ -29,7 +29,7 @@ export function InstanceQuestion({
   assignedGrader,
   lastGrader,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
@@ -149,7 +149,7 @@ function ConflictGradingJobModal({
   graders,
   lastGrader,
 }: {
-  resLocals: ResLocalsForPage<'instance-question'>;
+  resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;

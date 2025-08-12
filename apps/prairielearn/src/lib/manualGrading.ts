@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
@@ -132,7 +134,7 @@ export async function selectRubricData({
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission?: Submission;
+  submission?: Submission | SubmissionForRender | null | undefined;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -169,20 +171,6 @@ export async function selectRubricData({
   }
 
   return rubric_data;
-}
-
-/**
- * Populates the locals objects for rubric data. Assigns values to `rubric_data`
- * in the locals.
- *
- * The `assessment_question` is expected to have been retrieved before this call,
- * as well as any value that impacts the mustache rendering, such as `submission`.
- */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
-  locals.rubric_data = await selectRubricData({
-    assessment_question: locals.assessment_question,
-    submission: locals.submission,
-  });
 }
 
 /**

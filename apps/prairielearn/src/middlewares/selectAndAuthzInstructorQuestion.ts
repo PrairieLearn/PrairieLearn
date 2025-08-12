@@ -33,7 +33,9 @@ export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
   typeof SelectAndAuthWithCourseInstanceSchema
 >;
 
-export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema>;
+export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema> & {
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
+};
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {

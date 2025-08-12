@@ -51,7 +51,7 @@ import {
 import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
-import type { RubricData } from './manualGrading.js';
+import { type RubricData, selectRubricData } from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
@@ -407,11 +407,12 @@ export interface ResLocalsQuestionRender extends ResLocalsBuildLocals {
   variant: Variant;
   urls: QuestionUrls;
 
-  submission: SubmissionForRender;
+  submission: SubmissionForRender | null;
   effectiveQuestionType: questionServers.EffectiveQuestionType;
   extraHeadersHtml: string;
   questionHtml: string;
   submissionHtmls: string[];
+  answerHtml: string;
   issues: IssueRenderData[];
   questionJsonBase64: string | undefined;
 }
@@ -449,6 +450,8 @@ export async function getAndRenderVariant(
     client_fingerprint_id?: string | null;
     is_administrator: boolean;
     questionRenderContext?: QuestionRenderContext;
+    rubric_data?: RubricData | null;
+    submission?: SubmissionForRender | null | undefined;
   },
   {
     urlOverrides = {},
@@ -644,7 +647,10 @@ export async function getAndRenderVariant(
   );
 
   if (locals.instance_question) {
-    await manualGrading.populateRubricData(locals);
+    locals.rubric_data = await selectRubricData({
+      assessment_question: locals.assessment_question,
+      submission: locals.submission,
+    });
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
 

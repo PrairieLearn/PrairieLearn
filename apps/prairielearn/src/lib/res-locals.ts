@@ -1,3 +1,7 @@
+import type express from 'express';
+import asyncHandler from 'express-async-handler';
+import type core from 'express-serve-static-core';
+
 import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
@@ -20,13 +24,14 @@ import type {
 
 export interface ResLocals extends ResLocalsAuthnUser {
   __csrf_token: string;
+  urlPrefix: string;
+  navbarType: 'student' | 'instructor' | 'public';
 }
 
-interface PageLocalsMap {
+export interface ResLocalsForPage {
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
-  'course-instance': ResLocals & ResLocalsCourseInstanceMisc & ResLocalsCourseInstance;
+  'course-instance': ResLocals & ResLocalsCourseInstance;
   'instructor-instance-question': ResLocals &
-    ResLocalsCourseInstanceMisc &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestionWithCourseInstance &
     ResLocalsInstanceQuestion &
@@ -35,9 +40,16 @@ interface PageLocalsMap {
       questionRenderContext: 'manual_grading' | 'ai_grading';
       navbarType: 'instructor';
     };
-  'instructor-question': ResLocals & ResLocalsInstructorQuestion & ResLocalsQuestionRender;
+  'instructor-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender;
+  'instructor-assessment-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender &
+    ResLocalsAssessmentQuestion;
   'instance-question': ResLocals &
-    ResLocalsCourseInstanceMisc &
     ResLocalsCourseInstance &
     ResLocalsInstanceQuestion &
     ResLocalsInstanceQuestionRender;
@@ -49,17 +61,24 @@ interface PageLocalsMap {
   assessment: ResLocals & ResLocalsAssessment;
 }
 
-export type PageType = keyof PageLocalsMap;
-
-interface ResLocalsCourseInstanceMisc {
-  urlPrefix: string;
-  navbarType: 'student' | 'instructor';
-}
-
-export type ResLocalsForPage<T extends PageType> = PageLocalsMap[T];
+export type PageType = keyof ResLocalsForPage;
 
 export function getResLocalsForPage<T extends PageType>(
   locals: Record<string, any>,
-): ResLocalsForPage<T> {
-  return locals as ResLocalsForPage<T>;
+): ResLocalsForPage[T] {
+  return locals as ResLocalsForPage[T];
 }
+
+export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals = object>(
+  handler: (
+    ...args: Parameters<
+      express.RequestHandler<
+        core.ParamsDictionary,
+        any,
+        any,
+        core.Query,
+        ResLocalsForPage[T] & ExtraLocals
+      >
+    >
+  ) => void | Promise<void>,
+) => asyncHandler<core.ParamsDictionary, any, any, core.Query>(handler);
