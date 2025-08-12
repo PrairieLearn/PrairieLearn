@@ -85,7 +85,12 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       // If we don't have an associated instance question, the variant was created
       // from the instructor question preview and we should authorize for that.
       req.params.question_id = result.question_id;
-      await authzHasCoursePreviewOrInstanceView(req, res);
+      // TODO: This is a little hacky. Further context: https://github.com/PrairieLearn/PrairieLearn/pull/12496#discussion_r2240249138
+      const body = await authzHasCoursePreviewOrInstanceView(req, res);
+      if (body) {
+        res.status(403).send(body);
+        return;
+      }
       await selectAndAuthzInstructorQuestion(req, res);
 
       // We'll deny access to such variants if the user is in Exam mode to prevent

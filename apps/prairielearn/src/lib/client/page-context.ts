@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
+import { NavbarTypeSchema } from '../../components/Navbar.types.js';
+
 import {
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
@@ -9,28 +11,48 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffUserSchema,
 } from './safe-db-types.js';
 
 const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
   authz_data: z.object({
-    has_course_instance_permission_edit: z.boolean(),
-    has_course_instance_permission_view: z.boolean(),
+    // TODO: Type these more accurately into a course instance version.
+    authn_is_administrator: z.boolean(),
+    authn_has_course_permission_preview: z.boolean().optional(),
+    authn_has_course_permission_view: z.boolean().optional(),
+    authn_has_course_permission_edit: z.boolean().optional(),
+    authn_has_course_permission_own: z.boolean().optional(),
+    authn_course_role: z.string().optional(),
+    authn_course_instance_role: z.string().optional(),
+    authn_mode: z.string().optional(),
+    authn_has_student_access: z.boolean().optional(),
+    authn_has_student_access_with_enrollment: z.boolean().optional(),
+    authn_has_course_instance_permission_view: z.boolean().optional(),
+    authn_has_course_instance_permission_edit: z.boolean().optional(),
+    // Authz data
+    is_administrator: z.boolean(),
+    has_course_permission_preview: z.boolean(),
+    has_course_permission_view: z.boolean(),
+    has_course_permission_edit: z.boolean(),
     has_course_permission_own: z.boolean(),
-    user: z.object({
-      name: z.string(),
-      uid: z.string(),
-    }),
-    mode: z.string().nullable(),
+    course_role: z.string().optional(),
+    course_instance_role: z.string().optional(),
+    mode: z.string().optional(),
+    has_student_access: z.boolean().optional(),
+    has_student_access_with_enrollment: z.boolean().optional(),
+    has_course_instance_permission_view: z.boolean().optional(),
+    has_course_instance_permission_edit: z.boolean().optional(),
+
+    user: StaffUserSchema,
   }),
 
   urlPrefix: z.string(),
   access_as_administrator: z.boolean(),
-  authn_is_administrator: z.boolean(),
-  authn_user: z.object({
-    name: z.string(),
-    uid: z.string(),
-  }),
+
+  authn_user: StaffUserSchema,
+  /** You should prefer to set the navbarType instead of using this value. */
+  navbarType: NavbarTypeSchema,
 });
 export const PageContextSchema = RawPageContextSchema.brand<'PageContext'>();
 export type PageContext = z.infer<typeof PageContextSchema>;

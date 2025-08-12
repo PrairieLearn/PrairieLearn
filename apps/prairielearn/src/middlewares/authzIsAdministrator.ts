@@ -1,10 +1,6 @@
-import { type NextFunction, type Request, type Response } from 'express';
+import { createAuthzMiddleware } from './authzHelper.js';
 
-import { HttpStatusError } from '@prairielearn/error';
-
-export default function (req: Request, res: Response, next: NextFunction) {
-  if (!res.locals.is_administrator) {
-    return next(new HttpStatusError(403, 'Requires administrator privileges'));
-  }
-  next();
-}
+export default createAuthzMiddleware({
+  oneOfPermissions: ['is_administrator'],
+  unauthorizedUsers: 'block',
+});
