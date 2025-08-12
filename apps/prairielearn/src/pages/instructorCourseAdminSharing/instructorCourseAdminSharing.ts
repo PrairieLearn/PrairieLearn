@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCanonicalHost } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { updateCourseSharingName } from '../../models/course.js';
 
 import {
@@ -29,6 +30,10 @@ async function selectCanChooseSharingName(course) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_own'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -64,9 +69,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_own) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
-    }
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
