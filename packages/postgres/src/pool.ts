@@ -510,7 +510,7 @@ export class PostgresPool {
   async callAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await this.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
@@ -563,7 +563,7 @@ export class PostgresPool {
   ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
@@ -895,7 +895,7 @@ export class PostgresPool {
    *
    * @param schema The schema name to use (can be "null" to unset the search path)
    */
-  async setSearchSchema(schema: string) {
+  async setSearchSchema(schema: string | null) {
     if (schema == null) {
       this.searchSchema = schema;
       return;

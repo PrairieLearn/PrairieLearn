@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 3.1.6
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
 ## 3.1.5
 
 ### Patch Changes
