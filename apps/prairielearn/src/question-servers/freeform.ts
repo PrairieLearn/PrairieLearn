@@ -694,7 +694,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
