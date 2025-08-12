@@ -21,16 +21,12 @@ const effectiveQuestionTypes = {
   Freeform: 'Freeform',
 } satisfies Record<NonNullable<QuestionType>, EffectiveQuestionType>;
 
-function getEffectiveQuestionType(type: QuestionType): EffectiveQuestionType {
+export function getModule(type: QuestionType): QuestionServer {
   if (!type) {
     throw new Error('Question type is required');
   } else if (type in effectiveQuestionTypes) {
-    return effectiveQuestionTypes[type];
+    return questionModules[effectiveQuestionTypes[type]];
   } else {
     throw new Error('Unknown question type: ' + type);
   }
-}
-
-export function getModule(type: QuestionType): QuestionServer {
-  return questionModules[getEffectiveQuestionType(type)];
 }
