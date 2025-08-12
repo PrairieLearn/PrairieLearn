@@ -48,12 +48,18 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
-import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { type RubricData, selectRubricData } from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
+import type { ResLocals } from './res-locals.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -402,12 +408,14 @@ function buildLocals({
   return locals;
 }
 
-export interface ResLocalsQuestionRender extends ResLocalsBuildLocals {
+// All properties that are added to the locals by `getAndRenderVariant`.
+interface ResLocalsQuestionRenderAdded {
   question_is_shared: boolean;
   variant: Variant;
   urls: QuestionUrls;
-
+  showTrueAnswer: boolean;
   submission: SubmissionForRender | null;
+  submissions: SubmissionForRender[];
   effectiveQuestionType: questionServers.EffectiveQuestionType;
   extraHeadersHtml: string;
   questionHtml: string;
@@ -417,9 +425,13 @@ export interface ResLocalsQuestionRender extends ResLocalsBuildLocals {
   questionJsonBase64: string | undefined;
 }
 
-export interface ResLocalsInstanceQuestionRender extends ResLocalsQuestionRender {
+interface ResLocalsInstanceQuestionRenderAdded {
   rubric_data: RubricData | null;
 }
+
+export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
+export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
+  ResLocalsInstanceQuestionRenderAdded;
 
 /**
  * Render all information needed for a question.
@@ -431,28 +443,24 @@ export interface ResLocalsInstanceQuestionRender extends ResLocalsQuestionRender
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: {
-    urlPrefix: string;
+  locals: ResLocals & {
     course: Course;
     question: Question;
     user: User;
-    authn_user: User;
     course_instance?: CourseInstance;
     course_instance_id?: string;
     assessment?: Assessment;
     assessment_instance?: AssessmentInstance;
     assessment_question?: AssessmentQuestion;
     group_config?: GroupConfig;
-    group_role_permissions?: { can_view: boolean; can_submit: boolean };
+    group_role_permissions?: QuestionGroupPermissions;
     instance_question?: InstanceQuestionWithAllowGrade;
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
-    is_administrator: boolean;
     questionRenderContext?: QuestionRenderContext;
-    rubric_data?: RubricData | null;
-    submission?: SubmissionForRender | null | undefined;
-  },
+  } & Partial<ResLocalsInstanceQuestionRenderAdded> &
+    Partial<ResLocalsQuestionRenderAdded>,
   {
     urlOverrides = {},
     publicQuestionPreview = false,
@@ -475,7 +483,7 @@ export async function getAndRenderVariant(
 ) {
   // We write a fair amount of unstructured data back into locals,
   // so we'll cast it to `any` once so we don't have to do it every time.
-  const resultLocals = locals as any;
+  const resultLocals = locals;
 
   const question_course = await getQuestionCourse(locals.question, locals.course);
   resultLocals.question_is_shared = await sqldb.queryRow(
@@ -613,6 +621,8 @@ export async function getAndRenderVariant(
   if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
     // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
     resultLocals.showTrueAnswer = true;
+  } else {
+    resultLocals.showTrueAnswer = false;
   }
 
   const renderSelection: questionServers.RenderSelection = {
