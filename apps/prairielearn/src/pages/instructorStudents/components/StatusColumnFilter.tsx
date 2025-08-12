@@ -6,6 +6,13 @@ import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.j
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { STATUS_VALUES } from '../instructorStudents.shared.js';
 
+const computeSelected = (mode: 'include' | 'exclude', selected: Set<EnumEnrollmentStatus>) => {
+  if (mode === 'include') {
+    return selected;
+  }
+  return new Set(STATUS_VALUES.filter((s) => !selected.has(s)));
+};
+
 export function StatusColumnFilter({
   columnId,
   enrollmentStatusFilter,
@@ -21,13 +28,6 @@ export function StatusColumnFilter({
     () => computeSelected(mode, new Set(enrollmentStatusFilter)),
     [mode, enrollmentStatusFilter],
   );
-
-  const computeSelected = (mode: 'include' | 'exclude', selected: Set<EnumEnrollmentStatus>) => {
-    if (mode === 'include') {
-      return selected;
-    }
-    return new Set(STATUS_VALUES.filter((s) => !selected.has(s)));
-  };
 
   const apply = (newMode: 'include' | 'exclude', newSelected: Set<EnumEnrollmentStatus>) => {
     const selected = computeSelected(newMode, newSelected);

@@ -23,6 +23,7 @@ import {
 } from '../../lib/client/nuqs.js';
 import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
+import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -35,6 +36,8 @@ import { STATUS_VALUES, type StudentRow } from './instructorStudents.shared.js';
 const DEFAULT_SORT: SortingState = [];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
+
+const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -68,6 +71,12 @@ function StudentsCard({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+    'status',
+    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
+      DEFAULT_ENROLLMENT_STATUS_FILTER,
+    ),
+  );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -100,11 +109,6 @@ function StudentsCard({
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
-
-  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
-    'status',
-    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault([]),
-  );
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo(() => {
