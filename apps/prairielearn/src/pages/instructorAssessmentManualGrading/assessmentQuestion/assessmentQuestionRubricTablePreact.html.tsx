@@ -42,6 +42,7 @@ export function AssessmentQuestionRubricTable({
   const [minPoints, setMinPoints] = useState<number>(rubric_data?.min_points ?? 0);
   const [maxExtraPoints, SetMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
+  const [settingsError, setSettingsError] = useState<string | null>(null);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -177,11 +178,11 @@ export function AssessmentQuestionRubricTable({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
-    if (!res.ok) {
-      alert(`Save failed: ${res.statusText}`);
+    const data = (await res.json().catch(() => ({ err: `Error: ${res.statusText}` }))) ?? {};
+    if (data.err) {
+      setSettingsError(data.err);
       return;
     }
-    setEditMode(false);
   };
 
   return (
@@ -218,7 +219,6 @@ export function AssessmentQuestionRubricTable({
         wasUsingRubric={wasUsingRubric}
         showAiGradingStats={showAiGradingStats}
         submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-        onAddItem={onAddItem}
         onDelete={onDelete}
         moveUp={moveUp}
         moveDown={moveDown}
@@ -227,13 +227,32 @@ export function AssessmentQuestionRubricTable({
         rowDragOver={rowDragOver}
       />
 
-      {/* Warnings */}
       {pointsWarnings.map((warning) => (
         <div key={warning} class="alert alert-warning alert-dismissable fade show" role="alert">
           {warning}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
         </div>
       ))}
+      <div>
+        <button
+          type="button"
+          class="btn btn-sm btn-secondary"
+          disabled={!editMode}
+          onClick={onAddItem}
+        >
+          Add item
+        </button>
+      </div>
+      {settingsError && (
+        <div
+          key={settingsError}
+          class="alert alert-danger alert-dismissable fade show"
+          role="alert"
+        >
+          {settingsError}
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+        </div>
+      )}
 
       {/* Footer actions */}
       <div class="text-end mt-2">
@@ -379,7 +398,6 @@ function RubricTable({
   wasUsingRubric,
   showAiGradingStats,
   submissionCount,
-  onAddItem,
   onDelete,
   moveUp,
   moveDown,
@@ -392,7 +410,6 @@ function RubricTable({
   wasUsingRubric: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
-  onAddItem: () => void;
   onDelete: (idx: number) => void;
   moveUp: (idx: number) => void;
   moveDown: (idx: number) => void;
@@ -450,17 +467,6 @@ function RubricTable({
           )}
         </tbody>
       </table>
-
-      <div class="js-add-rubric-item-button-container">
-        <button
-          type="button"
-          class="btn btn-sm btn-secondary"
-          disabled={!editMode}
-          onClick={onAddItem}
-        >
-          Add item
-        </button>
-      </div>
     </div>
   );
 }

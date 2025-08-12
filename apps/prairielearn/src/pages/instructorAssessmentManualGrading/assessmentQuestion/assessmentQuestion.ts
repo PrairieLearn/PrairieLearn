@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -120,39 +119,6 @@ router.get(
     );
   }),
 );
-
-const RubricModificationPostBodySchema = z.object({
-  __action: z.literal('modify_rubric_settings'),
-  use_rubric: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((val) => val === 'true'),
-  replace_auto_points: z
-    .enum(['true', 'false'])
-    .optional()
-    .transform((val) => val === 'true'),
-  starting_points: z.coerce.number(),
-  min_points: z.coerce.number(),
-  max_extra_points: z.coerce.number(),
-  tag_for_manual_grading: z
-    .literal('true')
-    .optional()
-    .transform((val) => val === 'true'),
-  rubric_item: z
-    .record(
-      z.string(),
-      z.object({
-        id: z.string().optional(),
-        order: z.coerce.number(),
-        points: z.coerce.number(),
-        description: z.string(),
-        explanation: z.string().optional(),
-        grader_note: z.string().optional(),
-        always_show_to_students: z.string().transform((val) => val === 'true'),
-      }),
-    )
-    .default({}),
-});
 
 router.post(
   '/',
