@@ -36,7 +36,7 @@ export function ManualGradingAssessment({
   questions,
   courseStaff,
   num_open_instances,
-  adminFeaturesEnabled,
+  adminFeaturesEnabled
 }: {
   resLocals: Record<string, any>;
   questions: ManualGradingQuestion[];
