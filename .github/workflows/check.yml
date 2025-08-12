@@ -165,9 +165,10 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'requirements.txt'
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: 'dev'
       - name: Install Python dependencies
-        run: make python-deps
+        run: make python-deps-dev
 
       - name: Run the Dockerfile linter
         run: make lint-docker
