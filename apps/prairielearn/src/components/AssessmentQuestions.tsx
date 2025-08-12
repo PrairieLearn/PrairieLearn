@@ -19,10 +19,10 @@ export function AssessmentQuestionHeaders({
           <th colspan={nTableCols}>
             Zone {question.zone.number}. {question.zone.title}
             {question.zone.number_choose == null
-              ? '(Choose all questions)'
+              ? ' (Choose all questions)'
               : question.zone.number_choose === 1
-                ? '(Choose 1 question)'
-                : `(Choose ${question.zone.number_choose} questions)`}
+                ? ' (Choose 1 question)'
+                : ` (Choose ${question.zone.number_choose} questions)`}
             {question.zone.max_points != null
               ? ` (maximum ${question.zone.max_points} points)`
               : ''}
