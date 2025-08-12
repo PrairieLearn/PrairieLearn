@@ -409,7 +409,7 @@ export function AssessmentQuestionRubricTable({
   );
 }
 
-function RubricRow({
+export function RubricRow({
   item,
   editMode,
   showAiGradingStats,
