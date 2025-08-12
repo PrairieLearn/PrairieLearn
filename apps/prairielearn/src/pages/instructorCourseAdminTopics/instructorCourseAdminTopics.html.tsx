@@ -1,15 +1,18 @@
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type Topic } from '../../lib/db-types.js';
+import { Hydrate } from '../../lib/preact.js';
 
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
 export function InstructorCourseAdminTopics({
   resLocals,
   topics,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   topics: Topic[];
+  origHash: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -29,7 +32,14 @@ export function InstructorCourseAdminTopics({
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />
-        <InstructorCourseAdminTopicsTable topics={topics} />
+        <Hydrate>
+          <InstructorCourseAdminTopicsTable
+            topics={topics}
+            hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
+            csrfToken={resLocals.__csrf_token}
+            origHash={origHash}
+          />
+        </Hydrate>
       </>
     ),
   });
