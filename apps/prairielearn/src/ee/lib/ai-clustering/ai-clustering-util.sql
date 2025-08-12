@@ -23,6 +23,18 @@ FROM
 WHERE
     assessment_question_id = $assessment_question_id
 
+-- BLOCK select_ai_cluster_assignment_for_instance_question
+SELECT
+    ai_cluster_id
+FROM
+    ai_cluster_assignments
+JOIN
+    ai_clusters
+ON 
+    ai_cluster_assignments.ai_cluster_id = ai_clusters.id
+WHERE
+    instance_question_id = $instance_question_id
+
 -- BLOCK upsert_ai_cluster_for_instance_question
 INSERT INTO ai_cluster_assignments
     (ai_cluster_id, instance_question_id)

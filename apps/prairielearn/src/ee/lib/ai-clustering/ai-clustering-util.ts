@@ -3,7 +3,7 @@
 
 import z from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { AiClusterSchema, type Assessment, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
@@ -44,7 +44,8 @@ export async function insertAiClusters({
 
 /** Assign an AI cluster to an instance question */
 export async function assignAiCluster({
-    instanceQuestionId, aiClusterId
+    instanceQuestionId, 
+    aiClusterId
 }: {
     instanceQuestionId: string,
     aiClusterId: string 
@@ -53,6 +54,16 @@ export async function assignAiCluster({
         instance_question_id: instanceQuestionId,
         ai_cluster_id: aiClusterId
     })
+}
+
+export async function getAiClusterAssignmentForInstanceQuestion({
+    instanceQuestionId
+}: {
+    instanceQuestionId: string
+}) {
+    return await queryOptionalRow(sql.select_ai_cluster_assignment_for_instance_question, {
+        instance_question_id: instanceQuestionId
+    }, z.string().nullable());
 }
 
 export async function getAiClusterAssignment({

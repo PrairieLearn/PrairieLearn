@@ -14,7 +14,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { assignAiCluster, generateSubmissionDebuggingData, getAiClusterAssignment, getAiClusters, insertAiClusters } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { assignAiCluster, generateSubmissionDebuggingData, getAiClusterAssignment, getAiClusterAssignmentForInstanceQuestion, getAiClusters, insertAiClusters } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import type { SubmissionDebugData } from '../../../ee/lib/ai-clustering/types.js';
 import { aiEvaluateFinalAnswer, selectInstanceQuestionsForAssessmentQuestion } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
@@ -28,10 +28,24 @@ import { selectQuestionById } from '../../../models/question.js';
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const START_INDEX = 0; 
-const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 3;
-const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
+const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 5;
+const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 30;
 const PARALLEL_LIMIT = 20;
-const INSTANCE_QUESTIONS_TO_TEST: string[] = [];//['7677', '8456', '8038', '8518'];
+const SKIP_CLUSTERED_INSTANCE_QUESTIONS = false;
+const INSTANCE_QUESTIONS_TO_TEST: string[] = [];
+// ['19136',
+//  '17673',
+//  '17233',
+//  '19494',
+//  '20387',
+//  '18982',
+//  '19136',
+//  '17673',
+//  '17233',
+//  '19494',
+//  '20387',
+//  '18982'
+// ];//['7677', '8456', '8038', '8518'];
 
 // TODO: Move these answers
 const answers = {
@@ -63,7 +77,7 @@ const answers = {
     \sum_{i=1}^{12}\Bigl(\tfrac{2i}{3} + \tfrac{i^2}{9}\Bigr)^{\frac{1}{3}}
   `,
   11.0: '36u^2',
-  12.0: '\int_{0}^{1}\bigl(\pi(2 - x^3)^2 - \pi(2 - x^2)^2\bigr)\,dx',
+  12.0: '\int_{0}^{1}\bigl(\pi(2 - x^3)^2 - \pi (2 - x^2)^2\bigr)\,dx',
   20.0: '-(\sqrt[3]{x})^2 \,\sin\bigl(\sqrt[3]{x}\bigr)\;\cdot\;\frac{1}{3x^{2/3}}',
   21.0: '-78 miles/hour'
 }
@@ -258,26 +272,40 @@ router.post(
 
         const question = assessment_question_row.question;
         const course = await selectCourseById(question.course_id);
-        const j = 0;
 
+        let j = 0;
         await async.eachLimit(all_instance_questions, PARALLEL_LIMIT, async (instance_question) => {
           console.log(`Processing instance question ${j} of ${all_instance_questions.length} for assessment question ${assessment_question.id}`);
           // TODO: Remove the unneeded fields (e.g. promptImageUrls)
-          const isCorrect = await aiEvaluateFinalAnswer({
-            question,
-            question_answer: answers[aqNumberToOriginalNumber[i]],
-            instance_question,
-            course,
-            urlPrefix: res.locals.urlPrefix,
-            openai
-          });
-
-          await assignAiCluster({
-            instanceQuestionId: instance_question.id,
-            aiClusterId: isCorrect ? correctCluster.id : incorrectCluster.id
-          });
-
           j++;
+
+
+          let cluster = true;
+          if (SKIP_CLUSTERED_INSTANCE_QUESTIONS) {
+            const assignment = await getAiClusterAssignmentForInstanceQuestion({
+              instanceQuestionId: instance_question.id
+            });
+            if (assignment) {
+              console.log('Skip clustering of', instance_question.id);
+              cluster = false;
+            }
+          }
+
+          if (cluster) {
+            const isCorrect = await aiEvaluateFinalAnswer({
+              question,
+              question_answer: answers[aqNumberToOriginalNumber[i]],
+              instance_question,
+              course,
+              urlPrefix: res.locals.urlPrefix,
+              openai
+            });
+            console.log('isCorrect', isCorrect, instance_question.id);
+            await assignAiCluster({
+              instanceQuestionId: instance_question.id,
+              aiClusterId: isCorrect ? correctCluster.id : incorrectCluster.id
+            });
+          }
         });
       }
 
@@ -294,13 +322,14 @@ router.post(
         return;
       }
 
-      const exportData: SubmissionDebugData[] = [];
+      let totalDataAmount = 0;
+      const exportData: {[key: string]: SubmissionDebugData[]} = {};
       for (let i = START_INDEX; i < Math.min(START_INDEX + MAX_ASSESSMENT_QUESTIONS_TO_PROCESS, assessment_question_rows.length); i++) {
         const assessment_question_row = assessment_question_rows[i];
         const assessment_question = assessment_question_row.assessment_question;
-        const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+        const all_instance_questions = (await selectInstanceQuestionsForAssessmentQuestion(
           assessment_question.id,
-        );
+        )).slice(0, MAX_INSTANCE_QUESTIONS_TO_PROCESS);
 
         const clusterAssignments = await getAiClusterAssignment({
           assessment_question_id: assessment_question.id
@@ -317,8 +346,8 @@ router.post(
             urlPrefix: res.locals.urlPrefix
           });
         });
-
-        exportData.push(...newDebugData);
+        totalDataAmount += newDebugData.length;
+        exportData[assessment_question.id] = newDebugData;
       }
       
       // Export the data to JSON
@@ -326,7 +355,7 @@ router.post(
       res.setHeader('Content-Type', 'application/json');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="assessment_submissions_${assessment.id}.json"`,
+        `attachment; filename="data_n_${totalDataAmount}.json"`,
       );
       return res.send(jsonContent);
     } else {
