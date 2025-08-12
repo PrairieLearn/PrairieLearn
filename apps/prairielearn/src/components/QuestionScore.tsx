@@ -518,9 +518,6 @@ function QuestionValue({
           If you score 100% on your next submission, you will be awarded an additional
           ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
         </p>
-      `);
-
-      parts.push(html`
         <p class="mb-0">
           If you score less than 100% on your next submission, you will be awarded an additional
           <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
@@ -547,20 +544,14 @@ function QuestionValue({
           If you score 100% on your next submission, you will be awarded an additional
           ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
         </p>
-      `);
-
-      parts.push(
-        html`<p>
+        <p>
           If you score between ${formatPoints(bestCurrentScore)}% and 100% on your next submission,
           you will be awarded an additional
           <code>
             ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
           </code>
           points.
-        </p>`,
-      );
-
-      parts.push(html`
+        </p>
         <p class="mb-0">
           If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
           will not be awarded any additional points for that submission.

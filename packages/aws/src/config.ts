@@ -50,7 +50,7 @@ export function makeAwsConfigProvider({
 
   function makeS3ClientConfig<T extends Record<string, any>>(extraConfig: T = {} as T) {
     return makeAwsClientConfig({
-      ...(getS3ClientConfig?.() ?? {}),
+      ...getS3ClientConfig?.(),
       ...extraConfig,
     });
   }
