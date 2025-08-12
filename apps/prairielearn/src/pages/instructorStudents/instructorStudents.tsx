@@ -206,6 +206,7 @@ router.get(
                 courseInstance={courseInstance}
                 course={course}
                 csrfToken={csrfToken}
+                urlPrefix={urlPrefix}
               />
             </Hydrate>
           </>

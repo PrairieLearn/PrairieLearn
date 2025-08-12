@@ -24,6 +24,7 @@ import {
 import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
+import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -49,6 +50,7 @@ interface StudentsCardProps {
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
+  urlPrefix: string;
 }
 
 function StudentsCard({
@@ -59,6 +61,7 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
+  urlPrefix,
 }: StudentsCardProps) {
   const queryClient = useQueryClient();
 
@@ -177,7 +180,11 @@ function StudentsCard({
         header: 'Name',
         cell: (info) => {
           if (info.row.original.user) {
-            return info.getValue() || '—';
+            return (
+              <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+                {info.getValue() || '—'}
+              </a>
+            );
           }
           return (
             <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
@@ -223,7 +230,7 @@ function StudentsCard({
         },
       }),
     ],
-    [timezone],
+    [timezone, urlPrefix],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -271,7 +278,7 @@ function StudentsCard({
   return (
     <div class="card d-flex flex-column h-100">
       <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center justify-content-between gap-2">
           <div>Students</div>
           <div class="d-flex gap-2">
             <DownloadButton
@@ -364,6 +371,7 @@ export const InstructorStudents = ({
   enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
+  urlPrefix,
 }: {
   authzData: PageContext['authz_data'];
   search: string;
@@ -382,6 +390,7 @@ export const InstructorStudents = ({
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
     </NuqsAdapter>
