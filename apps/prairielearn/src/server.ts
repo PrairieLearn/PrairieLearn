@@ -624,11 +624,8 @@ export async function initExpress(): Promise<Express> {
       async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
     ),
     function (req: Request, res: Response, next: NextFunction) {
-      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
+      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
     },
   ]);
@@ -657,9 +654,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
     },
@@ -699,9 +693,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
     },
