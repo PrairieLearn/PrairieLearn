@@ -297,7 +297,7 @@ router.post(
           req.body.min_points,
           req.body.max_extra_points,
           req.body.rubric_items,
-          false,
+          false, // tag_for_manual_grading
           res.locals.authn_user.user_id,
         );
         res.redirect(req.originalUrl);
