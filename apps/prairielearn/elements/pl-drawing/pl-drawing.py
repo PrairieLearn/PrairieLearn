@@ -11,6 +11,9 @@ import lxml.etree
 import lxml.html
 import prairielearn as pl
 
+WEIGHT_DEFAULT = 1
+ALLOW_BLANK_DEFAULT = False
+SHOW_SCORE_DEFAULT = False # for backwards-compatibility 
 
 def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[dict]:
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
@@ -48,6 +51,11 @@ def check_attributes_rec(element: lxml.html.HtmlElement) -> None:
 
     name = element.tag
     attributes = elements.get_attributes(name)
+    attributes += [
+        "weight",
+        "allow-blank",
+        "show-score"
+    ]
     if elements.should_validate_attributes(name):
         try:
             pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
@@ -368,6 +376,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
+        showscore = pl.get_boolean_attrib(
+            element, "show-score", SHOW_SCORE_DEFAULT
+        )
+        if showscore:
+            html_params["correct"] = data["partial_scores"][name]["feedback"]["correct"]
+            html_params["partial"] = data["partial_scores"][name]["feedback"]["partial"]
+            html_params["incorrect"] = data["partial_scores"][name]["feedback"]["incorrect"]
 
     return chevron.render(template, html_params).strip()
 
@@ -385,6 +400,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     load_extensions(data)
+
+    allowblank = pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    )
+    if allowblank:
+        try:
+            data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
+        finally:
+            return 
 
     try:
         data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
@@ -409,6 +433,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
+    allowblank = pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    )
+    weight = pl.get_integer_attrib(
+        element, "weight", WEIGHT_DEFAULT 
+    )
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
@@ -429,8 +459,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     reference = data["correct_answers"].get(name, [])
 
     if not isinstance(student, list) or len(student) == 0:
-        data["format_errors"][name] = "No submitted answer."
-        return
+        if allowblank:
+            data["partial_scores"][name] = {
+                "score": 0.0,
+                "weight": weight,
+                "feedback": {"correct": False, "partial": 0, "incorrect": True, "missing": {}, "matches": {}},
+            }
+            return
+        else:
+            data["format_errors"][name] = "No submitted answer."
+            return
 
     matches = {}  # If a reference object is matched to a student object
     num_correct = 0  # number correct
@@ -507,8 +545,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     data["partial_scores"][name] = {
         "score": score,
-        "weight": 1,
-        "feedback": {"correct": (score == 1), "missing": {}, "matches": matches},
+        "weight": weight,
+        "feedback": {"correct": (score == 1), "incorrect": (score == 0), "partial": (score*100 if (score != 0 and score != 1) else False), "missing": {}, "matches": matches},
     }
 
 
@@ -525,6 +563,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
+    weight = pl.get_integer_attrib(
+        element, "weight", WEIGHT_DEFAULT 
+    )
 
     a_tru = []
     if result in ["correct", "incorrect"]:
@@ -537,9 +578,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = json.dumps(a_tru)
         data["partial_scores"][name] = {
             "score": 1,
-            "weight": 1,
+            "weight": weight,
             "feedback": {
                 "correct": True,
+                "partial": 0,
+                "incorrect": False,
                 "missing": {},
                 "matches": {
                     element["id"]: True
@@ -607,9 +650,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         )
         data["partial_scores"][name] = {
             "score": 0,
-            "weight": 1,
+            "weight": weight,
             "feedback": {
                 "correct": False,
+                "partial": 0,
+                "incorrect": True,
                 "missing": {},
                 "matches": {
                     element["id"]: False
