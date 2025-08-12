@@ -20,6 +20,7 @@ import {
   IdSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   type AssessmentRow,
@@ -185,7 +186,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'add_assessment') {
       if (!req.body.title) {
         throw new HttpStatusError(400, 'title is required');
@@ -207,7 +208,7 @@ router.post(
       }
 
       const editor = new AssessmentAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         title: req.body.title,
         aid: req.body.aid,
         type: req.body.type,

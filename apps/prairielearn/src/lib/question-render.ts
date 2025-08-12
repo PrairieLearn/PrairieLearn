@@ -409,7 +409,7 @@ function buildLocals({
 }
 
 // All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
+export interface ResLocalsQuestionRenderAdded {
   question_is_shared: boolean;
   variant: Variant;
   urls: QuestionUrls;
@@ -443,7 +443,17 @@ export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: ResLocals & {
+  locals: Omit<
+    ResLocals,
+    | '__csrf_token'
+    | 'navbarType'
+    | 'authn_is_administrator'
+    | 'authn_institution'
+    | 'authn_provider_name'
+    | 'access_as_administrator'
+    | 'is_institution_administrator'
+    | 'news_item_notification_count'
+  > & {
     course: Course;
     question: Question;
     user: User;

@@ -58,7 +58,7 @@ export interface ResLocalsForPage {
     ResLocalsAssessmentQuestion &
     ResLocalsInstanceQuestionRender;
   'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
-  assessment: ResLocals & ResLocalsAssessment;
+  assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
 export type PageType = keyof ResLocalsForPage;
