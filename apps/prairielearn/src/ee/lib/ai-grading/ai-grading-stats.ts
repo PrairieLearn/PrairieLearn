@@ -37,8 +37,6 @@ export interface AiGradingGeneralStats {
   submission_rubric_count: number;
   mean_error: number | null;
   rubric_stats: {
-    // Keeping all information for a rubric item
-    // if we want to implement rubric modification here
     rubric_item: RubricItem;
     disagreement_count: number;
   }[];

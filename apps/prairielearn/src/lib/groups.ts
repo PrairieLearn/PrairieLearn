@@ -432,11 +432,6 @@ export async function createOrAddToGroup(
   });
 }
 
-/**
- * @param {GroupInfo} groupInfo
- * @param {string} leavingUserId
- * @returns {GroupRoleAssignment[]}
- */
 export function getGroupRoleReassignmentsAfterLeave(
   groupInfo: GroupInfo,
   leavingUserId: string,
@@ -468,8 +463,7 @@ export function getGroupRoleReassignmentsAfterLeave(
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => idsEqual(user_id, m.user_id)) ===
-          undefined,
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({

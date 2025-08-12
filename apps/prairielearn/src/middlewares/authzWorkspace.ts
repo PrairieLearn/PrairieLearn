@@ -20,19 +20,21 @@ import { checkStudentAssessmentAccess } from './studentAssessmentAccess.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const SelectAuthDataFromWorkspaceSchema = z.object({
+  variant_id: IdSchema,
+  question_id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  course_id: IdSchema,
+});
+
 export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: false }) {
   return asyncHandler(async (req, res, next) => {
     // We rely on having res.locals.workspace_id already set to the correct value here
     const result = await sqldb.queryOptionalRow(
       sql.select_auth_data_from_workspace,
       { workspace_id: res.locals.workspace_id },
-      z.object({
-        variant_id: IdSchema,
-        question_id: IdSchema,
-        instance_question_id: IdSchema.nullable(),
-        course_instance_id: IdSchema.nullable(),
-        course_id: IdSchema,
-      }),
+      SelectAuthDataFromWorkspaceSchema,
     );
 
     if (!result) {
@@ -83,7 +85,12 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       // If we don't have an associated instance question, the variant was created
       // from the instructor question preview and we should authorize for that.
       req.params.question_id = result.question_id;
-      await authzHasCoursePreviewOrInstanceView(req, res);
+      // TODO: This is a little hacky. Further context: https://github.com/PrairieLearn/PrairieLearn/pull/12496#discussion_r2240249138
+      const body = await authzHasCoursePreviewOrInstanceView(req, res);
+      if (body) {
+        res.status(403).send(body);
+        return;
+      }
       await selectAndAuthzInstructorQuestion(req, res);
 
       // We'll deny access to such variants if the user is in Exam mode to prevent

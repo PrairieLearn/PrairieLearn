@@ -1,5 +1,21 @@
 # @prairielearn/flash
 
+## 2.0.21
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
+## 2.0.20
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [23adb05]
+  - @prairielearn/html@4.0.17
+
 ## 2.0.19
 
 ### Patch Changes

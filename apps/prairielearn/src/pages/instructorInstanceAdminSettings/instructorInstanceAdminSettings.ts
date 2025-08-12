@@ -19,6 +19,7 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
@@ -64,6 +65,18 @@ router.get(
         b64EncodeUnicode(await fs.readFile(fullInfoCourseInstancePath, 'utf8')),
       ).toString();
     }
+
+    let instanceGHLink: string | null = null;
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
+      instanceGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/${res.locals.course_instance.short_name}`;
+    } else if (res.locals.course.repository) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        instanceGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/courseInstances/${res.locals.course_instance.short_name}`;
+      }
+    }
+
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
@@ -76,6 +89,7 @@ router.get(
         infoCourseInstancePath,
         availableTimezones,
         origHash,
+        instanceGHLink,
         canEdit,
       }),
     );

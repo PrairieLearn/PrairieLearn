@@ -16,6 +16,7 @@ import { generateAssessmentAiGradingStatsCSV } from '../../../ee/lib/ai-grading/
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -26,10 +27,11 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {
@@ -134,28 +136,20 @@ router.post(
       if (manuallyGradedRows.length === 0) {
         flash('warning', 'No manually graded assessment questions found for AI grading.');
         res.redirect(req.originalUrl);
+        return;
       }
 
       for (const row of manuallyGradedRows) {
-        try {
-          await aiGrade({
-            question: row.question,
-            course: res.locals.course,
-            course_instance_id: assessment.course_instance_id,
-            assessment_question: row.assessment_question,
-            urlPrefix: res.locals.urlPrefix,
-            authn_user_id: res.locals.authn_user.user_id,
-            user_id: res.locals.user.user_id,
-            mode: 'all',
-          });
-        } catch {
-          flash(
-            'error',
-            `AI grading failed for assessment question ${row.assessment_question.id}.`,
-          );
-          res.redirect(req.originalUrl);
-          return;
-        }
+        await aiGrade({
+          question: row.question,
+          course: res.locals.course,
+          course_instance_id: assessment.course_instance_id,
+          assessment_question: row.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          mode: 'all',
+        });
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);

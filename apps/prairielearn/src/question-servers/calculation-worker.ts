@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // This is meant to be invoked from a Python code caller via `lib/code-caller`.
 // This allows us to isolate code from the main process that's handling requests,
 // and to execute code inside Docker containers in environments where

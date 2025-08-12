@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as courseDB from '../apps/prairielearn/dist/sync/course-db.js';
 (async () => {
   const courseData = await courseDB.loadFullCourse(null, '/course');

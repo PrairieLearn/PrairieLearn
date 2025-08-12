@@ -41,8 +41,6 @@ type TestType = 'correct' | 'incorrect' | 'invalid';
 
 /**
  * Internal worker for testVariant(). Do not call directly.
- * @protected
- *
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
@@ -129,8 +127,6 @@ async function createTestSubmission(
 
 /**
  * Internal worker for testVariant(). Do not call directly.
- * @protected
- *
  * @param expected_submission - Generated reference submission data.
  * @param test_submission - Computed submission to be tested.
  * @returns A list of errors encountered during comparison.
@@ -171,8 +167,6 @@ function compareSubmissions(expected_submission: Submission, test_submission: Su
 /**
  * Internal worker for _testQuestion(). Do not call directly.
  * Tests a question variant. Issues will be inserted into the issues table.
- * @protected
- *
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
@@ -245,9 +239,11 @@ async function testVariant(
  * Test a question. Issues will be inserted into the issues table.
  *
  * @param question - The question for the variant.
+ * @param course_instance - The course instance for the variant.
  * @param variant_course - The course for the variant.
- * @param authn_user_id - The currently authenticated user.
  * @param test_type - The type of test to run.
+ * @param authn_user_id - The currently authenticated user.
+ * @param user_id - The current effective user.
  */
 async function testQuestion(
   question: Question,
@@ -331,11 +327,10 @@ async function testQuestion(
 /**
  * Internal worker for _testQuestion(). Do not call directly.
  * Runs a single test.
- * @protected
- *
  * @param logger - The server job to run within.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
+ * @param course_instance - The course instance for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
  * @param user_id - The current effective user.
@@ -416,7 +411,7 @@ async function runTest(
  * @param course - The course for the variant.
  * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
- * @return The job sequence ID.
+ * @returns The job sequence ID.
  */
 export async function startTestQuestion(
   count: number,
@@ -441,7 +436,7 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array(count * test_types.length).keys()) {
+    for (const iter of Array.from({ length: count * test_types.length }).keys()) {
       const type = test_types[iter % test_types.length];
       job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
       const result = await runTest(
