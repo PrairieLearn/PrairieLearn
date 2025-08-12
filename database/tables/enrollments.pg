@@ -20,7 +20,7 @@ check constraints
     enrollments_impossible_synced: CHECK (NOT ((status = ANY (ARRAY['rejected'::enum_enrollment_status, 'blocked'::enum_enrollment_status])) AND lti_synced))
     enrollments_invited_lti_synced_true_only_if_pending_set: CHECK ((status = 'invited'::enum_enrollment_status AND lti_synced = true) = (pending_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL))
     enrollments_pending_sub_lti13_instance_id_both_or_both_not_null: CHECK ((pending_sub IS NULL) = (pending_lti13_instance_id IS NULL))
-    enrollments_user_id_not_null_only_if_joined_no_pending: CHECK ((status = 'joined'::enum_enrollment_status) = (user_id IS NOT NULL AND pending_uid IS NULL AND pending_sub IS NULL AND pending_lti13_instance_id IS NULL))
+    enrollments_user_id_not_null_only_if_joined_no_pending: CHECK (status <> 'joined'::enum_enrollment_status OR user_id IS NOT NULL AND pending_uid IS NULL AND pending_sub IS NULL AND pending_lti13_instance_id IS NULL)
     enrollments_user_id_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (user_id IS NULL))
 
 foreign-key constraints

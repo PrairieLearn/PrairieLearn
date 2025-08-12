@@ -57,7 +57,12 @@ ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
 -- If you are in the 'joined' state, you must have a user_id, and you cannot have any pending_* columns.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
-  (status = 'joined') = (user_id IS NOT NULL AND pending_uid IS NULL AND pending_sub IS NULL AND pending_lti13_instance_id IS NULL)
+  (status != 'joined') OR (
+    user_id IS NOT NULL
+    AND pending_uid IS NULL
+    AND pending_sub IS NULL
+    AND pending_lti13_instance_id IS NULL
+  )
 );
 
 -- pending_sub + pending_lti13_instance_id need to be set/unset together.
@@ -69,7 +74,13 @@ ADD CONSTRAINT enrollments_pending_sub_lti13_instance_id_both_or_both_not_null C
 -- pending_sub + pending_lti13_instance_id <-> status = 'invited' and lti_synced = true.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
-  (status = 'invited' AND lti_synced = TRUE) = (pending_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL)
+  (
+    status = 'invited'
+    AND lti_synced = TRUE
+  ) = (
+    pending_sub IS NOT NULL
+    AND pending_lti13_instance_id IS NOT NULL
+  )
 );
 
 -- pending_uid+course_instance_id must be unique.
