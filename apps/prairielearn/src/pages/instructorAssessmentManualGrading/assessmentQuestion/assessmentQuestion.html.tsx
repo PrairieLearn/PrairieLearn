@@ -170,7 +170,7 @@ export function AssessmentQuestion({
 
       <div class="mb-3">
         <div
-          id="rubric-editing-preact"
+          id="rubric-settings"
           data-assessment-question="${JSON.stringify(assessment_question)}"
           data-rubric-data="${JSON.stringify(rubric_data)}"
           data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"

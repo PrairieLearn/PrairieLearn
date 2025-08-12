@@ -8,7 +8,7 @@ type RubricItemData = Partial<
   RubricItem & { num_submissions: number; disagreement_count: number | null }
 >;
 
-export function AssessmentQuestionRubricTable({
+export function RubricSettings({
   assessment_question,
   rubric_data,
   __csrf_token,

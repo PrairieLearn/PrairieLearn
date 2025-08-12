@@ -1,8 +1,8 @@
 import {
-  AssessmentQuestionRubricTable,
   RubricRow,
-} from '../../../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestionRubricTablePreact.html.js';
+  RubricSettings,
+} from '../../../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/RubricSettings.js';
 import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
-registerReactFragment(AssessmentQuestionRubricTable);
+registerReactFragment(RubricSettings);
 registerReactFragment(RubricRow);
