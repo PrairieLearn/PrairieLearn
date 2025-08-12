@@ -30,7 +30,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 config.startServer = false;
 // Pick a unique port based on the Vitest worker ID.
-config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0', 10)).toString();
+config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0')).toString();
 
 export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
@@ -73,7 +73,8 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await assets.init();
 
       debug('before(): start server');
-      const httpServer = await server.startServer();
+      const app = await server.initExpress();
+      const httpServer = await server.startServer(app);
 
       debug('before(): initialize socket server');
       socketServer.init(httpServer);

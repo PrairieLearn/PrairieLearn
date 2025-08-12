@@ -6,23 +6,6 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 export { DateFromISOString, IdSchema, IntervalSchema };
 
 // *******************************************************************************
-// Miscellaneous schemas; keep these alphabetized.
-// *******************************************************************************
-
-// Result of assessments_format_for_question sproc
-export const AssessmentsFormatForQuestionSchema = z.array(
-  z.object({
-    label: z.string(),
-    assessment_id: IdSchema,
-    course_instance_id: IdSchema,
-    share_source_publicly: z.boolean(),
-    color: z.string(),
-  }),
-);
-
-export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
-
-// *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
@@ -50,6 +33,107 @@ export const EnumQuestionTypeSchema = z.enum([
   'Freeform',
 ]);
 export type EnumQuestionType = z.infer<typeof EnumQuestionTypeSchema>;
+
+// *******************************************************************************
+// Miscellaneous schemas; keep these alphabetized.
+// *******************************************************************************
+export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record(z.any())]);
+
+// *******************************************************************************
+// Sproc schemas. These should be alphabetized by their corresponding sproc name.
+// *******************************************************************************
+
+// Result of assessments_format_for_question sproc
+export const SprocAssessmentsFormatForQuestionSchema = z.array(
+  z.object({
+    label: z.string(),
+    assessment_id: IdSchema,
+    course_instance_id: IdSchema,
+    share_source_publicly: z.boolean(),
+    color: z.string(),
+  }),
+);
+
+// Result of check_assessment_access sproc
+const SprocCheckAssessmentAccessSchema = z.object({
+  credit: z.union([z.string(), z.literal('None')]),
+  time_limit_min: z.union([z.string(), z.literal('—')]),
+  start_date: z.union([z.string(), z.literal('—')]),
+  end_date: z.union([z.string(), z.literal('—')]),
+  mode: EnumModeSchema.nullable(),
+  active: z.boolean().nullable(),
+});
+
+// Result of authz_assessment sproc
+export const SprocAuthzAssessmentSchema = z.object({
+  authorized: z.boolean(),
+  exam_access_end: DateFromISOString.nullable(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  time_limit_min: z.number().nullable(),
+  password: z.string().nullable(),
+  mode: EnumModeSchema.nullable(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  active: z.boolean(),
+  next_active_time: z.string().nullable(),
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
+});
+
+// Result of authz_assessment_instance sproc
+export const SprocAuthzAssessmentInstanceSchema = z.object({
+  authorized: z.boolean(),
+  authorized_edit: z.boolean(),
+  exam_access_end: DateFromISOString.nullable(),
+  credit: z.number().nullable(),
+  credit_date_string: z.string().nullable(),
+  time_limit_min: z.number().nullable(),
+  time_limit_expired: z.boolean(),
+  password: z.string().nullable(),
+  mode: EnumModeSchema.nullable(),
+  show_closed_assessment: z.boolean(),
+  show_closed_assessment_score: z.boolean(),
+  active: z.boolean(),
+  next_active_time: z.string().nullable(),
+  access_rules: z.array(SprocCheckAssessmentAccessSchema),
+});
+
+// Result of authz_course sproc
+export const SprocAuthzCourseSchema = z.object({
+  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+  has_course_permission_own: z.boolean(),
+  has_course_permission_edit: z.boolean(),
+  has_course_permission_view: z.boolean(),
+  has_course_permission_preview: z.boolean(),
+});
+export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
+
+// Result of authz_course_instance sproc
+export const SprocAuthzCourseInstanceSchema = z.object({
+  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
+  has_course_instance_permission_view: z.boolean(),
+  has_course_instance_permission_edit: z.boolean(),
+  has_student_access: z.boolean(),
+  has_student_access_with_enrollment: z.boolean(),
+});
+export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
+
+// Result of tags_for_question sproc
+export const SprocTagsForQuestionSchema = z.array(
+  z.object({
+    name: z.string(),
+    id: IdSchema,
+    color: z.string(),
+    description: z.string(),
+  }),
+);
+
+// Result of instance_questions_next_allowed_grade sproc
+export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
+  allow_grade_date: DateFromISOString.nullable(),
+  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_interval: z.string(),
+});
 
 // *******************************************************************************
 // Database table schemas. These should be alphabetized by their corresponding

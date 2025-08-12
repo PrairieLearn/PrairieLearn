@@ -16,7 +16,7 @@ export function downloadTextFile(content: string, filename: string, mimeType: st
   a.download = filename;
   document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
+  a.remove();
   URL.revokeObjectURL(url);
 }
 

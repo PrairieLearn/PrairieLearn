@@ -6,6 +6,50 @@ FROM
 WHERE
   v.id = $variant_id;
 
+-- BLOCK select_and_lock_assessment_instance_or_variant
+WITH
+  variant_info AS (
+    SELECT
+      v.id AS variant_id,
+      iq.assessment_instance_id
+    FROM
+      variants AS v
+      LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    WHERE
+      v.id = $variant_id
+  ),
+  lock_assessment_instance AS (
+    SELECT
+      ai.id
+    FROM
+      variant_info AS vi
+      JOIN assessment_instances AS ai ON (vi.assessment_instance_id = ai.id)
+    WHERE
+      vi.assessment_instance_id IS NOT NULL
+    FOR NO KEY UPDATE OF
+      ai
+  ),
+  lock_variant AS (
+    SELECT
+      v.id
+    FROM
+      variant_info AS vi
+      JOIN variants AS v ON (vi.variant_id = v.id)
+    WHERE
+      vi.assessment_instance_id IS NULL
+    FOR NO KEY UPDATE OF
+      v
+  )
+SELECT
+  TRUE
+FROM
+  lock_assessment_instance
+UNION ALL
+SELECT
+  TRUE
+FROM
+  lock_variant;
+
 -- BLOCK reset_variants_for_assessment_question
 UPDATE variants AS v
 SET
