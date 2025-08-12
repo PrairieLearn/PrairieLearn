@@ -2,6 +2,7 @@ import assert from 'node:assert';
 
 import { z } from 'zod';
 
+import { stringify } from '@prairielearn/csv'
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 import { DateFromISOString } from '@prairielearn/zod';
 
@@ -14,6 +15,7 @@ import {
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 
+;
 import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
@@ -263,7 +265,7 @@ function safeDivide(numerator: number, denominator: number): number {
  * Generate detailed AI grading classification performance statistics for an assessment, including confusion
  * matrix elements (TP, FP, TN, FN), accuracy, precision, recall, and F1 score per question and overall.
  */
-async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
+export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
   perQuestion: AiGradingAQPerformanceStatsRow[];
   total: AiGradingPerformanceStats;
 }> {
@@ -408,20 +410,4 @@ async function generateAssessmentAiGradingStats(assessment: Assessment): Promise
     perQuestion: rows,
     total,
   };
-}
-
-/**
- * Generate a CSV string of detailed AI grading classification performance statistics for an assessment.
- */
-export async function generateAssessmentAiGradingStatsCSV(assessment: Assessment): Promise<string> {
-  const stats = await generateAssessmentAiGradingStats(assessment);
-  const header =
-    'assessment_question_id,questionNumber,truePositives,trueNegatives,falsePositives,falseNegatives,accuracy,precision,recall,f1score';
-  const rows = stats.perQuestion.map(
-    (row) =>
-      `${row.assessment_question_id},${row.number},${row.truePositives},${row.trueNegatives},${row.falsePositives},${row.falseNegatives},${row.accuracy},${row.precision},${row.recall},${row.f1score}`,
-  );
-  const totalRow = `Total,,${stats.total.truePositives},${stats.total.trueNegatives},${stats.total.falsePositives},${stats.total.falseNegatives},${stats.total.accuracy},${stats.total.precision},${stats.total.recall},${stats.total.f1score}`;
-  rows.push(totalRow);
-  return [header, ...rows].join('\n');
 }

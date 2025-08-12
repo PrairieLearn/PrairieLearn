@@ -163,6 +163,26 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      res.attachment('assessment_statistics.csv')
+       const stats = await generateAssessmentAiGradingStats(assessment);
+  stringify(
+    [...stats.perQuestion, stats.total], {
+      header: true,
+      columns: [
+        'assessment_question_id',
+        'questionNumber',
+        'truePositives',
+        'trueNegatives',
+        'falsePositives',
+        'falseNegatives',
+        'accuracy',
+        'precision',
+        'recall',
+        'f1score',
+      ]
+    }
+  )
+
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', 'attachment; filename="assessment_statistics.csv"');
       res.send(await generateAssessmentAiGradingStatsCSV(res.locals.assessment as Assessment));
