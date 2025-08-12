@@ -60,7 +60,6 @@ export function DeleteCourseInstanceModal({
       tabIndex={-1}
       role="dialog"
       aria-labelledby={labelId}
-      aria-hidden="true"
     >
       <div class="modal-dialog" role="document">
         <div class="modal-content">
