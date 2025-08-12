@@ -63,7 +63,6 @@ const SelectUserSchema = z.object({
   is_instructor: z.boolean(),
 });
 
-// This is if isCourseInstance is false
 interface ResLocalsCourseAuthz {
   authn_user: ResLocalsAuthnUser['authn_user'];
   authn_mode: SelectAuthzData['mode'];
@@ -83,6 +82,7 @@ interface ResLocalsCourseAuthz {
   has_course_permission_view: SelectAuthzData['permissions_course']['has_course_permission_view'];
   has_course_permission_edit: SelectAuthzData['permissions_course']['has_course_permission_edit'];
   has_course_permission_own: SelectAuthzData['permissions_course']['has_course_permission_own'];
+  overrides: Override[];
 }
 
 interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
@@ -96,6 +96,7 @@ interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   has_course_instance_permission_edit: SelectAuthzData['permissions_course_instance']['has_course_instance_permission_edit'];
   has_student_access_with_enrollment: SelectAuthzData['permissions_course_instance']['has_student_access_with_enrollment'];
   has_student_access: SelectAuthzData['permissions_course_instance']['has_student_access'];
+  user_with_requested_uid_has_instructor_access_to_course_instance: boolean;
 }
 
 export interface ResLocalsCourse {

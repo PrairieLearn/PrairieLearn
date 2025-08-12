@@ -594,7 +594,7 @@ function getNamesForCopy(
     return number;
   }
 
-  function getNumberLongName(basename: string, oldnames: (string | null)[]): number {
+  function getNumberLongName(basename: string, oldnames: string[]): number {
     let number = 1;
     oldnames.forEach((oldname) => {
       if (typeof oldname !== 'string') return;
