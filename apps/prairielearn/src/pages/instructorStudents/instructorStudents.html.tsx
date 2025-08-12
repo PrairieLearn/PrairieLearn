@@ -20,6 +20,7 @@ import {
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -39,9 +40,16 @@ interface StudentsCardProps {
   courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
   timezone: string;
+  urlPrefix: string;
 }
 
-function StudentsCard({ course, courseInstance, students, timezone }: StudentsCardProps) {
+function StudentsCard({
+  course,
+  courseInstance,
+  students,
+  timezone,
+  urlPrefix,
+}: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -91,7 +99,11 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
       columnHelper.accessor((row) => row.user.name, {
         id: 'user_name',
         header: 'Name',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => (
+          <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+            {info.getValue() || '—'}
+          </a>
+        ),
       }),
       columnHelper.accessor((row) => row.user.email, {
         id: 'user_email',
@@ -110,7 +122,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
         },
       }),
     ],
-    [timezone],
+    [timezone, urlPrefix],
   );
 
   const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
@@ -226,6 +238,7 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
+  urlPrefix,
 }: {
   search: string;
 } & StudentsCardProps) => {
@@ -236,6 +249,7 @@ export const InstructorStudents = ({
         courseInstance={courseInstance}
         students={students}
         timezone={timezone}
+        urlPrefix={urlPrefix}
       />
     </NuqsAdapter>
   );
