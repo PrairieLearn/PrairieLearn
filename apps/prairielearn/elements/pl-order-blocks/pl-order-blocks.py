@@ -4,17 +4,18 @@ import math
 import os
 import random
 from copy import deepcopy
-from enum import Enum
-from types import FunctionType
 from typing import TypedDict
-from order_blocks_options_parsing import OrderBlocksOptions, GradingMethodType, GroupInfo, SourceBlocksOrderType, SolutionPlacementType, FeedbackType, PartialCreditType, FormatType, get_graph_info
-
 import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml.etree import _Comment
 from typing_extensions import NotRequired, assert_never
+from order_blocks_options_parsing import (
+        OrderBlocksOptions, GradingMethodType, GroupInfo, 
+        SourceBlocksOrderType, SolutionPlacementType, FeedbackType,
+        PartialCreditType, FormatType
+        )
 
 
 class OrderBlocksAnswerData(TypedDict):
@@ -205,19 +206,19 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         for distractor in distractors:
             distractor["distractor_bin"] = distractor_bin
 
-    data["params"][order_blocks_options.answer_name] = all_blocks
-    data["correct_answers"][order_blocks_options.answer_name] = correct_answers
+    data["params"][order_blocks_options.answers_name] = all_blocks
+    data["correct_answers"][order_blocks_options.answers_name] = correct_answers
 
     # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
     # isn't we need to change it into a solution before displaying it as such
     data_copy = deepcopy(data)
     data_copy["submitted_answers"] = {
-        order_blocks_options.answer_name: deepcopy(correct_answers)
+        order_blocks_options.answers_name: deepcopy(correct_answers)
     }
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
-    if data_copy["partial_scores"][order_blocks_options.answer_name]["score"] != 1:
-        data["correct_answers"][order_blocks_options.answer_name] = solve_problem(
+    if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1:
+        data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers, order_blocks_options.grading_method
         )
 

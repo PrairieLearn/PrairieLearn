@@ -95,7 +95,7 @@ def get_graph_info(
     return tag, depends
 
 
-class OrderBlockOptions:
+class OrderBlocksOptions:
     def __init__(
     self,
     html_element: lxml.html.HtmlElement
