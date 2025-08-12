@@ -108,8 +108,8 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'requirements.txt'
-      - name: Install Python dependencies
+          cache-dependency-glob: 'pyproject.toml'
+      - name: Install all Python dependencies
         run: make python-deps
 
       - name: Set up Node

@@ -180,7 +180,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
         );
         if (newImportMapKeys.length > 0) {
           console.warn(
-            'Cannot update importmap. New importmap has imports not in current importmap: ',
+            'Cannot update importmap. New importmap has imports not in current importmap:',
             newImportMapKeys,
           );
         }
