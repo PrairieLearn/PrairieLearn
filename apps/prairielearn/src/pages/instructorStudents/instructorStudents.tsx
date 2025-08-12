@@ -4,13 +4,15 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -39,6 +41,24 @@ router.get(
   }),
 );
 
+router.get(
+  '/enrollment',
+  asyncHandler(async (req, res) => {
+    const pageContext = getPageContext(res.locals);
+    if (!pageContext.authz_data.has_course_instance_permission_view) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { uid } = req.query;
+    const staffEnrollment = await queryOptionalRow(
+      sql.select_enrollment_by_uid,
+      { course_instance_id: courseInstance.id, uid },
+      StaffEnrollmentSchema,
+    );
+    res.json(staffEnrollment);
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -57,7 +77,43 @@ router.post(
       });
       const body = BodySchema.parse(req.body);
 
-      await queryAsync(sql.insert_invite_by_uid, {
+      const existingEnrollment = await queryOptionalRow(
+        sql.select_enrollment_by_uid,
+        {
+          course_instance_id: courseInstance.id,
+          uid: body.uid,
+        },
+        EnrollmentSchema,
+      );
+
+      if (!existingEnrollment) {
+        await queryAsync(sql.upsert_enrollment_by_uid, {
+          course_instance_id: courseInstance.id,
+          uid: body.uid,
+        });
+        res.json({ ok: true });
+        return;
+      }
+
+      // Case 1: if the user is already enrolled, we can't invite them without that user being de-enrolled first.
+      const isEnrolled = existingEnrollment.status === 'joined';
+      if (isEnrolled) {
+        res.status(400).json({ error: 'The user is already enrolled' });
+        return;
+      }
+
+      // Case 2: the user has a pending non-LTI invitation, and we can't invite them again.
+      const isPending = existingEnrollment.status === 'invited' && !existingEnrollment.lti_synced;
+
+      if (isPending) {
+        res.status(400).json({ error: 'The user has a pending invitation' });
+        return;
+      }
+
+      // If the user is synced via LTI, they are either invited via LTI or removed via LTI. The UI has
+      // already confirmed that the instructor means to de-sync them from LTI and invite them again.
+      // If they are not synced via LTI, we can invite them. So in both cases, we can invite them.
+      await queryAsync(sql.upsert_enrollment_by_uid, {
         course_instance_id: courseInstance.id,
         uid: body.uid,
       });
@@ -131,6 +187,7 @@ router.get(
             />
             <Hydrate fullHeight>
               <InstructorStudents
+                isDevMode={process.env.NODE_ENV === 'development'}
                 authzData={authz_data}
                 students={students}
                 search={search}

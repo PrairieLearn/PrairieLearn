@@ -185,6 +185,7 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
+  id: true,
   lti_synced: true,
   pending_uid: true,
   status: true,

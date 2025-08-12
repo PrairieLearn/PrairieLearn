@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Button from 'react-bootstrap/Button';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -23,6 +24,7 @@ import {
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
 import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -55,6 +57,8 @@ function StudentsCard({
   timezone,
   csrfToken,
 }: StudentsCardProps) {
+  const queryClient = useQueryClient();
+
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -69,7 +73,13 @@ function StudentsCard({
 
   // Track screen size for aria-hidden
   const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(mediaQuery?.matches ?? true);
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+
+  useEffect(() => {
+    // TODO: This is a workaround to avoid a hydration mismatch.
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setIsMediumOrLarger(mediaQuery?.matches ?? true);
+  }, [mediaQuery]);
 
   useEffect(() => {
     const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
@@ -94,10 +104,10 @@ function StudentsCard({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
-  const { data: students, refetch } = useQuery<StudentRow[]>({
-    queryKey: ['instructor-students', courseInstance.id],
+  const { data: students } = useQuery<StudentRow[]>({
+    queryKey: ['enrollments', 'students'],
     queryFn: async () => {
-      const res = await fetch('data.json', { credentials: 'same-origin' });
+      const res = await fetch('data.json');
       if (!res.ok) throw new Error('Failed to fetch students');
       return res.json();
     },
@@ -107,27 +117,75 @@ function StudentsCard({
 
   const [showInvite, setShowInvite] = useState(false);
 
+  const inviteMutation = useMutation({
+    mutationKey: ['invite-uid'],
+    mutationFn: async (uid: string): Promise<void> => {
+      const body = new URLSearchParams({
+        __action: 'invite_by_uid',
+        uid,
+        __csrf_token: csrfToken,
+      });
+      const res = await fetch(window.location.pathname, {
+        method: 'POST',
+        body,
+      });
+      if (!res.ok) {
+        let message = 'Failed to invite';
+        try {
+          const data = await res.json();
+          if (typeof data?.error === 'string') message = data.error;
+        } catch {
+          // ignore parse errors
+        }
+        throw new Error(message);
+      }
+    },
+    onSuccess: async () => {
+      // Force a refetch of the enrollments query to ensure the new student is included
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      setShowInvite(false);
+    },
+  });
+
   const columns = useMemo(
     () => [
-      columnHelper.accessor((row) => row.user.uid, {
+      columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor((row) => row.user.name, {
+      columnHelper.accessor((row) => row.user?.name, {
         id: 'user_name',
         header: 'Name',
-        cell: (info) => info.getValue() || '—',
-      }),
-      columnHelper.accessor((row) => row.user.email, {
-        id: 'user_email',
-        header: 'Email',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
       columnHelper.accessor((row) => row.enrollment.status, {
         id: 'enrollment_status',
         header: 'Status',
         cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
+      }),
+      columnHelper.accessor((row) => row.user?.email, {
+        id: 'user_email',
+        header: 'Email',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
       columnHelper.accessor((row) => row.enrollment.created_at, {
         id: 'enrollment_created_at',
@@ -155,7 +213,7 @@ function StudentsCard({
     data: students,
     columns,
     columnResizeMode: 'onChange',
-    getRowId: (row) => row.user.user_id,
+    getRowId: (row) => row.enrollment.id,
     state: {
       sorting,
       columnFilters,
@@ -204,6 +262,7 @@ function StudentsCard({
               disabled={!authzData.has_course_instance_permission_edit}
               onClick={() => setShowInvite(true)}
             >
+              <i class="bi bi-person-plus me-2" />
               Invite student
             </Button>
           </div>
@@ -255,29 +314,7 @@ function StudentsCard({
         show={showInvite}
         onHide={() => setShowInvite(false)}
         onSubmit={async (uid) => {
-          const body = new URLSearchParams({
-            __action: 'invite_by_uid',
-            uid,
-            __csrf_token: csrfToken,
-          });
-          const res = await fetch(window.location.pathname, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            credentials: 'same-origin',
-            body,
-          });
-          if (!res.ok) {
-            let message = 'Failed to invite';
-            try {
-              const data = await res.json();
-              if (typeof data?.error === 'string') message = data.error;
-            } catch {
-              void 0;
-            }
-            throw new Error(message);
-          }
-          await refetch();
-          setShowInvite(false);
+          await inviteMutation.mutateAsync(uid);
         }}
       />
     </div>
@@ -295,14 +332,17 @@ export const InstructorStudents = ({
   courseInstance,
   course,
   csrfToken,
+  isDevMode,
 }: {
   authzData: PageContext['authz_data'];
   search: string;
+  isDevMode: boolean;
 } & StudentsCardProps) => {
   const queryClient = new QueryClient();
+
   return (
     <NuqsAdapter search={search}>
-      <QueryClientProvider client={queryClient}>
+      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <StudentsCard
           authzData={authzData}
           course={course}
@@ -311,7 +351,7 @@ export const InstructorStudents = ({
           timezone={timezone}
           csrfToken={csrfToken}
         />
-      </QueryClientProvider>
+      </QueryClientProviderDebug>
     </NuqsAdapter>
   );
 };

@@ -264,6 +264,7 @@ const minimalStudentAssessmentSet: z.input<typeof StudentAssessmentSetSchema> = 
 const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
+  id: '1',
   lti_synced: false,
   pending_uid: null,
   status: 'joined',

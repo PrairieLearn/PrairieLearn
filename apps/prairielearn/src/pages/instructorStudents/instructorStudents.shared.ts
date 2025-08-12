@@ -4,7 +4,13 @@ import { StaffEnrollmentSchema, StaffUserSchema } from '../../lib/client/safe-db
 
 export const StudentRowSchema = z.object({
   enrollment: StaffEnrollmentSchema,
+  user: StaffUserSchema.nullable(),
+});
+
+export const StudentRowSchemaWithUser = StudentRowSchema.extend({
   user: StaffUserSchema,
 });
 
 export type StudentRow = z.infer<typeof StudentRowSchema>;
+
+export type StudentRowWithUser = z.infer<typeof StudentRowSchemaWithUser>;
