@@ -172,7 +172,7 @@
 
   // Override default implementation of 'formula'
 
-  var Embed = Quill.import('blots/embed');
+  const Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
     static create(value) {

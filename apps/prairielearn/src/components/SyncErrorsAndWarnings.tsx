@@ -78,15 +78,23 @@ export function AssessmentSyncErrorsAndWarnings({
   course,
   urlPrefix,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
+  authz_data: { has_course_instance_permission_edit?: boolean };
   assessment: Assessment;
   courseInstance: StaffCourseInstance;
   course: StaffCourse | Course;
   urlPrefix: string;
 }) {
+  // This should never happen, but we are waiting on a better type system for res.locals.authz_data
+  // to be able to express this.
+  if (authz_data.has_course_instance_permission_edit === undefined) {
+    throw new Error('has_course_instance_permission_edit is undefined');
+  }
+
   return (
     <SyncErrorsAndWarnings
-      authz_data={authz_data}
+      authz_data={{
+        has_course_instance_permission_edit: authz_data.has_course_instance_permission_edit,
+      }}
       exampleCourse={course.example_course}
       syncErrors={assessment.sync_errors}
       syncWarnings={assessment.sync_warnings}

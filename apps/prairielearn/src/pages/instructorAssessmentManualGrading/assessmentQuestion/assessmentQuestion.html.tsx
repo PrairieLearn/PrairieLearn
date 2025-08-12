@@ -13,6 +13,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
@@ -23,12 +24,14 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
+  rubric_data,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
+  rubric_data: RubricData | null;
 }) {
   const {
     number_in_alternative_group,
@@ -79,6 +82,7 @@ export function AssessmentQuestion({
           maxAutoPoints: assessment_question.max_auto_points,
           csrfToken: __csrf_token,
           aiGradingMode,
+          rubric_data,
         },
         'instance-question-table-data',
       )}

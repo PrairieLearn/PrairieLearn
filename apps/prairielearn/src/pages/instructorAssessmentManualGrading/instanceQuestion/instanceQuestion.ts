@@ -12,6 +12,7 @@ import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -71,12 +72,12 @@ async function prepareLocalsForRender(
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
     const resLocals = res.locals as ResLocalsForPage<'instructor-instance-question'>;
-    if (!resLocals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
     const assignedGrader = resLocals.instance_question.assigned_grader
       ? await selectUserById(resLocals.instance_question.assigned_grader)
       : null;
