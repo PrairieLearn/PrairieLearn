@@ -404,11 +404,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allowblank = pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     )
-    if allowblank:
-        try:
-            data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
-        finally:
-            return 
+    if allowblank and data["submitted_answers"][name] == "":
+        return 
 
     try:
         data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
