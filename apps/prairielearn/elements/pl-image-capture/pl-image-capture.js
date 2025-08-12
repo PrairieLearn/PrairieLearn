@@ -1243,9 +1243,6 @@ const MAX_ZOOM_SCALE = 5;
       if (this.editable) {
         throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
       }
-      if (!this.imageCapturePreviewPanzoom) {
-        return;
-      }
 
       const capturePreview = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .capture-preview',
