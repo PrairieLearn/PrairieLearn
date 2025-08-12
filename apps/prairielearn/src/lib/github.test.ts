@@ -40,15 +40,15 @@ describe('Github library', () => {
       const course = { repository: 'IRRELEVANT', branch: 'IRRELEVANT', example_course: true };
       assert.equal(
         courseRepoContentUrl(course),
-        'https://github.com/prairielearn/prairielearn/tree/master/exampleCourse',
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse',
       );
       assert.equal(
         courseRepoContentUrl(course, 'questions/addNumbers'),
-        'https://github.com/prairielearn/prairielearn/tree/master/exampleCourse/questions/addNumbers',
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers',
       );
       assert.equal(
         courseRepoContentUrl(course, '/courseInstances/Sp15'),
-        'https://github.com/prairielearn/prairielearn/tree/master/exampleCourse/courseInstances/Sp15',
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/Sp15',
       );
     });
 
