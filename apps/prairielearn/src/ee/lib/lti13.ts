@@ -202,20 +202,21 @@ export async function getOpenidClientConfig(
 ): Promise<client.Configuration> {
   const keystore = lti13_instance.keystore as jose.JSONWebKeySet | null | undefined;
   if (!keystore || !Array.isArray(keystore.keys) || keystore.keys.length === 0) {
-    throw new HttpStatusError(403, 'LTI 1.3 configuration error: no keys available in keystore');
+    throw new Error('LTI 1.3 configuration error: no keys available in keystore');
   }
 
   const keyFromKeyStore = keystore.keys.at(-1);
   if (!keyFromKeyStore) {
-    throw new HttpStatusError(403, 'LTI 1.3 configuration error: unable to load key');
+    throw new Error('LTI 1.3 configuration error: unable to load key');
+  }
+
+  const cryptoKey = await jose.importJWK(keyFromKeyStore);
+  if (cryptoKey instanceof Uint8Array) {
+    throw new Error('LTI 1.3 configuration error: unsupported key type');
   }
 
   const privateKey: client.PrivateKey = {
-    // Provide alg explicitly to avoid import failures when JWKs omit `alg`
-    key: (await jose.importJWK(
-      keyFromKeyStore,
-      keyFromKeyStore.alg ?? 'RS256',
-    )) as client.CryptoKey,
+    key: cryptoKey,
     kid: keyFromKeyStore.kid,
   };
   debug(`getOpenidClientConfig: using key with kid ${keyFromKeyStore.kid}`);
@@ -395,17 +396,15 @@ export async function getAccessToken(lti13_instance_id: string) {
   debug('getAccessToken');
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
-  let tokenSet: client.TokenEndpointResponse | null = lti13_instance.access_tokenset;
-
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
 
   if (
-    tokenSet &&
+    lti13_instance.access_tokenset &&
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
     debug('getAccessToken: returning cached token');
-    return tokenSet.access_token;
+    return lti13_instance.access_tokenset.access_token;
   }
 
   const modAssertion: client.ModifyAssertionOptions = {
@@ -441,7 +440,7 @@ export async function getAccessToken(lti13_instance_id: string) {
   const openidClientConfig = await getOpenidClientConfig(lti13_instance, modAssertion);
 
   // Fetch the token
-  tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
+  const tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
     scope: TOKEN_SCOPES.join(' '),
   });
 

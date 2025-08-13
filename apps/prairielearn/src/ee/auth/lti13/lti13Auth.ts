@@ -146,7 +146,6 @@ async function launchFlow(req: Request, res: Response) {
 
   const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
   res.redirect(redirectTo.href);
-  return;
 }
 
 const OIDCAuthResponseSchema = z.object({
@@ -163,7 +162,7 @@ router.post(
     debug(req.body);
 
     // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-    OIDCAuthResponseSchema.passthrough().parse(req.body);
+    const authResponse = OIDCAuthResponseSchema.parse(req.body);
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
@@ -175,18 +174,16 @@ router.post(
     // URL href doesn't matter, openid-client only uses the url.hash to pass properties
     // into client.implicitAuthentication
     const url = new URL('https://example.com/');
-    url.hash = new URLSearchParams(req.body).toString();
+    url.hash = new URLSearchParams({
+      state: authResponse.state,
+      id_token: authResponse.id_token,
+    }).toString();
 
-    const IDToken = await client.implicitAuthentication(
-      openidClientConfig,
-      url,
-      req.session.lti13_state.nonce,
-      {
+    const lti13_claims = Lti13ClaimSchema.parse(
+      await client.implicitAuthentication(openidClientConfig, url, req.session.lti13_state.nonce, {
         expectedState: req.session.lti13_state.state,
-      },
+      }),
     );
-
-    const lti13_claims = Lti13ClaimSchema.parse(IDToken);
 
     // Check nonce to protect against reuse
     const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
@@ -202,12 +199,11 @@ router.post(
 
     // Save parameters about the platform back to the lti13_instance
     // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
-    const params = {
+    await queryAsync(sql.verify_upsert, {
       lti13_instance_id: req.params.lti13_instance_id,
       tool_platform_name:
         lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
-    };
-    await queryAsync(sql.verify_upsert, params);
+    });
 
     debug(lti13_claims);
     // If we get here, auth succeeded and lti13_claims is populated
