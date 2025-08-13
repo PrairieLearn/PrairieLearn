@@ -27,13 +27,16 @@
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
+    "@prairielearn/prairielearn": "workspace:^",
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
     "node-gyp": "^11.3.0",
     "preact-compat": "^3.19.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "tar-stream": "^3.1.7"
+    "tar-stream": "^3.1.7",
+    "tsc": "^2.0.4",
+    "turbo": "^2.5.5"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.5",
@@ -63,7 +66,6 @@
     "prettier-plugin-toml": "^2.0.6",
     "pyright": "^1.1.403",
     "s3rver": "^3.7.1",
-    "turbo": "^2.5.5",
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.39.0",
     "vitest": "^3.2.4"

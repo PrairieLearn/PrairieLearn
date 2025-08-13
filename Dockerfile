@@ -42,7 +42,7 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 #
 # If the following issue is ever addressed, we can use that instead:
 # https://github.com/yarnpkg/berry/issues/6339
-RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
+RUN yarn dlx node-gyp install && yarn workspaces focus --production && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . .
