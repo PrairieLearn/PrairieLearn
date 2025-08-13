@@ -1,4 +1,3 @@
-/* eslint sort-vars: error */
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
@@ -10,14 +9,14 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
-export type EnumMode = z.infer<typeof EnumModeSchema>;
+export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
+export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
-export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
-export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
+export type EnumMode = z.infer<typeof EnumModeSchema>;
+export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 
 export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
 export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
