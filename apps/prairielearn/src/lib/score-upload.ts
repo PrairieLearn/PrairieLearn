@@ -246,23 +246,22 @@ export async function uploadAssessmentInstanceScores(
   return serverJob.jobSequenceId;
 }
 
-// missing values and empty strings get mapped to null
+/** missing values and empty strings get mapped to null */
 function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
   const value = json[key] ?? null;
   if (value === '') return null;
   return value;
 }
 
-// missing values and empty strings get mapped to null
 function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
   const value = getJsonPropertyOrNull(json, key);
-  if (value != null && (typeof value !== 'number' || isNaN(value))) {
+  if (value != null && (typeof value !== 'number' || Number.isNaN(value))) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
   return value;
 }
 
-// "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json"
+/** "feedback" gets mapped to {manual: "XXX"} and overrides the contents of "feedback_json" */
 function getFeedbackOrNull(json: Record<string, any>): Record<string, any> | null {
   const feedback_string = getJsonPropertyOrNull(json, 'feedback');
   const feedback_json = getJsonPropertyOrNull(json, 'feedback_json');
@@ -304,7 +303,8 @@ function getPartialScoresOrNull(json: Record<string, any>): Record<string, any> 
   return partial_scores;
 }
 
-/** Update the score of an instance question based on a single row from the CSV file.
+/**
+ * Update the score of an instance question based on a single row from the CSV file.
  *
  * @param json Data from the CSV row.
  * @param assessment_id ID of the assessment being updated.

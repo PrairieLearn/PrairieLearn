@@ -323,7 +323,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * Returns an array of all records in a particular database table.
  *
  * @param tableName - The name of the table to query
- * @return The rows of the given table
+ * @returns The rows of the given table
  */
 export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
@@ -396,7 +396,7 @@ export function assertSnapshotsMatch(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
@@ -423,7 +423,7 @@ export function assertSnapshotSubset(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
