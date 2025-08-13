@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
@@ -68,20 +69,7 @@ export function InstructorInstanceAdminSettings({
               ? 'General course instance settings'
               : 'Course instance settings'}
           </h1>
-          ${instanceGHLink
-            ? html`
-                <a
-                  class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="View on GitHub"
-                  href="${instanceGHLink}"
-                >
-                  <i class="bi bi-github"></i>
-                  <span class="d-none d-sm-inline">View on GitHub</span>
-                </a>
-              `
-            : ''}
+          ${GitHubButton(instanceGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">

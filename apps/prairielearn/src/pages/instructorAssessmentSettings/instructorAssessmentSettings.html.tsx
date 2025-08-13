@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
@@ -65,20 +66,7 @@ export function InstructorAssessmentSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
-          ${assessmentGHLink
-            ? html`
-                <a
-                  class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="View on GitHub"
-                  href="${assessmentGHLink}"
-                >
-                  <i class="bi bi-github"></i>
-                  <span class="d-none d-sm-inline">View on GitHub</span>
-                </a>
-              `
-            : ''}
+          ${GitHubButton(assessmentGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">

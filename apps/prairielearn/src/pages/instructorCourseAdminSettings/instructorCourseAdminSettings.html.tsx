@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -50,20 +51,7 @@ export function InstructorCourseAdminSettings({
           <h1>
             ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
           </h1>
-          ${courseGHLink
-            ? html`
-                <a
-                  class="btn btn-sm btn-light d-inline-flex align-items-center gap-2"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="View on GitHub"
-                  href="${courseGHLink}"
-                >
-                  <i class="bi bi-github"></i>
-                  <span class="d-none d-sm-inline">View on GitHub</span>
-                </a>
-              `
-            : ''}
+          ${GitHubButton(courseGHLink)}
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists
