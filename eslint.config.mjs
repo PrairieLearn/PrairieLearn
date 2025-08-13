@@ -189,13 +189,17 @@ export default tseslint.config([
       'perfectionist/sort-array-includes': 'error',
       'perfectionist/sort-decorators': 'error',
       'perfectionist/sort-enums': 'error',
+      ...Object.fromEntries(
+        Object.keys(perfectionist.rules).map((ruleName) => [
+          perfectionist.meta.name + '/' + ruleName,
+          ['error', { partitionByComment: true, type: 'natural' }],
+        ]),
+      ),
       'perfectionist/sort-exports': [
-        'off',
+        'error',
         { partitionByComment: { block: true }, type: 'natural' },
       ],
-      'perfectionist/sort-heritage-clauses': 'error',
-      'perfectionist/sort-objects': ['off', { partitionByComment: true, type: 'natural' }],
-      'perfectionist/sort-sets': ['error', { partitionByComment: true, type: 'natural' }],
+      'perfectionist/sort-imports': 'off',
       'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
       'prefer-destructuring': 'off', // TODO: Consider enabling this
