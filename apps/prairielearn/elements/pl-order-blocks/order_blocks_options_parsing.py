@@ -46,11 +46,6 @@ class FormatType(Enum):
     CODE = "code"
 
 
-FIRST_WRONG_TYPES = frozenset([
-    FeedbackType.FIRST_WRONG,
-    FeedbackType.FIRST_WRONG_VERBOSE,
-])
-
 LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.RANKING,
     GradingMethodType.DAG,
@@ -149,8 +144,12 @@ class OrderBlocksOptions:
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
 
         self.answer_options = collect_answer_options(html_element, self.grading_method)
-        self.correct_answers = [options for options in self.answer_options if options.correct]
-        self.incorrect_answers = [options for options in self.answer_options if not options.correct]
+        self.correct_answers = [
+            options for options in self.answer_options if options.correct
+        ]
+        self.incorrect_answers = [
+            options for options in self.answer_options if not options.correct
+        ]
 
         self.max_incorrect = pl.get_integer_attrib(
             html_element, "max-incorrect", len(self.incorrect_answers)

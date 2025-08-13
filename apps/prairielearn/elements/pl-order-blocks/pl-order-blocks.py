@@ -19,6 +19,16 @@ from order_blocks_options_parsing import (
     PartialCreditType,
     SolutionPlacementType,
     SourceBlocksOrderType,
+    GRADING_METHOD_DEFAULT,
+    MAX_INDENTION_DEFAULT,
+    ALLOW_BLANK_DEFAULT,
+    INDENTION_DEFAULT,
+    INLINE_DEFAULT,
+    FILE_NAME_DEFAULT,
+    SOURCE_HEADER_DEFAULT,
+    SOLUTION_HEADER_DEFAULT,
+    FEEDBACK_DEFAULT,
+    WEIGHT_DEFAULT,
 )
 from typing_extensions import NotRequired, assert_never
 
@@ -42,32 +52,17 @@ FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
     FeedbackType.FIRST_WRONG_VERBOSE,
 ])
+
+
 LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.RANKING,
     GradingMethodType.DAG,
     GradingMethodType.ORDERED,
 ])
-GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
-SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
-FEEDBACK_DEFAULT = FeedbackType.NONE
-ANSWER_CORRECT_DEFAULT = True
-ANSWER_INDENT_DEFAULT = None
-ALLOW_BLANK_DEFAULT = False
-INDENTION_DEFAULT = False
-INLINE_DEFAULT = False
-DISTRACTOR_FEEDBACK_DEFAULT = None
-ORDERING_FEEDBACK_DEFAULT = None
-DISTRACTOR_FOR_DEFAULT = None
-MAX_INDENTION_DEFAULT = 4
-FILE_NAME_DEFAULT = "user_code.py"
-PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
-SOURCE_HEADER_DEFAULT = "Drag from here:"
-SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
-SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
+
+
 WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
-SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
-SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
     "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
@@ -152,20 +147,11 @@ def prepare(html: str, data: pl.QuestionData) -> None:
 
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
-    if (
-        order_blocks_options.source_blocks_order
-        == SourceBlocksOrderType.RANDOM
-    ):
+    if order_blocks_options.source_blocks_order == SourceBlocksOrderType.RANDOM:
         random.shuffle(all_blocks)
-    elif (
-        order_blocks_options.source_blocks_order
-        == SourceBlocksOrderType.ORDERED
-    ):
+    elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ORDERED:
         all_blocks.sort(key=lambda a: a["index"])
-    elif (
-        order_blocks_options.source_blocks_order
-        == SourceBlocksOrderType.ALPHABETIZED
-    ):
+    elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
         assert_never(order_blocks_options.source_blocks_order)

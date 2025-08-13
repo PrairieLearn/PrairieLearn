@@ -71,8 +71,6 @@ def assert_answer_options(
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
             assert answer_options.indent == test_options["indent"]
-
-        # TODO: This isn't testing if it is correct just that it exists
         if "depends" in test_options:
             if test_options["depends"] == "":
                 assert answer_options.depends == []
@@ -185,7 +183,7 @@ def test_check_attribute_failure(options: dict, error: str) -> None:
     ],
 )
 def test_order_block_validation(options: dict) -> None:
-    """Tests valid order blocks options validation"""
+    """Tests valid pl-order-blocks tag options validation"""
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,
@@ -226,7 +224,7 @@ def test_order_block_validation(options: dict) -> None:
     ],
 )
 def test_order_block_validation_failure(options: dict, error: str) -> None:
-    """Tests invalid order blocks options and asserts the fail during validation"""
+    """Tests invalid pl-order-blocks options and asserts the fail during validation"""
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,
@@ -257,7 +255,7 @@ def test_order_block_validation_failure(options: dict, error: str) -> None:
     ],
 )
 def test_answer_validation(options: dict, answer_options_list: list[dict]) -> None:
-    """Tests valid order blocks options validation"""
+    """Tests valid pl-answer tag options validation"""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )
