@@ -176,7 +176,7 @@ onDocumentReady(() => {
       .map((assessment) =>
         AssessmentBadgeHtml({
           plainUrlPrefix,
-          course_instance_id,
+          courseInstanceId: course_instance_id,
           assessment,
         }).toString(),
       )
@@ -268,7 +268,9 @@ onDocumentReady(() => {
       (event.ctrlKey || event.metaKey) &&
       String.fromCharCode(event.which).toLowerCase() === 'f'
     ) {
-      if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length) {
+      if (
+        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length > 0
+      ) {
         $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
       } else {
         $('input.bootstrap-table-filter-control-qid').focus();

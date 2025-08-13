@@ -73,12 +73,14 @@ router.post(
       const assignedGraderIds: string[] = Array.isArray(req.body.assigned_grader)
         ? req.body.assigned_grader
         : [req.body.assigned_grader];
-      const allowedGraderIds = (
-        await selectCourseInstanceGraderStaff({
-          course_instance_id: res.locals.course_instance.id,
-        })
-      ).map((user) => user.user_id);
-      if (assignedGraderIds.some((graderId) => !allowedGraderIds.includes(graderId))) {
+      const allowedGraderIds = new Set(
+        (
+          await selectCourseInstanceGraderStaff({
+            course_instance_id: res.locals.course_instance.id,
+          })
+        ).map((user) => user.user_id),
+      );
+      if (assignedGraderIds.some((graderId) => !allowedGraderIds.has(graderId))) {
         flash(
           'error',
           'Selected graders do not have student data editor access to this course instance.',

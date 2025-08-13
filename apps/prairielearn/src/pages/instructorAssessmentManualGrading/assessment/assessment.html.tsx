@@ -92,7 +92,7 @@ export function ManualGradingAssessment({
         : ''}
       <div class="card mb-4">
         <div
-          class="card-header bg-primary text-white align-items-center justify-content-between d-flex w-100 gap-2"
+          class="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2"
         >
           <h1>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
