@@ -1,14 +1,12 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
-
-import type { CourseInstance } from '../lib/db-types.js';
 import clsx from 'clsx';
+import { useEffect, useRef, useState } from 'preact/hooks';
 
 export function DeleteCourseInstanceModal({
   shortName,
   enrolledCount,
   csrfToken,
 }: {
-  shortName: CourseInstance['short_name'];
+  shortName: string;
   enrolledCount: number;
   csrfToken: string;
 }) {
