@@ -34,13 +34,12 @@ export function RubricSettings({
   // Define states
   const [editMode, setEditMode] = useState(false);
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
-  const [nextNewId, setNextNewId] = useState<number>(1);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points,
   );
   const [startingPoints, setStartingPoints] = useState<number>(rubric_data?.starting_points ?? 0);
   const [minPoints, setMinPoints] = useState<number>(rubric_data?.min_points ?? 0);
-  const [maxExtraPoints, SetMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
@@ -81,7 +80,6 @@ export function RubricSettings({
         always_show_to_students: true,
       },
     ]);
-    setNextNewId(nextNewId + 1);
   };
 
   const deleteRow = (idx: number) => {
@@ -163,15 +161,6 @@ export function RubricSettings({
         always_show_to_students: it.always_show_to_students,
       })),
     };
-
-    const body = new URLSearchParams();
-    Object.entries(payload).forEach(([k, v]) => {
-      if (Array.isArray(v)) {
-        body.set(k, JSON.stringify(v));
-      } else {
-        body.set(k, String(v));
-      }
-    });
 
     const res = await fetch(window.location.pathname, {
       method: 'POST',
@@ -309,7 +298,7 @@ export function RubricSettings({
                     type="number"
                     disabled={!editMode}
                     value={maxExtraPoints}
-                    onInput={(e: any) => SetMaxExtraPoints(Number(e.currentTarget.value))}
+                    onInput={(e: any) => setMaxExtraPoints(Number(e.currentTarget.value))}
                   />
                 </label>
               </div>
@@ -370,7 +359,7 @@ export function RubricSettings({
       </div>
 
       {pointsWarnings.map((warning) => (
-        <div key={warning} class="alert alert-warning alert-dismissable fade show" role="alert">
+        <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
           {warning}
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
         </div>
@@ -388,7 +377,7 @@ export function RubricSettings({
       {settingsError && (
         <div
           key={settingsError}
-          class="alert alert-danger alert-dismissable fade show"
+          class="alert alert-danger alert-dismissible fade show"
           role="alert"
         >
           {settingsError}
@@ -510,7 +499,7 @@ export function RubricRow({
           type="text"
           class="form-control"
           disabled={!editMode}
-          maxlength={100}
+          maxLength={100}
           style="min-width:15rem"
           value={item.description}
           aria-label="Description"
@@ -523,7 +512,7 @@ export function RubricRow({
         <textarea
           class="form-control"
           disabled={!editMode}
-          maxlength={10000}
+          maxLength={10000}
           style="min-width:15rem"
           value={item.explanation ?? ''}
           aria-label="Explanation"
@@ -535,7 +524,7 @@ export function RubricRow({
         <textarea
           class="form-control"
           disabled={!editMode}
-          maxlength={10000}
+          maxLength={10000}
           style="min-width:15rem"
           value={item.grader_note ?? ''}
           aria-label="Grader note"
