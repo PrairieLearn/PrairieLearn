@@ -23,8 +23,8 @@ import {
 } from '../../lib/client/nuqs.js';
 import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { getStudentDetailUrl } from '../../lib/client/url.js';
+import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
