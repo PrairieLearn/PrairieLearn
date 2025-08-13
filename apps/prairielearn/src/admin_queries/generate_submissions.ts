@@ -11,7 +11,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { saveSubmission } from '../lib/grading.js';
-import { type TestType, createTestSubmissionData, testTypeList } from '../lib/question-testing.js';
+import { TEST_TYPES, type TestType, createTestSubmissionData } from '../lib/question-testing.js';
 import { ensureVariant } from '../lib/question-variant.js';
 import { selectOptionalAssessmentById } from '../models/assessment.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
@@ -30,7 +30,7 @@ export const specs: AdministratorQuerySpecs = {
     },
     {
       name: 'test_type',
-      description: `Type of submission to generate (${testTypeList.map((type) => `"${type}"`).join(', ')} or "random")`,
+      description: `Type of submission to generate (${TEST_TYPES.map((type) => `"${type}"`).join(', ')} or "random")`,
       default: 'random',
     },
   ],
@@ -102,7 +102,7 @@ export default async function ({
 
       const currentTestType =
         test_type === 'random'
-          ? testTypeList[Math.floor(Math.random() * testTypeList.length)]
+          ? TEST_TYPES[Math.floor(Math.random() * TEST_TYPES.length)]
           : test_type;
       // Create a new submission for the variant.
       const { data, hasFatalIssue } = await createTestSubmissionData(

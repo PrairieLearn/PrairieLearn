@@ -37,8 +37,8 @@ interface TestQuestionResults {
   stats: TestResultStats;
 }
 
-export const testTypeList = ['correct', 'incorrect', 'invalid'] as const;
-export type TestType = (typeof testTypeList)[number];
+export const TEST_TYPES = ['correct', 'incorrect', 'invalid'] as const;
+export type TestType = (typeof TEST_TYPES)[number];
 
 /**
  * Creates the data for a test submission.
@@ -466,9 +466,9 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array.from({ length: count * testTypeList.length }).keys()) {
-      const type = testTypeList[iter % testTypeList.length];
-      const testIterationIndex = Math.floor(iter / testTypeList.length) + 1;
+    for (const iter of Array.from({ length: count * TEST_TYPES.length }).keys()) {
+      const type = TEST_TYPES[iter % TEST_TYPES.length];
+      const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
       job.verbose(`Test ${testIterationIndex}, type ${type}`);
       const result = await runTest(
         job,
