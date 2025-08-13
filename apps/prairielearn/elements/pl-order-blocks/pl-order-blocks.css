@@ -25,7 +25,7 @@ li.pl-order-blocks-code {
 }
 
 ul.pl-order-blocks-connected-sortable .pl-order-block:hover:not(.nodrag) {
-  cursor: grab; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+  cursor: move; /* For UX: The answer tiles shows a 'move' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
 }

@@ -20,7 +20,7 @@ window.PLOrderBlocks = function (uuid, options) {
       blockNum += 1;
       block.setAttribute('role', 'option');
       block.setAttribute('aria-roledescription', 'Block');
-      block.setAttribute('aria-selected', false);
+      block.removeAttribute('aria-selected');
       initializeBlockEvents(block);
     });
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
@@ -36,9 +36,8 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setIndentation(block, indentation) {
-    if (indentation >= 0 && indentation <= maxIndent * TABWIDTH) {
-      block.style.marginLeft = indentation + 'px';
-    }
+    const clamped = Math.max(0, Math.min(indentation, maxIndent * TABWIDTH));
+    block.style.marginLeft = clamped + 'px';
     if (inDropzone(block)) {
       block.setAttribute('aria-description', 'indentation depth ' + getIndentation(block));
     } else {
@@ -48,8 +47,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function initializeBlockEvents(block) {
     function removeSelectedAttribute() {
-      // block.classList.remove('pl-order-blocks-selected');
-      block.setAttribute('aria-selected', false);
+      block.removeAttribute('aria-selected');
     }
 
     function handleKey(ev, block, handle, focus = true) {
@@ -72,7 +70,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const dropzoneBlocks = Array.from(
         $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
       );
-      if (block.getAttribute('aria-selected') === 'false') {
+      if (!block.hasAttribute('aria-selected')) {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
@@ -110,7 +108,7 @@ window.PLOrderBlocks = function (uuid, options) {
         switch (ev.key) {
           case ' ': // Space key
           case 'Enter':
-            handleKey(ev, block, () => block.setAttribute('aria-selected', true));
+            handleKey(ev, block, () => block.setAttribute('aria-selected', ''));
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
@@ -147,11 +145,12 @@ window.PLOrderBlocks = function (uuid, options) {
           case 'ArrowLeft':
             handleKey(ev, block, () => {
               if (inDropzone(block)) {
-                if (getIndentation(block) === 0) {
+                const level = getIndentation(block);
+                if (level === 0) {
                   $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
+                  return;
                 }
-                setIndentation(block, (getIndentation(block) - 1) * TABWIDTH);
-                correctPairing(block);
+                setIndentation(block, (level - 1) * TABWIDTH);
               }
             });
             break;
