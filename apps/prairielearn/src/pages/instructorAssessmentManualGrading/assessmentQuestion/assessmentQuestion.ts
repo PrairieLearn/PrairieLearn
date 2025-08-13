@@ -14,6 +14,7 @@ import {
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
@@ -221,6 +222,25 @@ router.post(
           if (req.body.__action === 'ai_grade_assessment_all') return 'all';
           throw new Error(`Unknown action: ${req.body.__action}`);
         }),
+      });
+
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (
+      req.body.__action === 'ai_cluster_assessment_all'
+    ) {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const jobSequenceId = await aiCluster({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        mode: 'all',
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

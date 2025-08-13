@@ -148,6 +148,14 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
+            <form method="POST" id="ai-clustering">
+              <input type="hidden" name="__action" value="ai_cluster_assessment" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
+            <form method="POST" id="ai-clustering-all">
+              <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
+              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+            </form>
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
@@ -323,6 +331,44 @@ export function AssessmentQuestion({
                           data-bs-target="#delete-all-ai-grading-jobs-modal"
                         >
                           Delete all AI grading results
+                        </button>
+                      </div>
+                    </div>
+                    <div class="dropdown">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light dropdown-toggle"
+                        data-bs-toggle="dropdown"
+                        name="ai-clustering"
+                      >
+                        <i class="bi bi-stars" aria-hidden="true"></i> AI clustering
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        <button
+                          class="dropdown-item grading-tag-button"
+                          type="submit"
+                          name="batch_action"
+                          value="ai_grade_assessment_selected"
+                        >
+                          Cluster selected
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          onclick="$('#ai-clustering-all').submit();"
+                        >
+                          Cluster all
+                        </button>
+
+                        <hr class="dropdown-divider" />
+
+                        <button
+                          class="dropdown-item"
+                          type="button"
+                          data-bs-toggle="modal"
+                          data-bs-target="#delete-all-ai-grading-jobs-modal"
+                        >
+                          Delete all AI clustering results
                         </button>
                       </div>
                     </div>
