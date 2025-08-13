@@ -279,7 +279,7 @@ export function FileBrowser({
     navPage === 'course_admin'
       ? renderHtml(
           <CourseSyncErrorsAndWarnings
-            authz_data={authz_data}
+            authzData={authz_data}
             course={course}
             urlPrefix={urlPrefix}
           />,
@@ -287,7 +287,7 @@ export function FileBrowser({
       : navPage === 'instance_admin'
         ? renderHtml(
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={authz_data}
+              authzData={authz_data}
               courseInstance={resLocals.course_instance}
               course={course}
               urlPrefix={urlPrefix}
@@ -296,7 +296,7 @@ export function FileBrowser({
         : navPage === 'assessment'
           ? renderHtml(
               <AssessmentSyncErrorsAndWarnings
-                authz_data={authz_data}
+                authzData={authz_data}
                 assessment={resLocals.assessment}
                 courseInstance={resLocals.course_instance}
                 course={course}
@@ -306,7 +306,7 @@ export function FileBrowser({
           : navPage === 'question' || navPage === 'public_question'
             ? renderHtml(
                 <QuestionSyncErrorsAndWarnings
-                  authz_data={authz_data}
+                  authzData={authz_data}
                   question={resLocals.question}
                   course={course}
                   urlPrefix={urlPrefix}
