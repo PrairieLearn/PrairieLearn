@@ -23,6 +23,7 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import type { ResLocalsAuthnUser } from './authn.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -56,10 +57,10 @@ import {
 } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
-import { type RubricData, selectRubricData } from './manualGrading.js';
+import { selectRubricData } from './manualGrading.js';
+import type { RubricData } from './manualGrading.types.js';
 import type { SubmissionPanels } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
-import type { ResLocals } from './res-locals.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -443,17 +444,10 @@ export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: Omit<
-    ResLocals,
-    | '__csrf_token'
-    | 'navbarType'
-    | 'authn_is_administrator'
-    | 'authn_institution'
-    | 'authn_provider_name'
-    | 'access_as_administrator'
-    | 'is_institution_administrator'
-    | 'news_item_notification_count'
-  > & {
+  locals: {
+    urlPrefix: string;
+    authn_user: ResLocalsAuthnUser['authn_user'];
+    is_administrator: boolean;
     course: Course;
     question: Question;
     user: User;
