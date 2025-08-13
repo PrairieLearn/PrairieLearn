@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -63,12 +64,15 @@ export function InstructorInstanceAdminSettings({
         content: publicLink,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>
             ${resLocals.has_enhanced_navigation
               ? 'General course instance settings'
               : 'Course instance settings'}
           </h1>
+          ${GitHubButton(instanceGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">
@@ -76,11 +80,6 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="ciid">CIID</label>
-              ${instanceGHLink
-                ? html`<a target="_blank" href="${instanceGHLink}" rel="noreferrer">
-                    view on GitHub
-                  </a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"

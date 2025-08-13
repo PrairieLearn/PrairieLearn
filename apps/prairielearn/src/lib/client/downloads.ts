@@ -14,7 +14,7 @@ export function downloadTextFile(content: string, filename: string, mimeType: st
   const a = document.createElement('a');
   a.href = url;
   a.download = filename;
-  document.body.appendChild(a);
+  document.body.append(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);

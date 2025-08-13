@@ -38,7 +38,7 @@ export function AdministratorQueries({
                 (query) => html`
                   <tr>
                     <td>
-                      ${query.error
+                      ${query.error || query.enabled === false
                         ? html`<code>${query.filePrefix}</code>`
                         : html`
                             <a
@@ -51,7 +51,12 @@ export function AdministratorQueries({
                     <td>
                       ${query.error
                         ? html`<span class="text-danger">${query.error}</span>`
-                        : query.description}
+                        : query.enabled === false
+                          ? html`
+                              <span class="text-muted">${query.description}</span>
+                              <span class="badge text-bg-info">Disabled</span>
+                            `
+                          : query.description}
                     </td>
                   </tr>
                 `,

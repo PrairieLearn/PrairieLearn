@@ -306,7 +306,7 @@ function buildLocals({
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
-      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
+      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100) {
         locals.showTrueAnswer = true;
       }
     }
@@ -575,9 +575,6 @@ export async function getAndRenderVariant(
     resultLocals.showTrueAnswer = true;
   }
 
-  const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
-  resultLocals.effectiveQuestionType = effectiveQuestionType;
-
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
@@ -618,7 +615,7 @@ export async function getAndRenderVariant(
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,
       questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
-      effectiveQuestionType,
+      effectiveQuestionType: 'Calculation',
       course,
       courseInstance: course_instance,
       variant: {
