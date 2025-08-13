@@ -198,8 +198,27 @@ export function RubricSettings({
           class="card-header d-flex border-top-0 border-start-0 border-end-0 text-start"
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
+          aria-expanded="false"
+          aria-controls="rubric-setting"
+          onClick={(e: any) => {
+            const icon = (e.currentTarget as HTMLElement).querySelector(
+              '.fa-angle-down',
+            ) as HTMLElement;
+            if (icon) {
+              const current = icon.style.transform;
+              // Toggle between rotated and not rotated
+              icon.style.transform =
+                current === 'rotateX(180deg)' ? 'rotateX(0deg)' : 'rotateX(180deg)';
+              icon.style.transition = 'all 400ms';
+            }
+          }}
         >
-          Rubric settings
+          <div class="card-title mb-0 me-auto d-flex align-items-center">
+            <span>Rubric Settings</span>
+          </div>
+          <div class="ms-2">
+            <span class="fa fa-angle-down" />
+          </div>
         </button>
         <div id="rubric-setting" class="collapse p-2">
           <div>
