@@ -11,6 +11,16 @@ import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from order_blocks_options_parsing import (
+    ALLOW_BLANK_DEFAULT,
+    FEEDBACK_DEFAULT,
+    FILE_NAME_DEFAULT,
+    GRADING_METHOD_DEFAULT,
+    INDENTION_DEFAULT,
+    INLINE_DEFAULT,
+    MAX_INDENTION_DEFAULT,
+    SOLUTION_HEADER_DEFAULT,
+    SOURCE_HEADER_DEFAULT,
+    WEIGHT_DEFAULT,
     FeedbackType,
     FormatType,
     GradingMethodType,
@@ -19,16 +29,6 @@ from order_blocks_options_parsing import (
     PartialCreditType,
     SolutionPlacementType,
     SourceBlocksOrderType,
-    GRADING_METHOD_DEFAULT,
-    MAX_INDENTION_DEFAULT,
-    ALLOW_BLANK_DEFAULT,
-    INDENTION_DEFAULT,
-    INLINE_DEFAULT,
-    FILE_NAME_DEFAULT,
-    SOURCE_HEADER_DEFAULT,
-    SOLUTION_HEADER_DEFAULT,
-    FEEDBACK_DEFAULT,
-    WEIGHT_DEFAULT,
 )
 from typing_extensions import NotRequired, assert_never
 
