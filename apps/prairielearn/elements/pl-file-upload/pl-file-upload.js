@@ -188,7 +188,7 @@
         }
 
         // Store the file as base-64 encoded data
-        const base64FileData = dataUrl.substring(commaSplitIdx + 1);
+        const base64FileData = dataUrl.slice(commaSplitIdx + 1);
         this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
         this.refreshRequiredRegex();
         this.renderFileList();

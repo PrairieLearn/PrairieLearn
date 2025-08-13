@@ -183,7 +183,7 @@ export function AssessmentQuestion({
         <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
         <div class="card mb-4">
           <div
-            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center gap-2"
           >
             <h1>Student instance questions</h1>
             <div class="d-flex flex-row gap-2">

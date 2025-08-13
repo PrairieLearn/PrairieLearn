@@ -166,7 +166,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
         'script[type="importmap"]',
       );
       if (!currentImportMap) {
-        document.head.appendChild(newImportMap);
+        document.head.append(newImportMap);
       } else {
         // This case is not currently possible with existing importmap
         // functionality. Once an existing importmap has been created, the
@@ -187,23 +187,27 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       }
     }
 
-    const currentLinks = Array.from(
-      document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'),
-    ).map((link) => link.href);
+    const currentLinks = new Set(
+      Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+        (link) => link.href,
+      ),
+    );
     headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
-      if (!currentLinks.includes(header.href)) {
-        document.head.appendChild(header);
+      if (!currentLinks.has(header.href)) {
+        document.head.append(header);
       }
     });
 
-    const currentScripts = Array.from(
-      document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
-    ).map((script) => script.src);
+    const currentScripts = new Set(
+      Array.from(
+        document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+      ).map((script) => script.src),
+    );
     headers
       .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
       .forEach((header) => {
-        if (!currentScripts.includes(header.src)) {
-          document.head.appendChild(header);
+        if (!currentScripts.has(header.src)) {
+          document.head.append(header);
         }
       });
   }
