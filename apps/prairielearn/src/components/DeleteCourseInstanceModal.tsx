@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 
 import type { CourseInstance } from '../lib/db-types.js';
+import clsx from 'clsx';
 
 export function DeleteCourseInstanceModal({
   shortName,
@@ -155,35 +156,27 @@ export function DeleteCourseInstanceModal({
             )}
           </div>
           <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Cancel
+            </button>
             {step === 1 && (
-              <>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-primary"
-                  disabled={!canContinue}
-                  onClick={() => setStep(2)}
-                >
-                  Continue
-                </button>
-              </>
+              <button
+                type="button"
+                class="btn btn-primary"
+                disabled={!canContinue}
+                onClick={() => setStep(2)}
+              >
+                Continue
+              </button>
             )}
-            {step === 2 && (
-              <>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                  Cancel
-                </button>
-                <form method="POST">
-                  <input type="hidden" name="__action" value="delete_course_instance" />
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <button type="submit" class="btn btn-danger" disabled={!canContinue}>
-                    Delete
-                  </button>
-                </form>
-              </>
-            )}
+            {/* Hide with CSS, not conditional rendering, so that the tests can find the form */}
+            <form method="POST" class={clsx({ 'd-none': step !== 2 })}>
+              <input type="hidden" name="__action" value="delete_course_instance" />
+              <input type="hidden" name="__csrf_token" value={csrfToken} />
+              <button type="submit" class="btn btn-danger" disabled={!canContinue}>
+                Delete
+              </button>
+            </form>
           </div>
         </div>
       </div>
