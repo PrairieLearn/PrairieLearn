@@ -175,7 +175,7 @@ export function StudentsTable({
     virtualRows.length > 0
       ? [
           notUndefined(virtualRows[0]).start - rowVirtualizer.options.scrollMargin,
-          rowVirtualizer.getTotalSize() - notUndefined(virtualRows[virtualRows.length - 1]).end,
+          rowVirtualizer.getTotalSize() - notUndefined(virtualRows.at(-1)).end,
         ]
       : [0, 0];
   const headerGroups = table.getHeaderGroups();

@@ -152,7 +152,7 @@ export function AssessmentQuestion({
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
-            ${aiGradingStats.rubric_stats.length
+            ${aiGradingStats.rubric_stats.length > 0
               ? html`
                   <div class="card overflow-hidden mb-3">
                     <div class="table-responsive">

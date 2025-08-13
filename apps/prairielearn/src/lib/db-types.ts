@@ -9,6 +9,15 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -23,15 +32,6 @@ export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
-
-export const EnumEnrollmentStatusSchema = z.enum([
-  'invited',
-  'joined',
-  'removed',
-  'rejected',
-  'blocked',
-]);
-export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
 export const EnumQuestionTypeSchema = z.enum([
   'Calculation',
@@ -546,9 +546,9 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
   lti_synced: z.boolean(),
-  pending_uid: z.string().nullable(),
-  pending_sub: z.string().nullable(),
   pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_sub: z.string().nullable(),
+  pending_uid: z.string().nullable(),
   status: EnumEnrollmentStatusSchema,
   user_id: IdSchema.nullable(),
 });
