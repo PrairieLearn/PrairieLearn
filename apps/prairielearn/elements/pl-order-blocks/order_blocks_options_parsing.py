@@ -72,16 +72,6 @@ FEEDBACK_DEFAULT = FeedbackType.NONE
 WEIGHT_DEFAULT = 1
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
-FIRST_WRONG_FEEDBACK = {
-    "incomplete": "Your answer is correct so far, but it is incomplete.",
-    "wrong-at-block": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span>.
-        The problem is most likely one of the following:
-        <ul><li> This block is not a part of the correct solution </li>
-        <li>This block needs to come after a block that did not appear before it </li>""",
-    "indentation": r"""<li>This line is indented incorrectly </li>""",
-    "block-group": r"""<li> You have attempted to start a new section of the answer without finishing the previous section </li>""",
-    "distractor-feedback": r"""Your answer is incorrect starting at <span style="color:red;">block number {}</span> as the block at that location is not a part of any correct solution.""",
-}
 
 
 def get_graph_info(

@@ -17,6 +17,7 @@ from order_blocks_options_parsing import (
     GRADING_METHOD_DEFAULT,
     INDENTION_DEFAULT,
     INLINE_DEFAULT,
+    LCS_GRADABLE_TYPES,
     MAX_INDENTION_DEFAULT,
     SOLUTION_HEADER_DEFAULT,
     SOURCE_HEADER_DEFAULT,
@@ -51,13 +52,6 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
     FeedbackType.FIRST_WRONG_VERBOSE,
-])
-
-
-LCS_GRADABLE_TYPES = frozenset([
-    GradingMethodType.RANKING,
-    GradingMethodType.DAG,
-    GradingMethodType.ORDERED,
 ])
 
 
