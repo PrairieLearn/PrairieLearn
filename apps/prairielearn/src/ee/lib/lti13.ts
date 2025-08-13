@@ -445,6 +445,8 @@ export async function getAccessToken(lti13_instance_id: string) {
     scope: TOKEN_SCOPES.join(' '),
   });
 
+  console.log(tokenSet);
+
   // Store the token for reuse
   const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
 
