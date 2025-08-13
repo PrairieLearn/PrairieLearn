@@ -37,7 +37,6 @@ interface VariantCreationData {
   true_answer: Record<string, any>;
   options: Record<string, any>;
   broken: boolean;
-  broken_at: Date | null;
 }
 
 /**
@@ -71,7 +70,6 @@ export async function makeVariant(
     true_answer: data.true_answer || {},
     options: data.options || {},
     broken: hasFatalIssue,
-    broken_at: null,
   };
 
   if (question.workspace_image !== null) {
@@ -91,7 +89,7 @@ export async function makeVariant(
     const { courseIssues: prepareCourseIssues, data } = await questionModule.prepare(
       question,
       course,
-      variant,
+      { ...variant, broken_at: variant.broken ? new Date() : null },
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
@@ -101,7 +99,6 @@ export async function makeVariant(
       true_answer: data.true_answer || {},
       options: data.options || {},
       broken: hasFatalIssue,
-      broken_at: null,
     };
   }
 
