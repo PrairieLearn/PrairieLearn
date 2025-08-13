@@ -42,11 +42,13 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
+      this.handwritingEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
+        this.handwritingEnhancementListeners();
         return;
       }
 
@@ -253,8 +255,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
@@ -722,10 +724,10 @@ const MAX_ZOOM_SCALE = 5;
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
 
-      capturePreviewParent.appendChild(capturePreview);
+      capturePreviewParent.append(capturePreview);
 
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreviewParent);
+      uploadedImageContainer.append(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -1459,6 +1461,45 @@ const MAX_ZOOM_SCALE = 5;
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    /**
+     * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
+     */
+    async enhanceHandwriting() {
+      if (this.editable) {
+        throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
+      }
+
+      const capturePreview = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreview,
+      });
+
+      if (this.handwritingEnhanced) {
+        capturePreview.style.filter = '';
+        this.handwritingEnhanced = false;
+      } else {
+        capturePreview.style.filter = 'grayscale(1) contrast(2)';
+        this.handwritingEnhanced = true;
+      }
+    }
+
+    handwritingEnhancementListeners() {
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector(
+        '.js-enhance-handwriting-button',
+      );
+
+      this.ensureElementsExist({
+        enhanceHandwritingButton,
+      });
+
+      enhanceHandwritingButton.addEventListener('click', () => {
+        this.enhanceHandwriting();
+      });
     }
   }
 
