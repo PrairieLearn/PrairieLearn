@@ -132,7 +132,9 @@ export function InstructorQuestionSettings({
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
               ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
+                ? html`<a target="_blank" href="${questionGHLink}" rel="noreferrer">
+                    view on GitHub
+                  </a>`
                 : ''}
               <input
                 type="text"
@@ -626,7 +628,7 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${assessmentsWithQuestion.length
+      ${assessmentsWithQuestion.length > 0
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
@@ -637,7 +639,7 @@ function DeleteQuestionModal({
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
-                        course_instance_id: a_with_q.course_instance_id,
+                        courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
                     )}

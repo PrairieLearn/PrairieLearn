@@ -13,6 +13,7 @@ import {
   gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
@@ -28,9 +29,7 @@ router.get(
     }
     const assessmentInstances = await sqldb.queryRows(
       sql.select_assessment_instances,
-      {
-        assessment_id: res.locals.assessment.id,
-      },
+      { assessment_id: res.locals.assessment.id },
       AssessmentInstanceRowSchema,
     );
     res.send(assessmentInstances);
@@ -39,10 +38,11 @@ router.get(
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
   }),
 );

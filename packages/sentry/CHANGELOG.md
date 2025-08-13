@@ -1,5 +1,27 @@
 # @prairielearn/sentry
 
+## 4.0.2
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 4.0.0
+
+### Major Changes
+
+- a7d1ad9: Switch to using `@sentry/node-core`. The consumer must now ensure that OpenTelemetry is configured correctly.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 3.0.7
 
 ### Patch Changes

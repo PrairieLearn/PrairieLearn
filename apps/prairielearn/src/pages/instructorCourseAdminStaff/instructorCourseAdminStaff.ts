@@ -12,6 +12,7 @@ import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
@@ -45,11 +46,11 @@ const MAX_UIDS = 100;
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_own'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_own) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
-    }
-
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
@@ -60,9 +61,7 @@ router.get(
 
     const courseUsers = await sqldb.queryRows(
       sql.select_course_users,
-      {
-        course_id: res.locals.course.id,
-      },
+      { course_id: res.locals.course.id },
       CourseUsersRowSchema,
     );
 
@@ -350,7 +349,7 @@ ${given_cp_and_cip.join(',\n')}
       });
 
       if (req.body.course_instance_id) {
-        if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
+        if (!course_instances.some((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
           throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
@@ -391,7 +390,7 @@ ${given_cp_and_cip.join(',\n')}
       });
 
       if (req.body.course_instance_id) {
-        if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
+        if (!course_instances.some((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
           throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {

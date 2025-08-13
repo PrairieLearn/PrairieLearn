@@ -1,4 +1,10 @@
-/* global QRCode, io, bootstrap, Cropper */
+/* global QRCode, io, bootstrap, Cropper, Panzoom */
+
+/** Minimum zoom scale for the submitted image preview */
+const MIN_ZOOM_SCALE = 1;
+
+/** Maximum zoom scale for the submitted image preview */
+const MAX_ZOOM_SCALE = 5;
 
 (() => {
   class PLImageCapture {
@@ -31,13 +37,17 @@
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
 
+      /** Flag representing the current state of the capture before entering crop/zoom */
+      this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
+      this.handwritingEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
+        this.handwritingEnhancementListeners();
         return;
       }
 
@@ -81,25 +91,12 @@
         '.js-cancel-local-camera-button',
       );
 
-      const retakeLocalCameraImageButton = this.imageCaptureDiv.querySelector(
-        '.js-retake-local-camera-image-button',
-      );
-      const confirmLocalCameraImageButton = this.imageCaptureDiv.querySelector(
-        '.js-confirm-local-camera-image-button',
-      );
-      const cancelLocalCameraConfirmationButton = this.imageCaptureDiv.querySelector(
-        '.js-cancel-local-camera-confirmation-button',
-      );
-
       const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
 
       this.ensureElementsExist({
         captureWithLocalCameraButton,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
-        retakeLocalCameraImageButton,
-        confirmLocalCameraImageButton,
-        cancelLocalCameraConfirmationButton,
         applyChangesButton,
       });
 
@@ -113,19 +110,6 @@
 
       cancelLocalCameraButton.addEventListener('click', () => {
         this.cancelLocalCameraCapture();
-      });
-
-      retakeLocalCameraImageButton.addEventListener('click', () => {
-        this.cancelLocalCameraCapture();
-        this.startLocalCameraCapture();
-      });
-
-      confirmLocalCameraImageButton.addEventListener('click', () => {
-        this.confirmLocalCameraCapture();
-      });
-
-      cancelLocalCameraConfirmationButton.addEventListener('click', () => {
-        this.cancelConfirmationLocalCamera();
       });
 
       applyChangesButton.addEventListener('click', () => {
@@ -183,8 +167,8 @@
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
@@ -214,7 +198,7 @@
     /**
      * When the user clicks Enter or Space, apply any pending changes based on the current container.
      * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in local-camera-confirmation, confirm the local camera capture.
+     * - If in local-camera-capture, capture the current image.
      */
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
@@ -222,8 +206,8 @@
           event.preventDefault();
           if (this.selectedContainerName === 'crop-rotate') {
             this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'local-camera-confirmation') {
-            this.confirmLocalCameraCapture();
+          } else if (this.selectedContainerName === 'local-camera-capture') {
+            this.handleCaptureImage();
           }
         }
       });
@@ -233,17 +217,10 @@
      * Show the specified container within the image capture element and hide all others.
      *
      * @param {string} containerName The name of the container to open. Valid values are:
-     * 'capture-preview', 'local-camera-capture', or 'local-camera-confirmation'.
+     * 'capture-preview', 'local-camera-capture', 'crop-rotate'
      */
     openContainer(containerName) {
-      if (
-        ![
-          'capture-preview',
-          'local-camera-capture',
-          'local-camera-confirmation',
-          'crop-rotate',
-        ].includes(containerName)
-      ) {
+      if (!['capture-preview', 'local-camera-capture', 'crop-rotate'].includes(containerName)) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
 
@@ -257,18 +234,12 @@
         '.js-local-camera-capture-container',
       );
 
-      // Displays the image captured from the local camera and allows the user to confirm or retake it.
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-
       // Displays an interface for cropping and rotating the captured image.
       const cropRotateContainer = this.imageCaptureDiv.querySelector('.js-crop-rotate-container');
 
       this.ensureElementsExist({
         capturePreviewContainer,
         localCameraCaptureContainer,
-        localCameraConfirmationContainer,
         cropRotateContainer,
       });
 
@@ -282,11 +253,6 @@
         {
           name: 'local-camera-capture',
           element: localCameraCaptureContainer,
-          flex: true,
-        },
-        {
-          name: 'local-camera-confirmation',
-          element: localCameraConfirmationContainer,
           flex: true,
         },
         {
@@ -365,6 +331,7 @@
           data: msg.file_content,
           type: 'image/jpeg',
         });
+        this.setCaptureChangedFlag(true);
 
         // Acknowledge that the external image capture was received.
         socket.emit(
@@ -394,10 +361,9 @@
         }
 
         if (this.selectedContainerName !== 'capture-preview') {
-          // The user might upload an image while in the crop-rotate or local camera confirmation state.
-          // We discard any pending changes or captured images and show the capture preview, since
-          // the user's most recent action was to capture an image externally.
           if (this.selectedContainerName === 'crop-rotate') {
+            // We discard any pending changes or captured images and show the capture preview, since
+            // the user's most recent action was to capture an image externally.
             await this.revertToPreviousCropRotateState();
           }
           this.openContainer('capture-preview');
@@ -417,7 +383,11 @@
       });
 
       imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image captured yet.</span>
+        <span class="small text-muted text-center ">
+          No image captured yet.
+          <br/>
+          Use a clean sheet of paper.
+        </span>
       `;
     }
 
@@ -440,9 +410,6 @@
 
     /**
      * Loads the most recent submission or external image capture.
-     *
-     * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
-     * If false, load the image from the most recent submission.
      */
     async loadSubmission() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
@@ -481,7 +448,40 @@
         hiddenCaptureInput,
       });
 
+      if (dataUrl && !hiddenCaptureInput.value) {
+        this.updateCaptureButtonTextForRetake();
+      }
+
       hiddenCaptureInput.value = dataUrl;
+    }
+
+    /**
+     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     */
+    updateCaptureButtonTextForRetake() {
+      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-local-camera-button',
+      );
+      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
+      this.ensureElementsExist({
+        captureWithLocalCameraButtonSpan,
+      });
+      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+
+      if (!this.mobile_capture_enabled) {
+        return;
+      }
+      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
+        '.js-capture-with-mobile-device-button',
+      );
+      const captureWithMobileDeviceButtonSpan =
+        captureWithMobileDeviceButton?.querySelector('span');
+
+      this.ensureElementsExist({
+        captureWithMobileDeviceButtonSpan,
+      });
+
+      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
     }
 
     /**
@@ -511,8 +511,13 @@
       capturePreview.src = dataUrl;
       capturePreview.alt = 'Captured image preview';
 
+      const capturePreviewParent = document.createElement('div');
+      capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
+
+      capturePreviewParent.append(capturePreview);
+
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
+      uploadedImageContainer.append(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -522,6 +527,118 @@
           },
           { once: true },
         );
+      }
+
+      if (!this.editable) {
+        const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
+          '.js-viewer-rotate-clockwise-button',
+        );
+        const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
+        const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
+
+        this.ensureElementsExist({
+          zoomButtonsContainer,
+          viewerRotateClockwiseButton,
+          zoomInButton,
+          zoomOutButton,
+        });
+
+        // Display the zoom buttons only when the image is not editable to
+        // prevent confusion with crop/rotate functionality, which is
+        // available when the image is editable.
+        zoomButtonsContainer.classList.remove('d-none');
+
+        if (!this.imageCapturePreviewPanzoom) {
+          // Initialize Panzoom on the parent of the captured image element, since
+          // the image itself may be rotated.
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
+            contain: 'outside',
+            minScale: MIN_ZOOM_SCALE,
+            maxScale: MAX_ZOOM_SCALE,
+          });
+
+          zoomInButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomIn();
+          });
+          zoomOutButton.addEventListener('click', () => {
+            this.imageCapturePreviewPanzoom.zoomOut();
+          });
+
+          let rotation = 0;
+          viewerRotateClockwiseButton.addEventListener('click', () => {
+            const capturePreviewImg = this.imageCaptureDiv.querySelector(
+              '.js-uploaded-image-container .capture-preview',
+            );
+
+            this.ensureElementsExist({
+              capturePreviewImg,
+            });
+
+            // The capture preview image always fills the entire height.
+            const photoHeight = capturePreviewImg.clientHeight;
+
+            // Compute the width of the capture preview image excluding any side
+            // whitespace coming from the max-height: 600px constraint.
+            const photoWidth =
+              photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
+
+            const clientHeight = capturePreviewImg.clientHeight;
+            const clientWidth = capturePreviewImg.clientWidth;
+
+            // Rotation is strictly increasing so that the rotation animation is always in the same direction.
+            rotation += 90;
+
+            // Compute the scale factor based on the rotation.
+            // - If image is parallel to the capture preview div, reset its scaling to 1.
+            // - If image is perpendicular to the capture preview div, scale it so its longest side
+            //   fits within the preview container without clipping.
+            const scaleFactor =
+              rotation % 180 === 0
+                ? 1
+                : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
+            this.imageCapturePreviewPanzoom.reset({ animate: true });
+          });
+
+          let panEnabled = false;
+          capturePreview.addEventListener('panzoomzoom', (e) => {
+            const scale = e.detail.scale;
+
+            panEnabled = scale > 1;
+
+            // We only indicate that panning is available when the image is zoomed in.
+            // Panzoom has an option called panOnlyWhenZoomed, but it does not update the cursor.
+            capturePreview.style.cursor = panEnabled ? 'grab' : 'default';
+
+            if (scale === MIN_ZOOM_SCALE) {
+              zoomOutButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomOutButton.classList.remove('disabled', 'opacity-10');
+            }
+
+            if (scale >= MAX_ZOOM_SCALE) {
+              zoomInButton.classList.add('disabled', 'opacity-10');
+            } else {
+              zoomInButton.classList.remove('disabled', 'opacity-10');
+            }
+          });
+
+          capturePreview.addEventListener('panzoomstart', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grabbing';
+            }
+          });
+
+          capturePreview.addEventListener('panzoomend', () => {
+            if (panEnabled) {
+              capturePreview.style.cursor = 'grab';
+            }
+          });
+        } else {
+          this.imageCapturePreviewPanzoom.reset({ animate: false });
+        }
       }
 
       if (this.editable) {
@@ -552,6 +669,28 @@
       this.loadCapturePreviewFromDataUrl({ dataUrl: `data:${type};base64,${data}` });
     }
 
+    /**
+     * Updates the hidden capture changed flag, ensuring that users receive an unsaved changes
+     * warning if they attempt to leave the question without saving.
+     *
+     * This flag is not included in the submission data; it is used solely by the question
+     * unload event handler to detect unsaved edits to the image (e.g., after
+     * capturing, cropping, or rotating).
+     */
+    setCaptureChangedFlag(value) {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      hiddenCaptureChangedFlag.value = value;
+
+      // Disable the flag if no changes have been made.
+      hiddenCaptureChangedFlag.disabled = !value;
+    }
+
     async startLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
@@ -561,10 +700,6 @@
       );
       const localCameraErrorMessage = localCameraCaptureContainer.querySelector(
         '.js-local-camera-error-message',
-      );
-
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
       );
 
       const localCameraVideo = this.imageCaptureDiv.querySelector('.js-local-camera-video');
@@ -577,7 +712,6 @@
         capturePreviewContainer,
         localCameraCaptureContainer,
         localCameraErrorMessage,
-        localCameraConfirmationContainer,
         localCameraVideo,
         localCameraInstructions,
       });
@@ -649,19 +783,17 @@
       const localCameraCaptureContainer = this.imageCaptureDiv.querySelector(
         '.js-local-camera-capture-container',
       );
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-      const localCameraImagePreviewCanvas = this.imageCaptureDiv.querySelector(
+      const localCameraImagePreviewCanvas = localCameraCaptureContainer.querySelector(
         '.js-local-camera-image-preview',
       );
       const localCameraVideo = localCameraCaptureContainer.querySelector('.js-local-camera-video');
+      const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
         localCameraCaptureContainer,
-        localCameraConfirmationContainer,
         localCameraImagePreviewCanvas,
         localCameraVideo,
+        hiddenCaptureInput,
       });
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
@@ -676,39 +808,11 @@
           localCameraVideo.videoHeight,
         );
 
-      this.openContainer('local-camera-confirmation');
-
       this.deactivateVideoStream();
-
-      this.setHiddenCaptureInputValue(localCameraImagePreviewCanvas.toDataURL('image/jpeg'));
-    }
-
-    async confirmLocalCameraCapture() {
-      const imagePreviewCanvas = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-image-preview',
-      );
-
-      this.ensureElementsExist({
-        imagePreviewCanvas,
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: localCameraImagePreviewCanvas.toDataURL('image/jpeg'),
       });
-
-      this.loadCapturePreviewFromDataUrl({ dataUrl: imagePreviewCanvas.toDataURL('image/jpeg') });
-      this.closeConfirmationContainer();
-    }
-
-    closeConfirmationContainer() {
-      const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.js-capture-preview-container',
-      );
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-
-      this.ensureElementsExist({
-        capturePreviewContainer,
-        localCameraConfirmationContainer,
-      });
-
+      this.setCaptureChangedFlag(true);
       this.openContainer('capture-preview');
     }
 
@@ -737,27 +841,9 @@
       this.deactivateVideoStream();
     }
 
-    cancelConfirmationLocalCamera() {
-      const localCameraConfirmationContainer = this.imageCaptureDiv.querySelector(
-        '.js-local-camera-confirmation-container',
-      );
-      const capturePreviewContainer = this.imageCaptureDiv.querySelector(
-        '.js-capture-preview-container',
-      );
-
-      this.ensureElementsExist({
-        localCameraConfirmationContainer,
-        capturePreviewContainer,
-      });
-
-      this.openContainer('capture-preview');
-
-      this.setHiddenCaptureInputToCapturePreview();
-    }
-
     /**
      * Ensures that the provided elements exist. Throws an error if any element is not present.
-     * @param {Object} containers An object wherein keys are element names and values are the elements.
+     * @param {object} elements An object wherein keys are element names and values are the elements.
      */
     ensureElementsExist(elements) {
       for (const elementName in elements) {
@@ -789,6 +875,18 @@
     }
 
     async startCropRotate() {
+      const hiddenCaptureChangedFlag = this.imageCaptureDiv.querySelector(
+        '.js-hidden-capture-changed-flag',
+      );
+      this.ensureElementsExist({
+        hiddenCaptureChangedFlag,
+      });
+
+      this.previousCaptureChangedFlag = hiddenCaptureChangedFlag.value === 'true';
+
+      // To simplify this logic, we assume that the user will make changes if they are in the crop/rotate interface.
+      this.setCaptureChangedFlag(true);
+
       this.openContainer('crop-rotate');
 
       if (!this.cropper) {
@@ -1132,6 +1230,49 @@
 
       this.openContainer('capture-preview');
       this.setHiddenCaptureInputToCapturePreview();
+
+      // Restore the previous hidden capture changed flag value.
+      // Needed for the case that the user had no changes before starting crop/rotate.
+      this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    /**
+     * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
+     */
+    async enhanceHandwriting() {
+      if (this.editable) {
+        throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
+      }
+
+      const capturePreview = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreview,
+      });
+
+      if (this.handwritingEnhanced) {
+        capturePreview.style.filter = '';
+        this.handwritingEnhanced = false;
+      } else {
+        capturePreview.style.filter = 'grayscale(1) contrast(2)';
+        this.handwritingEnhanced = true;
+      }
+    }
+
+    handwritingEnhancementListeners() {
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector(
+        '.js-enhance-handwriting-button',
+      );
+
+      this.ensureElementsExist({
+        enhanceHandwritingButton,
+      });
+
+      enhanceHandwritingButton.addEventListener('click', () => {
+        this.enhanceHandwriting();
+      });
     }
   }
 

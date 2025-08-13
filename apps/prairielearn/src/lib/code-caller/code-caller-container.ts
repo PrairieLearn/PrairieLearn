@@ -464,7 +464,7 @@ export class CodeCallerContainer implements CodeCaller {
   _handleStdout(data: string) {
     this.debug('enter _handleStdout()');
     this.outputStdout.push(data);
-    if (data.indexOf('\n') >= 0) {
+    if (data.includes('\n')) {
       this._callIsFinished();
     }
     this.debug('exit _handleStdout()');
