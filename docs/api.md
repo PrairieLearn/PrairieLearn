@@ -164,6 +164,7 @@ GET /pl/api/v1/course/:course_id/staff
 POST /pl/api/v1/course/:course_id/staff
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com", "course_role": "Previewer"}
 ```
@@ -174,6 +175,7 @@ POST /pl/api/v1/course/:course_id/staff
 PUT /pl/api/v1/course/:course_id/staff
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com", "course_role": "Editor"}
 ```
@@ -184,6 +186,7 @@ PUT /pl/api/v1/course/:course_id/staff
 POST /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com", "course_instance_role": "Student Data Viewer"}
 ```
@@ -194,6 +197,7 @@ POST /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 PUT /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com", "course_instance_role": "Student Data Editor"}
 ```
@@ -204,6 +208,7 @@ PUT /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 DELETE /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com"}
 ```
@@ -214,6 +219,7 @@ DELETE /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 DELETE /pl/api/v1/course/:course_id/staff
 ```
 
+Example body
 ```json
 {"uid": "dev@example.com"}
 ```
