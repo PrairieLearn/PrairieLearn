@@ -295,8 +295,8 @@ export class Lti13Claim {
 
     let role_instructor = this.roles.some((val: string) =>
       [
-        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
         'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
       ].includes(val),
     );
 

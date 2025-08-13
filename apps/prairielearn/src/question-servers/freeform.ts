@@ -945,7 +945,7 @@ async function renderPanel(
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
       locals.allowAnswerEditing &&
-      !['ai_grading', 'manual_grading'].includes(locals.questionRenderContext)
+      !['manual_grading', 'ai_grading'].includes(locals.questionRenderContext)
     ),
     manual_grading: run(() => {
       if (locals.questionRenderContext === 'manual_grading') return true;

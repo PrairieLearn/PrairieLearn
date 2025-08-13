@@ -14,9 +14,9 @@ $(() => {
     if (event.repeat) return;
     // Ignore events that target an input element
     if (
-      !['SELECT', 'TEXTAREA'].includes(event.target.tagName) &&
+      !['TEXTAREA', 'SELECT'].includes(event.target.tagName) &&
       (event.target.tagName !== 'INPUT' ||
-        ['button', 'checkbox', 'radio', 'submit'].includes(event.target.type)) &&
+        ['radio', 'button', 'submit', 'checkbox'].includes(event.target.type)) &&
       !event.target.isContentEditable
     ) {
       document

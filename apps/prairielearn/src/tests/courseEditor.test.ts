@@ -1,4 +1,3 @@
-/* eslint-disable perfectionist/sort-sets */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';

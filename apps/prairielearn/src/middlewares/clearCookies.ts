@@ -2,7 +2,6 @@ import { type NextFunction, type Request, type Response } from 'express';
 
 import { clearCookie } from '../lib/cookie.js';
 
-/* eslint-disable perfectionist/sort-sets */
 const cookies_to_ignore = new Set([
   'pl_authn',
   'pl2_authn',
@@ -15,7 +14,6 @@ const cookies_to_ignore = new Set([
   'prairielearn_session',
   'pl2_session',
 ]);
-/* eslint-enable perfectionist/sort-sets */
 
 export default function (req: Request, res: Response, next: NextFunction) {
   Object.keys(req.cookies).forEach((key) => {

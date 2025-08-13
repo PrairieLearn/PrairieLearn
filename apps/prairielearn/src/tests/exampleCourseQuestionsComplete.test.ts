@@ -246,7 +246,7 @@ const course = {
 const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
-const unsupportedQuestions = new Set(['element/codeDocumentation', 'element/fileEditor']);
+const unsupportedQuestions = new Set(['element/fileEditor', 'element/codeDocumentation']);
 
 const accessibilitySkip = new Set([
   // Extremely large question

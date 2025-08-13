@@ -200,7 +200,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (
-      ['ai_grade_assessment', 'ai_grade_assessment_all', 'ai_grade_assessment_graded'].includes(
+      ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
         req.body.__action,
       )
     ) {

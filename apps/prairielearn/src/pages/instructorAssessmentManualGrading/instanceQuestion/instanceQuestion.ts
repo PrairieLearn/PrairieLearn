@@ -288,7 +288,7 @@ router.post(
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
       const actionPrompt = body.__action.slice(9);
-      const assigned_grader = ['graded', 'nobody'].includes(actionPrompt) ? null : actionPrompt;
+      const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
           course_instance_id: res.locals.course_instance.id,

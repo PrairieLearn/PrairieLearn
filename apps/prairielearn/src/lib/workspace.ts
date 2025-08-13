@@ -537,7 +537,7 @@ export async function generateWorkspaceFiles({
           }
 
           // Discard encodings outside of explicit list of allowed encodings
-          if (file.encoding && !['base64', 'hex', 'utf-8'].includes(file.encoding)) {
+          if (file.encoding && !['utf-8', 'base64', 'hex'].includes(file.encoding)) {
             fileGenerationErrors.push({
               file: file.name,
               msg: `Dynamic workspace file has unsupported file encoding (${file.encoding}). File ignored.`,

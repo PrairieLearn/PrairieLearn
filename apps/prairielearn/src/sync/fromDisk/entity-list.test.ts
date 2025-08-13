@@ -134,7 +134,7 @@ describe('determineOperationsForEntities', () => {
     const result = determineOperationsForEntities<TestEntity>({
       courseEntities: [{ name: 'A' }, { name: 'B' }],
       existingEntities: [],
-      knownNames: new Set(['A', 'B', 'C', 'D']),
+      knownNames: new Set(['A', 'B', 'D', 'C']),
       makeImplicitEntity: (name: string) => ({ name }),
       comparisonProperties: [],
       isInfoCourseValid: true,

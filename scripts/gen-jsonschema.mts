@@ -53,7 +53,7 @@ const orderedStringify = (schema) => {
 
       let localHeadKeys = headKeys;
       if (key === 'properties') {
-        localHeadKeys = headKeys.filter((k) => !['description', 'title', 'type'].includes(k));
+        localHeadKeys = headKeys.filter((k) => !['title', 'type', 'description'].includes(k));
       }
 
       if (typeof value === 'object' && value !== null && !Array.isArray(value)) {

@@ -19,7 +19,7 @@ const regexpExpressParamRegexp = /\(\?:\\?\\?\/?\([^)]+\)\)/g;
 const regexpExpressPathParamRegexp = /(:[^)]+)\([^)]+\)/g;
 
 const EXPRESS_ROOT_PATH_REGEXP_VALUE = '/^\\/?(?=\\/|$)/i';
-const STACK_ITEM_VALID_NAMES = new Set(['bound dispatch', 'mounted_app', 'router']);
+const STACK_ITEM_VALID_NAMES = new Set(['router', 'bound dispatch', 'mounted_app']);
 
 /**
  * Returns all the verbs detected for the passed route

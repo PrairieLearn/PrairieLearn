@@ -135,7 +135,7 @@ router.post(
     }
     if (
       !res.locals.authz_result.authorized_edit &&
-      ['attach_file', 'attach_text', 'delete_file', 'leave_group', 'timeLimitFinish'].includes(
+      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_group'].includes(
         req.body.__action,
       )
     ) {
@@ -151,7 +151,7 @@ router.post(
     } else if (req.body.__action === 'delete_file') {
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
-    } else if (['finish', 'grade', 'timeLimitFinish'].includes(req.body.__action)) {
+    } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
       const overrideGradeRate = false;
       let closeExam: boolean;
       if (req.body.__action === 'grade') {

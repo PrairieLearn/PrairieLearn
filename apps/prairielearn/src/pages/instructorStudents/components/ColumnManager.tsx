@@ -105,7 +105,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
       newLeft = currentLeft.filter((id) => id !== columnId);
     } else {
       const columnOrder = table.getAllLeafColumns().map((c) => c.id);
-      const newPinned = new Set([columnId, ...currentLeft]);
+      const newPinned = new Set([...currentLeft, columnId]);
       newLeft = columnOrder.filter((id) => newPinned.has(id));
     }
     table.setColumnPinning({ left: newLeft, right: [] });

@@ -192,6 +192,7 @@ export default tseslint.config([
           [
             [
               // All disabled rules, can be enabled inline, with e.g. /* eslint perfectionist/sort-objects: error */
+              'sort-arrays',
               'sort-classes',
               'sort-exports',
               'sort-imports',
@@ -203,6 +204,7 @@ export default tseslint.config([
               'sort-named-imports',
               'sort-object-types',
               'sort-objects',
+              'sort-sets',
               'sort-switch-case',
               'sort-union-types',
               'sort-variable-declarations',

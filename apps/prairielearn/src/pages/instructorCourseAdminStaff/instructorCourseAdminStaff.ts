@@ -99,7 +99,7 @@ router.post(
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
       // Verify the requested course role is valid
-      if (!['Editor', 'None', 'Owner', 'Previewer', 'Viewer'].includes(req.body.course_role)) {
+      if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(req.body.course_role)) {
         throw new error.HttpStatusError(
           400,
           `Invalid requested course role: ${req.body.course_role}`,
@@ -128,7 +128,7 @@ router.post(
       // Verify the requested course instance role is valid
       if (
         course_instance &&
-        !['Student Data Editor', 'Student Data Viewer'].includes(req.body.course_instance_role)
+        !['Student Data Viewer', 'Student Data Editor'].includes(req.body.course_instance_role)
       ) {
         throw new error.HttpStatusError(
           400,
