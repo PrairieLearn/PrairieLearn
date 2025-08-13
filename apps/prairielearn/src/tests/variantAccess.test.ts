@@ -116,7 +116,7 @@ async function assertVariantAccess({
   // Remove trailing slash if present.
   questionBasePath = questionBasePath.replace(/\/$/, '');
 
-  const isStudentRoute = !!questionBasePath.match(/course_instance\/\d+\/instance_question\//);
+  const isStudentRoute = !!/course_instance\/\d+\/instance_question\//.test(questionBasePath);
 
   // Test access to the rendered variant.
   const variantUrl = `${siteUrl}${questionBasePath}${isStudentRoute ? '' : '/preview'}?variant_id=${variantId}`;

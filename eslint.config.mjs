@@ -39,7 +39,6 @@ const NO_RESTRICTED_SYNTAX = [
 ];
 
 export default tseslint.config([
-  js.configs.recommended,
   tseslint.configs.stylistic,
   tseslint.configs.strict,
   {
@@ -151,10 +150,36 @@ export default tseslint.config([
     },
 
     rules: {
+      ...js.configs.all.rules,
+      'arrow-body-style': 'off', // TODO: Consider enabling this
+      'array-callback-return': 'off',
+      'capitalized-comments': 'off',
+      camelcase: 'off',
+      'class-methods-use-this': 'off',
+      'consistent-this': 'off',
+      'consistent-return': 'off', // TODO: Consider enabling this
+      complexity: 'off',
       curly: ['error', 'multi-line', 'consistent'],
+      'default-case': 'off', // TODO: Consider enabling this
+      'dot-notation': 'off', // TODO: Consider enabling this
       eqeqeq: ['error', 'smart'],
+      'func-names': 'off', // TODO: Consider enabling this
+      'func-style': 'off',
+      'guard-for-in': 'off',
       'handle-callback-err': 'error',
+      'id-length': 'off',
+      'init-declarations': 'off', // TODO: Consider enabling this
+      'logical-assignment-operators': 'off', // TODO: Consider enabling this
+      'no-bitwise': 'off',
+      'no-empty-function': 'off', // TODO: Consider enabling this
+      'no-implicit-coercion': 'off', // TODO: Consider enabling this
+      'no-invalid-this': 'off', // TODO: Consider enabling this
+      'no-lonely-if': 'off', // TODO: Consider enabling this
+      'no-negated-condition': 'off',
+      'no-new': 'off', // TODO: Consider enabling this
       'no-template-curly-in-string': 'error',
+      'no-promise-executor-return': 'off',
+      'no-redeclare': 'off',
       'no-restricted-globals': [
         'error',
         // These are not available in ES modules.
@@ -162,10 +187,53 @@ export default tseslint.config([
         '__dirname',
       ],
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
+      'no-shadow': 'off',
+      'no-unmodified-loop-condition': 'off',
+      'no-unneeded-ternary': 'off', // TODO: Consider enabling this
+      'no-useless-assignment': 'off', // TODO: Consider enabling this
+      'no-useless-concat': 'off', // TODO: Consider enabling this
+      'no-useless-constructor': 'off',
+      'no-useless-return': 'off', // TODO: Consider enabling this
       'object-shorthand': 'error',
+      'one-var': ['off', 'never'], // TODO: Consider enabling this
+      'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
+      'prefer-destructuring': 'off', // TODO: Consider enabling this
+      'prefer-named-capture-group': 'off',
+      'prefer-object-has-own': 'off', // TODO: Consider enabling this
+      'prefer-template': 'off',
+      'new-cap': 'off',
+      'no-await-in-loop': 'off',
       'no-console': ['error', { allow: ['warn', 'error', 'table', 'trace'] }],
+      'no-continue': 'off',
       'no-duplicate-imports': 'error',
+      'no-else-return': 'off',
+      'no-eq-null': 'off', // TODO: Consider enabling this
+      'no-inline-comments': 'off',
+      'no-loop-func': 'off',
+      'no-nested-ternary': 'off',
+      'no-magic-numbers': 'off',
+      'no-param-reassign': 'off',
+      'no-plusplus': 'off', // TODO: Consider enabling this
+      'no-ternary': 'off',
+      'no-underscore-dangle': 'off',
+      'no-use-before-define': 'off',
+      'no-warning-comments': 'off',
+      'no-undef': 'off',
+      'no-undef-init': 'off', // TODO: Consider enabling this
+      'no-undefined': 'off',
+      'no-unused-vars': 'off',
+      'max-classes-per-file': 'off',
+      'max-depth': 'off',
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'max-params': 'off',
+      'max-statements': 'off',
+      radix: ['error', 'as-needed'],
+      'require-atomic-updates': 'off',
+      'require-await': 'off', // TODO: Consider enabling this
+      'require-unicode-regexp': 'off',
+      'sort-vars': 'off',
 
       // Enforce alphabetical order of import specifiers within each import group.
       // The import-x/order rule handles the overall sorting of the import groups.
@@ -177,6 +245,7 @@ export default tseslint.config([
           memberSyntaxSortOrder: ['none', 'all', 'multiple', 'single'],
         },
       ],
+      'sort-keys': 'off',
 
       'import-x/order': [
         'error',
@@ -224,7 +293,7 @@ export default tseslint.config([
 
       // Use the recommended rules for react-you-might-not-need-an-effect as errors.
       ...Object.fromEntries(
-        Object.keys(reactYouMightNotNeedAnEffect.configs['recommended'].rules ?? {}).map(
+        Object.keys(reactYouMightNotNeedAnEffect.configs.recommended.rules ?? {}).map(
           (ruleName) => [ruleName, 'error'],
         ),
       ),
@@ -237,20 +306,25 @@ export default tseslint.config([
       ),
 
       ...eslintPluginUnicorn.configs.recommended.rules,
-      // We don't have specific rules for null/undefined, so we'll disable these.
-      'unicorn/no-null': 'off', // 1k+ violations
-      'unicorn/no-useless-undefined': 'off', // 15 violations
 
-      // We don't enforce specific styles for filenames.
-      'unicorn/filename-case': 'off', // 500+ violations
-
-      // We don't use `String.raw` in our codebase yet.
-      'unicorn/prefer-string-raw': 'off', // 300+ violations
-
-      // These rules don't provide much value.
-      'unicorn/prevent-abbreviations': 'off',
+      // These rules don't align with our own style guidelines
+      'unicorn/filename-case': 'off', // We don't enforce specific styles for filenames
+      'unicorn/no-anonymous-default-export': 'off', // We use this for all of our pages
       'unicorn/no-array-callback-reference': 'off',
+      'unicorn/no-array-method-this-argument': 'off',
+      'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
       'unicorn/no-hex-escape': 'off',
+      'unicorn/no-null': 'off',
+      'unicorn/no-useless-undefined': 'off', // Explicit undefined is more readable than implicit undefined
+      'unicorn/prefer-code-point': 'off',
+      'unicorn/prefer-dom-node-dataset': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2261095992
+      'unicorn/prefer-string-raw': 'off', // We don't use `String.raw` in our codebase
+      'unicorn/prefer-ternary': 'off', // if/else can be more readable than a ternary
+      'unicorn/prefer-top-level-await': 'off', // we use this on a lot of pages
+      'unicorn/prefer-type-error': 'off',
+      'unicorn/prevent-abbreviations': 'off',
+      'unicorn/prefer-export-from': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252265000
+      'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
 
       // These rules have many violations. Decisions about enabling the rules have been deferred.
       'unicorn/no-await-expression-member': 'off', // 400+ violations
@@ -261,55 +335,29 @@ export default tseslint.config([
       'unicorn/prefer-global-this': 'off', // 150+ violations
       'unicorn/prefer-node-protocol': 'off', // 100+ violations
 
-      // 20 - 100 violations
-      'unicorn/prefer-spread': 'off',
-      'unicorn/prefer-number-properties': 'off',
-      'unicorn/prefer-switch': 'off',
-      'unicorn/prefer-query-selector': 'off',
+      // TODO: investigate, < 100 violations
+      'unicorn/consistent-assert': 'off',
+      'unicorn/consistent-function-scoping': 'off',
       'unicorn/escape-case': 'off',
       'unicorn/import-style': 'off',
       'unicorn/numeric-separators-style': 'off',
-      'unicorn/explicit-length-check': 'off',
-      'unicorn/consistent-function-scoping': 'off',
-      'unicorn/consistent-assert': 'off',
+      'unicorn/prefer-spread': 'off',
+      'unicorn/prefer-switch': 'off',
+      'unicorn/prefer-query-selector': 'off',
       'unicorn/text-encoding-identifier-case': 'off',
 
-      // TODO:
-      'unicorn/prefer-string-replace-all': 'off',
-      'unicorn/prefer-string-slice': 'off',
-      'unicorn/prefer-dom-node-dataset': 'off',
-      'unicorn/no-zero-fractions': 'off',
-      ...Object.fromEntries(
-        [
-          'unicorn/prefer-code-point',
-          'unicorn/prefer-type-error',
-          'unicorn/prefer-set-has',
-          'unicorn/prefer-at',
-          'unicorn/prefer-includes',
-          'unicorn/number-literal-case',
-          'unicorn/prefer-single-call',
-          'unicorn/prefer-regexp-test',
-          'unicorn/prefer-export-from',
-          'unicorn/prefer-dom-node-append',
-          'unicorn/prefer-dom-node-text-content',
-          'unicorn/no-useless-fallback-in-spread',
-          'unicorn/no-typeof-undefined',
-          'unicorn/no-lonely-if',
-          'unicorn/prefer-top-level-await',
-          'unicorn/prefer-add-event-listener',
-        ].map((k) => [k, 'off']),
-      ),
-
-      // TODO:
-      'unicorn/prefer-event-target': 'off',
+      // TODO: investigated and manual fixes are required
       'unicorn/no-object-as-default-parameter': 'off',
+      'unicorn/prefer-event-target': 'off',
+      'unicorn/prefer-dom-node-text-content': 'off',
+      'unicorn/prefer-add-event-listener': 'off',
 
       // False positives
-      'unicorn/no-array-method-this-argument': 'off',
       'unicorn/error-message': 'off',
       'unicorn/throw-new-error': 'off',
+      'unicorn/prefer-at': 'off', // https://github.com/microsoft/TypeScript/issues/47660#issuecomment-3146907649
 
-      // Duplicated rules
+      // Duplicated from other lint rules
       'unicorn/no-this-assignment': 'off',
       'unicorn/prefer-module': 'off',
       'unicorn/no-static-only-class': 'off',
@@ -317,18 +365,10 @@ export default tseslint.config([
       // https://github.com/PrairieLearn/PrairieLearn/pull/12545/files#r2252069292
       'unicorn/no-for-loop': 'off',
 
-      // Sometimes, an if/else is more readable than a ternary.
-      'unicorn/prefer-ternary': 'off',
-
-      // Sometimes, an array reduce is more readable.
-      'unicorn/no-array-reduce': 'off',
-
       // Conflicts with prettier
       'unicorn/template-indent': 'off',
       'unicorn/no-nested-ternary': 'off',
-
-      // We use anonymous default exports for all of our pages.
-      'unicorn/no-anonymous-default-export': 'off',
+      'unicorn/number-literal-case': 'off',
 
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,

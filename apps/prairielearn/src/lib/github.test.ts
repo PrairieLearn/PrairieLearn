@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { httpPrefixForCourseRepo } from './github.js';
+import { courseRepoContentUrl, httpPrefixForCourseRepo } from './github.js';
 
 describe('Github library', () => {
   describe('httpPrefixforCourseRepo', () => {
@@ -32,6 +32,48 @@ describe('Github library', () => {
     it('Returns null if repo is not provided', async () => {
       assert.isNull(httpPrefixForCourseRepo(''));
       assert.isNull(httpPrefixForCourseRepo(null));
+    });
+  });
+
+  describe('courseRepoContentUrl', () => {
+    it('Computes a URL for the example course', async () => {
+      const course = { repository: 'IRRELEVANT', branch: 'IRRELEVANT', example_course: true };
+      assert.equal(
+        courseRepoContentUrl(course),
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse',
+      );
+      assert.equal(
+        courseRepoContentUrl(course, 'questions/addNumbers'),
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/addNumbers',
+      );
+      assert.equal(
+        courseRepoContentUrl(course, '/courseInstances/Sp15'),
+        'https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/Sp15',
+      );
+    });
+
+    it('Computes a URL for a non-example course when repo has proper format', async () => {
+      const course = {
+        repository: 'git@github.com:username/repo.git',
+        branch: 'master',
+        example_course: false,
+      };
+      assert.equal(courseRepoContentUrl(course), 'https://github.com/username/repo/tree/master');
+      assert.equal(
+        courseRepoContentUrl(course, 'questions/addNumbers'),
+        'https://github.com/username/repo/tree/master/questions/addNumbers',
+      );
+      assert.equal(
+        courseRepoContentUrl(course, '/courseInstances/Sp15'),
+        'https://github.com/username/repo/tree/master/courseInstances/Sp15',
+      );
+    });
+
+    it('Returns null if repo is not provided', async () => {
+      const course = { repository: null, branch: 'master', example_course: false };
+      assert.isNull(courseRepoContentUrl(course));
+      assert.isNull(courseRepoContentUrl(course, 'questions/addNumbers'));
+      assert.isNull(courseRepoContentUrl(course, '/courseInstances/Sp15'));
     });
   });
 });

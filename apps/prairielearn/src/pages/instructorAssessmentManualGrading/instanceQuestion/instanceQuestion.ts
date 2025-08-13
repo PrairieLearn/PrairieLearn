@@ -11,6 +11,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -67,11 +68,11 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
@@ -286,7 +287,7 @@ router.post(
         res.status(500).send({ err: String(err) });
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
-      const actionPrompt = body.__action.substring(9);
+      const actionPrompt = body.__action.slice(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
