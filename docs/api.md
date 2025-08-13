@@ -167,7 +167,7 @@ POST /pl/api/v1/course/:course_id/staff
 Example body
 
 ```json
-{"uid": "dev@example.com", "course_role": "Previewer"}
+{ "uid": "dev@example.com", "course_role": "Previewer" }
 ```
 
 #### Change existing staff access level in a course
@@ -179,7 +179,7 @@ PUT /pl/api/v1/course/:course_id/staff
 Example body
 
 ```json
-{"uid": "dev@example.com", "course_role": "Editor"}
+{ "uid": "dev@example.com", "course_role": "Editor" }
 ```
 
 #### Give student data access to a course instance
@@ -191,7 +191,7 @@ POST /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 Example body
 
 ```json
-{"uid": "dev@example.com", "course_instance_role": "Student Data Viewer"}
+{ "uid": "dev@example.com", "course_instance_role": "Student Data Viewer" }
 ```
 
 #### Change existing student data access level in a course instance
@@ -203,7 +203,7 @@ PUT /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 Example body
 
 ```json
-{"uid": "dev@example.com", "course_instance_role": "Student Data Editor"}
+{ "uid": "dev@example.com", "course_instance_role": "Student Data Editor" }
 ```
 
 #### Remove student data access in a course instance
@@ -215,7 +215,7 @@ DELETE /pl/api/v1/course/:course_id/staff/course_instance/:course_instance_id
 Example body
 
 ```json
-{"uid": "dev@example.com"}
+{ "uid": "dev@example.com" }
 ```
 
 #### Remove staff access from a course
@@ -227,5 +227,5 @@ DELETE /pl/api/v1/course/:course_id/staff
 Example body
 
 ```json
-{"uid": "dev@example.com"}
+{ "uid": "dev@example.com" }
 ```
