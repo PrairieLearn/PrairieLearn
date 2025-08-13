@@ -443,7 +443,17 @@ export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
 export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
-  locals: ResLocals & {
+  locals: Omit<
+    ResLocals,
+    | '__csrf_token'
+    | 'navbarType'
+    | 'authn_is_administrator'
+    | 'authn_institution'
+    | 'authn_provider_name'
+    | 'access_as_administrator'
+    | 'is_institution_administrator'
+    | 'news_item_notification_count'
+  > & {
     course: Course;
     question: Question;
     user: User;
