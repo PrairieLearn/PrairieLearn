@@ -58,8 +58,7 @@ def assert_answer_options(
     order_block_options: OrderBlocksOptions, answer_option_list: list[dict]
 ) -> None:
     # Must be the same length to test all of them
-    if len(order_block_options.answer_options) != len(answer_option_list):
-        return
+    assert len(order_block_options.answer_options) == len(answer_option_list), "answer_option length mismatch"
 
     for answer_options, test_options in zip(
         order_block_options.answer_options, answer_option_list, strict=False
@@ -70,6 +69,8 @@ def assert_answer_options(
             assert answer_options.ranking == test_options["ranking"]
         if "indent" in test_options:
             assert answer_options.indent == test_options["indent"]
+
+        # TODO: This isn't testing if it is correct just that it exists
         if "depends" in test_options:
             if test_options["depends"] == "":
                 assert answer_options.depends == []
@@ -101,9 +102,7 @@ def test_valid_order_block_options() -> None:
         "allow-blank": True,
         "file-name": "test_code.py",
         "source-blocks-order": "ordered",
-        "indentation": False,
-        "max-incorrect": 2,
-        "min-incorrect": 3,
+        "indentation": True,
         "source-header": "TEST",
         "solution-header": "TEST",
         "partial-credit": "lcs",
@@ -188,6 +187,7 @@ def test_order_block_validation(options: dict) -> None:
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,
+        inner_html=build_tag("pl-answer", {"correct": True})
     )
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
