@@ -20,7 +20,7 @@ window.PLOrderBlocks = function (uuid, options) {
       blockNum += 1;
       block.setAttribute('role', 'option');
       block.setAttribute('aria-roledescription', 'Block');
-      block.removeAttribute('aria-selected');
+      block.setAttribute('aria-selected', false);
       initializeBlockEvents(block);
     });
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
@@ -46,22 +46,22 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function initializeBlockEvents(block) {
-    function removeSelectedAttribute() {
-      block.removeAttribute('aria-selected');
+    function deselectBlock() {
+      block.setAttribute('aria-selected', false);
     }
 
     function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
       // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
       // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
-      block.removeEventListener('blur', removeSelectedAttribute);
+      block.removeEventListener('blur', deselectBlock);
       handle();
       ev.preventDefault();
       correctPairing(block);
       if (focus) {
         block.focus();
       }
-      block.addEventListener('blur', removeSelectedAttribute);
+      block.addEventListener('blur', deselectBlock);
       setAnswer();
     }
 
@@ -70,7 +70,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const dropzoneBlocks = Array.from(
         $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
       );
-      if (!block.hasAttribute('aria-selected')) {
+      if (block.getAttribute('aria-selected') !== 'true') {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
@@ -108,7 +108,7 @@ window.PLOrderBlocks = function (uuid, options) {
         switch (ev.key) {
           case ' ': // Space key
           case 'Enter':
-            handleKey(ev, block, () => block.setAttribute('aria-selected', ''));
+            handleKey(ev, block, () => block.setAttribute('aria-selected', true));
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
@@ -173,7 +173,7 @@ window.PLOrderBlocks = function (uuid, options) {
             });
             break;
           case 'Escape':
-            handleKey(ev, block, removeSelectedAttribute);
+            handleKey(ev, block, deselectBlock);
             break;
         }
       }
