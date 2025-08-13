@@ -133,6 +133,7 @@ export function RubricSettings({
   };
 
   const submitSettings = async (use_rubric: boolean) => {
+    // Performs validation on the required inputs
     if (use_rubric) {
       const required =
         document.querySelectorAll<HTMLInputElement>('#rubric-editing input[required]') ?? [];
@@ -172,11 +173,8 @@ export function RubricSettings({
       }
     });
 
-    const postUrl = window.location.pathname + window.location.search;
-
-    const res = await fetch(postUrl, {
+    const res = await fetch(window.location.pathname, {
       method: 'POST',
-      credentials: 'same-origin',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
@@ -201,7 +199,7 @@ export function RubricSettings({
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
         >
-          <div class="card-title mb-0 me-auto d-flex align-items-center">Rubric settings</div>
+          Rubric settings
         </button>
         <div id="rubric-setting" class="collapse p-2">
           <div>
