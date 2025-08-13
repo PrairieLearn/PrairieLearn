@@ -26,7 +26,7 @@ For other HTTP methods, replace the word `POST` with the required method type. E
 
 ## Providing data to an endpoint
 
-Endpoints that are making a change to PrairieLearn will typically require you to provide additional data to the endpoint. For example, to grant a staff member access to a specific course, you will need to provide their UID and the level of access you wish to grant them. For `curl`, this is done using the `-d` option.
+Endpoints that are making a change to PrairieLearn will typically require you to provide additional data in the body of the request that is sent to the endpoint. For example, to grant a staff member access to a specific course, you will need to provide their UID and the level of access you wish to grant them. For `curl`, this is done using the `-d` option.
 
 Here is an example of using `curl` for a `POST` request:
 
@@ -34,7 +34,7 @@ Here is an example of using `curl` for a `POST` request:
 curl -H "Private-Token: TOKEN" -X POST -d '{"key":"value"}' https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
-When listed, make sure to include the correct `JSON` key(s) for each endpoint and update the value(s) in each example for your use case.
+When listed, make sure to include the correct `JSON` key(s) for each endpoint and update the value(s) in each example body for your use case.
 
 ## Example access script
 
