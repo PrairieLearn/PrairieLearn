@@ -3467,6 +3467,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.17.0"
     "@typescript-eslint/rule-tester": "npm:^8.39.0"
+    "@typescript-eslint/tsconfig-utils": "npm:^8.39.1"
     "@typescript-eslint/utils": "npm:^8.39.0"
     "@vitest/coverage-v8": "npm:^3.2.4"
     tsx: "npm:^4.20.3"
