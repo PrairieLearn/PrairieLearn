@@ -211,7 +211,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
     // `highlightAuto()` on the first few thousand characters of the file.
     //
     // Note that we deliberately exclude `ls` and `ml` from the extensions
-    // that we try to guess from, as they're ambiguous (LiveScript/Lasso/
+    // that we try to guess from, as they're ambiguous (LiveScript/Lasso
     // and OCaml/Standard ML, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
     let language: string | undefined = undefined;
