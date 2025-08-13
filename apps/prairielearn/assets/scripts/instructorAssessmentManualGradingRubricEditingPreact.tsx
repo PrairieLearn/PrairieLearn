@@ -1,7 +1,7 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
 
-import { RubricSettings } from '../../src/pages/instructorAssessmentManualGrading/assessmentQuestion/RubricSettings.js';
+import { RubricSettings } from '../../src/components/RubricSettings.js';
 
 onDocumentReady(() => {
   const rubricSettings = document.querySelector('#rubric-settings') as HTMLElement;
