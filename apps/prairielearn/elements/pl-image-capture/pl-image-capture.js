@@ -167,8 +167,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
@@ -514,10 +514,10 @@ const MAX_ZOOM_SCALE = 5;
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
 
-      capturePreviewParent.appendChild(capturePreview);
+      capturePreviewParent.append(capturePreview);
 
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreviewParent);
+      uploadedImageContainer.append(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(

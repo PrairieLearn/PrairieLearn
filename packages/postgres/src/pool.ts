@@ -26,7 +26,7 @@ const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
-    ...((err as any).data ?? {}),
+    ...(err as any).data,
     ...data,
   };
   return err;
@@ -47,8 +47,8 @@ export class PostgresError extends Error {
  */
 function debugString(s: string): string {
   if (typeof s !== 'string') return 'NOT A STRING';
-  s = s.replace(/\n/g, '\\n');
-  if (s.length > 78) s = s.substring(0, 75) + '...';
+  s = s.replaceAll('\n', '\\n');
+  if (s.length > 78) s = s.slice(0, 75) + '...';
   s = '"' + s + '"';
   return s;
 }
@@ -107,14 +107,14 @@ function paramsToArray(
         paramsArray.push(params[v]);
       }
     }
-    processedSql += remainingSql.substring(0, result.index) + map[v];
-    remainingSql = remainingSql.substring(result.index + result[0].length);
+    processedSql += remainingSql.slice(0, result.index) + map[v];
+    remainingSql = remainingSql.slice(result.index + result[0].length);
   }
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
     const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length) {
+    if (difference.length > 0) {
       throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
     }
   }
@@ -923,7 +923,7 @@ export class PostgresPool {
    */
   async setRandomSearchSchemaAsync(prefix: string): Promise<string> {
     // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(0, 28);
+    const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
