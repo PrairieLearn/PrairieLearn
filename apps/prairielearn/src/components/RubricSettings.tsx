@@ -19,8 +19,8 @@ export function RubricSettings({
   __csrf_token: string;
   aiGradingStats: AiGradingGeneralStats | null;
 }) {
-  const showAiGradingStats = aiGradingStats ? true : false;
-  const wasUsingRubric = rubric_data ? true : false;
+  const showAiGradingStats = Boolean(aiGradingStats);
+  const wasUsingRubric = Boolean(rubric_data);
   const rubricItemsWithSelectionCount = rubric_data?.rubric_items ?? [];
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
   const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
@@ -320,7 +320,6 @@ export function RubricSettings({
               rubricItems.map((it, idx) => (
                 <RubricRow
                   key={it.id ?? `row-${idx}`}
-                  idx={idx}
                   item={it}
                   editMode={editMode}
                   showAiGradingStats={showAiGradingStats}
@@ -359,10 +358,10 @@ export function RubricSettings({
           <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
         </div>
       ))}
-      <div>
+      <div class="mb-3">
         <button
           type="button"
-          class="btn btn-sm btn-secondary"
+          class="btn btn-secondary"
           disabled={!editMode}
           onClick={addRubricItemRow}
         >
@@ -381,14 +380,16 @@ export function RubricSettings({
       )}
 
       {/* Footer actions */}
-      <div class="text-end mt-2">
-        <button
-          type="button"
-          class="btn btn-link btn-sm me-auto"
-          onClick={() => submitSettings(false)}
-        >
-          Disable rubric
-        </button>
+      <div class="text-end">
+        {wasUsingRubric && (
+          <button
+            type="button"
+            class="btn btn-link btn-sm me-auto"
+            onClick={() => submitSettings(false)}
+          >
+            Disable rubric
+          </button>
+        )}
         {!editMode ? (
           <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
             Edit rubric
@@ -420,7 +421,6 @@ export function RubricRow({
   rowDragStart,
   rowDragOver,
 }: {
-  idx: number;
   item: RubricItemData;
   editMode: boolean;
   showAiGradingStats: boolean;
