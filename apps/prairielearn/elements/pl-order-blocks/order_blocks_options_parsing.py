@@ -216,7 +216,7 @@ class OrderBlocksOptions:
             )
 
         if (
-            self.grading_method.value is not GradingMethodType.EXTERNAL.value
+            self.grading_method is not GradingMethodType.EXTERNAL
             and len(self.correct_answers) == 0
         ):
             raise ValueError(

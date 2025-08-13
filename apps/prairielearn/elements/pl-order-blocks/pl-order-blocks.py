@@ -61,7 +61,6 @@ LCS_GRADABLE_TYPES = frozenset([
 ])
 
 
-WEIGHT_DEFAULT = 1
 TAB_SIZE_PX = 50
 FIRST_WRONG_FEEDBACK = {
     "incomplete": "Your answer is correct so far, but it is incomplete.",
