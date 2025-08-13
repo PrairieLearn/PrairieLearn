@@ -71,9 +71,7 @@ export function StudentInstanceQuestion({
                   <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
                   <script src="${assetPath('javascripts/require.js')}"></script>
                   <script src="${assetPath('localscripts/question.js')}"></script>
-                  <script src="${assetPath(
-                      `localscripts/question${resLocals.effectiveQuestionType}.js`,
-                    )}"></script>
+                  <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
                 `
               : ''}
             ${unsafeHtml(resLocals.extraHeadersHtml)}
