@@ -22,6 +22,9 @@ ALTER TABLE enrollments
 ADD COLUMN pending_lti13_instance_id BIGINT;
 
 ALTER TABLE enrollments
+ADD FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_instances (id) ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE enrollments
 ALTER COLUMN user_id
 DROP NOT NULL;
 

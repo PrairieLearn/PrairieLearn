@@ -24,14 +24,15 @@ node -e "console.log(new Date().toISOString().replace(/\D/g,'').slice(0,14))"
 Each migration file should contain one or more SQL statements to make the appropriate modifications to the database. It's fine to put multiple logically-related migration statements in the same file. Some potentially useful migration statements follow:
 
 ```sql
--- add a column to a table
+-- add a column to a table with a default value
 ALTER TABLE assessments
 ADD COLUMN auto_close boolean DEFAULT true;
 
--- add a foreign key to a table
+-- add a column to a table
 ALTER TABLE variants
 ADD COLUMN authn_user_id bigint;
 
+-- add a foreign key to a table
 ALTER TABLE variants
 ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 
