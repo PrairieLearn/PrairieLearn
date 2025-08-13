@@ -333,7 +333,7 @@ export function RubricSettings({
             </tr>
           </thead>
           <tbody>
-            {rubricItems.length ? (
+            {rubricItems.length > 0 ? (
               rubricItems.map((it, idx) => (
                 <RubricRow
                   key={it.id ?? `row-${idx}`}
