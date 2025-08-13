@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -44,10 +45,13 @@ export function InstructorCourseAdminSettings({
       )}
 
       <div class="card  mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>
             ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
           </h1>
+          ${GitHubButton(courseGHLink)}
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists
@@ -62,11 +66,6 @@ export function InstructorCourseAdminSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="short_name">Short Name</label>
-              ${courseGHLink
-                ? html`<a target="_blank" href="${courseGHLink}" rel="noreferrer">
-                    view on GitHub
-                  </a>`
-                : ''}
               <input
                 type="text"
                 class="form-control"
