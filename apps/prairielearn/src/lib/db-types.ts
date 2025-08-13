@@ -873,22 +873,13 @@ export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 export const Lti13InstanceSchema = z.object({
   access_token_expires_at: DateFromISOString.nullable(),
   access_tokenset: z
-    .union([
-      // openid-client v5
-      z.object({
-        access_token: z.string(),
-        token_type: z.literal('Bearer'),
-        expires_at: z.number(),
-        scope: z.string(),
-      }),
-      // openid-client v6
-      z.object({
-        access_token: z.string(),
-        token_type: z.literal('bearer'),
-        expires_in: z.number(),
-        scope: z.string(),
-      }),
-    ])
+    .object({
+      access_token: z.string(),
+      token_type: z.string(),
+      scope: z.string(),
+      expires_at: z.number().optional(),
+      expires_in: z.number().optional(),
+    })
     .nullable(),
   client_params: z.any().nullable(),
   created_at: DateFromISOString,

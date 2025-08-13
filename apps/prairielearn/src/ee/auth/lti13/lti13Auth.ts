@@ -1,7 +1,6 @@
 import * as crypto from 'crypto';
 import { URL } from 'url';
 
-import debugfn from 'debug';
 import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import * as client from 'openid-client';
@@ -23,8 +22,6 @@ import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/l
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 import { Lti13AuthIframe, Lti13AuthRequired, Lti13Test } from './lti13Auth.html.js';
-
-const debug = debugfn('prairielearn:lti13');
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -83,10 +80,6 @@ const OIDCLaunchFlowSchema = z.object({
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
 async function launchFlow(req: Request, res: Response) {
-  debug('launchFlow');
-  debug(req.method);
-  debug({ ...req.query, ...req.body });
-
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
   // Can be POST or GET
 
@@ -142,7 +135,6 @@ async function launchFlow(req: Request, res: Response) {
       requestParameters[key] = parameters[key];
     }
   }
-  debug(requestParameters);
 
   const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
   res.redirect(redirectTo.href);
@@ -157,10 +149,6 @@ const OIDCAuthResponseSchema = z.object({
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
-    debug('callback');
-    debug(req.method);
-    debug(req.body);
-
     // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
     const authResponse = OIDCAuthResponseSchema.parse(req.body);
 
@@ -205,7 +193,6 @@ router.post(
         lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
     });
 
-    debug(lti13_claims);
     // If we get here, auth succeeded and lti13_claims is populated
 
     // Put the LTI 1.3 claims in the session

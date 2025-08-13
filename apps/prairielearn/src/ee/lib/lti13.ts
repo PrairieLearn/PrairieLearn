@@ -1,7 +1,6 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
-import debugfn from 'debug';
 import type { Request } from 'express';
 import * as jose from 'jose';
 import _ from 'lodash';
@@ -35,7 +34,6 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
 
-const debug = debugfn('prairielearn:lti13');
 const sql = loadSqlEquiv(import.meta.url);
 
 // Scope list at
@@ -215,17 +213,17 @@ export async function getOpenidClientConfig(
     throw new Error('LTI 1.3 configuration error: unsupported key type');
   }
 
-  const privateKey: client.PrivateKey = {
-    key: cryptoKey,
-    kid: keyFromKeyStore.kid,
-  };
-  debug(`getOpenidClientConfig: using key with kid ${keyFromKeyStore.kid}`);
-
   const openidClientConfig = new client.Configuration(
     lti13_instance.issuer_params,
     lti13_instance.client_params.client_id,
     lti13_instance.client_params,
-    client.PrivateKeyJwt(privateKey, options),
+    client.PrivateKeyJwt(
+      {
+        key: cryptoKey,
+        kid: keyFromKeyStore.kid,
+      },
+      options,
+    ),
   );
 
   // Only for testing
@@ -393,7 +391,6 @@ export async function validateLti13CourseInstance(
 }
 
 export async function getAccessToken(lti13_instance_id: string) {
-  debug('getAccessToken');
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
   const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
@@ -403,7 +400,6 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.access_token_expires_at &&
     lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
-    debug('getAccessToken: returning cached token');
     return lti13_instance.access_tokenset.access_token;
   }
 
@@ -443,8 +439,6 @@ export async function getAccessToken(lti13_instance_id: string) {
   const tokenSet = await client.clientCredentialsGrant(openidClientConfig, {
     scope: TOKEN_SCOPES.join(' '),
   });
-
-  console.log(tokenSet);
 
   // Store the token for reuse
   const expires_at = tokenSet.expires_in ? Date.now() + tokenSet.expires_in * 1000 : Date.now();
