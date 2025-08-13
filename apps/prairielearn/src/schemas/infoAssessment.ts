@@ -33,7 +33,7 @@ export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
       .string()
@@ -151,22 +151,26 @@ const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
   maxPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
-  maxAutoPoints: PointsSingleJsonSchema.optional(),
-  manualPoints: PointsSingleJsonSchema.optional(),
+  maxAutoPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
+  manualPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
-  comment: CommentJsonSchema.optional(),
+  comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
   id: QuestionIdJsonSchema,
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional().describe(
+    ForceMaxPointsJsonSchema.description!,
+  ),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional()
     .default(1),
-  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+  advanceScorePerc: AdvanceScorePercJsonSchema.optional().describe(
+    AdvanceScorePercJsonSchema.description!,
+  ),
   gradeRateMinutes: z
     .number()
     .gte(0)
@@ -179,7 +183,7 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
 });
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
-  comment: CommentJsonSchema.optional(),
+  comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
   maxPoints: PointsSingleJsonSchema.optional(),
@@ -244,7 +248,7 @@ export const ZoneAssessmentJsonSchema = z
         'Zone title, displayed to the students at the top of the question list for the zone.',
       )
       .optional(),
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     // Do we need to allow for additional keys?
     comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.').meta({
       deprecated: true,
@@ -303,7 +307,7 @@ export const ZoneAssessmentJsonSchema = z
 
 export const AssessmentJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
