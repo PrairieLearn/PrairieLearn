@@ -71,7 +71,7 @@ export async function makeVariant(
     true_answer: data.true_answer || {},
     options: data.options || {},
     broken: hasFatalIssue,
-    broken_at: hasFatalIssue ? new Date() : null,
+    broken_at: null,
   };
 
   if (question.workspace_image !== null) {
@@ -101,7 +101,7 @@ export async function makeVariant(
       true_answer: data.true_answer || {},
       options: data.options || {},
       broken: hasFatalIssue,
-      broken_at: hasFatalIssue ? new Date() : null,
+      broken_at: null,
     };
   }
 
