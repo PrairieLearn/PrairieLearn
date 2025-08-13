@@ -57,7 +57,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
     && rm -rf node_modules \
-    && yarn workspaces focus --all --production \
+    && yarn workspaces focus --production @prairielearn/prairielearn && yarn cache clean \
     && su postgres -c "createuser -s root" \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
