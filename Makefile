@@ -91,6 +91,7 @@ test-prairielearn: start-support
 
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
+	@yarn knip
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
