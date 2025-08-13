@@ -43,7 +43,7 @@ router.get(
 );
 
 router.get(
-  '/enrollment',
+  '/enrollment.json',
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_view) {
