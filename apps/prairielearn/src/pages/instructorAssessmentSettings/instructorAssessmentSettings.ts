@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
@@ -24,6 +25,7 @@ import {
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
@@ -112,10 +114,10 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -147,6 +149,8 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_assessment') {
+      assert(res.locals.course_instance.short_name, 'course_instance.short_name is required');
+      assert(res.locals.assessment.tid, 'assessment.tid is required');
       const infoAssessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',

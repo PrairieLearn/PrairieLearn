@@ -8,11 +8,17 @@ import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
+  type Course,
   IdSchema,
   type Issue,
+  type Question,
   QuestionGenerationContextEmbeddingSchema,
+  type User,
 } from '../../lib/db-types.js';
-import { getAndRenderVariant } from '../../lib/question-render.js';
+import {
+  type ResLocalsQuestionRenderAdded,
+  getAndRenderVariant,
+} from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
@@ -83,7 +89,14 @@ async function checkRender(
   const course = await selectCourseById(courseId);
   const user = await selectUserById(userId);
 
-  const locals = {
+  const locals: Partial<ResLocalsQuestionRenderAdded> & {
+    urlPrefix: string;
+    is_administrator: boolean;
+    question: Question;
+    course: Course;
+    user: User;
+    authn_user: User;
+  } = {
     // The URL prefix doesn't matter here since we won't ever show the result to the user.
     urlPrefix: '',
     question,
@@ -99,7 +112,7 @@ async function checkRender(
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
-  return ((locals as any).issues as Issue[])
+  return (locals.issues as Issue[])
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
     .filter((output) => output !== undefined)
     .map((output) => {
