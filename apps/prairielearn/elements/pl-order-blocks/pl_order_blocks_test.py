@@ -58,7 +58,9 @@ def assert_answer_options(
     order_block_options: OrderBlocksOptions, answer_option_list: list[dict]
 ) -> None:
     # Must be the same length to test all of them
-    assert len(order_block_options.answer_options) == len(answer_option_list), "answer_option length mismatch"
+    assert len(order_block_options.answer_options) == len(answer_option_list), (
+        "answer_option length mismatch"
+    )
 
     for answer_options, test_options in zip(
         order_block_options.answer_options, answer_option_list, strict=False
@@ -187,7 +189,7 @@ def test_order_block_validation(options: dict) -> None:
     question = build_tag(
         tag_name="pl-order-blocks",
         options=options,
-        inner_html=build_tag("pl-answer", {"correct": True})
+        inner_html=build_tag("pl-answer", {"correct": True}),
     )
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
