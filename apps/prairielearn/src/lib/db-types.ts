@@ -880,6 +880,17 @@ export const Lti13InstanceSchema = z.object({
       expires_at: z.number().optional(),
       expires_in: z.number().optional(),
     })
+    .refine(
+      (token) => {
+        // expires_at is from the openid-client v5 token representation
+        // expires_in is from the openic-client v6
+        // Either both present or both missing is an error case
+        return (token.expires_at === undefined) !== (token.expires_in === undefined);
+      },
+      {
+        message: 'Provide exactly one of expires_at or expires_in',
+      },
+    )
     .nullable(),
   client_params: z.any().nullable(),
   created_at: DateFromISOString,
