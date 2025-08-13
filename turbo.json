@@ -4,6 +4,10 @@
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", "public/build/**"]
+    },
+    "build-slim": {
+      "dependsOn": ["^build-slim"],
+      "outputs": ["dist/**", "public/build/**"]
     }
   }
 }

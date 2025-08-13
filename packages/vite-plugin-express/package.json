@@ -10,7 +10,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "dev": "tsc --watch --preserveWatchOutput",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "debounce": "^2.2.0",

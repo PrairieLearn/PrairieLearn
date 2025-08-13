@@ -12,7 +12,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "@aws-sdk/client-ecr": "^3.862.0",

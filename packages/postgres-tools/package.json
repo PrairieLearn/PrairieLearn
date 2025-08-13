@@ -14,7 +14,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",

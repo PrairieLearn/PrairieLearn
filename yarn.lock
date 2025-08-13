@@ -3793,7 +3793,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/prairielearn@workspace:^, @prairielearn/prairielearn@workspace:apps/prairielearn":
+"@prairielearn/prairielearn@workspace:apps/prairielearn":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
@@ -14644,7 +14644,6 @@ __metadata:
     "@changesets/cli": "npm:^2.29.5"
     "@eslint-react/eslint-plugin": "npm:^1.52.3"
     "@html-eslint/eslint-plugin": "npm:^0.44.0"
-    "@prairielearn/prairielearn": "workspace:^"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@stylistic/eslint-plugin": "npm:^5.2.2"
     "@types/tar-stream": "npm:^3.1.4"
@@ -14676,7 +14675,6 @@ __metadata:
     react-dom: "npm:^19.1.1"
     s3rver: "npm:^3.7.1"
     tar-stream: "npm:^3.1.7"
-    tsc: "npm:^2.0.4"
     turbo: "npm:^2.5.5"
     typescript: "npm:^5.9.2"
     typescript-eslint: "npm:^8.39.0"
@@ -16718,15 +16716,6 @@ __metadata:
   version: 5.7.1
   resolution: "ts-pattern@npm:5.7.1"
   checksum: 10c0/815592dcc8058c90f2329ca88ab4377eb89d794520055fb9a937424babeb87be29f60ad51505206e4ac130b7cbc70ae7c0b3c615469e7f379b7c749c0911265f
-  languageName: node
-  linkType: hard
-
-"tsc@npm:^2.0.4":
-  version: 2.0.4
-  resolution: "tsc@npm:2.0.4"
-  bin:
-    tsc: bin/tsc
-  checksum: 10c0/4651d344891d995e62ab7ca64ce0a8597bbdc2d392886c9956d15caab4dc9bfe86e759d3385b3f97c49fb5294194a161d6812673e3f51e46357c82482f32c3ab
   languageName: node
   linkType: hard
 

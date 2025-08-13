@@ -11,7 +11,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc && node-gyp rebuild",
-    "install": "node-gyp rebuild"
+    "install": "node-gyp rebuild",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "bindings": "^1.5.0",

@@ -10,7 +10,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "dev": "tsc --watch --preserveWatchOutput",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "sql-formatter": "^15.6.6"

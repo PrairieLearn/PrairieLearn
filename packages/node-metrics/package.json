@@ -10,7 +10,8 @@
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "dev": "tsc --watch --preserveWatchOutput",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.862.0",

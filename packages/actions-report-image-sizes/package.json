@@ -9,7 +9,8 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "@actions/core": "^1.11.1",

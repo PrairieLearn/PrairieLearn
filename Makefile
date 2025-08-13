@@ -2,6 +2,8 @@ export PATH := $(CURDIR)/.venv/bin:$(PATH)
 
 build:
 	@yarn turbo run build
+build-slim:
+	@yarn turbo run build-slim
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 

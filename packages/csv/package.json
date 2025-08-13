@@ -11,7 +11,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "vitest run --coverage"
+    "test": "vitest run --coverage",
+    "build-slim": "tsc -p tsconfig.prod.json"
   },
   "dependencies": {
     "csv-stringify": "^6.6.0",
