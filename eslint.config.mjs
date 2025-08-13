@@ -194,8 +194,8 @@ export default tseslint.config([
         { partitionByComment: { block: true }, type: 'natural' },
       ],
       'perfectionist/sort-heritage-clauses': 'error',
-      'perfectionist/sort-sets': ['error', { type: 'natural', partitionByComment: true }],
-      'perfectionist/sort-objects': ['off', { type: 'natural', partitionByComment: true }],
+      'perfectionist/sort-objects': ['off', { partitionByComment: true, type: 'natural' }],
+      'perfectionist/sort-sets': ['error', { partitionByComment: true, type: 'natural' }],
       'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
       'prefer-destructuring': 'off', // TODO: Consider enabling this
