@@ -5,17 +5,22 @@ import os
 import random
 from copy import deepcopy
 from typing import TypedDict
+
 import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
-from lxml.etree import _Comment
-from typing_extensions import NotRequired, assert_never
 from order_blocks_options_parsing import (
-        OrderBlocksOptions, GradingMethodType, GroupInfo, 
-        SourceBlocksOrderType, SolutionPlacementType, FeedbackType,
-        PartialCreditType, FormatType
-        )
+    FeedbackType,
+    FormatType,
+    GradingMethodType,
+    GroupInfo,
+    OrderBlocksOptions,
+    PartialCreditType,
+    SolutionPlacementType,
+    SourceBlocksOrderType,
+)
+from typing_extensions import NotRequired, assert_never
 
 
 class OrderBlocksAnswerData(TypedDict):
@@ -136,27 +141,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         else:
             incorrect_answers.append(answer_data_dict)
 
-    if (order_blocks_options.grading_method.value is not GradingMethodType.EXTERNAL.value and len(correct_answers) == 0):
-        raise ValueError("There are no correct answers specified for this question.")
-
-    all_incorrect_answers = len(incorrect_answers)
-    max_incorrect = pl.get_integer_attrib(
-        html_element, "max-incorrect", all_incorrect_answers
-    )
-    min_incorrect = pl.get_integer_attrib(
-        html_element, "min-incorrect", all_incorrect_answers
-    )
-
-    if min_incorrect > all_incorrect_answers or max_incorrect > all_incorrect_answers:
-        raise ValueError(
-            "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
-        )
-    if min_incorrect > max_incorrect:
-        raise ValueError(
-            "The attribute min-incorrect must be smaller than max-incorrect."
-        )
-
-    incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
+    incorrect_answers_count = random.randint(order_blocks_options.min_incorrect, order_blocks_options.max_incorrect)
 
     sampled_correct_answers = correct_answers
     sampled_incorrect_answers = random.sample(

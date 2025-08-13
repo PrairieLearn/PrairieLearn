@@ -1,13 +1,15 @@
 from enum import Enum
 from typing import TypedDict
+
 import lxml.html
+import prairielearn as pl
 from lxml.etree import _Comment
 
-import prairielearn as pl
 
 class GroupInfo(TypedDict):
     tag: str | None
     depends: list[str] | None
+
 
 class GradingMethodType(Enum):
     UNORDERED = "unordered"
@@ -15,6 +17,7 @@ class GradingMethodType(Enum):
     RANKING = "ranking"
     DAG = "dag"
     EXTERNAL = "external"
+
 
 class SourceBlocksOrderType(Enum):
     RANDOM = "random"
@@ -54,7 +57,7 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
-GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED 
+GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
@@ -96,32 +99,67 @@ def get_graph_info(
 
 
 class OrderBlocksOptions:
-    def __init__(
-    self,
-    html_element: lxml.html.HtmlElement
-    ) -> None:
+    def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
         self.weight = pl.get_integer_attrib(html_element, "weight", None)
-        self.grading_method = pl.get_enum_attrib( html_element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT)
-        self.allow_blank = pl.get_boolean_attrib( html_element, "allow-blank", ALLOW_BLANK_DEFAULT)
-        self.file_name = pl.get_string_attrib(html_element, "file-name", FILE_NAME_DEFAULT)
-        self.source_blocks_order = pl.get_enum_attrib(html_element, "source-blocks-order", SourceBlocksOrderType, SOURCE_BLOCKS_ORDER_DEFAULT)
-        self.indentation = pl.get_boolean_attrib(html_element, "indentation", INDENTION_DEFAULT)
-        self.max_incorrect = pl.get_integer_attrib(html_element, "max-incorrect", None)
-        self.min_incorrect = pl.get_integer_attrib(html_element, "min-incorrect", None)
-        self.source_header = pl.get_string_attrib(html_element, "source-header", SOURCE_HEADER_DEFAULT)
-        self.solution_header = pl.get_string_attrib(html_element, "solution-header", SOLUTION_HEADER_DEFAULT)
-        self.solution_placement = pl.get_enum_attrib(html_element, "solution-placement", SolutionPlacementType, SOLUTION_PLACEMENT_DEFAULT)
-        self.max_indent = pl.get_integer_attrib(html_element, "max-indent", MAX_INDENTION_DEFAULT)
-        self.partial_credit = pl.get_enum_attrib(html_element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT)
-        self.feedback = pl.get_enum_attrib(html_element, "feedback", FeedbackType, FEEDBACK_DEFAULT)
-        self.format = pl.get_enum_attrib(html_element, "format", FormatType, FormatType.DEFAULT)
+        self.grading_method = pl.get_enum_attrib(
+            html_element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
+        )
+        self.allow_blank = pl.get_boolean_attrib(
+            html_element, "allow-blank", ALLOW_BLANK_DEFAULT
+        )
+        self.file_name = pl.get_string_attrib(
+            html_element, "file-name", FILE_NAME_DEFAULT
+        )
+        self.source_blocks_order = pl.get_enum_attrib(
+            html_element,
+            "source-blocks-order",
+            SourceBlocksOrderType,
+            SOURCE_BLOCKS_ORDER_DEFAULT,
+        )
+        self.indentation = pl.get_boolean_attrib(
+            html_element, "indentation", INDENTION_DEFAULT
+        )
+        self.source_header = pl.get_string_attrib(
+            html_element, "source-header", SOURCE_HEADER_DEFAULT
+        )
+        self.solution_header = pl.get_string_attrib(
+            html_element, "solution-header", SOLUTION_HEADER_DEFAULT
+        )
+        self.solution_placement = pl.get_enum_attrib(
+            html_element,
+            "solution-placement",
+            SolutionPlacementType,
+            SOLUTION_PLACEMENT_DEFAULT,
+        )
+        self.max_indent = pl.get_integer_attrib(
+            html_element, "max-indent", MAX_INDENTION_DEFAULT
+        )
+        self.partial_credit = pl.get_enum_attrib(
+            html_element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT
+        )
+        self.feedback = pl.get_enum_attrib(
+            html_element, "feedback", FeedbackType, FEEDBACK_DEFAULT
+        )
+        self.format = pl.get_enum_attrib(
+            html_element, "format", FormatType, FormatType.DEFAULT
+        )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
 
         self.answer_options = collect_answer_options(html_element, self.grading_method)
+        self.correct_answers = []
+        self.incorrect_answers = []
 
+        for options in self.answer_options:
+            if options.correct:
+                self.correct_answers.append(options)
+            else:
+                self.incorrect_answers.append(options)
+
+        self.max_incorrect = pl.get_integer_attrib(html_element, "max-incorrect", len(self.incorrect_answers))
+        self.min_incorrect = pl.get_integer_attrib(html_element, "min-incorrect", len(self.incorrect_answers))
 
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
         if html_element.tag != "pl-order-blocks":
@@ -148,10 +186,12 @@ class OrderBlocksOptions:
             "allow-blank",
         ]
         pl.check_attribs(
-            html_element, required_attribs=required_attribs, optional_attribs=optional_attribs
+            html_element,
+            required_attribs=required_attribs,
+            optional_attribs=optional_attribs,
         )
 
-    def validate(self):
+    def validate(self) -> None:
         self._validate_order_blocks_options()
         self._validate_answer_options()
 
@@ -173,12 +213,27 @@ class OrderBlocksOptions:
                 f"feedback type {self.feedback.value} is not available with the {self.grading_method.value} grading-method."
             )
 
-        if (
-            self.format is FormatType.DEFAULT
-            and self.code_language is not None
-        ):
-            raise ValueError('code-language attribute may only be used with format="code"')
+        if self.format is FormatType.DEFAULT and self.code_language is not None:
+            raise ValueError(
+                'code-language attribute may only be used with format="code"'
+            )
 
+        if (
+            self.grading_method.value
+            is not GradingMethodType.EXTERNAL.value
+            and len(self.correct_answers) == 0
+        ):
+            raise ValueError("There are no correct answers specified for this question.")
+
+        all_incorrect_answers = len(self.incorrect_answers)
+        if self.min_incorrect > all_incorrect_answers or self.max_incorrect > all_incorrect_answers:
+            raise ValueError(
+                "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
+            )
+        if self.min_incorrect > self.max_incorrect:
+            raise ValueError(
+                "The attribute min-incorrect must be smaller than max-incorrect."
+            )
 
     def _validate_answer_options(self) -> None:
         used_tags = []
@@ -193,10 +248,7 @@ class OrderBlocksOptions:
                     'Block groups only supported in the "dag" grading mode.'
                 )
 
-            if (
-                self.indentation is False
-                and answer_options.indent is not None
-            ):
+            if self.indentation is False and answer_options.indent is not None:
                 raise ValueError(
                     "<pl-answer> should not specify indentation if indentation is disabled."
                 )
@@ -247,20 +299,36 @@ class OrderBlocksOptions:
 
 
 class AnswerOptions:
-    def __init__(self, html_element: lxml.html.HtmlElement, group_info: GroupInfo, grading_method: GradingMethodType):
+    def __init__(
+        self,
+        html_element: lxml.html.HtmlElement,
+        group_info: GroupInfo,
+        grading_method: GradingMethodType,
+    ) -> None:
         self._check_options(html_element, grading_method)
         self.tag, self.depends = get_graph_info(html_element)
-        self.correct = pl.get_boolean_attrib(html_element, "correct", ANSWER_CORRECT_DEFAULT)
+        self.correct = pl.get_boolean_attrib(
+            html_element, "correct", ANSWER_CORRECT_DEFAULT
+        )
         self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
-        self.indent = pl.get_integer_attrib(html_element, "indent", ANSWER_INDENT_DEFAULT)
-        self.distractor_for = pl.get_string_attrib(html_element, "distractor-for", DISTRACTOR_FOR_DEFAULT)
-        self.distractor_feedback = pl.get_string_attrib(html_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT)
-        self.ordering_feedback = pl.get_string_attrib(html_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT)
+        self.indent = pl.get_integer_attrib(
+            html_element, "indent", ANSWER_INDENT_DEFAULT
+        )
+        self.distractor_for = pl.get_string_attrib(
+            html_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
+        )
+        self.distractor_feedback = pl.get_string_attrib(
+            html_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
+        )
+        self.ordering_feedback = pl.get_string_attrib(
+            html_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
+        )
         self.inner_html = pl.inner_html(html_element)
         self.group_info = group_info
 
-
-    def _check_options(self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType) -> None:
+    def _check_options(
+        self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
+    ) -> None:
         if html_element.tag != "pl-answer":
             raise ValueError(
                 """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
@@ -268,7 +336,9 @@ class AnswerOptions:
             )
 
         if grading_method is GradingMethodType.EXTERNAL:
-            pl.check_attribs(html_element, required_attribs=[], optional_attribs=["correct"])
+            pl.check_attribs(
+                html_element, required_attribs=[], optional_attribs=["correct"]
+            )
         elif grading_method in [
             GradingMethodType.UNORDERED,
             GradingMethodType.ORDERED,
@@ -309,8 +379,9 @@ class AnswerOptions:
             )
 
 
-
-def collect_answer_options(html_element: lxml.html.HtmlElement, grading_method: GradingMethodType) -> list[AnswerOptions]:
+def collect_answer_options(
+    html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
+) -> list[AnswerOptions]:
     answer_options = []
     for inner_element in html_element:
         if isinstance(inner_element, _Comment):
@@ -320,9 +391,16 @@ def collect_answer_options(html_element: lxml.html.HtmlElement, grading_method: 
             case "pl-block-group":
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
-                    answer_options.append(AnswerOptions(answer_element, {"tag": group_tag, "depends": group_depends}, grading_method))
+                    options = AnswerOptions(answer_element,
+                                            {"tag": group_tag, "depends": group_depends},
+                                            grading_method)
+                    answer_options.append(options)
             case "pl-answer":
-                answer_options.append(AnswerOptions(inner_element, {"tag": None, "depends": None}, grading_method))
+                answer_options.append(
+                    AnswerOptions(
+                        inner_element, {"tag": None, "depends": None}, grading_method
+                    )
+                )
             case _:
                 raise ValueError(
                     """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
@@ -330,6 +408,3 @@ def collect_answer_options(html_element: lxml.html.HtmlElement, grading_method: 
                 )
 
     return answer_options
-
-
-

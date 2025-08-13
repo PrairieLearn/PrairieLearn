@@ -1,73 +1,88 @@
 import lxml.html
 import pytest
-from order_blocks_options_parsing import OrderBlocksOptions, get_graph_info
+from order_blocks_options_parsing import OrderBlocksOptions
+
 
 def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
     newline = "\n"
-    return f"""<{tag_name} 
+    return f"""<{tag_name}
         {newline.join(f'{n}="{v}"' for (n, v) in options.items())}
     >
     {inner_html}
 </{tag_name}>"""
 
 
-def assert_order_blocks_options(order_block_options: OrderBlocksOptions, options: dict):
+def assert_order_blocks_options(order_block_options: OrderBlocksOptions, options: dict) -> None:
     assert order_block_options.answers_name == options["answers-name"]
-    if 'weight' in options.keys():
+    if "weight" in options:
         assert order_block_options.weight == options["weight"]
-    if 'grading-method' in options.keys():
+    if "grading-method" in options:
         assert order_block_options.grading_method.value == options["grading-method"]
-    if 'allow-blank' in options.keys():
+    if "allow-blank" in options:
         assert order_block_options.allow_blank == options["allow-blank"]
-    if 'file-name' in options.keys():
+    if "file-name" in options:
         assert order_block_options.file_name == options["file-name"]
-    if 'source-blocks-order' in options.keys():
-        assert order_block_options.source_blocks_order.value == options["source-blocks-order"]
-    if 'indentation' in options.keys():
+    if "source-blocks-order" in options:
+        assert (
+            order_block_options.source_blocks_order.value
+            == options["source-blocks-order"]
+        )
+    if "indentation" in options:
         assert order_block_options.indentation == options["indentation"]
-    if 'max-incorrect' in options.keys():
+    if "max-incorrect" in options:
         assert order_block_options.max_incorrect == options["max-incorrect"]
-    if 'min-incorrect' in options.keys():
+    if "min-incorrect" in options:
         assert order_block_options.min_incorrect == options["min-incorrect"]
-    if 'source-header' in options.keys():
+    if "source-header" in options:
         assert order_block_options.source_header == options["source-header"]
-    if 'solution-header' in options.keys():
+    if "solution-header" in options:
         assert order_block_options.solution_header == options["solution-header"]
-    if 'partial-credit' in options.keys():
+    if "partial-credit" in options:
         assert order_block_options.partial_credit.value == options["partial-credit"]
-    if 'solution-placement' in options.keys():
-        assert order_block_options.solution_placement.value == options["solution-placement"]
-    if 'format' in options.keys():
+    if "solution-placement" in options:
+        assert (
+            order_block_options.solution_placement.value
+            == options["solution-placement"]
+        )
+    if "format" in options:
         assert order_block_options.format.value == options["format"]
-    if 'max-indent' in options.keys():
+    if "max-indent" in options:
         assert order_block_options.max_indent == options["max-indent"]
-    if 'feedback' in options.keys():
+    if "feedback" in options:
         assert order_block_options.feedback.value == options["feedback"]
 
-def assert_answer_options(order_block_options: OrderBlocksOptions, answer_option_list: list[dict]):
+
+def assert_answer_options(
+    order_block_options: OrderBlocksOptions, answer_option_list: list[dict]
+) -> None:
     # Must be the same length to test all of them
     if len(order_block_options.answer_options) != len(answer_option_list):
         return
 
-    for (answer_options, test_options) in zip(order_block_options.answer_options, answer_option_list):
-        if 'correct' in test_options.keys():
+    for answer_options, test_options in zip(
+        order_block_options.answer_options, answer_option_list, strict=False
+    ):
+        if "correct" in test_options:
             assert answer_options.correct == test_options["correct"]
-        if 'ranking' in test_options.keys():
+        if "ranking" in test_options:
             assert answer_options.ranking == test_options["ranking"]
-        if 'indent' in test_options.keys():
+        if "indent" in test_options:
             assert answer_options.indent == test_options["indent"]
-        if 'depends' in test_options.keys():
-            if test_options["depends"] == '':
+        if "depends" in test_options:
+            if test_options["depends"] == "":
                 assert answer_options.depends == []
             else:
                 assert answer_options.depends
-        if 'tag' in test_options.keys():
+        if "tag" in test_options:
             assert answer_options.tag == test_options["tag"]
-        if 'distractor-for' in test_options.keys():
+        if "distractor-for" in test_options:
             assert answer_options.distractor_for == test_options["distractor-for"]
-        if 'distractor-feedback' in test_options.keys():
-            assert answer_options.distractor_feedback == test_options["distractor-feedback"]
-        if 'ordering-feedback' in test_options.keys():
+        if "distractor-feedback" in test_options:
+            assert (
+                answer_options.distractor_feedback
+                == test_options["distractor-feedback"]
+            )
+        if "ordering-feedback" in test_options:
             assert answer_options.ordering_feedback == test_options["ordering-feedback"]
 
 
@@ -94,14 +109,13 @@ def test_valid_order_block_options() -> None:
         "format": "code",
         "max-indent": 3,
         "feedback": "first-wrong-verbose",
-        }
-    
+    }
 
     question = build_tag(
-            tag_name="pl-order-blocks",
-            options=options,
-            inner_html=build_tag(tag_name="pl-answer", options=tag1, inner_html="TAG1")
-            )
+        tag_name="pl-order-blocks",
+        options=options,
+        inner_html=build_tag(tag_name="pl-answer", options=tag1, inner_html="TAG1"),
+    )
     html_element = lxml.html.fromstring(question)
     order_block_options = OrderBlocksOptions(html_element)
     assert_order_blocks_options(order_block_options, options)
@@ -109,21 +123,21 @@ def test_valid_order_block_options() -> None:
 
 @pytest.mark.parametrize(
     ("options", "error"),
-    [({ 
-       "weight": 3,
-        }, r'Required attribute "answers-name" missing'
-      ),
-     ({ 
-       "answers-name": "test",
-       "invalid": "test"
-       }, r'Unknown attribute "invalid"'
-      )
-     ])
+    [
+        (
+            {
+                "weight": 3,
+            },
+            r'Required attribute "answers-name" missing',
+        ),
+        ({"answers-name": "test", "invalid": "test"}, r'Unknown attribute "invalid"'),
+    ],
+)
 def test_check_attribute_failure(options: dict, error: str) -> None:
     question = build_tag(
-            tag_name="pl-order-blocks",
-            options=options,
-            )
+        tag_name="pl-order-blocks",
+        options=options,
+    )
     html_element = lxml.html.fromstring(question)
 
     with pytest.raises(ValueError, match=error):
@@ -132,109 +146,117 @@ def test_check_attribute_failure(options: dict, error: str) -> None:
 
 @pytest.mark.parametrize(
     ("options"),
-    [{ 
-      "answers-name": "test",
-      "grading-method": "dag",
-      "weight": 2,
-      "indentation": False,
-      "partial-credit": "lcs",
-      },
-     { 
-      "answers-name": "test",
-      "grading-method": "unordered",
-      "weight": 1,
-      "indentation": True,
-      "solution-placement": "bottom",
-      "feedback": "none",
-      "source-blocks-order": "random",
-      },
-     { 
-      "answers-name": "test",
-      "grading-method": "unordered",
-      "weight": 1,
-      "indentation": True,
-      "solution-placement": "right",
-      "source-blocks-order": "random",
-      "format": "code",
-      },
-     { 
-      "answers-name": "test",
-      "allow-blank": True,
-      "file-name": "test.py",
-      "indentation": True,
-      "inline": True,
-      },
-     ])
+    [
+        {
+            "answers-name": "test",
+            "grading-method": "dag",
+            "weight": 2,
+            "indentation": False,
+            "partial-credit": "lcs",
+        },
+        {
+            "answers-name": "test",
+            "grading-method": "unordered",
+            "weight": 1,
+            "indentation": True,
+            "solution-placement": "bottom",
+            "feedback": "none",
+            "source-blocks-order": "random",
+        },
+        {
+            "answers-name": "test",
+            "grading-method": "unordered",
+            "weight": 1,
+            "indentation": True,
+            "solution-placement": "right",
+            "source-blocks-order": "random",
+            "format": "code",
+        },
+        {
+            "answers-name": "test",
+            "allow-blank": True,
+            "file-name": "test.py",
+            "indentation": True,
+            "inline": True,
+        },
+    ],
+)
 def test_order_block_validation(options: dict) -> None:
     """Tests valid order blocks options validation"""
     question = build_tag(
-            tag_name="pl-order-blocks",
-            options=options,
-            )
+        tag_name="pl-order-blocks",
+        options=options,
+    )
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
     assert_order_blocks_options(order_blocks_options, options)
     order_blocks_options._validate_order_blocks_options()
 
 
-
 @pytest.mark.parametrize(
     ("options", "error"),
-    [({ 
-       "answers-name": "test",
-       "grading-method": "unordered",
-       "partial-credit": "lcs",
-       }, r'You may only specify partial credit options in the DAG, ordered, and ranking grading modes.'),
-     ({ 
-       "answers-name": "test",
-       "grading-method": "unordered",
-       "feedback": "first-wrong-verbose",
-       }, r'feedback type first-wrong-verbose is not available with the unordered grading-method.'),
-     ({ 
-       "answers-name": "test",
-       "code-language": "python",
-       }, r'code-language attribute may only be used with format="code"'),
-     ])
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "unordered",
+                "partial-credit": "lcs",
+            },
+            r"You may only specify partial credit options in the DAG, ordered, and ranking grading modes.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "unordered",
+                "feedback": "first-wrong-verbose",
+            },
+            r"feedback type first-wrong-verbose is not available with the unordered grading-method.",
+        ),
+        (
+            {
+                "answers-name": "test",
+                "code-language": "python",
+            },
+            r'code-language attribute may only be used with format="code"',
+        ),
+    ],
+)
 def test_order_block_validation_failure(options: dict, error: str) -> None:
     """Tests invalid order blocks options and asserts the fail during validation"""
     question = build_tag(
-            tag_name="pl-order-blocks",
-            options=options,
-            )
+        tag_name="pl-order-blocks",
+        options=options,
+    )
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
 
     with pytest.raises(ValueError, match=error):
         order_blocks_options._validate_order_blocks_options()
 
+
 @pytest.mark.parametrize(
     ("options", "answer_options_list"),
-    [({ 
-       "answers-name": "test",
-       "grading-method": "dag",
-       "weight": 2,
-       "indentation": False,
-       "partial-credit": "lcs",
-       },
-      [
-          { "tag": "1", "depends": r'' }, 
-          { "tag": "2", "depends": r'1' }, 
-      ]),
-     ({ 
-       "answers-name": "test",
-       "grading-method": "dag",
-       "weight": 2,
-       "indentation": False,
-       "partial-credit": "lcs",
-       },
-      [
-          { "tag": "1", "depends": r'' }, 
-          { "tag": "2", "depends": r'1' }, 
-      ])
-     ])
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+                "weight": 2,
+                "indentation": False,
+                "partial-credit": "lcs",
+            },
+            [
+                {"tag": "1", "depends": r""},
+                {"tag": "2", "depends": r"1"},
+            ],
+        ),
+    ],
+)
 def test_answer_validation(options: dict, answer_options_list: list[dict]) -> None:
     """Tests valid order blocks options validation"""
-    tags_html = "\n".join(build_tag("pl-answer", answer_options) for answer_options in answer_options_list)
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
     question = build_tag("pl-order-blocks", options, tags_html)
     html_element = lxml.html.fromstring(question)
     order_blocks_options = OrderBlocksOptions(html_element)
