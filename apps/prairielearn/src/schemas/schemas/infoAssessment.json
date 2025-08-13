@@ -564,7 +564,6 @@
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
-      "id": "PointsSingleJsonSchema",
       "default": 0,
       "minimum": 0
     },

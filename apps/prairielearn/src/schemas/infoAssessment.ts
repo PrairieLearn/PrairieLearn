@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
@@ -149,9 +150,7 @@ export const AdvanceScorePercJsonSchema = z
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
-  maxPoints: PointsSingleJsonSchema.describe('A single point value.').meta({
-    description: 'A single point value.',
-  }),
+  maxPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
   maxAutoPoints: PointsSingleJsonSchema.optional(),
   manualPoints: PointsSingleJsonSchema.optional(),
 });
