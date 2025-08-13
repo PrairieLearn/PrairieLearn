@@ -9,8 +9,10 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
+import { selectAuditEvents } from '../../models/audit-event.js';
 
-import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
+import { UserDetailSchema } from './components/OverviewCard.js';
+import { InstructorStudentDetail } from './instructorStudentDetail.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -23,15 +25,15 @@ router.get(
     }
 
     const pageContext = getPageContext(res.locals);
-    const { urlPrefix } = pageContext;
-    const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext);
+    const { urlPrefix, authz_data } = pageContext;
+    const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
+    const courseInstanceUrl = getCourseInstanceUrl(course_instance.id);
 
     const student = await queryOptionalRow(
       sql.select_student_info,
       {
         user_id: req.params.user_id,
-        course_instance_id: res.locals.course_instance.id,
+        course_instance_id: course_instance.id,
       },
       UserDetailSchema,
     );
@@ -41,11 +43,16 @@ router.get(
     }
 
     const gradebookRows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
+      course_instance_id: course_instance.id,
       user_id: req.params.user_id,
-      authz_data: res.locals.authz_data,
+      authz_data,
       req_date: res.locals.req_date,
       auth: 'instructor',
+    });
+
+    const auditEvents = await selectAuditEvents({
+      subject_user_id: req.params.user_id,
+      course_instance_id: course_instance.id,
     });
 
     res.send(
@@ -60,6 +67,7 @@ router.get(
         content: (
           <Hydrate>
             <InstructorStudentDetail
+              auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
               urlPrefix={urlPrefix}
