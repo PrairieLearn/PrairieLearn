@@ -80,6 +80,8 @@ jobs:
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
+      - name: Check for unused dependencies
+        run: yarn knip
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
