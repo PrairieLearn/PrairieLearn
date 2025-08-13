@@ -149,14 +149,8 @@ class OrderBlocksOptions:
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
 
         self.answer_options = collect_answer_options(html_element, self.grading_method)
-        self.correct_answers = []
-        self.incorrect_answers = []
-
-        for options in self.answer_options:
-            if options.correct:
-                self.correct_answers.append(options)
-            else:
-                self.incorrect_answers.append(options)
+        self.correct_answers = [options for options in self.answer_options if options.correct]
+        self.incorrect_answers = [options for options in self.answer_options if not options.correct]
 
         self.max_incorrect = pl.get_integer_attrib(
             html_element, "max-incorrect", len(self.incorrect_answers)

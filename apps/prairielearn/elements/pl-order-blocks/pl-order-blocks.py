@@ -153,22 +153,22 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
     if (
-        order_blocks_options.source_blocks_order.value
-        == SourceBlocksOrderType.RANDOM.value
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.RANDOM
     ):
         random.shuffle(all_blocks)
     elif (
-        order_blocks_options.source_blocks_order.value
-        == SourceBlocksOrderType.ORDERED.value
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.ORDERED
     ):
         all_blocks.sort(key=lambda a: a["index"])
     elif (
-        order_blocks_options.source_blocks_order.value
-        == SourceBlocksOrderType.ALPHABETIZED.value
+        order_blocks_options.source_blocks_order
+        == SourceBlocksOrderType.ALPHABETIZED
     ):
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
-        assert_never(order_blocks_options.source_blocks_order.value)
+        assert_never(order_blocks_options.source_blocks_order)
 
     # prep for visual pairing
     correct_tags = {block["tag"] for block in all_blocks}
