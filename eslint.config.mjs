@@ -186,20 +186,36 @@ export default tseslint.config([
       'no-warning-comments': 'off',
       'object-shorthand': 'error',
       'one-var': ['off', 'never'], // TODO: Consider enabling this
-      'perfectionist/sort-array-includes': 'error',
-      'perfectionist/sort-decorators': 'error',
-      'perfectionist/sort-enums': 'error',
       ...Object.fromEntries(
         Object.keys(perfectionist.rules).map((ruleName) => [
-          perfectionist.meta.name + '/' + ruleName,
-          ['error', { partitionByComment: true, type: 'natural' }],
+          'perfectionist/' + ruleName,
+          [
+            [
+              // All disabled rules, can be enabled inline, with e.g. /* eslint perfectionist/sort-objects: error */
+              'sort-classes',
+              'sort-exports',
+              'sort-imports',
+              'sort-interfaces',
+              'sort-intersection-types',
+              'sort-jsx-props',
+              'sort-modules',
+              'sort-named-exports',
+              'sort-named-imports',
+              'sort-object-types',
+              'sort-objects',
+              'sort-switch-case',
+              'sort-union-types',
+              'sort-variable-declarations',
+            ].includes(ruleName)
+              ? 'off'
+              : 'error',
+            // These rules don't have a comment partition
+            ['sort-heritage-clauses', 'sort-jsx-props', 'sort-switch-case'].includes(ruleName)
+              ? { type: 'natural' }
+              : { partitionByComment: true, type: 'natural' },
+          ],
         ]),
       ),
-      'perfectionist/sort-exports': [
-        'error',
-        { partitionByComment: { block: true }, type: 'natural' },
-      ],
-      'perfectionist/sort-imports': 'off',
       'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
       'prefer-destructuring': 'off', // TODO: Consider enabling this
