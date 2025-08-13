@@ -16,7 +16,7 @@ ALTER TABLE enrollments
 ADD COLUMN pending_uid TEXT;
 
 ALTER TABLE enrollments
-ADD COLUMN pending_sub TEXT;
+ADD COLUMN pending_lti13_sub TEXT;
 
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_instance_id BIGINT;
@@ -62,25 +62,25 @@ ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
   OR (
     user_id IS NOT NULL
     AND pending_uid IS NULL
-    AND pending_sub IS NULL
+    AND pending_lti13_sub IS NULL
     AND pending_lti13_instance_id IS NULL
   )
 );
 
--- pending_sub + pending_lti13_instance_id need to be set/unset together.
+-- pending_lti13_sub + pending_lti13_instance_id need to be set/unset together.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_pending_sub_lti13_instance_id_both_or_both_not_null CHECK (
-  (pending_sub IS NULL) = (pending_lti13_instance_id IS NULL)
+ADD CONSTRAINT enrollments_pending_lti13_sub_lti13_instance_id_same CHECK (
+  (pending_lti13_sub IS NULL) = (pending_lti13_instance_id IS NULL)
 );
 
--- pending_sub + pending_lti13_instance_id <-> status = 'invited' and lti_synced = true.
+-- pending_lti13_sub + pending_lti13_instance_id <-> status = 'invited' and lti_synced = true.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
   (
     status = 'invited'
     AND lti_synced = TRUE
   ) = (
-    pending_sub IS NOT NULL
+    pending_lti13_sub IS NOT NULL
     AND pending_lti13_instance_id IS NOT NULL
   )
 );
@@ -88,3 +88,11 @@ ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
 -- pending_uid + course_instance_id must be unique.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_pending_uid_course_instance_id_key UNIQUE (pending_uid, course_instance_id);
+
+-- pending_lti13_instance_id + pending_lti13_sub + course_instance_id must be unique.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key UNIQUE (
+  pending_lti13_instance_id,
+  pending_lti13_sub,
+  course_instance_id
+);
