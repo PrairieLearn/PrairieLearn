@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
 import {
   CourseSchema,
   InstanceQuestionSchema,
@@ -21,6 +22,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 export const specs: AdministratorQuerySpecs = {
   description:
     'Creates a random submission for each assessment instance in an assessment. Assessment instances must already exist and be open. Submission is saved, but not graded.',
+  enabled: config.devMode, // This query is dangerous in production environments, so it is only enabled in dev mode
   params: [
     {
       name: 'assessment_id',

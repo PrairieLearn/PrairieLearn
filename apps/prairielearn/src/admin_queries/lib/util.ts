@@ -8,6 +8,7 @@ import { queryAsync } from '@prairielearn/postgres';
 
 export const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
+  enabled: z.boolean().optional(),
   resultFormats: z.record(z.enum(['pre'])).optional(),
   params: z
     .array(
