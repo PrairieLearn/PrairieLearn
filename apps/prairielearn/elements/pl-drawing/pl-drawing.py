@@ -401,10 +401,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
-    allowblank = pl.get_boolean_attrib(
+    allow_blank = pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     )
-    if allowblank and data["submitted_answers"][name] == "":
+    if allow_blank and data["submitted_answers"][name] == "":
         return 
 
     try:
@@ -430,7 +430,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
-    allowblank = pl.get_boolean_attrib(
+    allow_blank = pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     )
     weight = pl.get_integer_attrib(
@@ -456,7 +456,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     reference = data["correct_answers"].get(name, [])
 
     if not isinstance(student, list) or len(student) == 0:
-        if allowblank:
+        if allow_blank:
             data["partial_scores"][name] = {
                 "score": 0.0,
                 "weight": weight,
