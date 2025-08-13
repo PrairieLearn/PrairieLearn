@@ -141,7 +141,9 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         else:
             incorrect_answers.append(answer_data_dict)
 
-    incorrect_answers_count = random.randint(order_blocks_options.min_incorrect, order_blocks_options.max_incorrect)
+    incorrect_answers_count = random.randint(
+        order_blocks_options.min_incorrect, order_blocks_options.max_incorrect
+    )
 
     sampled_correct_answers = correct_answers
     sampled_incorrect_answers = random.sample(
@@ -150,9 +152,15 @@ def prepare(html: str, data: pl.QuestionData) -> None:
 
     all_blocks = sampled_correct_answers + sampled_incorrect_answers
 
-    if order_blocks_options.source_blocks_order.value == SourceBlocksOrderType.RANDOM.value:
+    if (
+        order_blocks_options.source_blocks_order.value
+        == SourceBlocksOrderType.RANDOM.value
+    ):
         random.shuffle(all_blocks)
-    elif order_blocks_options.source_blocks_order.value == SourceBlocksOrderType.ORDERED.value:
+    elif (
+        order_blocks_options.source_blocks_order.value
+        == SourceBlocksOrderType.ORDERED.value
+    ):
         all_blocks.sort(key=lambda a: a["index"])
     elif (
         order_blocks_options.source_blocks_order.value

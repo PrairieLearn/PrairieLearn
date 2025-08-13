@@ -12,7 +12,9 @@ def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
 </{tag_name}>"""
 
 
-def assert_order_blocks_options(order_block_options: OrderBlocksOptions, options: dict) -> None:
+def assert_order_blocks_options(
+    order_block_options: OrderBlocksOptions, options: dict
+) -> None:
     assert order_block_options.answers_name == options["answers-name"]
     if "weight" in options:
         assert order_block_options.weight == options["weight"]

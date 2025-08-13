@@ -158,8 +158,12 @@ class OrderBlocksOptions:
             else:
                 self.incorrect_answers.append(options)
 
-        self.max_incorrect = pl.get_integer_attrib(html_element, "max-incorrect", len(self.incorrect_answers))
-        self.min_incorrect = pl.get_integer_attrib(html_element, "min-incorrect", len(self.incorrect_answers))
+        self.max_incorrect = pl.get_integer_attrib(
+            html_element, "max-incorrect", len(self.incorrect_answers)
+        )
+        self.min_incorrect = pl.get_integer_attrib(
+            html_element, "min-incorrect", len(self.incorrect_answers)
+        )
 
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
         if html_element.tag != "pl-order-blocks":
@@ -219,14 +223,18 @@ class OrderBlocksOptions:
             )
 
         if (
-            self.grading_method.value
-            is not GradingMethodType.EXTERNAL.value
+            self.grading_method.value is not GradingMethodType.EXTERNAL.value
             and len(self.correct_answers) == 0
         ):
-            raise ValueError("There are no correct answers specified for this question.")
+            raise ValueError(
+                "There are no correct answers specified for this question."
+            )
 
         all_incorrect_answers = len(self.incorrect_answers)
-        if self.min_incorrect > all_incorrect_answers or self.max_incorrect > all_incorrect_answers:
+        if (
+            self.min_incorrect > all_incorrect_answers
+            or self.max_incorrect > all_incorrect_answers
+        ):
             raise ValueError(
                 "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
             )
@@ -391,9 +399,11 @@ def collect_answer_options(
             case "pl-block-group":
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
-                    options = AnswerOptions(answer_element,
-                                            {"tag": group_tag, "depends": group_depends},
-                                            grading_method)
+                    options = AnswerOptions(
+                        answer_element,
+                        {"tag": group_tag, "depends": group_depends},
+                        grading_method,
+                    )
                     answer_options.append(options)
             case "pl-answer":
                 answer_options.append(
