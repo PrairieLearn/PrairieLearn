@@ -1,0 +1,12 @@
+columns
+    ai_cluster_id: bigint not null
+    id: bigint not null default nextval('ai_cluster_assignments_id_seq'::regclass)
+    instance_question_id: bigint not null CONSTRAINT unique
+
+indexes
+    ai_cluster_assignments_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    ai_cluster_assignments_cluster_id_fkey: FOREIGN KEY (ai_cluster_id) REFERENCES ai_clusters(id) ON DELETE CASCADE
+    ai_cluster_assignments_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_cluster_assignments_instance_question_id_unique_constraint: UNIQUE (instance_question_id)
