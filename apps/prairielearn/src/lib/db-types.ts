@@ -1,3 +1,5 @@
+/* eslint perfectionist/sort-objects: error */
+
 import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
@@ -15,8 +17,8 @@ export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 export const EnumJobStatusSchema = z.enum(['Running', 'Success', 'Error']);
 export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
-export type EnumMode = z.infer<typeof EnumModeSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
+export type EnumMode = z.infer<typeof EnumModeSchema>;
 
 export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
 export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
