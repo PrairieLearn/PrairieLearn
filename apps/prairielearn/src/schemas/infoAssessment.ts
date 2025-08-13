@@ -104,8 +104,8 @@ export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSc
 export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
-  .describe('A single point value.')
   .default(0)
+  .describe('A single point value.')
   .meta({
     id: 'PointsSingleJsonSchema',
   });
@@ -118,7 +118,9 @@ export const PointsListJsonSchema = z
     id: 'PointsListJsonSchema',
   });
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]).meta({
+  id: 'PointsJsonSchema',
+});
 
 export const QuestionIdJsonSchema = z
   .string()
@@ -147,7 +149,9 @@ export const AdvanceScorePercJsonSchema = z
 const QuestionPointsJsonSchema = z.object({
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
-  maxPoints: PointsSingleJsonSchema.optional(),
+  maxPoints: PointsSingleJsonSchema.describe('A single point value.').meta({
+    description: 'A single point value.',
+  }),
   maxAutoPoints: PointsSingleJsonSchema.optional(),
   manualPoints: PointsSingleJsonSchema.optional(),
 });

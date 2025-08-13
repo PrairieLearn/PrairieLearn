@@ -375,22 +375,16 @@
           ]
         },
         "points": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "$ref": "#/definitions/PointsListJsonSchema"
+              "$ref": "#/definitions/PointsJsonSchema"
             }
           ]
         },
         "autoPoints": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "$ref": "#/definitions/PointsListJsonSchema"
+              "$ref": "#/definitions/PointsJsonSchema"
             }
           ]
         },
@@ -493,26 +487,21 @@
           ]
         },
         "points": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "$ref": "#/definitions/PointsListJsonSchema"
+              "$ref": "#/definitions/PointsJsonSchema"
             }
           ]
         },
         "autoPoints": {
-          "anyOf": [
+          "allOf": [
             {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "$ref": "#/definitions/PointsListJsonSchema"
+              "$ref": "#/definitions/PointsJsonSchema"
             }
           ]
         },
         "maxPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -562,9 +551,20 @@
         }
       }
     },
+    "PointsJsonSchema": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/PointsSingleJsonSchema"
+        },
+        {
+          "$ref": "#/definitions/PointsListJsonSchema"
+        }
+      ]
+    },
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
+      "id": "PointsSingleJsonSchema",
       "default": 0,
       "minimum": 0
     },
