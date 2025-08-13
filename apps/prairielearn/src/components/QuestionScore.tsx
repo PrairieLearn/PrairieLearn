@@ -388,7 +388,7 @@ export function InstanceQuestionPoints({
         ? assessment_question.max_manual_points
         : assessment_question.max_points;
   const pointsPending =
-    (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
+    (['grading', 'saved'].includes(instance_question.status ?? '') && component !== 'manual') ||
     (instance_question.requires_manual_grading && component !== 'auto');
 
   // Special case: if this is a manually-graded question in the saved state, don't show

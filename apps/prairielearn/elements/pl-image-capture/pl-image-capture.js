@@ -220,7 +220,7 @@ const MAX_ZOOM_SCALE = 5;
      * 'capture-preview', 'local-camera-capture', 'crop-rotate'
      */
     openContainer(containerName) {
-      if (!['capture-preview', 'local-camera-capture', 'crop-rotate'].includes(containerName)) {
+      if (!['capture-preview', 'crop-rotate', 'local-camera-capture'].includes(containerName)) {
         throw new Error(`Invalid container name: ${containerName}`);
       }
 

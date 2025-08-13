@@ -160,7 +160,7 @@ export function CreateQuestionModalContents({
   }, [startFrom, templateQuestions]);
 
   const selectedTemplate = filteredTemplateQuestions.find(({ qid }) => qid === selectedTemplateQid);
-  const isTemplateSelected = ['example', 'course'].includes(startFrom);
+  const isTemplateSelected = ['course', 'example'].includes(startFrom);
 
   // Build start from options based on available templates
   const startFromOptions: { id: string; title: string; description: string }[] = [];

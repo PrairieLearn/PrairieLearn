@@ -1,3 +1,4 @@
+/* eslint perfectionist/sort-objects: error */
 // @ts-check
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
@@ -185,13 +186,16 @@ export default tseslint.config([
       'no-warning-comments': 'off',
       'object-shorthand': 'error',
       'one-var': ['off', 'never'], // TODO: Consider enabling this
-      'perfectionist/sort-objects': [
-        'error',
-        {
-          partitionByComment: true,
-          type: 'natural',
-        },
+      'perfectionist/sort-array-includes': 'error',
+      'perfectionist/sort-decorators': 'error',
+      'perfectionist/sort-enums': 'error',
+      'perfectionist/sort-exports': [
+        'off',
+        { partitionByComment: { block: true }, type: 'natural' },
       ],
+      'perfectionist/sort-heritage-clauses': 'error',
+      'perfectionist/sort-sets': ['error', { type: 'natural', partitionByComment: true }],
+      'perfectionist/sort-objects': ['off', { type: 'natural', partitionByComment: true }],
       'prefer-arrow-callback': 'off',
       'prefer-const': ['error', { destructuring: 'all' }],
       'prefer-destructuring': 'off', // TODO: Consider enabling this

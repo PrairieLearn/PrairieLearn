@@ -63,7 +63,7 @@ const rewriteGroupRoleAnnotation = (
   refs: Refs,
 ): JsonSchema7Type | undefined | typeof ignoreOverride => {
   const segment = refs.currentPath[refs.currentPath.length - 1];
-  if (['canView', 'canSubmit'].includes(segment)) {
+  if (['canSubmit', 'canView'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
     let annotation = `A list of group role names matching those in groupRoles that can ${action} the question. Only applicable for group assessments.`;

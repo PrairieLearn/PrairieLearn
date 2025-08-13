@@ -1,3 +1,4 @@
+/* eslint-disable perfectionist/sort-sets */
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { clearCookie } from '../lib/cookie.js';

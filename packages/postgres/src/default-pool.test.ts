@@ -10,18 +10,18 @@ import { PostgresPool } from './pool.js';
 const HIDDEN_PROPERTIES = new Set([
   'constructor',
   // Private members
-  'pool',
-  'alsClient',
-  'searchSchema',
   '_queryCount',
-  'queryCursorWithClient',
-  'queryCursorInternal',
+  'alsClient',
   'errorOnUnusedParameters',
+  'pool',
+  'queryCursorInternal',
+  'queryCursorWithClient',
+  'searchSchema',
   // Getters
-  'totalCount',
   'idleCount',
-  'waitingCount',
   'queryCount',
+  'totalCount',
+  'waitingCount',
 ]);
 
 describe('sqldb', () => {

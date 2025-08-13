@@ -43,7 +43,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
   debug('init()');
 
   const { workersExecutionMode } = config;
-  if (!['container', 'native', 'disabled'].includes(workersExecutionMode)) {
+  if (!['container', 'disabled', 'native'].includes(workersExecutionMode)) {
     throw new Error(`unknown config.workersExecutionMode: ${workersExecutionMode}`);
   }
 

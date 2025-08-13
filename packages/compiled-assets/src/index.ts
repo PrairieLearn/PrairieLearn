@@ -347,7 +347,7 @@ function makeManifest(
 
     // Recursively walk the `imports` dependency tree
     const visit = (entry: (typeof meta)['imports'][number]) => {
-      if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
+      if (!['dynamic-import', 'import-statement'].includes(entry.kind)) return;
       const preloadPath = path.relative(buildDirectory, entry.path);
       if (preloads.has(preloadPath)) return;
       preloads.add(preloadPath);

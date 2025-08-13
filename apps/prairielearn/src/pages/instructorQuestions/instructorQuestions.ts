@@ -218,7 +218,7 @@ router.post(
           `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-      const usesTemplate = ['example', 'course'].includes(req.body.start_from);
+      const usesTemplate = ['course', 'example'].includes(req.body.start_from);
       if (usesTemplate && !req.body.template_qid) {
         throw new error.HttpStatusError(400, 'template_qid is required');
       }

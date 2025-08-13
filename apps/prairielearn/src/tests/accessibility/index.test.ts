@@ -120,11 +120,11 @@ async function checkPage(url: string) {
         m.ruleId === 'prefer-native-element' &&
         m.selector &&
         [
+          '#navbarDropdown',
           '#navbarDropdownMenuCourseAdminLink',
           '#navbarDropdownMenuInstanceAdminLink',
           '#navbarDropdownMenuInstanceChooseLink',
           '#navbarDropdownMenuLink',
-          '#navbarDropdown',
         ].includes(m.selector)
       ) {
         return false;

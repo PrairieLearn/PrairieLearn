@@ -380,12 +380,12 @@ class PLDrawingAnswerState {
       'canvas',
       'cornerSize',
       'dirty',
+      'id',
       'isMoving',
       'matrixCache',
       'oCoords',
       'ownCaching',
       'ownMatrixCache',
-      'id',
     ]);
 
     this.updateObject(submitted_object);
