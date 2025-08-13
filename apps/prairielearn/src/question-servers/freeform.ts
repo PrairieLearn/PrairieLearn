@@ -42,6 +42,7 @@ import {
   type PrepareResultData,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -817,7 +818,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: Pick<
+    Variant,
+    'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
+  >,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
@@ -1035,7 +1039,7 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -1464,7 +1468,10 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: Pick<
+    Partial<Submission>,
+    'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
+  >,
   variant: Variant,
   question: Question,
   course: Course,

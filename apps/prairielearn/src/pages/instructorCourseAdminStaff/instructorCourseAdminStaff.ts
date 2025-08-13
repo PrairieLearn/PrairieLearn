@@ -135,55 +135,58 @@ router.post(
           `Invalid requested course instance role: ${req.body.course_instance_role}`,
         );
       }
+
+      const initialMemo: {
+        given_cp: string[];
+        not_given_cp: string[];
+        not_given_cip: string[];
+        errors: string[];
+      } = {
+        given_cp: [],
+        not_given_cp: [],
+        not_given_cip: [],
+        errors: [],
+      };
+
       // Iterate through UIDs
-      const result = await async.reduce(
-        uids,
-        { given_cp: [], not_given_cp: [], not_given_cip: [], errors: [] },
-        async (
-          memo: {
-            given_cp: string[];
-            not_given_cp: string[];
-            not_given_cip: string[];
-            errors: string[];
-          },
-          uid,
-        ) => {
-          let user: User;
-          try {
-            user = await insertCoursePermissionsByUserUid({
-              course_id: res.locals.course.id,
-              uid,
-              course_role: req.body.course_role,
-              authn_user_id: res.locals.authz_data.authn_user.user_id,
-            });
-          } catch (err) {
-            logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
-            memo.not_given_cp.push(uid);
-            memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
-            return memo;
-          }
+      const result = await async.reduce(uids, initialMemo, async (memo, uid) => {
+        memo = memo ?? initialMemo;
 
-          memo.given_cp.push(uid);
-
-          if (!course_instance) return memo;
-
-          try {
-            await insertCourseInstancePermissions({
-              course_id: res.locals.course.id,
-              user_id: user.user_id,
-              course_instance_id: course_instance.id,
-              course_instance_role: req.body.course_instance_role,
-              authn_user_id: res.locals.authz_data.authn_user.user_id,
-            });
-          } catch (err) {
-            logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
-            memo.not_given_cip.push(uid);
-            memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
-          }
-
+        let user: User;
+        try {
+          user = await insertCoursePermissionsByUserUid({
+            course_id: res.locals.course.id,
+            uid,
+            course_role: req.body.course_role,
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
+          });
+        } catch (err) {
+          logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
+          memo.not_given_cp.push(uid);
+          memo.errors.push(`Failed to give course content access to ${uid}\n(${err.message})`);
           return memo;
-        },
-      );
+        }
+
+        memo.given_cp.push(uid);
+
+        if (!course_instance) return memo;
+
+        try {
+          await insertCourseInstancePermissions({
+            course_id: res.locals.course.id,
+            user_id: user.user_id,
+            course_instance_id: course_instance.id,
+            course_instance_role: req.body.course_instance_role,
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
+          });
+        } catch (err) {
+          logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
+          memo.not_given_cip.push(uid);
+          memo.errors.push(`Failed to give student data access to ${uid}\n(${err.message})`);
+        }
+
+        return memo;
+      });
 
       if (result.errors.length > 0) {
         const info: HtmlSafeString[] = [];

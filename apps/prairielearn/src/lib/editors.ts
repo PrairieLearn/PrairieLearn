@@ -136,8 +136,7 @@ export function getUniqueNames({
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber =
-          shortNameCompare === oldShortNameCompare ? 1 : Number.parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -157,7 +156,7 @@ export function getUniqueNames({
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : Number.parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -194,7 +193,7 @@ export function getUniqueNames({
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
  */
-export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -1598,7 +1597,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string | null>;
 
   constructor(
@@ -1790,10 +1788,10 @@ export class QuestionRenameEditor extends Editor {
 
       debug(`Find/replace QID in ${infoPath}`);
       let found = false;
-      infoJson.zones.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      infoJson.zones.forEach((zone: any) => {
+        zone.questions.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative) => {
+            question.alternatives.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;

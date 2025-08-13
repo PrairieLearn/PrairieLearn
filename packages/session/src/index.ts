@@ -1,6 +1,6 @@
 import cookie from 'cookie';
 import signature from 'cookie-signature';
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, RequestHandler, Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import onHeaders from 'on-headers';
 
@@ -60,7 +60,7 @@ export type { SessionStore };
 const DEFAULT_COOKIE_NAME = 'session';
 const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day
 
-export function createSessionMiddleware(options: SessionOptions) {
+export function createSessionMiddleware(options: SessionOptions): RequestHandler {
   const secrets = Array.isArray(options.secret) ? options.secret : [options.secret];
   const cookieName = options.cookie?.name ?? DEFAULT_COOKIE_NAME;
   const cookieMaxAge = options.cookie?.maxAge ?? DEFAULT_COOKIE_MAX_AGE;

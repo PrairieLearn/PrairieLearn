@@ -5,7 +5,10 @@
     "allowJs": true,
     // Allow spreading Maps/Sets into arrays
     "downlevelIteration": true,
-    "strictNullChecks": true,
+    "strict": true,
+    "useUnknownInCatchVariables": false,
+    "noImplicitAny": false,
+
     // Support native ESM
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

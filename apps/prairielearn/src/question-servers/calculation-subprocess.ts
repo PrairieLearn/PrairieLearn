@@ -18,6 +18,7 @@ import {
   type PrepareResultData,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
 } from './types.js';
 
 async function prepareChunksIfNeeded(question: Question, course: Course) {
@@ -143,13 +144,13 @@ export async function grade(
 // here to satisfy the question server interface.
 
 export async function render(
-  _renderSelection: any,
+  _renderSelection: RenderSelection,
   _variant: Variant,
   _question: Question,
-  _submission: Submission,
+  _submission: Submission | null,
   submissions: Submission[],
   _course: Course,
-  _locals: any,
+  _locals: Record<string, any>,
 ): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
@@ -163,7 +164,10 @@ export async function render(
 export async function prepare(
   _question: Question,
   _course: Course,
-  variant: Variant,
+  variant: Pick<
+    Variant,
+    'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
+  >,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -174,7 +178,10 @@ export async function prepare(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: Pick<
+    Partial<Submission>,
+    'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
+  >,
   variant: Variant,
   _question: Question,
   _course: Course,

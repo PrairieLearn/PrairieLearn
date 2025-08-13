@@ -69,7 +69,10 @@ export interface QuestionServer {
   prepare: (
     question: Question,
     course: Course,
-    variant: Pick<Variant, 'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'>,
+    variant: Pick<
+      Variant,
+      'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
+    >,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
     renderSelection: RenderSelection,

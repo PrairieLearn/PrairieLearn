@@ -196,7 +196,7 @@ async
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
       );
-      const idleErrorHandler = function (err) {
+      const idleErrorHandler = function (err: Error) {
         logger.error('idle client error', err);
         // https://github.com/PrairieLearn/PrairieLearn/issues/2396
         process.exit(1);
@@ -675,7 +675,7 @@ async function _pullImage(workspace: Workspace) {
 
   const progressDetails = await _getCachedProgressDetails(workspace_image);
 
-  const progressDetailsInit = {};
+  const progressDetailsInit: Record<string, any> = {};
   let current = 0;
   let total = 0;
   let fraction = 0;

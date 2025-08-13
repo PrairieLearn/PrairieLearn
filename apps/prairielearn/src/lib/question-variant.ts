@@ -37,6 +37,7 @@ interface VariantCreationData {
   true_answer: Record<string, any>;
   options: Record<string, any>;
   broken: boolean;
+  broken_at: Date | null;
 }
 
 /**
@@ -70,6 +71,7 @@ export async function makeVariant(
     true_answer: data.true_answer || {},
     options: data.options || {},
     broken: hasFatalIssue,
+    broken_at: hasFatalIssue ? new Date() : null,
   };
 
   if (question.workspace_image !== null) {
@@ -99,6 +101,7 @@ export async function makeVariant(
       true_answer: data.true_answer || {},
       options: data.options || {},
       broken: hasFatalIssue,
+      broken_at: hasFatalIssue ? new Date() : null,
     };
   }
 
