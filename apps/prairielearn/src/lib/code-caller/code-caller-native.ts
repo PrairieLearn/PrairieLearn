@@ -69,30 +69,29 @@ export interface ErrorData {
 
 export type CodeCallerError = Error & { data?: ErrorData };
 
-/**
-  Internal state machine
-  ======================
+/*
+Internal state machine
+======================
 
-  The list of internal states and the possible transitions are:
+The list of internal states and the possible transitions are:
 
-  CREATED: Child process is not yet started.
-    -> WAITING, EXITED
+CREATED: Child process is not yet started.
+  -> WAITING, EXITED
 
-  WAITING: Child process is running but no call is active, everything is healthy.
-    -> IN_CALL, RESTARTING, EXITING, EXITED
+WAITING: Child process is running but no call is active, everything is healthy.
+  -> IN_CALL, RESTARTING, EXITING, EXITED
 
-  IN_CALL: A call is currently running.
-    -> WAITING, EXITING, EXITED
+IN_CALL: A call is currently running.
+  -> WAITING, EXITING, EXITED
 
-  RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
-    -> WAITING, EXITING
+RESTARTING: The worker is restarting; waiting for confirmation of successful restart.
+  -> WAITING, EXITING
 
-  EXITING: The child process is being terminated.
-    -> EXITED
+EXITING: The child process is being terminated.
+  -> EXITED
 
-  EXITED: The child process has exited.
-    -> none
-
+EXITED: The child process has exited.
+  -> none
 */
 
 export class CodeCallerNative implements CodeCaller {
@@ -425,7 +424,7 @@ export class CodeCallerNative implements CodeCaller {
       this.outputData.push(data);
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
-      if (data.indexOf('\n') >= 0) {
+      if (data.includes('\n')) {
         this._callIsFinished();
       }
     }
@@ -604,7 +603,7 @@ export class CodeCallerNative implements CodeCaller {
    * code.
    */
   _restartWasSuccessful() {
-    if (this.outputRestart.indexOf('\n') === -1) {
+    if (!this.outputRestart.includes('\n')) {
       // We haven't yet gotten enough output to know if the restart
       // was successful.
       return false;

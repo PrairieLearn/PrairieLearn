@@ -51,7 +51,7 @@ export class FeatureManager<FeatureName extends string> {
 
   constructor(features: readonly FeatureName[]) {
     features.forEach((feature) => {
-      if (!feature.match(/^[a-z0-9:_-]+$/)) {
+      if (!/^[a-z0-9:_-]+$/.test(feature)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });
@@ -172,7 +172,6 @@ export class FeatureManager<FeatureName extends string> {
    * Enables the feature for the given context.
    *
    * @param name The name of the feature.
-   * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {

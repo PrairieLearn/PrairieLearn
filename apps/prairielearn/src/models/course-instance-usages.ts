@@ -31,7 +31,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Update the course instance usages for a submission.
- *
+ * @param param
  * @param param.submission_id The ID of the submission.
  * @param param.user_id The user ID of the submission.
  */
@@ -51,6 +51,7 @@ export async function updateCourseInstanceUsagesForSubmission({
 /**
  * Update the course instance usages for external grading job.
  *
+ * @param param
  * @param param.grading_job_id The ID of the grading job.
  */
 export async function updateCourseInstanceUsagesForGradingJob({
@@ -66,7 +67,11 @@ export async function updateCourseInstanceUsagesForGradingJob({
 /**
  * Update the course instance usages for an AI question generation prompt.
  *
- * @param param.prompt_id The ID of the AI question generation prompt.
+ * @param param
+ * @param param.promptId The ID of the AI question generation prompt.
+ * @param param.authnUserId The ID of the user who generated the prompt.
+ * @param param.promptTokens The number of tokens used in the prompt.
+ * @param param.completionTokens The number of tokens used in the completion.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,

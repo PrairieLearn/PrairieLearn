@@ -17,9 +17,7 @@ python:
       - any-glob-to-any-file:
           - 'apps/prairielearn/python/**'
           - 'apps/prairielearn/elements/**/*.py'
-          - 'requirements.txt'
           - 'pyproject.toml'
-          - 'docs/requirements.txt'
 
 tooling:
   - changed-files:

@@ -81,7 +81,6 @@ export function setupCountdown(options: {
     serverTimeLimitMS = data.serverTimeLimitMS;
     clientStart = Date.now();
 
-    console.log('Time remaining: ' + serverRemainingMS + ' ms');
     if (serverRemainingMS <= 0) {
       options.onTimerOut?.();
       updateServerIfExpired = false;
@@ -97,7 +96,7 @@ export function setupCountdown(options: {
           handleServerResponseRemainingMS(await response.json());
         })
         .catch((err) => {
-          console.log('Error retrieving remaining time', err);
+          console.error('Error retrieving remaining time', err);
           const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
           options.onServerUpdateFail?.(remainingMS);
           if (remainingMS <= 0) {

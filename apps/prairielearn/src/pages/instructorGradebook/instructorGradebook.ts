@@ -13,6 +13,7 @@ import {
   getCourseOwners,
 } from '../../lib/course.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorGradebook } from './instructorGradebook.html.js';
 import {
@@ -31,6 +32,10 @@ function buildCsvFilename(locals: Record<string, any>) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
@@ -91,15 +96,19 @@ router.get(
         { course_instance_id: res.locals.course_instance.id },
         CourseAssessmentRowSchema,
       );
-      const userScoresCursor = await queryCursor(sql.user_scores, {
-        course_id: res.locals.course.id,
-        course_instance_id: res.locals.course_instance.id,
-      });
+      const userScoresCursor = await queryCursor(
+        sql.user_scores,
+        {
+          course_id: res.locals.course.id,
+          course_instance_id: res.locals.course_instance.id,
+        },
+        GradebookRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<GradebookRow>({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessments.map((a) => a.label)],
-        transform: (record: GradebookRow) => [
+        transform: (record) => [
           record.uid,
           record.uin,
           record.user_name,

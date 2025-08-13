@@ -1,5 +1,17 @@
 # @prairielearn/formatter
 
+## 1.4.4
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.4.3
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 1.4.2
 
 ### Patch Changes

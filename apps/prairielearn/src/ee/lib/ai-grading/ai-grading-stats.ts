@@ -35,8 +35,6 @@ export interface AiGradingGeneralStats {
   submission_rubric_count: number;
   mean_error: number | null;
   rubric_stats: {
-    // Keeping all information for a rubric item
-    // if we want to implement rubric modification here
     rubric_item: RubricItem;
     disagreement_count: number;
   }[];
@@ -151,12 +149,13 @@ export async function calculateAiGradingStats(
   const stats: AiGradingGeneralStats = {
     submission_point_count: testPointResults.length,
     submission_rubric_count: testRubricResults.length,
-    mean_error: testPointResults.length
-      ? meanError(
-          testPointResults.map((item) => item.reference_points),
-          testPointResults.map((item) => item.ai_points),
-        )
-      : null,
+    mean_error:
+      testPointResults.length > 0
+        ? meanError(
+            testPointResults.map((item) => item.reference_points),
+            testPointResults.map((item) => item.ai_points),
+          )
+        : null,
     rubric_stats: [],
   };
   for (const rubric_item of rubric_items) {

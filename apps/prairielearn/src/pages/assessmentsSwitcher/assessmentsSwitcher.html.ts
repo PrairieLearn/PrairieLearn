@@ -21,7 +21,7 @@ export function AssessmentSwitcher({
   currentAssessmentId: string;
   courseInstanceId: string;
   plainUrlPrefix: string;
-  /* The subPage that assessment links should redirect to. */
+  /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
@@ -74,7 +74,7 @@ export function AssessmentSwitcher({
               </a>
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                urlPrefix: plainUrlPrefix,
+                urlPrefix: `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor`,
                 issueAid: row.tid,
               })}
             </div>
