@@ -17,8 +17,8 @@ const schemaNameOverrides = {
   time_series: 'TimeSeriesSchema',
 };
 
-const customSchemas = ['IdSchema', 'IntervalSchema'];
-const unusedSchemas = ['JsonCommentSchema'];
+const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
+const unusedSchemas = new Set(['JsonCommentSchema']);
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
@@ -101,8 +101,8 @@ describe('Database Schema Sync Test', () => {
         !usedSchemas.has(schemaName) &&
         !schemaName.startsWith('Enum') &&
         !schemaName.startsWith('Sproc') &&
-        !customSchemas.includes(schemaName) &&
-        !unusedSchemas.includes(schemaName),
+        !customSchemas.has(schemaName) &&
+        !unusedSchemas.has(schemaName),
     );
     if (remainingSchemas.length > 0) {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);

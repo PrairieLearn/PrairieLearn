@@ -80,12 +80,12 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
 
   if (
-    assessmentSetsToCreate.length ||
-    assessmentSetsToUpdate.length ||
-    assessmentSetsToDelete.length
+    assessmentSetsToCreate.length > 0 ||
+    assessmentSetsToUpdate.length > 0 ||
+    assessmentSetsToDelete.length > 0
   ) {
     await runInTransactionAsync(async () => {
-      if (assessmentSetsToCreate.length) {
+      if (assessmentSetsToCreate.length > 0) {
         await queryAsync(sql.insert_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToCreate.map((as) =>
@@ -102,7 +102,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         });
       }
 
-      if (assessmentSetsToUpdate.length) {
+      if (assessmentSetsToUpdate.length > 0) {
         await queryAsync(sql.update_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToUpdate.map((as) =>
@@ -119,7 +119,7 @@ export async function sync(courseId: string, courseData: CourseData) {
         });
       }
 
-      if (assessmentSetsToDelete.length) {
+      if (assessmentSetsToDelete.length > 0) {
         await queryAsync(sql.delete_assessment_sets, {
           course_id: courseId,
           sets: assessmentSetsToDelete,

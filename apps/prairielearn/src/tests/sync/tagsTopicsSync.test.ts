@@ -117,8 +117,7 @@ async function testDuplicate(entityName: 'tags' | 'topics') {
   const newEntity2 = makeEntity();
   newEntity2.color = 'green2';
   newEntity2.description = 'description for another new entity';
-  courseData.course[entityName].push(newEntity1);
-  courseData.course[entityName].push(newEntity2);
+  courseData.course[entityName].push(newEntity1, newEntity2);
   await util.writeAndSyncCourseData(courseData);
   const syncedEntities = await util.dumpTable(entityName);
   const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
