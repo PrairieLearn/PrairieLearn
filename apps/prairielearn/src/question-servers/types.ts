@@ -66,7 +66,7 @@ export type PrepareVariant = Pick<
 >;
 
 export type ParseSubmission = Pick<
-  Submission,
+  Partial<Submission>,
   'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
 >;
 
