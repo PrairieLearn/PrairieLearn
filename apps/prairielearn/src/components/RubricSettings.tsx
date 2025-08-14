@@ -590,3 +590,5 @@ export function RubricRow({
     </tr>
   );
 }
+
+RubricSettings.displayName = 'RubricSettings';

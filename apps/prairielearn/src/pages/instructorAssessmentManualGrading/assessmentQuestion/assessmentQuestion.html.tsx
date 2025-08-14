@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
@@ -14,6 +15,7 @@ import {
 import type { User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
+import { hydrateHtml } from '../../../lib/preact.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
@@ -169,13 +171,14 @@ export function AssessmentQuestion({
         : ''}
 
       <div class="mb-3">
-        <div
-          id="rubric-settings"
-          data-assessment-question="${JSON.stringify(assessment_question)}"
-          data-rubric-data="${JSON.stringify(rubric_data)}"
-          data-ai-grading-stats="${JSON.stringify(aiGradingStats)}"
-          data-csrf-token="${__csrf_token}"
-        ></div>
+        ${hydrateHtml(
+          <RubricSettings
+            assessment_question={assessment_question}
+            rubric_data={rubric_data}
+            __csrf_token={__csrf_token}
+            aiGradingStats={aiGradingStats}
+          />,
+        )}
       </div>
 
       <form name="grading-form" method="POST">
