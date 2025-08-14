@@ -440,10 +440,16 @@ export async function aiEvaluateFinalAnswer({
     {
       role: 'user',
       content: `
-Does the student\'s final response equal the correct answer exactly, 
-and is it mathematically equivalent? Ensure that all parts of the correct answer are included. Any error in the response will disqualify it from being a correct answer.
-If it seems ambiguous (e.g. a few answers are present, one answer is darker than the other), mark it incorrect.
-Only evaluate their final response(s), nothing more. Return only a boolean value, true if the answer is correct, false otherwise.
+Identify the student's final answer. Then, identify the student's box answer. Consider the box answer. If the boxed answer exists, response = boxed answer. Else, response = final answer.
+
+Does the student\'s response match the correct answer exactly? Consider the student's answer exactly as presented - do not give them the benefit of the doubt. 
+Must be PRECISELY equivalent to the answer as written - no slight mathematical/notational differences are permitted, even if it is equivalent.
+
+Ensure that all parts of the correct answer are included. Any error in the response will disqualify it from being a correct answer.
+
+If it seems AMBIGUOUS (e.g. a few answers are present, one answer erased out, crossed out), mark it incorrect.
+
+Only evaluate their response, nothing more. Return only a boolean value, true if the answer is correct, false otherwise.
       `
     }
   ];

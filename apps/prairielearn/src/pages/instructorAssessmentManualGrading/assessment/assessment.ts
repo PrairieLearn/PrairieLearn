@@ -28,10 +28,11 @@ import { selectQuestionById } from '../../../models/question.js';
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
 const START_INDEX = 0; 
-const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 5;
-const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 30;
+const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 20;
+const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
 const PARALLEL_LIMIT = 20;
 const SKIP_CLUSTERED_INSTANCE_QUESTIONS = false;
+const INCLUDE_IMAGES = false;
 const INSTANCE_QUESTIONS_TO_TEST: string[] = [];
 // ['19136',
 //  '17673',
@@ -311,6 +312,7 @@ router.post(
 
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'export_clusters') {
+
       // For debugging purposes only: also export the images and the prompts used.
       const course = res.locals.course as Course;
       const assessment = res.locals.assessment as Assessment;
@@ -343,7 +345,8 @@ router.post(
             instanceQuestion,
             cluster: clusterAssignments[instanceQuestion.id],
             answer: answers[aqNumberToOriginalNumber[i]],
-            urlPrefix: res.locals.urlPrefix
+            urlPrefix: res.locals.urlPrefix,
+            includeImages: INCLUDE_IMAGES 
           });
         });
         totalDataAmount += newDebugData.length;

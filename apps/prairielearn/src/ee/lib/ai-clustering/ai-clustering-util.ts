@@ -119,7 +119,8 @@ export async function generateSubmissionDebuggingData({
     instanceQuestion,
     cluster,
     answer,
-    urlPrefix
+    urlPrefix,
+    includeImages
 }: {
     course: Course,
     question: Question,
@@ -127,7 +128,8 @@ export async function generateSubmissionDebuggingData({
     instanceQuestion: InstanceQuestion, 
     cluster: string,
     answer: string,
-    urlPrefix: string
+    urlPrefix: string,
+    includeImages: boolean
 }): Promise<SubmissionDebugData> {
     const { submission, variant } = await selectLastVariantAndSubmission(instanceQuestion.id);
     const locals = {
@@ -154,7 +156,7 @@ export async function generateSubmissionDebuggingData({
     });
 
     const images: string[] = [];
-    if (submissionMessage && submissionMessage.content) {
+    if (includeImages && submissionMessage && submissionMessage.content) {
         for (const part of submissionMessage.content) {
             if (typeof part === 'object' && part.type === 'image_url') {
                 images.push(part.image_url.url);
