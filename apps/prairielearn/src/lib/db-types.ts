@@ -904,7 +904,7 @@ export type Lti13User = z.infer<typeof Lti13UserSchema>;
 
 export const LtiCredentialSchema = z.object({
   consumer_key: z.string().nullable(),
-  course_instance_id: z.string().nullable(),
+  course_instance_id: IdSchema.nullable(),
   created_at: DateFromISOString.nullable(),
   deleted_at: DateFromISOString.nullable(),
   id: IdSchema,
