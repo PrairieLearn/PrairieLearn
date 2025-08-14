@@ -645,7 +645,7 @@ const MAX_ZOOM_SCALE = 5;
      */
     setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .pl-image-capture-capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
       this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
@@ -661,8 +661,7 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className =
-        'pl-image-capture-capture-preview img-fluid bg-body-secondary w-100';
+      capturePreview.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
 
       if (dataUrl) {
         capturePreview.src = dataUrl;
@@ -731,7 +730,7 @@ const MAX_ZOOM_SCALE = 5;
           let rotation = 0;
           viewerRotateClockwiseButton.addEventListener('click', () => {
             const capturePreviewImg = this.imageCaptureDiv.querySelector(
-              '.js-uploaded-image-container .pl-image-capture-capture-preview',
+              '.js-uploaded-image-container .pl-image-capture-preview',
             );
 
             this.ensureElementsExist({
@@ -1422,7 +1421,7 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       const capturePreview = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .pl-image-capture-capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
       this.ensureElementsExist({
