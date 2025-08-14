@@ -675,7 +675,7 @@ async function _pullImage(workspace: Workspace) {
 
   const progressDetails = await _getCachedProgressDetails(workspace_image);
 
-  const progressDetailsInit: Record<string, any> = {};
+  const progressDetailsInit: ProgressDetails = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
