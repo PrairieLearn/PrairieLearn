@@ -87,7 +87,7 @@ const MAX_ZOOM_SCALE = 5;
                 ${
                   this.external_image_capture_available
                     ? `
-                  <div class="qr-code-${this.uuid} qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
+                  <div class="qr-code-${this.uuid} pl-image-capture-qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
                     <div class="spinning-wheel spinner-border">
                       <span class="visually-hidden">Loading...</span>
                     </div>
@@ -157,31 +157,7 @@ const MAX_ZOOM_SCALE = 5;
 
     /** Retrieve the local capture button elements for the horizontal and dropdown layouts. */
     getUseLocalCaptureButtons() {
-      const useLocalCaptureButtons = [];
-
-      const captureWithLocalCameraButtonHorizontal = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-horizontal .js-capture-with-local-camera-button',
-      );
-
-      this.ensureElementsExist({
-        captureWithLocalCameraButtonHorizontal,
-      });
-
-      useLocalCaptureButtons.push(captureWithLocalCameraButtonHorizontal);
-
-      if (this.mobile_capture_enabled) {
-        const captureWithLocalCameraButtonDropdown = this.imageCaptureDiv.querySelector(
-          '.js-capture-buttons-dropdown .js-capture-with-local-camera-button',
-        );
-
-        this.ensureElementsExist({
-          captureWithLocalCameraButtonDropdown,
-        });
-
-        useLocalCaptureButtons.push(captureWithLocalCameraButtonDropdown);
-      }
-
-      return useLocalCaptureButtons;
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-local-camera-button');
     }
 
     /** Retrieve the mobile capture button elements for the horizontal and dropdown layouts. */
@@ -190,19 +166,7 @@ const MAX_ZOOM_SCALE = 5;
         throw new Error('Mobile capture is not enabled, cannot get mobile capture buttons');
       }
 
-      const captureWithMobileDeviceButtonHorizontal = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-horizontal .js-capture-with-mobile-device-button',
-      );
-      const captureWithMobileDeviceButtonDropdown = this.imageCaptureDiv.querySelector(
-        '.js-capture-buttons-dropdown .js-capture-with-mobile-device-button',
-      );
-
-      this.ensureElementsExist({
-        captureWithMobileDeviceButtonHorizontal,
-        captureWithMobileDeviceButtonDropdown,
-      });
-
-      return [captureWithMobileDeviceButtonHorizontal, captureWithMobileDeviceButtonDropdown];
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
     }
 
     createCropRotateListeners() {
@@ -327,8 +291,6 @@ const MAX_ZOOM_SCALE = 5;
         uploadedImageContainer,
       });
 
-      const popover = bootstrap.Popover.getInstance(deleteCapturedImageButton);
-
       const confirmDeletion = () => {
         this.loadCapturePreviewFromDataUrl({
           dataUrl: null,
@@ -340,34 +302,22 @@ const MAX_ZOOM_SCALE = 5;
         this.setShowDeletionButton(false);
 
         this.setCaptureChangedFlag(true);
-
-        popover.hide();
-      };
-
-      const cancelDeletion = () => {
-        popover.hide();
       };
 
       deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
         const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
-        const cancelDeletionButton = document.querySelector(`#cancel-delete-${this.uuid}`);
         this.ensureElementsExist({
           confirmDeletionButton,
-          cancelDeletionButton,
         });
         confirmDeletionButton.addEventListener('click', confirmDeletion, { once: true });
-        cancelDeletionButton.addEventListener('click', cancelDeletion, { once: true });
       });
 
       deleteCapturedImageButton.addEventListener('hide.bs.popover', () => {
         const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
-        const cancelDeletionButton = document.querySelector(`#cancel-delete-${this.uuid}`);
         this.ensureElementsExist({
           confirmDeletionButton,
-          cancelDeletionButton,
         });
         confirmDeletionButton.removeEventListener('click', confirmDeletion);
-        cancelDeletionButton.removeEventListener('click', cancelDeletion);
       });
     }
 
@@ -696,7 +646,7 @@ const MAX_ZOOM_SCALE = 5;
      */
     setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-capture-preview',
       );
 
       this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
@@ -712,7 +662,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
+      capturePreview.className =
+        'pl-image-capture-capture-preview img-fluid bg-body-secondary w-100';
 
       if (dataUrl) {
         capturePreview.src = dataUrl;
@@ -781,7 +732,7 @@ const MAX_ZOOM_SCALE = 5;
           let rotation = 0;
           viewerRotateClockwiseButton.addEventListener('click', () => {
             const capturePreviewImg = this.imageCaptureDiv.querySelector(
-              '.js-uploaded-image-container .capture-preview',
+              '.js-uploaded-image-container .pl-image-capture-capture-preview',
             );
 
             this.ensureElementsExist({
@@ -1472,7 +1423,7 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       const capturePreview = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-capture-preview',
       );
 
       this.ensureElementsExist({
