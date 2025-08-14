@@ -15,6 +15,7 @@ export const EnumEnrollmentStatusSchema = z.enum([
   'removed',
   'rejected',
   'blocked',
+  'lti13_pending',
 ]);
 export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
