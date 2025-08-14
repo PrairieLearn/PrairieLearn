@@ -39,7 +39,9 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -818,10 +820,7 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Pick<
-    Variant,
-    'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
-  >,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
     if (variant.broken_at) throw new Error('attempted to prepare broken variant');
@@ -1468,10 +1467,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Pick<
-    Partial<Submission>,
-    'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
-  >,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,

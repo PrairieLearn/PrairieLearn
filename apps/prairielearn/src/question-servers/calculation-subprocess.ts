@@ -15,7 +15,9 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
   type RenderSelection,
@@ -164,10 +166,7 @@ export async function render(
 export async function prepare(
   _question: Question,
   _course: Course,
-  variant: Pick<
-    Variant,
-    'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
-  >,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -178,10 +177,7 @@ export async function prepare(
 }
 
 export async function parse(
-  submission: Pick<
-    Partial<Submission>,
-    'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
-  >,
+  submission: ParseSubmission,
   variant: Variant,
   _question: Question,
   _course: Course,
