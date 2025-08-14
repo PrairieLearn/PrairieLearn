@@ -417,8 +417,7 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       const qrCodes = document.querySelectorAll(`.qr-code-${this.uuid}`);
-
-      if (!qrCodes) {
+      if (qrCodes.length === 0) {
         throw new Error('QR code element not found.');
       }
 
