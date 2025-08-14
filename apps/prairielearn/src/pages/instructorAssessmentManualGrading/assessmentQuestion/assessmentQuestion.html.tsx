@@ -173,9 +173,9 @@ export function AssessmentQuestion({
       <div class="mb-3">
         ${hydrateHtml(
           <RubricSettings
-            assessment_question={assessment_question}
-            rubric_data={rubric_data}
-            __csrf_token={__csrf_token}
+            assessmentQuestion={assessment_question}
+            rubricData={rubric_data}
+            csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}
           />,
         )}

@@ -9,19 +9,19 @@ type RubricItemData = Partial<
 >;
 
 export function RubricSettings({
-  assessment_question,
-  rubric_data,
-  __csrf_token,
+  assessmentQuestion,
+  rubricData,
+  csrfToken,
   aiGradingStats,
 }: {
-  assessment_question: AssessmentQuestion;
-  rubric_data: RubricData | null;
-  __csrf_token: string;
+  assessmentQuestion: AssessmentQuestion;
+  rubricData: RubricData | null;
+  csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
-  const wasUsingRubric = Boolean(rubric_data);
-  const rubricItemsWithSelectionCount = rubric_data?.rubric_items ?? [];
+  const wasUsingRubric = Boolean(rubricData);
+  const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
   const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
     ...itemA,
@@ -35,11 +35,11 @@ export function RubricSettings({
   const [editMode, setEditMode] = useState(false);
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
-    rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points,
+    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const [startingPoints, setStartingPoints] = useState<number>(rubric_data?.starting_points ?? 0);
-  const [minPoints, setMinPoints] = useState<number>(rubric_data?.min_points ?? 0);
-  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubric_data?.max_extra_points ?? 0);
+  const [startingPoints, setStartingPoints] = useState<number>(rubricData?.starting_points ?? 0);
+  const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
 
@@ -53,7 +53,7 @@ export function RubricSettings({
     return { totalPositive: pos, totalNegative: neg };
   }, [rubricItems, startingPoints]);
 
-  const maxPoints = (assessment_question.max_manual_points ?? 0) + maxExtraPoints;
+  const maxPoints = (assessmentQuestion.max_manual_points ?? 0) + maxExtraPoints;
 
   const pointsWarnings: string[] = useMemo(() => {
     const warnings: string[] = [];
@@ -143,10 +143,10 @@ export function RubricSettings({
     }
 
     const payload = {
-      __csrf_token,
+      csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: rubric_data?.modified_at?.toString() ?? '',
+      modified_at: rubricData?.modified_at?.toString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,
@@ -211,7 +211,7 @@ export function RubricSettings({
         </button>
         <div id="rubric-setting" class="collapse p-2">
           <div>
-            {!!assessment_question.max_auto_points && (
+            {!!assessmentQuestion.max_auto_points && (
               <>
                 <div class="row">
                   <div class="col-12 col-lg-6">
@@ -224,8 +224,8 @@ export function RubricSettings({
                           checked={!replaceAutoPoints}
                           onChange={() => setReplaceAutoPoints(false)}
                         />
-                        Apply rubric to manual points (out of{' '}
-                        {assessment_question.max_manual_points}, keep auto points)
+                        Apply rubric to manual points (out of {assessmentQuestion.max_manual_points}
+                        , keep auto points)
                       </label>
                     </div>
                   </div>
@@ -239,8 +239,8 @@ export function RubricSettings({
                           checked={replaceAutoPoints}
                           onChange={() => setReplaceAutoPoints(true)}
                         />
-                        Apply rubric to total points (out of {assessment_question.max_points},
-                        ignore auto points)
+                        Apply rubric to total points (out of {assessmentQuestion.max_points}, ignore
+                        auto points)
                       </label>
                     </div>
                   </div>
@@ -270,9 +270,9 @@ export function RubricSettings({
                       type="radio"
                       disabled={!editMode}
                       checked={startingPoints !== 0}
-                      onChange={() => setStartingPoints(assessment_question.max_manual_points ?? 0)}
+                      onChange={() => setStartingPoints(assessmentQuestion.max_manual_points ?? 0)}
                     />
-                    Negative grading (start at {assessment_question.max_manual_points}, subtract
+                    Negative grading (start at {assessmentQuestion.max_manual_points}, subtract
                     penalties)
                   </label>
                 </div>
