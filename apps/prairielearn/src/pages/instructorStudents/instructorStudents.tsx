@@ -71,7 +71,7 @@ router.get(
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={{
+              authzData={{
                 has_course_instance_permission_edit:
                   authz_data.has_course_instance_permission_edit ?? false,
               }}

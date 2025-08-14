@@ -85,7 +85,7 @@ function runTest(context) {
 
   let new_user = 'garbage@example.com';
 
-  beforeAll(helperServer.before().bind(this));
+  beforeAll(helperServer.before());
 
   beforeAll(async function () {
     // Insert necessary users.
