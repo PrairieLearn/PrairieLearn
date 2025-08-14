@@ -83,7 +83,12 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        <li class="list-group-item">
+        <li class="list-group-item">          
+          <div class="mb-3">
+            <span class="w-100">
+              Cluster: 
+            </span>
+          </div>
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
