@@ -136,7 +136,8 @@ export function getUniqueNames({
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
+        const foundNumber =
+          shortNameCompare === oldShortNameCompare ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -156,7 +157,7 @@ export function getUniqueNames({
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        const foundNumber = oldLongName === longName ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -585,7 +586,7 @@ function getNamesForCopy(
     oldnames.forEach((oldname) => {
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -600,7 +601,7 @@ function getNamesForCopy(
       if (typeof oldname !== 'string') return;
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -1597,7 +1598,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string | null>;
 
   constructor(
