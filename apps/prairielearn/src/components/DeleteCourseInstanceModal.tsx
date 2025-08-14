@@ -42,15 +42,6 @@ export function DeleteCourseInstanceModal({
     };
   }, []);
 
-  // Focus the confirmation text input when moving to the second step.
-  const confirmationTextRef = useRef<HTMLInputElement | null>(null);
-  useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
-    if (step === 2) {
-      confirmationTextRef.current?.focus();
-    }
-  }, [step]);
-
   return (
     <div
       ref={modalRef}
@@ -141,12 +132,13 @@ export function DeleteCourseInstanceModal({
                     Type <strong>{shortName}</strong> to confirm deletion:
                   </label>
                   <input
-                    ref={confirmationTextRef}
                     id="confirmShortName"
                     name="confirmShortName"
                     class="form-control"
                     value={confirmationText}
                     autoComplete="off"
+                    // eslint-disable-next-line jsx-a11y-x/no-autofocus
+                    autoFocus
                     onInput={(e) => setConfirmationText(e.currentTarget.value)}
                   />
                 </div>
