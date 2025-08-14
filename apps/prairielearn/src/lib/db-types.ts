@@ -141,6 +141,20 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
+export const AiClusterSchema = z.object({
+  assessment_question_id: IdSchema,
+  cluster_name: z.string(),
+  id: IdSchema
+});
+export type AiCluster = z.infer<typeof AiClusterSchema>;
+
+export const AiClusterAssignmentSchema = z.object({
+  ai_cluster_id: IdSchema,
+  id: IdSchema,
+  instance_question_id:  IdSchema,
+})
+export type AiClusterAssignment = z.infer<typeof AiClusterAssignmentSchema>;
+
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
 

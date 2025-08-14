@@ -176,19 +176,23 @@ export async function generatePrompt({
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
-function generateSubmissionMessage({
+export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  include_images_only = false
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  include_images_only?: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (!include_images_only) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response: \n<response>\n',
+    });
+}
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -203,7 +207,7 @@ function generateSubmissionMessage({
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
       if (imageCaptureUUID) {
-        if (submissionTextSegment) {
+        if (submissionTextSegment && !include_images_only) {
           // Push and reset the current text segment before adding the image.
           message_content.push({
             type: 'text',
@@ -214,7 +218,7 @@ function generateSubmissionMessage({
 
         const options = $submission_html(node).data('options') as Record<string, string>;
         const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName) {
+        if (!submittedImageName && !include_images_only) {
           // If no submitted filename is available, no image was captured.
           message_content.push({
             type: 'text',
@@ -244,17 +248,19 @@ function generateSubmissionMessage({
       }
     });
 
-  if (submissionTextSegment) {
+  if (submissionTextSegment && !include_images_only) {
     message_content.push({
       type: 'text',
       text: submissionTextSegment,
     });
   }
-
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  
+  if (!include_images_only) {
+    message_content.push({
+      type: 'text',
+      text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    });
+  }
 
   return {
     role: 'user',
