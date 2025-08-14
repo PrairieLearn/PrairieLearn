@@ -136,16 +136,11 @@ router.post(
         );
       }
 
-      const initialMemo: {
-        given_cp: string[];
-        not_given_cp: string[];
-        not_given_cip: string[];
-        errors: string[];
-      } = {
-        given_cp: [],
-        not_given_cp: [],
-        not_given_cip: [],
-        errors: [],
+      const initialMemo = {
+        given_cp: [] as string[],
+        not_given_cp: [] as string[],
+        not_given_cip: [] as string[],
+        errors: [] as string[],
       };
 
       // Iterate through UIDs
