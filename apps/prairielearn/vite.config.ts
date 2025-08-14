@@ -34,6 +34,9 @@ export default defineConfig({
         './src/lib/code-caller/index.ts',
         './src/lib/load.ts',
 
+        // These files are imported dynamically, and should fully restart the server so that new modules are loaded.
+        './src/admin_queries/*.ts',
+
         // We'll always reload after config changes.
         './config.json',
         '../../config.json',
