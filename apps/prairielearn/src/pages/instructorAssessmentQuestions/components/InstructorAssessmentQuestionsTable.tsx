@@ -244,8 +244,8 @@ function createEmptyQuestionTemplate(
     question: {
       id: tempId,
       qid: '',
-      title: 'New Question',
-      type: 'Calculation',
+      title: '',
+      type: '',
       client_files: [],
       topic_id: null,
       grading_method: 'Internal',
@@ -261,8 +261,8 @@ function createEmptyQuestionTemplate(
     },
     topic: {
       id: '',
-      name: 'Default Topic',
-      color: 'gray1',
+      name: '',
+      color: '',
       description: null,
       number: 1,
     },
@@ -444,9 +444,27 @@ export function InstructorAssessmentQuestionsTable({
     }
 
     if (addQuestion) {
-      // Add new question to the state and renumber
+      // Add new question to the state in the correct zone position and renumber
       setQuestionState((prevState) => {
-        const newState = [...prevState, updatedQuestion];
+        // Find the correct position to insert the new question within its zone
+        const targetZoneId = updatedQuestion.zone.id;
+        let insertIndex = prevState.length; // Default to end if zone not found
+
+        // Find the last question in the target zone
+        for (let i = prevState.length - 1; i >= 0; i--) {
+          if (prevState[i].zone.id === targetZoneId) {
+            insertIndex = i + 1; // Insert after the last question in this zone
+            break;
+          }
+        }
+
+        // Insert the new question at the correct position
+        const newState = [
+          ...prevState.slice(0, insertIndex),
+          updatedQuestion,
+          ...prevState.slice(insertIndex),
+        ];
+
         return renumberQuestions(newState);
       });
     } else {
@@ -713,7 +731,7 @@ export function InstructorAssessmentQuestionsTable({
                     {/* Add "Add question" button at the end of each zone */}
                     {editMode && isLastInZone && (
                       <tr>
-                        <td colspan={nTableCols}>
+                        <td colspan={nTableCols + 1}>
                           <button
                             class="btn btn-sm"
                             type="button"
