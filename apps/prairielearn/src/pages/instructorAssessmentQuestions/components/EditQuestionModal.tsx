@@ -11,6 +11,7 @@ export function EditQuestionModal({
   handleUpdateQuestion,
   assessmentType,
   questionDisplayName,
+  addQuestion,
 }: {
   question: StaffAssessmentQuestionRow;
   showEditModal: boolean;
@@ -18,6 +19,7 @@ export function EditQuestionModal({
   handleUpdateQuestion: (updatedQuestion: any) => void;
   assessmentType: 'Homework' | 'Exam';
   questionDisplayName: (question: StaffAssessmentQuestionRow) => string;
+  addQuestion?: boolean;
 }) {
   const [autoGraded, setAutoGraded] = useState(
     question ? question.assessment_question.max_manual_points === 0 : true,
@@ -28,7 +30,7 @@ export function EditQuestionModal({
   return (
     <Modal show={showEditModal} onHide={onHide}>
       <Modal.Header closeButton>
-        <Modal.Title>Edit Question</Modal.Title>
+        <Modal.Title>{addQuestion ? 'Add Question' : 'Edit Question'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <div class="mb-3">
@@ -40,7 +42,7 @@ export function EditQuestionModal({
               id="qidInput"
               name="qid"
               aria-describedby="qidHelp"
-              value={questionDisplayName(question)}
+              value={addQuestion ? question.question.qid || '' : questionDisplayName(question)}
               onChange={(e) => {
                 if (question) {
                   question.question.qid = (e.target as HTMLInputElement).value;
@@ -173,10 +175,10 @@ export function EditQuestionModal({
                 class="form-control points-list"
                 id="autoPointsInput"
                 name="autoPoints"
-                value={question?.auto_points_list?.join(',')}
+                value={question?.assessment_question.points_list?.join(',') || ''}
                 onChange={(e) => {
                   if (question) {
-                    question.auto_points_list = (e.target as HTMLInputElement).value
+                    question.assessment_question.points_list = (e.target as HTMLInputElement).value
                       .split(',')
                       .map((v) => Number(v));
                   }
@@ -194,10 +196,12 @@ export function EditQuestionModal({
                 class="form-control"
                 id="manualPointsInput"
                 name="manualPoints"
-                value={question?.max_manual_points ?? 0}
+                value={question?.assessment_question.max_manual_points ?? 0}
                 onChange={(e) => {
                   if (question) {
-                    question.max_manual_points = (e.target as HTMLInputElement).valueAsNumber;
+                    question.assessment_question.max_manual_points = (
+                      e.target as HTMLInputElement
+                    ).valueAsNumber;
                   }
                 }}
               />
@@ -219,7 +223,7 @@ export function EditQuestionModal({
             handleUpdateQuestion(question);
           }}
         >
-          Update question
+          {addQuestion ? 'Add question' : 'Update question'}
         </button>
       </Modal.Footer>
     </Modal>

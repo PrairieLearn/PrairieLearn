@@ -84,6 +84,135 @@ function EditModeButtons({
   );
 }
 
+function createEmptyQuestionTemplate(
+  zone: StaffAssessmentQuestionRow['zone'],
+  course: StaffCourse,
+  assessmentType: 'Homework' | 'Exam',
+): StaffAssessmentQuestionRow {
+  const template = {
+    start_new_zone: false,
+    start_new_alternative_group: true,
+    alternative_group_size: 1,
+    assessment_question: {
+      advance_score_perc: null,
+      ai_grading_mode: false,
+      alternative_group_id: null,
+      assessment_id: '',
+      average_average_submission_score: null,
+      average_first_submission_score: null,
+      average_last_submission_score: null,
+      average_max_submission_score: null,
+      average_number_submissions: null,
+      average_submission_score_hist: null,
+      average_submission_score_variance: null,
+      deleted_at: null,
+      discrimination: null,
+      effective_advance_score_perc: 0,
+      first_submission_score_hist: null,
+      first_submission_score_variance: null,
+      force_max_points: null,
+      grade_rate_minutes: null,
+      id: 0,
+      incremental_submission_points_array_averages: null,
+      incremental_submission_points_array_variances: null,
+      incremental_submission_score_array_averages: null,
+      incremental_submission_score_array_variances: null,
+      init_points: assessmentType === 'Homework' ? 1 : 0,
+      json_comment: null,
+      json_grade_rate_minutes: null,
+      last_submission_score_hist: null,
+      last_submission_score_variance: null,
+      manual_rubric_id: null,
+      max_auto_points: assessmentType === 'Homework' ? 1 : 0,
+      max_manual_points: 0,
+      max_points: assessmentType === 'Homework' ? 1 : 0,
+      max_submission_score_hist: null,
+      max_submission_score_variance: null,
+      mean_question_score: null,
+      median_question_score: null,
+      number: 1,
+      number_in_alternative_group: 1,
+      number_submissions_hist: null,
+      number_submissions_variance: null,
+      points_list: null,
+      question_id: '',
+      question_score_variance: null,
+      quintile_question_scores: null,
+      some_nonzero_submission_perc: null,
+      some_perfect_submission_perc: null,
+      some_submission_perc: null,
+      submission_score_array_averages: null,
+      submission_score_array_variances: null,
+      tries_per_variant: 3,
+    },
+    question: {
+      id: 0,
+      qid: '',
+      title: 'New Question',
+      type: 'Calculation',
+      client_files: [],
+      topic_id: null,
+      grading_method: 'Internal',
+      single_variant: true,
+      template_directory: null,
+      options: {},
+      client_files_hash: null,
+      course_id: course.id,
+      deleted_at: null,
+      sync_errors: null,
+      sync_warnings: null,
+      uuid: '',
+    },
+    topic: {
+      id: '',
+      name: 'Default Topic',
+      color: 'gray1',
+      description: null,
+      number: 1,
+    },
+    alternative_group: {
+      id: 0,
+      number: 1,
+      number_choose: null,
+      assessment_id: '',
+    },
+    zone,
+    assessment: {
+      id: '',
+      tid: '',
+      number: '',
+      title: '',
+      type: assessmentType,
+      multiple_instance: false,
+      shuffle_questions: false,
+      allow_issue_reporting: false,
+      allow_real_time_grading: false,
+      require_honor_code: false,
+      auto_close: false,
+      course_instance_id: '',
+      deleted_at: null,
+      uuid: '',
+    },
+    course_instance: {
+      id: '',
+      long_name: '',
+      short_name: '',
+      display_timezone: '',
+      hide_in_enroll_page: false,
+      display_name: '',
+      course_id: '',
+      deleted_at: null,
+      uuid: '',
+    },
+    course,
+    open_issue_count: 0,
+    tags: [],
+    other_assessments: [],
+  } as unknown as StaffAssessmentQuestionRow;
+
+  return template;
+}
+
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
@@ -115,6 +244,7 @@ export function InstructorAssessmentQuestionsTable({
   const [editMode, setEditMode] = useState(false);
   const [selectedQuestion, setSelectedQuestion] = useState<StaffAssessmentQuestionRow | null>(null);
   const [questionState, setQuestionState] = useState<StaffAssessmentQuestionRow[]>(questionRows);
+  const [addQuestion, setAddQuestion] = useState(false);
 
   const handleResetButtonClick = (questionId: string) => {
     setResetAssessmentQuestionId(questionId);
@@ -123,24 +253,107 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleEditQuestion = (question) => {
     setSelectedQuestion(question);
-    console.log(selectedQuestion);
+    setIsAddingQuestion(false);
+    setShowEditModal(true);
+  };
+
+  const handleAddQuestion = (zone: StaffAssessmentQuestionRow['zone']) => {
+    const emptyQuestion = createEmptyQuestionTemplate(zone, course, assessmentType);
+    setSelectedQuestion(emptyQuestion);
+    setIsAddingQuestion(true);
     setShowEditModal(true);
   };
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
+    setIsAddingQuestion(false);
+  };
+
+  // Function to renumber questions after adding/removing questions
+  const renumberQuestions = (
+    questions: StaffAssessmentQuestionRow[],
+  ): StaffAssessmentQuestionRow[] => {
+    // Count questions in each alternative group
+    const groupCounts: Record<string, number> = {};
+    for (const question of questions) {
+      const groupId = question.alternative_group.id;
+      groupCounts[groupId] = (groupCounts[groupId] || 0) + 1;
+    }
+
+    let prevZoneId: string | null = null;
+    let prevAltGroupId: string | null = null;
+    let currentAltGroupNumber = 0;
+
+    return questions.map((question) => {
+      const start_new_zone = question.zone.id !== prevZoneId;
+      const start_new_alternative_group = question.alternative_group.id !== prevAltGroupId;
+
+      // If this is a new alternative group, increment the group number
+      if (start_new_alternative_group) {
+        currentAltGroupNumber++;
+      }
+
+      // Update alternative group size
+      const alternative_group_size = groupCounts[question.alternative_group.id];
+
+      // Update the alternative group number
+      const updatedAlternativeGroup = {
+        ...question.alternative_group,
+        number: currentAltGroupNumber,
+      };
+
+      // Update the assessment question number within the alternative group
+      const questionsInSameGroup = questions.filter(
+        (q) => q.alternative_group.id === question.alternative_group.id,
+      );
+      const questionIndexInGroup = questionsInSameGroup.findIndex(
+        (q) => q.question.id === question.question.id,
+      );
+      const number_in_alternative_group = questionIndexInGroup + 1;
+
+      const updatedAssessmentQuestion = {
+        ...question.assessment_question,
+        number: currentAltGroupNumber,
+        number_in_alternative_group,
+      };
+
+      prevZoneId = question.zone.id;
+      prevAltGroupId = question.alternative_group.id;
+
+      return {
+        ...question,
+        start_new_zone,
+        start_new_alternative_group,
+        alternative_group_size,
+        alternative_group: updatedAlternativeGroup,
+        assessment_question: updatedAssessmentQuestion,
+      };
+    });
   };
 
   const handleUpdateQuestion = (updatedQuestion: StaffAssessmentQuestionRow) => {
-    console.log(updatedQuestion);
-    setQuestionState((prevState) =>
-      prevState.map((q) => (q.question.qid === updatedQuestion.question.qid ? updatedQuestion : q)),
-    );
+    if (isAddingQuestion) {
+      // Add new question to the state and renumber
+      setQuestionState((prevState) => {
+        const newState = [...prevState, updatedQuestion];
+        return renumberQuestions(newState);
+      });
+    } else {
+      // Update existing question
+      setQuestionState((prevState) =>
+        prevState.map((q) =>
+          q.question.qid === updatedQuestion.question.qid ? updatedQuestion : q,
+        ),
+      );
+    }
     handleCloseEditModal();
   };
 
   const handleDeleteQuestion = ({ qid }: { qid: string | null }) => {
-    setQuestionState((prevState) => prevState.filter((q) => q.question.qid !== qid));
+    setQuestionState((prevState) => {
+      const filteredState = prevState.filter((q) => q.question.qid !== qid);
+      return renumberQuestions(filteredState);
+    });
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -177,9 +390,9 @@ export function InstructorAssessmentQuestionsTable({
 
   function questionDisplayName(question: StaffAssessmentQuestionRow) {
     if (idsEqual(course.id, question.question.course_id)) {
-      return question.question.qid;
+      return question.question.qid || '';
     }
-    return `@${course.sharing_name}/${question.question.qid}`;
+    return `@${course.sharing_name}/${question.question.qid || ''}`;
   }
 
   return (
@@ -235,7 +448,10 @@ export function InstructorAssessmentQuestionsTable({
               </tr>
             </thead>
             <tbody>
-              {questionState.map((question) => {
+              {questionState.map((question, index) => {
+                const isLastInZone =
+                  index === questionState.length - 1 || questionState[index + 1]?.start_new_zone;
+
                 return (
                   <Fragment key={question.question.qid}>
                     <AssessmentQuestionHeaders question={question} nTableCols={nTableCols} />
@@ -383,6 +599,20 @@ export function InstructorAssessmentQuestionsTable({
                         </Dropdown>
                       </td>
                     </tr>
+                    {/* Add "Add question" button at the end of each zone */}
+                    {editMode && isLastInZone && (
+                      <tr>
+                        <td colspan={nTableCols}>
+                          <button
+                            class="btn btn-sm"
+                            type="button"
+                            onClick={() => handleAddQuestion(question.zone)}
+                          >
+                            <i class="fa fa-add" aria-hidden="true" /> Add Question to Zone
+                          </button>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 );
               })}
@@ -396,13 +626,14 @@ export function InstructorAssessmentQuestionsTable({
         show={showResetModal}
         onHide={() => setShowResetModal(false)}
       />
-      {editMode ? (
+      {editMode && selectedQuestion ? (
         <EditQuestionModal
           question={selectedQuestion}
           showEditModal={showEditModal}
-          handleUpdateQuestion={handleUpdateQuestion}
           assessmentType={assessmentType}
           questionDisplayName={questionDisplayName}
+          isAddingQuestion={isAddingQuestion}
+          handleUpdateQuestion={handleUpdateQuestion}
           onHide={handleCloseEditModal}
         />
       ) : null}
