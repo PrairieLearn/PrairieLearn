@@ -16,6 +16,7 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
+import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
@@ -309,6 +310,80 @@ function createEmptyQuestionTemplate(
   return template;
 }
 
+function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuestionRow) {
+  if (idsEqual(course.id, question.question.course_id)) {
+    if (!question.question.qid) throw new Error('Question QID is required');
+    return question.question.qid;
+  }
+  return `@${question.course.sharing_name}/${question.question.qid || ''}`;
+}
+
+// TODO: add tests for this function. Something like: for each example/test course
+// assessment, load the rows, map through here, generate JSON out the other side,
+// and make sure it matches the original.
+function mapQuestions(
+  course: StaffCourse,
+  rows: StaffAssessmentQuestionRow[],
+): ZoneAssessmentJson[] {
+  const zones: ZoneAssessmentJson[] = [];
+
+  for (const row of rows) {
+    if (row.zone.number == null) throw new Error('Zone number required');
+
+    zones[row.zone.number - 1] ??= {
+      title: row.zone.title ?? undefined,
+      comment: row.zone.json_comment ?? undefined,
+      maxPoints: row.zone.max_points ?? undefined,
+      numberChoose: row.zone.number_choose ?? undefined,
+      bestQuestions: row.zone.best_questions ?? undefined,
+      questions: [],
+      advanceScorePerc: row.zone.advance_score_perc ?? undefined,
+      gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+      canView: row.zone.json_can_view ?? undefined,
+      canSubmit: row.zone.json_can_submit ?? undefined,
+    };
+
+    if (row.alternative_group.number == null) throw new Error('Alternative group number required');
+
+    zones[row.zone.number - 1].questions[row.alternative_group.number - 1] ??= {
+      advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
+      // TODO: update schemas to not have defaults so we can use `undefined`?
+      // Otherwise make sure we normalize the empty array to a null comment.
+      canView: row.alternative_group.json_can_view ?? [],
+      canSubmit: row.alternative_group.json_can_submit ?? [],
+      comment: row.alternative_group.json_comment ?? undefined,
+      gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
+      numberChoose: row.alternative_group.number_choose ?? 1,
+      // TODO: are we missing a `json_tries_per_variant` column here?
+      // We'll default to 1 for now to make progress, but we'll need to address this.
+      triesPerVariant: 1,
+    };
+
+    if (row.alternative_group.json_has_alternatives) {
+      if (row.assessment_question.number_in_alternative_group == null) {
+        throw new Error('Assessment question number is required');
+      }
+
+      zones[row.zone.number - 1].questions[row.alternative_group.number - 1].alternatives ??= [];
+      zones[row.zone.number - 1].questions[row.alternative_group.number - 1].alternatives[
+        row.assessment_question.number_in_alternative_group - 1
+      ] = {
+        comment: row.assessment_question.json_comment ?? undefined,
+        id: questionDisplayName(course, row),
+        forceMaxPoints: row.assessment_question.force_max_points ?? undefined,
+        triesPerVariant: row.assessment_question.tries_per_variant ?? 1,
+        advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
+        gradeRateMinutes: row.assessment_question.grade_rate_minutes ?? undefined,
+      };
+    } else {
+      zones[row.zone.number - 1].questions[row.alternative_group.number - 1].id =
+        questionDisplayName(course, row);
+    }
+  }
+
+  return zones;
+}
+
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
@@ -334,6 +409,12 @@ export function InstructorAssessmentQuestionsTable({
   origHash: string;
   editorEnabled: boolean;
 }) {
+  const questionMap = Object.fromEntries(
+    questionRows.map((r) => [questionDisplayName(course, r), r]),
+  );
+
+  console.log(mapQuestions(course, questionRows));
+
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -517,13 +598,6 @@ export function InstructorAssessmentQuestionsTable({
     }
   }
 
-  function questionDisplayName(question: StaffAssessmentQuestionRow) {
-    if (idsEqual(course.id, question.question.course_id)) {
-      return question.question.qid || '';
-    }
-    return `@${course.sharing_name}/${question.question.qid || ''}`;
-  }
-
   return (
     <>
       <div class="card mb-4">
@@ -636,7 +710,7 @@ export function InstructorAssessmentQuestionsTable({
                         ) : (
                           ''
                         )}
-                        {questionDisplayName(question)}
+                        {questionDisplayName(course, question)}
                       </td>
                       <td>
                         <TopicBadge topic={question.topic} />

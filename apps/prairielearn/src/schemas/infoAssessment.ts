@@ -249,6 +249,8 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional(),
 });
 
+export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
+
 export const AssessmentJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
