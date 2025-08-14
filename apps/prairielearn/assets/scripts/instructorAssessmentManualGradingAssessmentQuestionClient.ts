@@ -180,12 +180,23 @@ onDocumentReady(() => {
     columns: [
       [
         { checkbox: true },
+        aiGradingMode ? {
+          field: 'ai_cluster_name',
+          title: 'Cluster',
+          visible: aiGradingMode,
+          filterControl: 'select',
+          class: 'text-center',
+          formatter: (value: string | null) => (value ?? '&mdash;'),
+          sortable: true,
+
+        } : 
         {
           field: 'index',
           title: 'Instance',
           searchable: false,
           sortable: true,
           switchable: false,
+          class: 'text-center',
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
             html`
               <a
@@ -554,7 +565,7 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
     'ai_cluster_selected',
   ]);
 
-  if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction)) {
+  if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.
     return;
   }

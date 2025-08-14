@@ -22,7 +22,7 @@ export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export const InstanceQuestionRowWithAIGradingStatsSchema = z.object({
   ...InstanceQuestionRowSchema.shape,
-  ...AIGradingStatsSchema.shape,
+  ...AIGradingStatsSchema.shape
 });
 
 export type InstanceQuestionRowWithAIGradingStats = z.infer<

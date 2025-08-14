@@ -11,6 +11,7 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
+import { getAiClusterAssignment } from '../ai-clustering/ai-clustering-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
@@ -56,6 +57,10 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
   );
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
+
+  const instanceQuestionToAiClusterAssignment = await getAiClusterAssignment({
+    assessment_question_id: assessment_question.id
+  });
 
   const results: WithAIGradingStats<T>[] = [];
 
@@ -103,6 +108,9 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
         .map((item) => ({ ...item, false_positive: false }));
       instance_question.rubric_difference = fnItems.concat(fpItems);
     }
+
+    // Retrieve the current cluster of the instance question
+    instance_question.ai_cluster_name = instanceQuestionToAiClusterAssignment[instance_question.id] ?? null;
   }
   return results;
 }

@@ -8,7 +8,7 @@ import z from 'zod';
 
 import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { AiClusterSchema, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
+import { type AiCluster, AiClusterSchema, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { generateSubmissionMessage, selectLastVariantAndSubmission } from '../ai-grading/ai-grading-util.js';
@@ -83,7 +83,7 @@ export async function getAiClusterAssignment({
     )).reduce((acc, { cluster_name, instance_question_id }) => {
         acc[instance_question_id] = cluster_name;
         return acc;
-    }, {} as Record<string, string>);
+    }, {} as Record<InstanceQuestion['id'], AiCluster['cluster_name']>);
 }
 
 /** Retrieve all AI clusters for an assessment question */

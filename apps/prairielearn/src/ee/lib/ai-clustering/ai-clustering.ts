@@ -80,6 +80,8 @@ export async function aiCluster({
             index
         }));
 
+        job.info(`Clustering ${selectedInstanceQuestionsWithIndex.length} instance questions...`)
+
         await insertAiClusters({
           assessment_question_id: assessment_question.id,
         });
@@ -136,8 +138,6 @@ export async function aiCluster({
             logger.info(`Clustered instance question ${instance_question.id} (${index + 1}/${total})`);
             return true;
         }
-
-        job.info(`Clustering ${selectedInstanceQuestionsWithIndex.length} instance questions...`)
 
         const instance_question_clustering_successes = await async.mapLimit(
             selectedInstanceQuestionsWithIndex,
