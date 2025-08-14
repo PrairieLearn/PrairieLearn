@@ -7,6 +7,7 @@ export const AIGradingStatsSchema = z.object({
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),
   rubric_difference: z.array(RubricItemSchema.extend({ false_positive: z.boolean() })).nullable(),
+  rubric_similarity: z.array(RubricItemSchema.extend({ true_positive: z.boolean() })).nullable(),
 });
 
 type AIGradingStats = z.infer<typeof AIGradingStatsSchema>;

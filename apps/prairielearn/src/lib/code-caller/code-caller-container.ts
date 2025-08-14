@@ -135,16 +135,16 @@ export class CodeCallerContainer implements CodeCaller {
   callCount: number;
   hasBindMount: boolean;
   options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
-  stdinStream: MemoryStream | null;
-  stdoutStream: MemoryStream | null;
-  stderrStream: MemoryStream | null;
+  stdinStream: MemoryStream | undefined;
+  stdoutStream: MemoryStream | undefined;
+  stderrStream: MemoryStream | undefined;
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string;
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
-  hostDirectory: tmp.DirectoryResult | null;
+  hostDirectory: tmp.DirectoryResult | undefined;
 
   /**
    * Creating a new {@link CodeCallerContainer} instance requires some async work,
@@ -252,7 +252,7 @@ export class CodeCallerContainer implements CodeCaller {
     type: CallType,
     directory: string | null,
     file: string | null,
-    fcn: string,
+    fcn: string | null,
     args: any[],
   ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
@@ -644,7 +644,7 @@ export class CodeCallerContainer implements CodeCaller {
   /**
    * Checks if the caller is ready for a call to call().
    */
-  _checkReadyForCall(fcn: string): boolean {
+  _checkReadyForCall(fcn: string | null): boolean {
     if (!this.container) {
       return this._logError(
         `Not ready for call, container is not created (state: ${String(this.state)})`,

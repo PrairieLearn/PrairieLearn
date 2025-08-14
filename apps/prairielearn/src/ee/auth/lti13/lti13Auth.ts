@@ -133,6 +133,7 @@ async function setupPassport(lti13_instance_id: string) {
         client,
         passReqToCallback: true,
       },
+      // @ts-expect-error TODO: type correctly
       callbackify(verify),
     ),
   );
