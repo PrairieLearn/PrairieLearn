@@ -1,9 +1,11 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
+import { Cache } from '@prairielearn/cache';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
   IdSchema,
@@ -203,14 +205,102 @@ function extractFromCompletion(
 }
 
 /**
+ * Returns the AI question generation cache used for rate limiting.
+ */
+let aiQuestionGenerationCache: Cache | undefined;
+export function getAiQuestionGenerationCache() {
+  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
+  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
+  aiQuestionGenerationCache = new Cache();
+  aiQuestionGenerationCache.init({
+    type: config.nonVolatileCacheType,
+    keyPrefix: config.cacheKeyPrefix,
+    redisUrl: config.nonVolatileRedisUrl,
+  });
+  return aiQuestionGenerationCache;
+}
+
+/**
+ * Approximate the cost of the prompt, in US dollars.
+ * Accounts for the cost of prompt, system, and completion tokens.
+ */
+export function approximatePromptCost(prompt: string) {
+  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
+  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
+  // Also, on average, we generate 3750 system tokens per prompt.
+  const approxPromptAndSystemTokenCost =
+    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
+
+  // On average, we generate 250 completion tokens per prompt.
+  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+
+  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
+}
+
+/**
+ * Retrieve the Redis key for a user's current AI question generation interval usage
+ */
+function getIntervalUsageKey(userId: number) {
+  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
+  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+}
+
+// 1 hour in milliseconds
+const intervalLengthMs = 3600 * 1000;
+
+/**
+ * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
+ */
+export async function getIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+}) {
+  return (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
+}
+
+/**
+ * Add the cost of a completion to the usage of the user for the current interval.
+ */
+export async function addCompletionCostToIntervalUsage({
+  aiQuestionGenerationCache,
+  userId,
+  promptTokens,
+  completionTokens,
+  intervalCost,
+}: {
+  aiQuestionGenerationCache: Cache;
+  userId: number;
+  promptTokens: number;
+  completionTokens: number;
+  intervalCost: number;
+}) {
+  const completionCost =
+    (config.costPerMillionPromptTokens * promptTokens +
+      config.costPerMillionCompletionTokens * completionTokens) /
+    1e6;
+
+  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
+  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
+
+  aiQuestionGenerationCache.set(
+    getIntervalUsageKey(userId),
+    intervalCost + completionCost,
+    timeRemainingInInterval,
+  );
+}
+
+/**
  * Generates the HTML and Python code for a new question using an LLM.
- *
- * @param client The OpenAI client to use.
- * @param courseId The ID of the current course.
- * @param authnUserId The authenticated user's ID.
- * @param prompt The prompt for how to generate a question.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.client The OpenAI client to use.
+ * @param params.courseId The ID of the current course.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.prompt The prompt for how to generate a question.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
@@ -411,19 +501,22 @@ function traverseForTagNames(ast: any): Set<string> {
 
 /**
  * Revises a question using the LLM based on user input.
- *
- * @param client The OpenAI client to use.
- * @param authnUserId The authenticated user's ID.
- * @param originalPrompt The prompt creating the original generation.
- * @param revisionPrompt A prompt with user instructions on how to revise the question.
- * @param originalHTML The question.html file to revise.
- * @param originalPython The server.py file to revise.
- * @param remainingAttempts Number of times that regen could be called.
- * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
- * @param questionQid The qid of the question to edit.
- * @param courseId The ID of the current course.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.job The server job to use.
+ * @param params.client The OpenAI client to use.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.originalPrompt The prompt creating the original generation.
+ * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param params.originalHTML The question.html file to revise.
+ * @param params.originalPython The server.py file to revise.
+ * @param params.remainingAttempts Number of times that regen could be called.
+ * @param params.isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
+ * @param params.questionId The ID of the question to edit.
+ * @param params.questionQid The qid of the question to edit.
+ * @param params.courseId The ID of the current course.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params.jobSequenceId The ID of the server job.
  */
 async function regenInternal({
   job,
@@ -615,6 +708,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
+ * @param questionQid The qid of the question to edit.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.

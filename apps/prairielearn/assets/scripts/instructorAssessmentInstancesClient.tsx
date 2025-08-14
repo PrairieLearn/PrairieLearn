@@ -7,7 +7,7 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
@@ -637,7 +637,7 @@ onDocumentReady(() => {
   }
 
   function scorebarFormatter(score: number | null) {
-    return Scorebar(score).toString();
+    return ScorebarHtml(score).toString();
   }
 
   function listFormatter(list: string[]) {
@@ -663,7 +663,7 @@ onDocumentReady(() => {
           data-bs-placement="bottom"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
-        </a>
+        </button>
       </span>
     `.toString();
   }
@@ -793,7 +793,7 @@ onDocumentReady(() => {
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {
-    let time_limit_list: Record<string, any> = new Object();
+    let time_limit_list: Record<string, any> = {};
     let remaining_time_min = 0;
     let remaining_time_max = 0;
     let has_open_instance = false;

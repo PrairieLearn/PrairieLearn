@@ -10,10 +10,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import type {
   AssessmentJsonInput,
-  CommentJsonInput,
   CourseInstanceJsonInput,
   CourseJsonInput,
-  CourseOptionsJson,
   QuestionJsonInput,
   TagJsonInput,
   TopicJsonInput,
@@ -158,8 +156,9 @@ const course = {
       description: 'Another test tag',
     },
   ] as TagJsonInput[],
-  options: undefined as CourseOptionsJson | undefined,
-  comment: undefined as CommentJsonInput | undefined,
+  sharingSets: undefined as CourseJsonInput['sharingSets'],
+  options: undefined as CourseJsonInput['options'],
+  comment: undefined as CourseJsonInput['comment'],
 } satisfies CourseJsonInput;
 
 const questions: Record<string, QuestionJsonInput> = {
@@ -324,7 +323,7 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * Returns an array of all records in a particular database table.
  *
  * @param tableName - The name of the table to query
- * @return The rows of the given table
+ * @returns The rows of the given table
  */
 export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});

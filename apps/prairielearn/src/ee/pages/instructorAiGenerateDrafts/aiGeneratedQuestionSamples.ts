@@ -8,20 +8,22 @@ export type ExamplePrompt = {
     }
   | {
       answerType: 'number';
-      /* Numeric tolerances for grading answers */
+      /** Numeric tolerances for grading answers */
       rtol?: number;
       atol?: number;
-      /* Describes what the question answer is, e.g. dot product or velocity */
+      /** Describes what the question answer is, e.g. dot product or velocity */
       answerLabel: string;
       answerUnits?: string;
     }
   | {
       answerType: 'string';
-      /* Describes what the question answer is, e.g. dot product or velocity */
+      /** Describes what the question answer is, e.g. dot product or velocity */
       answerLabel: string;
       answerUnits?: string;
     }
 );
+
+export type ExamplePromptWithId = ExamplePrompt & { id: keyof typeof examplePrompts };
 
 export const examplePrompts = {
   'cities-in-random-country': {
@@ -109,7 +111,7 @@ export const examplePrompts = {
 export const examplePromptsArray = Object.entries(examplePrompts).map(([id, prompt]) => ({
   id: id as keyof typeof examplePrompts,
   ...prompt,
-}));
+})) satisfies ExamplePromptWithId[];
 
 export interface VariantOption {
   letter?: string;
@@ -422,7 +424,7 @@ function computeHypotenuseLength(): SampleQuestionVariant {
   const leg_b = Math.floor(Math.random() * 10) + 1;
 
   // Compute the hypotenuse using the Pythagorean theorem
-  const hypotenuse = Math.sqrt(leg_a ** 2 + leg_b ** 2);
+  const hypotenuse = Math.hypot(leg_a, leg_b);
 
   return {
     answerType: 'number',

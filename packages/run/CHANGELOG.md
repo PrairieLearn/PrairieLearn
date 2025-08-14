@@ -1,5 +1,23 @@
 # @prairielearn/run
 
+## 1.0.13
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.0.12
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 1.0.11
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
 ## 1.0.10
 
 ### Patch Changes

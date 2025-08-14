@@ -6,11 +6,12 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../../lib/db-types.js';
+import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -67,11 +68,11 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
@@ -141,7 +142,7 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
-    modified_at: z.string(),
+    modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
       .transform((val) =>
@@ -236,7 +237,7 @@ router.post(
           res.locals.assessment.id,
           res.locals.instance_question.id,
           body.submission_id,
-          body.modified_at,
+          body.modified_at, // check_modified_at
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,

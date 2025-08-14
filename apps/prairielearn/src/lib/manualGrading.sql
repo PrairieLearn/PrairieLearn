@@ -285,7 +285,8 @@ WITH
 SELECT
   rgr.*,
   gir.applied_rubric_items,
-  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed
+  COALESCE(gir.rubric_items_changed, FALSE) AS rubric_items_changed,
+  iq.is_ai_graded
 FROM
   rubric_gradings_to_review AS rgr
   JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
@@ -376,7 +377,10 @@ SELECT
   iq.manual_points,
   s.manual_rubric_grading_id,
   $check_modified_at::TIMESTAMPTZ IS NOT NULL
-  AND $check_modified_at != iq.modified_at AS modified_at_conflict
+  -- We are comparing a database timestamp (microseconds precision) to a time
+  -- that comes from the client (milliseconds precision). This avoids a precision
+  -- mismatch that would cause the comparison to fail.
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -472,6 +476,8 @@ WITH
       manual_points = COALESCE($manual_points, manual_points),
       status = 'complete',
       modified_at = now(),
+      -- TODO: this might not be correct. Matt suggested that we might want to
+      -- refactor `highest_submission_score` to track only auto points.
       highest_submission_score = COALESCE($score, highest_submission_score),
       requires_manual_grading = FALSE,
       last_grader = $authn_user_id,

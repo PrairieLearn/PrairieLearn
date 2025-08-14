@@ -1,7 +1,6 @@
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,12 +16,9 @@ import {
 import { ensureEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const UserWithIdSchema = z.object({
-  user_id: z.string(),
-});
 
 describe('effective user', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -55,17 +51,12 @@ describe('effective user', { timeout: 60_000 }, function () {
   let studentId: string;
 
   beforeAll(async function () {
-    const institutionAdmin = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      [
-        'institution-admin@example.com',
-        'Institution Admin',
-        null,
-        'institution-admin@example.com',
-        'dev',
-      ],
-      UserWithIdSchema,
-    );
+    const institutionAdmin = await getOrCreateUser({
+      uid: 'institution-admin@example.com',
+      name: 'Institution Admin',
+      uin: null,
+      email: 'institution-admin@example.com',
+    });
     institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
@@ -73,11 +64,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    const instructor = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
     instructorId = instructor.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -86,11 +78,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    const staff = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['staff@example.com', 'Staff Three', null, 'staff@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const staff = await getOrCreateUser({
+      uid: 'staff@example.com',
+      name: 'Staff Three',
+      uin: null,
+      email: 'staff@example.com',
+    });
     staffId = staff.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -99,11 +92,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '2',
     });
 
-    const student = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const student = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+      email: 'student@example.com',
+    });
     studentId = student.user_id;
     await ensureEnrollment({
       user_id: studentId,

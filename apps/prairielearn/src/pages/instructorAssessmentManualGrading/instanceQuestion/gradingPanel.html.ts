@@ -59,7 +59,11 @@ export function GradingPanel({
       data-rubric-min-points="${resLocals.rubric_data?.min_points}"
     >
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      <input type="hidden" name="modified_at" value="${resLocals.instance_question.modified_at}" />
+      <input
+        type="hidden"
+        name="modified_at"
+        value="${resLocals.instance_question.modified_at.toISOString()}"
+      />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
         ${resLocals.assessment_question.max_points
@@ -67,14 +71,14 @@ export function GradingPanel({
             html`
               <li class="list-group-item d-flex justify-content-center">
                 <span>Points</span>
-                <div class="custom-control custom-switch mx-2">
+                <div class="form-check form-switch mx-2">
                   <input
-                    class="custom-control-input js-manual-grading-pts-perc-select"
+                    class="form-check-input js-manual-grading-pts-perc-select"
                     name="use_score_perc"
                     id="use-score-perc"
                     type="checkbox"
                   />
-                  <label class="custom-control-label" for="use-score-perc">Percentage</label>
+                  <label class="form-check-label" for="use-score-perc">Percentage</label>
                 </div>
               </li>
             `

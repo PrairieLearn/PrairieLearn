@@ -1,5 +1,10 @@
+import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
-import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ParsedChatCompletion,
+} from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
 import {
@@ -71,23 +76,19 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
 export async function generatePrompt({
   questionPrompt,
   submission_text,
+  submitted_answer,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
   submission_text: string;
+  submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
 }): Promise<{
-  messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  messages: ChatCompletionMessageParam[];
 }> {
-  const messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[] = [];
+  const messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -160,12 +161,103 @@ export async function generatePrompt({
   }
 
   // Student response
-  messages.push({
-    role: 'user',
-    content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
-  });
+  messages.push(
+    generateSubmissionMessage({
+      submission_text,
+      submitted_answer,
+    }),
+  );
 
   return { messages };
+}
+
+/**
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ */
+function generateSubmissionMessage({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): ChatCompletionMessageParam {
+  const message_content: ChatCompletionContentPart[] = [];
+
+  message_content.push({
+    type: 'text',
+    text: 'The student submitted the following response: \n<response>\n',
+  });
+
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
+  // to the message content to construct an AI-readable version of the submission.
+
+  const $submission_html = cheerio.load(submission_text);
+  let submissionTextSegment = '';
+
+  $submission_html
+    .root()
+    .find('body')
+    .contents()
+    .each((_, node) => {
+      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      if (imageCaptureUUID) {
+        if (submissionTextSegment) {
+          // Push and reset the current text segment before adding the image.
+          message_content.push({
+            type: 'text',
+            text: submissionTextSegment,
+          });
+          submissionTextSegment = '';
+        }
+
+        const options = $submission_html(node).data('options') as Record<string, string>;
+        const submittedImageName = options.submitted_file_name;
+        if (!submittedImageName) {
+          // If no submitted filename is available, no image was captured.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${options.file_name} was not captured.`,
+          });
+          return;
+        }
+
+        // submitted_answer contains the base-64 encoded image data for the image capture.
+
+        if (!submitted_answer) {
+          throw new Error('No submitted answers found.');
+        }
+
+        if (!submitted_answer[submittedImageName]) {
+          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        }
+
+        message_content.push({
+          type: 'image_url',
+          image_url: {
+            url: submitted_answer[submittedImageName],
+          },
+        });
+      } else {
+        submissionTextSegment += $submission_html(node).text();
+      }
+    });
+
+  if (submissionTextSegment) {
+    message_content.push({
+      type: 'text',
+      text: submissionTextSegment,
+    });
+  }
+
+  message_content.push({
+    type: 'text',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+  });
+
+  return {
+    role: 'user',
+    content: message_content,
+  } satisfies ChatCompletionMessageParam;
 }
 
 export async function generateSubmissionEmbedding({
@@ -249,64 +341,12 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export function pearsonCorrelation(x: number[], y: number[]): number {
-  if (x.length !== y.length || x.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = x.length;
-  const sumX = x.reduce((acc, val) => acc + val, 0);
-  const sumY = y.reduce((acc, val) => acc + val, 0);
-  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
-  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
-  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
-
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
-
-  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
-}
-
-export function rootMeanSquaredError(actual: number[], predicted: number[]): number {
-  if (actual.length !== predicted.length || actual.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = actual.length;
-  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
-  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
-
-  return Math.round(Math.sqrt(meanSquaredError) * 100) / 100;
-}
-
-export function rubricItemAccuracy(
-  testRubricResults: {
-    reference_items: Set<string>;
-    ai_items: Set<string>;
-  }[],
-  item: RubricItem,
-): number {
-  let match = 0;
-  testRubricResults.forEach((test) => {
-    if (
-      (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
-      (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
-    ) {
-      match++;
-    }
-  });
-  const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
-  return accuracy;
-}
-
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     InstanceQuestionSchema,
   );
 }
@@ -316,9 +356,7 @@ export async function selectRubricGradingItems(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_grading_items,
-    {
-      manual_rubric_grading_id,
-    },
+    { manual_rubric_grading_id },
     RubricItemSchema,
   );
 }
@@ -333,10 +371,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  prompt: ChatCompletionMessageParam[];
   completion: ParsedChatCompletion<any>;
   course_id: string;
   course_instance_id?: string;
@@ -393,9 +428,7 @@ export async function selectRubricForGrading(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_for_grading,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     RubricItemSchema,
   );
 }

@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
@@ -172,7 +172,7 @@ export function InstructorEffectiveUser({
                   name="pl_requested_course_role"
                 >
                   ${courseRoles.available_course_roles
-                    .reverse()
+                    .toReversed()
                     .map((available_course_role) =>
                       available_course_role === authz_data.course_role
                         ? html`
@@ -229,7 +229,7 @@ export function InstructorEffectiveUser({
                         name="pl_requested_course_instance_role"
                       >
                         ${courseRoles.available_course_instance_roles
-                          .reverse()
+                          .toReversed()
                           .map((available_course_instance_role) =>
                             available_course_instance_role === authz_data.course_instance_role
                               ? html`

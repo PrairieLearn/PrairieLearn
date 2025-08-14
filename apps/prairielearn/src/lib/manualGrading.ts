@@ -30,7 +30,7 @@ const AppliedRubricItemSchema = z.object({
 });
 type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
-const RubricDataSchema = RubricSchema.extend({
+export const RubricDataSchema = RubricSchema.extend({
   rubric_items: z.array(
     RubricItemSchema.extend({
       num_submissions: z.number(),
@@ -87,11 +87,13 @@ const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
   rubric_settings_changed: z.boolean(),
   applied_rubric_items: RubricGradingItemSchema.array().nullable(),
   rubric_items_changed: z.boolean(),
+  is_ai_graded: z.boolean(),
 });
 
 type RubricItemInput = Partial<RubricItem> & { order: number };
 
-/** Builds the URL of an instance question tagged to be manually graded for a particular
+/**
+ * Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
  *
  * @param urlPrefix - URL prefix for the current course instance.
@@ -122,14 +124,15 @@ export async function nextUngradedInstanceQuestionUrl(
 
 /**
  * Selects a variety of rubric data for a given assessment question.
- * Also renders the selected rubric items with the submission data.
+ * If a submission is provided, the rubric items are rendered
+ * as Mustache templates with the submission's data.
  */
 export async function selectRubricData({
   assessment_question,
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission: Submission;
+  submission?: Submission;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -143,25 +146,27 @@ export async function selectRubricData({
     RubricDataSchema,
   );
 
-  // Render rubric items: description, explanation and grader note
-  const mustache_data = {
-    correct_answers: submission?.true_answer ?? {},
-    params: submission?.params ?? {},
-    submitted_answers: submission?.submitted_answer,
-  };
+  if (submission) {
+    // Render rubric items: description, explanation and grader note
+    const mustache_data = {
+      correct_answers: submission?.true_answer ?? {},
+      params: submission?.params ?? {},
+      submitted_answers: submission?.submitted_answer,
+    };
 
-  await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = await markdownToHtml(
-      mustache.render(item.description || '', mustache_data),
-      { inline: true },
-    );
-    item.explanation_rendered = await markdownToHtml(
-      mustache.render(item.explanation || '', mustache_data),
-    );
-    item.grader_note_rendered = await markdownToHtml(
-      mustache.render(item.grader_note || '', mustache_data),
-    );
-  });
+    await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
+      item.description_rendered = await markdownToHtml(
+        mustache.render(item.description || '', mustache_data),
+        { inline: true },
+      );
+      item.explanation_rendered = await markdownToHtml(
+        mustache.render(item.explanation || '', mustache_data),
+      );
+      item.grader_note_rendered = await markdownToHtml(
+        mustache.render(item.grader_note || '', mustache_data),
+      );
+    });
+  }
 
   return rubric_data;
 }
@@ -180,7 +185,8 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   });
 }
 
-/** Builds the locals object for rubric grading data. Can be called with any object that contains a
+/**
+ * Builds the locals object for rubric grading data. Can be called with any object that contains a
  * `manual_rubric_grading_id` field, typically a submission or grading job. Updates the object
  * in-place by adding a `rubric_grading` value, as well as the rendered version of the manual
  * feedback.
@@ -202,7 +208,8 @@ export async function populateManualGradingData(submission: Record<string, any>)
   }
 }
 
-/** Updates the rubric settings for an assessment question.
+/**
+ * Updates the rubric settings for an assessment question.
  *
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param use_rubric - Indicates if a rubric should be used for manual grading.
@@ -304,7 +311,7 @@ export async function updateAssessmentQuestionRubric(
       // Update rubric items. Start by soft-deleting rubric items that are no longer active.
       await sqldb.queryAsync(sql.delete_rubric_items, {
         rubric_id: new_rubric_id,
-        active_rubric_items: rubric_items.map((item) => item.id).filter((id) => id),
+        active_rubric_items: rubric_items.map((item) => item.id).filter(Boolean),
       });
 
       rubric_items.sort((a, b) => a.order - b.order);
@@ -338,7 +345,8 @@ export async function updateAssessmentQuestionRubric(
   });
 }
 
-/** Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
+/**
+ * Recomputes all graded instance questions based on changes in the rubric settings and items. A new grading job is created, but only if settings or item points are changed.
  *
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param authn_user_id - The user_id of the logged in user.
@@ -363,12 +371,14 @@ async function recomputeInstanceQuestions(
         null, // check_modified_at,
         { manual_rubric_data: instance_question },
         authn_user_id,
+        instance_question.is_ai_graded,
       );
     });
   });
 }
 
-/** Creates a new grading object for a specific rubric.
+/**
+ * Creates a new grading object for a specific rubric.
  *
  * @param rubric_id - ID of the rubric (typically retrieved from the assessment question).
  * @param max_points - number of points assigned as the maximum number of points to the assessment question.
@@ -453,20 +463,22 @@ const InstanceQuestionScoreInputSchema = z.object({
 });
 type InstanceQuestionScoreInput = z.infer<typeof InstanceQuestionScoreInputSchema>;
 
-/** Manually updates the score of an instance question.
+/**
+ * Manually updates the score of an instance question.
  * @param assessment_id - The ID of the assessment associated to the instance question. Assumed to be safe.
  * @param instance_question_id - The ID of the instance question to be updated. May or may not be safe.
  * @param submission_id - The ID of the submission. Optional, if not provided the last submission if the instance question is used.
  * @param check_modified_at - The value of modified_at when the question was retrieved, optional. If provided, and the modified_at value does not match this value, a grading job is created but the score is not updated.
  * @param score - The score values to be used for update.
  * @param authn_user_id - The user_id of the logged in user.
+ * @param is_ai_graded - Whether the score update is the result of AI grading or manual grading
  * @returns The ID of the grading job created, if any, and a flag indicating if the score was not updated due to a modified_at conflict.
  */
 export async function updateInstanceQuestionScore(
   assessment_id: string,
   instance_question_id: string,
   submission_id: string | null,
-  check_modified_at: string | null,
+  check_modified_at: Date | null,
   score: InstanceQuestionScoreInput,
   authn_user_id: string,
   is_ai_graded = false,
@@ -474,7 +486,12 @@ export async function updateInstanceQuestionScore(
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
       sql.select_submission_for_score_update,
-      { assessment_id, instance_question_id, submission_id, check_modified_at },
+      {
+        assessment_id,
+        instance_question_id,
+        submission_id,
+        check_modified_at: check_modified_at?.toISOString(),
+      },
       SubmissionForScoreUpdateSchema,
     );
 
@@ -665,6 +682,7 @@ export async function updateInstanceQuestionScore(
         true, // allow_decrease
       ]);
 
+      // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 

@@ -1,6 +1,8 @@
-import { IssueBadge } from '../components/IssueBadge.html.js';
+import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
-import { ProgressCircle } from '../components/ProgressCircle.html.js';
+import { ProgressCircle } from '../components/ProgressCircle.js';
+
+import { isEnterprise } from './license.js';
 
 /**
  * Retrieves horizontal navigation tab info for ContextNavigation.
@@ -45,7 +47,8 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
 
           {
@@ -83,18 +86,27 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
             renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
           },
           {
+            activeSubPage: 'students',
+            urlSuffix: '/instance_admin/students',
+            iconClasses: 'fas fa-users-line',
+            tabLabel: 'Students',
+            renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
+          },
+          {
             activeSubPage: 'lti',
             urlSuffix: '/instance_admin/lti',
             iconClasses: 'fas fa-graduation-cap',
             tabLabel: 'LTI',
-            renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
+            renderCondition: (resLocals) =>
+              resLocals.lti11_enabled && resLocals.authz_data.has_course_permission_edit,
           },
           {
-            activeSubPage: 'lti13',
+            activeSubPage: 'integrations',
             urlSuffix: '/instance_admin/lti13_instance',
             iconClasses: 'fas fa-school-flag',
-            tabLabel: 'LTI 1.3',
-            renderCondition: (resLocals) => resLocals.lti13_enabled,
+            tabLabel: 'Integrations',
+            renderCondition: ({ authz_data }) =>
+              authz_data.has_course_permission_edit && isEnterprise(),
           },
           {
             activeSubPage: 'billing',
@@ -168,7 +180,7 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
               ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               }),
             renderCondition: ({ authz_data, course }) =>
               authz_data.has_course_permission_edit && course.show_getting_started,
@@ -368,7 +380,11 @@ export function getNavPageTabs(hasEnhancedNavigation: boolean) {
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>
-          IssueBadge({ count: resLocals.open_issue_count, suppressLink: true, className: 'ms-2' }),
+          IssueBadgeHtml({
+            count: resLocals.open_issue_count,
+            suppressLink: true,
+            class: 'ms-2',
+          }),
         renderCondition: ({ course, question }) => question.course_id === course.id,
       },
     ],

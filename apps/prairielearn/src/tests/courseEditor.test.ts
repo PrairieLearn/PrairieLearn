@@ -6,12 +6,14 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { updateCourseSharingName } from '../models/course.js';
 
@@ -67,7 +69,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty question',
+      start_from: 'empty',
     },
     files: new Set([
       'README.md',
@@ -91,7 +93,7 @@ const testEditData: EditData[] = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty question',
+      start_from: 'empty',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
@@ -344,9 +346,36 @@ const publicCopyTestData: EditData[] = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
       'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
       'courseInstances/Fa19/assessments/test/infoAssessment.json',
       'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'courseInstances/Fa19_copy1/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'questions/test-course/shared-source-publicly_copy1/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/nested/dir/test/infoAssessment.json',
     ]),
   },
 ];
@@ -514,8 +543,8 @@ function testEdit(params: EditData) {
   describe('The job sequence', () => {
     let job_sequence_id: string;
     it('should have an id', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      job_sequence_id = result.rows[0].id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
       await helperServer.waitForJobSequenceSuccess(job_sequence_id);
@@ -586,6 +615,8 @@ async function createCourseFiles() {
 
 async function createSharedCourse() {
   const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const PUBLICLY_SHARED_SOURCE_QUESTION_QID = 'shared-source-publicly';
+
   const sharingCourseData = syncUtil.getCourseData();
   sharingCourseData.course.name = 'SHARING 101';
   sharingCourseData.questions = {
@@ -597,6 +628,13 @@ async function createSharedCourse() {
       sharePublicly: true,
       shareSourcePublicly: true,
     },
+    [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111112',
+      type: 'v3',
+      title: 'Shared source publicly',
+      topic: 'TOPIC HERE',
+      shareSourcePublicly: true,
+    },
   };
   sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
     {
@@ -605,14 +643,20 @@ async function createSharedCourse() {
           id: PUBLICLY_SHARED_QUESTION_QID,
           points: 1,
         },
+        {
+          id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
+          points: 1,
+        },
       ],
     },
   ];
   sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
   sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
 
-  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] =
-    sharingCourseData.courseInstances['Fa19'].assessments['test'];
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
+    sharingCourseData.courseInstances['Fa19'].assessments['test'],
+  );
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

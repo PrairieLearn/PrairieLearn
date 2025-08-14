@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
@@ -9,8 +11,8 @@ import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
 import * as path from 'node:path';
+import * as url from 'node:url';
 import * as util from 'node:util';
-import * as url from 'url';
 
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -26,12 +28,12 @@ import express, {
   Router,
 } from 'express';
 import asyncHandler from 'express-async-handler';
+import minimist from 'minimist';
 import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
 import { v4 as uuidv4 } from 'uuid';
-import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -49,22 +51,24 @@ import * as sqldb from '@prairielearn/postgres';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
-import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
+import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
+import { UserSchema } from './lib/db-types.js';
 import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
+import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
 import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
+import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
@@ -78,20 +82,21 @@ import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
-const argv = yargsParser(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
   const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
+    --config <filename>                 Use the specified configuration file
     --migrate-and-exit                  Run the DB initialization parts and exit
     --refresh-workspace-hosts-and-exit  Refresh the workspace hosts and exit
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
+  // eslint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -108,7 +113,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return The express "app" object that was created.
+ * @returns The express "app" object that was created.
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
@@ -212,6 +217,12 @@ export async function initExpress(): Promise<Express> {
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view/*',
     upload.single('file'),
   );
+
+  app.post(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+
   app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     upload.single('file'),
@@ -260,7 +271,19 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    upload.single('file'),
+  );
+  app.post(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     upload.single('file'),
   );
 
@@ -271,37 +294,57 @@ export async function initExpress(): Promise<Express> {
   const workspaceProxySocketActivityMetrics = new SocketActivityMetrics(meter, 'workspace-proxy');
   workspaceProxySocketActivityMetrics.start();
 
-  const workspaceAuthRouter = Router();
-  workspaceAuthRouter.use([
-    // We use a short-lived cookie to cache a successful
-    // authn/authz for a specific workspace. We run the following
-    // middlewares in this separate sub-router so that we can
-    // short-circuit out of authzWorkspaceCookieCheck if we find
-    // the workspace-authz cookie. Short-circuiting will exit this
-    // sub-router immediately, so we can either exit this
-    // sub-router by finding the cookie, or by running regular
-    // authn/authz.
+  async function makeWorkspaceContainerRoutes({
+    url,
+    containerPathRegex,
+    publicQuestionEndpoint,
+  }: {
+    url: string;
+    containerPathRegex: RegExp;
+    publicQuestionEndpoint: boolean;
+  }) {
+    const workspaceAuthRouter = Router();
+    workspaceAuthRouter.use([
+      // We use a short-lived cookie to cache a successful
+      // authn/authz for a specific workspace. We run the following
+      // middlewares in this separate sub-router so that we can
+      // short-circuit out of authzWorkspaceCookieCheck if we find
+      // the workspace-authz cookie. Short-circuiting will exit this
+      // sub-router immediately, so we can either exit this
+      // sub-router by finding the cookie, or by running regular
+      // authn/authz.
 
-    (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
-    (await import('./middlewares/date.js')).default,
-    (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
-    (await import('./middlewares/authzWorkspace.js')).default, // jumps to error handler if authz fails
-    (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
-  ]);
-  app.use('/pl/workspace/:workspace_id(\\d+)/container', [
-    cookieParser(),
-    (req: Request, res: Response, next: NextFunction) => {
-      // Needed for workspaceAuthRouter.
-      res.locals.workspace_id = req.params.workspace_id;
-      next();
-    },
-    workspaceAuthRouter,
-    (req: Request, res: Response, next: NextFunction) => {
-      workspaceProxySocketActivityMetrics.addSocket(req.socket);
-      next();
-    },
-    makeWorkspaceProxyMiddleware(),
-  ]);
+      (await import('./middlewares/authzWorkspaceCookieCheck.js')).default, // short-circuits if we have the workspace-authz cookie
+      (await import('./middlewares/date.js')).default,
+      (await import('./middlewares/authn.js')).default, // jumps to error handler if authn fails
+      (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint }), // jumps to error handler if authz fails
+      (await import('./middlewares/authzWorkspaceCookieSet.js')).default, // sets the workspace-authz cookie
+    ]);
+    app.use(url, [
+      cookieParser(),
+      (req: Request, res: Response, next: NextFunction) => {
+        // Needed for workspaceAuthRouter.
+        res.locals.workspace_id = req.params.workspace_id;
+        next();
+      },
+      workspaceAuthRouter,
+      (req: Request, res: Response, next: NextFunction) => {
+        workspaceProxySocketActivityMetrics.addSocket(req.socket);
+        next();
+      },
+      makeWorkspaceProxyMiddleware(containerPathRegex),
+    ]);
+  }
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: false,
+  });
+  await makeWorkspaceContainerRoutes({
+    url: '/pl/public/workspace/:workspace_id(\\d+)/container',
+    containerPathRegex: /^\/pl\/public\/workspace\/([0-9]+)\/container\/(.*)/,
+    publicQuestionEndpoint: true,
+  });
 
   app.use((req, res, next) => {
     // Stripe webhook signature verification requires the raw body, so we avoid
@@ -512,11 +555,11 @@ export async function initExpress(): Promise<Express> {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
-    (await import('./middlewares/authzWorkspace.js')).default,
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: false }),
   ]);
   app.use(
     '/pl/workspace/:workspace_id(\\d+)',
-    (await import('./pages/workspace/workspace.js')).default,
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: false }),
   );
   app.use(
     '/pl/workspace/:workspace_id(\\d+)/logs',
@@ -556,16 +599,20 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzCourseOrInstance.js')).default,
   );
 
-  // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
-  // or `autoEnroll` middlewares so that we can render it even when the student
-  // isn't enrolled in the course instance or doesn't have the necessary plan grants.
   if (isEnterprise()) {
-    // This must come before `authzHasCourseInstanceAccess` and the upgrade page
-    // below so that we can render it even when the student isn't enrolled in the
-    // course instance.
+    // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
+    // or `autoEnroll` middlewares so that we can render it even when the student
+    // isn't enrolled in the course instance or doesn't have the necessary plan grants.
     app.use('/pl/course_instance/:course_instance_id(\\d+)/upgrade', [
       (await import('./ee/pages/studentCourseInstanceUpgrade/studentCourseInstanceUpgrade.js'))
         .default,
+    ]);
+
+    // This must come after `authzCourseOrInstance` but before the `requireLinkedLtiUser`
+    // middleware so that it can render it even if that middleware would otherwise
+    // forbid access.
+    app.use('/pl/course_instance/:course_instance_id(\\d+)/lti_linking_required', [
+      (await import('./ee/pages/linkedLtiUserRequired/linkedLtiUserRequired.js')).default,
     ]);
   }
 
@@ -573,12 +620,12 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
-      next();
-    },
+    await enterpriseOnly(
+      async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
+    ),
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
+      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
     },
   ]);
@@ -607,9 +654,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
     },
@@ -649,9 +693,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
     },
@@ -763,8 +804,8 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      const hasLti13CourseInstance = await validateLti13CourseInstance(res.locals);
-      res.locals.lti13_enabled = hasLti13CourseInstance && isEnterprise();
+      res.locals.lti11_enabled =
+        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
       next();
     }),
   );
@@ -1066,6 +1107,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_download',
     (await import('./pages/instructorFileDownload/instructorFileDownload.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/grading_job',
@@ -1214,6 +1259,14 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/student',
+    (await import('./pages/instructorStudentDetail/instructorStudentDetail.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students',
+    (await import('./pages/instructorStudents/instructorStudents.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti',
@@ -1402,6 +1455,11 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
@@ -1505,6 +1563,12 @@ export async function initExpress(): Promise<Express> {
     res.locals.navPage = 'question';
     next();
   });
+
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
+  );
+
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings',
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
@@ -1741,6 +1805,23 @@ export async function initExpress(): Promise<Express> {
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview',
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
   );
+  app.use('/pl/public/workspace/:workspace_id(\\d+)', [
+    (req: Request, res: Response, next: NextFunction) => {
+      res.locals.workspace_id = req.params.workspace_id;
+      next();
+    },
+    (await import('./middlewares/authzWorkspace.js')).default({ publicQuestionEndpoint: true }),
+  ]);
+  app.use(
+    '/pl/public/workspace/:workspace_id(\\d+)',
+    (await import('./pages/workspace/workspace.js')).default({ publicQuestionEndpoint: true }),
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
+    (await import('./pages/externalImageCapture/externalImageCapture.js')).default({
+      publicQuestionPreview: true,
+    }),
+  );
   app.use(
     '/pl/public/course/:course_id(\\d+)/questions',
     (await import('./pages/publicQuestions/publicQuestions.js')).default,
@@ -1917,7 +1998,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
 
     res.locals.error_id = Array.from({ length: 12 })
       .map(() => chars[Math.floor(Math.random() * chars.length)])
@@ -1940,12 +2021,10 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-
 let server: http.Server | https.Server;
+let app: express.Express | undefined;
 
-export async function startServer() {
-  const app = await initExpress();
-
+export async function startServer(app: express.Express) {
   if (config.serverType === 'https') {
     const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
@@ -1997,6 +2076,13 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
+
+  // When using Vite in development, it is responsible for the server.
+  if (DEV_EXECUTION_MODE === 'hmr') {
+    return server;
+  }
+
+  // When Vite is not in use, start the server normally
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
@@ -2046,8 +2132,7 @@ export async function insertDevUser() {
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
     ' RETURNING user_id;';
-  const result = await sqldb.queryOneRowAsync(sql, []);
-  const user_id = result.rows[0].user_id;
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2068,8 +2153,15 @@ function idleErrorHandler(err: Error) {
   Sentry.close().finally(() => process.exit(1));
 }
 
-if (esMain(import.meta) && config.startServer) {
+const isHMR = DEV_EXECUTION_MODE === 'hmr';
+
+if (isHMR && isServerPending()) {
+  throw new Error('The server was restarted, but it was not fully initialized.');
+}
+
+if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
   try {
+    setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
     // For backwards compatibility, we'll default to trying to load config
@@ -2111,12 +2203,6 @@ if (esMain(import.meta) && config.startServer) {
       await Sentry.init({
         dsn: config.sentryDsn,
         environment: config.sentryEnvironment,
-
-        // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-        // try to set that up for itself, but only if OpenTelemetry is
-        // enabled. Otherwise, allow Sentry to install its own stuff so
-        // that request isolation works correctly.
-        skipOpenTelemetrySetup: config.openTelemetryEnabled,
       });
     }
 
@@ -2157,7 +2243,7 @@ if (esMain(import.meta) && config.startServer) {
         (time, stack) => {
           const msg = `BLOCKED-AT: Blocked for ${time}ms`;
           logger.verbose(msg, { time, stack });
-          console.log(msg + '\n' + stack.join('\n'));
+          console.warn(msg + '\n' + stack.join('\n'));
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds
@@ -2166,7 +2252,7 @@ if (esMain(import.meta) && config.startServer) {
         (time) => {
           const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
           logger.verbose(msg, { time });
-          console.log(msg);
+          console.warn(msg);
         },
         { threshold: config.blockedWarnThresholdMS },
       ); // threshold in milliseconds
@@ -2404,12 +2490,14 @@ if (esMain(import.meta) && config.startServer) {
     }
 
     logger.verbose('Starting server...');
-    const server = await startServer();
+    app = await initExpress();
+    const httpServer = await startServer(app);
 
-    await socketServer.init(server);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
+    externalImageCaptureSocket.init();
 
     await workspace.init();
     serverJobs.init();
@@ -2439,12 +2527,13 @@ if (esMain(import.meta) && config.startServer) {
     await cron.init();
     await lifecycleHooks.completeInstanceLaunch();
   } catch (err) {
-    logger.error('Error initializing PrairieLearn server:', err);
+    // When HMR is active, we'll defer this error logging to the Vite plugin, which can
+    // do a better job.
+    if (!isHMR) {
+      logger.error('Error initializing PrairieLearn server:', err);
+    }
+
     throw err;
-  }
-  logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
-    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 
   // SIGTERM can be used to gracefully shut down the process. This signal
@@ -2495,4 +2584,38 @@ if (esMain(import.meta) && config.startServer) {
       process.exit(0);
     }
   });
+
+  setServerState('initialized');
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode) {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
+  }
+} else if (isHMR && isServerInitialized()) {
+  // We need to re-initialize the server when we are running in HMR mode.
+  await socketServer.close();
+  app = await initExpress();
+  const httpServer = await startServer(app);
+  await socketServer.init(httpServer);
 }
+
+/**
+ * Vite (and specifically our `@prairielearn/vite-plugin-express`) will call this
+ * function when it wants to perform a full restart of the server. Anything that
+ * creates long-lived resources (e.g. connection or worker pools) should be
+ * cleaned up here.
+ */
+export async function close() {
+  // These are run in the opposite order in which they're initialized/started.
+  await cron.stop();
+  await serverJobs.stop();
+  await socketServer.close();
+  await cache.close();
+  await assets.close();
+  await codeCaller.finish();
+  load.close();
+  await stopBatchedMigrations();
+  await namedLocks.close();
+  await sqldb.closeAsync();
+}
+
+export const viteExpressApp = app;

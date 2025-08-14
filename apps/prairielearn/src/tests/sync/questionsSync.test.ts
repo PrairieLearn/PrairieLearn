@@ -11,6 +11,7 @@ import {
   type TopicJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -543,5 +544,24 @@ describe('Question syncing', () => {
       comment: 'external grading comment 1',
       comment2: 'external grading comment 2',
     });
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].sharingSets = [];
+    courseData.questions[util.QUESTION_ID].sharePublicly = true;
+    courseData.questions[util.QUESTION_ID].shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.isOk(syncedQuestion);
+    assert.match(syncedQuestion?.sync_errors, /"sharingSets" cannot be used/);
+    assert.match(syncedQuestion?.sync_errors, /"sharePublicly" cannot be used/);
+    assert.match(syncedQuestion?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

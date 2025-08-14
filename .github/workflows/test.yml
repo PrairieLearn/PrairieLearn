@@ -50,28 +50,8 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Check whether images/plbase was modified
-        run: scripts/check_path_modified.sh images/plbase images_plbase_modified
-      - name: Build and push prairielearn/plbase
-        if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: images/plbase
-          platforms: linux/amd64
-          pull: true
-          cache-from: type=registry,ref=prairielearn/plbase:buildcache-linux-amd64
-          tags: prairielearn/plbase:${{ env.COMMIT_SHA }}
-
-      # This ensures that the `prairielearn/prairielearn` image is built with the
-      # correct version of `prairielearn/plbase`. We'll only tag this as `latest`
-      # if we actually built it; if it wasn't built, we don't tag it, so Docker will
-      # correctly fall back to pulling the `latest` version from the registry.
-      - name: Tag plbase image as latest
-        if: ${{ env.images_plbase_modified }}
-        run: docker tag prairielearn/plbase:${{ env.COMMIT_SHA }} prairielearn/plbase:latest
-
       - name: Build the prairielearn docker image
-        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} --cache-from type=registry,ref=prairielearn/prairielearn:buildcache-linux-amd64 .
+        run: docker build -t prairielearn/prairielearn:${{ env.COMMIT_SHA }} .
 
       # This ensures that the `prairielearn/executor` image is built with the
       # correct version of `prairielearn/prairielearn`.
@@ -104,26 +84,20 @@ jobs:
           --name=test_container \
           prairielearn/prairielearn /bin/bash
       - name: Run the JavaScript tests
-        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-js"
+        run: docker exec --env GITHUB_ACTIONS=true test_container sh -c "make -s -C /PrairieLearn test-prairielearn-docker-smoke-tests"
         # The JS tests hang relatively often when someone makes a mistake in a PR,
         # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
         # spinning until it eventually times out. This shorter timeout helps
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
 
-      # Since tests run in the context of the container, we need to copy all
-      # the coverage reports out of the container and into the host filesystem.
-      - name: Copy coverage reports to the host
-        run: ./scripts/copy_docker_coverage_reports.sh test_container
-      - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          flags: javascript
-
   test-prairielearn-native:
-    name: Native
+    name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        shardIndex: [1, 2, 3, 4]
+        shardTotal: [4]
     steps:
       - uses: actions/checkout@v4
 
@@ -162,7 +136,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -180,13 +154,10 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'images/plbase/python-requirements.txt'
-      - name: Install Python dependencies
-        env:
-          UV_SYSTEM_PYTHON: 1
-          # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
-          UV_COMPILE_BYTECODE: 1
-        run: uv pip install -r images/plbase/python-requirements.txt
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: core
+      - name: Install core Python dependencies
+        run: make python-deps-core
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -205,4 +176,47 @@ jobs:
           git config --global safe.directory '*'
 
       - name: Test JavaScript code
-        run: make test-js
+        run: |
+          make start-support
+          yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+        env:
+          SHARDED_TESTS: true
+
+      - name: Upload blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: blob-report-${{ matrix.shardIndex }}
+          path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+  merge-native-test-reports:
+    name: Native (merge test reports)
+    if: ${{ !cancelled() }}
+    needs: [test-prairielearn-native]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'yarn'
+      - name: Set up Yarn
+        # We only install the dependencies in the root workspace to avoid
+        # installing dependencies that won't be used.
+        run: yarn workspaces focus prairielearn
+      - name: Download blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: .vitest-reports
+          pattern: blob-report-*
+          merge-multiple: true
+
+      - name: Merge reports
+        run: yarn vitest --watch=false --merge-reports --coverage
+      - name: Upload JavaScript coverage report to Codecov
+        uses: codecov/codecov-action@v5.4.3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          flags: javascript
