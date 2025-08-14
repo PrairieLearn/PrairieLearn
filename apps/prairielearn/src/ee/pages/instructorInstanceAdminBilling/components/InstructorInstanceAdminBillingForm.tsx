@@ -210,7 +210,7 @@ export function InstructorInstanceAdminBillingForm({
           disabled={!studentBillingCanChange}
           value="1"
           id="studentBillingEnabled"
-          onChange={(e) => setBasicPlanEnabled(e.currentTarget.checked)}
+          onInput={(e) => setBasicPlanEnabled(e.currentTarget.checked)}
         />
         <label class="form-check-label" for="studentBillingEnabled">
           Enable student billing for enrollments
@@ -238,7 +238,7 @@ export function InstructorInstanceAdminBillingForm({
           disabled={!computeCanChange}
           value="1"
           id="computeEnabled"
-          onChange={(e) => setComputePlanEnabled(e.currentTarget.checked)}
+          onInput={(e) => setComputePlanEnabled(e.currentTarget.checked)}
         />
         <label class="form-check-label" for="computeEnabled">
           External grading and workspaces

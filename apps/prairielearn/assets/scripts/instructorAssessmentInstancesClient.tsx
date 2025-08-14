@@ -574,9 +574,7 @@ onDocumentReady(() => {
               name="time_add"
               aria-label="Time value"
               value={form.time_add}
-              onChange={(e) =>
-                updateFormState('time_add', Number.parseFloat(e.currentTarget.value))
-              }
+              onInput={(e) => updateFormState('time_add', Number.parseFloat(e.currentTarget.value))}
             />
             <span class="input-group-text time-limit-field">minutes</span>
           </div>
@@ -588,7 +586,7 @@ onDocumentReady(() => {
               type="datetime-local"
               name="date"
               value={form.date}
-              onChange={(e) => updateFormState('date', e.currentTarget.value)}
+              onInput={(e) => updateFormState('date', e.currentTarget.value)}
             />
             <span class="input-group-text date-picker">{timezone}</span>
           </div>
@@ -610,7 +608,7 @@ onDocumentReady(() => {
                 value="true"
                 checked={form.reopen_closed}
                 id="reopen_closed"
-                onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
+                onInput={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
               />
               <label class="form-check-label" for="reopen_closed">
                 Also re-open closed instances

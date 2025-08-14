@@ -47,7 +47,7 @@ function ColumnMenuItem({
               column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`
             }
             aria-describedby={`${column.id}-label`}
-            onChange={column.getToggleVisibilityHandler()}
+            onInput={column.getToggleVisibilityHandler()}
           />
         </OverlayTrigger>
         <span class="form-check-label ms-2" id={`${column.id}-label`}>

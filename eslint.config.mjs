@@ -307,7 +307,16 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', '/_/'],
+          forbid: [
+            'className',
+            '/_/',
+            {
+              // Prefer using `onInput` instead of `onChange` for input elements.
+              // https://preactjs.com/guide/v10/differences-to-react/#use-oninput-instead-of-onchange
+              prop: 'onChange',
+              includedNodes: ['input'],
+            },
+          ],
         },
       ],
 
