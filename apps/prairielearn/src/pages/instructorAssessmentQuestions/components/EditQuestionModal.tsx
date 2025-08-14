@@ -16,7 +16,7 @@ export function EditQuestionModal({
   question: StaffAssessmentQuestionRow;
   showEditModal: boolean;
   onHide: () => void;
-  handleUpdateQuestion: (updatedQuestion: any) => void;
+  handleUpdateQuestion: (updatedQuestion: any, gradingMethod?: 'auto' | 'manual') => void;
   assessmentType: 'Homework' | 'Exam';
   questionDisplayName: (question: StaffAssessmentQuestionRow) => string;
   addQuestion?: boolean;
@@ -169,7 +169,7 @@ export function EditQuestionModal({
         ) : (
           <>
             <div class="mb-3">
-              <label for="autoPoints">Auto Points</label>
+              <label for="autoPoints">Points List</label>
               <input
                 type="text"
                 class="form-control points-list"
@@ -220,7 +220,10 @@ export function EditQuestionModal({
           type="button"
           className="btn btn-primary"
           onClick={() => {
-            handleUpdateQuestion(question);
+            handleUpdateQuestion(
+              question,
+              assessmentType === 'Homework' ? (autoGraded ? 'auto' : 'manual') : undefined,
+            );
           }}
         >
           {addQuestion ? 'Add question' : 'Update question'}

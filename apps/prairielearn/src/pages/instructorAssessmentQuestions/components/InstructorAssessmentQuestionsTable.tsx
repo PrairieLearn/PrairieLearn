@@ -55,7 +55,7 @@ function EditModeButtons({
 }: {
   csrfToken: string;
   origHash: string;
-  questions: Record<string, any>;
+  questions: StaffAssessmentQuestionRow[];
   editMode: boolean;
   setEditMode: (editMode: boolean) => void;
 }) {
@@ -66,12 +66,16 @@ function EditModeButtons({
       </button>
     );
   }
+
+  // Serialize questions to zones format
+  const zones = serializeQuestionsToZones(questions);
+
   return (
     <form method="POST">
-      <input type="hidden" name="__action" value="save_topics" />
+      <input type="hidden" name="__action" value="save_questions" />
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="orig_hash" value={origHash} />
-      <input type="hidden" name="topics" value={JSON.stringify(questions)} />
+      <input type="hidden" name="zones" value={JSON.stringify(zones)} />
       <span class="js-edit-mode-buttons">
         <button class="btn btn-sm btn-light mx-1" type="submit">
           <i class="fa fa-save" aria-hidden="true" /> Save and sync
@@ -84,11 +88,103 @@ function EditModeButtons({
   );
 }
 
+// Function to serialize questions to zones format
+function serializeQuestionsToZones(questions: StaffAssessmentQuestionRow[]): any[] {
+  const zonesMap = new Map<string, any>();
+
+  questions.forEach((question) => {
+    const zoneId = question.zone.id;
+
+    if (!zonesMap.has(zoneId)) {
+      zonesMap.set(zoneId, {
+        title: question.zone.title,
+        maxPoints: question.zone.max_points,
+        numberChoose: question.zone.number_choose,
+        bestQuestions: question.zone.best_questions,
+        advanceScorePerc: question.zone.advance_score_perc,
+        gradeRateMinutes: question.zone.json_grade_rate_minutes,
+        questions: [],
+      });
+    }
+
+    const zone = zonesMap.get(zoneId);
+
+    // Helper function to create question object with correct points structure
+    const createQuestionObject = (question: StaffAssessmentQuestionRow) => {
+      const questionObj: any = {
+        id: question.question.qid,
+        triesPerVariant: question.assessment_question.tries_per_variant,
+        advanceScorePerc: question.assessment_question.advance_score_perc,
+        gradeRateMinutes: question.assessment_question.json_grade_rate_minutes,
+      };
+
+      // Determine assessment type from the question's assessment
+      const assessmentType = question.assessment.type;
+
+      if (assessmentType === 'Homework') {
+        // For Homework: use either auto points OR manual points based on grading method
+        const isAutoGraded = question.assessment_question.max_manual_points === 0;
+
+        if (isAutoGraded) {
+          // Auto grading: use autoPoints and maxAutoPoints
+          questionObj.autoPoints = question.assessment_question.init_points;
+          questionObj.maxAutoPoints = question.assessment_question.max_auto_points;
+          questionObj.manualPoints = 0; // Set to 0 for Homework auto grading
+        } else {
+          // Manual grading: use manualPoints only
+          questionObj.manualPoints = question.assessment_question.max_manual_points;
+          questionObj.autoPoints = 0; // Set to 0 for Homework manual grading
+          questionObj.maxAutoPoints = 0; // Set to 0 for Homework manual grading
+        }
+      } else {
+        // For Exam: always include both autoPoints and manualPoints
+        questionObj.autoPoints =
+          question.assessment_question.points_list || question.assessment_question.init_points;
+        questionObj.maxAutoPoints = question.assessment_question.max_auto_points;
+        questionObj.manualPoints = question.assessment_question.max_manual_points;
+      }
+
+      return questionObj;
+    };
+
+    // Check if this question starts a new alternative group
+    if (question.start_new_alternative_group) {
+      // Check if this is a single question or the start of an alternative group
+      if (question.alternative_group_size === 1) {
+        // Single question - add directly to zone.questions
+        zone.questions.push(createQuestionObject(question));
+      } else {
+        // Start of an alternative group
+        const alternativeGroup: any = {
+          numberChoose: question.alternative_group.number_choose,
+          alternatives: [],
+        };
+
+        // Add the current question to this alternative group
+        alternativeGroup.alternatives.push(createQuestionObject(question));
+
+        zone.questions.push(alternativeGroup);
+      }
+    } else {
+      // Add to the last alternative group (this should only happen for alternative groups)
+      const lastQuestion = zone.questions[zone.questions.length - 1];
+      if (lastQuestion && lastQuestion.alternatives) {
+        lastQuestion.alternatives.push(createQuestionObject(question));
+      }
+    }
+  });
+
+  return Array.from(zonesMap.values());
+}
+
 function createEmptyQuestionTemplate(
   zone: StaffAssessmentQuestionRow['zone'],
   course: StaffCourse,
   assessmentType: 'Homework' | 'Exam',
 ): StaffAssessmentQuestionRow {
+  // Generate a unique temporary ID for the new question
+  const tempId = Date.now() + Math.random();
+
   const template = {
     start_new_zone: false,
     start_new_alternative_group: true,
@@ -112,7 +208,7 @@ function createEmptyQuestionTemplate(
       first_submission_score_variance: null,
       force_max_points: null,
       grade_rate_minutes: null,
-      id: 0,
+      id: tempId,
       incremental_submission_points_array_averages: null,
       incremental_submission_points_array_variances: null,
       incremental_submission_score_array_averages: null,
@@ -123,9 +219,9 @@ function createEmptyQuestionTemplate(
       last_submission_score_hist: null,
       last_submission_score_variance: null,
       manual_rubric_id: null,
-      max_auto_points: assessmentType === 'Homework' ? 1 : 0,
+      max_auto_points: assessmentType === 'Homework' ? 1 : 1,
       max_manual_points: 0,
-      max_points: assessmentType === 'Homework' ? 1 : 0,
+      max_points: assessmentType === 'Homework' ? 1 : 1,
       max_submission_score_hist: null,
       max_submission_score_variance: null,
       mean_question_score: null,
@@ -134,7 +230,7 @@ function createEmptyQuestionTemplate(
       number_in_alternative_group: 1,
       number_submissions_hist: null,
       number_submissions_variance: null,
-      points_list: null,
+      points_list: assessmentType === 'Exam' ? [1] : null,
       question_id: '',
       question_score_variance: null,
       quintile_question_scores: null,
@@ -146,7 +242,7 @@ function createEmptyQuestionTemplate(
       tries_per_variant: 3,
     },
     question: {
-      id: 0,
+      id: tempId,
       qid: '',
       title: 'New Question',
       type: 'Calculation',
@@ -171,7 +267,7 @@ function createEmptyQuestionTemplate(
       number: 1,
     },
     alternative_group: {
-      id: 0,
+      id: tempId,
       number: 1,
       number_choose: null,
       assessment_id: '',
@@ -253,20 +349,20 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleEditQuestion = (question) => {
     setSelectedQuestion(question);
-    setIsAddingQuestion(false);
+    setAddQuestion(false);
     setShowEditModal(true);
   };
 
   const handleAddQuestion = (zone: StaffAssessmentQuestionRow['zone']) => {
     const emptyQuestion = createEmptyQuestionTemplate(zone, course, assessmentType);
     setSelectedQuestion(emptyQuestion);
-    setIsAddingQuestion(true);
+    setAddQuestion(true);
     setShowEditModal(true);
   };
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
-    setIsAddingQuestion(false);
+    setAddQuestion(false);
   };
 
   // Function to renumber questions after adding/removing questions
@@ -331,8 +427,23 @@ export function InstructorAssessmentQuestionsTable({
     });
   };
 
-  const handleUpdateQuestion = (updatedQuestion: StaffAssessmentQuestionRow) => {
-    if (isAddingQuestion) {
+  const handleUpdateQuestion = (
+    updatedQuestion: StaffAssessmentQuestionRow,
+    gradingMethod?: 'auto' | 'manual',
+  ) => {
+    // For Homework assessments, ensure points are correctly set based on grading method
+    if (assessmentType === 'Homework' && gradingMethod) {
+      if (gradingMethod === 'auto') {
+        // Auto grading: ensure manual points are 0
+        updatedQuestion.assessment_question.max_manual_points = 0;
+      } else {
+        // Manual grading: ensure auto points are 0
+        updatedQuestion.assessment_question.init_points = 0;
+        updatedQuestion.assessment_question.max_auto_points = 0;
+      }
+    }
+
+    if (addQuestion) {
       // Add new question to the state and renumber
       setQuestionState((prevState) => {
         const newState = [...prevState, updatedQuestion];
@@ -632,7 +743,7 @@ export function InstructorAssessmentQuestionsTable({
           showEditModal={showEditModal}
           assessmentType={assessmentType}
           questionDisplayName={questionDisplayName}
-          isAddingQuestion={isAddingQuestion}
+          addQuestion={addQuestion}
           handleUpdateQuestion={handleUpdateQuestion}
           onHide={handleCloseEditModal}
         />
