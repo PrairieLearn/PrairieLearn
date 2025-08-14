@@ -34,7 +34,7 @@ router.get(
 
     let ipAddress = req.ip;
     // Trim out IPv6 wrapper on IPv4 addresses
-    if (ipAddress.slice(0, 7) === '::ffff:') {
+    if (ipAddress?.slice(0, 7) === '::ffff:') {
       ipAddress = ipAddress.slice(7);
     }
 
