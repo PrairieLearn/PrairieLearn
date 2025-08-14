@@ -82,7 +82,7 @@ export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals 
     >
   ) => void | Promise<void>,
 ) => {
-  asyncHandler(
+  return asyncHandler(
     handler as express.RequestHandler<
       core.ParamsDictionary,
       any,
