@@ -19,7 +19,7 @@ indexes
 check constraints
     enrollments_exactly_one_null_user_id_pending_uid: CHECK (user_id IS NULL AND pending_uid IS NOT NULL OR user_id IS NOT NULL AND pending_uid IS NULL)
     enrollments_impossible_synced: CHECK (NOT ((status = ANY (ARRAY['rejected'::enum_enrollment_status, 'blocked'::enum_enrollment_status])) AND lti_managed))
-    enrollments_invited_lti_synced_true_only_if_pending_set: CHECK ((status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true) = (pending_lti13_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL))
+    enrollments_invited_lti_synced_true_only_if_pending_set: CHECK ((status = 'lti13_pending'::enum_enrollment_status) = (pending_lti13_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL))
     enrollments_lti13_pending_lti_managed_true: CHECK (status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true OR status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_pending_uid_null_only_if_invited: CHECK ((status = 'invited'::enum_enrollment_status) = (pending_uid IS NOT NULL))
     enrollments_user_id_not_null_only_if_joined_no_pending: CHECK (status <> 'joined'::enum_enrollment_status OR user_id IS NOT NULL AND pending_uid IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_instance_id IS NULL)
