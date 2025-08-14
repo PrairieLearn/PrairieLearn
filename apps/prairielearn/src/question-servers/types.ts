@@ -62,7 +62,7 @@ export interface TestResultData {
 
 export type PrepareVariant = Pick<
   Variant,
-  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken' | 'broken_at'
+  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'
 >;
 
 export type ParseSubmission = Pick<
