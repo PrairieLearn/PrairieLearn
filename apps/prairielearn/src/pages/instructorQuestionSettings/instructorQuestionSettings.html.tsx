@@ -116,7 +116,7 @@ export function InstructorQuestionSettings({
     content: html`
       ${renderHtml(
         <QuestionSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           question={resLocals.question}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
