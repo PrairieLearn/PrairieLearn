@@ -103,11 +103,11 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check
+	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
-	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss,sh}" --check --cache --cache-strategy content
+	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python: python-deps
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
