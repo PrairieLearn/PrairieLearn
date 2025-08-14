@@ -317,7 +317,7 @@ export function AssessmentQuestion({
                         <hr class="dropdown-divider" />
 
                         <button
-                          class="dropdown-item"
+                          class="dropdown-item btn btn-danger"
                           type="button"
                           data-bs-toggle="modal"
                           data-bs-target="#delete-all-ai-grading-jobs-modal"

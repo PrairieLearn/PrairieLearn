@@ -392,7 +392,7 @@ ${resLocals.assessment.honor_code}</textarea
                 </form>
                 <button
                   type="button"
-                  class="btn btn-sm btn-primary"
+                  class="btn btn-sm btn-danger"
                   href="#"
                   data-bs-toggle="modal"
                   data-bs-target="#deleteAssessmentModal"

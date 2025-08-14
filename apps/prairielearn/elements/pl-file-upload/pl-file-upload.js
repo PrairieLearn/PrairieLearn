@@ -373,7 +373,7 @@
           );
 
           const $deleteUpload = $(
-            `<button type="button" class="btn btn-outline-secondary btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
+            `<button type="button" class="btn btn-outline-danger btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
           const $previewNotAvailable = $(
