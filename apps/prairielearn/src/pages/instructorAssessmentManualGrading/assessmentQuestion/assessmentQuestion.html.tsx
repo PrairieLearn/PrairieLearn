@@ -72,7 +72,6 @@ export function AssessmentQuestion({
 
       ${compiledScriptTag('bootstrap-table-sticky-header.js')}
       ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
-      ${compiledScriptTag('instructorAssessmentManualGradingRubricSettings.tsx')}
       ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
       ${EncodedData<InstanceQuestionTableData>(
         {
