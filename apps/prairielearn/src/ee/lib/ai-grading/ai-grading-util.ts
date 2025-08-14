@@ -451,5 +451,4 @@ export async function selectEmbeddingForSubmission(
 
 export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
   await queryAsync(sql.toggle_ai_grading_mode, { assessment_question_id });
-  return;
 }
