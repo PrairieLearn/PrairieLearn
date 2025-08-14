@@ -103,10 +103,11 @@ export function InstanceQuestion({
             <li class="breadcrumb-item">
               <a
                 href="${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}"
-                >Question ${assessment_question.number_in_alternative_group}. ${question.title}</a
               >
+                Question ${assessment_question.number_in_alternative_group}. ${question.title}
+              </a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">Question panel</li>
+            <li class="breadcrumb-item active" aria-current="page">Student submission</li>
           </ol>
         </nav>
 
