@@ -71,6 +71,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
+      ai_cluster_name: null
     };
     results.push(instance_question);
 

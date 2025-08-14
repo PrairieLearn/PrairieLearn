@@ -180,16 +180,6 @@ onDocumentReady(() => {
     columns: [
       [
         { checkbox: true },
-        aiGradingMode ? {
-          field: 'ai_cluster_name',
-          title: 'Cluster',
-          visible: aiGradingMode,
-          filterControl: 'select',
-          class: 'text-center',
-          formatter: (value: string | null) => (value ?? '&mdash;'),
-          sortable: true,
-
-        } : 
         {
           field: 'index',
           title: 'Instance',
@@ -232,6 +222,16 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
+        aiGradingMode ? {
+          field: 'ai_cluster_name',
+          title: 'Cluster',
+          visible: aiGradingMode,
+          filterControl: 'select',
+          class: 'text-center',
+          formatter: (value: string | null) => (value ?? '&mdash;'),
+          sortable: true,
+
+        } : null,
         {
           field: 'user_or_group_name',
           title: groupWork ? 'Group Name' : 'Name',
