@@ -19,12 +19,9 @@ ADD COLUMN pending_uid TEXT;
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_sub TEXT;
 
-ALTER TABLE enrollments
-ADD COLUMN pending_lti13_instance_id BIGINT;
-
 -- If a lti13_course_instance is deleted, we want to delete the enrollment. This should only happen if the user is in the 'lti13_pending' state.
 ALTER TABLE enrollments
-ADD FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE;
+ADD COLUMN pending_lti13_instance_id BIGINT REFERENCES lti13_course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE enrollments
 ALTER COLUMN user_id
@@ -81,7 +78,6 @@ ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
   (
     status = 'lti13_pending'
-    AND lti_managed = TRUE
   ) = (
     pending_lti13_sub IS NOT NULL
     AND pending_lti13_instance_id IS NOT NULL
