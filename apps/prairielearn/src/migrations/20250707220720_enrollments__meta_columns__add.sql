@@ -76,9 +76,7 @@ ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
 -- Only if a user is in the 'lti13_pending' state can they have a pending_lti13_sub and pending_lti13_instance_id.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
-  (
-    status = 'lti13_pending'
-  ) = (
+  (status = 'lti13_pending') = (
     pending_lti13_sub IS NOT NULL
     AND pending_lti13_instance_id IS NOT NULL
   )
