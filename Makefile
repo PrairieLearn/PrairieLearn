@@ -7,8 +7,9 @@ build-sequential:
 
 # We use the system Python due to this bug: https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869
 venv-setup:
-	@[ -f .venv/bin/python3 ] || uv venv --python-preference only-system --python 3.10 --seed .venv || \
-		python3 -m venv .venv
+	@[ -f .venv/bin/python3 ] || \
+		(uv venv --python-preference only-system --python 3.10 --seed .venv && uv pip install -U pip) || \
+		(python3 -m venv .venv && pip install -U pip)
 
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
 # performance the first time things run:
