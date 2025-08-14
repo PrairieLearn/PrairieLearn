@@ -823,7 +823,7 @@ export async function prepare(
   variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
