@@ -49,9 +49,7 @@ ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected CHECK (
 
 -- Only users in the 'invited' state can have a pending_uid.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited CHECK (
-  (status = 'invited') = (pending_uid IS NOT NULL)
-);
+ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited CHECK ((status = 'invited') = (pending_uid IS NOT NULL));
 
 -- Require exactly one of user_id and pending_uid to be NULL.
 ALTER TABLE enrollments
@@ -93,7 +91,11 @@ ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
 -- If a user is in the 'lti13_pending' state, they must have a lti_managed = TRUE.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_lti13_pending_lti_managed_true CHECK (
-  (status = 'lti13_pending' AND lti_managed = TRUE) OR (status != 'lti13_pending')
+  (
+    status = 'lti13_pending'
+    AND lti_managed = TRUE
+  )
+  OR (status != 'lti13_pending')
 );
 
 -- pending_uid + course_instance_id must be unique.
