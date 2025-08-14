@@ -13,7 +13,6 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@typescript-eslint/tsconfig-utils": "^8.39.1",
     "@typescript-eslint/utils": "^8.39.1"
   },
   "devDependencies": {
