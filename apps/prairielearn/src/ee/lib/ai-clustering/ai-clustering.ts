@@ -5,10 +5,11 @@ import { HttpStatusError } from '@prairielearn/error';
 
 import { config } from '../../../lib/config.js';
 import type { AssessmentQuestion, Course, InstanceQuestion, Question } from '../../../lib/db-types.js';
-import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectInstanceQuestionsForAssessmentQuestion } from '../ai-grading/ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from '../ai-grading/types.js';
+
+import { aiEvaluateStudentResponse, assignAiCluster, getAiClusters, getInstanceQuestionAnswer, insertAiClusters } from './ai-clustering-util.js';
 
 
 const PARALLEL_SUBMISSION_CLUSTERING_LIMIT = 20;
@@ -24,7 +25,6 @@ export async function aiCluster({
   urlPrefix,
   authn_user_id,
   user_id,
-  mode,
   instance_question_ids,
 }: {
   question: Question;
@@ -34,7 +34,6 @@ export async function aiCluster({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
-  mode: 'all' | 'selected';
   /**
    * Limit grading to the specified instance questions.
    * Only use when mode is 'selected'.
@@ -51,8 +50,6 @@ export async function aiCluster({
         organization: config.aiGradingOpenAiOrganization,
     });
 
-    const question_course = await getQuestionCourse(question, course);
-
     const serverJob = await createServerJob({
         courseId: course.id,
         courseInstanceId: course_instance_id,
@@ -63,27 +60,92 @@ export async function aiCluster({
         description: 'Perform AI clustering',
     });
 
+    const instanceQuestionIdsSet: Set<string> = instance_question_ids ? new Set(instance_question_ids) : new Set();
+
     serverJob.executeInBackground(async (job) => {
         if (!assessment_question.max_manual_points) {
             job.fail('The assessment question has no manual grading');
         }
 
-        const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
+        const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
             assessment_question.id,
         );
 
+        const selectedInstanceQuestions = instanceQuestionIdsSet.size > 0
+            ? allInstanceQuestions.filter((q) => instanceQuestionIdsSet.has(q.id))
+            : allInstanceQuestions;
+
+        const selectedInstanceQuestionsWithIndex = selectedInstanceQuestions.map((instanceQuestion, index) => ({
+            instanceQuestion,
+            index
+        }));
+
+        await insertAiClusters({
+          assessment_question_id: assessment_question.id,
+        });
+
+        const clusters = await getAiClusters({
+          assessmentQuestionId: assessment_question.id
+        });
+
+        const correctCluster = clusters.find((c) => c.cluster_name === 'Correct');
+        const incorrectCluster = clusters.find((c) => c.cluster_name === 'Incorrect');
+
+        if (!correctCluster) {
+          // Handle missing correct cluster
+          throw new Error(`Missing correct cluster for assessment question ${assessment_question.id}`);
+        }
+
+        if (!incorrectCluster) {
+          // Handle missing incorrect cluster
+          throw new Error(`Missing incorrect cluster for assessment question ${assessment_question.id}`);
+        }
+
         const clusterInstanceQuestion = async (
+            index: number,
+            total: number,
             instance_question: InstanceQuestion,
             logger: AIGradingLogger
         ) => {
-            logger.info('Test');            
+            // Render the question's answer
+            const question_answer = await getInstanceQuestionAnswer({
+                question,
+                instance_question,
+                course,
+                urlPrefix
+            });
+
+            if (!question_answer) {
+                logger.error(`Instance question ${instance_question.id} has no answer. Ensure that every instance question has an answer in pl-answer-panel.`)
+                return false;
+            }
+
+            const responseCorrect = await aiEvaluateStudentResponse({
+                question,
+                question_answer,
+                instance_question,
+                course,
+                urlPrefix,
+                openai
+            });
+
+            await assignAiCluster({
+              instanceQuestionId: instance_question.id,
+              aiClusterId: responseCorrect ? correctCluster.id : incorrectCluster.id
+            });
+            logger.info(`Clustered instance question ${instance_question.id} (${index + 1}/${total})`);
             return true;
         }
 
+        job.info(`Clustering ${selectedInstanceQuestionsWithIndex.length} instance questions...`)
+
         const instance_question_clustering_successes = await async.mapLimit(
-            all_instance_questions,
+            selectedInstanceQuestionsWithIndex,
             PARALLEL_SUBMISSION_CLUSTERING_LIMIT,
-            async (instance_question: InstanceQuestion) => {
+            async ({
+                instanceQuestion,
+                index
+            }) => {
                 const logs: AIGradingLog[] = [];
                 const logger: AIGradingLogger = {
                     info: (msg: string) => {
@@ -101,7 +163,7 @@ export async function aiCluster({
                 };
 
                 try {
-                    return await clusterInstanceQuestion(instance_question, logger);
+                    return await clusterInstanceQuestion(index, selectedInstanceQuestions.length, instanceQuestion, logger);
                 } catch (err) {
                     logger.error(err);
                 } finally {
@@ -115,12 +177,13 @@ export async function aiCluster({
                 }                
             }
         )
-
         const error_count = instance_question_clustering_successes.filter(success => !success).length;
 
         if (error_count > 0) {
             job.error('Number of errors: ' + error_count);
             job.fail('Errors occurred during AI clustering, see output for details');
+        } else {
+            job.info('AI clustering completed successfully');
         }
     });
     return serverJob.jobSequenceId;

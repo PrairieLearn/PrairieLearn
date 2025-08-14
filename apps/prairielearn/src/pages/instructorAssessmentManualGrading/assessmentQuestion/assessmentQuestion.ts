@@ -147,6 +147,27 @@ router.post(
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      } else if (req.body.batch_action === 'ai_cluster_selected') {
+        if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+          throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+        }
+
+        const instance_question_ids = Array.isArray(req.body.instance_question_id)
+          ? req.body.instance_question_id
+          : [req.body.instance_question_id];
+
+        const jobSequenceId = await aiCluster({
+          question: res.locals.question,
+          course: res.locals.course,
+          course_instance_id: res.locals.course_instance.id,
+          assessment_question: res.locals.assessment_question,
+          urlPrefix: res.locals.urlPrefix,
+          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.user_id,
+          instance_question_ids,
+        });
+
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
         const action_data = JSON.parse(req.body.batch_action_data) || {};
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
@@ -240,7 +261,6 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        mode: 'all',
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

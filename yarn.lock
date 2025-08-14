@@ -3993,7 +3993,7 @@ __metadata:
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
     on-headers: "npm:^1.1.0"
-    openai: "npm:^5.12.0"
+    openai: "npm:^5.12.2"
     openid-client: "npm:^5.7.1"
     p-memoize: "npm:^7.1.1"
     parse5: "npm:^7.3.0"
@@ -14001,9 +14001,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^5.12.0":
-  version: 5.12.0
-  resolution: "openai@npm:5.12.0"
+"openai@npm:^5.12.2":
+  version: 5.12.2
+  resolution: "openai@npm:5.12.2"
   peerDependencies:
     ws: ^8.18.0
     zod: ^3.23.8
@@ -14014,7 +14014,7 @@ __metadata:
       optional: true
   bin:
     openai: bin/cli
-  checksum: 10c0/adab04e90cae8f393f76c007f98c0636af97a280fb05766b0cee5ab202c802db01c113d0ce0dfea42e1a1fe3b08c9a3881b6eea9a0b0703375f487688aaca1fc
+  checksum: 10c0/7737b9b24edc81fcf9e6dcfb18a196cc0f8e29b6e839adf06a2538558c03908e3aa4cd94901b1a7f4a9dd62676fe9e34d6202281b2395090d998618ea1614c0c
   languageName: node
   linkType: hard
 

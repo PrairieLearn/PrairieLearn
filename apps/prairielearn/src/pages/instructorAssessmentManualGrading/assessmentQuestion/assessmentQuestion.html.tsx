@@ -148,10 +148,6 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form method="POST" id="ai-clustering">
-              <input type="hidden" name="__action" value="ai_cluster_assessment" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
             <form method="POST" id="ai-clustering-all">
               <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -348,7 +344,7 @@ export function AssessmentQuestion({
                           class="dropdown-item grading-tag-button"
                           type="submit"
                           name="batch_action"
-                          value="ai_grade_assessment_selected"
+                          value="ai_cluster_selected"
                         >
                           Cluster selected
                         </button>
