@@ -18,23 +18,23 @@ export function GradingPanel({
   context,
   graders,
   disable,
-  hide_back_to_question,
   skip_text,
   custom_points,
   custom_auto_points,
   custom_manual_points,
   grading_job,
+  clusterName
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
-  hide_back_to_question?: boolean;
   skip_text?: string;
   custom_points?: number;
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
+  clusterName?: string;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -43,7 +43,7 @@ export function GradingPanel({
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
-  skip_text = skip_text || (disable ? 'Next' : 'Skip');
+  skip_text = skip_text || 'Next';
 
   return html`
     <form
@@ -84,11 +84,13 @@ export function GradingPanel({
             `
           : ''}
         <li class="list-group-item">          
-          <div class="mb-3">
-            <span class="w-100">
-              Cluster: 
-            </span>
-          </div>
+          ${clusterName ? html`
+            <div class="mb-3">
+              <span class="w-100">
+                Cluster: ${clusterName}
+              </span>
+            </div>
+          ` : ''}
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
@@ -149,14 +151,6 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center">
-          ${!hide_back_to_question
-            ? html`
-                <a class="btn btn-primary" href="${assessment_question_url}">
-                  <i class="fas fa-arrow-left"></i>
-                  Back to Question
-                </a>
-              `
-            : ''}
           <span class="ms-auto">
             ${!disable
               ? html`
@@ -166,7 +160,7 @@ ${submission.feedback?.manual}</textarea
                     name="__action"
                     value="add_manual_grade"
                   >
-                    Submit
+                    Grade
                   </button>
                 `
               : ''}

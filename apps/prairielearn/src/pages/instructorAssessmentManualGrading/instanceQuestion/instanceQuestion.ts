@@ -23,6 +23,7 @@ import {
   InstanceQuestion,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
+import { getAiClusterAssignmentForInstanceQuestion } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -79,11 +80,17 @@ router.get(
     const lastGrader = res.locals.instance_question.last_grader
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
+
+    const clusterName = await getAiClusterAssignmentForInstanceQuestion({
+      instanceQuestionId: res.locals.instance_question.id
+    });
+
     res.send(
       InstanceQuestion({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        clusterName
       }),
     );
   }),

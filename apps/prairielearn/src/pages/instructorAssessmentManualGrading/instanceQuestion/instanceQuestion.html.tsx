@@ -27,12 +27,14 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  clusterName
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  clusterName?: string;
 }) {
   return PageLayout({
     resLocals: {
@@ -101,7 +103,7 @@ export function InstanceQuestion({
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({ resLocals, context: 'main', graders, clusterName })}
             </div>
           </div>
 
@@ -187,7 +189,6 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     disable: true,
-                    hide_back_to_question: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
                   })}
