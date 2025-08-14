@@ -89,7 +89,7 @@ export async function makeVariant(
     const { courseIssues: prepareCourseIssues, data } = await questionModule.prepare(
       question,
       course,
-      variant,
+      { ...variant, broken_at: null },
     );
     courseIssues.push(...prepareCourseIssues);
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
