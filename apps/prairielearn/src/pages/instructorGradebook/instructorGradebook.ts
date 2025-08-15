@@ -22,6 +22,7 @@ import {
   type GradebookRow,
   GradebookRowSchema,
 } from './instructorGradebook.types.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -46,9 +47,19 @@ router.get(
       // users just wouldn't see the tab at all, and this caused a lot of questions
       // about why staff couldn't see the gradebook tab.
       const courseOwners = await getCourseOwners(res.locals.course.id);
-      res
-        .status(403)
-        .send(InstructorGradebook({ resLocals: res.locals, courseOwners, csvFilename }));
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'gradebook',
+          },
+          courseOwners,
+          pageTitle: 'Gradebook',
+          requiredPermissions: 'Student Data Viewer',
+        }),
+      );
       return;
     }
 
@@ -60,7 +71,6 @@ router.get(
     res.send(
       InstructorGradebook({
         resLocals: res.locals,
-        courseOwners: [], // Not needed in this context
         csvFilename,
         courseAssessments,
       }),

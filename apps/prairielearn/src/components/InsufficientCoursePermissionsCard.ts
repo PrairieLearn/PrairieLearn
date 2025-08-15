@@ -2,43 +2,44 @@ import { html } from '@prairielearn/html';
 
 import { type User } from '../lib/db-types.js';
 
-import { HeadContents } from './HeadContents.js';
-import { Navbar } from './Navbar.js';
+import { PageLayout } from './PageLayout.js';
+import type { NavContext } from './Navbar.types.js';
 
 export function InsufficientCoursePermissionsCardPage({
   resLocals,
   courseOwners,
   pageTitle,
+  navContext,
   requiredPermissions,
 }: {
   resLocals: Record<string, any>;
   courseOwners: User[];
   pageTitle: string;
+  navContext: NavContext;
   requiredPermissions: string;
 }) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          ${InsufficientCoursePermissionsCard({ courseOwners, pageTitle, requiredPermissions })}
-        </main>
-      </body>
-    </html>
-  `.toString();
+  return PageLayout({
+    resLocals,
+    pageTitle,
+    navContext,
+    content: InsufficientCoursePermissionsCard({
+      courseOwners,
+      pageTitle,
+      requiredPermissions,
+      resLocals,
+    }),
+  });
 }
 
 export function InsufficientCoursePermissionsCard({
   courseOwners,
   pageTitle,
+  resLocals,
   requiredPermissions,
 }: {
   courseOwners: User[];
   pageTitle: string;
+  resLocals: Record<string, any>;
   requiredPermissions: string;
 }) {
   return html`<div class="card mb-4">
@@ -48,16 +49,21 @@ export function InsufficientCoursePermissionsCard({
     <div class="card-body">
       <h2>Insufficient permissions</h2>
       <p>You must have at least &quot;${requiredPermissions}&quot; permissions for this course.</p>
-      ${courseOwners.length > 0
-        ? html`
-            <p>Contact one of the below course owners to request access.</p>
-            <ul>
-              ${courseOwners.map(
-                (owner) => html` <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li> `,
-              )}
-            </ul>
-          `
-        : ''}
+      ${resLocals.authz_data.has_course_permission_own
+        ? html`<p>
+            You can grant yourself access to student data on the course's
+            <a href="${resLocals.urlPrefix}/course_admin/staff">Staff page</a>.
+          </p>`
+        : courseOwners.length > 0
+          ? html`
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+                ${courseOwners.map(
+                  (owner) => html` <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li> `,
+                )}
+              </ul>
+            `
+          : ''}
     </div>
   </div>`;
 }
