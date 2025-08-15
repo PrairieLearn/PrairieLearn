@@ -32,20 +32,22 @@ export const logger = createLogger({
       format: format.combine(
         format((info) => {
           const { outputStdout, outputStderr } = (info?.data ?? {}) as any;
-          if (typeof outputStdout !== 'string' || typeof outputStderr !== 'string') {
-            return false;
+          if (typeof outputStdout === 'string' && outputStdout.length > 0) {
+            return info;
           }
-          if (outputStdout.length === 0 && outputStderr.length === 0) {
-            return false;
+          if (typeof outputStderr === 'string' && outputStderr.length > 0) {
+            return info;
           }
-          return info;
+          return false;
         })(),
         format.printf((info) => {
           const { outputStdout, outputStderr } = (info?.data ?? {}) as any;
           let output = '';
-          if (outputStdout) {
+          if (typeof outputStdout === 'string' && outputStdout.length > 0) {
             output += `[stdout] ${outputStdout}`;
-          } else if (outputStderr) {
+          }
+
+          if (typeof outputStderr === 'string' && outputStderr.length > 0) {
             output += `[stderr] ${outputStderr}`;
           }
 
