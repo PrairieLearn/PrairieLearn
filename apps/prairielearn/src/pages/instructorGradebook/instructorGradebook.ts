@@ -38,8 +38,6 @@ router.get(
     unauthorizedUsers: 'passthrough',
   }),
   asyncHandler(async (req, res) => {
-    const csvFilename = buildCsvFilename(res.locals);
-
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       // We don't actually forbid access to this page if the user is not a student
       // data viewer, because we want to allow users to click the gradebook tab and
@@ -63,6 +61,7 @@ router.get(
       return;
     }
 
+    const csvFilename = buildCsvFilename(res.locals);
     const courseAssessments = await queryRows(
       sql.course_assessments,
       { course_instance_id: res.locals.course_instance.id },
