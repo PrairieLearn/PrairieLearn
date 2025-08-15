@@ -12,7 +12,7 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-function generateJoinId() {
+export function generateJoinId() {
   /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
   const chars = '0123456789abcdef';
   // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
@@ -39,8 +39,6 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
 
   return {
     uuid: courseInstance.uuid,
-    // This join ID is only used for inserts, and not used on updates
-    join_id: generateJoinId(),
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
@@ -100,6 +98,8 @@ export async function sync(
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
+        // This join ID is only used for inserts, and not used on updates
+        generateJoinId(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),

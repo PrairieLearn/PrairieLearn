@@ -23,6 +23,7 @@ BEGIN
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
+        join_id VARCHAR(255),
         errors TEXT,
         warnings TEXT,
         data JSONB
@@ -31,6 +32,7 @@ BEGIN
     INSERT INTO disk_course_instances (
         short_name,
         uuid,
+        join_id,
         errors,
         warnings,
         data
@@ -39,7 +41,8 @@ BEGIN
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        entries->4,
+        (entries->5)::JSONB
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src

@@ -14,6 +14,7 @@ import {
   getEnrollmentCountsForInstitution,
 } from './enrollment.js';
 import { ensurePlanGrant } from './plan-grants.js';
+import { generateJoinId } from '../../sync/fromDisk/courseInstances.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
@@ -39,7 +40,12 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      "INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *",
+      'INSERT INTO course_instances (course_id, display_timezone, join_id) VALUES ($course_id, $display_timezone, $join_id) RETURNING *',
+      {
+        course_id: 1,
+        display_timezone: 'UTC',
+        join_id: generateJoinId(),
+      },
       CourseInstanceSchema,
     );
 
