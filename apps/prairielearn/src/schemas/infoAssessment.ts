@@ -200,6 +200,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .default([]),
 });
 
+export type ZoneQuestionJson = z.infer<typeof ZoneQuestionJsonSchema>;
+
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
     .string()

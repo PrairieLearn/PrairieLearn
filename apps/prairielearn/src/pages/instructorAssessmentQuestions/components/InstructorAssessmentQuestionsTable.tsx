@@ -3,10 +3,14 @@ import { useState } from 'preact/hooks';
 import { Fragment } from 'preact/jsx-runtime';
 import { Dropdown } from 'react-bootstrap';
 
+import { run } from '@prairielearn/run';
+
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
+  AlternativeGroupHeader,
   AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
+  ZoneHeader,
 } from '../../../components/AssessmentQuestions.js';
 import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadge } from '../../../components/IssueBadge.js';
@@ -14,9 +18,14 @@ import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type { Assessment } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type {
+  QuestionAlternativeJson,
+  ZoneAssessmentJson,
+  ZoneQuestionJson,
+} from '../../../schemas/infoAssessment.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
@@ -318,6 +327,34 @@ function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuest
   return `@${question.course.sharing_name}/${question.question.qid || ''}`;
 }
 
+function maxPointsText({
+  max_auto_points,
+  max_manual_points,
+  points_list,
+  init_points,
+  assessmentType,
+}: {
+  max_auto_points: number | null;
+  max_manual_points: number | null;
+  points_list: number[] | null;
+  init_points: number | null;
+  // TODO: this should be its own `EnumAssessmentType` type.
+  assessmentType: Assessment['type'];
+}) {
+  if (max_auto_points || !max_manual_points) {
+    if (assessmentType === 'Exam') {
+      return (points_list || [max_manual_points])
+        .map((p) => (p ?? 0) - (max_manual_points ?? 0))
+        .join(',');
+    }
+    if (assessmentType === 'Homework') {
+      return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+    }
+  } else {
+    return '—';
+  }
+}
+
 // TODO: add tests for this function. Something like: for each example/test course
 // assessment, load the rows, map through here, generate JSON out the other side,
 // and make sure it matches the original.
@@ -384,6 +421,306 @@ function mapQuestions(
   return zones;
 }
 
+// TODO: maybe better name?
+function AssessmentQuestion({
+  id,
+  alternative,
+  // TODO: currently unused. We need to be using this instead of the data off of `questionMap`.
+  alternativeGroup,
+  nTableCols,
+  questionMap,
+  editMode,
+  urlPrefix,
+  hasCoursePermissionPreview,
+  hasCourseInstancePermissionEdit,
+  showAdvanceScorePercCol,
+}: {
+  id?: string;
+  alternative?: QuestionAlternativeJson;
+  alternativeGroup: ZoneQuestionJson;
+  nTableCols: number;
+  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
+  urlPrefix: string;
+  hasCoursePermissionPreview?: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+  showAdvanceScorePercCol: boolean;
+}) {
+  const questionId = alternative?.id ?? id;
+  if (questionId == null) throw new Error('Either ID or question is required');
+
+  const question = questionMap[questionId];
+
+  return (
+    <Fragment>
+      <tr>
+        {editMode ? (
+          <>
+            <td class="align-content-center">
+              <button
+                class="btn btn-sm btn-secondary"
+                type="button"
+                onClick={() => handleEditQuestion(question)}
+              >
+                <i class="fa fa-edit" aria-hidden="true" />
+              </button>
+            </td>
+            <td class="align-content-center">
+              <button
+                class="btn btn-sm btn-danger"
+                type="button"
+                onClick={() =>
+                  handleDeleteQuestion({
+                    qid: question.question.qid,
+                  })
+                }
+              >
+                <i class="fa fa-trash" aria-hidden="true" />
+              </button>
+            </td>
+          </>
+        ) : (
+          ''
+        )}
+        <td>
+          <Title
+            questionRow={question}
+            hasCoursePermissionPreview={hasCoursePermissionPreview}
+            urlPrefix={urlPrefix}
+          />
+          <IssueBadge
+            urlPrefix={urlPrefix}
+            count={question.open_issue_count ?? 0}
+            issueQid={question.question.qid}
+          />
+        </td>
+        <td>
+          {question.question.sync_errors ? (
+            <SyncProblemButton output={question.question.sync_errors} type="error" />
+          ) : question.question.sync_warnings ? (
+            <SyncProblemButton output={question.question.sync_warnings} type="warning" />
+          ) : (
+            ''
+          )}
+          {questionId}
+        </td>
+        <td>
+          <TopicBadge topic={question.topic} />
+        </td>
+        <td>
+          <TagBadgeList tags={question.tags} />
+        </td>
+        <td>
+          {maxPointsText({
+            max_auto_points: question.assessment_question.max_auto_points,
+            max_manual_points: question.assessment_question.max_manual_points,
+            points_list: question.assessment_question.points_list,
+            init_points: question.assessment_question.init_points,
+            assessmentType: question.assessment.type,
+          })}
+        </td>
+        <td>{question.assessment_question.max_manual_points || '—'}</td>
+        {showAdvanceScorePercCol ? (
+          <td
+            class={clsx(
+              question.assessment_question.effective_advance_score_perc === 0 ? 'text-muted' : '',
+            )}
+            data-testid="advance-score-perc"
+          >
+            {question.assessment_question.effective_advance_score_perc}%
+          </td>
+        ) : (
+          ''
+        )}
+        <td>
+          {question.assessment_question.mean_question_score
+            ? `${question.assessment_question.mean_question_score.toFixed(3)} %`
+            : ''}
+        </td>
+        <td class="text-center">
+          {question.assessment_question.number_submissions_hist ? (
+            <HistMini
+              data={question.assessment_question.number_submissions_hist}
+              options={{ width: 60, height: 20 }}
+            />
+          ) : (
+            ''
+          )}
+        </td>
+        <td>
+          {question.other_assessments?.map((assessment) => {
+            return (
+              <div
+                key={`${question.question.qid}-${assessment.assessment_id}`}
+                class="d-inline-block me-1"
+              >
+                <AssessmentBadge
+                  urlPrefix={urlPrefix}
+                  assessment={{
+                    assessment_id: assessment.assessment_id,
+                    color: assessment.assessment_set_color,
+                    label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                  }}
+                />
+              </div>
+            );
+          })}
+        </td>
+        <td class="text-end">
+          <Dropdown>
+            <Dropdown.Toggle
+              variant="secondary"
+              class="dropdown-toggle btn-xs"
+              id={`question-actions-${question.question.qid}`}
+            >
+              Action
+            </Dropdown.Toggle>
+            <Dropdown.Menu>
+              {hasCourseInstancePermissionEdit ? (
+                <Dropdown.Item
+                  as="button"
+                  type="button"
+                  onClick={() => handleResetButtonClick(question.assessment_question.id)}
+                >
+                  Reset question variants
+                </Dropdown.Item>
+              ) : (
+                <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
+              )}
+            </Dropdown.Menu>
+          </Dropdown>
+        </td>
+      </tr>
+    </Fragment>
+  );
+}
+
+function AlternativeGroup({
+  alternativeGroup,
+  alternativeGroupNumber,
+  nTableCols,
+  questionMap,
+  editMode,
+  urlPrefix,
+  hasCoursePermissionPreview,
+  hasCourseInstancePermissionEdit,
+  showAdvanceScorePercCol,
+}: {
+  alternativeGroup: ZoneQuestionJson;
+  alternativeGroupNumber: number;
+  nTableCols: number;
+  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
+  urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+  showAdvanceScorePercCol: boolean;
+}) {
+  return (
+    // TODO: better index?
+    <Fragment>
+      {(alternativeGroup.alternatives?.length ?? 0) > 1 ? (
+        <AlternativeGroupHeader
+          alternativeGroup={alternativeGroup}
+          alternativeGroupNumber={alternativeGroupNumber}
+          nTableCols={nTableCols}
+        />
+      ) : null}
+      {run(() => {
+        if (alternativeGroup.id) {
+          return (
+            <AssessmentQuestion
+              id={alternativeGroup.id}
+              alternativeGroup={alternativeGroup}
+              nTableCols={nTableCols}
+              questionMap={questionMap}
+              editMode={editMode}
+              urlPrefix={urlPrefix}
+              hasCoursePermissionPreview={hasCoursePermissionPreview}
+              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+              showAdvanceScorePercCol={showAdvanceScorePercCol}
+            />
+          );
+        }
+
+        return alternativeGroup.alternatives?.map((alternative) => {
+          return (
+            <AssessmentQuestion
+              key={question.id}
+              alternative={alternative}
+              alternativeGroup={alternativeGroup}
+              nTableCols={nTableCols}
+              questionMap={questionMap}
+              editMode={editMode}
+              urlPrefix={urlPrefix}
+              hasCoursePermissionPreview={hasCoursePermissionPreview}
+              hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+              showAdvanceScorePercCol={showAdvanceScorePercCol}
+            />
+          );
+        });
+      })}
+    </Fragment>
+  );
+}
+
+function Zone({
+  zone,
+  zoneNumber,
+  nTableCols,
+  questionMap,
+  editMode,
+  urlPrefix,
+  hasCoursePermissionPreview,
+  hasCourseInstancePermissionEdit,
+  showAdvanceScorePercCol,
+}: {
+  zone: ZoneAssessmentJson;
+  zoneNumber: number;
+  nTableCols: number;
+  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
+  urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+  showAdvanceScorePercCol: boolean;
+}) {
+  return (
+    <>
+      <ZoneHeader zone={zone} zoneNumber={zoneNumber} nTableCols={nTableCols} />
+      {zone.questions.map((alternativeGroup, index) => (
+        <AlternativeGroup
+          // TODO: better key
+          key={index}
+          alternativeGroup={alternativeGroup}
+          alternativeGroupNumber={index + 1}
+          nTableCols={nTableCols}
+          questionMap={questionMap}
+          editMode={editMode}
+          urlPrefix={urlPrefix}
+          hasCoursePermissionPreview={hasCoursePermissionPreview}
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          showAdvanceScorePercCol={showAdvanceScorePercCol}
+        />
+      ))}
+      {/* Add "Add question" button at the end of each zone */}
+      {editMode && (
+        <tr>
+          <td colspan={nTableCols + 1}>
+            <button
+              class="btn btn-sm"
+              type="button"
+              onClick={() => handleAddQuestion(question.zone)}
+            >
+              <i class="fa fa-add" aria-hidden="true" /> Add Question to Zone
+            </button>
+          </td>
+        </tr>
+      )}
+    </>
+  );
+}
+
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
@@ -409,11 +746,15 @@ export function InstructorAssessmentQuestionsTable({
   origHash: string;
   editorEnabled: boolean;
 }) {
+  // TODO: memoize?
   const questionMap = Object.fromEntries(
     questionRows.map((r) => [questionDisplayName(course, r), r]),
   );
 
-  console.log(mapQuestions(course, questionRows));
+  // TODO: name better; memoize?
+  const [mappedQuestions, setMappedQuestion] = useState(() => mapQuestions(course, questionRows));
+
+  console.log(mappedQuestions);
 
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
@@ -573,31 +914,6 @@ export function InstructorAssessmentQuestionsTable({
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
-  function maxPointsText({
-    max_auto_points,
-    max_manual_points,
-    points_list,
-    init_points,
-  }: {
-    max_auto_points: number | null;
-    max_manual_points: number | null;
-    points_list: number[] | null;
-    init_points: number | null;
-  }) {
-    if (max_auto_points || !max_manual_points) {
-      if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points])
-          .map((p) => (p ?? 0) - (max_manual_points ?? 0))
-          .join(',');
-      }
-      if (assessmentType === 'Homework') {
-        return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
-      }
-    } else {
-      return '—';
-    }
-  }
-
   return (
     <>
       <div class="card mb-4">
@@ -651,6 +967,23 @@ export function InstructorAssessmentQuestionsTable({
               </tr>
             </thead>
             <tbody>
+              {mappedQuestions.map((zone, index) => {
+                return (
+                  <Zone
+                    // TODO: better key?
+                    key={index}
+                    zone={zone}
+                    zoneNumber={index + 1}
+                    nTableCols={nTableCols}
+                    questionMap={questionMap}
+                    editMode={editMode}
+                    urlPrefix={urlPrefix}
+                    hasCoursePermissionPreview={hasCoursePermissionPreview}
+                    hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+                    showAdvanceScorePercCol={showAdvanceScorePercCol}
+                  />
+                );
+              })}
               {questionState.map((question, index) => {
                 const isLastInZone =
                   index === questionState.length - 1 || questionState[index + 1]?.start_new_zone;
@@ -724,6 +1057,7 @@ export function InstructorAssessmentQuestionsTable({
                           max_manual_points: question.assessment_question.max_manual_points,
                           points_list: question.assessment_question.points_list,
                           init_points: question.assessment_question.init_points,
+                          assessmentType: question.assessment.type,
                         })}
                       </td>
                       <td>{question.assessment_question.max_manual_points || '—'}</td>
