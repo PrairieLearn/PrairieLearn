@@ -9,6 +9,7 @@ export default makeBatchedMigration({
   async getParameters() {
     const max = await queryRow(sql.select_bounds, z.bigint());
     return {
+      min: 1n,
       max,
       batchSize: 1000,
     };
