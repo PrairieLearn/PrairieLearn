@@ -1298,7 +1298,9 @@ const MAX_ZOOM_SCALE = 5;
       };
     }
 
-    /** Resets the crop/rotation interface state and any changes made to the image */
+    /**
+     * Resets the crop/rotation interface state and any changes made to the image.
+     */
     resetAllCropRotation() {
       const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
         '.js-hidden-original-capture-input',
