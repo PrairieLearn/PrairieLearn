@@ -1,18 +1,18 @@
 CREATE FUNCTION
     instance_questions_points(
         IN instance_question_id bigint,
-        IN submission_score DOUBLE PRECISION,
-        OUT open BOOLEAN,
+        IN submission_score double precision,
+        OUT open boolean,
         OUT status enum_instance_question_status,
-        OUT auto_points DOUBLE PRECISION,
-        OUT points DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
-        OUT highest_submission_score DOUBLE PRECISION,
-        OUT current_value DOUBLE PRECISION,
-        OUT points_list DOUBLE PRECISION[],
-        OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_auto_points DOUBLE PRECISION,
-        OUT max_points DOUBLE PRECISION
+        OUT auto_points double precision,
+        OUT points double precision,
+        OUT score_perc double precision,
+        OUT highest_submission_score double precision,
+        OUT current_value double precision,
+        OUT points_list double precision[],
+        OUT variants_points_list double precision[],
+        OUT max_auto_points double precision,
+        OUT max_points double precision
     ) AS $$
 DECLARE
     type enum_assessment_type;

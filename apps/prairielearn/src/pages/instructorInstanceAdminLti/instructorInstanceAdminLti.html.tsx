@@ -47,7 +47,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={courseInstance}
           course={course}
           urlPrefix={urlPrefix}

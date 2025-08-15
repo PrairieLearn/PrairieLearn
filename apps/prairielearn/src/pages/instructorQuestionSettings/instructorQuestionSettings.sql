@@ -62,7 +62,7 @@ FROM
 SELECT
   ss.id,
   ss.name,
-  ssq.question_id IS NOT NULL as in_set
+  ssq.question_id IS NOT NULL AS in_set
 FROM
   sharing_sets AS ss
   LEFT OUTER JOIN (

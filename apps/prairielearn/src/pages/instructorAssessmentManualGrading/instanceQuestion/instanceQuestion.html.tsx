@@ -8,6 +8,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
@@ -27,12 +28,19 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  /**
+   * `aiGradingInfo` is defined when
+   * 1. The AI grading feature flag is enabled
+   * 2. The question was AI graded
+   */
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   return PageLayout({
     resLocals: {
@@ -71,7 +79,7 @@ export function InstanceQuestion({
       <div class="container-fluid">
         ${renderHtml(
           <QuestionSyncErrorsAndWarnings
-            authz_data={resLocals.authz_data}
+            authzData={resLocals.authz_data}
             question={resLocals.question}
             course={resLocals.course}
             urlPrefix={resLocals.urlPrefix}
@@ -94,14 +102,24 @@ export function InstanceQuestion({
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
-          ${QuestionContainer({ resLocals, questionContext: 'manual_grading', showFooter: false })}
+          ${QuestionContainer({
+            resLocals,
+            questionContext: 'manual_grading',
+            showFooter: false,
+            aiGradingInfo,
+          })}
         </div>
 
         <div class="col-lg-4 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info">Grading</div>
             <div class="js-main-grading-panel">
-              ${GradingPanel({ resLocals, context: 'main', graders })}
+              ${GradingPanel({
+                resLocals,
+                context: 'main',
+                graders,
+                aiGradingInfo,
+              })}
             </div>
           </div>
 
