@@ -23,3 +23,14 @@ export interface AIGradingLogger {
   info(msg: string): void;
   error(msg: string): void;
 }
+
+export interface InstanceQuestionAIGradingInfo {
+  /** If the submission was also manually graded. */
+  submissionManuallyGraded: boolean;
+  /** The IDs of the rubric items selected by the AI grader. */
+  selectedRubricItemIds: string[];
+  /** The raw prompt sent to the LLM for AI grading.  */
+  prompt: string;
+  /** Images that were sent in the prompt. */
+  promptImageUrls: string[];
+}
