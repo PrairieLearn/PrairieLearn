@@ -49,6 +49,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners: [],
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',
@@ -64,6 +69,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners,
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',

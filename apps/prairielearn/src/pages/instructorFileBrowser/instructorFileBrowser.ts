@@ -30,6 +30,11 @@ router.get(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_view',
+          },
           pageTitle: 'Files',
           requiredPermissions: 'Viewer',
         }),
