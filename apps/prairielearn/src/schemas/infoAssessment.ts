@@ -132,6 +132,7 @@ const QuestionPointsJsonSchema = z.object({
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
+export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),

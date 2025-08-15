@@ -34,6 +34,50 @@
       "default": true,
       "deprecated": true
     },
+    "enrollment": {
+      "type": "object",
+      "properties": {
+        "selfEnrollment": {
+          "anyOf": [
+            {
+              "description": "If true, allows users to enroll themselves. If false, users cannot enroll themselves, and must be either invited or added in the UI.",
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "required": ["beforeDate"],
+              "properties": {
+                "beforeDate": {
+                  "description": "Before this date, selfEnrollment is true. After this date, selfEnrollment is false.",
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "default": true
+        },
+        "ltiEnforced": {
+          "anyOf": [
+            {
+              "description": "If true, LTI enrollment is enforced.",
+              "type": "boolean"
+            },
+            {
+              "type": "object",
+              "required": ["beforeDate"],
+              "properties": {
+                "beforeDate": {
+                  "description": "Before this date, ltiEnforced is true.",
+                  "type": "string"
+                }
+              }
+            }
+          ],
+          "default": false
+        }
+      },
+      "default": {}
+    },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
       "type": "boolean",

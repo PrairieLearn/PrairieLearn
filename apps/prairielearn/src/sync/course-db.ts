@@ -16,12 +16,12 @@ import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
-  type AssessmentJson,
+  type AssessmentJsonInput,
   type AssessmentSetJson,
-  type CourseInstanceJson,
-  type CourseJson,
-  type QuestionJson,
-  type QuestionPointsJson,
+  type CourseInstanceJsonInput,
+  type CourseJsonInput,
+  type QuestionJsonInput,
+  type QuestionPointsJsonInput,
   type TagJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
@@ -195,13 +195,13 @@ const FILE_UUID_REGEX =
 type InfoFile<T> = infofile.InfoFile<T>;
 
 export interface CourseInstanceData {
-  courseInstance: InfoFile<CourseInstanceJson>;
-  assessments: Record<string, InfoFile<AssessmentJson>>;
+  courseInstance: InfoFile<CourseInstanceJsonInput>;
+  assessments: Record<string, InfoFile<AssessmentJsonInput>>;
 }
 
 export interface CourseData {
-  course: InfoFile<CourseJson>;
-  questions: Record<string, InfoFile<QuestionJson>>;
+  course: InfoFile<CourseJsonInput>;
+  questions: Record<string, InfoFile<QuestionJsonInput>>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -505,8 +505,8 @@ export async function loadCourseInfo({
   assessmentSetsInUse: Set<string>;
   tagsInUse: Set<string>;
   sharingEnabled: boolean;
-}): Promise<InfoFile<CourseJson>> {
-  const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
+}): Promise<InfoFile<CourseJsonInput>> {
+  const maybeNullLoadedData: InfoFile<CourseJsonInput> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -541,7 +541,11 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
+  >(
+    fieldName: K,
+    entryIdentifier: string,
+    defaults?: CourseJsonInput[K] | undefined,
+  ): CourseJsonInput[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -942,7 +946,7 @@ async function validateQuestion({
   question,
   sharingEnabled,
 }: {
-  question: QuestionJson;
+  question: QuestionJsonInput;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1002,8 +1006,8 @@ async function validateAssessment({
   sharingEnabled,
   courseInstanceExpired,
 }: {
-  assessment: AssessmentJson;
-  questions: Record<string, InfoFile<QuestionJson>>;
+  assessment: AssessmentJsonInput;
+  questions: Record<string, InfoFile<QuestionJsonInput>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
@@ -1096,7 +1100,7 @@ async function validateAssessment({
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPointsJson[] = [];
+      let alternatives: QuestionPointsJsonInput[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
@@ -1161,7 +1165,8 @@ async function validateAssessment({
             alternative.maxAutoPoints !== undefined ||
             alternative.manualPoints !== undefined;
           const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          // We have to cast this because Zod incorrectly infers the type of autoPoints
+          const pointsList = (Array.isArray(autoPoints) ? autoPoints : [autoPoints]) as number[];
           const isNonIncreasing = pointsList.every(
             (points, index) => index === 0 || points <= pointsList[index - 1],
           );
@@ -1322,7 +1327,7 @@ async function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
-  courseInstance: CourseInstanceJson;
+  courseInstance: CourseInstanceJsonInput;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1344,10 +1349,10 @@ async function validateCourseInstance({
     }
   }
 
-  if (courseInstance.enrollment.selfEnrollment !== true) {
+  if ((courseInstance?.enrollment?.selfEnrollment ?? true) !== true) {
     errors.push('"selfEnrollment" is not configurable yet.');
   }
-  if (courseInstance.enrollment.ltiEnforced !== false) {
+  if ((courseInstance?.enrollment?.ltiEnforced ?? false) !== false) {
     errors.push('"ltiEnforced" is not configurable yet.');
   }
 
@@ -1398,14 +1403,14 @@ export async function loadQuestions({
 }: {
   coursePath: string;
   sharingEnabled: boolean;
-}): Promise<Record<string, InfoFile<QuestionJson>>> {
+}): Promise<Record<string, InfoFile<QuestionJsonInput>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
     infoFilename: 'info.json',
     defaultInfo: DEFAULT_QUESTION_INFO,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (question: QuestionJsonInput) => validateQuestion({ question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1431,14 +1436,14 @@ export async function loadCourseInstances({
 }: {
   coursePath: string;
   sharingEnabled: boolean;
-}): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
+}): Promise<Record<string, InfoFile<CourseInstanceJsonInput>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
     infoFilename: 'infoCourseInstance.json',
     defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
     schema: schemas.infoCourseInstance,
-    validate: (courseInstance: CourseInstanceJson) =>
+    validate: (courseInstance: CourseInstanceJsonInput) =>
       validateCourseInstance({ courseInstance, sharingEnabled }),
     recursive: true,
   });
@@ -1462,9 +1467,9 @@ export async function loadAssessments({
   coursePath: string;
   courseInstanceDirectory: string;
   courseInstanceExpired: boolean;
-  questions: Record<string, InfoFile<QuestionJson>>;
+  questions: Record<string, InfoFile<QuestionJsonInput>>;
   sharingEnabled: boolean;
-}): Promise<Record<string, InfoFile<AssessmentJson>>> {
+}): Promise<Record<string, InfoFile<AssessmentJsonInput>>> {
   const assessmentsPath = path.join('courseInstances', courseInstanceDirectory, 'assessments');
   const assessments = await loadInfoForDirectory({
     coursePath,
@@ -1472,7 +1477,7 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: (assessment: AssessmentJson) =>
+    validate: (assessment: AssessmentJsonInput) =>
       validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
     recursive: true,
   });

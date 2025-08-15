@@ -63,6 +63,7 @@ export const CourseInstanceJsonSchema = z
                 ),
             }),
           ])
+          .optional()
           .default(true),
         ltiEnforced: z
           .union([
@@ -71,8 +72,10 @@ export const CourseInstanceJsonSchema = z
               beforeDate: z.string().describe('Before this date, ltiEnforced is true.'),
             }),
           ])
+          .optional()
           .default(false),
       })
+      .optional()
       .default({}),
     hideInEnrollPage: z
       .boolean()
