@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 const AccessRuleJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe('Arbitrary comment for reference purposes.'),
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
       .describe('DEPRECATED -- do not use.')
@@ -28,14 +28,14 @@ const AccessRuleJsonSchema = z
   );
 
 const AccessControlJsonSchema = z
-  .array(AccessRuleJsonSchema)
+  .array(AccessRuleJsonSchema.describe(AccessRuleJsonSchema.description!))
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
 export const CourseInstanceJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe('Arbitrary comment for reference purposes.'),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
@@ -77,7 +77,7 @@ export const CourseInstanceJsonSchema = z
         deprecated: true,
       })
       .optional(),
-    allowAccess: AccessControlJsonSchema.optional(),
+    allowAccess: AccessControlJsonSchema.optional().describe(AccessControlJsonSchema.description!),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

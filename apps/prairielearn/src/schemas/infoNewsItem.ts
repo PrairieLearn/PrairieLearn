@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const NewsItemJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)

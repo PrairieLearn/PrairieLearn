@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const QuestionFileOptionsJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     fileName: z.string().describe('Filename of the file to download').optional(),
   })
 

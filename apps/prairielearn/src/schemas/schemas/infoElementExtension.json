@@ -88,6 +88,7 @@
       "additionalProperties": false,
       "properties": {
         "comment": {
+          "description": "Arbitrary comment for reference purposes.",
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"

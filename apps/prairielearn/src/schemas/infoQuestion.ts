@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const QuestionDependencyJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -53,7 +53,7 @@ export const QuestionDependencyJsonSchema = z
 
 export const WorkspaceOptionsJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     image: z
       .string()
       .describe(
@@ -108,7 +108,7 @@ export const WorkspaceOptionsJsonSchema = z
 
 export const ExternalGradingOptionsJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     enabled: z
       .boolean()
       .describe(
@@ -158,7 +158,7 @@ export const ExternalGradingOptionsJsonSchema = z
 
 export const QuestionJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
@@ -215,9 +215,15 @@ export const QuestionJsonSchema = z
         'Options that define how the question will work, specific to the individual question type.',
       )
       .optional(),
-    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
-    dependencies: QuestionDependencyJsonSchema.optional(),
-    workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
+    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional().describe(
+      ExternalGradingOptionsJsonSchema.description!,
+    ),
+    dependencies: QuestionDependencyJsonSchema.optional().describe(
+      QuestionDependencyJsonSchema.description!,
+    ),
+    workspaceOptions: WorkspaceOptionsJsonSchema.optional().describe(
+      WorkspaceOptionsJsonSchema.description!,
+    ),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')

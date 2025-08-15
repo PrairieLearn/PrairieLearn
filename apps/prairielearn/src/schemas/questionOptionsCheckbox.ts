@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const QuestionCheckboxOptionsJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     text: z.string().describe('The question HTML text that comes before the options.'),
     correctAnswers: z
       .array(z.string())

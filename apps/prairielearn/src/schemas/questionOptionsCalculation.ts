@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const QuestionCalculationOptionsJsonSchema = z
   .looseObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
   })
   .describe('Options for a Calculation question.')
   .meta({

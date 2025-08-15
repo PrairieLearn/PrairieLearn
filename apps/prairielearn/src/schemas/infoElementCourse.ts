@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 const DependencyJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -53,7 +53,7 @@ const DependencyJsonSchema = z
 
 const DynamicDependencyJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     nodeModulesScripts: z
       .record(z.string(), z.string())
       .describe('The scripts required by this element from /node_modules as an importmap.')
@@ -74,10 +74,12 @@ const DynamicDependencyJsonSchema = z
 
 export const ElementCourseJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     controller: z.string().describe("The name of the element's controller file."),
-    dependencies: DependencyJsonSchema.optional(),
-    dynamicDependencies: DynamicDependencyJsonSchema.optional(),
+    dependencies: DependencyJsonSchema.optional().describe(DependencyJsonSchema.description!),
+    dynamicDependencies: DynamicDependencyJsonSchema.optional().describe(
+      DynamicDependencyJsonSchema.description!,
+    ),
   })
 
   .describe('Info files for v3 elements.')

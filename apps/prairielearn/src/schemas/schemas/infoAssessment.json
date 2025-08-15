@@ -7,6 +7,7 @@
   "required": ["uuid", "type", "title", "set", "number"],
   "properties": {
     "comment": {
+      "description": "Arbitrary comment for reference purposes.",
       "allOf": [
         {
           "$ref": "#/definitions/CommentJsonSchema"
@@ -54,7 +55,12 @@
       "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
+        "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
+          }
+        ]
       }
     },
     "text": {
@@ -82,7 +88,11 @@
       "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/ZoneAssessmentJsonSchema"
+        "allOf": [
+          {
+            "$ref": "#/definitions/ZoneAssessmentJsonSchema"
+          }
+        ]
       }
     },
     "constantQuestionValue": {
@@ -121,7 +131,12 @@
       "description": "Array of custom user roles in a group.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/GroupRoleJsonSchema"
+        "description": "A custom role for use in group assessments that allows control over certain permissions.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/GroupRoleJsonSchema"
+          }
+        ]
       }
     },
     "canSubmit": {
@@ -163,6 +178,7 @@
       "default": false
     },
     "advanceScorePerc": {
+      "description": "Minimum score percentage to unlock access to subsequent questions.",
       "allOf": [
         {
           "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -189,6 +205,7 @@
       "description": "A custom role for use in group assessments that allows control over certain permissions.",
       "type": "object",
       "required": ["name"],
+      "id": "GroupRoleJsonSchema",
       "properties": {
         "name": {
           "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
@@ -214,8 +231,10 @@
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
       "additionalProperties": false,
+      "id": "AssessmentAccessRuleJsonSchema",
       "properties": {
         "comment": {
+          "description": "Arbitrary comment for reference purposes.",
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"
@@ -289,8 +308,10 @@
     "ZoneAssessmentJsonSchema": {
       "type": "object",
       "required": ["questions"],
+      "id": "ZoneAssessmentJsonSchema",
       "properties": {
         "comment": {
+          "description": "Arbitrary comment for reference purposes.",
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"
@@ -331,10 +352,15 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "#/definitions/ZoneQuestionJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/ZoneQuestionJsonSchema"
+              }
+            ]
           }
         },
         "advanceScorePerc": {
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "allOf": [
             {
               "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -366,8 +392,10 @@
     },
     "ZoneQuestionJsonSchema": {
       "type": "object",
+      "id": "ZoneQuestionJsonSchema",
       "properties": {
         "comment": {
+          "description": "Arbitrary comment for reference purposes.",
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"
@@ -389,6 +417,7 @@
           ]
         },
         "maxPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -396,6 +425,7 @@
           ]
         },
         "maxAutoPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -403,6 +433,7 @@
           ]
         },
         "manualPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -410,6 +441,7 @@
           ]
         },
         "id": {
+          "description": "Question ID (directory name of the question).",
           "allOf": [
             {
               "$ref": "#/definitions/QuestionIdJsonSchema"
@@ -417,6 +449,7 @@
           ]
         },
         "forceMaxPoints": {
+          "description": "Whether to force this question to be awarded maximum points on a regrade.",
           "allOf": [
             {
               "$ref": "#/definitions/ForceMaxPointsJsonSchema"
@@ -428,7 +461,11 @@
           "type": "array",
           "minItems": 1,
           "items": {
-            "$ref": "#/definitions/QuestionAlternativeJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/QuestionAlternativeJsonSchema"
+              }
+            ]
           }
         },
         "numberChoose": {
@@ -444,6 +481,7 @@
           "default": 1
         },
         "advanceScorePerc": {
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "allOf": [
             {
               "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -478,8 +516,10 @@
     "QuestionAlternativeJsonSchema": {
       "type": "object",
       "required": ["id"],
+      "id": "QuestionAlternativeJsonSchema",
       "properties": {
         "comment": {
+          "description": "Arbitrary comment for reference purposes.",
           "allOf": [
             {
               "$ref": "#/definitions/CommentJsonSchema"
@@ -509,6 +549,7 @@
           ]
         },
         "maxAutoPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -516,6 +557,7 @@
           ]
         },
         "manualPoints": {
+          "description": "A single point value.",
           "allOf": [
             {
               "$ref": "#/definitions/PointsSingleJsonSchema"
@@ -523,9 +565,15 @@
           ]
         },
         "id": {
-          "$ref": "#/definitions/QuestionIdJsonSchema"
+          "description": "Question ID (directory name of the question).",
+          "allOf": [
+            {
+              "$ref": "#/definitions/QuestionIdJsonSchema"
+            }
+          ]
         },
         "forceMaxPoints": {
+          "description": "Whether to force this question to be awarded maximum points on a regrade.",
           "allOf": [
             {
               "$ref": "#/definitions/ForceMaxPointsJsonSchema"
@@ -538,6 +586,7 @@
           "default": 1
         },
         "advanceScorePerc": {
+          "description": "Minimum score percentage to unlock access to subsequent questions.",
           "allOf": [
             {
               "$ref": "#/definitions/AdvanceScorePercJsonSchema"
@@ -554,7 +603,12 @@
     "PointsJsonSchema": {
       "anyOf": [
         {
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "description": "A single point value.",
+          "allOf": [
+            {
+              "$ref": "#/definitions/PointsSingleJsonSchema"
+            }
+          ]
         },
         {
           "$ref": "#/definitions/PointsListJsonSchema"
@@ -564,6 +618,7 @@
     "PointsSingleJsonSchema": {
       "description": "A single point value.",
       "type": "number",
+      "id": "PointsSingleJsonSchema",
       "default": 0,
       "minimum": 0
     },
@@ -572,12 +627,18 @@
       "type": "array",
       "minItems": 1,
       "items": {
-        "$ref": "#/definitions/PointsSingleJsonSchema"
+        "description": "A single point value.",
+        "allOf": [
+          {
+            "$ref": "#/definitions/PointsSingleJsonSchema"
+          }
+        ]
       }
     },
     "QuestionIdJsonSchema": {
       "description": "Question ID (directory name of the question).",
-      "type": "string"
+      "type": "string",
+      "id": "QuestionIdJsonSchema"
     },
     "ForceMaxPointsJsonSchema": {
       "description": "Whether to force this question to be awarded maximum points on a regrade.",

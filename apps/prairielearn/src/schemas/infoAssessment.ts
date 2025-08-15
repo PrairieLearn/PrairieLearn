@@ -112,16 +112,21 @@ export const PointsSingleJsonSchema = z
   });
 
 export const PointsListJsonSchema = z
-  .array(PointsSingleJsonSchema)
+  .array(PointsSingleJsonSchema.describe(PointsSingleJsonSchema.description!))
   .min(1)
   .describe('An array of point values.')
   .meta({
     id: 'PointsListJsonSchema',
   });
 
-export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]).meta({
-  id: 'PointsJsonSchema',
-});
+export const PointsJsonSchema = z
+  .union([
+    PointsSingleJsonSchema.describe(PointsSingleJsonSchema.description!),
+    PointsListJsonSchema,
+  ])
+  .meta({
+    id: 'PointsJsonSchema',
+  });
 
 export const QuestionIdJsonSchema = z
   .string()
@@ -159,7 +164,7 @@ export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
-  id: QuestionIdJsonSchema,
+  id: QuestionIdJsonSchema.describe(QuestionIdJsonSchema.description!),
   forceMaxPoints: ForceMaxPointsJsonSchema.optional().describe(
     ForceMaxPointsJsonSchema.description!,
   ),
@@ -184,15 +189,17 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
-  points: PointsJsonSchema.optional(),
-  autoPoints: PointsJsonSchema.optional(),
-  maxPoints: PointsSingleJsonSchema.optional(),
-  maxAutoPoints: PointsSingleJsonSchema.optional(),
-  manualPoints: PointsSingleJsonSchema.optional(),
-  id: QuestionIdJsonSchema.optional(),
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
+  points: PointsJsonSchema.optional().describe(PointsJsonSchema.description!),
+  autoPoints: PointsJsonSchema.optional().describe(PointsJsonSchema.description!),
+  maxPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
+  maxAutoPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
+  manualPoints: PointsSingleJsonSchema.optional().describe(PointsSingleJsonSchema.description!),
+  id: QuestionIdJsonSchema.optional().describe(QuestionIdJsonSchema.description!),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional().describe(
+    ForceMaxPointsJsonSchema.description!,
+  ),
   alternatives: z
-    .array(QuestionAlternativeJsonSchema)
+    .array(QuestionAlternativeJsonSchema.describe(QuestionAlternativeJsonSchema.description!))
     .min(1)
     .describe('Array of question alternatives to choose from.')
     .optional(),
@@ -208,7 +215,9 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional()
     .default(1),
-  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+  advanceScorePerc: AdvanceScorePercJsonSchema.optional().describe(
+    AdvanceScorePercJsonSchema.description!,
+  ),
   gradeRateMinutes: z
     .number()
     .gte(0)
@@ -273,8 +282,13 @@ export const ZoneAssessmentJsonSchema = z
         'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
       )
       .optional(),
-    questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
-    advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+    questions: z
+      .array(ZoneQuestionJsonSchema.describe(ZoneQuestionJsonSchema.description!))
+      .min(1)
+      .describe('Array of questions in the zone.'),
+    advanceScorePerc: AdvanceScorePercJsonSchema.optional().describe(
+      AdvanceScorePercJsonSchema.description!,
+    ),
     gradeRateMinutes: z
       .number()
       .gte(0)
@@ -338,7 +352,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(false),
     allowAccess: z
-      .array(AssessmentAccessRuleJsonSchema)
+      .array(AssessmentAccessRuleJsonSchema.describe(AssessmentAccessRuleJsonSchema.description!))
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
@@ -364,7 +378,7 @@ export const AssessmentJsonSchema = z
       .optional()
       .default(true),
     zones: z
-      .array(ZoneAssessmentJsonSchema)
+      .array(ZoneAssessmentJsonSchema.describe(ZoneAssessmentJsonSchema.description!))
       .describe(
         'Array of "zones" in the assessment, each containing questions that can be randomized within the zone.',
       )
@@ -404,7 +418,7 @@ export const AssessmentJsonSchema = z
     groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
     groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
     groupRoles: z
-      .array(GroupRoleJsonSchema)
+      .array(GroupRoleJsonSchema.describe(GroupRoleJsonSchema.description!))
       .describe('Array of custom user roles in a group.')
       .optional(),
     canSubmit: z
@@ -449,7 +463,9 @@ export const AssessmentJsonSchema = z
       .describe('Whether students can leave groups.')
       .optional()
       .default(false),
-    advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
+    advanceScorePerc: AdvanceScorePercJsonSchema.optional().describe(
+      AdvanceScorePercJsonSchema.description!,
+    ),
     gradeRateMinutes: z
       .number()
       .gte(0)

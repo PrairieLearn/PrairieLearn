@@ -56,10 +56,10 @@ export const ElementExtensionJsonSchema = z
       .string()
       .describe("The name of the extension's Python controller file.")
       .optional(),
-    dependencies: DependencyJsonSchema.optional(),
+    dependencies: DependencyJsonSchema.optional().describe(DependencyJsonSchema.description!),
     dynamicDependencies: z
       .strictObject({
-        comment: CommentJsonSchema.optional(),
+        comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
         nodeModulesScripts: z
           .record(z.string(), z.string())
           .describe('The scripts required by this element from /node_modules as an importmap.')

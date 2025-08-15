@@ -4,7 +4,7 @@ import { CommentJsonSchema } from './comment.js';
 
 export const QuestionMultipleTrueFalseOptionsJsonSchema = z
   .strictObject({
-    comment: CommentJsonSchema.optional(),
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     text: z.string().describe('Text to precede the set of statements being given.').optional(),
     trueStatements: z
       .array(z.string())
