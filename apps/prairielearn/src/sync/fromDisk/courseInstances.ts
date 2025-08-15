@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -8,14 +9,13 @@ import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import _ from 'lodash';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-// Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
 function generateJoinId() {
   /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
   const chars = '0123456789abcdef';
+  // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
   const joinId = _.times(12, () => _.sample(chars)).join('');
   return joinId;
 }
