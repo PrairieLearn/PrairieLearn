@@ -1,9 +1,9 @@
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
-import type { LtiCredentials, User } from '../../lib/db-types.js';
+import type { LtiCredential, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -47,7 +47,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={courseInstance}
           course={course}
           urlPrefix={urlPrefix}
@@ -109,7 +109,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
 
             ${lti11_enabled
               ? html`
-                  ${LtiCredentialsCard({ lti_credentials, csrfToken })}
+                  ${LtiCredentialCard({ lti_credentials, csrfToken })}
                   ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
                 `
               : ''}
@@ -118,11 +118,11 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
   });
 }
 
-function LtiCredentialsCard({
+function LtiCredentialCard({
   lti_credentials,
   csrfToken,
 }: {
-  lti_credentials: (Omit<LtiCredentials, 'deleted_at'> & {
+  lti_credentials: (Omit<LtiCredential, 'deleted_at'> & {
     created: string | null;
     deleted: string | null;
   })[];
@@ -159,7 +159,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy redirect URL to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -170,7 +170,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy consumer key to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -181,7 +181,7 @@ function LtiCredentialsCard({
                         type="button"
                         class="btn btn-sm btn-ghost"
                         aria-label="Copy shared secret to clipboard"
-                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                       >
                         <i class="far fa-copy"></i>
                       </button>
@@ -289,7 +289,7 @@ function LtiLinkTargetsCard({
                         <input type="hidden" name="lti_link_id" value="${link.id}" />
                         <select
                           class="form-select"
-                          onChange="this.form.submit();"
+                          onchange="this.form.submit();"
                           name="newAssessment"
                         >
                           <option value="" ${!link.assessment_id ? 'selected' : ''}>-- None</option>

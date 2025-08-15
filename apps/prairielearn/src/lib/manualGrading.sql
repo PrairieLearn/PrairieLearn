@@ -377,7 +377,10 @@ SELECT
   iq.manual_points,
   s.manual_rubric_grading_id,
   $check_modified_at::timestamptz IS NOT NULL
-  AND $check_modified_at != iq.modified_at AS modified_at_conflict
+  -- We are comparing a database timestamp (microseconds precision) to a time
+  -- that comes from the client (milliseconds precision). This avoids a precision
+  -- mismatch that would cause the comparison to fail.
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

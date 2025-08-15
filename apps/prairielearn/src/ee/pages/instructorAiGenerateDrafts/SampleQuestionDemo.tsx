@@ -1,13 +1,13 @@
 import { useLayoutEffect, useRef, useState } from 'preact/hooks';
-import ButtonOriginal from 'react-bootstrap/Button';
-import CardOriginal from 'react-bootstrap/Card';
-import CardBodyOriginal from 'react-bootstrap/CardBody';
-import CardFooterOriginal from 'react-bootstrap/CardFooter';
-import CardHeaderOriginal from 'react-bootstrap/CardHeader';
-import FormCheckOriginal from 'react-bootstrap/FormCheck';
-import FormControlOriginal from 'react-bootstrap/FormControl';
-import InputGroupOriginal from 'react-bootstrap/InputGroup';
-import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import CardBody from 'react-bootstrap/CardBody';
+import CardFooter from 'react-bootstrap/CardFooter';
+import CardHeader from 'react-bootstrap/CardHeader';
+import FormCheck from 'react-bootstrap/FormCheck';
+import FormControl from 'react-bootstrap/FormControl';
+import InputGroup from 'react-bootstrap/InputGroup';
+import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { run } from '@prairielearn/run';
 
@@ -17,16 +17,6 @@ import {
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
-
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
-const Card = CardOriginal as unknown as typeof CardOriginal.default;
-const CardBody = CardBodyOriginal as unknown as typeof CardBodyOriginal.default;
-const CardHeader = CardHeaderOriginal as unknown as typeof CardHeaderOriginal.default;
-const CardFooter = CardFooterOriginal as unknown as typeof CardFooterOriginal.default;
-const FormCheck = FormCheckOriginal as unknown as typeof FormCheckOriginal.default;
-const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal.default;
-const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
-const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
 
 export function SampleQuestionDemo({
   prompt,
@@ -82,7 +72,7 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     if (cardRef.current) {
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onMathjaxTypeset([cardRef.current]);
     }
   }, [variant?.question, onMathjaxTypeset]);
@@ -93,7 +83,7 @@ export function SampleQuestionDemo({
     }
 
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
-      const responseNum = parseFloat(userInputResponse);
+      const responseNum = Number.parseFloat(userInputResponse);
 
       const rtol = prompt.rtol;
       const atol = prompt.atol;
@@ -185,7 +175,7 @@ export function SampleQuestionDemo({
     : '';
 
   return (
-    <Card class="shadow" ref={cardRef}>
+    <Card ref={cardRef} class="shadow">
       <CardHeader>
         <div class="d-flex align-items-center gap-2">
           <p class="mb-0">{prompt.name}</p>
@@ -212,7 +202,7 @@ export function SampleQuestionDemo({
               }
 
               // Regular text
-              return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
+              return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
             })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
@@ -237,7 +227,7 @@ export function SampleQuestionDemo({
       <CardFooter>
         <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div class="flex-grow-1"></div>
+          <div class="flex-grow-1" />
           <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
               <span class="text-nowrap">New variant</span>
@@ -261,12 +251,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return (
-    <span class={`badge ${badgeType}`}>
-      {Math.floor(grade)}
-      {'%'}
-    </span>
-  );
+  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
@@ -323,8 +308,8 @@ function CheckboxOrRadioInput({
     <div class="mt-2">
       {options.map((option) => (
         <FormCheck
-          id={`check-${option.value}`}
           key={option.value}
+          id={`check-${option.value}`}
           type={answerType as 'checkbox' | 'radio'}
           label={variantOptionToString(option)}
           value={option.value}

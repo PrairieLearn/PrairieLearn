@@ -6,7 +6,7 @@ export function formatQueryWithErrorPosition(query: string, position: number | n
   if (nextNewline < 0) nextNewline = query.length;
   const gap = ' '.repeat(Math.max(0, position - prevNewline - 1));
   return (
-    query.substring(0, nextNewline) +
+    query.slice(0, nextNewline) +
     '\n' +
     gap +
     '^\n' +
@@ -14,6 +14,6 @@ export function formatQueryWithErrorPosition(query: string, position: number | n
     '|\n' +
     gap +
     '+ ERROR POSITION SHOWN ABOVE\n' +
-    query.substring(nextNewline)
+    query.slice(nextNewline)
   );
 }

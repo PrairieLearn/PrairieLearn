@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { JobStatus } from '../../components/JobStatus.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { JobStatus } from '../../components/JobStatus.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -38,7 +38,7 @@ export function InstructorAssessmentUploads({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}

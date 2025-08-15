@@ -6,20 +6,20 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.js';
 import {
   type QuestionContext,
   type QuestionRenderContext,
 } from '../components/QuestionContainer.types.js';
-import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
+import { QuestionNavSideButton } from '../components/QuestionNavigation.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
   type SubmissionForRender,
   SubmissionPanel,
-} from '../components/SubmissionPanel.html.js';
+} from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -170,13 +170,14 @@ interface QuestionUrls {
  * @param variant The variant object for this question.
  * @param question The question.
  * @param instance_question The instance question.
- * @return An object containing the named URLs.
+ * @returns An object containing the named URLs.
  */
 export function buildQuestionUrls(
   urlPrefix: string,
   variant: Variant,
   question: Question,
   instance_question: InstanceQuestion | null,
+  publicQuestionPreview = false,
 ): QuestionUrls {
   let urls: QuestionUrls;
 
@@ -231,7 +232,11 @@ export function buildQuestionUrls(
   }
 
   if (variant.workspace_id) {
-    urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    if (publicQuestionPreview) {
+      urls.workspaceUrl = `/pl/public/workspace/${variant.workspace_id}`;
+    } else {
+      urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    }
   }
 
   return urls;
@@ -301,7 +306,7 @@ function buildLocals({
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
-      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
+      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100) {
         locals.showTrueAnswer = true;
       }
     }
@@ -489,7 +494,13 @@ export async function getAndRenderVariant(
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
+  const urls = buildQuestionUrls(
+    urlPrefix,
+    variant,
+    question,
+    instance_question ?? null,
+    publicQuestionPreview,
+  );
   Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 
@@ -564,9 +575,6 @@ export async function getAndRenderVariant(
     resultLocals.showTrueAnswer = true;
   }
 
-  const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
-  resultLocals.effectiveQuestionType = effectiveQuestionType;
-
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
@@ -607,7 +615,7 @@ export async function getAndRenderVariant(
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,
       questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
-      effectiveQuestionType,
+      effectiveQuestionType: 'Calculation',
       course,
       courseInstance: course_instance,
       variant: {

@@ -73,9 +73,9 @@ export class DockerName {
 
     // @ symbol is more important
     let separatorPos;
-    if (digestPos >= 0) {
+    if (digestPos !== -1) {
       separatorPos = digestPos;
-    } else if (colonPos >= 0) {
+    } else if (colonPos !== -1) {
       separatorPos = colonPos;
     }
 
@@ -84,7 +84,7 @@ export class DockerName {
       const tag = name.slice(separatorPos + 1);
 
       // if it contains a / its not a tag and is part of the url
-      if (tag.indexOf('/') === -1) {
+      if (!tag.includes('/')) {
         this.repository = name.slice(0, separatorPos);
         this.tag = tag;
       }
@@ -111,7 +111,7 @@ export class DockerName {
 
   getRegistryRepo() {
     let combined = '';
-    if (typeof this.registry !== 'undefined') {
+    if (this.registry !== undefined) {
       combined = this.registry + '/';
     }
     combined += this.repository;
@@ -120,7 +120,7 @@ export class DockerName {
 
   getCombined(latestTag = false) {
     let combined = '';
-    if (typeof this.registry !== 'undefined') {
+    if (this.registry !== undefined) {
       combined = this.registry + '/';
     }
     combined += this.repository;

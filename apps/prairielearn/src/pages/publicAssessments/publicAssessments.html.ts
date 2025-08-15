@@ -1,10 +1,10 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.html.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
 import type { Course, CourseInstance } from '../../lib/db-types.js';
 import { type AssessmentRow } from '../../models/assessment.js';
@@ -139,7 +139,7 @@ export function PublicAssessments({
                 data-bs-toggle="modal"
                 data-bs-target="#copyCourseInstanceModal"
               >
-                <i class="fa fa-fw fa-clone"></i>
+                <i class="fa fa-clone"></i>
                 <span class="d-none d-sm-inline">Copy course instance</span>
               </button>
             </div>

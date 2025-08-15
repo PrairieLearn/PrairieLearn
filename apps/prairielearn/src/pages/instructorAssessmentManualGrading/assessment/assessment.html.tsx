@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
 
-import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -36,11 +36,13 @@ export function ManualGradingAssessment({
   questions,
   courseStaff,
   num_open_instances,
+  adminFeaturesEnabled,
 }: {
   resLocals: Record<string, any>;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
+  adminFeaturesEnabled: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -64,7 +66,7 @@ export function ManualGradingAssessment({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -76,11 +78,51 @@ export function ManualGradingAssessment({
         assessmentId: resLocals.assessment.id,
         urlPrefix: resLocals.urlPrefix,
       })}
+      ${adminFeaturesEnabled
+        ? html`
+            <form method="POST" id="ai-grade-all">
+              <input type="hidden" name="__action" value="ai_grade_all" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            </form>
+            <form method="POST" id="export-ai-grading-statistics">
+              <input type="hidden" name="__action" value="export_ai_grading_statistics" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            </form>
+          `
+        : ''}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div
+          class="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2"
+        >
           <h1>
             ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
           </h1>
+          ${adminFeaturesEnabled && questions.length > 0
+            ? html`
+                <div class="d-flex align-items-center gap-2">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light grading-tag-button"
+                    name="export-ai-grading-statistics"
+                    onclick="$('#export-ai-grading-statistics').submit();"
+                    aria-label="Export AI grading statistics"
+                  >
+                    <i class="bi bi-download" aria-hidden="true"></i>
+                    Export AI grading statistics
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light grading-tag-button"
+                    name="ai-grade-all-questions"
+                    onclick="$('#ai-grade-all').submit();"
+                    aria-label="AI grade all questions"
+                  >
+                    <i class="bi bi-stars" aria-hidden="true"></i>
+                    AI grade all questions
+                  </button>
+                </div>
+              `
+            : ''}
         </div>
 
         <div class="table-responsive">

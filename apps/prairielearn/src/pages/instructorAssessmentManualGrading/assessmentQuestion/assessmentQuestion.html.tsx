@@ -2,10 +2,10 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
-import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   compiledScriptTag,
@@ -13,6 +13,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
@@ -23,12 +24,14 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
+  rubric_data,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
+  rubric_data: RubricData | null;
 }) {
   const {
     number_in_alternative_group,
@@ -79,6 +82,7 @@ export function AssessmentQuestion({
           maxAutoPoints: assessment_question.max_auto_points,
           csrfToken: __csrf_token,
           aiGradingMode,
+          rubric_data,
         },
         'instance-question-table-data',
       )}
@@ -86,7 +90,7 @@ export function AssessmentQuestion({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           assessment={assessment}
           courseInstance={course_instance}
           course={course}
@@ -148,7 +152,7 @@ export function AssessmentQuestion({
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
-            ${aiGradingStats.rubric_stats.length
+            ${aiGradingStats.rubric_stats.length > 0
               ? html`
                   <div class="card overflow-hidden mb-3">
                     <div class="table-responsive">
@@ -212,7 +216,7 @@ export function AssessmentQuestion({
         <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
         <div class="card mb-4">
           <div
-            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center gap-2"
           >
             <h1>Student instance questions</h1>
             <div class="d-flex flex-row gap-2">

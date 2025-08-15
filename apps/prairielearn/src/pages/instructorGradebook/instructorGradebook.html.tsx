@@ -1,9 +1,9 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -72,7 +72,7 @@ export function InstructorGradebook({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
           urlPrefix={urlPrefix}

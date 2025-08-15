@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
 
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type Issue, type User } from '../../../lib/db-types.js';
 
 import {
@@ -24,6 +25,7 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -35,6 +37,7 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -59,7 +62,11 @@ export function GradingPanel({
       data-rubric-min-points="${resLocals.rubric_data?.min_points}"
     >
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-      <input type="hidden" name="modified_at" value="${resLocals.instance_question.modified_at}" />
+      <input
+        type="hidden"
+        name="modified_at"
+        value="${resLocals.instance_question.modified_at.toISOString()}"
+      />
       <input type="hidden" name="submission_id" value="${resLocals.submission.id}" />
       <ul class="list-group list-group-flush">
         ${resLocals.assessment_question.max_points
@@ -83,7 +90,7 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable })
+            ? RubricInputSection({ resLocals, disable, aiGradingInfo })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -94,7 +101,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
                 ${resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable })
+                  ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}
               </li>
             `

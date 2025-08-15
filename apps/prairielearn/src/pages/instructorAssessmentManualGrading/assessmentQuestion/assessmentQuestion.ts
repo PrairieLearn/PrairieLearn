@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -28,6 +28,7 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestion } from './assessmentQuestion.html.js';
@@ -38,14 +39,18 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    const rubric_data = await manualGrading.selectRubricData({
+      assessment_question: res.locals.assessment_question,
+    });
     res.send(
       AssessmentQuestion({
         resLocals: res.locals,
@@ -56,6 +61,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
+        rubric_data,
       }),
     );
   }),
@@ -116,6 +122,8 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+    // TODO: parse req.body with Zod
+
     if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -169,7 +177,7 @@ router.post(
         res.locals.assessment.id,
         req.body.instance_question_id,
         null, // submission_id
-        req.body.modified_at,
+        req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
         {
           points: req.body.points,
           manual_points: req.body.manual_points,

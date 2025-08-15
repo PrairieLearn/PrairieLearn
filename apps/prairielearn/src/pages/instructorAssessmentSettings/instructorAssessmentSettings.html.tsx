@@ -1,9 +1,10 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QRCodeModal } from '../../components/QRCodeModal.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -43,7 +44,7 @@ export function InstructorAssessmentSettings({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -61,8 +62,11 @@ export function InstructorAssessmentSettings({
         content: publicLink,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
+          ${GitHubButton(assessmentGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">
@@ -70,9 +74,6 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
-              ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}">view on GitHub</a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
