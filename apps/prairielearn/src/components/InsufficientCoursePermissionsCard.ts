@@ -54,7 +54,7 @@ function InsufficientCoursePermissionsCard({
       <p>You must have at least &quot;${requiredPermissions}&quot; permissions for this course.</p>
       ${hasCoursePermissionOwn
         ? html`<p>
-            You can grant yourself access to student data on the course's
+            You can grant yourself the necessary permissions on the course's
             <a href="${urlPrefix}/course_admin/staff">Staff page</a>.
           </p>`
         : courseOwners.length > 0
