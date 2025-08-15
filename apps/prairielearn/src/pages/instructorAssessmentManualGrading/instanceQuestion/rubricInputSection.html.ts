@@ -1,7 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 
 import type { AssessmentQuestion, RubricGradingItem } from '../../../lib/db-types.js';
-import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
+import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.types.js';
 
 export function RubricInputSection({
   resLocals,
