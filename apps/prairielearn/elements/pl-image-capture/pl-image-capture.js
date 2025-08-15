@@ -1302,7 +1302,7 @@ const MAX_ZOOM_SCALE = 5;
     /**
      * Resets the crop/rotation interface state and any transformations applied to the image.
      */
-    resetAllCropRotation() {
+    async resetAllCropRotation() {
       const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
         '.js-hidden-original-capture-input',
       );
@@ -1313,10 +1313,11 @@ const MAX_ZOOM_SCALE = 5;
 
       this.previousCropRotateState = null;
 
-      this.cancelCropRotate();
+      await this.cancelCropRotate(false);
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl: hiddenOriginalCaptureInput.value,
+        originalCapture: false,
       });
     }
 
@@ -1431,7 +1432,7 @@ const MAX_ZOOM_SCALE = 5;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    async cancelCropRotate() {
+    async cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
@@ -1439,7 +1440,9 @@ const MAX_ZOOM_SCALE = 5;
       await this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      if (revertToLastImage) {
+        this.setHiddenCaptureInputToCapturePreview();
+      }
 
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
