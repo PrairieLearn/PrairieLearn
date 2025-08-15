@@ -21,7 +21,7 @@ FROM
   authn_providers;
 
 -- BLOCK select_institution_authn_providers
-SELECT
+SELECt
   ap.*
 FROM
   authn_providers AS ap

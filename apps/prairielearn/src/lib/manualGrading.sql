@@ -384,7 +384,7 @@ SELECT
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  JOIN questions AS q ON (q.id = aq.question_id)
+  JOIN questions AS q on (q.id = aq.question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)

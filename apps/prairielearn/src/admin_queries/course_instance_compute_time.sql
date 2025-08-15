@@ -5,8 +5,8 @@ WITH
       COUNT(DISTINCT w.id) AS workspace_count,
       sum(
         extract(
-          EPOCH
-          FROM
+          epoch
+          from
             w.launching_duration + w.running_duration
         ) / 3600.0
       ) AS duration_hours
@@ -34,8 +34,8 @@ WITH
       COUNT(DISTINCT gj.id) AS grading_job_count,
       sum(
         extract(
-          EPOCH
-          FROM
+          epoch
+          from
             gj.grading_finished_at - gj.grading_received_at
         ) / 3600.0
       ) AS duration_hours

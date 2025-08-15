@@ -1989,7 +1989,7 @@ export async function initExpress(): Promise<Express> {
     const rawCode = err?.data?.sqlError?.code;
     if (!rawCode?.startsWith('ST')) return null;
 
-    const parsedCode = Number(rawCode.toString().substring(2));
+    const parsedCode = Number(rawCode.toString().slice(2));
     if (Number.isNaN(parsedCode)) return null;
 
     return parsedCode;
@@ -2064,6 +2064,7 @@ export async function startServer(app: express.Express) {
         valueType: opentelemetry.ValueType.INT,
         interval: 1000,
       },
+      // @ts-expect-error TODO: type correctly
       () => {
         return util.promisify(server.getConnections.bind(server))();
       },

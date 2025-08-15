@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  questions AS q
+  questions as q
 WHERE
   q.id = ANY ($question_ids::bigint[])
   AND q.course_id = $course_id;

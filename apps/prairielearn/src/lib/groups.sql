@@ -80,7 +80,7 @@ SELECT
   u.*
 FROM
   group_users AS gu
-  JOIN users AS u ON (u.user_id = gu.user_id)
+  JOIN users as u ON (u.user_id = gu.user_id)
 WHERE
   gu.group_id = $group_id;
 
@@ -148,7 +148,7 @@ SELECT
   gu.user_id,
   u.uid,
   gr.role_name,
-  gr.id AS group_role_id
+  gr.id as group_role_id
 FROM
   group_users AS gu
   JOIN users u ON (gu.user_id = u.user_id)
@@ -164,7 +164,7 @@ WHERE
 SELECT
   g.id
 FROM
-  groups AS g
+  groups as g
   JOIN group_configs AS gc ON g.group_config_id = gc.id
   JOIN group_users AS gu ON gu.group_id = g.id
 WHERE
@@ -183,7 +183,7 @@ WHERE
   AND gc.assessment_id = $assessment_id
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL
-FOR NO KEY UPDATE OF
+FOR NO KEY UPDATE of
   g;
 
 -- BLOCK select_and_lock_group
@@ -207,7 +207,7 @@ WHERE
   AND gc.assessment_id = $assessment_id
   AND g.deleted_at IS NULL
   AND gc.deleted_at IS NULL
-FOR NO KEY UPDATE OF
+FOR NO KEY UPDATE of
   g;
 
 -- BLOCK select_suitable_group_role
@@ -387,11 +387,11 @@ SELECT
       WHERE
         gr.id IS NOT NULL
     ),
-    ARRAY[]::text[]
+    array[]::text[]
   )
 FROM
   group_users AS gu
-  LEFT JOIN json_roles AS jr ON jr.user_id = gu.user_id
+  LEFT JOIN json_roles AS jr on jr.user_id = gu.user_id
   LEFT JOIN group_roles AS gr ON jr.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id

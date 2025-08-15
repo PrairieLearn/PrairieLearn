@@ -18,7 +18,7 @@ SELECT
     SELECT
       1
     FROM
-      questions AS q
+      questions as q
     WHERE
       q.course_id = $course_id
       AND q.deleted_at IS NULL

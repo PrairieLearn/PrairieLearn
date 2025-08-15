@@ -90,7 +90,6 @@ $$;
 CREATE TABLE IF NOT EXISTS users (
   user_id BIGSERIAL PRIMARY KEY,
   uid text UNIQUE NOT NULL,
-  -- squawk-ignore ban-char-field
   uin char(9) UNIQUE,
   name text
 );

@@ -2,7 +2,7 @@ CREATE FUNCTION
     administrators_insert_by_user_uid(
         uid text,
         authn_user_id bigint
-    ) RETURNS void
+    ) returns void
 AS $$
 DECLARE
     user_id bigint;
