@@ -72,7 +72,7 @@ export function InstructorGradebook({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
           urlPrefix={urlPrefix}

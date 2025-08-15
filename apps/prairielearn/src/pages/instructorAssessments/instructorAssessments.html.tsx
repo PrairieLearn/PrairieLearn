@@ -58,7 +58,7 @@ export function InstructorAssessments({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={resLocals.course_instance}
           course={course}
           urlPrefix={urlPrefix}
