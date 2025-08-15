@@ -904,7 +904,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 0);
       });
     });
-    withConfig({ logTestErrors: false }, () => {
+    withConfig({ additionalErrorLogging: false }, () => {
       helperQuestion.getInstanceQuestion(locals);
     });
     describe('access the question', function () {
@@ -919,7 +919,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 1);
       });
     });
-    withConfig({ logTestErrors: false }, () => {
+    withConfig({ additionalErrorLogging: false }, () => {
       helperQuestion.getInstanceQuestion(locals);
     });
     describe('access the question again', function () {

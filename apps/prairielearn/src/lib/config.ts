@@ -92,10 +92,11 @@ export const ConfigSchema = z.object({
    */
 nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
   /**
-   * If true, if an error page is rendered, the error will be logged to the console if in test mode.
-   * You can disable this for tests that expect errors to be logged.
+   * If additionalErrorLogging is false, then:
+   *  - If an error page is rendered, and we are in test mode (i.e. running `vitest`), the error will not be logged to the console.
+   *  - If question server code throws an error, and `config.devMode` is true, the error will not be logged to the console.
    */
-  logTestErrors: z.boolean().default(true),
+  additionalErrorLogging: z.boolean().default(true),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
