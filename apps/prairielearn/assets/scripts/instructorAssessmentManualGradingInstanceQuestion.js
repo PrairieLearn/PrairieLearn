@@ -36,6 +36,22 @@ $(() => {
       })
       .modal('show');
   }
+
+  const goToNextUngradedCheckbox = document.querySelector('#go_to_next_ungraded');
+  const nextInstanceQuestionButton = document.querySelector('#next-instance-question-button');
+  const nextInstanceQuestionLinkData = decodeData('next-instance-question-link-data');
+
+  if (!goToNextUngradedCheckbox) {
+    throw new Error('goToNextUngradedCheckbox not found');
+  }
+  if (!nextInstanceQuestionButton) {
+    throw new Error('nextInstanceQuestionButton not found');
+  }
+
+  goToNextUngradedCheckbox.addEventListener('change', (e) => {
+    const newValue = e.target.checked;
+    nextInstanceQuestionButton.href = `${nextInstanceQuestionLinkData.assessment_question_url}/${newValue ? 'next_ungraded' : 'next'}?prior_instance_question_id=${nextInstanceQuestionLinkData.instance_question_id}`;
+  })
 });
 
 function resetRubricImportFormListeners() {

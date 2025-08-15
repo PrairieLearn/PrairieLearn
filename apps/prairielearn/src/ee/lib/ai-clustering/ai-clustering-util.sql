@@ -25,7 +25,7 @@ WHERE
 
 -- BLOCK select_ai_cluster_assignment_for_instance_question
 SELECT
-    cluster_name
+    ai_clusters.*
 FROM
     ai_cluster_assignments
 JOIN

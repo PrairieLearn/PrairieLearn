@@ -16,7 +16,10 @@ WITH
         $prior_instance_question_id::BIGINT IS NULL
         OR iq.id != $prior_instance_question_id
       )
-      AND iq.requires_manual_grading
+      AND (
+        COALESCE($graded_allowed, FALSE)
+        OR iq.requires_manual_grading
+      )
       AND (
         iq.assigned_grader = $user_id
         OR iq.assigned_grader IS NULL

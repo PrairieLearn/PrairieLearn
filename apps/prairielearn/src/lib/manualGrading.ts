@@ -101,17 +101,20 @@ type RubricItemInput = Partial<RubricItem> & { order: number };
  * @param assessment_question_id - The assessment question being graded.
  * @param user_id - The user_id of the current grader. Typically the current effective user.
  * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param graded_allowed - Whether or not the next instance question URL must be graded.
  */
-export async function nextUngradedInstanceQuestionUrl(
+export async function nextInstanceQuestionUrl(
   urlPrefix: string,
   assessment_id: string,
   assessment_question_id: string,
   user_id: string,
   prior_instance_question_id: string | null,
+  graded_allowed: boolean
 ): Promise<string> {
+  console.log('graded_allowed', graded_allowed);
   const instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_ungraded_instance_question,
-    { assessment_id, assessment_question_id, user_id, prior_instance_question_id },
+    { assessment_id, assessment_question_id, user_id, prior_instance_question_id, graded_allowed },
     IdSchema,
   );
 

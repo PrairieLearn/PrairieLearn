@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { type Issue, type User } from '../../../lib/db-types.js';
@@ -23,7 +24,8 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
-  clusterName
+  clusterName,
+  next_graded_allowed
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -35,7 +37,10 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   clusterName?: string;
+  next_graded_allowed?: boolean;
 }) {
+  console.log('next_graded_allowed', next_graded_allowed);
+
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
@@ -46,6 +51,10 @@ export function GradingPanel({
   skip_text = skip_text || 'Next';
 
   return html`
+    ${EncodedData({
+      assessment_question_url,
+      instance_question_id: resLocals.instance_question.id
+    }, 'next-instance-question-link-data')}
     <form
       name="manual-grading-form"
       method="POST"
@@ -83,14 +92,14 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        <li class="list-group-item">          
-          ${clusterName ? html`
-            <div class="mb-3">
-              <span class="w-100">
-                Cluster: ${clusterName}
-              </span>
-            </div>
-          ` : ''}
+        ${clusterName ? html`
+          <li class="list-group-item">
+            <span>
+              Cluster: ${clusterName}
+            </span>
+          </li>
+        ` : ''}
+        <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
@@ -151,24 +160,84 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center">
+          <div class="form-check">
+            <input
+              id="go_to_next_ungraded"
+              type="checkbox"
+              class="form-check-input"
+              name="go_to_next_ungraded"
+              value="true"
+              ${!next_graded_allowed ? 'checked' : ''}
+            />
+            <label class="form-check-label" for="go_to_next_ungraded">
+              Go to next ungraded
+            </label>
+          </div>
           <span class="ms-auto">
             ${!disable
               ? html`
-                  <button
-                    type="submit"
-                    class="btn btn-primary"
-                    name="__action"
-                    value="add_manual_grade"
-                  >
-                    Grade
-                  </button>
+                  ${clusterName ? html`
+                    <div class="btn-group">
+                      <button
+                        type="submit"
+                        class="btn btn-primary"
+                        name="__action"
+                        value="add_manual_grade"
+                      >
+                        Grade
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                        data-bs-toggle="dropdown"
+                        aria-haspopup="true"
+                        aria-expanded="false"
+                      ></button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="add_manual_grade"
+                        >
+                          This instance question
+                        </button>
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="add_manual_grade_for_cluster_ungraded"
+                        >
+                          All ungraded instance questions in cluster
+                        </button>
+                        <button
+                          type="submit"
+                          class="dropdown-item"
+                          name="__action"
+                          value="add_manual_grade_for_cluster"
+                        >
+                          All instance questions in cluster
+                        </button>
+                      </div>
+
+                    </div>
+                  ` : html`
+                    <button
+                      type="submit"
+                      class="btn btn-primary"
+                      name="__action"
+                      value="add_manual_grade"
+                    >
+                      Grade
+                    </button>
+                  `}
                 `
               : ''}
             <div class="btn-group">
               <a
+                id="next-instance-question-button"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next_ungraded?prior_instance_question_id=${resLocals
-                  .instance_question.id}"
+                href="${assessment_question_url}/${next_graded_allowed ? 'next' : 'next_ungraded'}?prior_instance_question_id=${resLocals.instance_question.id}"
               >
                 ${skip_text}
               </a>

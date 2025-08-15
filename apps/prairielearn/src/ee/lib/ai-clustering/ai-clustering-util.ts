@@ -64,7 +64,7 @@ export async function getAiClusterAssignmentForInstanceQuestion({
 }) {
     return await queryOptionalRow(sql.select_ai_cluster_assignment_for_instance_question, {
         instance_question_id: instanceQuestionId
-    }, z.string().nullable());
+    }, AiClusterSchema);
 }
 
 export async function getAiClusterAssignment({

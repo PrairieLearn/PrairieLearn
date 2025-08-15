@@ -76,3 +76,22 @@ SELECT
   jsonb_build_object('open', i.open)
 FROM
   updated_issues AS i;
+
+-- BLOCK select_instance_question_ids_in_cluster
+SELECT
+  aca.instance_question_id,
+  s.id AS submission_id
+FROM
+  ai_cluster_assignments AS aca
+  JOIN instance_questions AS iq
+    ON iq.id = aca.instance_question_id
+  JOIN assessment_instances AS ai
+    ON ai.id = iq.assessment_instance_id
+  JOIN variants as v
+    ON v.instance_question_id = iq.id
+  JOIN submissions AS s
+    ON s.variant_id = v.id
+WHERE
+  aca.ai_cluster_id            = $cluster_id
+  AND ai.assessment_id          = $assessment_id
+  AND iq.requires_manual_grading = NOT($graded_allowed);

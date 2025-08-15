@@ -4,8 +4,10 @@ import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
+import { getAiClusterAssignmentForInstanceQuestion } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
@@ -23,7 +25,6 @@ import {
   InstanceQuestion,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
-import { getAiClusterAssignmentForInstanceQuestion } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -81,7 +82,7 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    const clusterName = await getAiClusterAssignmentForInstanceQuestion({
+    const cluster = await getAiClusterAssignmentForInstanceQuestion({
       instanceQuestionId: res.locals.instance_question.id
     });
 
@@ -90,7 +91,8 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        clusterName
+        clusterName: cluster?.cluster_name,
+        next_graded_allowed: req.query.next_graded_allowed === 'true'
       }),
     );
   }),
@@ -147,7 +149,11 @@ router.get(
 
 const PostBodySchema = z.union([
   z.object({
-    __action: z.literal('add_manual_grade'),
+    __action: z.union([
+      z.literal('add_manual_grade'),
+      z.literal('add_manual_grade_for_cluster'),
+      z.literal('add_manual_grade_for_cluster_ungraded'),
+    ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
@@ -167,6 +173,9 @@ const PostBodySchema = z.union([
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
+    go_to_next_ungraded: z.string().optional().transform((val) => {
+      return val === 'true'
+    })
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -218,6 +227,7 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
@@ -238,7 +248,6 @@ router.post(
             adjust_points: body.score_manual_adjust_points || null,
           }
         : undefined;
-
       const { modified_at_conflict, grading_job_id } =
         await manualGrading.updateInstanceQuestionScore(
           res.locals.assessment.id,
@@ -267,14 +276,88 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
         });
       }
+
+      console.log('body.go_to_next_ungraded', body.go_to_next_ungraded);
+
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-        ),
+          !body.go_to_next_ungraded
+        ) + (!body.go_to_next_ungraded ? '?next_graded_allowed=true' : '')
+      );
+    // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
+    } else if (body.__action === 'add_manual_grade_for_cluster_ungraded' || body.__action === 'add_manual_grade_for_cluster') {
+      const cluster = await getAiClusterAssignmentForInstanceQuestion({
+        instanceQuestionId: res.locals.instance_question.id
+      });
+      if (!cluster) {
+        throw new error.HttpStatusError(404, 'AI cluster not found');
+      }
+
+      const instanceQuestionsInCluster = await sqldb.queryRows(
+        sql.select_instance_question_ids_in_cluster,
+        {
+          cluster_id: cluster?.id,
+          assessment_id: res.locals.assessment.id,
+          graded_allowed: body.__action === 'add_manual_grade_for_cluster'
+        },
+        z.object({
+          instance_question_id: z.string(),
+          submission_id: z.string()
+        })
+      );
+
+      console.log('instanceQuestionIdsInCluster', instanceQuestionsInCluster);
+
+      const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
+        ? {
+            rubric_id: res.locals.assessment_question.manual_rubric_id,
+            applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: body.score_manual_adjust_points || null,
+          }
+        : undefined;
+    
+      for (const instanceQuestion of instanceQuestionsInCluster) {
+        console.log('Instance question id', instanceQuestion);
+
+        const { modified_at_conflict } =
+          await manualGrading.updateInstanceQuestionScore(
+            res.locals.assessment.id,
+            instanceQuestion.instance_question_id,
+            instanceQuestion.submission_id,
+            null,
+            {
+              manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
+              manual_points: body.use_score_perc ? null : body.score_manual_points,
+              auto_score_perc: body.use_score_perc ? body.score_auto_percent : null, // maybe different
+              auto_points: body.use_score_perc ? null : body.score_auto_points, // maybe different
+              feedback: { manual: body.submission_note },
+              manual_rubric_data,
+            },
+            res.locals.authn_user.user_id,
+          );
+
+        if (modified_at_conflict) {
+          flash('error', 'A conflict occurred while grading the submission. Please try again.');
+          return res.redirect(req.baseUrl);
+        }
+      }      
+
+      res.redirect(
+        await manualGrading.nextInstanceQuestionUrl(
+          res.locals.urlPrefix,
+          res.locals.assessment.id,
+          res.locals.assessment_question.id,
+          res.locals.authz_data.user.user_id,
+          res.locals.instance_question.id,
+          !body.go_to_next_ungraded
+        ) + (!body.go_to_next_ungraded ? '?next_graded_allowed=true' : '')
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
@@ -314,12 +397,13 @@ router.post(
       });
 
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
+          false
         ),
       );
     } else if (body.__action === 'report_issue') {
