@@ -51,6 +51,10 @@
       "url": "/apps/prairielearn/src/schemas/schemas/infoQuestion.json"
     },
     {
+      "fileMatch": ["apps/prairielearn/elements/**/info.json"],
+      "url": "/apps/prairielearn/src/schemas/schemas/infoElementCore.json"
+    },
+    {
       "fileMatch": ["config.json"],
       "url": "/docs/assets/config-unified.schema.json"
     },
