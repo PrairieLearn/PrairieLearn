@@ -9,6 +9,16 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+  'lti13_pending',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -536,7 +546,13 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  user_id: IdSchema,
+  // View constraints on LTI and invitation states in 20250707220720_enrollments__meta_columns__add.sql
+  lti_managed: z.boolean(),
+  pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_sub: z.string().nullable(),
+  pending_uid: z.string().nullable(),
+  status: EnumEnrollmentStatusSchema,
+  user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
