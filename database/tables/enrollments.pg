@@ -15,6 +15,7 @@ indexes
     enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
     enrollments_course_instance_id_idx: USING btree (course_instance_id)
+    enrollments_pending_lti13_instance_id_idx: USING btree (pending_lti13_instance_id)
 
 check constraints
     enrollments_exactly_one_null_user_id_pending_uid: CHECK (user_id IS NULL AND pending_uid IS NOT NULL OR user_id IS NOT NULL AND pending_uid IS NULL)
