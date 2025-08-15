@@ -94,7 +94,7 @@ SET
   END
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::BIGINT[]);
+  AND iq.id = ANY ($instance_question_ids::bigint[]);
 
 -- BLOCK toggle_ai_grading_mode
 UPDATE assessment_questions
