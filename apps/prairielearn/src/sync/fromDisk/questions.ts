@@ -63,6 +63,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     workspace_comment: q.workspaceOptions?.comment,
     share_publicly: q.sharePublicly ?? false,
     share_source_publicly: q.shareSourcePublicly ?? false,
+    questionParams: q.questionParams ?? {},
   };
 }
 
@@ -79,7 +80,6 @@ export async function sync(
       getParamsForQuestion(qid, question.data),
     ]);
   });
-
   const result = await sqldb.callRow(
     'sync_questions',
     [questionParams, courseId],
