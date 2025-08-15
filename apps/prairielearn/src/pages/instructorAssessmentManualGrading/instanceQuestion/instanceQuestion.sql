@@ -83,8 +83,8 @@ SELECT
   gj.manual_rubric_grading_id,
   agj.prompt
 FROM
-  grading_jobs as gj
-  LEFT JOIN ai_grading_jobs as agj ON (agj.grading_job_id = gj.id)
+  grading_jobs AS gj
+  LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
 WHERE
   submission_id = $submission_id
   AND grading_method = 'AI'

@@ -1521,7 +1521,7 @@ WITH
       ntile(5) OVER (
         ORDER BY
           assessment_scores_by_user_or_group.score_perc
-      ) as quintile
+      ) AS quintile
     FROM
       assessment_scores_by_user_or_group
   ),

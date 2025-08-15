@@ -22,7 +22,7 @@ SELECT
   (
     SELECT
       substring(
-        pg_catalog.pg_get_expr (d.adbin, d.adrelid) for 128
+        pg_catalog.pg_get_expr (d.adbin, d.adrelid) FOR 128
       )
     FROM
       pg_catalog.pg_attrdef d
