@@ -70,7 +70,7 @@ SELECT
     WHERE
       batched_migration_id = $batched_migration_id
       AND status = 'pending'
-  ) AS exists;
+  ) as exists;
 
 -- BLOCK batched_migration_has_failed_jobs
 SELECT
@@ -82,7 +82,7 @@ SELECT
     WHERE
       batched_migration_id = $batched_migration_id
       AND status = 'failed'
-  ) AS exists;
+  ) as exists;
 
 -- BLOCK get_migration_status
 SELECT
