@@ -23,9 +23,9 @@ ADD COLUMN pending_lti13_sub TEXT;
 -- This should only happen if the user is in the 'lti13_pending' state.
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_instance_id BIGINT REFERENCES lti13_course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE;
- 
- -- lti13_course_instances can be hard deleted, which cascades to deleting associated enrollments.
- -- We index this column to speed up the deletion of those enrollments and avoid a table scan.
+
+-- lti13_course_instances can be hard deleted, which cascades to deleting associated enrollments.
+-- We index this column to speed up the deletion of those enrollments and avoid a table scan.
 CREATE INDEX enrollments_pending_lti13_instance_id_idx ON enrollments (pending_lti13_instance_id);
 
 ALTER TABLE enrollments
