@@ -73,6 +73,5 @@
   "[json]": {
     "files.insertFinalNewline": true
   },
-  "vitest.maximumConfigs": 100,
-  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
+  "vitest.maximumConfigs": 100
 }

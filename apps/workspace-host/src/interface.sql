@@ -56,7 +56,7 @@ SET
   ready_at = EXCLUDED.ready_at;
 
 -- BLOCK update_load_count
-UPDATE workspace_hosts AS wh
+UPDATE workspace_hosts as wh
 SET
   load_count = (
     SELECT
