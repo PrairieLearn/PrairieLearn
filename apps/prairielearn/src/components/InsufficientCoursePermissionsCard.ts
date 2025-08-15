@@ -2,8 +2,8 @@ import { html } from '@prairielearn/html';
 
 import { type User } from '../lib/db-types.js';
 
-import { PageLayout } from './PageLayout.js';
 import type { NavContext } from './Navbar.types.js';
+import { PageLayout } from './PageLayout.js';
 
 export function InsufficientCoursePermissionsCardPage({
   resLocals,

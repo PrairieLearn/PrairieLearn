@@ -7,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import {
   checkAssessmentInstanceBelongsToCourseInstance,
@@ -22,7 +23,6 @@ import {
   type GradebookRow,
   GradebookRowSchema,
 } from './instructorGradebook.types.js';
-import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
