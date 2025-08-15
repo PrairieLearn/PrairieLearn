@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
