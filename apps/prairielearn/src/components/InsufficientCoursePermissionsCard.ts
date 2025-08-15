@@ -26,21 +26,24 @@ export function InsufficientCoursePermissionsCardPage({
       courseOwners,
       pageTitle,
       requiredPermissions,
-      resLocals,
+      hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
+      urlPrefix: resLocals.urlPrefix,
     }),
   });
 }
 
-export function InsufficientCoursePermissionsCard({
+function InsufficientCoursePermissionsCard({
   courseOwners,
   pageTitle,
-  resLocals,
   requiredPermissions,
+  hasCoursePermissionOwn,
+  urlPrefix,
 }: {
   courseOwners: User[];
   pageTitle: string;
-  resLocals: Record<string, any>;
   requiredPermissions: string;
+  hasCoursePermissionOwn: boolean;
+  urlPrefix: string;
 }) {
   return html`<div class="card mb-4">
     <div class="card-header bg-danger text-white">
@@ -49,10 +52,10 @@ export function InsufficientCoursePermissionsCard({
     <div class="card-body">
       <h2>Insufficient permissions</h2>
       <p>You must have at least &quot;${requiredPermissions}&quot; permissions for this course.</p>
-      ${resLocals.authz_data.has_course_permission_own
+      ${hasCoursePermissionOwn
         ? html`<p>
             You can grant yourself access to student data on the course's
-            <a href="${resLocals.urlPrefix}/course_admin/staff">Staff page</a>.
+            <a href="${urlPrefix}/course_admin/staff">Staff page</a>.
           </p>`
         : courseOwners.length > 0
           ? html`
