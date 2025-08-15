@@ -503,7 +503,7 @@ async function processQuestionPhase<T>(
     result = res.result;
     output = res.output;
   } catch (err) {
-    if (config.devMode && config.logTestErrors) {
+    if (config.devMode && config.additionalErrorLogging) {
       logger.error(
         `Error in processQuestionPhase(${phase}) for question ${context.question.directory}`,
         err,
@@ -647,7 +647,7 @@ async function processQuestionServer<T extends ExecutionData>(
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
   } catch (err) {
-    if (config.devMode && config.logTestErrors) {
+    if (config.devMode && config.additionalErrorLogging) {
       logger.error(
         `Error in processQuestionServer(${phase}) for question ${context.question.directory}`,
         err,
