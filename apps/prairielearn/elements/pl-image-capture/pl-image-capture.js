@@ -204,7 +204,9 @@ const MAX_ZOOM_SCALE = 5;
       const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
       const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
 
-      const useFullImageButton = this.imageCaptureDiv.querySelector('.js-use-full-image-button');
+      const cropRotateResetButton = this.imageCaptureDiv.querySelector(
+        '.js-crop-rotate-reset-button',
+      );
 
       this.ensureElementsExist({
         cropRotateButton,
@@ -214,7 +216,7 @@ const MAX_ZOOM_SCALE = 5;
         rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
-        useFullImageButton,
+        cropRotateResetButton,
       });
 
       cropRotateButton.addEventListener('click', () => {
@@ -249,8 +251,22 @@ const MAX_ZOOM_SCALE = 5;
         this.cancelCropRotate();
       });
 
-      useFullImageButton.addEventListener('click', () => {
-        this.selectFullImage();
+      cropRotateResetButton.addEventListener('click', () => {
+        const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+          '.js-hidden-original-capture-input',
+        );
+
+        this.ensureElementsExist({
+          hiddenOriginalCaptureInput,
+        });
+
+        this.previousCropRotateState = null;
+
+        this.cancelCropRotate();
+
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: hiddenOriginalCaptureInput.value,
+        });
       });
     }
 
@@ -1419,7 +1435,10 @@ const MAX_ZOOM_SCALE = 5;
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
     }
 
-    async selectFullImage() {
+    /**
+     * Resets all transformations, selects the entire image for use, and exits the crop/rotate mode.
+     */
+    async resetAllCropRotation() {
       this.ensureCropperExists();
 
       const cropperImage = this.cropper.getCropperImage();
@@ -1444,7 +1463,10 @@ const MAX_ZOOM_SCALE = 5;
 
       // Save the selection to the hidden input field.
       await this.saveCropperSelectionToHiddenInput();
+
+      this.confirmCropRotateChanges();
     }
+
     /**
      * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
      */
