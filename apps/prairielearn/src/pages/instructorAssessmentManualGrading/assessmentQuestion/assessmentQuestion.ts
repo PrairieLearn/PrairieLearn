@@ -156,7 +156,7 @@ router.post(
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
 
-        const jobSequenceId = await aiGrade({
+        const jobSequenceId = await aiCluster({
           question: res.locals.question,
           course: res.locals.course,
           course_instance_id: res.locals.course_instance.id,
@@ -164,7 +164,6 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
-          mode: 'selected',
           instance_question_ids,
         });
 
