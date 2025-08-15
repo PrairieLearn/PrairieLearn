@@ -260,9 +260,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
 
         help_text = (
-            "Drag answer tiles into the answer area to the "
-            + dropzone_layout.value
-            + ". "
+            f"Move answer blocks from the options area to the {dropzone_layout.value}."
         )
 
         if inline and check_indentation:
@@ -277,10 +275,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
-        if check_indentation:
-            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
+        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks. With a block selected, up/down arrows to reorder; left/right arrows to move between the options area and answer area.</p>"
 
-        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
+        if check_indentation:
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
 
         uuid = pl.get_uuid()
         html_params = {
@@ -441,6 +439,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+
     student_answer = json.loads(student_answer)
 
     if (not allow_blank_submission) and (
@@ -544,6 +543,7 @@ def construct_feedback(
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
+
     student_answer = data["submitted_answers"][answer_name]
     grading_method = pl.get_enum_attrib(
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
