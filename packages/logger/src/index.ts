@@ -5,7 +5,53 @@ export const logger = createLogger({
   transports: [
     new transports.Console({
       level: 'info',
-      format: format.combine(format.colorize(), format.simple()),
+      format: format.combine(
+        format((info) => {
+          // If info is an Error object with data from a code caller, we will log
+          // the stdout and stderr from the code caller separately.
+
+          // We avoid logging the stdout and stderr in this transport to avoid
+          // duplicating the output in multiple locations.
+          const { data, ...infoRest } = info;
+          const {
+            outputStdout: _outputStdout,
+            outputStderr: _outputStderr,
+            outputBoth: _outputBoth,
+            ...dataRest
+          } = (data ?? {}) as any;
+          return { ...infoRest, data: info.data ? dataRest : undefined };
+        })(),
+        format.colorize(),
+        format.simple(),
+      ),
+    }),
+    // Format outputStdout and outputStderr as separate lines.
+    // This will come from info.data if info is an Error object.
+    new transports.Console({
+      level: 'error',
+      format: format.combine(
+        format((info) => {
+          const { outputStdout, outputStderr } = (info?.data ?? {}) as any;
+          if (typeof outputStdout !== 'string' || typeof outputStderr !== 'string') {
+            return false;
+          }
+          if (outputStdout.length === 0 && outputStderr.length === 0) {
+            return false;
+          }
+          return info;
+        })(),
+        format.printf((info) => {
+          const { outputStdout, outputStderr } = (info?.data ?? {}) as any;
+          let output = '';
+          if (outputStdout) {
+            output += `[stdout] ${outputStdout}`;
+          } else if (outputStderr) {
+            output += `[stderr] ${outputStderr}`;
+          }
+
+          return output;
+        }),
+      ),
     }),
   ],
 });
