@@ -54,6 +54,8 @@ BEGIN
         SELECT DISTINCT ON (src_short_name)
             src.short_name AS src_short_name,
             src.uuid AS src_uuid,
+             -- This join ID is only used for inserts, and not used on updates
+            src.join_id AS src_join_id,
             dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
@@ -83,8 +85,8 @@ BEGIN
     insert_unmatched_src_rows AS (
         -- UTC is used as a temporary timezone, which will be updated in following statements
         INSERT INTO course_instances AS dest
-            (course_id, short_name, uuid, display_timezone, deleted_at)
-        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
+            (course_id, short_name, uuid, display_timezone, deleted_at, join_id)
+        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL, src_join_id
         FROM matched_rows
         WHERE dest_id IS NULL
         -- This is a total hack, but the test suite hardcoded course instance ID 1
