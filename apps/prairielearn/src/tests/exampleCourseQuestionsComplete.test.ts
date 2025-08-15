@@ -78,6 +78,13 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
+    .on('.pl-order-blocks-connected-sortable', {
+      element(el) {
+        // pl-order-blocks containers have a label to make it clear where, but
+        // html-validate claims that it's not recommended to set aria-label on a `ul` element.
+        el.removeAttribute('aria-label');
+      },
+    })
     .on('select > option[aria-label]', {
       element(el) {
         // Our blank option has no text by default.
