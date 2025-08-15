@@ -4,12 +4,12 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../../lib/db-types.js';
-import { type QuestionJson } from '../../schemas/index.js';
+import { type QuestionJsonInput } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { isDraftQid } from '../question.js';
 
-function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
+function getParamsForQuestion(qid: string, q: QuestionJsonInput | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
