@@ -61,7 +61,7 @@ export function InstructorGradebook({
           csvFilename,
           csrfToken: __csrf_token,
           hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
-          courseAssessments: courseAssessments ?? [],
+          courseAssessments,
         },
         'gradebook-data',
       )}
