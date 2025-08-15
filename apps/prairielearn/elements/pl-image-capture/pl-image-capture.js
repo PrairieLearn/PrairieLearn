@@ -1259,7 +1259,8 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
-     * Resets the crop/rotate interface state. Does not reset transformations to the captured image.
+     * Resets the cropper selection, rotation amount, and flip states without
+     * affecting the actual transformations applied to the captured image.
      */
     resetCropRotateInterfaceState() {
       this.ensureCropperExists();
