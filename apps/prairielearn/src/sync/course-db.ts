@@ -1344,6 +1344,13 @@ async function validateCourseInstance({
     }
   }
 
+  if (courseInstance.enrollment.selfEnrollment !== true) {
+    errors.push('"selfEnrollment" is not configurable yet.');
+  }
+  if (courseInstance.enrollment.ltiEnforced !== false) {
+    errors.push('"ltiEnforced" is not configurable yet.');
+  }
+
   let accessibleInFuture = false;
   (courseInstance.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);

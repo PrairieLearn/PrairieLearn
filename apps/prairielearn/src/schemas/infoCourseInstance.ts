@@ -46,6 +46,34 @@ export const CourseInstanceJsonSchema = z
       )
       .optional(),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
+    enrollment: z
+      .object({
+        selfEnrollment: z
+          .union([
+            z
+              .boolean()
+              .describe(
+                'If true, allows users to enroll themselves. If false, users cannot enroll themselves, and must be either invited or added in the UI.',
+              ),
+            z.object({
+              beforeDate: z
+                .string()
+                .describe(
+                  'Before this date, selfEnrollment is true. After this date, selfEnrollment is false.',
+                ),
+            }),
+          ])
+          .default(true),
+        ltiEnforced: z
+          .union([
+            z.boolean().describe('If true, LTI enrollment is enforced.'),
+            z.object({
+              beforeDate: z.string().describe('Before this date, ltiEnforced is true.'),
+            }),
+          ])
+          .default(false),
+      })
+      .default({}),
     hideInEnrollPage: z
       .boolean()
       .describe(
