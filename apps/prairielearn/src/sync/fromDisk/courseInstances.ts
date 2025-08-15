@@ -39,8 +39,6 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
 
   return {
     uuid: courseInstance.uuid,
-    // This join ID is only used for inserts, and not used on updates
-    join_id: generateJoinId(),
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
@@ -100,6 +98,8 @@ export async function sync(
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
+        // This join ID is only used for inserts, and not used on updates
+        generateJoinId(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
