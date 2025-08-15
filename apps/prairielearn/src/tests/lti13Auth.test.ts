@@ -22,6 +22,7 @@ import {
   makeLoginExecutor,
   withServer,
 } from './lti13TestHelpers.js';
+import { withConfig } from './utils/config.js';
 
 const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
 const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
@@ -124,8 +125,10 @@ describe('LTI 1.3 authentication', () => {
     assert.equal(res.status, 200);
 
     // Logging in again should fail because of nonce reuse.
-    const repeatLoginRes = await executor.login();
-    assert.equal(repeatLoginRes.status, 500);
+    await withConfig({ logTestErrors: false }, async () => {
+      const repeatLoginRes = await executor.login();
+      assert.equal(repeatLoginRes.status, 500);
+    });
   });
 
   test.sequential('validate login', async () => {
@@ -149,19 +152,21 @@ describe('LTI 1.3 authentication', () => {
   test.sequential('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
-    // Malformed login - missing login_hint
-    const startBadLoginResponse = await fetchWithCookies(
-      `${siteUrl}/pl/lti13_instance/1/auth/login`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          iss: siteUrl,
-          target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
-        }),
-        redirect: 'manual',
-      },
-    );
-    assert.equal(startBadLoginResponse.status, 500);
+// Malformed login - missing login_hint
+    await withConfig({ logTestErrors: false }, async () => {
+      const startBadLoginResponse = await fetchWithCookies(
+        `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            iss: siteUrl,
+            target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
+          }),
+          redirect: 'manual',
+        },
+      );
+      assert.equal(startBadLoginResponse.status, 500);
+    });
 
     // Successful login to test malformed response
     const startLoginResponse = await fetchWithCookies(`${siteUrl}/pl/lti13_instance/1/auth/login`, {
@@ -184,20 +189,21 @@ describe('LTI 1.3 authentication', () => {
     const redirectUri = redirectUrl.searchParams.get('redirect_uri');
     const nonce = redirectUrl.searchParams.get('nonce');
 
-    assert.ok(redirectUri);
+assert.ok(redirectUri);
     assert.ok(nonce);
 
     // Missing state parameter should error
-    const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
-      method: 'POST',
-      body: new URLSearchParams({
-        nonce,
-        id_token: 'junkjunkjunk',
-      }),
-      redirect: 'manual',
+    await withConfig({ logTestErrors: false }, async () => {
+      const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
+        method: 'POST',
+        body: new URLSearchParams({
+          nonce,
+          id_token: 'junkjunkjunk',
+        }),
+        redirect: 'manual',
+      });
+      assert.equal(finishBadLoginResponse.status, 500);
     });
-
-    assert.equal(finishBadLoginResponse.status, 500);
   });
 
   test.sequential('request access token', async () => {
@@ -458,29 +464,32 @@ describe('LTI 1.3 authentication', () => {
     test.sequential('login should fail with misconfiguration error', async () => {
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
 
-      const executor = await makeLoginExecutor({
-        user: {
-          name: 'Test User',
-          email: 'test-user@example.com',
-          uin: '123456789',
-          sub: USER_SUB,
-        },
-        fetchWithCookies,
-        oidcProviderPort,
-        keystore,
-        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
-        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
-        targetLinkUri,
+      await withConfig({ logTestErrors: false }, async () => {
+        const executor = await makeLoginExecutor({
+          user: {
+            name: 'Test User',
+            email: 'test-user@example.com',
+            uin: '123456789',
+            sub: USER_SUB,
+          },
+          fetchWithCookies,
+          oidcProviderPort,
+          keystore,
+          loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
+          callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+          targetLinkUri,
+        });
+
+        const res = await executor.login();
+        assert.equal(res.status, 500);
+
+        // The error response should contain our misconfiguration error message
+        const responseText = await res.text();
+        assert.include(
+          responseText,
+          'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+        );
       });
-
-      const res = await executor.login();
-      assert.equal(res.status, 500);
-
-      const responseText = await res.text();
-      assert.include(
-        responseText,
-        'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
-      );
     });
   });
 });

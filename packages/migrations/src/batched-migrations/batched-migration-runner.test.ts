@@ -151,7 +151,7 @@ describe('BatchedMigrationExecutor', () => {
     const migrationImplementation = makeTestBatchMigration();
     migrationImplementation.setFailingIds([1n, 5010n]);
     const runner = new BatchedMigrationRunner(migration, migrationImplementation);
-    await runner.run();
+    await runner.run({ logError: false });
 
     const jobs = await getBatchedMigrationJobs(migration.id);
     const failedJobs = jobs.filter((job) => job.status === 'failed');

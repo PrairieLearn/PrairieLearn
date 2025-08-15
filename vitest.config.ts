@@ -3,7 +3,13 @@ import crypto from 'node:crypto';
 import { slash } from '@vitest/utils/helpers';
 import { resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification } from 'vitest/node';
+import {
+  BaseSequencer,
+  type TestCase,
+  type TestModuleState,
+  type TestSpecification,
+} from 'vitest/node';
+import { DefaultReporter } from 'vitest/reporters';
 
 // Vitest will try to intelligently sequence the test suite based on which ones
 // are slowest. However, this depends on cached data from previous runs, which
@@ -101,6 +107,28 @@ class CustomSequencer extends BaseSequencer {
   }
 }
 
+/**
+ * This custom reporter is used to override the default reporter
+ * to not print successful tests live. They clutter the output,
+ * making it harder to see slow and failing tests as they occur.
+ */
+export class SlowAndFailingReporter extends DefaultReporter {
+  renderSucceed = false;
+  onTestRunStart(_: readonly TestSpecification[]): void {}
+  printTestCase(moduleState: TestModuleState, test: TestCase) {
+    // The original reporter prints all test case failures in a module if *any* in that
+    // module failed.
+
+    // This custom reporter overrides the default reporter to *only* print the slow
+    // and failing tests.
+    // See https://github.com/vitest-dev/vitest/blob/512ac7f8d6f3ccb242dc14972f1bcda93abfeed2/packages/vitest/src/node/reporters/base.ts#L212-L214
+    if (moduleState === 'failed') {
+      moduleState = 'passed';
+    }
+    super.printTestCase(moduleState, test);
+  }
+}
+
 export const sharedConfig = defineConfig({
   test: {
     isolate: false,
@@ -123,7 +151,7 @@ export const sharedConfig = defineConfig({
             },
           ],
         ]
-      : ['default'],
+      : [new SlowAndFailingReporter()],
   },
 });
 

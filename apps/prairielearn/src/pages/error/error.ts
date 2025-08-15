@@ -4,7 +4,7 @@ import jsonStringifySafe from 'json-stringify-safe';
 import { AugmentedError, formatErrorStackSafe } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
-import { config } from '../../lib/config.js';
+import { DEV_EXECUTION_MODE, config } from '../../lib/config.js';
 
 import { ErrorPage } from './error.html.js';
 
@@ -47,18 +47,21 @@ export default (function (err, req, res, _next) {
 
   const referrer = req.get('Referrer') || null;
 
-  logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
-    msg: err.message,
-    id: errorId,
-    status: err.status,
-    // Use the "safe" version when logging so that we don't error out while
-    // trying to log the actual error.
-    stack: formatErrorStackSafe(err),
-    data: jsonStringifySafe(err.data),
-    url: req.url,
-    referrer,
-    response_id: res.locals.response_id,
-  });
+  const logError = DEV_EXECUTION_MODE !== 'test' || config.logTestErrors;
+  if (logError) {
+    logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
+      msg: err.message,
+      id: errorId,
+      status: err.status,
+      // Use the "safe" version when logging so that we don't error out while
+      // trying to log the actual error.
+      stack: formatErrorStackSafe(err),
+      data: jsonStringifySafe(err.data),
+      url: req.url,
+      referrer,
+      response_id: res.locals.response_id,
+    });
+  }
 
   // Handle errors for tRPC requests (e.g., CSRF failures before tRPC middleware runs).
   // Format the response to match tRPC's expected JSON-RPC 2.0 error structure.

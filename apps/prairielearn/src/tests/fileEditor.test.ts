@@ -24,6 +24,7 @@ import {
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
+import { withConfig } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -318,44 +319,46 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
       // `fetch()` pre-normalizes the URL, which means we can't use it to test
       // path traversal attacks. In this specific case, we'll use `http.request()`
       // directly to avoid this normalization.
-      const res = await new Promise<{ status: number; text: () => Promise<string> }>(
-        (resolve, reject) => {
-          // We deliberately use the deprecated `node:url#parse()` instead of
-          // `new URL()` to avoid path normalization.
-          const parsedUrl = nodeUrl.parse(url);
-          const req = http.request(
-            {
-              hostname: 'localhost',
-              port: config.serverPort,
-              path: parsedUrl.path,
-              method: 'GET',
-            },
-            (res) => {
-              let data = '';
+      await withConfig({ logTestErrors: false }, async () => {
+        const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+          (resolve, reject) => {
+            // We deliberately use the deprecated `node:url#parse()` instead of
+            // `new URL()` to avoid path normalization.
+            const parsedUrl = nodeUrl.parse(url);
+            const req = http.request(
+              {
+                hostname: 'localhost',
+                port: config.serverPort,
+                path: parsedUrl.path,
+                method: 'GET',
+              },
+              (res) => {
+                let data = '';
 
-              res.on('data', (chunk) => {
-                data += chunk;
-              });
-
-              res.on('end', () => {
-                resolve({
-                  status: res.statusCode ?? 500,
-                  text: () => Promise.resolve(data),
+                res.on('data', (chunk) => {
+                  data += chunk;
                 });
-              });
-            },
-          );
 
-          req.on('error', (err) => {
-            reject(err);
-          });
+                res.on('end', () => {
+                  resolve({
+                    status: res.statusCode ?? 500,
+                    text: () => Promise.resolve(data),
+                  });
+                });
+              },
+            );
 
-          req.end();
-        },
-      );
+            req.on('error', (err) => {
+              reject(err);
+            });
 
-      assert.equal(res.status, expected_status);
-      page = await res.text();
+            req.end();
+          },
+        );
+
+        assert.equal(res.status, expected_status);
+        page = await res.text();
+      });
     });
     if (should_parse) {
       it('should parse', function () {

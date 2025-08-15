@@ -90,7 +90,12 @@ export const ConfigSchema = z.object({
    * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
-  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
+nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
+  /**
+   * If true, if an error page is rendered, the error will be logged to the console if in test mode.
+   * You can disable this for tests that expect errors to be logged.
+   */
+  logTestErrors: z.boolean().default(true),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
