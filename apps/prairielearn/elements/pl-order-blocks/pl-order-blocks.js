@@ -160,6 +160,7 @@ window.PLOrderBlocks = function (uuid, options) {
                 // Moving to the answer area
                 $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
                 if (enableIndentation) {
+                  // when inserting a block, default to the same indentation level as the previous block
                   if (block.previousElementSibling) {
                     setIndentation(block, getIndentation(block.previousElementSibling) * TABWIDTH);
                   } else {
