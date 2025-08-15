@@ -56,7 +56,7 @@ export function InstructorAssessmentGroups({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -80,8 +80,8 @@ export function InstructorAssessmentGroups({
               ? html`
                   ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
                   ${RandomAssessmentGroupsModal({
-                    groupMin: groupConfigInfo.minimum ? groupConfigInfo.minimum : 2,
-                    groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
+                    groupMin: groupConfigInfo.minimum ?? 2,
+                    groupMax: groupConfigInfo.maximum ?? 5,
                     csrfToken: resLocals.__csrf_token,
                   })}
                   ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
@@ -93,7 +93,7 @@ export function InstructorAssessmentGroups({
                 `
               : ''}
             <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex align-items-center">
+              <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
                 <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
