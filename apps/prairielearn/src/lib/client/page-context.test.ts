@@ -46,6 +46,7 @@ describe('getPageContext', () => {
           foo: 'bar',
         },
       },
+      __csrf_token: '123',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
@@ -97,6 +98,7 @@ describe('getPageContext', () => {
           user_id: '1',
         },
       },
+      __csrf_token: '123',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
@@ -179,6 +181,11 @@ describe('getCourseInstanceContext', () => {
       sharing_name: 'example',
       show_getting_started: false,
     },
+    institution: {
+      id: '1',
+      long_name: 'Example Institution',
+      short_name: 'EI',
+    },
   };
 
   it('parses student context correctly', () => {
@@ -215,6 +222,7 @@ describe('getCourseInstanceContext', () => {
     const instructorDataWithExtra = {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
+      institution: { ...mockInstructorData.institution, extra: 'field' },
     };
     const result = getCourseInstanceContext(instructorDataWithExtra, 'instructor');
     expect(result.course_instance).not.toHaveProperty('extra');
