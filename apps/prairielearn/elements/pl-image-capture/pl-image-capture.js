@@ -204,6 +204,10 @@ const MAX_ZOOM_SCALE = 5;
       const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
       const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
 
+      const cropRotateResetButton = this.imageCaptureDiv.querySelector(
+        '.js-crop-rotate-reset-button',
+      );
+
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
@@ -212,6 +216,7 @@ const MAX_ZOOM_SCALE = 5;
         rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
+        cropRotateResetButton,
       });
 
       cropRotateButton.addEventListener('click', () => {
@@ -244,6 +249,10 @@ const MAX_ZOOM_SCALE = 5;
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
+      });
+
+      cropRotateResetButton.addEventListener('click', () => {
+        this.resetAllCropRotation();
       });
     }
 
@@ -821,7 +830,7 @@ const MAX_ZOOM_SCALE = 5;
             hiddenOriginalCaptureInput.removeAttribute('value');
           }
           if (this.cropper) {
-            this.resetCropRotate();
+            this.resetCropRotateInterfaceState();
           }
         }
 
@@ -1249,7 +1258,11 @@ const MAX_ZOOM_SCALE = 5;
       );
     }
 
-    resetCropRotate() {
+    /**
+     * Resets the cropper selection, rotation amount, and flip states without
+     * affecting the actual transformations applied to the captured image.
+     */
+    resetCropRotateInterfaceState() {
       this.ensureCropperExists();
 
       this.cropper.getCropperImage().$resetTransform();
@@ -1284,6 +1297,28 @@ const MAX_ZOOM_SCALE = 5;
         flippedX: false,
         flippedY: false,
       };
+    }
+
+    /**
+     * Resets the crop/rotation interface state and any transformations applied to the image.
+     */
+    async resetAllCropRotation() {
+      const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+        '.js-hidden-original-capture-input',
+      );
+
+      this.ensureElementsExist({
+        hiddenOriginalCaptureInput,
+      });
+
+      this.previousCropRotateState = null;
+
+      await this.cancelCropRotate(false);
+
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: hiddenOriginalCaptureInput.value,
+        originalCapture: false,
+      });
     }
 
     timeoutId = null;
@@ -1366,7 +1401,7 @@ const MAX_ZOOM_SCALE = 5;
       this.ensureCropperExists();
 
       if (!this.previousCropRotateState) {
-        this.resetCropRotate();
+        this.resetCropRotateInterfaceState();
         return;
       }
 
@@ -1397,7 +1432,7 @@ const MAX_ZOOM_SCALE = 5;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    async cancelCropRotate() {
+    async cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
@@ -1405,7 +1440,9 @@ const MAX_ZOOM_SCALE = 5;
       await this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      if (revertToLastImage) {
+        this.setHiddenCaptureInputToCapturePreview();
+      }
 
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
