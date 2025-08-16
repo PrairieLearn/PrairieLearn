@@ -17,7 +17,7 @@ export function AssessmentQuestionHeaders({
       {question.start_new_zone ? (
         <tr>
           <th colspan={nTableCols}>
-            Zone {question.zone.number}. {question.zone.title}
+            Zone {question.zone.number}. {question.zone.title}{' '}
             {question.zone.number_choose == null
               ? '(Choose all questions)'
               : question.zone.number_choose === 1

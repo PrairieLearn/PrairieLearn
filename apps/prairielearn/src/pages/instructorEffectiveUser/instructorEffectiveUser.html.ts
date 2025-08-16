@@ -25,7 +25,7 @@ export function InstructorEffectiveUser({
   courseRoles,
 }: {
   resLocals: Record<string, any>;
-  ipAddress: string;
+  ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
   const { authz_data, course_instance, __csrf_token, req_date, true_req_date, user } = resLocals;
@@ -90,7 +90,7 @@ export function InstructorEffectiveUser({
             </p>
           </form>
 
-          <p><strong>Connecting from IP:</strong> ${ipAddress}</p>
+          <p><strong>Connecting from IP:</strong> ${ipAddress ?? html`<em>unknown</em>`}</p>
         </div>
 
         <div class="card-footer">

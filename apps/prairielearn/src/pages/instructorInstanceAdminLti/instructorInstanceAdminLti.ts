@@ -37,7 +37,7 @@ const LtiDataSchema = z.object({
           created_at: true,
         }).shape,
         created: z.string(),
-        deleted: z.string(),
+        deleted: z.string().nullable(),
       }),
     )
     .nullable(),

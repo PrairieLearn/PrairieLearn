@@ -4,8 +4,8 @@ CREATE FUNCTION
         course_instance_id bigint,
         is_administrator boolean,
         req_date timestamptz,
-        req_course_instance_role enum_course_instance_role default NULL
-    ) returns jsonb
+        req_course_instance_role enum_course_instance_role DEFAULT NULL
+    ) RETURNS jsonb
 AS $$
 DECLARE
     course_instance_role enum_course_instance_role;

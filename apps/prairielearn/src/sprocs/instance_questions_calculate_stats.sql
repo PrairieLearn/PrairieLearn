@@ -1,7 +1,7 @@
 CREATE FUNCTION
     instance_questions_calculate_stats(
         instance_question_id_param bigint
-    ) RETURNS VOID
+    ) RETURNS void
 AS $$
 WITH first_calculation AS (
     SELECT
