@@ -6,14 +6,14 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
+import { type AssessmentJsonInput, type CommentJson } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
+type AssessmentInfoFile = infofile.InfoFile<AssessmentJsonInput>;
 
 /**
  * SYNCING PROCESS:
@@ -133,9 +133,12 @@ function getParamsForAssessment(
           return {
             qid: alternative.id,
             maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
-            points: alternative.points ?? question.points ?? null,
+            points: (alternative.points ?? question.points ?? null) as number | number[] | null,
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
-            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
+            autoPoints: (alternative.autoPoints ?? question.autoPoints ?? null) as
+              | number
+              | number[]
+              | null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
@@ -152,9 +155,11 @@ function getParamsForAssessment(
           {
             qid: question.id,
             maxPoints: question.maxPoints ?? null,
-            points: question.points ?? null,
+            // We cast to number | number[] | null here because the type of `points`
+            // is inferred incorrectly from the schema.
+            points: (question.points ?? null) as number | number[] | null,
             maxAutoPoints: question.maxAutoPoints ?? null,
-            autoPoints: question.autoPoints ?? null,
+            autoPoints: (question.autoPoints ?? null) as number | number[] | null,
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints ?? false,
             triesPerVariant: question.triesPerVariant ?? 1,

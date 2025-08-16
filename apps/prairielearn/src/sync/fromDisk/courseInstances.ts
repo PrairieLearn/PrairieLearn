@@ -4,14 +4,14 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { type CourseInstanceJson } from '../../schemas/index.js';
+import { type CourseInstanceJsonInput } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
+function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | null | undefined) {
   if (!courseInstance) return null;
 
   // It used to be the case that instance access rules could be associated with a
