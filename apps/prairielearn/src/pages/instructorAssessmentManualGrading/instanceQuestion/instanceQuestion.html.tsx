@@ -28,6 +28,8 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  aiGradingEnabled,
+  aiGradingMode,
   aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
@@ -35,6 +37,8 @@ export function InstanceQuestion({
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  aiGradingEnabled: boolean;
+  aiGradingMode: boolean;
   /**
    * `aiGradingInfo` is defined when
    * 1. The AI grading feature flag is enabled
@@ -97,6 +101,50 @@ export function InstanceQuestion({
             </div>
           `
         : ''}
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item">
+              <a href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading">
+                Manual grading
+              </a>
+            </li>
+            <li class="breadcrumb-item">
+              <a
+                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                  .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
+              >
+                Question ${resLocals.assessment_question.number_in_alternative_group}.
+                ${resLocals.question.title}
+              </a>
+            </li>
+            <li class="breadcrumb-item active" aria-current="page">Student submission</li>
+          </ol>
+        </nav>
+
+        ${aiGradingEnabled
+          ? html`
+              <form method="POST" class="card px-3 py-2 mb-0">
+                <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <div class="form-check form-switch mb-0">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="switchCheckDefault"
+                    ${aiGradingMode ? 'checked' : ''}
+                    onchange="setTimeout(() => this.form.submit(), 150)"
+                  />
+                  <label class="form-check-label" for="switchCheckDefault">
+                    <i class="bi bi-stars"></i>
+                    AI grading mode
+                  </label>
+                </div>
+              </form>
+            `
+          : ''}
+      </div>
       ${conflict_grading_job
         ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders, lastGrader })
         : ''}

@@ -10,6 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
+  toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import {
@@ -173,6 +174,8 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        aiGradingEnabled,
+        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
       }),
     );
@@ -296,6 +299,9 @@ const PostBodySchema = z.union([
     __variant_id: IdSchema,
     description: z.string(),
   }),
+  z.object({
+    __action: z.literal('toggle_ai_grading_mode'),
+  }),
 ]);
 
 router.post(
@@ -410,6 +416,9 @@ router.post(
       );
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
+    } else if (body.__action === 'toggle_ai_grading_mode') {
+      await toggleAiGradingMode(res.locals.assessment_question.id);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

@@ -96,13 +96,6 @@ WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
 
--- BLOCK toggle_ai_grading_mode
-UPDATE assessment_questions
-SET
-  ai_grading_mode = NOT ai_grading_mode
-WHERE
-  id = $assessment_question_id;
-
 -- BLOCK delete_ai_grading_jobs
 WITH
   deleted_grading_jobs AS (

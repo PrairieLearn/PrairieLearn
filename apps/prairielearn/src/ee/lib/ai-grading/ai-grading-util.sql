@@ -153,3 +153,10 @@ FROM
   submission_grading_context_embeddings AS emb
 WHERE
   emb.submission_id = $submission_id;
+
+-- BLOCK toggle_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;
