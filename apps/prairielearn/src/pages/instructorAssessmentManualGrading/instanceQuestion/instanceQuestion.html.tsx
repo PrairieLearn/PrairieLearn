@@ -46,7 +46,6 @@ export function InstanceQuestion({
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
-  const { urlPrefix, assessment, question, assessment_question, __csrf_token } = resLocals;
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -102,17 +101,21 @@ export function InstanceQuestion({
             </div>
           `
         : ''}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
-              <a href="${urlPrefix}/assessment/${assessment.id}/manual_grading"> Manual grading </a>
+              <a href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading">
+                Manual grading
+              </a>
             </li>
             <li class="breadcrumb-item">
               <a
-                href="${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}"
+                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                  .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
               >
-                Question ${assessment_question.number_in_alternative_group}. ${question.title}
+                Question ${resLocals.assessment_question.number_in_alternative_group}.
+                ${resLocals.question.title}
               </a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">Student submission</li>
@@ -123,7 +126,7 @@ export function InstanceQuestion({
           ? html`
               <form method="POST" class="card px-3 py-2 mb-0">
                 <input type="hidden" name="__action" value="toggle_ai_grading_mode" />
-                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <div class="form-check form-switch mb-0">
                   <input
                     class="form-check-input"
