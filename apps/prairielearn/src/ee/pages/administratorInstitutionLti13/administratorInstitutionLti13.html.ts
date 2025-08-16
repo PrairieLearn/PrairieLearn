@@ -278,7 +278,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           type="submit"
           name="__action"
           value="delete_keys"
-          class="btn btn-warning"
+          class="btn btn-danger"
           onclick="return confirm('Really delete all keys from keystore?')"
         >
           Delete all keys from keystore

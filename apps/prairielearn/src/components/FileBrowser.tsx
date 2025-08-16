@@ -464,7 +464,7 @@ function FileBrowserActions({
           </button>
           <button
             type="button"
-            class="btn btn-sm btn-light"
+            class="btn btn-sm btn-danger"
             data-bs-toggle="popover"
             data-bs-container="body"
             data-bs-html="true"
@@ -667,7 +667,7 @@ function DirectoryBrowserBody({
                       </button>
                       <button
                         type="button"
-                        class="btn btn-xs btn-secondary"
+                        class="btn btn-xs btn-danger"
                         data-bs-toggle="popover"
                         data-bs-container="body"
                         data-bs-html="true"
@@ -751,7 +751,7 @@ function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: 
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete</button>
+        <button type="submit" class="btn btn-danger">Delete</button>
       </div>
     </form>
   `;
