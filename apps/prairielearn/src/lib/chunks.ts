@@ -169,7 +169,6 @@ const DatabaseChunkSchema = z.intersection(
       type: z.literal('question'),
       question_id: IdSchema,
       question_name: z.string(),
-      uuid: ChunkSchema.shape.uuid,
     }),
   ]),
 );
@@ -1067,6 +1066,8 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
   // Now, ensure each individual chunk is loaded and untarred to the correct
   // place on disk.
   await async.eachLimit(validChunks, config.chunksMaxParallelDownload, async (chunk) => {
+    // TypeScript can't handle Omit<DatabaseChunk, 'uuid'> & { uuid: string }
+    // since DatabaseChunk is a union. See https://github.com/microsoft/TypeScript/issues/31501
     assert(chunk.uuid != null, 'chunk.uuid is required');
     const pendingChunkKey = `${courseId}-${chunk.uuid}`;
     const pendingChunkPromise = pendingChunksMap.get(pendingChunkKey);
