@@ -632,6 +632,15 @@ describe('API', { timeout: 60_000 }, function () {
       );
     });
 
+    test.sequential('GET to /staff fails with incorrect permissions', async function () {
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        headers: {
+          'Private-Token': '12345678-1234-1234-1234-1234567890ab',
+        },
+      });
+      assert.equal(res.status, 403);
+    });
+
     test.sequential(
       'DELETE users access to student data of a specific course instance succeeds',
       async function () {

@@ -39,6 +39,16 @@ const authzHasCourseEditor = asyncHandler(async (req, res, next) => {
   next();
 });
 
+/**
+ * Only course owners are allowed to modifiy staff roles
+ */
+const authzHasCourseOwn = asyncHandler(async (req, resizeBy, next) => {
+  if (!resizeBy.locals.authz_data.has_course_permission_own) {
+    throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
+  }
+  next();
+});
+
 // Pretty-print all JSON responses.
 router.use((await import('./prettyPrintJson.js')).default);
 
@@ -92,6 +102,7 @@ router.use(
 );
 router.use(
   '/course/:course_id(\\d+)/staff',
+  authzHasCourseOwn,
   (await import('./endpoints/courseStaffPermissions/index.js')).default,
 );
 router.use(
