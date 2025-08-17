@@ -104,18 +104,18 @@ interface ServerFilesCourseChunk {
 
 interface ClientFilesCourseInstanceChunk {
   type: 'clientFilesCourseInstance';
-  courseInstanceId: string | number;
+  courseInstanceId: string;
 }
 
 interface ClientFilesAssessmentChunk {
   type: 'clientFilesAssessment';
-  courseInstanceId: string | number;
-  assessmentId: string | number;
+  courseInstanceId: string;
+  assessmentId: string;
 }
 
 export interface QuestionChunk {
   type: 'question';
-  questionId: string | number;
+  questionId: string;
 }
 
 /**
