@@ -64,7 +64,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
-  join_id: '1234567890abcdef',
+  join_id: '1234567890ab',
   json_comment: null,
   long_name: null,
   share_source_publicly: false,
