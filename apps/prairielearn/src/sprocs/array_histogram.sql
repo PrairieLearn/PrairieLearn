@@ -2,7 +2,7 @@
 -- Based on: https://wiki.postgresql.org/wiki/Aggregate_Histogram
 
 CREATE FUNCTION
-    array_histogram_sfunc (state INTEGER[], val anyelement, thresholds anyarray) RETURNS INTEGER[] AS $$
+    array_histogram_sfunc (state integer[], val anyelement, thresholds anyarray) RETURNS integer[] AS $$
 DECLARE
     nbuckets INTEGER;
     bucket INTEGER;
@@ -29,6 +29,6 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Tell Postgres how to use the new function
 CREATE AGGREGATE array_histogram (anyelement, anyarray) (
-    SFUNC = array_histogram_sfunc,
-    STYPE = INTEGER[]
+    sfunc = array_histogram_sfunc,
+    stype = INTEGER[]
 );

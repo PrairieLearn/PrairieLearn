@@ -1846,7 +1846,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             helperQuestion.checkQuestionStats(locals);
             helperQuestion.checkAssessmentScore(locals);
           } else {
-            throw Error('unknown action: ' + questionTest.action);
+            throw new Error('unknown action: ' + questionTest.action);
           }
         });
       });

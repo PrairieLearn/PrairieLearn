@@ -37,7 +37,7 @@ export function InstructorAssessmentQuestions({
     content: (
       <>
         <AssessmentSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           assessment={assessment}
           courseInstance={course_instance}
           course={course}

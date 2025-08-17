@@ -19,6 +19,7 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
@@ -37,6 +38,11 @@ router.get(
       sql.short_names,
       { course_id: res.locals.course.id },
       z.string(),
+    );
+    const enrollmentCount = await sqldb.queryRow(
+      sql.select_enrollment_count,
+      { course_instance_id: res.locals.course_instance.id },
+      z.number(),
     );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
@@ -64,6 +70,12 @@ router.get(
         b64EncodeUnicode(await fs.readFile(fullInfoCourseInstancePath, 'utf8')),
       ).toString();
     }
+
+    const instanceGHLink = courseRepoContentUrl(
+      res.locals.course,
+      `courseInstances/${res.locals.course_instance.short_name}`,
+    );
+
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
@@ -76,7 +88,9 @@ router.get(
         infoCourseInstancePath,
         availableTimezones,
         origHash,
+        instanceGHLink,
         canEdit,
+        enrollmentCount,
       }),
     );
   }),

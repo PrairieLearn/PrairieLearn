@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -115,15 +116,18 @@ export function InstructorQuestionSettings({
     content: html`
       ${renderHtml(
         <QuestionSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           question={resLocals.question}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>Question Settings</h1>
+          ${GitHubButton(questionGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -131,9 +135,6 @@ export function InstructorQuestionSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
-              ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -626,7 +627,7 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${assessmentsWithQuestion.length
+      ${assessmentsWithQuestion.length > 0
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
@@ -637,7 +638,7 @@ function DeleteQuestionModal({
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
-                        course_instance_id: a_with_q.course_instance_id,
+                        courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
                     )}

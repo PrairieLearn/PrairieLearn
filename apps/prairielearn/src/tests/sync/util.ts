@@ -396,7 +396,7 @@ export function assertSnapshotsMatch(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
@@ -423,7 +423,7 @@ export function assertSnapshotSubset(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));

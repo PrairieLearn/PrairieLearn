@@ -33,6 +33,7 @@ const MAX_ZOOM_SCALE = 5;
       this.editable = options.editable;
 
       this.external_image_capture_url = options.external_image_capture_url;
+      this.external_image_capture_available = options.external_image_capture_available;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
@@ -41,20 +42,25 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
+      this.handwritingEnhanced = false;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
+        this.handwritingEnhancementListeners();
         return;
       }
 
       if (this.mobile_capture_enabled) {
-        this.createExternalCaptureListeners();
+        this.prepareMobileCaptureButtons();
       }
+
       this.createLocalCameraCaptureListeners();
 
       this.loadSubmission();
+      this.createDeletionListeners();
+
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
@@ -63,24 +69,57 @@ const MAX_ZOOM_SCALE = 5;
       this.createApplyChangesListeners();
     }
 
-    createExternalCaptureListeners() {
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
+    /**
+     * Add the popovers and listeners to the mobile capture buttons in the
+     * horizontal and dropdown layouts.
+     */
+    prepareMobileCaptureButtons() {
+      const mobileCaptureButtons = this.getMobileCaptureButtons();
 
-      if (!captureWithMobileDeviceButton) {
-        throw new Error('Capture with mobile device button not found in image capture element');
+      for (const mobileCaptureButton of mobileCaptureButtons) {
+        $(mobileCaptureButton).popover({
+          title: 'Capture with mobile device',
+          placement: 'auto',
+          container: 'body',
+          html: true,
+          content: `
+              <div class="w-100 d-flex flex-column align-items-center">
+                ${
+                  this.external_image_capture_available
+                    ? `
+                  <div class="qr-code-${this.uuid} pl-image-capture-qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
+                    <div class="spinning-wheel spinner-border">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                  <p class="small text-muted mb-0">
+                    Scan the QR code with your mobile device to capture an image of your work. 
+                  </p>
+                `
+                    : `
+                  <p class="small text-muted mb-0">
+                    Mobile device capture is not available in this environment.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    It will be available once the question is deployed to production.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    For setup instructions to enable mobile capture locally, refer to the 
+                    <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+                  </p>
+                `
+                }
+              </div>
+            `,
+        });
+        mobileCaptureButton.addEventListener('inserted.bs.popover', () => {
+          this.generateQrCode();
+        });
       }
-
-      captureWithMobileDeviceButton.addEventListener('inserted.bs.popover', () => {
-        this.generateQrCode();
-      });
     }
 
     createLocalCameraCaptureListeners() {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
+      const localCaptureButtons = this.getUseLocalCaptureButtons();
 
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
@@ -92,15 +131,16 @@ const MAX_ZOOM_SCALE = 5;
       const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
 
       this.ensureElementsExist({
-        captureWithLocalCameraButton,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
         applyChangesButton,
       });
 
-      captureWithLocalCameraButton.addEventListener('click', () => {
-        this.startLocalCameraCapture();
-      });
+      for (const localCaptureButton of localCaptureButtons) {
+        localCaptureButton.addEventListener('click', () => {
+          this.startLocalCameraCapture();
+        });
+      }
 
       captureLocalCameraImageButton.addEventListener('click', () => {
         this.handleCaptureImage();
@@ -113,6 +153,20 @@ const MAX_ZOOM_SCALE = 5;
       applyChangesButton.addEventListener('click', () => {
         this.confirmCropRotateChanges();
       });
+    }
+
+    /** Retrieve the local capture button elements for the horizontal and dropdown layouts. */
+    getUseLocalCaptureButtons() {
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-local-camera-button');
+    }
+
+    /** Retrieve the mobile capture button elements for the horizontal and dropdown layouts. */
+    getMobileCaptureButtons() {
+      if (!this.mobile_capture_enabled) {
+        throw new Error('Mobile capture is not enabled, cannot get mobile capture buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
     }
 
     createCropRotateListeners() {
@@ -165,8 +219,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
@@ -190,6 +244,80 @@ const MAX_ZOOM_SCALE = 5;
 
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
+      });
+    }
+
+    setShowDeletionButton(showDeletionButton) {
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
+      );
+      this.ensureElementsExist({
+        deleteCapturedImageButton,
+      });
+      deleteCapturedImageButton.classList.toggle('d-none', !showDeletionButton);
+    }
+
+    confirmImageDeletion() {
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        uploadedImageContainer,
+      });
+
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: null,
+        originalCapture: true,
+      });
+
+      this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+      this.setShowDeletionButton(false);
+
+      this.setCaptureChangedFlag(true);
+    }
+
+    createDeletionListeners() {
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
+      );
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        deleteCapturedImageButton,
+        uploadedImageContainer,
+      });
+
+      const confirmDeletion = () => {
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: null,
+          originalCapture: true,
+        });
+
+        this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+        this.setShowDeletionButton(false);
+
+        this.setCaptureChangedFlag(true);
+      };
+
+      deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+        });
+        confirmDeletionButton.addEventListener('click', confirmDeletion, { once: true });
+      });
+
+      deleteCapturedImageButton.addEventListener('hide.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+        });
+        confirmDeletionButton.removeEventListener('click', confirmDeletion);
       });
     }
 
@@ -279,21 +407,26 @@ const MAX_ZOOM_SCALE = 5;
       this.selectedContainerName = containerName;
     }
 
+    /**
+     * Generate the QR code for external image capture and insert it into
+     * any QR code divs associated with the image capture element.
+     */
     generateQrCode() {
       if (!this.external_image_capture_url) {
         return;
       }
 
-      const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
-
-      if (!qrCode) {
+      const qrCodes = document.querySelectorAll(`.qr-code-${this.uuid}`);
+      if (qrCodes.length === 0) {
         throw new Error('QR code element not found.');
       }
 
-      qrCode.innerHTML = new QRCode({
-        content: this.external_image_capture_url,
-        container: 'svg-viewbox',
-      }).svg();
+      for (const qrCode of qrCodes) {
+        qrCode.innerHTML = new QRCode({
+          content: this.external_image_capture_url,
+          container: 'svg-viewbox',
+        }).svg();
+      }
     }
 
     /**
@@ -346,13 +479,11 @@ const MAX_ZOOM_SCALE = 5;
           },
         );
 
-        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-          '.js-capture-with-mobile-device-button',
-        );
+        const mobileCaptureButtons = this.getMobileCaptureButtons();
 
-        if (captureWithMobileDeviceButton) {
-          // Dismiss the QR code popover if it is open.
-          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
+        // Dismiss the QR code popover if it is open.
+        for (const mobileCaptureButton of mobileCaptureButtons) {
+          const popover = bootstrap.Popover.getInstance(mobileCaptureButton);
           if (popover) {
             popover.hide();
           }
@@ -370,19 +501,39 @@ const MAX_ZOOM_SCALE = 5;
     }
 
     /**
+     * Creates the HTML for the image placeholder div, which is displayed when
+     * no image is captured or when the image is loading.
+     *
+     * @param {string} content The inner HTML of the placeholder div.
+     */
+    createJsImagePlaceholderDivHtml(content) {
+      return `
+        <div class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center" style="height: 200px;">
+          ${content}
+        </div>
+      `;
+    }
+
+    /**
      * Updates the uploaded image container to display that no image has been captured yet.
      * @param {HTMLElement} uploadedImageContainer
      */
     setNoCaptureAvailableYetState(uploadedImageContainer) {
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
 
-      this.ensureElementsExist({
-        imagePlaceholderDiv,
-      });
-
-      imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image captured yet.</span>
+      const placeholderMessage = `
+        <span class="small text-muted text-center">
+          No image captured yet.
+          <br/>
+          Use a clean sheet of paper.
+        </span>
       `;
+
+      if (imagePlaceholderDiv) {
+        imagePlaceholderDiv.innerHTML = placeholderMessage;
+      } else {
+        uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(placeholderMessage);
+      }
     }
 
     /**
@@ -390,16 +541,11 @@ const MAX_ZOOM_SCALE = 5;
      * @param {HTMLElement} uploadedImageContainer
      */
     setLoadingCaptureState(uploadedImageContainer) {
-      uploadedImageContainer.innerHTML = `
-        <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center w-100"
-            style="height: 200px;"
-        >
-            <div class="spinning-wheel spinner-border">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+      uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
+        <div class="spinning-wheel spinner-border">
+          <span class="visually-hidden">Loading...</span>
         </div>
-      `;
+      `);
     }
 
     /**
@@ -443,39 +589,54 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtonTextForRetake();
+        this.updateCaptureButtons(true);
+      } else if (!dataUrl) {
+        this.updateCaptureButtons(false);
       }
 
-      hiddenCaptureInput.value = dataUrl;
+      if (dataUrl) {
+        hiddenCaptureInput.value = dataUrl;
+      } else {
+        hiddenCaptureInput.removeAttribute('value');
+      }
     }
 
     /**
-     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     * Update the capture button layout and text based on if the user is retaking the image.
+     *
+     * @param {boolean} isRetaking - Whether the user is retaking the image.
      */
-    updateCaptureButtonTextForRetake() {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
-      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
-      this.ensureElementsExist({
-        captureWithLocalCameraButtonSpan,
-      });
-      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+    updateCaptureButtons(isRetaking) {
+      if (this.mobile_capture_enabled) {
+        const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal',
+        );
+        const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-dropdown',
+        );
 
-      if (!this.mobile_capture_enabled) {
-        return;
+        this.ensureElementsExist({
+          captureButtonsHorizontalDiv,
+          captureButtonsDropdownDiv,
+        });
+
+        if (isRetaking) {
+          captureButtonsHorizontalDiv.classList.replace('d-flex', 'd-none');
+        } else {
+          captureButtonsHorizontalDiv.classList.replace('d-none', 'd-flex');
+        }
+        captureButtonsDropdownDiv.classList.toggle('d-none', !isRetaking);
+      } else {
+        const captureWithLocalCameraButtonHorizontalSpan = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal .js-capture-with-local-camera-button span',
+        );
+        this.ensureElementsExist({
+          captureWithLocalCameraButtonHorizontalSpan,
+        });
+        captureWithLocalCameraButtonHorizontalSpan.innerHTML = isRetaking
+          ? 'Retake with webcam'
+          : 'Use webcam';
       }
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
-      const captureWithMobileDeviceButtonSpan =
-        captureWithMobileDeviceButton?.querySelector('span');
-
-      this.ensureElementsExist({
-        captureWithMobileDeviceButtonSpan,
-      });
-
-      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
     }
 
     /**
@@ -484,7 +645,7 @@ const MAX_ZOOM_SCALE = 5;
      */
     setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
       this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
@@ -500,18 +661,22 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
+      capturePreview.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
 
-      capturePreview.src = dataUrl;
+      if (dataUrl) {
+        capturePreview.src = dataUrl;
+      } else {
+        capturePreview.removeAttribute('src');
+      }
       capturePreview.alt = 'Captured image preview';
 
       const capturePreviewParent = document.createElement('div');
       capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
 
-      capturePreviewParent.appendChild(capturePreview);
+      capturePreviewParent.append(capturePreview);
 
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreviewParent);
+      uploadedImageContainer.append(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -523,11 +688,14 @@ const MAX_ZOOM_SCALE = 5;
         );
       }
 
-      if (!this.editable) {
+      if (this.editable) {
+        this.setShowDeletionButton(dataUrl ? true : false);
+      } else {
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
         const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
           '.js-viewer-rotate-clockwise-button',
         );
+
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
@@ -562,7 +730,7 @@ const MAX_ZOOM_SCALE = 5;
           let rotation = 0;
           viewerRotateClockwiseButton.addEventListener('click', () => {
             const capturePreviewImg = this.imageCaptureDiv.querySelector(
-              '.js-uploaded-image-container .capture-preview',
+              '.js-uploaded-image-container .pl-image-capture-preview',
             );
 
             this.ensureElementsExist({
@@ -642,12 +810,22 @@ const MAX_ZOOM_SCALE = 5;
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
             '.js-hidden-original-capture-input',
           );
-          hiddenOriginalCaptureInput.value = dataUrl;
+
+          this.ensureElementsExist({
+            hiddenOriginalCaptureInput,
+          });
+
+          if (dataUrl) {
+            hiddenOriginalCaptureInput.value = dataUrl;
+          } else {
+            hiddenOriginalCaptureInput.removeAttribute('value');
+          }
           if (this.cropper) {
             this.resetCropRotate();
           }
         }
-        this.showCropRotateButton();
+
+        this.setShowCropRotateButton(dataUrl ? true : false);
       }
     }
 
@@ -858,14 +1036,18 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    showCropRotateButton() {
+    /**
+     * Set if the crop rotate button is shown or not.
+     *
+     * @param {boolean} show If true, shows the crop rotate button. Otherwise, hides it.
+     */
+    setShowCropRotateButton(show) {
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
 
       this.ensureElementsExist({
         cropRotateButton,
       });
-
-      cropRotateButton.classList.remove('d-none');
+      cropRotateButton.classList.toggle('d-none', !show);
     }
 
     async startCropRotate() {
@@ -1228,6 +1410,45 @@ const MAX_ZOOM_SCALE = 5;
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    /**
+     * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
+     */
+    async enhanceHandwriting() {
+      if (this.editable) {
+        throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
+      }
+
+      const capturePreview = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .pl-image-capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreview,
+      });
+
+      if (this.handwritingEnhanced) {
+        capturePreview.style.filter = '';
+        this.handwritingEnhanced = false;
+      } else {
+        capturePreview.style.filter = 'grayscale(1) contrast(2)';
+        this.handwritingEnhanced = true;
+      }
+    }
+
+    handwritingEnhancementListeners() {
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector(
+        '.js-enhance-handwriting-button',
+      );
+
+      this.ensureElementsExist({
+        enhanceHandwritingButton,
+      });
+
+      enhanceHandwritingButton.addEventListener('click', () => {
+        this.enhanceHandwriting();
+      });
     }
   }
 
