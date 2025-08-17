@@ -9,7 +9,7 @@ WITH
         institution_id
       )
     VALUES
-      (100, 'normaluser@host.com', null, 1),
+      (100, 'normaluser@host.com', NULL, 1),
       (101, 'ltiuserci1@host.com', 1, 2),
       (102, 'ltiuserci2@host.com', 2, 2)
   ),
@@ -63,7 +63,7 @@ WITH
         2,
         1,
         2,
-        null,
+        NULL,
         '2011-01-01 00:00:00-00',
         '2011-12-31 23:59:59-00',
         'school'
@@ -72,7 +72,7 @@ WITH
         3,
         1,
         3,
-        null,
+        NULL,
         '2012-01-01 00:00:00-00',
         '2012-12-31 23:59:59-00',
         'notInDb'
@@ -81,16 +81,16 @@ WITH
         4,
         1,
         4,
-        null,
+        NULL,
         '2013-01-01 00:00:00-00',
         '2013-12-31 23:59:59-00',
-        null
+        NULL
       ),
       (
         5,
         1,
         5,
-        null,
+        NULL,
         '2013-01-01 00:00:00-00',
         '2013-12-31 23:59:59-00',
         'LTI'
@@ -115,7 +115,7 @@ WITH
       )
   )
 SELECT
-  true;
+  TRUE;
 
 -- BLOCK ciar_test
 SELECT

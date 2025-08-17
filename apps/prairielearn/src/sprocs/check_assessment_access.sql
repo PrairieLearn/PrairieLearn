@@ -7,12 +7,12 @@ CREATE FUNCTION
         IN course_instance_role enum_course_instance_role,
         IN user_id bigint,
         IN uid text,
-        IN date TIMESTAMP WITH TIME ZONE,
+        IN date timestamp with time zone,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT exam_access_end timestamp with time zone, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string TEXT, -- For display to the user.
+        OUT credit_date_string text, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
@@ -20,7 +20,7 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,        -- If the assessment is active
         OUT next_active_time text, -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
     active_access_rule_id bigint;
