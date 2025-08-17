@@ -41,7 +41,7 @@ BEGIN
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        entries->4,
+        entries->>4,
         (entries->5)::JSONB
     FROM UNNEST(disk_course_instances_data) AS entries;
 
