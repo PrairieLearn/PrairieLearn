@@ -304,6 +304,12 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
+      '@eslint-react/no-forbidden-props': [
+        'error',
+        {
+          forbid: ['className', '/_/'],
+        },
+      ],
 
       ...eslintPluginUnicorn.configs.recommended.rules,
 

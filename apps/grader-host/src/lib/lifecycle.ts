@@ -96,7 +96,7 @@ function heartbeat() {
       LifecycleHookName: 'launching',
       InstanceId: config.instanceId,
     };
-    autoscaling.recordLifecycleActionHeartbeat(params, (err, _data) => {
+    autoscaling.recordLifecycleActionHeartbeat(params, (err: any) => {
       if (err) return logger.error('lifecycle.heartbeat(): ERROR', err);
       setTimeout(heartbeat, config.lifecycleHeartbeatIntervalMS);
     });
