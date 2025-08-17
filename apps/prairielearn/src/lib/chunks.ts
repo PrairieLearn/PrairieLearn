@@ -28,7 +28,6 @@ import {
   ChunkSchema,
   CourseInstanceSchema,
   CourseSchema,
-  EnumChunkTypeSchema,
   IdSchema,
   QuestionSchema,
 } from './db-types.js';
@@ -136,20 +135,44 @@ export type Chunk =
   | ClientFilesAssessmentChunk
   | QuestionChunk;
 
-const DatabaseChunkSchema = z.object({
-  // All fields in ChunkSchema are nullable from the LEFT JOIN
-  assessment_id: ChunkSchema.shape.assessment_id.nullable(),
-  course_id: ChunkSchema.shape.course_id.nullable(),
-  course_instance_id: ChunkSchema.shape.course_instance_id.nullable(),
-  id: ChunkSchema.shape.id.nullable(),
-  question_id: ChunkSchema.shape.question_id.nullable(),
-  uuid: ChunkSchema.shape.uuid.nullable(),
-  // Other fields
-  type: EnumChunkTypeSchema,
-  question_name: QuestionSchema.shape.qid,
-  assessment_name: AssessmentSchema.shape.tid,
-  course_instance_name: CourseInstanceSchema.shape.short_name,
-});
+const DatabaseChunkSchema = z.intersection(
+  z.object({
+    id: ChunkSchema.shape.id.nullable(),
+    uuid: ChunkSchema.shape.uuid.nullable(),
+  }),
+  z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('elements'),
+    }),
+    z.object({
+      type: z.literal('elementExtensions'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('serverFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourseInstance'),
+      course_instance_id: IdSchema,
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('clientFilesAssessment'),
+      assessment_id: IdSchema,
+      assessment_name: z.string(),
+      course_instance_id: IdSchema,
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('question'),
+      question_id: IdSchema,
+      question_name: z.string(),
+      uuid: ChunkSchema.shape.uuid,
+    }),
+  ]),
+);
 
 /**
  * {@link DatabaseChunk} objects represent chunks that we've fetched from the
@@ -881,7 +904,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   const downloadPath = path.join(courseChunksDirs.downloads, `${chunk.uuid}.tar.gz`);
   const chunkPath = path.join(courseChunksDirs.chunks, `${chunk.uuid}.tar.gz`);
   const unpackPath = path.join(courseChunksDirs.unpacked, chunk.uuid);
-  let relativeTargetPath;
+  let relativeTargetPath: string;
   switch (chunk.type) {
     case 'elements':
     case 'elementExtensions':
@@ -890,9 +913,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = chunk.type;
       break;
     case 'clientFilesCourseInstance':
-      if (!chunk.course_instance_name) {
-        throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -900,12 +920,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'clientFilesAssessment':
-      if (!chunk.course_instance_name) {
-        throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
-      }
-      if (!chunk.assessment_name) {
-        throw new Error(`assessment_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -915,9 +929,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'question':
-      if (!chunk.question_name) {
-        throw new Error(`question_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join('questions', chunk.question_name);
       break;
     default:
