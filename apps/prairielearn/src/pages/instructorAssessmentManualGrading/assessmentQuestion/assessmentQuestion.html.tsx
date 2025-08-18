@@ -90,7 +90,7 @@ export function AssessmentQuestion({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           assessment={assessment}
           courseInstance={course_instance}
           course={course}
@@ -102,7 +102,7 @@ export function AssessmentQuestion({
         assessmentId: assessment.id,
         urlPrefix,
       })}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
@@ -152,7 +152,7 @@ export function AssessmentQuestion({
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
         ? html`
-            ${aiGradingStats.rubric_stats.length
+            ${aiGradingStats.rubric_stats.length > 0
               ? html`
                   <div class="card overflow-hidden mb-3">
                     <div class="table-responsive">
@@ -216,7 +216,7 @@ export function AssessmentQuestion({
         <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
         <div class="card mb-4">
           <div
-            class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+            class="card-header bg-primary text-white d-flex justify-content-between align-items-center gap-2"
           >
             <h1>Student instance questions</h1>
             <div class="d-flex flex-row gap-2">
