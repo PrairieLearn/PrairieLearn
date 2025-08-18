@@ -194,8 +194,6 @@ export async function syncDiskToSqlWithLock(
     logger.info(line || ''),
   );
 
-  console.log('completed', courseDataHasErrors, courseDataHasErrorsOrWarnings);
-
   return {
     status: 'complete',
     hadJsonErrors: courseDataHasErrors,

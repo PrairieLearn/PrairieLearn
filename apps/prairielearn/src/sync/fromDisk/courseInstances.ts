@@ -132,8 +132,6 @@ export async function sync(
     },
   );
 
-  console.log('courseInstanceParams', courseInstanceParams);
-
   const result = await sqldb.callRow(
     'sync_course_instances',
     [courseInstanceParams, courseId],

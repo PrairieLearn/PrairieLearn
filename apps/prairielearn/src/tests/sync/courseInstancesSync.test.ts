@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import { FUTURE_DATE } from '../../sync/fromDisk/courseInstances.js';
 import * as helperDb from '../helperDb.js';
@@ -586,27 +587,19 @@ describe('Course instance syncing', () => {
       const courseData = util.getCourseData();
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.enrollment = json;
 
-      // console.log('Testing mapping:', {
-      //   json,
-      //   expected: db,
-      // });
-
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       const results = await util.syncCourseData(courseDir);
       assert.isOk(results.status === 'complete');
-      const courseInstanceErrors =
-        results.courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.errors;
+      const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+      const courseInstanceErrors = courseInstance.courseInstance.errors;
+      const courseInstanceUUID = courseInstance.courseInstance.uuid;
       assert.isEmpty(courseInstanceErrors);
+      assert.isDefined(courseInstanceUUID);
 
-      // TODO: Check that there are no warnings.
-
-      const syncedCourseInstances = await util.dumpTableWithSchema(
-        'course_instances',
-        CourseInstanceSchema,
-      );
-      const syncedCourseInstance = syncedCourseInstances.find(
-        (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-      );
+      const syncedCourseInstance = await selectCourseInstanceByUuid({
+        course_id: results.courseId,
+        uuid: courseInstanceUUID,
+      });
       assert.isOk(syncedCourseInstance);
 
       const result = {
@@ -618,11 +611,7 @@ describe('Course instance syncing', () => {
           syncedCourseInstance.enrollment_lti_enforced_after?.getTime() ?? null,
       };
 
-      // console.log('Result:', result);
-      // console.log('Expected:', db);
-
       assert.deepEqual(result, db);
-      console.log('success');
     }
   });
 });
