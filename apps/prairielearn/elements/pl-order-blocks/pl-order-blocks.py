@@ -17,7 +17,6 @@ from order_blocks_options_parsing import (
     GRADING_METHOD_DEFAULT,
     INDENTION_DEFAULT,
     INLINE_DEFAULT,
-    LCS_GRADABLE_TYPES,
     MAX_INDENTION_DEFAULT,
     SOLUTION_HEADER_DEFAULT,
     SOURCE_HEADER_DEFAULT,
@@ -52,6 +51,13 @@ class OrderBlocksAnswerData(TypedDict):
 FIRST_WRONG_TYPES = frozenset([
     FeedbackType.FIRST_WRONG,
     FeedbackType.FIRST_WRONG_VERBOSE,
+])
+
+
+LCS_GRADABLE_TYPES = frozenset([
+    GradingMethodType.RANKING,
+    GradingMethodType.DAG,
+    GradingMethodType.ORDERED,
 ])
 
 
@@ -207,32 +213,24 @@ def get_distractors(
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answers-name")
-    format_type = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
-    inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
-    dropzone_layout = pl.get_enum_attrib(
-        element,
-        "solution-placement",
-        SolutionPlacementType,
-        SolutionPlacementType.RIGHT,
-    )
+    order_blocks_options = OrderBlocksOptions(element)
+
+    answer_name = order_blocks_options.answers_name
+    format_type = order_blocks_options.format
+    inline = order_blocks_options.inline
+
+    dropzone_layout = order_blocks_options.solution_placement
+
     block_formatting = (
         "pl-order-blocks-code" if format_type is FormatType.CODE else "list-group-item"
     )
-    grading_method = pl.get_enum_attrib(
-        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-    )
+    grading_method = order_blocks_options.grading_method
 
     if data["panel"] == "question":
         editable = data["editable"]
 
-        answer_name = pl.get_string_attrib(element, "answers-name")
-        source_header = pl.get_string_attrib(
-            element, "source-header", SOURCE_HEADER_DEFAULT
-        )
-        solution_header = pl.get_string_attrib(
-            element, "solution-header", SOLUTION_HEADER_DEFAULT
-        )
+        source_header = order_blocks_options.source_header
+        solution_header = order_blocks_options.solution_header
 
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update the `indent`
@@ -254,21 +252,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
-        check_indentation = pl.get_boolean_attrib(
-            element, "indentation", INDENTION_DEFAULT
-        )
-        max_indent = pl.get_integer_attrib(element, "max-indent", MAX_INDENTION_DEFAULT)
+        check_indentation = order_blocks_options.indentation
+        max_indent = order_blocks_options.max_indent
 
         help_text = (
             "Drag answer tiles into the answer area to the "
             + dropzone_layout.value
             + ". "
         )
-
-        if inline and check_indentation:
-            raise ValueError(
-                "The indentation attribute may not be used when inline is true."
-            )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<p>Your answer ordering does not matter. </p>"

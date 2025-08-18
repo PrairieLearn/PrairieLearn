@@ -226,6 +226,11 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
+        if self.inline and self.indentation:
+            raise ValueError(
+                "The indentation attribute may not be used when inline is true."
+            )
+
     def _validate_answer_options(self) -> None:
         used_tags = []
         used_groups = []
