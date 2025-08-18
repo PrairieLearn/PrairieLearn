@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { boolean, z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -8,8 +8,12 @@ import { type CourseInstanceJsonInput } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
+import { run } from '@prairielearn/run';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
+
+/** This date is used to represent a 'false' boolean value for a date field. */
+const FUTURE_DATE = new Date('2099-12-31T23:59:59.999Z');
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | null | undefined) {
   if (!courseInstance) return null;
@@ -28,14 +32,46 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | nu
       comment: accessRule.comment,
     }));
 
+  const selfEnrollmentEnabledDate = run(() => {
+    if (
+      courseInstance.enrollment == null ||
+      courseInstance.enrollment.selfEnrollmentEnabled == null ||
+      typeof courseInstance.enrollment?.selfEnrollmentEnabled === 'boolean'
+    ) {
+      // Default value for selfEnrollmentEnabled is true.
+      if (courseInstance.enrollment && courseInstance.enrollment.selfEnrollmentEnabled == null) {
+        courseInstance.enrollment.selfEnrollmentEnabled = true;
+      }
+      // A null date is used to indicate that self-enrollment is enabled.
+      return courseInstance.enrollment?.selfEnrollmentEnabled ? null : FUTURE_DATE.toISOString();
+    }
+    return courseInstance.enrollment.selfEnrollmentEnabled.beforeDate;
+  });
+
+  const enrollmentLtiEnforcedDate = run(() => {
+    if (
+      courseInstance.enrollment == null ||
+      courseInstance.enrollment?.ltiEnforced == null ||
+      typeof courseInstance.enrollment?.ltiEnforced === 'boolean'
+    ) {
+      // Default value for ltiEnforced is false.
+      if (courseInstance.enrollment && courseInstance.enrollment.ltiEnforced == null) {
+        courseInstance.enrollment.ltiEnforced = false;
+      }
+      // A null date is used to indicate that the course instance always needs a linked LTI identity to access it.
+      return courseInstance.enrollment?.ltiEnforced ? null : FUTURE_DATE.toISOString();
+    }
+    return courseInstance.enrollment.ltiEnforced.beforeDate;
+  });
+
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
-    enrollment_lti_enforced: courseInstance.enrollment?.ltiEnforced ?? false,
-    self_enrollment_enabled: courseInstance.enrollment?.selfEnrollmentEnabled ?? true,
+    enrollment_lti_enforced: enrollmentLtiEnforcedDate,
+    self_enrollment_enabled: selfEnrollmentEnabledDate,
     self_enrollment_requires_secret_link:
       courseInstance.enrollment?.selfEnrollmentRequiresSecretLink ?? false,
     assessments_group_by: courseInstance.groupAssessmentsBy,
