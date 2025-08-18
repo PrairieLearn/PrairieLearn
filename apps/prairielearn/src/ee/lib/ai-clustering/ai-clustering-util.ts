@@ -177,7 +177,7 @@ export async function aiEvaluateStudentResponse({
     locals,
   );
 
-  console.log('Submission HTMLs', render_submission_results.data.submissionHtmls);
+  // console.log('Submission HTMLs', render_submission_results.data.submissionHtmls);
 
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
@@ -211,26 +211,25 @@ export async function aiEvaluateStudentResponse({
     },
     {
       role: 'user',
-      content: `CORRECT ANSWER: \n${question_answer}`,
+      content: `CORRECT ANSWER = \n${question_answer}`,
     },
     {
       role: 'user',
       content: `
 Identify the student's final answer. Then, identify the student's box answer. Consider the box answer. If the boxed answer exists, response = boxed answer. Else, response = final answer.
 
-Does the student's response match the correct answer exactly? Consider the student's answer exactly as presented - do not give them the benefit of the doubt. 
-Must be PRECISELY equivalent to the answer as written - no slight mathematical/notational differences are permitted, even if it is equivalent.
+Does the student's response match the correct answer exactly? Must be PRECISELY mathematically equivalent to the answer as written.
 
 Ensure that all parts of the correct answer are included. Any error in the response will disqualify it from being a correct answer.
 
 If it seems AMBIGUOUS (e.g. a few answers are present, one answer erased out, crossed out), mark it incorrect.
 
-Only evaluate their response, nothing more. Return only a boolean value, true if the answer is correct, false otherwise.
+Return a boolean corresponding to whether or not the student's response is equivalent to the correct answer.
       `
     }
   ];
 
-  console.log('messages', messages);
+  console.log('messages', JSON.stringify(messages));
 
   const completion = await openai.chat.completions.parse({
     messages,

@@ -131,6 +131,8 @@ export async function aiCluster({
                 openai
             });
 
+            console.log('responseCorrect', responseCorrect);
+
             await assignAiCluster({
               instanceQuestionId: instance_question.id,
               aiClusterId: responseCorrect ? correctCluster.id : incorrectCluster.id
