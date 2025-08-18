@@ -1,4 +1,4 @@
--- A null date is used to indicate that the enrollment is not enforced.
+-- A null date is used to indicate that the course instance doesn't need a linked LTI identity to access it.
 ALTER TABLE course_instances ADD COLUMN enrollment_lti_enforced TIMESTAMP WITH TIME ZONE;
 -- A null date is used to indicate that self-enrollment is not enabled.
 ALTER TABLE course_instances ADD COLUMN self_enrollment_enabled TIMESTAMP WITH TIME ZONE;
