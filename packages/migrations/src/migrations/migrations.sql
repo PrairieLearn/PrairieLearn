@@ -1,18 +1,18 @@
 -- BLOCK create_migrations_table
 CREATE TABLE IF NOT EXISTS migrations (
-  id BIGSERIAL PRIMARY KEY,
-  filename TEXT,
-  index INTEGER,
-  project TEXT DEFAULT 'prairielearn',
-  applied_at TIMESTAMP WITH TIME ZONE,
-  timestamp TEXT,
+  id bigserial PRIMARY KEY,
+  filename text,
+  index integer,
+  project text DEFAULT 'prairielearn',
+  applied_at timestamp with time zone,
+  timestamp text,
   UNIQUE (project, index),
   UNIQUE (project, timestamp)
 );
 
 -- BLOCK add_projects_column
 ALTER TABLE migrations
-ADD COLUMN IF NOT EXISTS project TEXT DEFAULT 'prairielearn';
+ADD COLUMN IF NOT EXISTS project text DEFAULT 'prairielearn';
 
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_project_index_key ON migrations (index, project);
 
@@ -23,7 +23,7 @@ DROP INDEX IF EXISTS migrations_index_key;
 
 -- BLOCK add_timestamp_column
 ALTER TABLE migrations
-ADD COLUMN IF NOT EXISTS timestamp TEXT;
+ADD COLUMN IF NOT EXISTS timestamp text;
 
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_project_timestamp_key ON migrations (timestamp, project);
 
@@ -43,7 +43,7 @@ INSERT INTO
   migrations (filename, timestamp, project, applied_at)
 VALUES
   (
-    $filename::TEXT,
+    $filename::text,
     $timestamp,
     $project,
     CURRENT_TIMESTAMP

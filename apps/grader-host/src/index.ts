@@ -83,7 +83,7 @@ async.series(
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
-      function idleErrorHandler(err) {
+      function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {
         globalLogger.error('idle client error', err);
         Sentry.captureException(err, {
           level: 'fatal',
