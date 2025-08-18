@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -9,7 +11,6 @@ import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import { randomBytes } from 'node:crypto';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 

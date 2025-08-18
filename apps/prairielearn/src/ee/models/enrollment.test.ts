@@ -4,6 +4,7 @@ import { queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
+import { generateJoinId } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
@@ -14,7 +15,6 @@ import {
   getEnrollmentCountsForInstitution,
 } from './enrollment.js';
 import { ensurePlanGrant } from './plan-grants.js';
-import { generateJoinId } from '../../sync/fromDisk/courseInstances.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
