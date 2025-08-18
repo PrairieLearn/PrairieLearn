@@ -48,7 +48,7 @@ export const CourseInstanceJsonSchema = z
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
     enrollment: z
       .object({
-        selfEnrollment: z
+        selfEnrollmentEnabled: z
           .union([
             z
               .boolean()
@@ -59,12 +59,19 @@ export const CourseInstanceJsonSchema = z
               beforeDate: z
                 .string()
                 .describe(
-                  'Before this date, selfEnrollment is true. After this date, selfEnrollment is false.',
+                  'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled.',
                 ),
             }),
           ])
           .optional()
           .default(true),
+        selfEnrollmentRequiresSecretLink: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
+          )
+          .optional()
+          .default(false),
         ltiEnforced: z
           .union([
             z.boolean().describe('If true, LTI enrollment is enforced.'),

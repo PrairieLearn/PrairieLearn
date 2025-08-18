@@ -34,6 +34,10 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | nu
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
+    enrollment_lti_enforced: courseInstance.enrollment?.ltiEnforced ?? false,
+    self_enrollment_enabled: courseInstance.enrollment?.selfEnrollmentEnabled ?? true,
+    self_enrollment_requires_secret_link:
+      courseInstance.enrollment?.selfEnrollmentRequiresSecretLink ?? false,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
     share_source_publicly: courseInstance.shareSourcePublicly || false,

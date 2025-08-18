@@ -1349,11 +1349,14 @@ async function validateCourseInstance({
     }
   }
 
-  if ((courseInstance?.enrollment?.selfEnrollment ?? true) !== true) {
-    errors.push('"selfEnrollment" is not configurable yet.');
+  if ((courseInstance?.enrollment?.selfEnrollmentEnabled ?? true) !== true) {
+    errors.push('"selfEnrollmentEnabled" is not configurable yet.');
   }
   if ((courseInstance?.enrollment?.ltiEnforced ?? false) !== false) {
     errors.push('"ltiEnforced" is not configurable yet.');
+  }
+  if ((courseInstance?.enrollment?.selfEnrollmentRequiresSecretLink ?? false) !== false) {
+    errors.push('"selfEnrollmentRequiresSecretLink" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

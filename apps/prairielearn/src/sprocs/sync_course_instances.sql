@@ -146,7 +146,10 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        enrollment_lti_enforced = src.data->>'enrollment_lti_enforced',
         json_comment = (src.data->>'comment')::jsonb,
+        self_enrollment_enabled = src.data->>'self_enrollment_enabled',
+        self_enrollment_requires_secret_link = src.data->>'self_enrollment_requires_secret_link',
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
