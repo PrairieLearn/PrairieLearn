@@ -539,17 +539,6 @@ describe('Course instance syncing', () => {
     }[] = [
       {
         json: {
-          selfEnrollmentEnabled: { beforeDate: new Date('2025-06-15T00:00:00Z').toISOString() },
-          ltiEnforced: { afterDate: new Date('2025-12-31T23:59:59Z').toISOString() },
-        },
-        db: {
-          self_enrollment_enabled_before: new Date('2025-06-15T00:00:00Z').getTime(),
-          self_enrollment_requires_secret_link: false,
-          enrollment_lti_enforced_after: new Date('2025-12-31T23:59:59Z').getTime(),
-        },
-      },
-      {
-        json: {
           selfEnrollmentEnabled: true,
           selfEnrollmentRequiresSecretLink: true,
           ltiEnforced: true,
@@ -558,6 +547,17 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before: FUTURE_DATE.getTime(),
           self_enrollment_requires_secret_link: true,
           enrollment_lti_enforced_after: null,
+        },
+      },
+      {
+        json: {
+          selfEnrollmentEnabled: { beforeDate: new Date('2025-06-15T00:00:00Z').toISOString() },
+          ltiEnforced: { afterDate: new Date('2025-12-31T23:59:59Z').toISOString() },
+        },
+        db: {
+          self_enrollment_enabled_before: new Date('2025-06-15T00:00:00Z').getTime(),
+          self_enrollment_requires_secret_link: false,
+          enrollment_lti_enforced_after: new Date('2025-12-31T23:59:59Z').getTime(),
         },
       },
       {
@@ -586,10 +586,10 @@ describe('Course instance syncing', () => {
       const courseData = util.getCourseData();
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.enrollment = json;
 
-      console.log('Testing mapping:', {
-        json,
-        expected: db,
-      });
+      // console.log('Testing mapping:', {
+      //   json,
+      //   expected: db,
+      // });
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       const results = await util.syncCourseData(courseDir);
@@ -618,10 +618,11 @@ describe('Course instance syncing', () => {
           syncedCourseInstance.enrollment_lti_enforced_after?.getTime() ?? null,
       };
 
-      console.log('Result:', result);
-      console.log('Expected:', db);
+      // console.log('Result:', result);
+      // console.log('Expected:', db);
 
       assert.deepEqual(result, db);
+      console.log('success');
     }
   });
 });
