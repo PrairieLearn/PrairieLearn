@@ -47,12 +47,16 @@ ADD CONSTRAINT enrollments_impossible_synced CHECK (
 -- A user in any other state must have a user_id (including rejected users).
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_pending CHECK (
-  (status IN ('invited', 'rejected', 'lti13_pending')) = (user_id IS NULL)
+  (
+    status IN ('invited', 'rejected', 'lti13_pending')
+  ) = (user_id IS NULL)
 );
 
 -- Only enrollments in the 'invited' or 'rejected' state can have a pending_uid.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected CHECK ((status IN ('invited', 'rejected')) = (pending_uid IS NOT NULL));
+ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected CHECK (
+  (status IN ('invited', 'rejected')) = (pending_uid IS NOT NULL)
+);
 
 -- Enrollments in the 'joined' state must have a user_id, and they cannot have any pending_* columns.
 ALTER TABLE enrollments
@@ -87,7 +91,8 @@ ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid_lti13_sub CHECK 
     user_id IS NOT NULL
     AND pending_lti13_sub IS NULL
     AND pending_uid IS NULL
-  ) OR (
+  )
+  OR (
     user_id IS NULL
     AND pending_lti13_sub IS NOT NULL
     AND pending_uid IS NULL
