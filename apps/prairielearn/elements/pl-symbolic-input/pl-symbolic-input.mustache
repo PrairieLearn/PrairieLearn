@@ -117,7 +117,7 @@
                 await window.PLSymbolicInputParseError("{{uuid}}");
             });
         </script>
-        {{#raw_submitted_answer_l}}<math-field id="symbolic-input-parse-error-{{uuid}}" read-only custom-functions="{{custom_functions}}" allow-trig="{{allow_trig}}" class="gray-bg">{{raw_submitted_answer_l}}</math-field>{{/raw_submitted_answer_l}}
+        {{#raw_submitted_answer_l}}<math-field id="symbolic-input-parse-error-{{uuid}}" read-only custom-functions="{{custom_functions}}" {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} class="gray-bg">{{raw_submitted_answer_l}}</math-field>{{/raw_submitted_answer_l}}
     {{/formula_editor}}
     {{^formula_editor}}
         {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
@@ -185,7 +185,7 @@ ${{a_sub}}$
     data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"
     {{/raw_submitted_answer_l}}
     {{#raw_submitted_answer_l}}
-    data-bs-content='Parsed from <math-field read-only id="symbolic-input-popover-{{uuid}}" allow-trig="{{allow_trig}}" custom-functions="{{custom_functions_escaped}}" class="gray-bg">{{raw_submitted_answer_l}}</math-field>'
+    data-bs-content='Parsed from <math-field read-only id="symbolic-input-popover-{{uuid}}" {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} custom-functions="{{custom_functions_escaped}}" class="gray-bg">{{raw_submitted_answer_l}}</math-field>'
     {{/raw_submitted_answer_l}}
 >
     <i class="fa fa-question-circle" aria-hidden="true"></i>

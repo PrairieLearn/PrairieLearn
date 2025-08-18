@@ -7,7 +7,7 @@ window.PLSymbolicInput = async function (name) {
   const mf = document.getElementById('symbolic-input-' + name);
 
   // Always keep basic right-click items and append to other menu items
-  endMenuItems = mf.menuItems.filter(
+  const endMenuItems = mf.menuItems.filter(
     (item) =>
       item.id &&
       (item.id === 'cut' || item.id === 'copy' || item.id === 'paste' || item.id === 'select-all'),
@@ -22,7 +22,7 @@ window.PLSymbolicInput = async function (name) {
     {
       id: 'power',
       label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
-      onMenuSelect: () => mf.insert('{#@^{#?}}'),
+      onMenuSelect: () => mf.insert('{#@}^{#?}'),
     },
     {
       id: 'sqrt',
@@ -225,7 +225,7 @@ window.PLSymbolicInput = async function (name) {
   mf.setAttribute('placeholder', `\\text{${placeholderText}}`);
 
   // Set up sync between input box and hidden submission data inputs
-  updateSubmissionData = function () {
+  const updateSubmissionData = function () {
     $('#symbolic-input-sub-' + name).val(mf.getValue('plain-text'));
     $('#symbolic-input-latex-' + name).val(mf.getValue('latex'));
   };
@@ -303,27 +303,25 @@ function setUpSymbolicInputMacros(mf) {
     ? JSON.parse(mf.getAttribute('custom-functions').replaceAll("'", '"'))
     : [];
 
-  const disabledFunctions =
-    mf.getAttribute('allow-trig') === 'True'
-      ? new Set([])
-      : new Set([
-          'sin',
-          'cos',
-          'tan',
-          'asinh',
-          'atanh',
-          'acosh',
-          'arctan',
-          'arcsin',
-          'arccos',
-          'sec',
-          'cot',
-          'csc',
-          'asin',
-          'atan',
-          'acos',
-          'log',
-        ]);
+  const disabledFunctions = mf.getAttribute('allow-trig')
+    ? new Set([])
+    : new Set([
+        'sin',
+        'cos',
+        'tan',
+        'asinh',
+        'atanh',
+        'acosh',
+        'arctan',
+        'arcsin',
+        'arccos',
+        'sec',
+        'cot',
+        'csc',
+        'asin',
+        'atan',
+        'acos',
+      ]);
 
   const customFunctions = new Set(
     additionalFunctions.concat([

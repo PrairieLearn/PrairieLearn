@@ -237,6 +237,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_info": show_info,
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
+            "allow_trig": allow_trig,
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_l": raw_submitted_answer_l,
             "parse_error": parse_error,
