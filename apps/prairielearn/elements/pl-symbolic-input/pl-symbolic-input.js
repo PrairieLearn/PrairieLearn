@@ -1,7 +1,7 @@
 /**
  * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
  *
- * @param name Name of the element to look up the tag
+ * @param {string} name Name of the element to look up the tag
  */
 window.PLSymbolicInput = async function (name) {
   const mf = document.getElementById('symbolic-input-' + name);
@@ -10,19 +10,19 @@ window.PLSymbolicInput = async function (name) {
   endMenuItems = mf.menuItems.filter(
     (item) =>
       item.id &&
-      (item.id == 'cut' || item.id == 'copy' || item.id == 'paste' || item.id == 'select-all'),
+      (item.id === 'cut' || item.id === 'copy' || item.id === 'paste' || item.id === 'select-all'),
   );
 
   mf.menuItems = [
     {
       id: 'fraction',
-      label: () => `<span class='ML__insert-template'><sup>x</sup>&frasl;<sub>y</sub></span>`,
+      label: () => '<span class="ML__insert-template"><sup>x</sup>&frasl;<sub>y</sub></span>',
       onMenuSelect: () => mf.insert('\\frac{#@}{#?}'),
     },
     {
       id: 'power',
-      label: () => `<span class='ML__insert-template'>x<sup>y</sup></span>`,
-      onMenuSelect: () => mf.insert('${#@^{#?}}$'),
+      label: () => '<span class="ML__insert-template">x<sup>y</sup></span>',
+      onMenuSelect: () => mf.insert('{#@^{#?}}'),
     },
     {
       id: 'sqrt',
@@ -240,14 +240,16 @@ window.PLSymbolicInput = async function (name) {
       if (ev.key === '\\') {
         ev.preventDefault();
         mf.executeCommand(['insert', '\\backslash']);
-      } else if (ev.key === 'Escape') ev.preventDefault();
+      } else if (ev.key === 'Escape') {
+        ev.preventDefault();
+      }
     },
     { capture: true },
   );
 
   // Workaround for glitchy size-based menu button show/hide behavior
   if (!mf.getAttribute('read-only')) {
-    const resizeObserver = new ResizeObserver((e) => {
+    const resizeObserver = new ResizeObserver((_) => {
       if (mf.offsetWidth < 160) {
         mf.setAttribute('hide-menu', 'true');
       } else {
@@ -262,7 +264,7 @@ window.PLSymbolicInput = async function (name) {
  * Initialize the <math-field> element used to represent parse errors.
  * This element is read-only and only needs to be updated with the set of allowed function names for display
  *
- * @param uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
+ * @param {string} uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
  */
 window.PLSymbolicInputParseError = async function (uuid) {
   const mf = document.getElementById(`symbolic-input-parse-error-${uuid}`);
@@ -276,7 +278,7 @@ window.PLSymbolicInputParseError = async function (uuid) {
  * Initialize the <math-field> element used to represent raw parsed submissions.
  * This element is read-only and only needs to be updated with the set of allowed function names for display
  *
- * @param uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
+ * @param {string} uuid UUID of the element to look up the tag (used instead of name since there might be multiple submissions per element)
  */
 window.PLSymbolicInputPopover = async function (uuid) {
   // Wait for popover to appear
@@ -294,7 +296,7 @@ window.PLSymbolicInputPopover = async function (uuid) {
  * the allow-trig and custom-functions attributes and each allowed function is added as a "macro" to
  * automatically replace individual letters with well-formatted, atomic function name blocks.
  *
- * @param mf The <math-field> element to initialize
+ * @param {HTMLElement} mf The <math-field> element to initialize
  */
 function setUpSymbolicInputMacros(mf) {
   const additionalFunctions = mf.getAttribute('custom-functions')
@@ -355,7 +357,7 @@ function setUpSymbolicInputMacros(mf) {
   );
 
   // Remove disabled functions
-  for (let fn of disabledFunctions) customFunctions.delete(fn);
+  for (const fn of disabledFunctions) customFunctions.delete(fn);
 
   const macros = {};
   for (const fun of customFunctions) {
