@@ -41,32 +41,20 @@ ADD CONSTRAINT enrollments_impossible_synced CHECK (
   )
 );
 
--- If a user is invited or rejected an invitation, we don't link them to a user to avoid PII leakage.
--- A user in any other state must have a user_id.
+-- If a user is invited or rejected, we don't link them to a user to avoid PII leakage.
 -- Further discussion: https://github.com/PrairieLearn/PrairieLearn/issues/12198#issuecomment-3161792357
+-- Provisional 'lti13_pending' enrollments should never be associated with a user.
+-- A user in any other state must have a user_id (including rejected users).
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected CHECK (
-  (status IN ('invited', 'rejected')) = (user_id IS NULL)
+ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_pending CHECK (
+  (status IN ('invited', 'rejected', 'lti13_pending')) = (user_id IS NULL)
 );
 
--- Only users in the 'invited' state can have a pending_uid.
+-- Only enrollments in the 'invited' or 'rejected' state can have a pending_uid.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited CHECK ((status = 'invited') = (pending_uid IS NOT NULL));
+ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected CHECK ((status IN ('invited', 'rejected')) = (pending_uid IS NOT NULL));
 
--- Require exactly one of user_id and pending_uid to be NULL.
-ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid CHECK (
-  (
-    user_id IS NULL
-    AND pending_uid IS NOT NULL
-  )
-  OR (
-    user_id IS NOT NULL
-    AND pending_uid IS NULL
-  )
-);
-
--- If you are in the 'joined' state, you must have a user_id, and you cannot have any pending_* columns.
+-- Enrollments in the 'joined' state must have a user_id, and they cannot have any pending_* columns.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
   (status != 'joined')
@@ -78,7 +66,7 @@ ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
   )
 );
 
--- Only if a user is in the 'lti13_pending' state can they have a pending_lti13_sub and pending_lti13_instance_id.
+-- Only enrollments in the 'lti13_pending' state can have a pending_lti13_sub and pending_lti13_instance_id.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
   (status = 'lti13_pending') = (
@@ -87,7 +75,26 @@ ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
   )
 );
 
--- If a user is in the 'lti13_pending' state, they must have a lti_managed = TRUE.
+-- Require exactly one of user_id, pending_lti13_sub, and pending_uid to be NULL.
+ALTER TABLE enrollments
+ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid_lti13_sub CHECK (
+  (
+    user_id IS NULL
+    AND pending_lti13_sub IS NULL
+    AND pending_uid IS NOT NULL
+  )
+  OR (
+    user_id IS NOT NULL
+    AND pending_lti13_sub IS NULL
+    AND pending_uid IS NULL
+  ) OR (
+    user_id IS NULL
+    AND pending_lti13_sub IS NOT NULL
+    AND pending_uid IS NULL
+  )
+);
+
+-- If an enrollment is in the 'lti13_pending' state, it must have a lti_managed = TRUE.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_lti13_pending_lti_managed_true CHECK (
   (

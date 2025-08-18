@@ -546,7 +546,6 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  // View constraints on LTI and invitation states in 20250707220720_enrollments__meta_columns__add.sql
   lti_managed: z.boolean(),
   pending_lti13_instance_id: IdSchema.nullable(),
   pending_lti13_sub: z.string().nullable(),
