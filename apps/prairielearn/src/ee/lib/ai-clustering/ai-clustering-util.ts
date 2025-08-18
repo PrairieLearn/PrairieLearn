@@ -176,6 +176,9 @@ export async function aiEvaluateStudentResponse({
     course,
     locals,
   );
+
+  console.log('Submission HTMLs', render_submission_results.data.submissionHtmls);
+
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
   const submissionMessage = generateSubmissionMessage({
