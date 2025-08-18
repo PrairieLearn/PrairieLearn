@@ -94,7 +94,10 @@ FROM
 WHERE
   aca.ai_cluster_id            = $cluster_id
   AND ai.assessment_id          = $assessment_id
-  AND iq.requires_manual_grading = NOT($graded_allowed);
+  AND (
+    NOT $skip_graded_submissions 
+    OR iq.requires_manual_grading
+  );
 
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT

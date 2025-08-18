@@ -101,7 +101,7 @@ type RubricItemInput = Partial<RubricItem> & { order: number };
  * @param assessment_question_id - The assessment question being graded.
  * @param user_id - The user_id of the current grader. Typically the current effective user.
  * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
- * @param graded_allowed - Whether or not the next instance question URL must be graded.
+ * @param skip_graded_submissions - Whether or not to skip graded submissions. TODO: Better comment
  */
 export async function nextInstanceQuestionUrl(
   urlPrefix: string,
@@ -109,9 +109,8 @@ export async function nextInstanceQuestionUrl(
   assessment_question_id: string,
   user_id: string,
   prior_instance_question_id: string | null,
-  graded_allowed: boolean
+  skip_graded_submissions: boolean
 ): Promise<string> {
-  console.log('prior_instance_question_id', prior_instance_question_id);
   const priorInstanceQuestionAIClusterData = await sqldb.queryRow(
     sql.select_prior_instance_question_ai_cluster_data,
     {
@@ -120,11 +119,8 @@ export async function nextInstanceQuestionUrl(
     z.any()
   )
 
-  console.log('priorInstanceQuestionAIClusterData', priorInstanceQuestionAIClusterData);
-
-
   const instance_question_id = await sqldb.queryOptionalRow(
-    sql.select_next_ungraded_instance_question,
+    sql.select_next_instance_question,
     { 
       assessment_id, 
       assessment_question_id, 
@@ -132,7 +128,7 @@ export async function nextInstanceQuestionUrl(
       prior_instance_question_id, 
       cluster_count: priorInstanceQuestionAIClusterData.cluster_count,
       prior_ai_cluster_id: priorInstanceQuestionAIClusterData.ai_cluster_id,
-      graded_allowed
+      skip_graded_submissions
     },
     IdSchema,
   );

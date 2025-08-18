@@ -243,7 +243,7 @@ function AssessmentQuestionRow({
       <td class="align-middle">
         ${showGradingButton
           ? html`
-              <a class="btn btn-xs btn-primary" href="${gradingUrl}/next_ungraded">
+              <a class="btn btn-xs btn-primary" href="${gradingUrl}/next">
                 Grade next submission
               </a>
             `

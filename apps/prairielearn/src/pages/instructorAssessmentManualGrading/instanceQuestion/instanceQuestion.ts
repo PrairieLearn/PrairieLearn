@@ -264,10 +264,7 @@ const PostBodySchema = z.union([
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
-      ),
-    go_to_next_ungraded: z.string().optional().transform((val) => {
-      return val === 'true'
-    })
+      )
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -369,8 +366,6 @@ router.post(
         });
       }
 
-      console.log('body.go_to_next_ungraded', body.go_to_next_ungraded);
-
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
@@ -378,8 +373,8 @@ router.post(
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          !body.go_to_next_ungraded
-        ) + (!body.go_to_next_ungraded ? '?next_graded_allowed=true' : '')
+          res.locals.skip_graded_submissions
+        )
       );
     // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
     } else if (body.__action === 'add_manual_grade_for_cluster_ungraded' || body.__action === 'add_manual_grade_for_cluster') {
@@ -395,15 +390,13 @@ router.post(
         {
           cluster_id: cluster?.id,
           assessment_id: res.locals.assessment.id,
-          graded_allowed: body.__action === 'add_manual_grade_for_cluster'
+          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster'
         },
         z.object({
           instance_question_id: z.string(),
           submission_id: z.string()
         })
       );
-
-      console.log('instanceQuestionIdsInCluster', instanceQuestionsInCluster);
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -416,8 +409,6 @@ router.post(
         : undefined;
     
       for (const instanceQuestion of instanceQuestionsInCluster) {
-        console.log('Instance question id', instanceQuestion);
-
         const { modified_at_conflict } =
           await manualGrading.updateInstanceQuestionScore(
             res.locals.assessment.id,
@@ -448,8 +439,8 @@ router.post(
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          !body.go_to_next_ungraded
-        ) + (!body.go_to_next_ungraded ? '?next_graded_allowed=true' : '')
+          res.locals.skip_graded_submissions
+        )
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {

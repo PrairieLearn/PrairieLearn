@@ -37,20 +37,28 @@ $(() => {
       .modal('show');
   }
 
-  const goToNextUngradedCheckbox = document.querySelector('#go_to_next_ungraded');
+  const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
   const nextInstanceQuestionButton = document.querySelector('#next-instance-question-button');
-  const nextInstanceQuestionLinkData = decodeData('next-instance-question-link-data');
+  // const nextInstanceQuestionLinkData = decodeData('next-instance-question-link-data');
 
-  if (!goToNextUngradedCheckbox) {
-    throw new Error('goToNextUngradedCheckbox not found');
+  if (!skipGradedSubmissionsCheckbox) {
+    throw new Error('skipGradedSubmissionsCheckbox not found');
   }
   if (!nextInstanceQuestionButton) {
     throw new Error('nextInstanceQuestionButton not found');
   }
 
-  goToNextUngradedCheckbox.addEventListener('change', (e) => {
-    const newValue = e.target.checked;
-    nextInstanceQuestionButton.href = `${nextInstanceQuestionLinkData.assessment_question_url}/${newValue ? 'next_ungraded' : 'next'}?prior_instance_question_id=${nextInstanceQuestionLinkData.instance_question_id}`;
+  skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
+    // Update the side nav expanded state
+    await fetch('/pl/manual_grading/skip_graded_submissions', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        skip_graded_submissions: !e.target.checked,
+      }),
+    });
   })
 });
 

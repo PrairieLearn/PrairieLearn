@@ -362,7 +362,7 @@ export function AssessmentQuestion({
                           class="dropdown-item"
                           type="button"
                           data-bs-toggle="modal"
-                          data-bs-target="#delete-all-ai-grading-jobs-modal"
+                          data-bs-target="#delete-all-ai-clustering-results-modal"
                         >
                           Delete all AI clustering results
                         </button>
@@ -376,7 +376,7 @@ export function AssessmentQuestion({
         </div>
       </form>
     `,
-    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token })],
+    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token })],
   });
 }
 
@@ -403,6 +403,23 @@ function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="delete_ai_grading_jobs" />
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Delete</button>
+    `,
+  });
+}
+
+function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'delete-all-ai-clustering-results-modal',
+    title: 'Delete all AI clustering results',
+    body: html`
+      Are you sure you want to delete <strong>all AI clustering results</strong> for this assessment?
+      This action cannot be undone.
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="delete_ai_clustering_results" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,

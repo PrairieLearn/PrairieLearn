@@ -14,6 +14,7 @@ import {
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { deleteAiClusteringAssignmentsForAssessmentQuestion } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
 import {
   calculateAiGradingStats,
@@ -94,7 +95,7 @@ router.get(
 );
 
 router.get(
-  '/next_ungraded',
+  '/next',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -112,7 +113,7 @@ router.get(
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
         req.query.prior_instance_question_id ?? null,
-        false
+        res.locals.skip_graded_submissions
       )
     );
   }),
@@ -351,6 +352,21 @@ router.post(
       flash(
         'success',
         `Deleted AI grading results for ${iqs.length} ${iqs.length === 1 ? 'question' : 'questions'}.`,
+      );
+
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_ai_clustering_results') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const numDeleted = await deleteAiClusteringAssignmentsForAssessmentQuestion({
+        assessment_question_id: res.locals.assessment_question.id,
+      });
+
+      flash(
+        'success',
+        `Deleted AI clustering results for ${numDeleted} questions.`
       );
 
       res.redirect(req.originalUrl);

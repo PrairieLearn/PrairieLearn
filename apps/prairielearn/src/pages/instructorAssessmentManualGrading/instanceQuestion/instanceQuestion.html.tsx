@@ -29,8 +29,8 @@ export function InstanceQuestion({
   assignedGrader,
   lastGrader,
   clusterName,
-  next_graded_allowed
-  aiGradingInfo,
+  next_graded_allowed,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
@@ -123,7 +123,6 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 clusterName, 
-                next_graded_allowed,
                 aiGradingInfo,
               })}
             </div>

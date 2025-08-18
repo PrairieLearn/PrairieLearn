@@ -7,11 +7,11 @@ FROM
 WHERE 
   aca.instance_question_id = $prior_instance_question_id
 
--- BLOCK select_next_ungraded_instance_question
+-- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
     SELECT
-      iq.id,
+      iq.id as iq_id,
       iq.assigned_grader,
       ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
       (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order,
@@ -29,7 +29,7 @@ WITH
         OR iq.id != $prior_instance_question_id
       )
       AND (
-        COALESCE($graded_allowed, FALSE)
+        COALESCE($skip_graded_submissions, FALSE)
         OR iq.requires_manual_grading
       )
       AND (
@@ -47,12 +47,14 @@ WITH
       )
   )
 SELECT
-  id
+  iq_id
 FROM
   instance_questions_to_grade
+LEFT JOIN
+  ai_cluster_assignments AS aca ON aca.instance_question_id = instance_questions_to_grade.iq_id
 ORDER BY
   -- Questions that aren't clustered come last
-  ai_cluster_id IS NULL,
+  aca.ai_cluster_id IS NULL,
   -- Lower-numbered clusters come first
   ai_cluster_order > prior_ai_cluster_order,
   -- Choose one assigned to current user if one exists, unassigned if not
@@ -62,7 +64,7 @@ ORDER BY
   -- questions page.
   iq_stable_order > prior_iq_stable_order DESC,
   iq_stable_order,
-  id
+  iq_id
 LIMIT
   1;
 

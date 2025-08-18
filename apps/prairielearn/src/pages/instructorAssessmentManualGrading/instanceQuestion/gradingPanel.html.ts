@@ -26,8 +26,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   clusterName,
-  next_graded_allowed
-  aiGradingInfo,
+  aiGradingInfo
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -39,11 +38,8 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   clusterName?: string;
-  next_graded_allowed?: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
-  console.log('next_graded_allowed', next_graded_allowed);
-
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
@@ -162,21 +158,21 @@ ${submission.feedback?.manual}</textarea
               </li>
             `
           : ''}
-        <li class="list-group-item d-flex align-items-center">
-          <div class="form-check">
+        <li class="list-group-item d-flex align-items-center flex-wrap">
+          <div class="form-check me-auto">
             <input
-              id="go_to_next_ungraded"
+              id="skip_graded_submissions"
               type="checkbox"
               class="form-check-input"
-              name="go_to_next_ungraded"
+              name="skip_graded_submissions"
               value="true"
-              ${!next_graded_allowed ? 'checked' : ''}
+              ${!resLocals.skip_graded_submissions ? 'checked' : ''}
             />
-            <label class="form-check-label" for="go_to_next_ungraded">
-              Go to next ungraded
+            <label class="form-check-label" for="skip_graded_submissions">
+                Skip graded submissions
             </label>
           </div>
-          <span class="ms-auto">
+          <span>
             ${!disable
               ? html`
                   ${clusterName ? html`
@@ -240,7 +236,7 @@ ${submission.feedback?.manual}</textarea
               <a
                 id="next-instance-question-button"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/${next_graded_allowed ? 'next' : 'next_ungraded'}?prior_instance_question_id=${resLocals.instance_question.id}"
+                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals.instance_question.id}"
               >
                 ${skip_text}
               </a>

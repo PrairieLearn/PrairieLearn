@@ -59,3 +59,14 @@ ON
     ai_cluster_assignments.ai_cluster_id = ac.id
 WHERE
     iq.assessment_question_id = $assessment_question_id
+
+-- BLOCK delete_ai_clustering_assignments_for_assessment_question
+
+WITH deleted AS (
+  DELETE FROM ai_cluster_assignments
+  USING instance_questions AS iq
+  WHERE ai_cluster_assignments.instance_question_id = iq.id
+    AND iq.assessment_question_id = $assessment_question_id
+  RETURNING *
+)
+SELECT COUNT(*)::int FROM deleted;

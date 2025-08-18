@@ -181,7 +181,7 @@ export async function aiEvaluateStudentResponse({
   const submissionMessage = generateSubmissionMessage({
     submission_text,
     submitted_answer: submission.submitted_answer,
-    include_images_only: false, // This is not a grading request, so we don't need the grading prompt.
+    include_images_only: true
   });
 
   // Extract all images
@@ -227,6 +227,8 @@ Only evaluate their response, nothing more. Return only a boolean value, true if
     }
   ];
 
+  console.log('messages', messages);
+
   const completion = await openai.chat.completions.parse({
     messages,
     model: CLUSTERING_OPENAI_MODEL,
@@ -246,4 +248,16 @@ Only evaluate their response, nothing more. Return only a boolean value, true if
   }
 
   return completionContent.correct;
+}
+
+export async function deleteAiClusteringAssignmentsForAssessmentQuestion(
+  {
+    assessment_question_id
+  }: {
+    assessment_question_id: string
+  }
+) {
+  return await queryRow(sql.delete_ai_clustering_assignments_for_assessment_question, {
+    assessment_question_id
+  }, z.number());
 }
