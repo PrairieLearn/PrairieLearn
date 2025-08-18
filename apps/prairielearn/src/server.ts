@@ -2064,6 +2064,7 @@ export async function startServer(app: express.Express) {
         valueType: opentelemetry.ValueType.INT,
         interval: 1000,
       },
+      // @ts-expect-error TODO: type correctly
       () => {
         return util.promisify(server.getConnections.bind(server))();
       },

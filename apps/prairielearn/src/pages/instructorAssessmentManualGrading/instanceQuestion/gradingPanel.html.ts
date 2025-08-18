@@ -1,6 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type Issue, type User } from '../../../lib/db-types.js';
 
 import {
@@ -26,6 +27,7 @@ export function GradingPanel({
   grading_job,
   clusterName,
   next_graded_allowed
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -38,6 +40,7 @@ export function GradingPanel({
   grading_job?: SubmissionOrGradingJob;
   clusterName?: string;
   next_graded_allowed?: boolean;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   console.log('next_graded_allowed', next_graded_allowed);
 
@@ -103,7 +106,7 @@ export function GradingPanel({
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
-            ? RubricInputSection({ resLocals, disable })
+            ? RubricInputSection({ resLocals, disable, aiGradingInfo })
             : ''}
         </li>
         ${resLocals.assessment_question.max_auto_points || auto_points
@@ -114,7 +117,7 @@ export function GradingPanel({
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
                 ${resLocals.rubric_data?.replace_auto_points
-                  ? RubricInputSection({ resLocals, disable })
+                  ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}
               </li>
             `

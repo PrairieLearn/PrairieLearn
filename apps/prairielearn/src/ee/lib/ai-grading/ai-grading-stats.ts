@@ -6,12 +6,14 @@ import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgre
 import { DateFromISOString } from '@prairielearn/zod';
 
 import {
+  type Assessment,
   type AssessmentQuestion,
   IdSchema,
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { getAiClusterAssignment } from '../ai-clustering/ai-clustering-util.js';
+import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
@@ -71,7 +73,8 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
-      ai_cluster_name: null
+      ai_cluster_name: null,
+      rubric_similarity: null,
     };
     results.push(instance_question);
 
@@ -101,6 +104,18 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
     if (manualGradingJob?.manual_rubric_grading_id && aiGradingJob?.manual_rubric_grading_id) {
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
+
+      const allRubricItems = await selectRubricForGrading(assessment_question.id);
+      const tpItems = manualItems
+        .filter((item) => rubricListIncludes(aiItems, item))
+        .map((item) => ({ ...item, true_positive: true }));
+      const tnItems = allRubricItems
+        .filter(
+          (item) => !rubricListIncludes(manualItems, item) && !rubricListIncludes(aiItems, item),
+        )
+        .map((item) => ({ ...item, true_positive: false }));
+      instance_question.rubric_similarity = tpItems.concat(tnItems);
+
       const fpItems = aiItems
         .filter((item) => !rubricListIncludes(manualItems, item))
         .map((item) => ({ ...item, false_positive: true }));
@@ -229,4 +244,181 @@ export function meanError(actual: number[], predicted: number[]): number {
   const mean = errors.reduce((acc, val) => acc + val, 0) / n;
 
   return Math.round(mean * 100) / 100;
+}
+
+interface AiGradingPerformanceStatsRow {
+  assessmentQuestionId: string;
+  truePositives: number;
+  trueNegatives: number;
+  falsePositives: number;
+  falseNegatives: number;
+  accuracy: number;
+  precision: number;
+  recall: number;
+  f1score: number;
+}
+
+type AiGradingAQPerformanceStatsQuestionRow = {
+  questionNumber: number;
+} & AiGradingPerformanceStatsRow;
+
+/**
+ * Safely divide two numbers, returning 0 if the denominator is 0.
+ */
+function safeDivide(numerator: number, denominator: number): number {
+  return denominator === 0 ? 0 : numerator / denominator;
+}
+
+/**
+ * Generate detailed AI grading classification performance statistics for an assessment, including confusion
+ * matrix elements (TP, FP, TN, FN), accuracy, precision, recall, and F1 score per question and overall.
+ */
+export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
+  perQuestion: AiGradingAQPerformanceStatsQuestionRow[];
+  total: AiGradingPerformanceStatsRow;
+}> {
+  const assessmentQuestionRows = await selectAssessmentQuestions({
+    assessment_id: assessment.id,
+  });
+
+  if (!assessmentQuestionRows) {
+    return {
+      perQuestion: [],
+      total: {
+        assessmentQuestionId: 'Totals',
+        accuracy: 0,
+        truePositives: 0,
+        trueNegatives: 0,
+        falsePositives: 0,
+        falseNegatives: 0,
+        precision: 0,
+        recall: 0,
+        f1score: 0,
+      },
+    };
+  }
+
+  const rows: AiGradingAQPerformanceStatsQuestionRow[] = [];
+
+  const totals = {
+    truePositives: 0,
+    trueNegatives: 0,
+    falsePositives: 0,
+    falseNegatives: 0,
+  };
+
+  for (let i = 0; i < assessmentQuestionRows.length; i++) {
+    const questionRow = assessmentQuestionRows[i];
+
+    const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
+      questionRow.assessment_question.id,
+    );
+
+    const instanceQuestionsTable = await fillInstanceQuestionColumns(
+      instanceQuestions,
+      questionRow.assessment_question,
+    );
+
+    const confusionMatrix = {
+      truePositives: 0,
+      trueNegatives: 0,
+      falsePositives: 0,
+      falseNegatives: 0,
+    };
+
+    for (const row of instanceQuestionsTable) {
+      if (row.ai_grading_status === 'LatestRubric') {
+        if (row.rubric_difference) {
+          for (const difference of row.rubric_difference) {
+            if (difference.false_positive) {
+              confusionMatrix.falsePositives++;
+            } else {
+              confusionMatrix.falseNegatives++;
+            }
+          }
+        }
+        if (row.rubric_similarity) {
+          for (const item of row.rubric_similarity) {
+            if (item.true_positive) {
+              confusionMatrix.truePositives++;
+            } else {
+              confusionMatrix.trueNegatives++;
+            }
+          }
+        }
+      }
+    }
+
+    totals.truePositives += confusionMatrix.truePositives;
+    totals.trueNegatives += confusionMatrix.trueNegatives;
+    totals.falsePositives += confusionMatrix.falsePositives;
+    totals.falseNegatives += confusionMatrix.falseNegatives;
+
+    const accuracy = safeDivide(
+      confusionMatrix.truePositives + confusionMatrix.trueNegatives,
+      confusionMatrix.truePositives +
+        confusionMatrix.trueNegatives +
+        confusionMatrix.falsePositives +
+        confusionMatrix.falseNegatives,
+    );
+
+    const precision = safeDivide(
+      confusionMatrix.truePositives,
+      confusionMatrix.truePositives + confusionMatrix.falsePositives,
+    );
+
+    const recall = safeDivide(
+      confusionMatrix.truePositives,
+      confusionMatrix.truePositives + confusionMatrix.falseNegatives,
+    );
+
+    const f1score = safeDivide(2 * (precision * recall), precision + recall);
+
+    rows.push({
+      assessmentQuestionId: questionRow.assessment_question.id,
+      questionNumber: i + 1,
+      truePositives: confusionMatrix.truePositives,
+      trueNegatives: confusionMatrix.trueNegatives,
+      falsePositives: confusionMatrix.falsePositives,
+      falseNegatives: confusionMatrix.falseNegatives,
+      accuracy,
+      precision,
+      recall,
+      f1score,
+    });
+  }
+
+  const totalAccuracy = safeDivide(
+    totals.truePositives + totals.trueNegatives,
+    totals.truePositives + totals.trueNegatives + totals.falsePositives + totals.falseNegatives,
+  );
+
+  const totalPrecision = safeDivide(
+    totals.truePositives,
+    totals.truePositives + totals.falsePositives,
+  );
+
+  const totalRecall = safeDivide(
+    totals.truePositives,
+    totals.truePositives + totals.falseNegatives,
+  );
+
+  const totalF1Score = safeDivide(2 * (totalPrecision * totalRecall), totalPrecision + totalRecall);
+
+  const total: AiGradingPerformanceStatsRow = {
+    assessmentQuestionId: 'Totals',
+    truePositives: totals.truePositives,
+    trueNegatives: totals.trueNegatives,
+    falsePositives: totals.falsePositives,
+    falseNegatives: totals.falseNegatives,
+    accuracy: totalAccuracy,
+    precision: totalPrecision,
+    recall: totalRecall,
+    f1score: totalF1Score,
+  };
+
+  return {
+    perQuestion: rows,
+    total,
+  };
 }

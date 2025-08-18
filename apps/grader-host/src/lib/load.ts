@@ -8,9 +8,13 @@ import logger from './logger.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let initialized = false;
-let currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
+let currentJobs: number;
+let maxJobs: number;
+let lastEstimateTimeMS: number;
+let lastIncrementTimeMS: number;
+let integratedLoad: number;
 
-export function init(newMaxJobs) {
+export function init(newMaxJobs: number) {
   maxJobs = newMaxJobs;
   const nowMS = Date.now();
   lastEstimateTimeMS = nowMS;
@@ -79,7 +83,7 @@ function _reportLoad() {
     })
     .finally(() => {
       // Report load again in the future
-      setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+      setTimeout(_reportLoad, config.reportIntervalSec * 1000);
     });
 }
 

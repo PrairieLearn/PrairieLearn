@@ -5,10 +5,10 @@ CREATE FUNCTION
         IN mode_reason enum_mode_reason,
         IN user_id bigint,
         IN uid text,
-        IN date TIMESTAMP WITH TIME ZONE,
-        IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
+        IN date timestamp with time zone,
+        IN use_date_check boolean, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
         OUT authorized boolean,
-        OUT exam_access_end TIMESTAMP WITH TIME ZONE
+        OUT exam_access_end timestamp with time zone
     ) AS $$
 BEGIN
     authorized := TRUE;
