@@ -1,4 +1,5 @@
 import random
+import re
 from enum import Enum
 
 import chevron
@@ -27,6 +28,7 @@ DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
+FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
@@ -49,6 +51,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "imaginary-unit-for-display",
         "allow-trig-functions",
         "size",
+        "formula-editor",
         "show-help-text",
         "allow-blank",
         "blank-value",
@@ -206,11 +209,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ).strip()
 
     # Next, get some attributes we will use in multiple places
-    raw_submitted_answer = data["raw_submitted_answers"].get(name)
+    formula_editor = pl.get_boolean_attrib(
     score = data["partial_scores"].get(name, {}).get("score")
 
     if data["panel"] == "question":
         editable = data["editable"]
+
+        # For display/editing purposes, treat multi-character vars as function names to prevent adding spaces
+        multi_char_variables = [v for v in variables if len(v) > 1]
+        custom_functions += multi_char_variables
 
         html_params = {
             "question": True,
@@ -226,8 +233,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
             "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer_l": raw_submitted_answer_l,
             "parse_error": parse_error,
             display.value: True,
+            "formula_editor": formula_editor,
+            "custom_functions": custom_functions,
         }
 
         if show_score and score is not None:
@@ -245,6 +255,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
             "raw_submitted_answer": raw_submitted_answer,
+            "raw_submitted_answer_l": raw_submitted_answer_l,
+            "formula_editor": formula_editor,
+            "custom_functions": custom_functions,
+            # Used in the "Parsed from" popover, which is wrapped in single quotes
+            "custom_functions_escaped": str(custom_functions).replace("'", "&quot;"),
+            "allow_trig": allow_trig,
             display.value: True,
             "error": parse_error or missing_input,
             "missing_input": missing_input,
@@ -297,6 +313,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+    formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", FORMULA_EDITOR_DEFAULT
+    )
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
@@ -318,8 +337,24 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
 
+    constants_class = psu._Constants()
+    operators: list[str] = list(psu.STANDARD_OPERATORS)
+    operators.extend(custom_functions)
+    operators.extend(constants_class.functions.keys())
+    if allow_trig:
+        operators.extend(constants_class.trig_functions.keys())
+    to_remove = ["Abs", "Min", "Max"]
+    for o in to_remove:
+        operators.remove(o)
+
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answers"].get(name, None)
+    if formula_editor:
+        a_sub = format_submission(
+            data["submitted_answers"].get(name, None), operators, variables
+        )
+    else:
+        a_sub = data["submitted_answers"].get(name, None)
+
     if allow_blank and a_sub is not None and a_sub.strip() == "":
         a_sub = blank_value
     if not a_sub:
@@ -376,6 +411,68 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
         )
         data["submitted_answers"][name] = None
+
+
+def format_submission(
+    sub: str | None, functions: list[str], variables: list[str]
+) -> str | None:
+    """
+    Format raw formula editor input to be compatible with SymPy. This is necessary
+    due to some incompatibilities between SymPy's and the editor's syntax.
+
+    There are 2 cases that need to be handled:
+    1. In the raw output, multi-letter function and variable names are separated
+    by spaces (e.g., "s i n" needs to become "sin")
+    2. In the raw output, in some cases, numbers immediately follow variables
+    (e.g., "e^x2" is intended to be "e^x * 2" (otherwise there'd be parentheses),
+    but to make SymPy use this interpretation it needs to become "e^x 2")
+
+    Args:
+        sub: The formula editor input (extracted as plain text)
+        functions: The list of allowed function names in the input
+        variables: The list of allowed variable names in the input
+
+    Returns:
+        str: The formatted version of the input
+    """
+    if sub is None:
+        return None
+
+    # Step 1: Compile list of allowed names
+    multi_char_variables = [v for v in variables if len(v) > 1]
+    names = functions + multi_char_variables
+    # Necessary for names that are prefixes of other names, e.g., cos and cosh
+    names = sorted(names, key=len, reverse=True)
+
+    # Step 2: Merge allowed names (e.g., "s i n" -> "sin")
+    names_found = []
+    for name in names:
+        spaced_name = name
+        spaced_name = " ".join(list(name))
+        if spaced_name in sub:
+            sub = sub.replace(spaced_name, name)
+            names_found.append(name)
+
+    # Step 3: Protect names that contain numbers (e.g., in custom functions)
+    protected_indices = set()
+    for name in names_found:
+        if re.search(r"\d", name):
+            for match in re.finditer(re.escape(name), sub):
+                start = match.start()
+                end = match.end()
+                protected_indices.update(range(start, end))
+
+    # Step 4: Add spaces between all letter->number pairs that are not custom names
+    i = 1
+    while i < len(sub):
+        if i in protected_indices:
+            i += 1
+            continue
+        if sub[i].isdigit() and sub[i - 1].isalpha():
+            sub = sub[:i] + " " + sub[i:]
+            i += 1  # Skip over the just inserted space
+        i += 1
+    return sub
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
