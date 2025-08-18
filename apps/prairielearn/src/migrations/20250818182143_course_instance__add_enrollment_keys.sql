@@ -1,6 +1,6 @@
 -- A null date is used to indicate that the course instance always needs a linked LTI identity to access it.
-ALTER TABLE course_instances ADD COLUMN enrollment_lti_enforced TIMESTAMP WITH TIME ZONE;
+ALTER TABLE course_instances ADD COLUMN enrollment_lti_enforced_after TIMESTAMP WITH TIME ZONE;
 -- A null date is used to indicate that self-enrollment is enabled.
-ALTER TABLE course_instances ADD COLUMN self_enrollment_enabled TIMESTAMP WITH TIME ZONE;
+ALTER TABLE course_instances ADD COLUMN self_enrollment_enabled_before TIMESTAMP WITH TIME ZONE;
 -- If this is true, self-enrollment requires a secret link to enroll.
 ALTER TABLE course_instances ADD COLUMN self_enrollment_requires_secret_link BOOLEAN default FALSE;

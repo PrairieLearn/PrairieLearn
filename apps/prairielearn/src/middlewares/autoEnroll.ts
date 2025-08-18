@@ -1,8 +1,8 @@
 import asyncHandler from 'express-async-handler';
 
+import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment } from '../models/enrollment.js';
-import type { CourseInstance } from '../lib/db-types.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -16,8 +16,8 @@ export default asyncHandler(async (req, res, next) => {
   // If we are on the enrollment page for the secret link, that page should handle
   // the enrollment.
   const selfEnrollmentWithoutSecretLinkEnabled =
-    courseInstance.self_enrollment_enabled != null &&
-    courseInstance.self_enrollment_enabled > new Date() &&
+    courseInstance.self_enrollment_enabled_before != null &&
+    new Date() < courseInstance.self_enrollment_enabled_before &&
     !courseInstance.self_enrollment_requires_secret_link;
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&

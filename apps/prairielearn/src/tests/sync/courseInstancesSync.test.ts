@@ -4,7 +4,13 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { type CourseInstance, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import {
+  type CourseInstanceJsonInput,
+  CourseInstanceJsonSchema,
+} from '../../schemas/infoCourseInstance.js';
+import { FUTURE_DATE } from '../../sync/fromDisk/courseInstances.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
@@ -514,11 +520,111 @@ describe('Course instance syncing', () => {
       await util.syncCourseData(courseDir);
     });
 
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     const syncedCourseInstance = syncedCourseInstances.find(
       (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
     );
     assert.isOk(syncedCourseInstance);
-    assert.match(syncedCourseInstance?.sync_errors, /"shareSourcePublicly" cannot be used/);
+    assert.match(syncedCourseInstance?.sync_errors ?? '', /"shareSourcePublicly" cannot be used/);
+  });
+
+  it('syncs enrollment settings correctly', async () => {
+    const schemaMappings: {
+      json: CourseInstanceJsonInput['enrollment'];
+      db: {
+        self_enrollment_enabled_before: number | null;
+        self_enrollment_requires_secret_link: boolean;
+        enrollment_lti_enforced_after: number | null;
+      };
+    }[] = [
+      {
+        json: {
+          selfEnrollmentEnabled: { beforeDate: new Date('2025-06-15T00:00:00Z').toISOString() },
+          ltiEnforced: { afterDate: new Date('2025-12-31T23:59:59Z').toISOString() },
+        },
+        db: {
+          self_enrollment_enabled_before: new Date('2025-06-15T00:00:00Z').getTime(),
+          self_enrollment_requires_secret_link: false,
+          enrollment_lti_enforced_after: new Date('2025-12-31T23:59:59Z').getTime(),
+        },
+      },
+      {
+        json: {
+          selfEnrollmentEnabled: true,
+          selfEnrollmentRequiresSecretLink: true,
+          ltiEnforced: true,
+        },
+        db: {
+          self_enrollment_enabled_before: FUTURE_DATE.getTime(),
+          self_enrollment_requires_secret_link: true,
+          enrollment_lti_enforced_after: null,
+        },
+      },
+      {
+        json: undefined,
+        db: {
+          self_enrollment_enabled_before: FUTURE_DATE.getTime(),
+          self_enrollment_requires_secret_link: false,
+          enrollment_lti_enforced_after: FUTURE_DATE.getTime(),
+        },
+      },
+      {
+        json: {
+          selfEnrollmentEnabled: false,
+          ltiEnforced: false,
+        },
+        db: {
+          self_enrollment_enabled_before: null,
+          self_enrollment_requires_secret_link: false,
+          enrollment_lti_enforced_after: FUTURE_DATE.getTime(),
+        },
+      },
+    ];
+
+    // Test various enrollment configurations
+    for (const { json, db } of schemaMappings) {
+      const courseData = util.getCourseData();
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.enrollment = json;
+
+      console.log('Testing mapping:', {
+        json,
+        expected: db,
+      });
+
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      const results = await util.syncCourseData(courseDir);
+      assert.isOk(results.status === 'complete');
+      const courseInstanceErrors =
+        results.courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.errors;
+      assert.isEmpty(courseInstanceErrors);
+
+      // TODO: Check that there are no warnings.
+
+      const syncedCourseInstances = await util.dumpTableWithSchema(
+        'course_instances',
+        CourseInstanceSchema,
+      );
+      const syncedCourseInstance = syncedCourseInstances.find(
+        (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
+      );
+      assert.isOk(syncedCourseInstance);
+
+      const result = {
+        self_enrollment_enabled_before:
+          syncedCourseInstance.self_enrollment_enabled_before?.getTime() ?? null,
+        self_enrollment_requires_secret_link:
+          syncedCourseInstance.self_enrollment_requires_secret_link,
+        enrollment_lti_enforced_after:
+          syncedCourseInstance.enrollment_lti_enforced_after?.getTime() ?? null,
+      };
+
+      console.log('Result:', result);
+      console.log('Expected:', db);
+
+      assert.deepEqual(result, db);
+    }
   });
 });

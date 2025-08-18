@@ -207,8 +207,8 @@ export interface CourseData {
 
 /**
  * Loads and validates an entire course from a directory on disk.
- * Downstream callers of this function can use
- * ...Json types instead of ...JsonInput types.
+ * Downstream callers of this function should still use
+ * ...JsonInput types.
  */
 export async function loadFullCourse(
   courseId: string | null,
@@ -706,6 +706,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return null;
   }
   if (infofile.hasErrors(loadedJson) || !loadedJson.data) {
+    console.log('Loaded JSON has errors');
     return loadedJson;
   }
 
@@ -739,6 +740,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   infoFilename: string;
   defaultInfo: any;
   schema: any;
+  /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
   validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
@@ -1349,14 +1351,17 @@ async function validateCourseInstance({
     }
   }
 
+  // TODO: Remove these warnings once we've migrated all courses to the new schema.
+  // These are warnings so that we can test syncing with the new schema.
+
   if ((courseInstance?.enrollment?.selfEnrollmentEnabled ?? true) !== true) {
-    errors.push('"selfEnrollmentEnabled" is not configurable yet.');
+    warnings.push('"selfEnrollmentEnabled" is not configurable yet.');
   }
   if ((courseInstance?.enrollment?.ltiEnforced ?? false) !== false) {
-    errors.push('"ltiEnforced" is not configurable yet.');
+    warnings.push('"ltiEnforced" is not configurable yet.');
   }
   if ((courseInstance?.enrollment?.selfEnrollmentRequiresSecretLink ?? false) !== false) {
-    errors.push('"selfEnrollmentRequiresSecretLink" is not configurable yet.');
+    warnings.push('"selfEnrollmentRequiresSecretLink" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

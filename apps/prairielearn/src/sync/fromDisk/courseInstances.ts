@@ -1,6 +1,7 @@
-import { boolean, z } from 'zod';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -8,12 +9,11 @@ import { type CourseInstanceJsonInput } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import { run } from '@prairielearn/run';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-/** This date is used to represent a 'false' boolean value for a date field. */
-const FUTURE_DATE = new Date('2099-12-31T23:59:59.999Z');
+/** This date is used to represent a boolean value for a date field. */
+export const FUTURE_DATE = new Date(Date.UTC(2099, 11, 31));
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | null | undefined) {
   if (!courseInstance) return null;
@@ -32,36 +32,32 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | nu
       comment: accessRule.comment,
     }));
 
-  const selfEnrollmentEnabledDate = run(() => {
-    if (
-      courseInstance.enrollment == null ||
-      courseInstance.enrollment.selfEnrollmentEnabled == null ||
-      typeof courseInstance.enrollment?.selfEnrollmentEnabled === 'boolean'
-    ) {
+  const selfEnrollmentEnabledBefore = run(() => {
+    if (courseInstance.enrollment?.selfEnrollmentEnabled == null) {
+      courseInstance.enrollment ??= {};
       // Default value for selfEnrollmentEnabled is true.
-      if (courseInstance.enrollment && courseInstance.enrollment.selfEnrollmentEnabled == null) {
-        courseInstance.enrollment.selfEnrollmentEnabled = true;
-      }
-      // A null date is used to indicate that self-enrollment is enabled.
-      return courseInstance.enrollment?.selfEnrollmentEnabled ? null : FUTURE_DATE.toISOString();
+      courseInstance.enrollment.selfEnrollmentEnabled = true;
+    }
+
+    if (typeof courseInstance.enrollment.selfEnrollmentEnabled === 'boolean') {
+      // A null date is used to indicate that self-enrollment is not enabled.
+      return courseInstance.enrollment.selfEnrollmentEnabled ? FUTURE_DATE.toISOString() : null;
     }
     return courseInstance.enrollment.selfEnrollmentEnabled.beforeDate;
   });
 
-  const enrollmentLtiEnforcedDate = run(() => {
-    if (
-      courseInstance.enrollment == null ||
-      courseInstance.enrollment?.ltiEnforced == null ||
-      typeof courseInstance.enrollment?.ltiEnforced === 'boolean'
-    ) {
+  const enrollmentLtiEnforcedAfter = run(() => {
+    if (courseInstance.enrollment?.ltiEnforced == null) {
+      courseInstance.enrollment ??= {};
       // Default value for ltiEnforced is false.
-      if (courseInstance.enrollment && courseInstance.enrollment.ltiEnforced == null) {
-        courseInstance.enrollment.ltiEnforced = false;
-      }
-      // A null date is used to indicate that the course instance always needs a linked LTI identity to access it.
-      return courseInstance.enrollment?.ltiEnforced ? null : FUTURE_DATE.toISOString();
+      courseInstance.enrollment.ltiEnforced = false;
     }
-    return courseInstance.enrollment.ltiEnforced.beforeDate;
+
+    if (typeof courseInstance.enrollment.ltiEnforced === 'boolean') {
+      // A null date is used to indicate that the course instance always needs a linked LTI identity to access it.
+      return courseInstance.enrollment.ltiEnforced ? null : FUTURE_DATE.toISOString();
+    }
+    return courseInstance.enrollment.ltiEnforced.afterDate;
   });
 
   return {
@@ -70,8 +66,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | nu
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
-    enrollment_lti_enforced: enrollmentLtiEnforcedDate,
-    self_enrollment_enabled: selfEnrollmentEnabledDate,
+    enrollment_lti_enforced_after: enrollmentLtiEnforcedAfter,
+    self_enrollment_enabled_before: selfEnrollmentEnabledBefore,
     self_enrollment_requires_secret_link:
       courseInstance.enrollment?.selfEnrollmentRequiresSecretLink ?? false,
     assessments_group_by: courseInstance.groupAssessmentsBy,

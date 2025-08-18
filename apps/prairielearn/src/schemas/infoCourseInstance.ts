@@ -30,7 +30,8 @@ const AccessControlJsonSchema = z
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-export const CourseInstanceJsonSchema = z
+export const 
+CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     uuid: z
@@ -74,9 +75,17 @@ export const CourseInstanceJsonSchema = z
           .default(false),
         ltiEnforced: z
           .union([
-            z.boolean().describe('If true, LTI enrollment is enforced.'),
+            z
+              .boolean()
+              .describe(
+                'If true, students must be authenticated with a linked LTI identity to access the course instance.',
+              ),
             z.object({
-              beforeDate: z.string().describe('Before this date, ltiEnforced is true.'),
+              afterDate: z
+                .string()
+                .describe(
+                  'Before this date, LTI enrollment is not enforced. After this date, LTI enrollment is enforced.',
+                ),
             }),
           ])
           .optional()

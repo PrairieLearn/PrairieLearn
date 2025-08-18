@@ -64,15 +64,15 @@
         "ltiEnforced": {
           "anyOf": [
             {
-              "description": "If true, LTI enrollment is enforced.",
+              "description": "If true, students must be authenticated with a linked LTI identity to access the course instance.",
               "type": "boolean"
             },
             {
               "type": "object",
-              "required": ["beforeDate"],
+              "required": ["afterDate"],
               "properties": {
-                "beforeDate": {
-                  "description": "Before this date, ltiEnforced is true.",
+                "afterDate": {
+                  "description": "Before this date, LTI enrollment is not enforced. After this date, LTI enrollment is enforced.",
                   "type": "string"
                 }
               }

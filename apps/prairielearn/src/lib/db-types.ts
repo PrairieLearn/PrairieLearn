@@ -453,12 +453,14 @@ export const CourseInstanceSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
   enrollment_limit: z.number().nullable(),
-  enrollment_lti_enforced: DateFromISOString.nullable(),
+  enrollment_lti_enforced_after:
+    DateFromISOString.nullable() /** A null value means that the course instance always requires LTI. */,
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
-  self_enrollment_enabled: DateFromISOString.nullable(),
+  self_enrollment_enabled_before:
+    DateFromISOString.nullable() /** A null value means that self-enrollment is not enabled. */,
   self_enrollment_requires_secret_link: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
