@@ -4,12 +4,9 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { type CourseInstance, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import {
-  type CourseInstanceJsonInput,
-  CourseInstanceJsonSchema,
-} from '../../schemas/infoCourseInstance.js';
+import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import { FUTURE_DATE } from '../../sync/fromDisk/courseInstances.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
