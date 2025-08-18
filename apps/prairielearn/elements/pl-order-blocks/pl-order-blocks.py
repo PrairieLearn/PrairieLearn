@@ -374,10 +374,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ordering_message = "there may be other correct orders"
         else:
             ordering_message = "in the specified order"
-        check_indentation = pl.get_boolean_attrib(
-            element, "indentation", INDENTION_DEFAULT
-        )
-
+        check_indentation = order_blocks_options.indentation
         required_indents = {
             block["indent"] for block in data["correct_answers"][answer_name]
         }
