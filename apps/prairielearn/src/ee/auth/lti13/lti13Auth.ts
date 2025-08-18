@@ -348,7 +348,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   if (cacheResult) {
     throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
   }
-  await cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+  cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
   // Canvas OIDC logins expire after 3600 seconds
 
   // Save parameters about the platform back to the lti13_instance

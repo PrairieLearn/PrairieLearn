@@ -132,7 +132,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
     allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-    const files = await buildContextForElementDocs(fileText);
+    const files = buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
         client,

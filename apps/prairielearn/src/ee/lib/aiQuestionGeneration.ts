@@ -208,11 +208,11 @@ function extractFromCompletion(
  * Returns the AI question generation cache used for rate limiting.
  */
 let aiQuestionGenerationCache: Cache | undefined;
-export function getAiQuestionGenerationCache() {
+export async function getAiQuestionGenerationCache() {
   // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();
-  aiQuestionGenerationCache.init({
+  await aiQuestionGenerationCache.init({
     type: config.nonVolatileCacheType,
     keyPrefix: config.cacheKeyPrefix,
     redisUrl: config.nonVolatileRedisUrl,
@@ -264,7 +264,7 @@ export async function getIntervalUsage({
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
-export async function addCompletionCostToIntervalUsage({
+export function addCompletionCostToIntervalUsage({
   aiQuestionGenerationCache,
   userId,
   promptTokens,

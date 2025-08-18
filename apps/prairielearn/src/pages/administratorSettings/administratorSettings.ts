@@ -14,12 +14,9 @@ import { AdministratorSettings } from './administratorSettings.html.js';
 
 const router = Router();
 
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    res.send(AdministratorSettings({ resLocals: res.locals }));
-  }),
-);
+router.get('/', (req, res) => {
+  res.send(AdministratorSettings({ resLocals: res.locals }));
+});
 
 router.post(
   '/',

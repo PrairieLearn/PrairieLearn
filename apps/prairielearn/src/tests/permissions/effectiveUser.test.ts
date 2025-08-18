@@ -403,7 +403,7 @@ describe('effective user', { timeout: 60_000 }, function () {
   });
 
   test.sequential('instructor cannot request higher course instance role', async () => {
-    updateCourseInstancePermissionsRole({
+    await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
       course_instance_id: '1',

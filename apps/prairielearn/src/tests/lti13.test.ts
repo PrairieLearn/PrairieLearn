@@ -284,7 +284,7 @@ describe('LTI 1.3', () => {
   });
 
   afterAll(async () => {
-    helperServer.after();
+    await helperServer.after();
     config.isEnterprise = false;
     config.features = {};
   });
@@ -445,7 +445,7 @@ describe('LTI 1.3', () => {
     const app = express();
     app.use(express.urlencoded({ extended: true }));
 
-    app.post('/token', async (req, res) => {
+    app.post('/token', (req, res) => {
       assert.equal(req.body.grant_type, 'client_credentials');
       assert.equal(req.body.client_id, CLIENT_ID);
       assert.equal(

@@ -42,9 +42,9 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  (req, res) => {
     res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
-  }),
+  },
 );
 
 router.post(

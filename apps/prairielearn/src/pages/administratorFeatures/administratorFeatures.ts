@@ -33,17 +33,14 @@ function validateFeature(feature: string): FeatureName {
   return feature;
 }
 
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    res.send(
-      AdministratorFeatures({
-        features: features.allFeatures().sort(),
-        resLocals: res.locals,
-      }),
-    );
-  }),
-);
+router.get('/', (req, res) => {
+  res.send(
+    AdministratorFeatures({
+      features: features.allFeatures().sort(),
+      resLocals: res.locals,
+    }),
+  );
+});
 
 router.get(
   '/:feature',

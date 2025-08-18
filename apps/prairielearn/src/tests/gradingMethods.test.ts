@@ -132,7 +132,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -165,7 +165,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -199,7 +199,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -231,7 +231,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -295,7 +295,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -327,7 +327,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -385,7 +385,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -428,7 +428,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -464,7 +464,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -504,7 +504,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -542,7 +542,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
           const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -584,7 +584,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -616,7 +616,7 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {

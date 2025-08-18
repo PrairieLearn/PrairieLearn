@@ -770,7 +770,7 @@ export async function renderPanelsForSubmission({
         urlPrefix,
       }).toString();
     },
-    async () => {
+    () => {
       // Render the question score panel
       if (!renderScorePanels) return;
 
@@ -796,7 +796,7 @@ export async function renderPanelsForSubmission({
         instance_question_info: { question_number, previous_variants },
       }).toString();
     },
-    async () => {
+    () => {
       // Render the assessment score panel
       if (!renderScorePanels) return;
 

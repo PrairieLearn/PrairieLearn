@@ -49,51 +49,51 @@ export default function (options = { publicQuestionPreview: false }) {
     }),
   );
 
-  router.get(
-    '/',
-    asyncHandler(async (req, res) => {
-      if (!req.query.file_name) {
-        throw new HttpStatusError(400, 'file_name query parameter is required');
-      }
-      res.send(
-        ExternalImageCapture({
-          variantId: req.params.variant_id,
-          fileName: req.query.file_name as string,
-          resLocals: res.locals,
-        }),
+  router.get('/', (req, res) => {
+    const params = req.params as { variant_id?: string };
+    if (!req.query.file_name || !params.variant_id) {
+      throw new HttpStatusError(
+        400,
+        'file_name query parameter and variant_id path parameter are required',
       );
-    }),
-  );
+    }
+    res.send(
+      ExternalImageCapture({
+        variantId: params.variant_id,
+        fileName: req.query.file_name as string,
+        resLocals: res.locals,
+      }),
+    );
+  });
 
   // Handles image uploading from the external image capture page.
-  router.post(
-    '/',
-    asyncHandler(async (req, res) => {
-      const variantId = req.params.variant_id as string;
-      const fileName = req.body.file_name as string | undefined;
+  router.post('/', (req, res) => {
+    const params = req.params as { variant_id?: string };
+    const fileName = req.body.file_name as string | undefined;
 
-      if (!fileName) {
-        throw new HttpStatusError(400, 'file_name is required');
-      }
+    if (!fileName || !params.variant_id) {
+      throw new HttpStatusError(400, 'file_name and variant_id are required');
+    }
 
-      if (!req.file?.buffer) {
-        throw new HttpStatusError(400, 'No file uploaded');
-      }
+    const variantId = params.variant_id;
 
-      if (req.file.buffer.length > 10 * 1024 * 1024) {
-        throw new HttpStatusError(400, 'File size exceeds the limit of 10MB');
-      }
+    if (!req.file?.buffer) {
+      throw new HttpStatusError(400, 'No file uploaded');
+    }
 
-      // Emit a socket event to notify the client that the image has been captured.
-      emitExternalImageCapture({
-        variant_id: variantId,
-        file_name: fileName,
-        file_content: req.file.buffer.toString('base64'),
-      });
+    if (req.file.buffer.length > 10 * 1024 * 1024) {
+      throw new HttpStatusError(400, 'File size exceeds the limit of 10MB');
+    }
 
-      res.status(200).send('Success');
-    }),
-  );
+    // Emit a socket event to notify the client that the image has been captured.
+    emitExternalImageCapture({
+      variant_id: variantId,
+      file_name: fileName,
+      file_content: req.file.buffer.toString('base64'),
+    });
+
+    res.status(200).send('Success');
+  });
 
   return router;
 }

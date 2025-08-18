@@ -349,7 +349,7 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.state === CREATED) {
       this.state = EXITED;
     } else if (this.state === WAITING) {
-      this._cleanup();
+      void this._cleanup();
       this.state = EXITING;
     }
     this._checkState();
@@ -480,7 +480,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
     this.timeoutID = null;
-    this._cleanup();
+    void this._cleanup();
     this.state = EXITING;
     this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
@@ -499,7 +499,7 @@ export class CodeCallerContainer implements CodeCaller {
    * @param err An error that occurred while waiting for the container to exit.
    * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err: Error | null | undefined, code?: number) {
+  _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {

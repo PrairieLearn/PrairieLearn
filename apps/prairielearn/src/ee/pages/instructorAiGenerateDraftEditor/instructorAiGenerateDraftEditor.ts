@@ -40,7 +40,7 @@ import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEdit
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-const aiQuestionGenerationCache = getAiQuestionGenerationCache();
+const aiQuestionGenerationCache = await getAiQuestionGenerationCache();
 
 async function saveGeneratedQuestion(
   res: Response,

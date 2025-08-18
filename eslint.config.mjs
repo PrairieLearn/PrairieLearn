@@ -1,4 +1,6 @@
 // @ts-check
+import path from 'path';
+
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
@@ -194,6 +196,7 @@ export default tseslint.config([
       'no-useless-concat': 'off', // TODO: Consider enabling this
       'no-useless-constructor': 'off',
       'no-useless-return': 'off', // TODO: Consider enabling this
+      'no-void': 'off', // https://typescript-eslint.io/rules/no-floating-promises/#ignorevoid
       'object-shorthand': 'error',
       'one-var': ['off', 'never'], // TODO: Consider enabling this
       'prefer-arrow-callback': 'off',
@@ -529,6 +532,73 @@ export default tseslint.config([
       'jsdoc/require-returns': 'off',
       'jsdoc/require-param': 'off',
       'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    // We only include apps/prairielearn for performance reasons.
+    files: ['apps/prairielearn/**/*.{ts,tsx}'],
+    extends: [tseslint.configs.recommendedTypeCheckedOnly],
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // We don't always check that we got a error when a promise is rejected.
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        {
+          allow: [{ name: ['Error', 'URL', 'URLSearchParams'], from: 'lib' }],
+          allowAny: true,
+          allowBoolean: true,
+          allowNullish: true,
+          allowNumber: true,
+          allowRegExp: true,
+        },
+      ],
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+
+        {
+          checksConditionals: true,
+          checksSpreads: true,
+          checksVoidReturn: {
+            // Common usage with `async` functions
+            arguments: false,
+            // Common usage with `async` onClick handlers
+            attributes: false,
+            inheritedMethods: true,
+            // Common usage with e.g. setState
+            properties: false,
+            returns: true,
+            variables: true,
+          },
+        },
+      ],
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allow: [
+            {
+              name: 'HttpRedirect',
+              from: 'file',
+            },
+          ],
+          allowRethrowing: true,
+          allowThrowingAny: true,
+          allowThrowingUnknown: true,
+        },
+      ],
+    },
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+        },
+        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
+      },
     },
   },
   {

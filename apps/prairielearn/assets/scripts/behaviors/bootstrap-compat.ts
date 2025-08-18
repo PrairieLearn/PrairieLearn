@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
 // eslint-disable-next-line no-console

@@ -263,20 +263,17 @@ async function pipeCursorToArchive<T>(
       }
     }
   }
-  archive.finalize();
+  await archive.finalize();
 }
 
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-    res.send(
-      InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
-    );
-  }),
-);
+router.get('/', (req, res) => {
+  if (!res.locals.authz_data.has_course_instance_permission_view) {
+    throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+  }
+  res.send(
+    InstructorAssessmentDownloads({ resLocals: res.locals, filenames: getFilenames(res.locals) }),
+  );
+});
 
 /**
  * Local abstraction to adapt our internal notion of columns to the columns

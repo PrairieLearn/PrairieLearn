@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import type { Job, JobSequence } from '../lib/db-types.js';
+import type { Job } from '../lib/db-types.js';
 
-export function JobStatus({ status }: { status: Job['status'] | JobSequence['status'] }) {
+export function JobStatus({ status }: { status: Job['status'] }) {
   if (status === 'Running') {
     return html`<span class="badge text-bg-primary">Running</span>`;
   } else if (status === 'Success') {

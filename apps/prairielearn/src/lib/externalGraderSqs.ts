@@ -74,7 +74,7 @@ export class ExternalGraderSqs implements Grader {
         async () => sendJobToQueue(grading_job.id, question, config),
       ],
       (err) => {
-        fs.remove(dir);
+        void fs.remove(dir);
         if (err) {
           emitter.emit('error', err);
         } else {

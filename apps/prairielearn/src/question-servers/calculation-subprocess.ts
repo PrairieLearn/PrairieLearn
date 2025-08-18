@@ -145,6 +145,7 @@ export async function grade(
 // The following functions don't do anything for v2 questions; they're just
 // here to satisfy the question server interface.
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function render(
   _renderSelection: RenderSelection,
   _variant: Variant,
@@ -163,6 +164,7 @@ export async function render(
   return { courseIssues: [], data };
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function prepare(
   _question: Question,
   _course: Course,
@@ -176,6 +178,7 @@ export async function prepare(
   return { courseIssues: [], data };
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export async function parse(
   submission: ParseSubmission,
   variant: Variant,

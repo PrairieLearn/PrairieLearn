@@ -90,6 +90,7 @@ async function drainQueue(sqs: SQSClient, queueName: string) {
       // keep getting messages if we got some this time
       return true;
     },
+    // eslint-disable-next-line @typescript-eslint/require-await
     async (keepGoing) => keepGoing,
   );
   return messages;

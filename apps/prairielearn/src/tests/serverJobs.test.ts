@@ -31,6 +31,7 @@ describe('server-jobs', () => {
         description: 'test server job',
       });
 
+      // eslint-disable-next-line @typescript-eslint/require-await
       await serverJob.execute(async (job) => {
         job.info('testing info');
         job.error('testing error');
@@ -59,6 +60,7 @@ describe('server-jobs', () => {
       });
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/require-await
         serverJob.execute(async (job) => {
           job.info('testing info');
           throw new Error('failing job');
@@ -82,6 +84,7 @@ describe('server-jobs', () => {
       });
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/require-await
         serverJob.execute(async (job) => {
           job.fail('failing job');
         }),
@@ -109,6 +112,7 @@ describe('server-jobs', () => {
       });
 
       await expect(
+        // eslint-disable-next-line @typescript-eslint/require-await
         serverJob.executeUnsafe(async (job) => {
           job.info('testing info');
           throw new Error('failing job');

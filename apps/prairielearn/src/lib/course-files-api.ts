@@ -13,6 +13,7 @@ function getCourseFilesLink() {
   if (config.courseFilesApiTransport === 'process') {
     return unstable_localLink({
       router: courseFilesRouter,
+      // eslint-disable-next-line @typescript-eslint/require-await
       createContext: async () => ({ jwt: null, bypassJwt: true }),
     });
   }

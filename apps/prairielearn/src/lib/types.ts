@@ -48,6 +48,7 @@ export type ExpandRecursively<T> = T extends object
     : never
   : T;
 
-export function assertNever(value: never): never {
-  throw new Error(`Unexpected value: ${value}`);
+export function assertNever(value: never, message = 'Unexpected value'): never {
+  // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+  throw new Error(`${message}: ${value}`);
 }

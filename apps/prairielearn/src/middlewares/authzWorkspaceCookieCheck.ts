@@ -1,11 +1,11 @@
-import asyncHandler from 'express-async-handler';
+import type { NextFunction, Request, Response } from 'express';
 
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { idsEqual } from '../lib/id.js';
 
-export default asyncHandler(async (req, res, next) => {
+export default (req: Request, res: Response, next: NextFunction): void => {
   // This middleware looks for a workspace_id-specific cookie and,
   // if found, skips the rest of authn/authz. The special cookie is
   // set by middlewares/authzWorkspaceCookieSet.js
@@ -26,4 +26,4 @@ export default asyncHandler(async (req, res, next) => {
 
   // otherwise we fall through and proceed to the full authn/authz stack
   next();
-});
+};

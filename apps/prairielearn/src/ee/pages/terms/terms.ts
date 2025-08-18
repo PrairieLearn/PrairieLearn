@@ -11,12 +11,9 @@ import { Terms } from './terms.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-router.get(
-  '/',
-  asyncHandler(async (req, res) => {
-    res.send(Terms({ user: res.locals.authn_user, resLocals: res.locals }));
-  }),
-);
+router.get('/', (req, res) => {
+  res.send(Terms({ user: res.locals.authn_user, resLocals: res.locals }));
+});
 
 router.post(
   '/',

@@ -194,9 +194,9 @@ function StudentsCard({
                 aria-label="Search by UID, name or email."
                 placeholder="Search by UID, name, email..."
                 value={globalFilter}
-                onInput={(e) => {
+                onInput={async (e) => {
                   if (!(e.target instanceof HTMLInputElement)) return;
-                  setGlobalFilter(e.target.value);
+                  await setGlobalFilter(e.target.value);
                 }}
               />
               <button
@@ -205,7 +205,7 @@ function StudentsCard({
                 aria-label="Clear search"
                 title="Clear search"
                 data-bs-toggle="tooltip"
-                onClick={() => setGlobalFilter('')}
+                onClick={async () => await setGlobalFilter('')}
               >
                 <i class="bi bi-x-circle" aria-hidden="true" />
               </button>

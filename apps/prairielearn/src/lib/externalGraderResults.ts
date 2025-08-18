@@ -35,7 +35,7 @@ export async function init() {
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
-  (async () => {
+  void (async () => {
     while (true) {
       // Spin until we can get at least one message from the queue.
       let messages: ReceiveMessageResult['Messages'];

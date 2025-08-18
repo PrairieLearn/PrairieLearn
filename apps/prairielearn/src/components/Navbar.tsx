@@ -1,8 +1,9 @@
 import { type FlashMessageType, flash } from '@prairielearn/flash';
-import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { assertNever } from '../lib/types.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
@@ -187,7 +188,7 @@ function NavbarByType({
       } else if (navbarType === 'institution') {
         return NavbarInstitution({ resLocals });
       } else {
-        throw new Error(`Unknown navbarType: ${navbarType}`);
+        assertNever(navbarType, 'Unknown navbarType');
       }
     }
   }
@@ -213,7 +214,7 @@ function UserDropdownMenu({
     authn_is_administrator,
   } = resLocals;
 
-  let displayedName: HtmlValue;
+  let displayedName = '';
   if (authz_data) {
     displayedName = authz_data.user.name || authz_data.user.uid;
 
@@ -232,11 +233,14 @@ function UserDropdownMenu({
     (authz_data.authn_has_course_permission_preview ||
       authz_data.authn_has_course_instance_permission_view)
   ) {
-    displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
+    displayedName = html`${displayedName}
+      <span class="badge text-bg-warning">student</span>`.toString();
   } else if (authz_data?.overrides) {
-    displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
+    displayedName = html`${displayedName}
+      <span class="badge text-bg-warning">modified</span>`.toString();
   } else if (navbarType === 'instructor') {
-    displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
+    displayedName = html`${displayedName}
+      <span class="badge text-bg-success">staff</span>`.toString();
   }
 
   return html`

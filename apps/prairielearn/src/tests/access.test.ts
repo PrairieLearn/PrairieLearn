@@ -46,39 +46,39 @@ describe('Access control', { timeout: 20000 }, function () {
       2450 after course_instance
      */
 
-  function cookiesStudent() {
+  async function cookiesStudent() {
     const cookies = new fetchCookie.toughCookie.CookieJar();
-    cookies.setCookie('pl_test_user=test_student', siteUrl);
+    await cookies.setCookie('pl_test_user=test_student', siteUrl);
     return cookies;
   }
 
-  function cookiesStudentExam() {
-    const cookies = cookiesStudent();
-    cookies.setCookie('pl_test_mode=Exam', siteUrl);
+  async function cookiesStudentExam() {
+    const cookies = await cookiesStudent();
+    await cookies.setCookie('pl_test_mode=Exam', siteUrl);
     return cookies;
   }
 
-  function cookiesStudentExamBeforeCourseInstance() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
+  async function cookiesStudentExamBeforeCourseInstance() {
+    const cookies = await cookiesStudentExam();
+    await cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
-  function cookiesStudentExamBeforeAssessment() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
+  async function cookiesStudentExamBeforeAssessment() {
+    const cookies = await cookiesStudentExam();
+    await cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
-  function cookiesStudentExamAfterAssessment() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
+  async function cookiesStudentExamAfterAssessment() {
+    const cookies = await cookiesStudentExam();
+    await cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
-  function cookiesStudentExamAfterCourseInstance() {
-    const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
+  async function cookiesStudentExamAfterCourseInstance() {
+    const cookies = await cookiesStudentExam();
+    await cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
@@ -89,7 +89,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getPl(cookies, shouldContainQA101) {
+  async function getPl(cookies: Parameters<typeof fetchCookie>[1], shouldContainQA101: boolean) {
     const res = await fetchCookie(fetch, cookies)(siteUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -100,7 +100,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('1. GET /pl', function () {
     it('as student should not contain QA 101', async () => {
-      await getPl(cookiesStudent(), false);
+      await getPl(await cookiesStudent(), false);
     });
   });
 
@@ -118,13 +118,13 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('4. GET /pl', function () {
     it('as student should contain QA 101', async () => {
-      await getPl(cookiesStudent(), true);
+      await getPl(await cookiesStudent(), true);
     });
     it('as student in Exam mode before course instance time period should not contain QA 101', async () => {
-      await getPl(cookiesStudentExamBeforeCourseInstance(), false);
+      await getPl(await cookiesStudentExamBeforeCourseInstance(), false);
     });
     it('as student in Exam mode after course instance time period should not contain QA 101', async () => {
-      await getPl(cookiesStudentExamAfterCourseInstance(), false);
+      await getPl(await cookiesStudentExamAfterCourseInstance(), false);
     });
   });
 

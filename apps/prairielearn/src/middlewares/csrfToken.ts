@@ -1,11 +1,11 @@
-import asyncHandler from 'express-async-handler';
+import type { NextFunction, Request, Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 
-export default asyncHandler(async (req, res, next) => {
+export default (req: Request, res: Response, next: NextFunction): void => {
   const tokenData = {
     url: req.originalUrl,
     authn_user_id: res.locals.authn_user?.user_id,
@@ -24,4 +24,4 @@ export default asyncHandler(async (req, res, next) => {
     }
   }
   next();
-});
+};
