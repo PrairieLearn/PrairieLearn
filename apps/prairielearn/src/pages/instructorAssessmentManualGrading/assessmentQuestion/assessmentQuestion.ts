@@ -18,6 +18,7 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { toggleAiGradingMode } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   AssessmentQuestionSchema,
@@ -195,9 +196,7 @@ router.post(
         res.send({});
       }
     } else if (req.body.__action === 'toggle_ai_grading_mode') {
-      await queryAsync(sql.toggle_ai_grading_mode, {
-        assessment_question_id: res.locals.assessment_question.id,
-      });
+      await toggleAiGradingMode(res.locals.assessment_question.id);
       res.redirect(req.originalUrl);
     } else if (
       ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
