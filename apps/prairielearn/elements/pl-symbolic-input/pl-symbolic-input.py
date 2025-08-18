@@ -210,6 +210,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Next, get some attributes we will use in multiple places
     formula_editor = pl.get_boolean_attrib(
+        element, "formula-editor", FORMULA_EDITOR_DEFAULT
+    )
+    raw_submitted_answer_l = data["raw_submitted_answers"].get(name + "-latex", None)
+    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+
     score = data["partial_scores"].get(name, {}).get("score")
 
     if data["panel"] == "question":

@@ -1,3 +1,5 @@
+/**
+ * Initialize a <math-field> element with custom settings for <pl-symbolic-input>
  *
  * @param name Name of the element to look up the tag
  */
