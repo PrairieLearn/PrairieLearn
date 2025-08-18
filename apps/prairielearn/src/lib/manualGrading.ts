@@ -111,10 +111,29 @@ export async function nextInstanceQuestionUrl(
   prior_instance_question_id: string | null,
   graded_allowed: boolean
 ): Promise<string> {
-  console.log('graded_allowed', graded_allowed);
+  console.log('prior_instance_question_id', prior_instance_question_id);
+  const priorInstanceQuestionAIClusterData = await sqldb.queryRow(
+    sql.select_prior_instance_question_ai_cluster_data,
+    {
+      prior_instance_question_id
+    },
+    z.any()
+  )
+
+  console.log('priorInstanceQuestionAIClusterData', priorInstanceQuestionAIClusterData);
+
+
   const instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_ungraded_instance_question,
-    { assessment_id, assessment_question_id, user_id, prior_instance_question_id, graded_allowed },
+    { 
+      assessment_id, 
+      assessment_question_id, 
+      user_id, 
+      prior_instance_question_id, 
+      cluster_count: priorInstanceQuestionAIClusterData.cluster_count,
+      prior_ai_cluster_id: priorInstanceQuestionAIClusterData.ai_cluster_id,
+      graded_allowed
+    },
     IdSchema,
   );
 

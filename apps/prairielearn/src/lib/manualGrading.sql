@@ -1,3 +1,12 @@
+-- BLOCK select_prior_instance_question_ai_cluster_data
+SELECT 
+  COUNT(*) as cluster_count,
+  MAX(aca.ai_cluster_id) as ai_cluster_id
+FROM 
+  ai_cluster_assignments as aca
+WHERE 
+  aca.instance_question_id = $prior_instance_question_id
+
 -- BLOCK select_next_ungraded_instance_question
 WITH
   instance_questions_to_grade AS (
@@ -5,10 +14,13 @@ WITH
       iq.id,
       iq.assigned_grader,
       ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
-      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order
+      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order,
+      (aca.ai_cluster_id + $cluster_count) % $cluster_count as ai_cluster_order,
+      ($prior_ai_cluster_id + $cluster_count) % $cluster_count as prior_ai_cluster_order
     FROM
       instance_questions AS iq
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+      LEFT JOIN ai_cluster_assignments AS aca ON aca.instance_question_id = iq.id
     WHERE
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
@@ -39,6 +51,10 @@ SELECT
 FROM
   instance_questions_to_grade
 ORDER BY
+  -- Questions that aren't clustered come last
+  ai_cluster_id IS NULL,
+  -- Lower-numbered clusters come first
+  ai_cluster_order > prior_ai_cluster_order,
   -- Choose one assigned to current user if one exists, unassigned if not
   assigned_grader NULLS LAST,
   -- Choose question that list after the prior if one exists. Follow the same
