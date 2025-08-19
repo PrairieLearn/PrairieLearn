@@ -18,7 +18,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
 
 const STANDARD_CLUSTERS = [
-    'Correct', 'Incorrect'
+    'Answer Match', 'Review Needed'
 ]
 
 /** Insert the clusters for an assessment question if they don't exist */

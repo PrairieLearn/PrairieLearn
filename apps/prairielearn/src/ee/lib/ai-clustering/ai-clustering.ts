@@ -85,17 +85,17 @@ export async function aiCluster({
           assessmentQuestionId: assessment_question.id
         });
 
-        const correctCluster = clusters.find((c) => c.cluster_name === 'Correct');
-        const incorrectCluster = clusters.find((c) => c.cluster_name === 'Incorrect');
+        const answerMatchCluster = clusters.find((c) => c.cluster_name === 'Answer Match');
+        const reviewNeededCluster = clusters.find((c) => c.cluster_name === 'Review Needed');
 
-        if (!correctCluster) {
-          // Handle missing correct cluster
-          throw new Error(`Missing correct cluster for assessment question ${assessment_question.id}`);
+        if (!answerMatchCluster) {
+          // Handle missing answer match cluster
+          throw new Error(`Missing answer match cluster for assessment question ${assessment_question.id}`);
         }
 
-        if (!incorrectCluster) {
-          // Handle missing incorrect cluster
-          throw new Error(`Missing incorrect cluster for assessment question ${assessment_question.id}`);
+        if (!reviewNeededCluster) {
+          // Handle missing review needed cluster
+          throw new Error(`Missing review needed cluster for assessment question ${assessment_question.id}`);
         }
 
         let index = 1;
@@ -128,7 +128,7 @@ export async function aiCluster({
 
             await assignAiCluster({
               instanceQuestionId: instance_question.id,
-              aiClusterId: responseCorrect ? correctCluster.id : incorrectCluster.id
+              aiClusterId: responseCorrect ? answerMatchCluster.id : reviewNeededCluster.id
             });
             logger.info(`Clustered instance question ${instance_question.id} (${index}/${total})`);
             index += 1;
