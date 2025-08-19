@@ -83,6 +83,8 @@ ADD CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending CHECK (
 );
 
 -- Require exactly one of user_id, pending_lti13_sub, and pending_uid to be NULL.
+-- This constraint is technically redundant given the other constraints we have in place.
+-- See https://github.com/PrairieLearn/PrairieLearn/pull/12363#discussion_r2285760563 for more details.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_exactly_one_null_user_id_pending_uid_lti13_sub CHECK (
   (
