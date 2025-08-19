@@ -149,4 +149,5 @@ export interface ExecutionData {
   filename?: string;
   gradable?: boolean;
   extensions?: Record<string, ElementExtensionJsonExtension>;
+  user?: Record<string, unknown>;
 }
