@@ -13,6 +13,7 @@ import { getAiClusterAssignmentForInstanceQuestion, getAiClusters, getAiClusters
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
+  toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import {
@@ -185,7 +186,9 @@ router.get(
         lastGrader,
         clusterName: cluster?.cluster_name,
         aiClustersExist,
-        aiGradingInfo
+        aiGradingEnabled,
+        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
+        aiGradingInfo,
       }),
     );
   }),
@@ -337,6 +340,9 @@ const PostBodySchema = z.union([
     __action: z.literal('report_issue'),
     __variant_id: IdSchema,
     description: z.string(),
+  }),
+  z.object({
+    __action: z.literal('toggle_ai_grading_mode'),
   }),
 ]);
 
@@ -521,6 +527,9 @@ router.post(
       );
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
+    } else if (body.__action === 'toggle_ai_grading_mode') {
+      await toggleAiGradingMode(res.locals.assessment_question.id);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

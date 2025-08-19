@@ -105,7 +105,7 @@ export function AssessmentQuestion({
         assessmentId: assessment.id,
         urlPrefix,
       })}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
