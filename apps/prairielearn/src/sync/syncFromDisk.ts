@@ -146,6 +146,21 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
+    // We need to perform sharing validation at exactly this moment. We can only
+    // do this once we have a dictionary of question IDs, as this process will also
+    // populate any shared questions in that dictionary. We also need to do it before
+    // syncing the assessment sets, as the presence of errors that this validation
+    // could produce influences whether the "Unknown" assessment set is created.
+    await timed('Check sharing validity', async () => {
+      await async.eachLimit(Object.values(courseData.courseInstances), 3, async (ci) => {
+        await syncAssessments.validateAssessmentSharedQuestions(
+          courseId,
+          ci.assessments,
+          questionIds,
+        );
+      });
+    });
+
     await timed('Synced sharing sets', () =>
       syncSharingSets.sync(courseId, courseData, questionIds),
     );
