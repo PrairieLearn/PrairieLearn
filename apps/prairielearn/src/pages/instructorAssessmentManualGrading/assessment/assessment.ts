@@ -185,6 +185,10 @@ router.post(
         ],
       }).pipe(res);
     } else if (req.body.__action === 'delete_ai_grading_data') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
