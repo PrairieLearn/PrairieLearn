@@ -30,6 +30,7 @@ from order_blocks_options_parsing import (
 )
 from typing_extensions import NotRequired, assert_never
 
+
 class OrderBlocksAnswerData(TypedDict):
     inner_html: str
     indent: int | None
@@ -406,11 +407,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answers-name")
-    allow_blank_submission = pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    )
-
+    order_block_options = OrderBlocksOptions(element)
+    answer_name = order_block_options.answers_name
+    allow_blank_submission = order_block_options.allow_blank
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
     student_answer = json.loads(student_answer)
@@ -423,9 +422,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
         return
 
-    grading_method = pl.get_enum_attrib(
-        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-    )
+    grading_method = order_block_options.grading_method
     correct_answers = data["correct_answers"][answer_name]
     blocks = data["params"][answer_name]
 
@@ -459,10 +456,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["ordering_feedback"] = matching_block.get("ordering_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
-        for html_tags in element:
-            if html_tags.tag == "pl-answer":
-                pl.check_attribs(html_tags, required_attribs=[], optional_attribs=[])
-        file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
+        file_name = order_block_options.file_name
 
         answer_code = ""
         for answer in student_answer:
@@ -665,23 +659,15 @@ def get_default_partial_credit_type(
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    grading_method = pl.get_enum_attrib(
-        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-    )
-    answer_name = pl.get_string_attrib(element, "answers-name")
+    order_block_options = OrderBlocksOptions(element)
+    grading_method = order_block_options.grading_method
+    answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
-    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
-    feedback_type = pl.get_enum_attrib(
-        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
-    )
+    weight = order_block_options.weight
+    check_indentation = order_block_options.indentation
+    feedback_type = order_block_options.feedback
 
-    partial_credit_type = pl.get_enum_attrib(
-        element,
-        "partial-credit",
-        PartialCreditType,
-        get_default_partial_credit_type(grading_method),
-    )
+    partial_credit_type = order_block_options.partial_credit
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This

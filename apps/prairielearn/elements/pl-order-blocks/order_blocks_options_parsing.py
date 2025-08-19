@@ -77,7 +77,7 @@ FEEDBACK_DEFAULT = FeedbackType.NONE
 WEIGHT_DEFAULT = 1
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
-WEIGHT_DEFAULT = 1
+
 
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
@@ -86,6 +86,7 @@ def get_graph_info(
     depends = pl.get_string_attrib(html_tag, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
     return tag, depends
+
 
 class AnswerOptions:
     def __init__(
@@ -167,6 +168,7 @@ class AnswerOptions:
                 ],
             )
 
+
 def collect_answer_options(
     html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
 ) -> list[AnswerOptions]:
@@ -198,6 +200,7 @@ def collect_answer_options(
                 )
 
     return answer_options
+
 
 class OrderBlocksOptions:
     """
@@ -391,7 +394,7 @@ class OrderBlocksOptions:
 
     Default: len(incorrect_answers)
     """
- 
+
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
@@ -600,5 +603,3 @@ class OrderBlocksOptions:
                     + answer_options.inner_html
                     + "</pl-code>"
                 )
-
-
