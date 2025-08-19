@@ -209,7 +209,7 @@ class OrderBlocksOptions:
     """
 
     answers_name: str
-    """ 
+    """
     Variable name to store data in. Note that this attribute has to be unique
     within a question, i.e., no value for this attribute should be repeated
     within a question.
@@ -218,13 +218,13 @@ class OrderBlocksOptions:
     weight: int
     """
     Weight to use when computing a weighted average score over all elements
-    in a question. 
+    in a question.
 
     Default = `1`
     """
 
     grading_method: GradingMethodType
-    """ 
+    """
     The method that will be used to grade the pl-order-blocks question.
 
     # Options
@@ -246,7 +246,7 @@ class OrderBlocksOptions:
     """
 
     file_name: str
-    """ 
+    """
     Name of the file where the information from the blocks will be saved,
     to be used by the external grader.
 
@@ -254,8 +254,8 @@ class OrderBlocksOptions:
     """
 
     source_blocks_order: SourceBlocksOrderType
-    """ 
-    The order of the blocks in the source area. 
+    """
+    The order of the blocks in the source area.
 
     # Options
     * SourceBlocksOrderType.RANDOM = "random"
@@ -266,7 +266,7 @@ class OrderBlocksOptions:
     """
 
     indentation: bool
-    """ 
+    """
     Enable both the ability for indentation in the solution area and the grading of
     the expected indentation (set by indent in pl-answer, as described below).
 
@@ -274,7 +274,7 @@ class OrderBlocksOptions:
     """
 
     source_header: str
-    """ 
+    """
     Enable both the ability for indentation in the solution area and the grading of
     the expected indentation (set by indent in pl-answer, as described below).
 
@@ -282,14 +282,14 @@ class OrderBlocksOptions:
     """
 
     solution_header: str
-    """ 
+    """
     The text that appears at the start of the solution area.
 
     Default: `SolutionPlacementType.RIGHT`
     """
 
     solution_placement: SolutionPlacementType
-    """ 
+    """
     "right" shows the source and solution areas aligned side-by-side. "bottom"
     shows the solution area below the source area.
 
@@ -301,7 +301,7 @@ class OrderBlocksOptions:
     """
 
     max_indent: int
-    """ 
+    """
     Maximum possible indent depth for blocks in the solution area. Note only
     applied when indentation is enabled.
 
@@ -309,10 +309,10 @@ class OrderBlocksOptions:
     """
 
     partial_credit: PartialCreditType
-    """ 
+    """
     For the "dag", "ordered", and "ranking" grading methods, you may specify
     "none" for no partial credit or "lcs" for partial credit based on the LCS
-    edit-distance from the student solution to some correct solution. 
+    edit-distance from the student solution to some correct solution.
 
     # Options
     * PartialCreditType.NONE = `none`
@@ -322,7 +322,7 @@ class OrderBlocksOptions:
     """
 
     feedback: FeedbackType
-    """ 
+    """
     The level of feedback the student will receive upon giving an incorrect answer.
     Available with the "dag" or "ranking grading mode. "none" will give no
     feedback. "first-wrong" will tell the student which block in their answer was
@@ -339,7 +339,7 @@ class OrderBlocksOptions:
     """
 
     format: FormatType
-    """ 
+    """
     If this property is set to "code", then the contents of each of the blocks will
     be wrapped with a <pl-code> element.
 
@@ -351,34 +351,34 @@ class OrderBlocksOptions:
     """
 
     code_language: str | None
-    """ 
+    """
     The programming language syntax highlighting to use. Only available when
     using format="code".
     """
 
     inline: bool
-    """ 
+    """
     Inline set to `false` sets the blocks to be stacked vertically whereas true
     requires blocks to be placed horizontally.
     """
 
     answer_options: list[AnswerOptions]
-    """ 
+    """
     List of AnswerOptions parsed from interior pl-answer tags.
     """
 
     correct_answers: list[AnswerOptions]
-    """ 
+    """
     List of correct AnswerOptions parsed from interior pl-answer tags.
     """
 
     incorrect_answers: list[AnswerOptions]
-    """ 
+    """
     List of incorrect AnswerOptions parsed from interior pl-answer tags.
     """
 
     max_incorrect: int
-    """ 
+    """
     The maximum number of incorrect answers to be displayed in the source area.
     The incorrect answers are set using <pl-answer correct="false">. Defaults
     to displaying all incorrect answers.
@@ -387,7 +387,7 @@ class OrderBlocksOptions:
     """
 
     min_incorrect: int
-    """ 
+    """
     The minimum number of incorrect answers to be displayed in the source area.
     The incorrect answers are set using <pl-answer correct="false">. Defaults
     to displaying all incorrect answers.
