@@ -30,8 +30,7 @@ const AccessControlJsonSchema = z
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-export const 
-CourseInstanceJsonSchema = z
+export const CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     uuid: z
