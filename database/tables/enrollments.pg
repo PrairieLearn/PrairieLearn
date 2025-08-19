@@ -21,7 +21,7 @@ indexes
 check constraints
     enrollments_exactly_one_null_user_id_pending_uid_lti13_sub: CHECK (user_id IS NULL AND pending_lti13_sub IS NULL AND pending_uid IS NOT NULL OR user_id IS NOT NULL AND pending_lti13_sub IS NULL AND pending_uid IS NULL OR user_id IS NULL AND pending_lti13_sub IS NOT NULL AND pending_uid IS NULL)
     enrollments_impossible_lti_managed: CHECK (NOT ((status = ANY (ARRAY['rejected'::enum_enrollment_status, 'blocked'::enum_enrollment_status])) AND lti_managed))
-    enrollments_lti13_keys_only_if_lti13_pending: CHECK ((status = 'lti13_pending'::enum_enrollment_status) = (pending_lti13_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL) AND (status = 'lti13_pending'::enum_enrollment_status OR pending_lti13_name IS NULL AND pending_lti13_email IS NULL))
+    enrollments_lti13_keys_only_if_lti13_pending: CHECK (status = 'lti13_pending'::enum_enrollment_status AND pending_lti13_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL OR status <> 'lti13_pending'::enum_enrollment_status AND pending_lti13_name IS NULL AND pending_lti13_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_instance_id IS NULL)
     enrollments_lti13_pending_lti_managed_true: CHECK (status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true OR status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_pending_uid_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (pending_uid IS NOT NULL))
     enrollments_user_id_null_only_if_invited_rejected_pending: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status])) = (user_id IS NULL))
