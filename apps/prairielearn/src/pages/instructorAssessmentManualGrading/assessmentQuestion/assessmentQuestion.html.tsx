@@ -354,7 +354,8 @@ export function AssessmentQuestion({
                         <button
                           class="dropdown-item"
                           type="button"
-                          onclick="$('#ai-clustering-all').submit();"
+                          data-bs-toggle="modal"
+                          data-bs-target="#cluster-confirmation-modal"
                         >
                           Cluster all
                         </button>
@@ -379,7 +380,7 @@ export function AssessmentQuestion({
         </div>
       </form>
     `,
-    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token })],
+    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }), ClusterInfoModal()],
   });
 }
 
@@ -427,4 +428,53 @@ function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string })
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
   });
+}
+
+function ClusterInfoModal() {
+  return Modal({
+    id: 'cluster-confirmation-modal',
+    title: 'Clustering info',
+    body: html`
+      <p>Clustering groups questions with answers precisely matching the correct one into a group, and those without into another.</p>
+
+      <p>Answers must explicitly be provided in <code>pl-answer-panel</code>.</p>
+
+      <p>Clustering is currently designed for exact answer equivalence. Other work can be shown, but only the boxed or final answer will be assessed.</p>
+
+      <table class="table table-sm border">
+        <thead>
+          <tr>
+            <th>Exact</th>
+            <th>Not Exact</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Mathematical Equations</td>
+            <td>Essays</td>
+          </tr>
+          <tr>
+            <td>Mechanical Formulas</td>
+            <td>Free Response Questions</td>
+          </tr>
+          <tr>
+            <td>Exact String Inputs</td>
+            <td>Code</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="alert alert-danger" role="alert">
+        A simple secondary alert—check it out!
+      </div>
+    `,
+    footer: html`
+      <div class="m-0">
+        <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+          <button type="button" class="btn btn-primary">Cluster all submissions</button>
+        </div>
+        <small class="text-muted my-0">AI can make mistakes. Review cluster assignments before grading.</small>
+      </div>
+    `
+  })
 }

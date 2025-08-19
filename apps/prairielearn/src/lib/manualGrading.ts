@@ -142,21 +142,16 @@ export async function nextInstanceQuestionUrl(
 
   console.log('instance_question_id', instance_question_id);
 
-  if (!instance_question_id) {
+  if (!instance_question_id && prior_ai_cluster_id) {
     // Get the next cluster ID for the assessment question based on its ID
-
-    console.log('Prior instance question ID', prior_instance_question_id);
-
-    console.log('prior_ai_cluster_id', prior_ai_cluster_id, 'assessment_question_id', assessment_question_id)
-
-    const next_ai_cluster_id = prior_ai_cluster_id ? await sqldb.queryOptionalRow(
+    const next_ai_cluster_id = await sqldb.queryOptionalRow(
       sql.select_next_ai_cluster_id,
       { 
         assessment_question_id: Number.parseInt(assessment_question_id),
         prior_ai_cluster_id: Number.parseInt(prior_ai_cluster_id)
       },
       IdSchema.nullable()
-    ) : null;
+    );
 
     // Find the next question there
     instance_question_id = await sqldb.queryOptionalRow(

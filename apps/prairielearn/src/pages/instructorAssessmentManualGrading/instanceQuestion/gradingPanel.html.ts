@@ -255,6 +255,7 @@ ${submission.feedback?.manual}</textarea
                 >
                   Grade
                 </button>
+                `
               : ''}
             <div class="btn-group">
               <a
