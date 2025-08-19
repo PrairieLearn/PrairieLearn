@@ -706,7 +706,6 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return null;
   }
   if (infofile.hasErrors(loadedJson) || !loadedJson.data) {
-    console.log('Loaded JSON has errors');
     return loadedJson;
   }
 
