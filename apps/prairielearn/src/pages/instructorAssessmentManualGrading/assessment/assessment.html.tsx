@@ -36,14 +36,12 @@ export function ManualGradingAssessment({
   questions,
   courseStaff,
   num_open_instances,
-  aiGradingEnabled,
   adminFeaturesEnabled,
 }: {
   resLocals: Record<string, any>;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
-  aiGradingEnabled: boolean;
   adminFeaturesEnabled: boolean;
 }) {
   return PageLayout({

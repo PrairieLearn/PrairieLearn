@@ -10,8 +10,10 @@ import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
-import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { toggleAiGradingMode } from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import {
+  deleteAiGradingJobs,
+  toggleAiGradingMode,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
