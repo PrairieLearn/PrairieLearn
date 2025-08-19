@@ -185,7 +185,7 @@ ${submission.feedback?.manual}</textarea
               </li>
             `
           : ''}
-        <li class="list-group-item d-flex align-items-center flex-wrap">
+        <li class="list-group-item d-flex align-items-center flex-wrap gap-2">
           <div class="form-check me-auto">
             <input
               id="skip_graded_submissions"
@@ -202,62 +202,59 @@ ${submission.feedback?.manual}</textarea
           <span>
             ${!disable
               ? html`
-                  ${clusterName ? html`
-                    <div class="btn-group">
-                      <button
-                        type="submit"
-                        class="btn btn-primary"
-                        name="__action"
-                        value="add_manual_grade"
-                      >
-                        Grade
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                        data-bs-toggle="dropdown"
-                        aria-haspopup="true"
-                        aria-expanded="false"
-                      ></button>
-                      <div class="dropdown-menu dropdown-menu-end">
-                        <button
-                          type="submit"
-                          class="dropdown-item"
-                          name="__action"
-                          value="add_manual_grade"
-                        >
-                          This instance question
-                        </button>
-                        <button
-                          type="submit"
-                          class="dropdown-item"
-                          name="__action"
-                          value="add_manual_grade_for_cluster_ungraded"
-                        >
-                          All ungraded instance questions in cluster
-                        </button>
-                        <button
-                          type="submit"
-                          class="dropdown-item"
-                          name="__action"
-                          value="add_manual_grade_for_cluster"
-                        >
-                          All instance questions in cluster
-                        </button>
-                      </div>
-
-                    </div>
-                  ` : html`
+                <div id="grade-button-with-options" class="btn-group ${clusterName ? '' : 'd-none'}">
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    name="__action"
+                    value="add_manual_grade"
+                  >
+                    Grade
+                  </button>
+                  <button
+                    id="grade-options-dropdown"
+                    type="button"
+                    class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                  ></button>
+                  <div class="dropdown-menu dropdown-menu-end">
                     <button
                       type="submit"
-                      class="btn btn-primary"
+                      class="dropdown-item"
                       name="__action"
                       value="add_manual_grade"
                     >
-                      Grade
+                      This instance question
                     </button>
-                  `}
-                `
+                    <button
+                      type="submit"
+                      class="dropdown-item"
+                      name="__action"
+                      value="add_manual_grade_for_cluster_ungraded"
+                    >
+                      All ungraded instance questions in cluster
+                    </button>
+                    <button
+                      type="submit"
+                      class="dropdown-item"
+                      name="__action"
+                      value="add_manual_grade_for_cluster"
+                    >
+                      All instance questions in cluster
+                    </button>
+                  </div>
+                </div>
+                <button
+                  id="grade-button"
+                  type="submit"
+                  class="btn btn-primary ${clusterName ? 'd-none' : ''}"
+                  name="__action"
+                  value="add_manual_grade"
+                >
+                  Grade
+                </button>
               : ''}
             <div class="btn-group">
               <a

@@ -40,6 +40,10 @@ $(() => {
   const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
   const nextInstanceQuestionButton = document.querySelector('#next-instance-question-button');
   const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
+  const gradeOptionsDropdown = document.querySelector('#grade-options-dropdown');
+
+  const gradeButton = document.querySelector('#grade-button');
+  const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
 
   if (!skipGradedSubmissionsCheckbox) {
     throw new Error('skipGradedSubmissionsCheckbox not found');
@@ -49,6 +53,9 @@ $(() => {
   }
   if (!clusterSelectionDropdown) {
     throw new Error('clusterSelectionDropdown not found');
+  }
+  if (!gradeOptionsDropdown) {
+    throw new Error('gradeOptionsDropdown not found');
   }
 
   skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
@@ -84,6 +91,9 @@ $(() => {
     activeDropdownItem.classList.remove('active');
 
     selectedItem.classList.add('active');
+
+    gradeButton.classList.toggle('d-none', selectedItem.getAttribute('value'));
+    gradeButtonWithDropdown.classList.toggle('d-none', !selectedItem.getAttribute('value'));
 
     const clusterSelectionDropdownSpan = document.querySelector('#cluster-selection-dropdown-span');
     clusterSelectionDropdownSpan.innerHTML = selectedItem.textContent;
