@@ -90,7 +90,7 @@ export function AssessmentQuestion({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           assessment={assessment}
           courseInstance={course_instance}
           course={course}
@@ -102,7 +102,7 @@ export function AssessmentQuestion({
         assessmentId: assessment.id,
         urlPrefix,
       })}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3">
+      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb mb-0">
             <li class="breadcrumb-item">
