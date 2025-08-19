@@ -26,7 +26,8 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   clusterName,
-  aiGradingInfo
+  aiGradingInfo,
+  aiGradingEnabled
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -39,6 +40,7 @@ export function GradingPanel({
   grading_job?: SubmissionOrGradingJob;
   clusterName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiGradingEnabled?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -46,6 +48,7 @@ export function GradingPanel({
   const submission = grading_job ?? resLocals.submission;
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
+  
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
@@ -91,10 +94,10 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${clusterName ? html`
+        ${(aiGradingEnabled) ? html`
           <li class="list-group-item">
             <span>
-              Cluster: ${clusterName}
+              Cluster: ${clusterName || 'None'}
             </span>
           </li>
         ` : ''}
@@ -166,7 +169,7 @@ ${submission.feedback?.manual}</textarea
               class="form-check-input"
               name="skip_graded_submissions"
               value="true"
-              ${!resLocals.skip_graded_submissions ? 'checked' : ''}
+              ${resLocals.skip_graded_submissions ? 'checked' : ''}
             />
             <label class="form-check-label" for="skip_graded_submissions">
                 Skip graded submissions

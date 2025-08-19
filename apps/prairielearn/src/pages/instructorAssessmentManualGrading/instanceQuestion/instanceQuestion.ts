@@ -180,7 +180,7 @@ router.get(
         assignedGrader,
         lastGrader,
         clusterName: cluster?.cluster_name,
-        next_graded_allowed: req.query.next_graded_allowed === 'true',
+        aiGradingEnabled,
         aiGradingInfo
       }),
     );

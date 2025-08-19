@@ -5,6 +5,9 @@ import { z } from 'zod';
 
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
+
+import { getAiClusterAssignmentForInstanceQuestion, getAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
 
 import {
   type AssessmentQuestion,
@@ -111,31 +114,69 @@ export async function nextInstanceQuestionUrl(
   prior_instance_question_id: string | null,
   skip_graded_submissions: boolean
 ): Promise<string> {
-  const priorInstanceQuestionAIClusterData = await sqldb.queryRow(
-    sql.select_prior_instance_question_ai_cluster_data,
-    {
-      prior_instance_question_id
-    },
-    z.any()
-  )
+  const prior_ai_cluster_id = await run(async () => {
+    if (prior_instance_question_id) {
+      return (await getAiClusterAssignmentForInstanceQuestion({
+        instanceQuestionId: prior_instance_question_id
+      }))?.id ?? null;
+    } else {
+      const clusters = await getAiClusters({
+        assessmentQuestionId: assessment_question_id
+      })[0]
+      return clusters > 0 ? clusters[0].id : null;
+    }
+  })
 
-  const instance_question_id = await sqldb.queryOptionalRow(
+  let instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,
     { 
       assessment_id, 
       assessment_question_id, 
       user_id, 
       prior_instance_question_id, 
-      cluster_count: priorInstanceQuestionAIClusterData.cluster_count,
-      prior_ai_cluster_id: priorInstanceQuestionAIClusterData.ai_cluster_id,
+      prior_ai_cluster_id,
       skip_graded_submissions
     },
     IdSchema,
   );
 
-  if (instance_question_id != null) {
+  console.log('instance_question_id', instance_question_id);
+
+  if (!instance_question_id) {
+    // Get the next cluster ID for the assessment question based on its ID
+
+    console.log('Prior instance question ID', prior_instance_question_id);
+
+    console.log('prior_ai_cluster_id', prior_ai_cluster_id, 'assessment_question_id', assessment_question_id)
+
+    const next_ai_cluster_id = prior_ai_cluster_id ? await sqldb.queryOptionalRow(
+      sql.select_next_ai_cluster_id,
+      { 
+        assessment_question_id: Number.parseInt(assessment_question_id),
+        prior_ai_cluster_id: Number.parseInt(prior_ai_cluster_id)
+      },
+      IdSchema.nullable()
+    ) : null;
+
+    // Find the next question there
+    instance_question_id = await sqldb.queryOptionalRow(
+      sql.select_next_instance_question,
+      { 
+        assessment_id, 
+        assessment_question_id, 
+        user_id, 
+        prior_instance_question_id: null, 
+        prior_ai_cluster_id: next_ai_cluster_id,
+        skip_graded_submissions
+      },
+      IdSchema,
+    );
+  }
+
+  if (instance_question_id !== null) {
     return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`;
   }
+
   // If we have no more submissions, then redirect back to main assessment question page
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }

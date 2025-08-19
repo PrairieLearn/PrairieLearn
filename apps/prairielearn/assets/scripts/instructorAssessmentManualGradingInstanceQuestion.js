@@ -56,7 +56,7 @@ $(() => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        skip_graded_submissions: !e.target.checked,
+        skip_graded_submissions: e.target.checked,
       }),
     });
   })

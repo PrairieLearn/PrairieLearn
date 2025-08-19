@@ -119,32 +119,6 @@ router.get(
   }),
 );
 
-router.get(
-  '/next',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-    if (
-      req.query.prior_instance_question_id != null &&
-      typeof req.query.prior_instance_question_id !== 'string'
-    ) {
-      throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
-    }
-
-    res.redirect(
-      await manualGrading.nextInstanceQuestionUrl(
-        res.locals.urlPrefix,
-        res.locals.assessment.id,
-        res.locals.assessment_question.id,
-        res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id ?? null,
-        true
-      ) + '?next_graded_allowed=true'
-    );
-  }),
-);
-
 router.post(
   '/',
   asyncHandler(async (req, res) => {

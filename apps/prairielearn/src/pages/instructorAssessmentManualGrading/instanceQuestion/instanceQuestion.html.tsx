@@ -29,8 +29,8 @@ export function InstanceQuestion({
   assignedGrader,
   lastGrader,
   clusterName,
-  next_graded_allowed,
-  aiGradingInfo
+  aiGradingInfo,
+  aiGradingEnabled
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
@@ -38,13 +38,13 @@ export function InstanceQuestion({
   assignedGrader: User | null;
   lastGrader: User | null;
   clusterName?: string;
-  next_graded_allowed?: boolean;
   /**
    * `aiGradingInfo` is defined when
    * 1. The AI grading feature flag is enabled
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiGradingEnabled?: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -124,6 +124,7 @@ export function InstanceQuestion({
                 graders,
                 clusterName, 
                 aiGradingInfo,
+                aiGradingEnabled
               })}
             </div>
           </div>
@@ -212,6 +213,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    aiGradingEnabled
                   })}
                 </div>
               </div>
@@ -236,6 +238,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    aiGradingEnabled
                   })}
                 </div>
               </div>
