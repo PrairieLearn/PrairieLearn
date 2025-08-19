@@ -8,10 +8,11 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../lib/db-types.js';
+
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-import { UserSchema } from '../lib/db-types.js';
 
 const locals: Record<string, any> = {};
 
@@ -656,7 +657,7 @@ describe('API', { timeout: 60_000 }, function () {
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
       await sqldb.queryAsync(sql.insert_access_token, {
-        user_id: user_id,
+        user_id,
         name,
         token,
         token_hash,
