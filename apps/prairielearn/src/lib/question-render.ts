@@ -625,14 +625,13 @@ export async function getAndRenderVariant(
   if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
     // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
     resultLocals.showTrueAnswer = true;
-  } else {
-    resultLocals.showTrueAnswer = false;
   }
+  // if this isn't true, don't set `resultLocals.showTrueAnswer = false`
 
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: resultLocals.showTrueAnswer,
+    answer: resultLocals.showTrueAnswer ?? false,
   };
   const htmls = await render(
     course,
