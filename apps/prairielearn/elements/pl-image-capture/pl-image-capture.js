@@ -463,7 +463,7 @@ const MAX_ZOOM_SCALE = 5;
         },
       );
 
-      socket.on('externalImageCapture', async (msg) => {
+      socket.on('externalImageCapture', (msg) => {
         if (this.selectedContainerName === 'crop-rotate') {
           this.removeCropperChangeListeners();
         }
@@ -502,7 +502,7 @@ const MAX_ZOOM_SCALE = 5;
           if (this.selectedContainerName === 'crop-rotate') {
             // We discard any pending changes or captured images and show the capture preview, since
             // the user's most recent action was to capture an image externally.
-            await this.revertToPreviousCropRotateState();
+            this.revertToPreviousCropRotateState();
           }
           this.openContainer('capture-preview');
         }
@@ -1302,7 +1302,7 @@ const MAX_ZOOM_SCALE = 5;
     /**
      * Resets the crop/rotation interface state and any transformations applied to the image.
      */
-    async resetAllCropRotation() {
+    resetAllCropRotation() {
       const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
         '.js-hidden-original-capture-input',
       );
@@ -1313,7 +1313,7 @@ const MAX_ZOOM_SCALE = 5;
 
       this.previousCropRotateState = null;
 
-      await this.cancelCropRotate(false);
+      this.cancelCropRotate(false);
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl: hiddenOriginalCaptureInput.value,
@@ -1397,7 +1397,7 @@ const MAX_ZOOM_SCALE = 5;
       this.openContainer('capture-preview');
     }
 
-    async revertToPreviousCropRotateState() {
+    revertToPreviousCropRotateState() {
       this.ensureCropperExists();
 
       if (!this.previousCropRotateState) {
@@ -1432,12 +1432,12 @@ const MAX_ZOOM_SCALE = 5;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    async cancelCropRotate(revertToLastImage = true) {
+    cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
 
-      await this.revertToPreviousCropRotateState();
+      this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
       if (revertToLastImage) {
