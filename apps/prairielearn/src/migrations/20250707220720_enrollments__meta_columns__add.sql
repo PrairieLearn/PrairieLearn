@@ -64,10 +64,12 @@ ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected CHECK (
 -- The pending_lti13_sub and pending_lti13_instance_id are required in this state.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending CHECK (
-  (status = 'lti13_pending')
-  AND (
-    pending_lti13_sub IS NOT NULL
-    AND pending_lti13_instance_id IS NOT NULL
+  (
+    status = 'lti13_pending'
+    AND (
+      pending_lti13_sub IS NOT NULL
+      AND pending_lti13_instance_id IS NOT NULL
+    )
   )
   OR (
     status != 'lti13_pending'
