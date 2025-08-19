@@ -1437,6 +1437,10 @@ const MAX_ZOOM_SCALE = 5;
 
       this.removeCropperChangeListeners();
 
+      // Clear any pending debounced crop/rotate changes that would be saved
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+
       this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
