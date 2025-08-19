@@ -1,10 +1,17 @@
+import * as crypto from 'crypto';
+import * as path from 'node:path';
+
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+
+import * as sqldb from '@prairielearn/postgres';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { UserSchema } from '../lib/db-types.js';
 
 const locals: Record<string, any> = {};
 
@@ -633,12 +640,43 @@ describe('API', { timeout: 60_000 }, function () {
     });
 
     test.sequential('GET to /staff fails with incorrect permissions', async function () {
+      const sqlUser =
+        'INSERT INTO users (uid, name)' +
+        " VALUES ('editor@example.com', 'Editor User')" +
+        ' ON CONFLICT (uid) DO UPDATE' +
+        ' SET name = EXCLUDED.name' +
+        ' RETURNING user_id;';
+      const user_id = await sqldb.queryRow(sqlUser, UserSchema.shape.user_id);
+
+      const sql = sqldb.loadSql(
+        path.join(import.meta.dirname, '..', 'pages/userSettings/userSettings.sql'),
+      );
+      const name = 'invalidToken';
+      const token = uuidv4();
+      const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+
+      await sqldb.queryAsync(sql.insert_access_token, {
+        user_id: user_id,
+        name,
+        token,
+        token_hash,
+      });
+
+      const res = await fetch(locals.apiCourseStaffUrl, {
+        headers: {
+          'Private-Token': token,
+        },
+      });
+      assert.equal(res.status, 403);
+    });
+
+    test.sequential('GET to /staff fails with incorrect token', async function () {
       const res = await fetch(locals.apiCourseStaffUrl, {
         headers: {
           'Private-Token': '12345678-1234-1234-1234-1234567890ab',
         },
       });
-      assert.equal(res.status, 403);
+      assert.equal(res.status, 401);
     });
 
     test.sequential(
