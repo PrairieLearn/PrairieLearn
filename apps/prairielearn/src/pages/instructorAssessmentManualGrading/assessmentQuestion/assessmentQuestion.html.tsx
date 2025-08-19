@@ -24,6 +24,7 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
+  aiClustersExist,
   rubric_data,
 }: {
   resLocals: Record<string, any>;
@@ -31,6 +32,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
+  aiClustersExist: boolean;
   rubric_data: RubricData | null;
 }) {
   const {
@@ -83,6 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
+          aiClustersExist,
         },
         'instance-question-table-data',
       )}

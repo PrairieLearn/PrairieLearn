@@ -30,6 +30,7 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
+    aiClustersExist
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -222,7 +223,7 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
-        aiGradingMode ? {
+        (aiGradingMode && aiClustersExist) ? {
           field: 'ai_cluster_name',
           title: 'Cluster',
           visible: aiGradingMode,
@@ -230,6 +231,7 @@ onDocumentReady(() => {
           class: 'text-center',
           formatter: (value: string | null) => (value ?? '&mdash;'),
           sortable: true,
+          searchable: true,
 
         } : null,
         {

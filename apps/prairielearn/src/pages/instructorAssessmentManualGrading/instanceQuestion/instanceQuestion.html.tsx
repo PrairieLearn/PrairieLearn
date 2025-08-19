@@ -30,7 +30,7 @@ export function InstanceQuestion({
   lastGrader,
   clusterName,
   aiGradingInfo,
-  aiGradingEnabled
+  aiClustersExist
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
@@ -44,7 +44,7 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiGradingEnabled?: boolean;
+  aiClustersExist?: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -124,7 +124,7 @@ export function InstanceQuestion({
                 graders,
                 clusterName, 
                 aiGradingInfo,
-                aiGradingEnabled
+                aiClustersExist
               })}
             </div>
           </div>
@@ -171,11 +171,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  aiClustersExist
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  aiClustersExist?: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -213,7 +215,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    aiGradingEnabled
+                    aiClustersExist
                   })}
                 </div>
               </div>
@@ -238,7 +240,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    aiGradingEnabled
+                    aiClustersExist
                   })}
                 </div>
               </div>

@@ -21,7 +21,7 @@ SELECT
 FROM
     ai_clusters 
 WHERE
-    assessment_question_id = $assessment_question_id
+    assessment_question_id = $assessment_question_id;
 
 -- BLOCK select_ai_cluster_assignment_for_instance_question
 SELECT

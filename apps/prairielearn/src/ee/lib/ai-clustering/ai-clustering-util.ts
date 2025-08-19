@@ -27,9 +27,7 @@ export async function insertAiClusters({
 }: {
     assessment_question_id: string
 }) {
-    const aiClustersExist = await queryRow(sql.select_exists_ai_clusters, {
-        assessment_question_id
-    }, z.boolean());
+    const aiClustersExist = await getAiClustersExist({ assessmentQuestionId: assessment_question_id });
     if (aiClustersExist) {
         return;
     }
@@ -85,6 +83,17 @@ export async function getAiClusterAssignment({
         return acc;
     }, {} as Record<InstanceQuestion['id'], AiCluster['cluster_name']>);
 }
+
+export async function getAiClustersExist({
+    assessmentQuestionId
+}: {
+    assessmentQuestionId: string
+}) {
+    return await queryRow(sql.select_exists_ai_clusters, {
+        assessment_question_id: assessmentQuestionId
+    }, z.boolean());
+}
+
 
 /** Retrieve all AI clusters for an assessment question */
 export async function getAiClusters({
@@ -228,8 +237,6 @@ Return a boolean corresponding to whether or not the student's response is equiv
       `
     }
   ];
-
-  console.log('messages', JSON.stringify(messages));
 
   const completion = await openai.chat.completions.parse({
     messages,

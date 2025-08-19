@@ -27,7 +27,7 @@ export function GradingPanel({
   grading_job,
   clusterName,
   aiGradingInfo,
-  aiGradingEnabled
+  aiClustersExist
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -40,7 +40,7 @@ export function GradingPanel({
   grading_job?: SubmissionOrGradingJob;
   clusterName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiGradingEnabled?: boolean;
+  aiClustersExist?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -94,11 +94,40 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${(aiGradingEnabled) ? html`
-          <li class="list-group-item">
+        ${aiClustersExist ? html`
+          <li class="list-group-item d-flex align-items-center gap-2">
             <span>
-              Cluster: ${clusterName || 'None'}
+              Cluster:
             </span>
+            <div class="dropdown w-100">
+              <button
+                type="button"
+                class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
+                aria-label="Change selected cluster"
+                aria-haspopup="true"
+                aria-expanded="false"
+                data-bs-toggle="dropdown"
+                data-bs-boundary="window"
+                hx-get="/pl/course_instance/${resLocals.course_instance.id}/instructor/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}/ai_clusters/switcher"
+                hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+                hx-target="#cluster-selection-dropdown"
+              >
+                <span> ${clusterName || 'No cluster'} </span>
+              </button>
+              <div class="dropdown-menu py-0 overflow-hidden">
+                <div
+                  id="cluster-selection-dropdown"
+                  style="max-height: 50vh"
+                  class="overflow-auto py-2"
+                >
+                  <div class="d-flex justify-content-center">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="visually-hidden">Loading clusters...</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </li>
         ` : ''}
         <li class="list-group-item">

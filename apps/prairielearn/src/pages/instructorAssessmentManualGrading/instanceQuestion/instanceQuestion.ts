@@ -1,3 +1,4 @@
+import { CopySnapshotRequestFilterSensitiveLog } from '@aws-sdk/client-ec2';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
@@ -8,7 +9,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getAiClusterAssignmentForInstanceQuestion } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { getAiClusterAssignmentForInstanceQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -32,6 +33,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
+import { AIClusterSwitcher } from './aiClusterSwitcher.html.js';
 import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
@@ -107,6 +109,8 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
+    const aiClustersExist = await getAiClustersExist({ assessmentQuestionId: res.locals.assessment_question.id });
+
     /**
      * Contains the prompt and selected rubric items of the AI grader.
      * If the submission was not graded by AI, this will be undefined.
@@ -180,12 +184,38 @@ router.get(
         assignedGrader,
         lastGrader,
         clusterName: cluster?.cluster_name,
-        aiGradingEnabled,
+        aiClustersExist,
         aiGradingInfo
       }),
     );
   }),
 );
+
+router.get(
+  '/ai_clusters/switcher', 
+  asyncHandler(async (req, res) => {
+    const aiClusters = await getAiClusters({ assessmentQuestionId: res.locals.assessment_question.id });
+    const aiCluster = await getAiClusterAssignmentForInstanceQuestion({
+      instanceQuestionId: res.locals.instance_question.id
+    });
+    console.log('aiCluster', aiCluster);
+
+    res.send(
+      AIClusterSwitcher({
+        aiClusters: [
+          ...aiClusters,
+          {
+            assessment_question_id: res.locals.assessment_question.id,
+            cluster_name: 'No cluster',
+            id: ''
+          }
+        ],
+        currentClusterId: aiCluster?.id ?? null,
+        plainUrlPrefix: res.locals.urlPrefix
+      })
+    )
+  })
+)
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
