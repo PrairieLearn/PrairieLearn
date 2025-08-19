@@ -11,14 +11,8 @@ import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from order_blocks_options_parsing import (
-    ALLOW_BLANK_DEFAULT,
-    FEEDBACK_DEFAULT,
-    FILE_NAME_DEFAULT,
     FIRST_WRONG_TYPES,
-    GRADING_METHOD_DEFAULT,
-    INDENTION_DEFAULT,
     LCS_GRADABLE_TYPES,
-    WEIGHT_DEFAULT,
     FeedbackType,
     FormatType,
     GradingMethodType,
