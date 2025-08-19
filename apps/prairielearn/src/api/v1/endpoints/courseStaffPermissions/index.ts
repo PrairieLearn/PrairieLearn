@@ -103,7 +103,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { uid, course_role } = req.body;
 
-    // User can be added to staff list before being created so do not check for user existence
+    // User can be added to staff list before it exists in database
+    // so we do not run 'selectOptionalUserByUid()' like other endpoints
     if (!uid) {
       throw new error.HttpStatusError(400, 'Missing required field: uid');
     }
