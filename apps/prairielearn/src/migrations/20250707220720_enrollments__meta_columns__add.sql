@@ -24,17 +24,13 @@ ADD COLUMN pending_lti13_sub TEXT;
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_instance_id BIGINT REFERENCES lti13_course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
--- lti13_course_instances can be hard deleted, which cascades to deleting associated enrollments.
--- We index this column to speed up the deletion of those enrollments and avoid a table scan.
-CREATE INDEX enrollments_pending_lti13_instance_id_idx ON enrollments (pending_lti13_instance_id);
-
 ALTER TABLE enrollments
 ALTER COLUMN user_id
 DROP NOT NULL;
 
--- Forbid impossible states: rejected + lti_synced, blocked + lti_synced
+-- Forbid impossible states: rejected + lti_managed, blocked + lti_managed
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_impossible_synced CHECK (
+ADD CONSTRAINT enrollments_impossible_lti_managed CHECK (
   NOT (
     status IN ('rejected', 'blocked')
     AND lti_managed
@@ -72,7 +68,7 @@ ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
 
 -- Only enrollments in the 'lti13_pending' state can have a pending_lti13_sub and pending_lti13_instance_id.
 ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_invited_lti_synced_true_only_if_pending_set CHECK (
+ADD CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending CHECK (
   (status = 'lti13_pending') = (
     pending_lti13_sub IS NOT NULL
     AND pending_lti13_instance_id IS NOT NULL
@@ -116,6 +112,8 @@ ADD CONSTRAINT enrollments_pending_uid_course_instance_id_key UNIQUE (pending_ui
 -- pending_lti13_instance_id + pending_lti13_sub + course_instance_id must be unique.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key UNIQUE (
+  -- lti13_course_instances can be hard deleted, which cascades to deleting associated enrollments.
+  -- We index this column first to speed up the deletion of those enrollments and avoid a table scan.
   pending_lti13_instance_id,
   pending_lti13_sub,
   course_instance_id
