@@ -89,6 +89,97 @@ def get_graph_info(
 
 
 class AnswerOptions:
+    """
+    A data class that collects and validates pl-answer tag options within a pl-order-block tag
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
+    """
+
+    tag: str
+    """
+    Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.
+
+    Default: UUID
+    """
+
+    depends: list[str]
+    """
+    Optional attribute when grading-method="dag". Used to specify the directed
+    acyclic graph relation among the blocks, with blocks being referred to by
+    their tag. For example, if depends="1,3" for a particular block, it must
+    appear later in the solution than the block with tag="1" and the block with
+    tag="3".
+
+
+    Default: ""
+    """
+
+    correct: bool
+    """
+	Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).
+
+    Default: True
+    """
+
+    ranking: int
+    """
+    This attribute is used when grading-method="ranking" and specifies the correct
+    ranking of the answer block. For example, a block with ranking 2 should be
+    placed below a block with ranking 1. The same ranking can be used when the
+    order of certain blocks is not relevant. Blocks that can be placed at any
+    position should not have the ranking attribute.
+
+    Default = -1
+    """
+
+    indent: int | None
+    """
+    Specifies the correct indentation level of the block. For example, a value of 2
+    means the block should be indented twice. A value of -1 means the indention of
+    the block does not matter. This attribute can only be used when
+    indentation="true".
+
+    Default: None
+    """
+
+    distractor_for: str | None
+    """
+    Optional attribute on blocks where correct=false. Used to visually group a
+    distractor block with a correct block that it is similar to, should match the
+    tag attribute of the block that it should be visually paired with.
+
+    Default: None
+    """
+
+    distractor_feedback: str | None
+    """
+    Optional attribute, used when correct=false that indicates why a given block is
+    incorrect or should not be included in the solution. Shown to the student after
+    all attempts at a problem are exhausted, or if feedback="first-wrong" and the
+    first incorrect line in their submission has distractor-feedback.
+
+    Default: None
+    """
+
+    ordering_feedback: str | None
+    """
+    Optional attribute used when grading-method="dag" or grading-method="ranking"
+    and correct=true. Used to provide specific feedback when the block is placed in
+    the wrong position relative to other blocks. This feedback is shown to the
+    student after submission to help clarify ordering errors.
+
+    Default: None
+    """
+
+    inner_html: str
+    """
+    The inner html that is within the pl-answer tag
+    """
+
+    group_info: GroupInfo
+    """
+    Data class that contains the tag and the depends attributes.
+    """
+
     def __init__(
         self,
         html_element: lxml.html.HtmlElement,
@@ -204,7 +295,7 @@ def collect_answer_options(
 
 class OrderBlocksOptions:
     """
-    A class that collects validates pl-order-block questions
+    A data class that collects and validates pl-order-block question options
     For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
     """
 
@@ -234,7 +325,7 @@ class OrderBlocksOptions:
     * GradingMethodType.DAG = "dag"
     * GradingMethodType.EXTERNAL = "external"
 
-    Default = `GradingMethodType.ORDERED`
+    Default: `GradingMethodType.ORDERED`
     """
 
     allow_blank: bool
