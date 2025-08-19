@@ -146,7 +146,7 @@ export function RubricSettings({
     }
 
     const payload = {
-      csrfToken,
+      __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
       modified_at: rubricData?.modified_at?.toString() ?? '',
