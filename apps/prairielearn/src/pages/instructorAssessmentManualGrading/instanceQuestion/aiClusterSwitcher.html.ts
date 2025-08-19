@@ -6,11 +6,9 @@ import { idsEqual } from '../../../lib/id.js';
 export function AIClusterSwitcher({
     aiClusters,
     currentClusterId,
-    plainUrlPrefix
 }: {
     aiClusters: AiCluster[];
     currentClusterId: string | null;
-    plainUrlPrefix: string;
 }) {
     return html`
         ${aiClusters.map((cluster) => {
@@ -19,7 +17,7 @@ export function AIClusterSwitcher({
             <a
                 class="dropdown-item ${isSelected ? 'active' : ''}"
                 aria-current="${isSelected ? 'page' : ''}"
-                href="${plainUrlPrefix}/course/${cluster.id}/course_admin"
+                value="${cluster.id}"
             >
                 ${cluster.cluster_name}
             </a>

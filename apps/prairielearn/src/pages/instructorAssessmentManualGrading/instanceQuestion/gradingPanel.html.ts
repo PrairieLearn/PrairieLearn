@@ -1,4 +1,3 @@
-import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
@@ -53,10 +52,6 @@ export function GradingPanel({
   skip_text = skip_text || 'Next';
 
   return html`
-    ${EncodedData({
-      assessment_question_url,
-      instance_question_id: resLocals.instance_question.id
-    }, 'next-instance-question-link-data')}
     <form
       name="manual-grading-form"
       method="POST"
@@ -112,7 +107,7 @@ export function GradingPanel({
                 hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
                 hx-target="#cluster-selection-dropdown"
               >
-                <span> ${clusterName || 'No cluster'} </span>
+                <span id="cluster-selection-dropdown-span"> ${clusterName || 'No cluster'} </span>
               </button>
               <div class="dropdown-menu py-0 overflow-hidden">
                 <div

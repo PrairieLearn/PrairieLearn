@@ -9,7 +9,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getAiClusterAssignmentForInstanceQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { assignAiCluster, getAiClusterAssignmentForInstanceQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -201,7 +201,6 @@ router.get(
     const aiCluster = await getAiClusterAssignmentForInstanceQuestion({
       instanceQuestionId: res.locals.instance_question.id
     });
-    console.log('aiCluster', aiCluster);
 
     res.send(
       AIClusterSwitcher({
@@ -214,9 +213,22 @@ router.get(
           }
         ],
         currentClusterId: aiCluster?.id ?? null,
-        plainUrlPrefix: res.locals.urlPrefix
       })
     )
+  })
+)
+
+router.put(
+  '/ai_cluster', 
+  asyncHandler(async (req, res) => {
+    const aiClusterId = req.body.aiClusterId;
+
+    await assignAiCluster({  
+      instanceQuestionId: res.locals.instance_question.id,
+      aiClusterId: aiClusterId || null
+    });
+
+    res.sendStatus(204);
   })
 )
 

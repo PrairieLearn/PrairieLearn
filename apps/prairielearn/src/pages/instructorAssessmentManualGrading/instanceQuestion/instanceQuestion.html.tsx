@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
@@ -82,6 +83,11 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+      ${EncodedData({
+        course_instance_id: resLocals.course_instance.id,
+        assessment_id: resLocals.assessment.id,
+        instance_question_id: resLocals.instance_question.id
+      }, 'instance-question-data')}
     `,
     preContent: html`
       <div class="container-fluid">

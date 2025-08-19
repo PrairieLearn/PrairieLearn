@@ -39,13 +39,16 @@ $(() => {
 
   const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
   const nextInstanceQuestionButton = document.querySelector('#next-instance-question-button');
-  // const nextInstanceQuestionLinkData = decodeData('next-instance-question-link-data');
+  const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
 
   if (!skipGradedSubmissionsCheckbox) {
     throw new Error('skipGradedSubmissionsCheckbox not found');
   }
   if (!nextInstanceQuestionButton) {
     throw new Error('nextInstanceQuestionButton not found');
+  }
+  if (!clusterSelectionDropdown) {
+    throw new Error('clusterSelectionDropdown not found');
   }
 
   skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
@@ -59,6 +62,31 @@ $(() => {
         skip_graded_submissions: e.target.checked,
       }),
     });
+  })
+
+  clusterSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedItem = e.target.closest('.dropdown-item')
+    const {
+      instance_question_id,
+    } = decodeData('instance-question-data');
+
+    await fetch(`${instance_question_id}/ai_cluster`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        aiClusterId: selectedItem.getAttribute('value')
+      })
+    })
+
+    const activeDropdownItem = document.querySelector('.dropdown-item.active');
+    activeDropdownItem.classList.remove('active');
+
+    selectedItem.classList.add('active');
+
+    const clusterSelectionDropdownSpan = document.querySelector('#cluster-selection-dropdown-span');
+    clusterSelectionDropdownSpan.innerHTML = selectedItem.textContent;
   })
 });
 

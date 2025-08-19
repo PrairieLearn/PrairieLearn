@@ -1,5 +1,5 @@
 columns
-    ai_cluster_id: bigint not null
+    ai_cluster_id: bigint
     id: bigint not null default nextval('ai_cluster_assignments_id_seq'::regclass)
     instance_question_id: bigint not null CONSTRAINT unique
 

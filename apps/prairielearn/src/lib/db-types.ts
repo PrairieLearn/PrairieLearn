@@ -149,7 +149,7 @@ export const AiClusterSchema = z.object({
 export type AiCluster = z.infer<typeof AiClusterSchema>;
 
 export const AiClusterAssignmentSchema = z.object({
-  ai_cluster_id: IdSchema,
+  ai_cluster_id: IdSchema.nullable(),
   id: IdSchema,
   instance_question_id:  IdSchema,
 })
