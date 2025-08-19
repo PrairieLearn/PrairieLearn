@@ -11,6 +11,19 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+// elements, elementExtensions, clientFilesCourse, serverFilesCourse, clientFilesCourseInstance, clientFilesAssessment, question
+
+export const EnumChunkTypeSchema = z.enum([
+  'elements',
+  'elementExtensions',
+  'clientFilesCourse',
+  'serverFilesCourse',
+  'clientFilesCourseInstance',
+  'clientFilesAssessment',
+  'question',
+]);
+export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -405,7 +418,17 @@ export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
-export const ChunkSchema = null;
+
+export const ChunkSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  course_id: IdSchema,
+  course_instance_id: IdSchema.nullable(),
+  id: IdSchema,
+  question_id: IdSchema.nullable(),
+  type: EnumChunkTypeSchema,
+  uuid: z.string(), // TODO: should this be a UUID?
+});
+export type Chunk = z.infer<typeof ChunkSchema>;
 
 export const ClientFingerprintSchema = z.object({
   accept_language: z.string().nullable(),
@@ -522,7 +545,14 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
-export const CronJobSchema = null;
+export const CronJobSchema = z.object({
+  date: DateFromISOString,
+  id: IdSchema,
+  name: z.string(),
+  succeeded_at: DateFromISOString.nullable(),
+});
+export type CronJob = z.infer<typeof CronJobSchema>;
+
 export const CurrentPageSchema = null;
 
 export const DraftQuestionMetadataSchema = z.object({
