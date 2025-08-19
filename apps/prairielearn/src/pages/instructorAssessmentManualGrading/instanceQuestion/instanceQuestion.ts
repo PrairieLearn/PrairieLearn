@@ -438,13 +438,18 @@ router.post(
         {
           cluster_id: cluster?.id,
           assessment_id: res.locals.assessment.id,
-          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster'
+          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster_ungraded'
         },
         z.object({
           instance_question_id: z.string(),
           submission_id: z.string()
         })
       );
+
+      if (instanceQuestionsInCluster.length === 0) {
+        flash('warning', `No ${body.__action === 'add_manual_grade_for_cluster_ungraded' ? 'ungraded ' : ''}instance questions in the cluster.`);
+        return res.redirect(req.baseUrl);
+      }
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -479,6 +484,11 @@ router.post(
           return res.redirect(req.baseUrl);
         }
       }      
+
+      flash(
+        'success',
+        `Successfully applied grade and feedback to ${instanceQuestionsInCluster.length} instance questions.`
+      )
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(

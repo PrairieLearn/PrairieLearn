@@ -74,13 +74,8 @@ export async function aiCluster({
         const selectedInstanceQuestions = instanceQuestionIdsSet.size > 0
             ? allInstanceQuestions.filter((q) => instanceQuestionIdsSet.has(q.id))
             : allInstanceQuestions;
-
-        const selectedInstanceQuestionsWithIndex = selectedInstanceQuestions.map((instanceQuestion, index) => ({
-            instanceQuestion,
-            index
-        }));
-
-        job.info(`Clustering ${selectedInstanceQuestionsWithIndex.length} instance questions...`)
+            
+        job.info(`Clustering ${selectedInstanceQuestions.length} instance questions...`)
 
         await insertAiClusters({
           assessment_question_id: assessment_question.id,
@@ -103,8 +98,8 @@ export async function aiCluster({
           throw new Error(`Missing incorrect cluster for assessment question ${assessment_question.id}`);
         }
 
+        let index = 1;
         const clusterInstanceQuestion = async (
-            index: number,
             total: number,
             instance_question: InstanceQuestion,
             logger: AIGradingLogger
@@ -131,23 +126,19 @@ export async function aiCluster({
                 openai
             });
 
-            console.log('responseCorrect', responseCorrect);
-
             await assignAiCluster({
               instanceQuestionId: instance_question.id,
               aiClusterId: responseCorrect ? correctCluster.id : incorrectCluster.id
             });
-            logger.info(`Clustered instance question ${instance_question.id} (${index + 1}/${total})`);
+            logger.info(`Clustered instance question ${instance_question.id} (${index}/${total})`);
+            index += 1;
             return true;
         }
 
         const instance_question_clustering_successes = await async.mapLimit(
-            selectedInstanceQuestionsWithIndex,
+            selectedInstanceQuestions,
             PARALLEL_SUBMISSION_CLUSTERING_LIMIT,
-            async ({
-                instanceQuestion,
-                index
-            }) => {
+            async (instanceQuestion) => {
                 const logs: AIGradingLog[] = [];
                 const logger: AIGradingLogger = {
                     info: (msg: string) => {
@@ -165,7 +156,7 @@ export async function aiCluster({
                 };
 
                 try {
-                    return await clusterInstanceQuestion(index, selectedInstanceQuestions.length, instanceQuestion, logger);
+                    return await clusterInstanceQuestion(selectedInstanceQuestions.length, instanceQuestion, logger);
                 } catch (err) {
                     logger.error(err);
                 } finally {
