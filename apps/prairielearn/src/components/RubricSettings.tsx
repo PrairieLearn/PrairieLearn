@@ -53,7 +53,10 @@ export function RubricSettings({
     return { totalPositive: pos, totalNegative: neg };
   }, [rubricItems, startingPoints]);
 
-  const maxPoints = (assessmentQuestion.max_manual_points ?? 0) + maxExtraPoints;
+  const maxPoints =
+    (replaceAutoPoints
+      ? (assessmentQuestion.max_points ?? 0)
+      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints;
 
   const pointsWarnings: string[] = useMemo(() => {
     const warnings: string[] = [];
@@ -270,10 +273,19 @@ export function RubricSettings({
                       type="radio"
                       disabled={!editMode}
                       checked={startingPoints !== 0}
-                      onChange={() => setStartingPoints(assessmentQuestion.max_manual_points ?? 0)}
+                      onChange={() =>
+                        setStartingPoints(
+                          replaceAutoPoints
+                            ? (assessmentQuestion.max_points ?? 0)
+                            : (assessmentQuestion.max_manual_points ?? 0),
+                        )
+                      }
                     />
-                    Negative grading (start at {assessmentQuestion.max_manual_points}, subtract
-                    penalties)
+                    Negative grading (start at{' '}
+                    {replaceAutoPoints
+                      ? assessmentQuestion.max_points
+                      : assessmentQuestion.max_manual_points}
+                    , subtract penalties)
                   </label>
                 </div>
               </div>
