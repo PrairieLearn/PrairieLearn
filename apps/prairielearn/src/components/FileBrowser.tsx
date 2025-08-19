@@ -215,7 +215,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
     // and LiveScript/Lasso, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
     let language: string | undefined = undefined;
-    const extension = path.extname(paths.workingPath).substring(1);
+    const extension = path.extname(paths.workingPath).slice(1);
     if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
       language = extension;
     } else {
@@ -279,7 +279,7 @@ export function FileBrowser({
     navPage === 'course_admin'
       ? renderHtml(
           <CourseSyncErrorsAndWarnings
-            authz_data={authz_data}
+            authzData={authz_data}
             course={course}
             urlPrefix={urlPrefix}
           />,
@@ -287,7 +287,7 @@ export function FileBrowser({
       : navPage === 'instance_admin'
         ? renderHtml(
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={authz_data}
+              authzData={authz_data}
               courseInstance={resLocals.course_instance}
               course={course}
               urlPrefix={urlPrefix}
@@ -296,7 +296,7 @@ export function FileBrowser({
         : navPage === 'assessment'
           ? renderHtml(
               <AssessmentSyncErrorsAndWarnings
-                authz_data={authz_data}
+                authzData={authz_data}
                 assessment={resLocals.assessment}
                 courseInstance={resLocals.course_instance}
                 course={course}
@@ -306,7 +306,7 @@ export function FileBrowser({
           : navPage === 'question' || navPage === 'public_question'
             ? renderHtml(
                 <QuestionSyncErrorsAndWarnings
-                  authz_data={authz_data}
+                  authzData={authz_data}
                   question={resLocals.question}
                   course={course}
                   urlPrefix={urlPrefix}

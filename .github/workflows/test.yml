@@ -154,9 +154,10 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'requirements.txt'
-      - name: Install Python dependencies
-        run: make python-deps
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: core
+      - name: Install core Python dependencies
+        run: make python-deps-core
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -206,7 +207,7 @@ jobs:
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: .vitest-reports
           pattern: blob-report-*

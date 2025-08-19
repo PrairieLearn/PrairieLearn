@@ -8,6 +8,7 @@ import { queryAsync } from '@prairielearn/postgres';
 
 export const AdministratorQuerySpecsSchema = z.object({
   description: z.string(),
+  enabled: z.boolean().optional(),
   resultFormats: z.record(z.enum(['pre'])).optional(),
   params: z
     .array(
@@ -23,7 +24,7 @@ export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSche
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.record(z.any()).array(),
-  columns: z.string().array(),
+  columns: z.string().array().readonly(),
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
@@ -51,7 +52,7 @@ export async function loadAdminQueryModule(query: string): Promise<{
     default: (params: Record<string, any>) => Promise<AdministratorQueryResult>;
   };
   try {
-    module = await import(modulePath);
+    module = await import(/* @vite-ignore */ modulePath);
   } catch (err) {
     logger.error(`Failed to load module for query ${query}:`, err);
     throw new Error(`Query module ${query} could not be imported`);

@@ -332,3 +332,10 @@ SELECT
 FROM
   updated_instance_questions AS uiq
   LEFT JOIN most_recent_instance_question_manual_grading_jobs AS mriqmgj ON (mriqmgj.instance_question_id = uiq.id);
+
+-- BLOCK toggle_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;

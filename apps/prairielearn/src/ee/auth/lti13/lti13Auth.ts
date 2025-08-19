@@ -69,10 +69,83 @@ function getClaimUserAttributes({
   return { uin, uid, name, email };
 }
 
+const OIDCLaunchFlowSchema = z.object({
+  iss: z.string(),
+  login_hint: z.string(),
+  lti_message_hint: z.string().optional(),
+  lti_deployment_id: z.string().optional(),
+  client_id: z.string().optional(),
+  target_link_uri: z.string(),
+  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
+});
+
 // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
 // Can be POST or GET
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
+async function launchFlow(req: Request, res: Response, next: NextFunction) {
+  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+
+  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
+
+  // If the authentication request is coming from an iframe, intercept the parameters
+  // and offer a small form to open in a new window.
+  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
+  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
+  // offer a redirect/POST in a new window.
+  // This is a controlled exception to our security policy for LTI compatibility.
+  if (req.headers['sec-fetch-dest'] === 'iframe') {
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+    res.end(Lti13AuthIframe({ parameters }));
+    return;
+  }
+
+  // Generate our own OIDC state, use it to toggle if testing is happening
+  let state = crypto.randomBytes(28).toString('hex');
+  if ('test' in parameters) {
+    state = state.concat(STATE_TEST);
+  }
+
+  const myPassport = await setupPassport(req.params.lti13_instance_id);
+  myPassport.authenticate('lti13', {
+    response_type: 'id_token',
+    lti_message_hint: parameters.lti_message_hint,
+    login_hint: parameters.login_hint,
+    prompt: 'none',
+    response_mode: 'form_post',
+    failWithError: true,
+    state,
+  } as passport.AuthenticateOptions)(req, res, next);
+}
+
+async function setupPassport(lti13_instance_id: string) {
+  const lti13_instance = await selectLti13Instance(lti13_instance_id);
+
+  const localPassport = new passport.Passport();
+  const issuer = new Issuer(lti13_instance.issuer_params);
+  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+
+  localPassport.use(
+    'lti13',
+    new Strategy(
+      {
+        client,
+        passReqToCallback: true,
+      },
+      // @ts-expect-error TODO: type correctly
+      callbackify(verify),
+    ),
+  );
+
+  return localPassport;
+}
+
+const OIDCAuthResponseSchema = z.object({
+  state: z.string(),
+  id_token: z.string(),
+  // also has utf8, authenticity_token, lti_storage_target
+});
 
 router.post(
   '/callback',
@@ -233,28 +306,6 @@ router.get(
 
 export default router;
 
-//
-// Schema to validate OIDC, LTI
-//
-const OIDCAuthResponseSchema = z.object({
-  state: z.string(),
-  id_token: z.string(),
-  // also has utf8, authenticity_token, lti_storage_target
-});
-
-const OIDCLaunchFlowSchema = z.object({
-  iss: z.string(),
-  login_hint: z.string(),
-  lti_message_hint: z.string().optional(),
-  lti_deployment_id: z.string().optional(),
-  client_id: z.string().optional(),
-  target_link_uri: z.string(),
-  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
-});
-
-//
-// Helper functions
-//
 async function authenticate(req: Request, res: Response): Promise<any> {
   // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   OIDCAuthResponseSchema.passthrough().parse(req.body);
@@ -286,63 +337,6 @@ async function authenticate(req: Request, res: Response): Promise<any> {
       }
     }) as passport.AuthenticateCallback)(req, res);
   });
-}
-
-async function launchFlow(req: Request, res: Response, next: NextFunction) {
-  // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-
-  const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
-
-  // If the authentication request is coming from an iframe, intercept the parameters
-  // and offer a small form to open in a new window.
-  // SECURITY NOTE: We intentionally remove security headers CSP and X-Frame-Options
-  // only for this specific response to allow iframe embedding during LTI 1.3 auth to
-  // offer a redirect/POST in a new window.
-  // This is a controlled exception to our security policy for LTI compatibility.
-  if (req.headers['sec-fetch-dest'] === 'iframe') {
-    res.removeHeader('content-security-policy');
-    res.removeHeader('x-frame-options');
-    res.end(Lti13AuthIframe({ parameters }));
-    return;
-  }
-
-  // Generate our own OIDC state, use it to toggle if testing is happening
-  let state = crypto.randomBytes(28).toString('hex');
-  if ('test' in parameters) {
-    state = state.concat(STATE_TEST);
-  }
-
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  myPassport.authenticate('lti13', {
-    response_type: 'id_token',
-    lti_message_hint: parameters.lti_message_hint,
-    login_hint: parameters.login_hint,
-    prompt: 'none',
-    response_mode: 'form_post',
-    failWithError: true,
-    state,
-  } as passport.AuthenticateOptions)(req, res, next);
-}
-
-async function setupPassport(lti13_instance_id: string) {
-  const lti13_instance = await selectLti13Instance(lti13_instance_id);
-
-  const localPassport = new passport.Passport();
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-  localPassport.use(
-    'lti13',
-    new Strategy(
-      {
-        client,
-        passReqToCallback: true,
-      },
-      callbackify(verify),
-    ),
-  );
-
-  return localPassport;
 }
 
 async function verify(req: Request, tokenSet: TokenSet) {
