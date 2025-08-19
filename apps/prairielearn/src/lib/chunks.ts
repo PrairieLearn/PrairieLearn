@@ -155,19 +155,19 @@ const DatabaseChunkSchema = z.intersection(
     }),
     z.object({
       type: z.literal('clientFilesCourseInstance'),
-      course_instance_id: IdSchema,
+      course_instance_id: IdSchema.nullable(),
       course_instance_name: z.string(),
     }),
     z.object({
       type: z.literal('clientFilesAssessment'),
-      assessment_id: IdSchema,
+      assessment_id: IdSchema.nullable(),
       assessment_name: z.string(),
-      course_instance_id: IdSchema,
+      course_instance_id: IdSchema.nullable(),
       course_instance_name: z.string(),
     }),
     z.object({
       type: z.literal('question'),
-      question_id: IdSchema,
+      question_id: IdSchema.nullable(),
       question_name: z.string(),
     }),
   ]),
