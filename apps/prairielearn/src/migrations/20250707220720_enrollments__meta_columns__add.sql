@@ -19,6 +19,12 @@ ADD COLUMN pending_uid TEXT;
 ALTER TABLE enrollments
 ADD COLUMN pending_lti13_sub TEXT;
 
+ALTER TABLE enrollments
+ADD COLUMN pending_lti13_name TEXT;
+
+ALTER TABLE enrollments
+ADD COLUMN pending_lti13_email TEXT;
+
 -- If a lti13_course_instance is deleted, we want to delete the enrollment.
 -- This should only happen if the user is in the 'lti13_pending' state.
 ALTER TABLE enrollments
@@ -40,7 +46,7 @@ ADD CONSTRAINT enrollments_impossible_lti_managed CHECK (
 -- If a user is invited or rejected, we don't link them to a user to avoid PII leakage.
 -- Further discussion: https://github.com/PrairieLearn/PrairieLearn/issues/12198#issuecomment-3161792357
 -- Provisional 'lti13_pending' enrollments should never be associated with a user.
--- A user in any other state must have a user_id (including rejected users).
+-- A user in any other state (e.g. joined users) must have a user_id.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_user_id_null_only_if_invited_rejected_pending CHECK (
   (
@@ -54,24 +60,20 @@ ADD CONSTRAINT enrollments_pending_uid_null_only_if_invited_rejected CHECK (
   (status IN ('invited', 'rejected')) = (pending_uid IS NOT NULL)
 );
 
--- Enrollments in the 'joined' state must have a user_id, and they cannot have any pending_* columns.
-ALTER TABLE enrollments
-ADD CONSTRAINT enrollments_user_id_not_null_only_if_joined_no_pending CHECK (
-  (status != 'joined')
-  OR (
-    user_id IS NOT NULL
-    AND pending_uid IS NULL
-    AND pending_lti13_sub IS NULL
-    AND pending_lti13_instance_id IS NULL
-  )
-);
-
--- Only enrollments in the 'lti13_pending' state can have a pending_lti13_sub and pending_lti13_instance_id.
+-- Only enrollments in the 'lti13_pending' state can have pending_lti13_* columns.
+-- The pending_lti13_sub and pending_lti13_instance_id are required in this state.
 ALTER TABLE enrollments
 ADD CONSTRAINT enrollments_lti13_keys_only_if_lti13_pending CHECK (
   (status = 'lti13_pending') = (
     pending_lti13_sub IS NOT NULL
     AND pending_lti13_instance_id IS NOT NULL
+  )
+  AND (
+    status = 'lti13_pending'
+    OR (
+      pending_lti13_name IS NULL
+      AND pending_lti13_email IS NULL
+    )
   )
 );
 

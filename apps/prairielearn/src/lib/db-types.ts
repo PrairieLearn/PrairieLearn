@@ -548,6 +548,8 @@ export const EnrollmentSchema = z.object({
   id: IdSchema,
   lti_managed: z.boolean(),
   pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_name: z.string().nullable(),
+  pending_lti13_email: z.string().nullable(),
   pending_lti13_sub: z.string().nullable(),
   pending_uid: z.string().nullable(),
   status: EnumEnrollmentStatusSchema,
