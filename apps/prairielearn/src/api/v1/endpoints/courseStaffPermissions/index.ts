@@ -2,6 +2,7 @@ import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -20,12 +21,7 @@ import {
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
-
-const CourseUsersRowSchemaAPIFriendly = CourseUsersRowSchema.pick({
-  user: true,
-  course_permission: true,
-  course_instance_roles: true,
-});
+import { UserSchema } from '../../../../lib/db-types.js';
 
 const sql = sqldb.loadSql(
   path.join(
@@ -84,8 +80,19 @@ router.get(
     const users = await sqldb.queryRows(
       sql.select_course_users,
       { course_id: req.params.course_id },
-      CourseUsersRowSchemaAPIFriendly,
+      z.object({
+        user: UserSchema.pick({
+          uid: true,
+          email: true,
+          name: true,
+        }).partial(),
+        course_permission: CourseUsersRowSchema.shape.course_permission.pick({
+          course_role: true,
+        }),
+        course_instance_roles: CourseUsersRowSchema.shape.course_instance_roles,
+      }),
     );
+
     res.status(200).json({ users });
   }),
 );
