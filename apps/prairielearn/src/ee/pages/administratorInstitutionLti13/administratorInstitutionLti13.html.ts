@@ -95,7 +95,7 @@ function LTI13Instance(
         </button>
       </p>
 
-      <div class="modal fade" id="instanceData" tabindex="-1" aria-hidden="true">
+      <div class="modal fade" id="instanceData" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
