@@ -10,6 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   EnumCourseInstancePermissionSchema,
   EnumCourseRoleSchema,
+  UserSchema,
 } from '../../../../lib/db-types.js';
 import {
   deleteCourseInstancePermissions,
@@ -21,7 +22,6 @@ import {
 } from '../../../../models/course-permissions.js';
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
-import { UserSchema } from '../../../../lib/db-types.js';
 
 const sql = sqldb.loadSql(
   path.join(
