@@ -14,12 +14,10 @@ from order_blocks_options_parsing import (
     ALLOW_BLANK_DEFAULT,
     FEEDBACK_DEFAULT,
     FILE_NAME_DEFAULT,
+    FIRST_WRONG_TYPES,
     GRADING_METHOD_DEFAULT,
     INDENTION_DEFAULT,
-    INLINE_DEFAULT,
-    MAX_INDENTION_DEFAULT,
-    SOLUTION_HEADER_DEFAULT,
-    SOURCE_HEADER_DEFAULT,
+    LCS_GRADABLE_TYPES,
     WEIGHT_DEFAULT,
     FeedbackType,
     FormatType,
@@ -31,7 +29,6 @@ from order_blocks_options_parsing import (
     SourceBlocksOrderType,
 )
 from typing_extensions import NotRequired, assert_never
-
 
 class OrderBlocksAnswerData(TypedDict):
     inner_html: str
@@ -46,19 +43,6 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_feedback: str | None
     ordering_feedback: str | None
     uuid: str
-
-
-FIRST_WRONG_TYPES = frozenset([
-    FeedbackType.FIRST_WRONG,
-    FeedbackType.FIRST_WRONG_VERBOSE,
-])
-
-
-LCS_GRADABLE_TYPES = frozenset([
-    GradingMethodType.RANKING,
-    GradingMethodType.DAG,
-    GradingMethodType.ORDERED,
-])
 
 
 TAB_SIZE_PX = 50
@@ -531,24 +515,15 @@ def construct_feedback(
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, "answers-name")
+    order_blocks_options = OrderBlocksOptions(element)
+    answer_name = order_blocks_options.answers_name
     student_answer = data["submitted_answers"][answer_name]
-    grading_method = pl.get_enum_attrib(
-        element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
-    )
-    check_indentation = pl.get_boolean_attrib(element, "indentation", INDENTION_DEFAULT)
-    feedback_type = pl.get_enum_attrib(
-        element, "feedback", FeedbackType, FEEDBACK_DEFAULT
-    )
-    answer_weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    grading_method = order_blocks_options.grading_method
+    check_indentation = order_blocks_options.indentation
+    feedback_type = order_blocks_options.feedback
+    answer_weight = order_blocks_options.weight
 
-    partial_credit_type = pl.get_enum_attrib(
-        element,
-        "partial-credit",
-        PartialCreditType,
-        get_default_partial_credit_type(grading_method),
-    )
-
+    partial_credit_type = order_blocks_options.partial_credit
     true_answer_list = data["correct_answers"][answer_name]
 
     final_score = 0

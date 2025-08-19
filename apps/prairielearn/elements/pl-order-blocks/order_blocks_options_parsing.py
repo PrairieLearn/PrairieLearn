@@ -52,6 +52,11 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
+FIRST_WRONG_TYPES = frozenset([
+    FeedbackType.FIRST_WRONG,
+    FeedbackType.FIRST_WRONG_VERBOSE,
+])
+
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
@@ -72,7 +77,7 @@ FEEDBACK_DEFAULT = FeedbackType.NONE
 WEIGHT_DEFAULT = 1
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
-
+WEIGHT_DEFAULT = 1
 
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
@@ -207,12 +212,12 @@ class OrderBlocksOptions:
     within a question.
     """
 
-    weight: int | None
+    weight: int
     """
     Weight to use when computing a weighted average score over all elements
     in a question. 
 
-    Default = `False`
+    Default = `1`
     """
 
     grading_method: GradingMethodType
@@ -390,7 +395,7 @@ class OrderBlocksOptions:
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
-        self.weight = pl.get_integer_attrib(html_element, "weight", None)
+        self.weight = pl.get_integer_attrib(html_element, "weight", WEIGHT_DEFAULT)
         self.grading_method = pl.get_enum_attrib(
             html_element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
         )
