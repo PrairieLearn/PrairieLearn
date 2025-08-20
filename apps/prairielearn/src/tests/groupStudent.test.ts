@@ -7,7 +7,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { GroupConfigSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -463,12 +463,14 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.equal(response.status, 200);
     });
     it('should have 1 assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 1);
-      locals.assessment_instance_id = result.rows[0].id;
+      const result = await sqldb.queryRow(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      locals.assessment_instance_id = result.id;
       locals.assessmentInstanceURL =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(result.rows[0].group_id, 1);
+      assert.equal(result.group_id, '1');
     });
   });
 
@@ -611,7 +613,6 @@ describe('Group based homework assess control on student side', { timeout: 20_00
     it('should contain a second group-based homework assessment', async () => {
       const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
       assert.lengthOf(result.rows, 2);
-      assert.notEqual(result.rows[1].id, undefined);
     });
     it('should load the second assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl_2);
