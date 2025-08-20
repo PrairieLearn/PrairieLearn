@@ -39,6 +39,11 @@ router.get(
       { course_id: res.locals.course.id },
       z.string(),
     );
+    const enrollmentCount = await sqldb.queryRow(
+      sql.select_enrollment_count,
+      { course_instance_id: res.locals.course_instance.id },
+      z.number(),
+    );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
@@ -85,6 +90,7 @@ router.get(
         origHash,
         instanceGHLink,
         canEdit,
+        enrollmentCount,
       }),
     );
   }),
