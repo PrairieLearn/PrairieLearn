@@ -27,12 +27,20 @@ RETURNING
 
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  *
+  iq.*,
+  ai.open as ai_open
 FROM
   instance_questions AS iq
+JOIN
+  assessment_instances AS ai
+  ON ai.id = iq.assessment_instance_id
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.status != 'unanswered';
+  AND iq.status != 'unanswered'
+  AND (
+    NOT $closed_instance_questions_only OR
+    ai.open = FALSE
+  );
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO

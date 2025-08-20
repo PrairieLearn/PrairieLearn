@@ -151,10 +151,6 @@ export function AssessmentQuestion({
               <input type="hidden" name="__action" value="ai_grade_assessment_all" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
             </form>
-            <form method="POST" id="ai-clustering-all">
-              <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
-              <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-            </form>
           `
         : ''}
       ${aiGradingEnabled && aiGradingMode && aiGradingStats
@@ -345,17 +341,15 @@ export function AssessmentQuestion({
                       <div class="dropdown-menu dropdown-menu-end">
                         <button
                           class="dropdown-item grading-tag-button"
-                          type="submit"
-                          name="batch_action"
-                          value="ai_cluster_selected"
+                          data-bs-toggle="modal"
+                          data-bs-target="#cluster-confirmation-modal-selected"
                         >
                           Cluster selected
                         </button>
                         <button
                           class="dropdown-item"
-                          type="button"
                           data-bs-toggle="modal"
-                          data-bs-target="#cluster-confirmation-modal"
+                          data-bs-target="#cluster-confirmation-modal-all"
                         >
                           Cluster all
                         </button>
@@ -378,6 +372,11 @@ export function AssessmentQuestion({
           </div>
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>
         </div>
+        ${ClusterInfoModal({
+          modalFor: 'selected',
+          numOpenInstances: num_open_instances,
+          csrfToken: __csrf_token
+        })}
       </form>
     `,
     postContent: [
@@ -385,9 +384,9 @@ export function AssessmentQuestion({
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), 
       DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }), 
       ClusterInfoModal({
+        modalFor: 'all',
         numOpenInstances: num_open_instances,
-        assessmentId: assessment.id,
-        urlPrefix
+        csrfToken: __csrf_token
       })
     ],
   });
@@ -440,18 +439,23 @@ function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string })
 }
 
 function ClusterInfoModal({
+  modalFor,
   numOpenInstances,
-  assessmentId,
-  urlPrefix,
+  csrfToken
 }: {
+  modalFor: 'all' | 'selected';
   numOpenInstances: number;
-  assessmentId: string;
-  urlPrefix: string;
+  csrfToken: string;
 }) {
   return Modal({
-    id: 'cluster-confirmation-modal',
-    title: 'Cluster all submissions',
+    id: `cluster-confirmation-modal-${modalFor}`,
+    title: modalFor === 'all' ? 'Cluster all submissions' : 'Cluster selected submissions',
+    form: modalFor === 'all',
     body: html`
+      ${modalFor === 'all' ? html`
+        <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      `: ''}
       <p>
         Clustering groups student answers based on whether they <b>match the correct answer exactly.</b>
       </p>
@@ -488,18 +492,19 @@ function ClusterInfoModal({
       </table>
       ${(numOpenInstances > 0) && (
         html`<div class="alert alert-warning gap-2 flex-wrap d-flex align-items-center justify-content-between" role="alert">
-          <div>
+          <div class="flex-1">
             <p class="my-0">This assessment currently has ${numOpenInstances === 1 ? 'one open instance.' : `${numOpenInstances} open instances.`}</p>
             <p class="my-0">Choose how to apply clustering:</p>
           </div>
-          <select class="form-select" style="max-width: 300px;">
+          <select class="form-select flex-1" style="max-width: 300px;" name="closed_instance_questions_only">
             <option
-              value="cluster-closed-instances-only"
+              value="true"
+              selected
             >
               Cluster closed instances only
             </option>
             <option
-              value="cluster-all-instances"
+              value="false"
             >
               Cluster closed and open instances
             </option>
@@ -511,10 +516,27 @@ function ClusterInfoModal({
       <div class="m-0">
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Cluster submissions</button>
+          ${modalFor === 'all' ? html`
+            <button
+              class="btn btn-primary"
+              type="submit"
+            >
+              Cluster submissions
+            </button>
+          `: html`
+            <button
+              class="btn btn-primary"
+              type="submit"
+              name="batch_action"
+              value="ai_cluster_selected"
+            >
+              Cluster submissions
+            </button>
+          `}
         </div>
         <small class="text-muted my-0">AI can make mistakes. Review cluster assignments before grading.</small>
       </div>
     `
   })
 }
+

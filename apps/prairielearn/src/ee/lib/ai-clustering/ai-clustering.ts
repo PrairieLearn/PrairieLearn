@@ -25,7 +25,8 @@ export async function aiCluster({
   urlPrefix,
   authn_user_id,
   user_id,
-  instance_question_ids,
+  closed_instance_questions_only,
+  instance_question_ids
 }: {
   question: Question;
   course: Course;
@@ -34,12 +35,16 @@ export async function aiCluster({
   urlPrefix: string;
   authn_user_id: string;
   user_id: string;
+  closed_instance_questions_only: boolean;
   /**
    * Limit grading to the specified instance questions.
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
 }) {
+
+
+
     // If OpenAI API Key and Organization are not provided, throw an error
     if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
         throw new HttpStatusError(403, 'Not implemented (feature not available)');
@@ -69,6 +74,7 @@ export async function aiCluster({
 
         const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
             assessment_question.id,
+            closed_instance_questions_only
         );
 
         const selectedInstanceQuestions = instanceQuestionIdsSet.size > 0
