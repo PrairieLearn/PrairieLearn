@@ -14,6 +14,7 @@ import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
+import { QuestionSchema, QuestionTagSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 
 /**
  * Makes an empty question.
@@ -28,13 +29,17 @@ function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
 }
 
 async function findSyncedQuestion(qid) {
-  const syncedQuestions = await util.dumpTable('questions');
-  return syncedQuestions.find((q) => q.qid === qid);
+  const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+  const syncedQuestion = syncedQuestions.find((q) => q.qid === qid);
+  assert.isDefined(syncedQuestion);
+  return syncedQuestion;
 }
 
 async function findSyncedUndeletedQuestion(qid) {
-  const syncedQuestions = await util.dumpTable('questions');
-  return syncedQuestions.find((q) => q.qid === qid && q.deleted_at == null);
+  const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+  const syncedQuestion = syncedQuestions.find((q) => q.qid === qid && q.deleted_at == null);
+  assert.isDefined(syncedQuestion);
+  return syncedQuestion;
 }
 
 describe('Question syncing', () => {
@@ -52,27 +57,27 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === questionId);
     assert.isOk(syncedQuestion);
   });
 
   it('soft-deletes and restores questions', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
-    const oldSyncedQuestions = await util.dumpTable('questions');
+    const oldSyncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const oldSyncedQuestion = oldSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
 
     const oldQuestion = courseData.questions[util.QUESTION_ID];
     delete courseData.questions[util.QUESTION_ID];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const midSyncedQuestions = await util.dumpTable('questions');
+    const midSyncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const midSyncedQuestion = midSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isOk(midSyncedQuestion);
     assert.isNotNull(midSyncedQuestion?.deleted_at);
 
     courseData.questions[util.QUESTION_ID] = oldQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedQuestions = await util.dumpTable('questions');
+    const newSyncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const newSyncedQuestion = newSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.deepEqual(newSyncedQuestion, oldSyncedQuestion);
   });
@@ -83,7 +88,7 @@ describe('Question syncing', () => {
     const missingTagName = 'missing tag name';
     courseData.questions[util.QUESTION_ID].tags?.push(missingTagName);
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
-    let syncedTags = await util.dumpTable('tags');
+    let syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
     assert.isTrue(syncedTag.implicit);
@@ -91,7 +96,7 @@ describe('Question syncing', () => {
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedTags = await util.dumpTable('tags');
+    syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
     assert.isTrue(syncedTag.implicit);
@@ -100,7 +105,7 @@ describe('Question syncing', () => {
     // be removed from the DB
     courseData.questions[util.QUESTION_ID].tags?.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedTags = await util.dumpTable('tags');
+    syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isUndefined(syncedTag);
   });
@@ -112,7 +117,7 @@ describe('Question syncing', () => {
     const originalTopicName = courseData.questions[util.QUESTION_ID].topic;
     courseData.questions[util.QUESTION_ID].topic = missingTopicName;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
-    let syncedTopics = await util.dumpTable('topics');
+    let syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
     assert.isTrue(syncedTopic.implicit);
@@ -120,7 +125,7 @@ describe('Question syncing', () => {
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedTopics = await util.dumpTable('topics');
+    syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
     assert.isTrue(syncedTopic.implicit);
@@ -129,7 +134,7 @@ describe('Question syncing', () => {
     // be removed from the DB
     courseData.questions[util.QUESTION_ID].topic = originalTopicName;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedTopics = await util.dumpTable('topics');
+    syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isUndefined(syncedTopic);
   });
@@ -144,7 +149,7 @@ describe('Question syncing', () => {
       serverFilesCourse: [],
     };
     await util.writeAndSyncCourseData(courseData);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isArray(syncedQuestion?.client_files, 'client_files should be an array');
     assert.isEmpty(syncedQuestion?.client_files, 'client_files should be empty');
@@ -165,7 +170,7 @@ describe('Question syncing', () => {
       entrypoint: ['entrypoint', 'second argument'],
     };
     await util.writeAndSyncCourseData(courseData);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.equal(syncedQuestion?.external_grading_entrypoint, "entrypoint 'second argument'");
   });
@@ -179,7 +184,7 @@ describe('Question syncing', () => {
       args: ['first', 'second argument'],
     };
     await util.writeAndSyncCourseData(courseData);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.equal(syncedQuestion?.workspace_args, "first 'second argument'");
   });
@@ -193,7 +198,7 @@ describe('Question syncing', () => {
     const secondDirectory = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(firstDirectory);
     await util.syncCourseData(secondDirectory);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const questions = syncedQuestions.filter((q) => q.qid === util.QUESTION_ID);
     assert.equal(questions.length, 2);
   });
@@ -218,7 +223,7 @@ describe('Question syncing', () => {
     assert.equal(newSyncedQuestion?.id, originalSyncedQuestion?.id);
 
     // Check that we have a valid auto-created topic
-    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     const syncedTopic = syncedTopics.find((t) => t.name === newTopic.name);
     assert.equal(newSyncedQuestion?.topic_id, syncedTopic?.id);
     assert.isTrue(syncedTopic?.implicit);
@@ -244,11 +249,12 @@ describe('Question syncing', () => {
     assert.equal(newSyncedQuestion?.id, originalSyncedQuestion?.id);
 
     // Check that we have a valid auto-created tag
-    const syncedTags = await util.dumpTable('tags');
+    const syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     const syncedTag = syncedTags.find((t) => t.name === newTag.name);
-    const syncedQuestionTags = await util.dumpTable('question_tags');
+    assert.isDefined(syncedTag);
+    const syncedQuestionTags = await util.dumpTableWithSchema('question_tags', QuestionTagSchema);
     const syncedQuestionTag = syncedQuestionTags.find(
-      (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag?.id),
+      (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag.id),
     );
     assert.isTrue(syncedTag?.implicit);
     assert.ok(syncedQuestionTag);
@@ -265,12 +271,11 @@ describe('Question syncing', () => {
     };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-    assert.match(
-      syncedQuestion?.sync_errors,
-      /data must have required property 'incorrectAnswers'/,
-    );
+    assert.isDefined(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
+    assert.match(syncedQuestion.sync_errors, /data must have required property 'incorrectAnswers'/);
   });
 
   it('records a warning if same UUID is used in multiple questions', async () => {
@@ -278,15 +283,19 @@ describe('Question syncing', () => {
     courseData.questions['test2'] = courseData.questions[util.QUESTION_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const firstSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.isDefined(firstSyncedQuestion);
+    assert.isNotNull(firstSyncedQuestion.sync_warnings);
     assert.match(
-      firstSyncedQuestion?.sync_warnings,
+      firstSyncedQuestion.sync_warnings,
       /UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: test2/,
     );
     const secondSyncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.isDefined(secondSyncedQuestion);
+    assert.isNotNull(secondSyncedQuestion.sync_warnings);
     assert.match(
-      secondSyncedQuestion?.sync_warnings,
+      secondSyncedQuestion.sync_warnings,
       new RegExp(
         `UUID "f4ff2429-926e-4358-9e1f-d2f377e2036a" is used in other questions: ${util.QUESTION_ID}`,
       ),
@@ -299,11 +308,12 @@ describe('Question syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'questions', 'badQuestion'));
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === 'badQuestion');
     assert.isOk(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
     assert.match(
-      syncedQuestion?.sync_errors,
+      syncedQuestion.sync_errors,
       /Missing JSON file: questions\/badQuestion\/info.json/,
     );
   });
@@ -316,11 +326,12 @@ describe('Question syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'questions', ...nestedQuestionStructure));
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === questionId);
     assert.isOk(syncedQuestion);
+    assert.isNotNull(syncedQuestion.sync_errors);
     assert.match(
-      syncedQuestion?.sync_errors,
+      syncedQuestion.sync_errors,
       /Missing JSON file: questions\/subfolder1\/subfolder2\/subfolder3\/nestedQuestion\/info.json/,
     );
 
@@ -359,7 +370,7 @@ describe('Question syncing', () => {
     newQuestion.title = 'Changed title';
     courseData.questions['repeatedQuestion'] = newQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const deletedQuestion = syncedQuestions.find(
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
@@ -382,19 +393,22 @@ describe('Question syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // check that the newly-synced question has an error
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find(
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null,
     );
-    assert.equal(syncedQuestion?.uuid, newQuestion.uuid);
-    assert.match(syncedQuestion?.sync_errors, /must have required property 'title'/);
+    assert.isDefined(syncedQuestion);
+    assert.equal(syncedQuestion.uuid, newQuestion.uuid);
+    assert.isNotNull(syncedQuestion.sync_errors);
+    assert.match(syncedQuestion.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted question does not have any errors
     const deletedQuestion = syncedQuestions.find(
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
+    assert.isDefined(deletedQuestion);
     assert.equal(deletedQuestion?.uuid, originalQuestion.uuid);
-    assert.equal(deletedQuestion?.sync_errors, null);
+    assert.isNull(deletedQuestion?.sync_errors);
   });
 
   // https://github.com/PrairieLearn/PrairieLearn/issues/6539
@@ -424,7 +438,7 @@ describe('Question syncing', () => {
     };
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const questions = await util.dumpTable('questions');
+    const questions = await util.dumpTableWithSchema('questions', QuestionSchema);
 
     // Original question should not exist.
     const originalQuestionRow = questions.find((q) => q.qid === 'a');
@@ -447,7 +461,7 @@ describe('Question syncing', () => {
     courseData.questions['__drafts__/draft_1'] = question;
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === '__drafts__/draft_1');
     assert.isOk(syncedQuestion);
     assert.isTrue(syncedQuestion.draft);
@@ -469,7 +483,7 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.equal(syncedQuestion?.json_comment, 'Question comment');
     assert.equal(syncedQuestion?.json_workspace_comment, 'Workspace comment');
@@ -492,7 +506,7 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.deepEqual(syncedQuestion?.json_comment, ['question comment 1', 'question comment 2']);
     assert.deepEqual(syncedQuestion?.json_workspace_comment, [
@@ -530,7 +544,7 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.deepEqual(syncedQuestion?.json_comment, {
       comment: 'question comment 1',
@@ -557,11 +571,12 @@ describe('Question syncing', () => {
       await util.syncCourseData(courseDir);
     });
 
-    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isOk(syncedQuestion);
-    assert.match(syncedQuestion?.sync_errors, /"sharingSets" cannot be used/);
-    assert.match(syncedQuestion?.sync_errors, /"sharePublicly" cannot be used/);
-    assert.match(syncedQuestion?.sync_errors, /"shareSourcePublicly" cannot be used/);
+    assert.isNotNull(syncedQuestion.sync_errors);
+    assert.match(syncedQuestion.sync_errors, /"sharingSets" cannot be used/);
+    assert.match(syncedQuestion.sync_errors, /"sharePublicly" cannot be used/);
+    assert.match(syncedQuestion.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });
