@@ -180,7 +180,6 @@ export class CodeCallerNative implements CodeCaller {
     debug(`[${this.uuid} ${paddedState}] ${message}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
   async prepareForCourse({ coursePath, forbiddenModules }: PrepareForCourseOptions) {
     this.debug('enter prepareForCourse()');
     this.coursePath = coursePath;
