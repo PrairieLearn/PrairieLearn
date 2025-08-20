@@ -1,7 +1,7 @@
 import * as error from '@prairielearn/error';
 import {
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryOptionalRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';

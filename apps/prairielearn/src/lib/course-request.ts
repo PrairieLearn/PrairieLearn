@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, execute, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';

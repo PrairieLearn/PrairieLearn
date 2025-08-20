@@ -3,13 +3,13 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
-import { IdSchema } from '@prairielearn/zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

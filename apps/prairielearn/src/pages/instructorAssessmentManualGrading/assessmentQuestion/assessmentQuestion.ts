@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, execute, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {

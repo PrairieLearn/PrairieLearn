@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, execute } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { clearCookie } from '../../../lib/cookie.js';
 

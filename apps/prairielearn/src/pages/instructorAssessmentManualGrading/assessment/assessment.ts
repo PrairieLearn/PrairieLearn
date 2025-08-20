@@ -6,8 +6,8 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,

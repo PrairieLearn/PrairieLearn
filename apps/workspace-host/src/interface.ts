@@ -89,7 +89,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.execute(sql.update_load_count!, {
+      await sqldb.execute(sql.update_load_count, {
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';

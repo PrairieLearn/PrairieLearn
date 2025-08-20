@@ -23,7 +23,7 @@
  * `duration` for compute usage.
  */
 
-import { loadSqlEquiv, execute } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { computeCompletionCost } from '../lib/ai.js';
 

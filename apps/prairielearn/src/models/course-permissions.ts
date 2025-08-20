@@ -2,8 +2,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,

@@ -3,11 +3,11 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type Config, config } from '../lib/config.js';
 
 import * as helperServer from './helperServer.js';
-import { IdSchema } from '@prairielearn/zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

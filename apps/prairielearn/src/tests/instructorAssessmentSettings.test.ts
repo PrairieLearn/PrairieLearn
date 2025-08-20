@@ -7,7 +7,7 @@ import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
-import { loadSqlEquiv, execute, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';

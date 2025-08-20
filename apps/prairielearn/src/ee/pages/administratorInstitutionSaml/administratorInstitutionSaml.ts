@@ -9,7 +9,7 @@ import formatXml from 'xml-formatter';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, execute, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {

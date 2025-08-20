@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, execute, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';

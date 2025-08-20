@@ -1,6 +1,6 @@
 import type Stripe from 'stripe';
 
-import { loadSqlEquiv, execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { type StripeCheckoutSession, StripeCheckoutSessionSchema } from '../../lib/db-types.js';
 import { type PlanName } from '../lib/billing/plans-types.js';

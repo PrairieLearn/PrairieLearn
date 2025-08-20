@@ -6,10 +6,10 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { VariantSchema } from '../lib/db-types.js';
 
 import { type User, parseInstanceQuestionId, saveOrGrade, setUser } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { VariantSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

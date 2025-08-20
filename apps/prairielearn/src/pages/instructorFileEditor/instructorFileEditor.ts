@@ -9,8 +9,8 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import {
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryOptionalRow,
   queryRow,
   queryRows,

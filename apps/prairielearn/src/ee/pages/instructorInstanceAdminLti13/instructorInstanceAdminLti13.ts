@@ -7,8 +7,8 @@ import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import {
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryRow,
   queryRows,
   runInTransactionAsync,

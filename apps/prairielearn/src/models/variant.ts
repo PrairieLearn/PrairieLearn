@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { AugmentedError } from '@prairielearn/error';
 import {
   callRow,
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryOptionalRow,
   queryRow,
   queryRows,

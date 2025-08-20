@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, execute, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type CourseInstance,

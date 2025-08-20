@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, execute } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';

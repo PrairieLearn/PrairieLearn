@@ -1,7 +1,7 @@
 import {
   callAsync,
-  loadSqlEquiv,
   execute,
+  loadSqlEquiv,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';

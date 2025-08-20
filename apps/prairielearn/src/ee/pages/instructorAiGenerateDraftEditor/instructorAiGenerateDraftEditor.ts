@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, execute, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
