@@ -8,6 +8,7 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
+import { IdSchema } from '@prairielearn/zod';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
@@ -18,10 +19,8 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {
-    const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
-    assert.notEqual(result.rows.length, 0);
-    assert.notEqual(result.rows[0].id, undefined);
-    locals.assessment_id = result.rows[0].id;
+    const assessmentId = await sqldb.queryRow(sql.select_group_work_assessment, IdSchema);
+    locals.assessment_id = assessmentId;
   });
 
   test.sequential('create 500 users', async () => {
@@ -45,26 +44,24 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   });
 
   test.sequential('check groups and users', async () => {
-    const groupUserCounts = await sqldb.queryAsync(
+    const groupUserCountsRowCount = await sqldb.execute(
       'SELECT count(group_id) FROM group_users GROUP BY group_id',
-      [],
     );
-    assert.equal(groupUserCounts.rows.length, 50);
+    assert.equal(groupUserCountsRowCount, 50);
 
-    const groupUsers = await sqldb.queryAsync('SELECT DISTINCT(user_id) FROM group_users', []);
-    assert.equal(groupUsers.rows.length, 500);
+    const groupUsersRowCount = await sqldb.execute('SELECT DISTINCT(user_id) FROM group_users');
+    assert.equal(groupUsersRowCount, 500);
   });
 
   test.sequential('delete groups', async () => {
     await deleteAllGroups(locals.assessment_id, '1');
 
-    const groups = await sqldb.queryAsync(
+    const groupsRowCount = await sqldb.execute(
       'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
-      [],
     );
-    assert.equal(groups.rows.length, 0);
+    assert.equal(groupsRowCount, 0);
 
-    const groupUsers = await sqldb.queryAsync('SELECT * FROM group_users', {});
-    assert.equal(groupUsers.rows.length, 0);
+    const groupUsersRowCount = await sqldb.execute('SELECT * FROM group_users');
+    assert.equal(groupUsersRowCount, 0);
   });
 });

@@ -845,10 +845,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         locals.question = helperExam.questions.brokenGeneration;
       });
       it('should result in no variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 0);
+        assert.equal(rowCount, 0);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -858,10 +858,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created one variant', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 1);
+        assert.equal(rowCount, 1);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -871,10 +871,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created two variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 2);
+        assert.equal(rowCount, 2);
       });
     });
   });
@@ -1060,7 +1060,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
 
   describe('31. close exam', function () {
     it('should succeed', async () => {
-      await sqldb.queryOneRowAsync(sql.close_all_assessment_instances, []);
+      await sqldb.executeRow(sql.close_all_assessment_instances, []);
     });
   });
 
@@ -1088,7 +1088,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_addVectors_force_max_points, []);
+        await sqldb.execute(sql.update_addVectors_force_max_points, []);
       });
     });
     helperQuestion.regradeAssessment(locals);
