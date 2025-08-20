@@ -476,6 +476,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
+   *
+   * @deprecated Use {@link executeRow} or {@link queryRow} instead.
    */
   async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));

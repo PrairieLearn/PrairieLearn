@@ -19,8 +19,9 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
   afterAll(helperServer.after);
 
   test.sequential('get group-based homework assessment', async () => {
-    const assessmentId = await sqldb.queryRow(sql.select_group_work_assessment, IdSchema);
-    locals.assessment_id = assessmentId;
+    const assessmentIds = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+    assert.equal(assessmentIds.length, 2);
+    locals.assessment_id = assessmentIds[0];
   });
 
   test.sequential('create 500 users', async () => {

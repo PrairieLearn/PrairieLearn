@@ -82,7 +82,7 @@ export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead.
+ * @deprecated Use {@link executeRow} or {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
@@ -172,6 +172,7 @@ export const execute = defaultPool.execute.bind(defaultPool);
  * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
  */
 export const executeRow = defaultPool.executeRow.bind(defaultPool);
+
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.
