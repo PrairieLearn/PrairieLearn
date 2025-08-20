@@ -417,7 +417,7 @@ export const AuditEventSchema = z.object({
 });
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
-// This table is getting deprecated in favor of the audit_event table.
+// This table is getting deprecated in favor of the `audit_events` table.
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
