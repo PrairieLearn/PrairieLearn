@@ -13,7 +13,6 @@ function getCourseFilesLink() {
   if (config.courseFilesApiTransport === 'process') {
     return unstable_localLink({
       router: courseFilesRouter,
-
       createContext: async () => ({ jwt: null, bypassJwt: true }),
     });
   }

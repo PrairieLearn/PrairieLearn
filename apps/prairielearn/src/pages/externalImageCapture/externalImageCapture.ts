@@ -72,8 +72,8 @@ export default function (options = { publicQuestionPreview: false }) {
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      const fileName = req.body.file_name as string | undefined;
       const variantId = req.params.variant_id;
+      const fileName = req.body.file_name as string | undefined;
 
       if (!fileName || !variantId) {
         throw new HttpStatusError(400, 'file_name and variant_id are required');

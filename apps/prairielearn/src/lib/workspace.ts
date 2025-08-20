@@ -444,7 +444,6 @@ export async function generateWorkspaceFiles({
 
   const staticFiles: WorkspaceFile[] = (
     await async
-
       .mapSeries(klaw(localPath), async (file: klaw.Item): Promise<WorkspaceFile | null> => {
         return file.stats.isFile()
           ? { name: path.relative(localPath, file.path), localPath: file.path }
