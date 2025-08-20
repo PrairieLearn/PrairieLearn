@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -92,10 +93,12 @@ router.get(
     await updateAssessmentStatistics(res.locals.assessment.id);
 
     // re-fetch assessment to get updated statistics
-    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
-      assessment_id: res.locals.assessment.id,
-    });
-    res.locals.assessment = assessmentResult.rows[0].assessment;
+    const assessment = await sqldb.queryRow(
+      sql.select_assessment,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentSchema,
+    );
+    res.locals.assessment = assessment;
 
     if (req.params.filename === filenames.scoreStatsCsvFilename) {
       const csvData = [
@@ -147,10 +150,23 @@ router.get(
       }).pipe(res);
     } else if (req.params.filename === filenames.durationStatsCsvFilename) {
       // get formatted duration statistics
-      const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
-        assessment_id: res.locals.assessment.id,
-      });
-      const duration_stat = durationStatsResult.rows[0];
+      const duration_stat = await sqldb.queryRow(
+        sql.select_duration_stats,
+        { assessment_id: res.locals.assessment.id },
+        z.object({
+          median_formatted: z.string(),
+          min_formatted: z.string(),
+          max_formatted: z.string(),
+          mean_formatted: z.string(),
+          median_minutes: z.number(),
+          min_minutes: z.number(),
+          max_minutes: z.number(),
+          mean_minutes: z.number(),
+          threshold_seconds: AssessmentSchema.shape.duration_stat_threshold_seconds,
+          threshold_labels: AssessmentSchema.shape.duration_stat_threshold_labels,
+          hist: z.array(z.number()),
+        }),
+      );
 
       const csvData = [
         [
@@ -161,10 +177,10 @@ router.get(
           res.locals.assessment_set.abbreviation + res.locals.assessment.number,
           res.locals.assessment.title,
           res.locals.assessment.tid,
-          duration_stat.mean_mins,
-          duration_stat.median_mins,
-          duration_stat.min_mins,
-          duration_stat.max_mins,
+          duration_stat.mean_minutes,
+          duration_stat.median_minutes,
+          duration_stat.min_minutes,
+          duration_stat.max_minutes,
           ...duration_stat.threshold_seconds,
           ...duration_stat.hist,
         ],
@@ -190,17 +206,19 @@ router.get(
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
-      const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
-        assessment_id: res.locals.assessment.id,
-      });
-      const scoresByDay = histByDateResult.rows;
+      const histByDateResult = await sqldb.queryRows(
+        sql.assessment_score_histogram_by_date,
+        { assessment_id: res.locals.assessment.id },
+        AssessmentScoreHistogramByDateSchema,
+      );
+      const scoresByDay = histByDateResult;
 
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
       const csvData: (string | number)[][] = [];
 
-      let groupData = ['Number'];
+      let groupData: (string | number)[] = ['Number'];
       for (let day = 0; day < numDays; day++) {
         groupData.push(scoresByDay[day].number);
       }

@@ -215,7 +215,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
     // and LiveScript/Lasso, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
     let language: string | undefined = undefined;
-    const extension = path.extname(paths.workingPath).substring(1);
+    const extension = path.extname(paths.workingPath).slice(1);
     if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
       language = extension;
     } else {
@@ -279,7 +279,7 @@ export function FileBrowser({
     navPage === 'course_admin'
       ? renderHtml(
           <CourseSyncErrorsAndWarnings
-            authz_data={authz_data}
+            authzData={authz_data}
             course={course}
             urlPrefix={urlPrefix}
           />,
@@ -287,7 +287,7 @@ export function FileBrowser({
       : navPage === 'instance_admin'
         ? renderHtml(
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={authz_data}
+              authzData={authz_data}
               courseInstance={resLocals.course_instance}
               course={course}
               urlPrefix={urlPrefix}
@@ -296,7 +296,7 @@ export function FileBrowser({
         : navPage === 'assessment'
           ? renderHtml(
               <AssessmentSyncErrorsAndWarnings
-                authz_data={authz_data}
+                authzData={authz_data}
                 assessment={resLocals.assessment}
                 courseInstance={resLocals.course_instance}
                 course={course}
@@ -306,7 +306,7 @@ export function FileBrowser({
           : navPage === 'question' || navPage === 'public_question'
             ? renderHtml(
                 <QuestionSyncErrorsAndWarnings
-                  authz_data={authz_data}
+                  authzData={authz_data}
                   question={resLocals.question}
                   course={course}
                   urlPrefix={urlPrefix}
@@ -603,7 +603,7 @@ function DirectoryBrowserBody({
                         output: f.sync_warnings,
                       })
                     : ''}
-                <span><i class="far fa-file-alt fa-fw"></i></span>
+                <span><i class="far fa-file-alt"></i></span>
                 ${f.canView
                   ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(f.path)}">${f.name}</a>`
                   : html`<span>${f.name}</span>`}
@@ -689,7 +689,7 @@ function DirectoryBrowserBody({
           (d) => html`
             <tr>
               <td colspan="2">
-                <i class="fa fa-folder fa-fw"></i>
+                <i class="fa fa-folder"></i>
                 ${d.canView
                   ? html`<a href="${paths.urlPrefix}/file_view/${encodePath(d.path)}">${d.name}</a>`
                   : html`<span>${d.name}</span>`}

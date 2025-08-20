@@ -59,7 +59,7 @@ export async function sync(courseId: string, courseData: CourseData) {
     deleteUnused,
   });
 
-  if (topicsToCreate.length || topicsToUpdate.length || topicsToDelete.length) {
+  if (topicsToCreate.length > 0 || topicsToUpdate.length > 0 || topicsToDelete.length > 0) {
     await runInTransactionAsync(async () => {
       if (topicsToCreate.length > 0) {
         await queryAsync(sql.insert_topics, {

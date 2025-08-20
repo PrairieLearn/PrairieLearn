@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -34,6 +35,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl,
   renderSubmissionSearchParams,
   questionCopyTargets = null,
+  aiGradingInfo,
 }: {
   resLocals: Record<string, any>;
   questionContext: QuestionContext;
@@ -43,6 +45,7 @@ export function QuestionContainer({
   aiGradingPreviewUrl?: string;
   renderSubmissionSearchParams?: URLSearchParams;
   questionCopyTargets?: CopyTarget[] | null;
+  aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
   const {
     question,
@@ -65,6 +68,7 @@ export function QuestionContainer({
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
       data-variant-token="${variantToken}"
+      data-workspace-id="${variant.workspace_id}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
@@ -101,6 +105,15 @@ export function QuestionContainer({
             `
           : ''
       }
+      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
+      aiGradingInfo &&
+      aiGradingInfo.prompt
+        ? AIGradingPrompt({
+            variantId: variant.id,
+            prompt: aiGradingInfo.prompt,
+            promptImageUrls: aiGradingInfo.promptImageUrls,
+          })
+        : ''}
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
@@ -124,7 +137,7 @@ export function QuestionContainer({
                       aria-controls="more-submissions-collapser"
                     >
                       Show/hide older submissions
-                      <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                      <i class="fa fa-angle-up ms-1 expand-icon"></i>
                     </button>
                   </div>
 
@@ -145,6 +158,65 @@ export function QuestionContainer({
         : ''}
     </div>
     ${CopyQuestionModal({ resLocals, questionCopyTargets })}
+  `;
+}
+
+function AIGradingPrompt({
+  variantId,
+  prompt,
+  promptImageUrls,
+}: {
+  variantId: string;
+  prompt: string;
+  promptImageUrls: string[];
+}) {
+  return html`
+    <div class="card mb-3 grading-block">
+      <div
+        class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
+      >
+        <h2>AI Grading Prompt</h2>
+        <button
+          type="button"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+          data-bs-toggle="collapse"
+          data-bs-target="#ai-grading-prompt-${variantId}-body"
+          aria-expanded="true"
+          aria-controls="ai-grading-prompt-${variantId}-body"
+        >
+          <i class="fa fa-angle-up ms-1 expand-icon"></i>
+        </button>
+      </div>
+      <div
+        class="js-submission-body js-collapsible-card-body show"
+        id="ai-grading-prompt-${variantId}-body"
+      >
+        <div class="card-body">
+          <ul class="list-group list-group-flush">
+            <li class="list-group-item my-0">
+              <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
+              <pre class="mb-0"><code>${prompt}</code></pre>
+            </li>
+            <li class="list-group-item my-0">
+              ${promptImageUrls.length > 0
+                ? html`
+                    <h5 class="card-title mt-2 mb-3">Prompt images</h5>
+                    ${promptImageUrls.map(
+                      (url, index) =>
+                        html`<img
+                          src="${url}"
+                          alt="Image ${index + 1} in the AI grading prompt"
+                          class="img-fluid mb-2"
+                          style="max-height: 600px"
+                        />`,
+                    )}
+                  `
+                : ''}
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
   `;
 }
 
@@ -690,7 +762,7 @@ function QuestionPanel({
 
   return html`
     <div class="card mb-3 question-block">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
         <h1>
           ${QuestionTitle({
             questionContext,
@@ -709,7 +781,7 @@ function QuestionPanel({
                     data-bs-toggle="modal"
                     data-bs-target="#copyQuestionModal"
                   >
-                    <i class="fa fa-fw fa-clone"></i>
+                    <i class="fa fa-clone"></i>
                     <span class="d-none d-sm-inline">Copy question</span>
                   </button>
                 `

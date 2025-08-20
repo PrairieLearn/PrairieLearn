@@ -59,9 +59,7 @@ export async function updateScore(assessment_instance_id: string) {
 
   const info = await sqldb.queryOptionalRow(
     sql.get_score,
-    {
-      ai_id: assessment_instance_id,
-    },
+    { ai_id: assessment_instance_id },
     z.object({
       ...AssessmentInstanceSchema.shape,
       ...LtiOutcomeSchema.shape,
@@ -72,10 +70,10 @@ export async function updateScore(assessment_instance_id: string) {
 
   let score = (info.score_perc ?? 0) / 100;
   if (score > 1) {
-    score = 1.0;
+    score = 1;
   }
   if (score < 0) {
-    score = 0.0;
+    score = 0;
   }
 
   if (info.lis_result_sourcedid === null || info.date === null) {
@@ -97,7 +95,7 @@ export async function updateScore(assessment_instance_id: string) {
     oauth_consumer_key: info.consumer_key,
     oauth_version: '1.0',
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-    oauth_nonce: uuid().replace(/-/g, ''),
+    oauth_nonce: uuid().replaceAll('-', ''),
     oauth_signature_method: 'HMAC-SHA1',
     oauth_body_hash: Buffer.from(sha1, 'hex').toString('base64'),
   };

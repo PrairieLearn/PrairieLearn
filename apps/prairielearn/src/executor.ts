@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createInterface } from 'node:readline';
 
 import {
@@ -143,7 +145,7 @@ process.once('SIGTERM', () => process.exit(0));
   for await (const line of rl) {
     const results = await handleInput(line, codeCaller);
     const { needsFullRestart, ...rest } = results;
-    console.log(JSON.stringify(rest));
+    process.stdout.write(JSON.stringify(rest) + '\n');
     if (needsFullRestart) {
       codeCaller.done();
       codeCaller = await prepareCodeCaller();

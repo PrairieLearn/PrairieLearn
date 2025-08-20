@@ -294,13 +294,13 @@ export async function addCompletionCostToIntervalUsage({
 
 /**
  * Generates the HTML and Python code for a new question using an LLM.
- *
- * @param client The OpenAI client to use.
- * @param courseId The ID of the current course.
- * @param authnUserId The authenticated user's ID.
- * @param prompt The prompt for how to generate a question.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.client The OpenAI client to use.
+ * @param params.courseId The ID of the current course.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.prompt The prompt for how to generate a question.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
@@ -501,19 +501,22 @@ function traverseForTagNames(ast: any): Set<string> {
 
 /**
  * Revises a question using the LLM based on user input.
- *
- * @param client The OpenAI client to use.
- * @param authnUserId The authenticated user's ID.
- * @param originalPrompt The prompt creating the original generation.
- * @param revisionPrompt A prompt with user instructions on how to revise the question.
- * @param originalHTML The question.html file to revise.
- * @param originalPython The server.py file to revise.
- * @param remainingAttempts Number of times that regen could be called.
- * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
- * @param questionQid The qid of the question to edit.
- * @param courseId The ID of the current course.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.job The server job to use.
+ * @param params.client The OpenAI client to use.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.originalPrompt The prompt creating the original generation.
+ * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param params.originalHTML The question.html file to revise.
+ * @param params.originalPython The server.py file to revise.
+ * @param params.remainingAttempts Number of times that regen could be called.
+ * @param params.isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
+ * @param params.questionId The ID of the question to edit.
+ * @param params.questionQid The qid of the question to edit.
+ * @param params.courseId The ID of the current course.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params.jobSequenceId The ID of the server job.
  */
 async function regenInternal({
   job,
@@ -705,6 +708,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
+ * @param questionQid The qid of the question to edit.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.

@@ -8,8 +8,8 @@ SET
   sub = $sub;
 
 -- BLOCK select_lti13_instance_identities_for_course_instance
-SELECT
-  to_jsonb(lti13_instances.*) AS lti13_instance,
+SELECT DISTINCT
+  ON (lti13_instances.id) to_jsonb(lti13_instances.*) AS lti13_instance,
   lti13_users.id AS lti13_user_id
 FROM
   lti13_course_instances
@@ -22,3 +22,13 @@ FROM
   )
 WHERE
   lti13_course_instances.course_instance_id = $course_instance_id;
+
+-- BLOCK select_user_by_lti13_sub
+SELECT
+  u.*
+FROM
+  users AS u
+  INNER JOIN lti13_users AS l13u ON u.user_id = l13u.user_id
+WHERE
+  l13u.lti13_instance_id = $lti13_instance_id
+  AND l13u.sub = $sub;

@@ -64,7 +64,7 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
   // Pricings are updated according to https://platform.openai.com/docs/pricing
   const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
-  const completion_cost = 10.0 / 10 ** 6;
+  const completion_cost = 10 / 10 ** 6;
 
   return (
     cached_input_tokens * cached_input_cost +
@@ -103,24 +103,26 @@ export async function generatePrompt({
       }
       rubric_info += '\n';
     }
-    messages.push({
-      role: 'system',
-      content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
-        (example_submissions.length
-          ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : ''),
-    });
-    messages.push({
-      role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
-    });
+    messages.push(
+      {
+        role: 'system',
+        content:
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          (example_submissions.length > 0
+            ? ' I will provide some example student responses and their corresponding selected rubric items.'
+            : ''),
+      },
+      {
+        role: 'system',
+        content: `Here are the rubric items:\n\n${rubric_info}`,
+      },
+    );
   } else {
     messages.push({
       role: 'system',
       content:
         "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is correct." +
-        (example_submissions.length
+        (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
     });
@@ -445,4 +447,8 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
+  await queryAsync(sql.toggle_ai_grading_mode, { assessment_question_id });
 }

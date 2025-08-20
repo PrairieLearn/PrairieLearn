@@ -1,5 +1,4 @@
 import {
-  type AccessorKeyColumnDef,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -21,6 +20,7 @@ import {
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import { getStudentDetailUrl } from '../../lib/client/url.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
@@ -40,9 +40,16 @@ interface StudentsCardProps {
   courseInstance: StaffCourseInstanceContext['course_instance'];
   students: StudentRow[];
   timezone: string;
+  urlPrefix: string;
 }
 
-function StudentsCard({ course, courseInstance, students, timezone }: StudentsCardProps) {
+function StudentsCard({
+  course,
+  courseInstance,
+  students,
+  timezone,
+  urlPrefix,
+}: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -82,36 +89,43 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
-  const columns = useMemo<AccessorKeyColumnDef<StudentRow, any>[]>(
+  const columns = useMemo(
     () => [
-      columnHelper.accessor('user.uid', {
+      columnHelper.accessor((row) => row.user.uid, {
+        id: 'user_uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor('user.name', {
+      columnHelper.accessor((row) => row.user.name, {
+        id: 'user_name',
         header: 'Name',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => (
+          <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+            {info.getValue() || '—'}
+          </a>
+        ),
       }),
-      columnHelper.accessor('user.email', {
+      columnHelper.accessor((row) => row.user.email, {
+        id: 'user_email',
         header: 'Email',
         cell: (info) => info.getValue() || '—',
       }),
-      columnHelper.accessor('enrollment.created_at', {
+      columnHelper.accessor((row) => row.enrollment.created_at, {
+        id: 'enrollment_created_at',
         header: 'Enrolled on',
         cell: (info) => {
-          const date = new Date(info.getValue());
+          const date = info.getValue();
+          if (date == null) return '—';
           return (
             <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
           );
         },
       }),
     ],
-    [timezone],
+    [timezone, urlPrefix],
   );
 
-  const allColumnIds = columns
-    .filter((col) => col.accessorKey)
-    .map((col) => col.accessorKey.replace('.', '_'));
+  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -157,7 +171,7 @@ function StudentsCard({ course, courseInstance, students, timezone }: StudentsCa
   return (
     <div class="card d-flex flex-column h-100">
       <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center justify-content-between gap-2">
           <div>Students</div>
           <div>
             <DownloadButton
@@ -224,6 +238,7 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
+  urlPrefix,
 }: {
   search: string;
 } & StudentsCardProps) => {
@@ -234,6 +249,7 @@ export const InstructorStudents = ({
         courseInstance={courseInstance}
         students={students}
         timezone={timezone}
+        urlPrefix={urlPrefix}
       />
     </NuqsAdapter>
   );

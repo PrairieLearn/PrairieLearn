@@ -1,4 +1,10 @@
-.capture-preview {
+.pl-image-capture-preview {
   object-fit: contain;
   max-height: max(60vh, 600px);
+  transition: transform 0.2s ease-in-out;
+}
+
+.pl-image-capture-qr-code-box {
+  width: 200px;
+  height: 200px;
 }

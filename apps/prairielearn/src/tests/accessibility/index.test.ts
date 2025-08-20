@@ -8,6 +8,7 @@ import { afterAll, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
@@ -109,7 +110,7 @@ async function checkPage(url: string) {
     result.messages = result.messages.filter((m) => {
       // This doesn't appear to be an actual issue and isn't flagged by
       // other tools like https://validator.w3.org/nu.
-      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+      if (/<tt> element is not permitted as content under <(small|strong)>/.test(m.message)) {
         return false;
       }
 
@@ -341,6 +342,7 @@ const SKIP_ROUTES = [
   // in order to create a workspace.
   // TODO: open a question and create a workspace so we can test this page.
   /^\/pl\/workspace\//,
+  /^\/pl\/public\/workspace\//,
 
   // TODO: run a query so we can test this page.
   '/pl/administrator/query/:query',
@@ -398,28 +400,37 @@ describe('accessibility', () => {
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 
-    const firstNewsItemResult = await sqldb.queryOneRowAsync(
+    const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
+      IdSchema,
     );
 
-    const assessmentResult = await sqldb.queryOneRowAsync(
+    const assessment_id = await sqldb.queryRow(
       'SELECT id FROM assessments WHERE tid = $tid',
       { tid: 'hw1-automaticTestSuite' },
+      IdSchema,
     );
 
-    const questionResult = await sqldb.queryOneRowAsync(
+    const question_id = await sqldb.queryRow(
       'SELECT id FROM questions WHERE qid = $qid',
       { qid: 'downloadFile' },
+      IdSchema,
+    );
+
+    const user_id = await sqldb.queryRow(
+      'SELECT user_id FROM users WHERE uid = $uid',
+      { uid: 'dev@example.com' },
+      IdSchema,
     );
 
     await features.enable('question-sharing');
 
     routeParams = {
       ...STATIC_ROUTE_PARAMS,
-      news_item_id: firstNewsItemResult.rows[0].id,
-      assessment_id: assessmentResult.rows[0].id,
-      question_id: questionResult.rows[0].id,
+      news_item_id,
+      assessment_id,
+      question_id,
+      user_id,
     };
 
     await sqldb.queryOneRowAsync(
@@ -437,14 +448,15 @@ describe('accessibility', () => {
       { course_instance_id: routeParams.course_instance_id },
     );
 
-    const courseId = await sqldb.queryOneRowAsync(
+    const course_id = await sqldb.queryRow(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
+      IdSchema,
     );
 
     await sqldb.queryOneRowAsync(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
-      { sharing_name: 'test', course_id: courseId.rows[0].course_id },
+      { sharing_name: 'test', course_id },
     );
   });
 

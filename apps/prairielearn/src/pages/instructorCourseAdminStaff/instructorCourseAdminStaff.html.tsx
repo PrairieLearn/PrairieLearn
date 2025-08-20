@@ -77,7 +77,7 @@ export function InstructorCourseAdminStaff({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
@@ -396,9 +396,7 @@ function StaffTable({
             <tr>
               <td class="align-middle">${courseUser.user.uid}</td>
               <td class="align-middle">
-                ${courseUser.user.name
-                  ? courseUser.user.name
-                  : html`<span class="text-danger">Unknown user</span>`}
+                ${courseUser.user.name ?? html`<span class="text-danger">Unknown user</span>`}
               </td>
               <td class="align-middle">
                 ${!canChangeCourseRole
