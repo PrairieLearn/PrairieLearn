@@ -10,11 +10,20 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
-
-    blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
+    let blockNum = 0;
+    blocks.forEach((block) => {
+      block.setAttribute('tabindex', '-1');
+      if (enableIndentation) {
+        setIndentation(block, 0);
+      }
+      block.setAttribute('id', uuid + '-' + blockNum);
+      blockNum += 1;
+      block.setAttribute('role', 'option');
+      block.setAttribute('aria-roledescription', 'Block');
+      block.setAttribute('aria-selected', false);
+      initializeBlockEvents(block);
+    });
     blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
-
-    blocks.forEach((block) => initializeBlockEvents(block));
   }
 
   function inDropzone(block) {
@@ -27,28 +36,32 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setIndentation(block, indentation) {
-    if (indentation >= 0 && indentation <= maxIndent) {
-      block.style.marginLeft = indentation * TABWIDTH + 'px';
+    const clamped = Math.max(0, Math.min(indentation, maxIndent * TABWIDTH));
+    block.style.marginLeft = clamped + 'px';
+    if (inDropzone(block)) {
+      block.setAttribute('aria-description', 'indentation depth ' + getIndentation(block));
+    } else {
+      block.removeAttribute('aria-description');
     }
   }
 
   function initializeBlockEvents(block) {
-    function removeSelectedAttribute() {
-      block.classList.remove('pl-order-blocks-selected');
+    function deselectBlock() {
+      block.setAttribute('aria-selected', false);
     }
 
     function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
       // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
       // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
-      block.removeEventListener('blur', removeSelectedAttribute);
+      block.removeEventListener('blur', deselectBlock);
       handle();
       ev.preventDefault();
-      block.addEventListener('blur', removeSelectedAttribute);
       correctPairing(block);
       if (focus) {
         block.focus();
       }
+      block.addEventListener('blur', deselectBlock);
       setAnswer();
     }
 
@@ -57,7 +70,7 @@ window.PLOrderBlocks = function (uuid, options) {
       const dropzoneBlocks = Array.from(
         $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
       );
-      if (!block.classList.contains('pl-order-blocks-selected')) {
+      if (block.getAttribute('aria-selected') !== 'true') {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
@@ -95,7 +108,7 @@ window.PLOrderBlocks = function (uuid, options) {
         switch (ev.key) {
           case ' ': // Space key
           case 'Enter':
-            handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
+            handleKey(ev, block, () => block.setAttribute('aria-selected', true));
             break;
           case 'ArrowUp':
             handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
@@ -132,27 +145,36 @@ window.PLOrderBlocks = function (uuid, options) {
           case 'ArrowLeft':
             handleKey(ev, block, () => {
               if (inDropzone(block)) {
-                const currentIndent = getIndentation(block);
-                if (currentIndent > 0) {
-                  setIndentation(block, getIndentation(block) - 1);
-                } else {
+                const level = getIndentation(block);
+                if (level === 0) {
                   $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
-                  correctPairing(block);
+                  return;
                 }
+                setIndentation(block, (level - 1) * TABWIDTH);
               }
             });
             break;
           case 'ArrowRight':
             handleKey(ev, block, () => {
               if (!inDropzone(block)) {
+                // Moving to the answer area
                 $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
+                if (enableIndentation) {
+                  // when inserting a block, default to the same indentation level as the previous block
+                  if (block.previousElementSibling) {
+                    setIndentation(block, getIndentation(block.previousElementSibling) * TABWIDTH);
+                  } else {
+                    setIndentation(block, 0);
+                  }
+                }
               } else if (enableIndentation) {
-                setIndentation(block, getIndentation(block) + 1);
+                // Already in answer area
+                setIndentation(block, (getIndentation(block) + 1) * TABWIDTH);
               }
             });
             break;
           case 'Escape':
-            handleKey(ev, block, removeSelectedAttribute);
+            handleKey(ev, block, deselectBlock);
             break;
         }
       }
@@ -323,8 +345,8 @@ window.PLOrderBlocks = function (uuid, options) {
       // update the location of the placeholder as the item is dragged
       const placeholder = ui.placeholder;
       const leftDiff = calculateIndent(ui, placeholder.parent());
-      placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
+      setIndentation(placeholder[0], leftDiff);
 
       // Sets the width of the placeholder to match the width of the block being dragged
       if (options.inline) {
@@ -334,7 +356,7 @@ window.PLOrderBlocks = function (uuid, options) {
     stop(event, ui) {
       // when the user stops interacting with the list
       const leftDiff = calculateIndent(ui, ui.item.parent());
-      ui.item[0].style.marginLeft = leftDiff + 'px';
+      setIndentation(ui.item[0], leftDiff);
       setAnswer();
 
       correctPairing(ui.item[0]);
