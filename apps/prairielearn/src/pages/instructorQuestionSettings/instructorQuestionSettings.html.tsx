@@ -562,9 +562,9 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                     ${canEdit ? '' : 'disabled'}
                     ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
                   />
-                  <label class="form-check-label" for="external_grading_enable_networking"
-                    >Enable networking</label
-                  >
+                  <label class="form-check-label" for="external_grading_enable_networking">
+                    Enable networking</label
+                  </label>
                   <div class="small text-muted">
                     Whether the grading containers should have network access. Access is disabled by
                     default.
