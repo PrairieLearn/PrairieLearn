@@ -1,4 +1,5 @@
 import { type NextFunction, type Request, type Response, Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as Sentry from '@prairielearn/sentry';
@@ -10,12 +11,12 @@ const router = Router();
  * viewing permissions. This should be added to any routes that provide student
  * data.
  */
-const authzHasCourseInstanceView = (req: Request, res: Response, next: NextFunction) => {
+const authzHasCourseInstanceView = asyncHandler(async (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
     throw new error.HttpStatusError(403, 'Requires student data view access');
   }
   next();
-};
+});
 
 /**
  * We'll forbid API access to the example course unless the user is a global
@@ -31,12 +32,12 @@ function assertNotExampleCourse(req: Request, res: Response, next: NextFunction)
 /**
  * Used to block access to course sync unless has course editor permissions
  */
-const authzHasCourseEditor = (req: Request, res: Response, next: NextFunction) => {
+const authzHasCourseEditor = asyncHandler(async (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
   }
   next();
-};
+});
 
 // Pretty-print all JSON responses.
 router.use((await import('./prettyPrintJson.js')).default);

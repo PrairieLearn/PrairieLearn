@@ -1,11 +1,11 @@
-import type { NextFunction, Request, Response } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../lib/config.js';
 import { setCookie, shouldSecureCookie } from '../lib/cookie.js';
 
-export default (req: Request, res: Response, next: NextFunction): void => {
+export default asyncHandler(async (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and
   // are authorized to access res.locals.workspace_id. We will set a
   // short-lived cookie specific to this workspace_id that will let
@@ -25,4 +25,4 @@ export default (req: Request, res: Response, next: NextFunction): void => {
     secure: shouldSecureCookie(req),
   });
   next();
-};
+});

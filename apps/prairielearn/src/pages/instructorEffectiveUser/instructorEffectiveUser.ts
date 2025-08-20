@@ -42,63 +42,66 @@ router.get(
   }),
 );
 
-router.post('/', (req, res) => {
-  if (
-    !(
-      res.locals.authz_data.authn_has_course_permission_preview ||
-      res.locals.authz_data.authn_has_course_instance_permission_view
-    )
-  ) {
-    throw new HttpStatusError(
-      403,
-      'Access denied (must be course previewer or student data viewer)',
-    );
-  }
-
-  if (req.body.__action === 'reset') {
-    clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
-    clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
-    clearCookie(res, ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    clearCookie(res, ['pl_requested_date', 'pl2_requested_date']);
-    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    res.redirect(req.originalUrl);
-  } else if (req.body.__action === 'changeUid') {
-    setCookie(res, ['pl_requested_uid', 'pl2_requested_uid'], req.body.pl_requested_uid, {
-      maxAge: 60 * 60 * 1000,
-    });
-    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    res.redirect(req.originalUrl);
-  } else if (req.body.__action === 'changeCourseRole') {
-    setCookie(
-      res,
-      ['pl_requested_course_role', 'pl2_requested_course_role'],
-      req.body.pl_requested_course_role,
-      { maxAge: 60 * 60 * 1000 },
-    );
-    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    res.redirect(req.originalUrl);
-  } else if (req.body.__action === 'changeCourseInstanceRole') {
-    setCookie(
-      res,
-      ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role'],
-      req.body.pl_requested_course_instance_role,
-      { maxAge: 60 * 60 * 1000 },
-    );
-    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    res.redirect(req.originalUrl);
-  } else if (req.body.__action === 'changeDate') {
-    const date = parseISO(req.body.pl_requested_date);
-    if (!isValid(date)) {
-      throw new HttpStatusError(400, `invalid requested date: ${req.body.pl_requested_date}`);
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (
+      !(
+        res.locals.authz_data.authn_has_course_permission_preview ||
+        res.locals.authz_data.authn_has_course_instance_permission_view
+      )
+    ) {
+      throw new HttpStatusError(
+        403,
+        'Access denied (must be course previewer or student data viewer)',
+      );
     }
-    setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
-      maxAge: 60 * 60 * 1000,
-    });
-    setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-    res.redirect(req.originalUrl);
-  } else {
-    throw new HttpStatusError(400, 'unknown action: ' + res.locals.__action);
-  }
-});
+
+    if (req.body.__action === 'reset') {
+      clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
+      clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
+      clearCookie(res, ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
+      clearCookie(res, ['pl_requested_date', 'pl2_requested_date']);
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeUid') {
+      setCookie(res, ['pl_requested_uid', 'pl2_requested_uid'], req.body.pl_requested_uid, {
+        maxAge: 60 * 60 * 1000,
+      });
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeCourseRole') {
+      setCookie(
+        res,
+        ['pl_requested_course_role', 'pl2_requested_course_role'],
+        req.body.pl_requested_course_role,
+        { maxAge: 60 * 60 * 1000 },
+      );
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeCourseInstanceRole') {
+      setCookie(
+        res,
+        ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role'],
+        req.body.pl_requested_course_instance_role,
+        { maxAge: 60 * 60 * 1000 },
+      );
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'changeDate') {
+      const date = parseISO(req.body.pl_requested_date);
+      if (!isValid(date)) {
+        throw new HttpStatusError(400, `invalid requested date: ${req.body.pl_requested_date}`);
+      }
+      setCookie(res, ['pl_requested_date', 'pl2_requested_date'], date.toISOString(), {
+        maxAge: 60 * 60 * 1000,
+      });
+      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
+      res.redirect(req.originalUrl);
+    } else {
+      throw new HttpStatusError(400, 'unknown action: ' + res.locals.__action);
+    }
+  }),
+);
 
 export default router;

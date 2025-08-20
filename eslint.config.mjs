@@ -545,6 +545,8 @@ export default tseslint.config([
       '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      // Some functions are required to be async, but don't actually use any async code.
+      '@typescript-eslint/require-await': 'off',
       // We don't always check that we got a error when a promise is rejected.
       '@typescript-eslint/prefer-promise-reject-errors': 'off',
       '@typescript-eslint/restrict-template-expressions': [

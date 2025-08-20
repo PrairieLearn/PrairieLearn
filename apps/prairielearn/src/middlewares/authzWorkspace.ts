@@ -86,7 +86,7 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       // from the instructor question preview and we should authorize for that.
       req.params.question_id = result.question_id;
       // TODO: This is a little hacky. Further context: https://github.com/PrairieLearn/PrairieLearn/pull/12496#discussion_r2240249138
-      const body = authzHasCoursePreviewOrInstanceView(req, res);
+      const body = await authzHasCoursePreviewOrInstanceView(req, res);
       if (body) {
         res.status(403).send(body);
         return;

@@ -1,4 +1,5 @@
-import { type NextFunction, type Request, type Response } from 'express';
+import { type Request, type Response } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
@@ -8,7 +9,7 @@ import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 
-export function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
+export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
   const effectiveAccess =
     res.locals.authz_data.has_course_permission_preview ||
     res.locals.authz_data.has_course_instance_permission_view;
@@ -50,11 +51,11 @@ export function authzHasCoursePreviewOrInstanceView(req: Request, res: Response)
   }
 }
 
-export default (req: Request, res: Response, next: NextFunction): void => {
-  const body = authzHasCoursePreviewOrInstanceView(req, res);
+export default asyncHandler(async (req, res, next) => {
+  const body = await authzHasCoursePreviewOrInstanceView(req, res);
   if (body) {
     res.status(403).send(body);
   } else {
     next();
   }
-};
+});
