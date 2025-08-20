@@ -472,8 +472,7 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                   />
                   <label class="form-check-label" for="external_grading_enabled">Enabled</label>
                   <div class="small text-muted">
-                    Whether the external grader is currently enabled. Useful if it is breaking, for
-                    example.
+                    Whether the external grader is currently enabled. Useful for troubleshooting external grader failures, for instance.
                   </div>
                 </div>
                 <div class="mb-3">
