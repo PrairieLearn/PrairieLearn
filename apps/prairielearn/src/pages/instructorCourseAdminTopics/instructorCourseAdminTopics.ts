@@ -77,8 +77,8 @@ router.post(
           return {
             name: topic.name,
             color: topic.color,
-            description: topic.description,
-            comment: topic.json_comment ?? undefined,
+            description: topic.description || undefined,
+            comment: topic.json_comment || undefined,
           };
         })
         .filter((topic) => topic);
