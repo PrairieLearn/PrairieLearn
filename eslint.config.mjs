@@ -554,8 +554,16 @@ export default tseslint.config([
   },
   {
     // We only include apps/prairielearn for performance reasons.
-    files: ['apps/prairielearn/**/*.{ts,tsx}'],
     extends: [tseslint.configs.recommendedTypeCheckedOnly],
+    files: ['apps/prairielearn/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+        },
+        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
+      },
+    },
     rules: {
       '@typescript-eslint/no-base-to-string': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
@@ -566,18 +574,6 @@ export default tseslint.config([
       // Some functions are required to be async, but don't actually use any async code.
       '@typescript-eslint/require-await': 'off',
       // We don't always check that we got a error when a promise is rejected.
-      '@typescript-eslint/prefer-promise-reject-errors': 'off',
-      '@typescript-eslint/restrict-template-expressions': [
-        'error',
-        {
-          allow: [{ name: ['Error', 'URL', 'URLSearchParams'], from: 'lib' }],
-          allowAny: true,
-          allowBoolean: true,
-          allowNullish: true,
-          allowNumber: true,
-          allowRegExp: true,
-        },
-      ],
       '@typescript-eslint/no-misused-promises': [
         'error',
 
@@ -602,8 +598,8 @@ export default tseslint.config([
         {
           allow: [
             {
-              name: 'HttpRedirect',
               from: 'file',
+              name: 'HttpRedirect',
             },
           ],
           allowRethrowing: true,
@@ -611,14 +607,18 @@ export default tseslint.config([
           allowThrowingUnknown: true,
         },
       ],
-    },
-    languageOptions: {
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        {
+          allow: [{ from: 'lib', name: ['Error', 'URL', 'URLSearchParams'] }],
+          allowAny: true,
+          allowBoolean: true,
+          allowNullish: true,
+          allowNumber: true,
+          allowRegExp: true,
         },
-        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
-      },
+      ],
     },
   },
   {
