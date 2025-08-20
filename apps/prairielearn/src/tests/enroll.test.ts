@@ -64,7 +64,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('apply a course instance enrollment limit', async () => {
-    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('enroll one student', async () => {
@@ -80,8 +80,8 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('apply an institution-level course instance enrollment limit', async () => {
-    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
-    await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
+    await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('fail to enroll a second student', async () => {
@@ -91,7 +91,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('set a higher course instance enrollment limit', async () => {
-    await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1');
   });
 
   test.sequential('enroll a second student', async () => {
@@ -107,7 +107,7 @@ describe('Enroll page (enterprise)', function () {
   });
 
   test.sequential('set a yearly enrollment limit', async () => {
-    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
     await execute(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
       {},
@@ -127,7 +127,7 @@ describe('Enroll page (non-enterprise)', () => {
   afterAll(helperServer.after);
 
   test.sequential('apply a course instance enrollment limit', async () => {
-    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
   test.sequential('enroll one student', async () => {

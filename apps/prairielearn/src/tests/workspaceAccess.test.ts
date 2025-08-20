@@ -105,7 +105,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     });
     afterAll(async () => {
       // Remove owner permissions.
-      await sqldb.execute(sql.revoke_owner_access, {});
+      await sqldb.execute(sql.revoke_owner_access);
     });
 
     let workspace_id: string | undefined;

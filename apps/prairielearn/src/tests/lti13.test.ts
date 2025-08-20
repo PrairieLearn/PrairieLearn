@@ -270,7 +270,7 @@ describe('LTI 1.3', () => {
     await helperServer.before()();
 
     // We need to give the default institution a `uid_regexp`.
-    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'", {});
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();

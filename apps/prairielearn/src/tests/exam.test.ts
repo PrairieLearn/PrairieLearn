@@ -1088,7 +1088,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
       it('should succeed', async () => {
-        await sqldb.execute(sql.update_addVectors_force_max_points, []);
+        await sqldb.execute(sql.update_addVectors_force_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);

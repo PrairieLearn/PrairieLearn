@@ -292,7 +292,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.$ = cheerio.load(page);
     });
     it('should have 3 students in group 1 in db', async () => {
-      const rowCount = await sqldb.execute(sql.select_all_user_in_group, []);
+      const rowCount = await sqldb.execute(sql.select_all_user_in_group);
       assert.equal(rowCount, 3);
     });
   });
@@ -449,7 +449,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.lengthOf(elemList, 3);
     });
     it('should have 0 assessment instance in db', async () => {
-      const rowCount = await sqldb.execute(sql.select_all_assessment_instance, []);
+      const rowCount = await sqldb.execute(sql.select_all_assessment_instance);
       assert.equal(rowCount, 0);
     });
     it('should be able to start the assessment', async () => {
@@ -611,7 +611,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('20. cross assessment grouping', function () {
     it('should contain a second group-based homework assessment', async () => {
-      const rowCount = await sqldb.execute(sql.select_group_work_assessment, []);
+      const rowCount = await sqldb.execute(sql.select_group_work_assessment);
       assert.equal(rowCount, 2);
     });
     it('should load the second assessment page successfully', async () => {

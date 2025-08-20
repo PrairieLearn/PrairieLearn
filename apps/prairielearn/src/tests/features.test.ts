@@ -18,7 +18,7 @@ describe('features', () => {
   });
 
   beforeEach(async () => {
-    await execute('DELETE FROM feature_grants', {});
+    await execute('DELETE FROM feature_grants');
   });
 
   afterAll(async function () {

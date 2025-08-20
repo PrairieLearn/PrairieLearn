@@ -66,25 +66,25 @@ export async function initWithLock(directories: string[], project: string) {
   await sqldb.defaultPool.setSearchSchema('public');
   try {
     // Create the migrations table if needed
-    await sqldb.execute(sql.create_migrations_table, {});
+    await sqldb.execute(sql.create_migrations_table);
 
     // Apply necessary changes to the migrations table as needed.
     try {
-      await sqldb.execute('SELECT project FROM migrations;', {});
+      await sqldb.execute('SELECT project FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table');
-        await sqldb.execute(sql.add_projects_column, {});
+        await sqldb.execute(sql.add_projects_column);
       } else {
         throw err;
       }
     }
     try {
-      await sqldb.execute('SELECT timestamp FROM migrations;', {});
+      await sqldb.execute('SELECT timestamp FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table again');
-        await sqldb.execute(sql.add_timestamp_column, {});
+        await sqldb.execute(sql.add_timestamp_column);
       } else {
         throw err;
       }

@@ -42,7 +42,7 @@ describe('sproc check_assessment_access* tests', function () {
   afterAll(helperDb.after);
 
   beforeAll(async () => {
-    await sqldb.execute(sql.setup_caa_scheduler_tests, {});
+    await sqldb.execute(sql.setup_caa_scheduler_tests);
   });
 
   describe('without PrairieTest', () => {

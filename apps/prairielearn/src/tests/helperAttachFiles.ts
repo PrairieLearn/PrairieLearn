@@ -177,7 +177,7 @@ export function deleteAttachedFile(locals) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should result in no attached files', async () => {
-      const rowCount = await sqldb.execute(sql.select_files, []);
+      const rowCount = await sqldb.execute(sql.select_files);
       assert.equal(rowCount, 0);
     });
   });

@@ -44,7 +44,7 @@ describe('Cron', { timeout: 60_000 }, function () {
     });
 
     it('should all have successfully completed', async () => {
-      const rowCount = await sqldb.execute(sql.select_unsuccessful_cron_jobs, []);
+      const rowCount = await sqldb.execute(sql.select_unsuccessful_cron_jobs);
       assert.equal(rowCount, 0);
     });
   });

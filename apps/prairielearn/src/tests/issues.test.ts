@@ -81,7 +81,7 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const rowCount = await sqldb.execute(sql.select_open_issues, []);
+      const rowCount = await sqldb.execute(sql.select_open_issues);
       assert.equal(rowCount, 3, 'Expected three open issues');
     });
 
@@ -110,7 +110,7 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const rowCount = await sqldb.execute(sql.select_open_issues, []);
+      const rowCount = await sqldb.execute(sql.select_open_issues);
       assert.equal(rowCount, 2, 'Expected two open issues');
     });
 
@@ -138,7 +138,7 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const rowCount = await sqldb.execute(sql.select_open_issues, []);
+      const rowCount = await sqldb.execute(sql.select_open_issues);
       assert.equal(rowCount, 0, 'Expected zero open issues');
     });
   });

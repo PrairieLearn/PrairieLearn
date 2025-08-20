@@ -102,9 +102,9 @@ describe('workspaceHost utilities', function () {
   });
 
   beforeEach(async () => {
-    await sqldb.execute('DELETE FROM workspaces;', {});
-    await sqldb.execute('DELETE FROM workspace_hosts;', {});
-    await sqldb.execute('DELETE FROM workspace_host_logs;', {});
+    await sqldb.execute('DELETE FROM workspaces;');
+    await sqldb.execute('DELETE FROM workspace_hosts;');
+    await sqldb.execute('DELETE FROM workspace_host_logs;');
   });
 
   describe('markWorkspaceHostUnhealthy()', () => {
