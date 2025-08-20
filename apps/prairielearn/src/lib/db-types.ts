@@ -14,8 +14,6 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
 export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
 
-// elements, elementExtensions, clientFilesCourse, serverFilesCourse, clientFilesCourseInstance, clientFilesAssessment, question
-
 export const EnumChunkTypeSchema = z.enum([
   'elements',
   'elementExtensions',
