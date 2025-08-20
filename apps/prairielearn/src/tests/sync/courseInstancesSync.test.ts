@@ -395,7 +395,7 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // Original course instance should not exist.
-    const originalCourseInstanceRow = await findSyncedUndeletedCourseInstance('a');
+    const originalCourseInstanceRow = await findSyncedCourseInstance('a');
     assert.isUndefined(originalCourseInstanceRow);
 
     // New course instances should exist and have the correct UUIDs.
