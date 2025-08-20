@@ -1,11 +1,3 @@
--- BLOCK select_prior_instance_question_ai_cluster_data
-SELECT 
-  MAX(aca.ai_cluster_id) as ai_cluster_id
-FROM 
-  ai_cluster_assignments as aca
-WHERE 
-  aca.instance_question_id = $prior_instance_question_id
-
 -- BLOCK select_next_ai_cluster_id
 SELECT
   MIN(ac.id) as ai_cluster_id
@@ -14,14 +6,6 @@ FROM
 WHERE
   ac.assessment_question_id = $assessment_question_id AND
   ac.id > $prior_ai_cluster_id;
-
--- BLOCK select_assessment_question_for_instance_question_id
-SELECT
-  iq.assessment_question_id
-FROM
-  instance_questions AS iq
-WHERE
-  iq.id = $instance_question_id;
 
 -- BLOCK select_next_instance_question
 WITH
@@ -548,3 +532,11 @@ FROM
   updated_instance_question uiq
 RETURNING
   *;
+
+-- SELECT ai_cluster_id_for_instance_question
+SELECT
+  ai_cluster_id
+FROM 
+  instance_questions
+WHERE
+  id = $instance_question_id;

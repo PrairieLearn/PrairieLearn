@@ -231,7 +231,7 @@ export function AssessmentQuestion({
                     html`
                       <tr>
                         <td>${aiCluster.cluster_name}</td>
-                        <td>${aiCluster.cluster_name}</td>
+                        <td>${aiCluster.cluster_description}</td>
                       </tr>
                     `
                   ))}

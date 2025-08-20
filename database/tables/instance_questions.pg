@@ -1,4 +1,5 @@
 columns
+    ai_cluster_id: bigint
     assessment_instance_id: bigint not null
     assessment_question_id: bigint not null
     assigned_grader: bigint

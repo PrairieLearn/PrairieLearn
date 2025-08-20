@@ -1,6 +1,7 @@
 CREATE TABLE ai_clusters (
     assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions (id) ON DELETE CASCADE ON UPDATE CASCADE,
     cluster_name TEXT NOT NULL,
+    cluster_description TEXT NOT NULL,
     id BIGSERIAL PRIMARY KEY
 );
 

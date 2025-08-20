@@ -14,7 +14,7 @@ import {
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { deleteAiClusteringAssignmentsForAssessmentQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { resetInstanceQuestionsAiClusters, selectAiClusters } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
 import {
   calculateAiGradingStats,
@@ -55,7 +55,7 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const aiClusters = await getAiClusters({
+    const aiClusters = await selectAiClusters({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -341,7 +341,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const numDeleted = await deleteAiClusteringAssignmentsForAssessmentQuestion({
+      const numDeleted = await resetInstanceQuestionsAiClusters({
         assessment_question_id: res.locals.assessment_question.id,
       });
 

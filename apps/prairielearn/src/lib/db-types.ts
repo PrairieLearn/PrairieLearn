@@ -144,16 +144,10 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 export const AiClusterSchema = z.object({
   assessment_question_id: IdSchema,
   cluster_name: z.string(),
+  cluster_description: z.string(),
   id: IdSchema
 });
 export type AiCluster = z.infer<typeof AiClusterSchema>;
-
-export const AiClusterAssignmentSchema = z.object({
-  ai_cluster_id: IdSchema.nullable(),
-  id: IdSchema,
-  instance_question_id:  IdSchema,
-})
-export type AiClusterAssignment = z.infer<typeof AiClusterAssignmentSchema>;
 
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
@@ -726,6 +720,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
+  ai_cluster_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),

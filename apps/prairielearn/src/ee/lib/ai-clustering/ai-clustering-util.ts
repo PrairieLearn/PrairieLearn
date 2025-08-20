@@ -1,14 +1,11 @@
-
-
-
 import type OpenAI from 'openai';
 import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import z from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { type AiCluster, AiClusterSchema, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
+import { AiClusterSchema, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { generateSubmissionMessage, selectLastVariantAndSubmission } from '../ai-grading/ai-grading-util.js';
@@ -18,7 +15,13 @@ const sql = loadSqlEquiv(import.meta.url);
 const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
 
 const STANDARD_CLUSTERS = [
-    'Answer Match', 'Review Needed'
+    {
+      name: 'Likely Match', 
+      description: 'The final answer likely matches the correct answer.'
+    }, {
+      name: 'Review Needed',
+      description: 'The AI model could not confidently determine that the final answer is correct.'
+    }
 ]
 
 /** Insert the clusters for an assessment question if they don't exist */
@@ -42,48 +45,30 @@ export async function insertAiClusters({
     });
 }
 
-export async function assignAiCluster({
-    instanceQuestionId, 
-    aiClusterId
+export async function selectAiCluster(ai_cluster_id: string) {
+  return await queryRow(
+    sql.select_ai_cluster,
+    {
+      ai_cluster_id
+    },
+    AiClusterSchema
+  );
+}
+
+export async function updateAiCluster({
+    instance_question_id, 
+    ai_cluster_id
 }: {
-    instanceQuestionId: string,
-    aiClusterId: string 
+    instance_question_id: string,
+    ai_cluster_id: string 
 }) {
-    await queryAsync(sql.upsert_ai_cluster_for_instance_question, {
-        instance_question_id: instanceQuestionId,
-        ai_cluster_id: aiClusterId
+    await queryAsync(sql.update_instance_question_ai_cluster, {
+      instance_question_id,
+      ai_cluster_id
     })
 }
 
-export async function getAiClusterAssignmentForInstanceQuestion({
-    instanceQuestionId
-}: {
-    instanceQuestionId: string
-}) {
-    return await queryOptionalRow(sql.select_ai_cluster_assignment_for_instance_question, {
-        instance_question_id: instanceQuestionId
-    }, AiClusterSchema);
-}
-
-export async function getAiClusterAssignment({
-    assessment_question_id
-}: {
-    assessment_question_id: string
-}) {
-    return (await queryRows(sql.select_ai_cluster_assignment,
-        {
-            assessment_question_id
-        },
-        z.object({
-            cluster_name: z.string(),
-            instance_question_id: z.string(),
-        })
-    )).reduce((acc, { cluster_name, instance_question_id }) => {
-        acc[instance_question_id] = cluster_name;
-        return acc;
-    }, {} as Record<InstanceQuestion['id'], AiCluster['cluster_name']>);
-}
-
+/** whether or not the AI clusters exist for a given assessment question. */
 export async function getAiClustersExist({
     assessmentQuestionId
 }: {
@@ -94,9 +79,7 @@ export async function getAiClustersExist({
     }, z.boolean());
 }
 
-
-/** Retrieve all AI clusters for an assessment question */
-export async function getAiClusters({
+export async function selectAiClusters({
     assessmentQuestionId
 }: {
     assessmentQuestionId: string
@@ -104,21 +87,6 @@ export async function getAiClusters({
     return await queryRows(sql.select_ai_clusters, {
         assessment_question_id: assessmentQuestionId
     }, AiClusterSchema);
-}
-
-/** Generate submission evaluation data for clusters that were generated. */
-export async function generateSubmissionEvaluationData({
-    assessmentQuestionId
-}: {
-    assessmentQuestionId: string
-}) {
-    const clusters = await getAiClusters({ assessmentQuestionId });
-    // Generate evaluation data based on the clusters
-    const evaluationData = clusters.map(cluster => ({
-        clusterId: cluster.id,
-        clusterName: cluster.cluster_name,
-    }));
-    return evaluationData;
 }
 
 export async function getInstanceQuestionAnswer({
@@ -186,7 +154,6 @@ export async function aiEvaluateStudentResponse({
     locals,
   );
 
-  // console.log('Submission HTMLs', render_submission_results.data.submissionHtmls);
 
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
@@ -259,14 +226,14 @@ Return a boolean corresponding to whether or not the student's response is equiv
   return completionContent.correct;
 }
 
-export async function deleteAiClusteringAssignmentsForAssessmentQuestion(
+export async function resetInstanceQuestionsAiClusters(
   {
     assessment_question_id
   }: {
     assessment_question_id: string
   }
 ) {
-  return await queryRow(sql.delete_ai_clustering_assignments_for_assessment_question, {
+  return await queryRow(sql.reset_instance_questions_ai_clusters, {
     assessment_question_id
   }, z.number());
 }

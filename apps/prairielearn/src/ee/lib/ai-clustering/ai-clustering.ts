@@ -9,7 +9,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectInstanceQuestionsForAssessmentQuestion } from '../ai-grading/ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from '../ai-grading/types.js';
 
-import { aiEvaluateStudentResponse, assignAiCluster, getAiClusters, getInstanceQuestionAnswer, insertAiClusters } from './ai-clustering-util.js';
+import { aiEvaluateStudentResponse, getInstanceQuestionAnswer, insertAiClusters, selectAiClusters, updateAiCluster } from './ai-clustering-util.js';
 
 
 const PARALLEL_SUBMISSION_CLUSTERING_LIMIT = 20;
@@ -87,16 +87,16 @@ export async function aiCluster({
           assessment_question_id: assessment_question.id,
         });
 
-        const clusters = await getAiClusters({
+        const clusters = await selectAiClusters({
           assessmentQuestionId: assessment_question.id
         });
 
-        const answerMatchCluster = clusters.find((c) => c.cluster_name === 'Answer Match');
+        const likelyMatchCluster = clusters.find((c) => c.cluster_name === 'Likely Match');
         const reviewNeededCluster = clusters.find((c) => c.cluster_name === 'Review Needed');
 
-        if (!answerMatchCluster) {
-          // Handle missing answer match cluster
-          throw new Error(`Missing answer match cluster for assessment question ${assessment_question.id}`);
+        if (!likelyMatchCluster) {
+          // Handle missing likely match cluster
+          throw new Error(`Missing likely match cluster for assessment question ${assessment_question.id}`);
         }
 
         if (!reviewNeededCluster) {
@@ -132,9 +132,9 @@ export async function aiCluster({
                 openai
             });
 
-            await assignAiCluster({
-              instanceQuestionId: instance_question.id,
-              aiClusterId: responseCorrect ? answerMatchCluster.id : reviewNeededCluster.id
+            await updateAiCluster({
+              instance_question_id: instance_question.id,
+              ai_cluster_id: responseCorrect ? likelyMatchCluster.id : reviewNeededCluster.id
             });
             logger.info(`Clustered instance question ${instance_question.id} (${index}/${total})`);
             index += 1;

@@ -7,7 +7,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { getAiClusterAssignmentForInstanceQuestion, getAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
+import { selectAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
 
 import {
   type AssessmentQuestion,
@@ -116,11 +116,12 @@ export async function nextInstanceQuestionUrl(
 ): Promise<string> {
   const prior_ai_cluster_id = await run(async () => {
     if (prior_instance_question_id) {
-      return (await getAiClusterAssignmentForInstanceQuestion({
-        instanceQuestionId: prior_instance_question_id
-      }))?.id ?? null;
+      return (
+        await sqldb.queryOptionalRow(sql.ai_cluster_id_for_instance_question, z.number()) 
+        ?? null
+      );
     } else {
-      const clusters = await getAiClusters({
+      const clusters = await selectAiClusters({
         assessmentQuestionId: assessment_question_id
       })[0]
       return clusters > 0 ? clusters[0].id : null;

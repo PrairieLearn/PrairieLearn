@@ -1,4 +1,3 @@
-import { CopySnapshotRequestFilterSensitiveLog } from '@aws-sdk/client-ec2';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
@@ -9,7 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { assignAiCluster, getAiClusterAssignmentForInstanceQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { getAiClustersExist, selectAiCluster, selectAiClusters, updateAiCluster } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -99,11 +98,9 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    const cluster = await getAiClusterAssignmentForInstanceQuestion({
-      instanceQuestionId: res.locals.instance_question.id
-    });
-    
+      
     const instance_question = res.locals.instance_question as InstanceQuestion;
+    const cluster = instance_question.ai_cluster_id ? await selectAiCluster(instance_question.ai_cluster_id) : null;
     if (instance_question == null) {
       throw new error.HttpStatusError(404, 'Instance question not found');
     }
@@ -197,10 +194,7 @@ router.get(
 router.get(
   '/ai_clusters/switcher', 
   asyncHandler(async (req, res) => {
-    const aiClusters = await getAiClusters({ assessmentQuestionId: res.locals.assessment_question.id });
-    const aiCluster = await getAiClusterAssignmentForInstanceQuestion({
-      instanceQuestionId: res.locals.instance_question.id
-    });
+    const aiClusters = await selectAiClusters({ assessmentQuestionId: res.locals.assessment_question.id });
 
     res.send(
       AIClusterSwitcher({
@@ -209,10 +203,11 @@ router.get(
           {
             assessment_question_id: res.locals.assessment_question.id,
             cluster_name: 'No cluster',
+            cluster_description: 'Cluster was not assigned.',
             id: ''
           }
         ],
-        currentClusterId: aiCluster?.id ?? null,
+        currentClusterId:  res.locals.instance_question.ai_cluster_id ?? null
       })
     )
   })
@@ -223,9 +218,9 @@ router.put(
   asyncHandler(async (req, res) => {
     const aiClusterId = req.body.aiClusterId;
 
-    await assignAiCluster({  
-      instanceQuestionId: res.locals.instance_question.id,
-      aiClusterId: aiClusterId || null
+    await updateAiCluster({  
+      instance_question_id: res.locals.instance_question.id,
+      ai_cluster_id: aiClusterId || null
     });
 
     res.sendStatus(204);
@@ -426,17 +421,15 @@ router.post(
       );
     // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
     } else if (body.__action === 'add_manual_grade_for_cluster_ungraded' || body.__action === 'add_manual_grade_for_cluster') {
-      const cluster = await getAiClusterAssignmentForInstanceQuestion({
-        instanceQuestionId: res.locals.instance_question.id
-      });
-      if (!cluster) {
+      const ai_cluster_id = res.locals.instance_question.ai_cluster_id;
+      if (!ai_cluster_id) {
         throw new error.HttpStatusError(404, 'AI cluster not found');
       }
 
       const instanceQuestionsInCluster = await sqldb.queryRows(
         sql.select_instance_question_ids_in_cluster,
         {
-          cluster_id: cluster?.id,
+          cluster_id: ai_cluster_id,
           assessment_id: res.locals.assessment.id,
           skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster_ungraded'
         },
