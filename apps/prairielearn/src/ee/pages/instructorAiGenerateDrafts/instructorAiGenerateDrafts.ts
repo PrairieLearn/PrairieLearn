@@ -102,7 +102,6 @@ router.post(
 
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
       });
 
@@ -131,7 +130,6 @@ router.post(
       });
 
       addCompletionCostToIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
