@@ -118,7 +118,7 @@ def get_and_save_json(
     full_filename = os.path.join(args.output_dir, filename + ".json")
     if args.resume and os.path.exists(full_filename):
         log(logfile, f"reusing existing file {full_filename} ...")
-        with open(full_filename, "r") as in_f:
+        with open(full_filename) as in_f:
             return json.load(in_f)
 
     url = args.server + endpoint
