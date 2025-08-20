@@ -4,19 +4,10 @@ import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert } from 'vitest';
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import type {
-  AssessmentJsonInput,
-  CourseInstanceJsonInput,
-  CourseJsonInput,
-  QuestionJsonInput,
-  TagJsonInput,
-  TopicJsonInput,
-} from '../../schemas/index.js';
-import * as syncFromDisk from '../../sync/syncFromDisk.js';
 import {
   AlternativeGroupSchema,
   AssessmentAccessRuleSchema,
@@ -33,6 +24,15 @@ import {
   UserSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
+import type {
+  AssessmentJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
+} from '../../schemas/index.js';
+import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 export interface CourseInstanceData {
   assessments: Record<string, AssessmentJsonInput>;

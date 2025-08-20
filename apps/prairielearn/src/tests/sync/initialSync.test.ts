@@ -1,9 +1,9 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { CourseSchema, QuestionSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
-import { CourseSchema, QuestionSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 
 describe('Initial Sync', () => {
   beforeAll(helperDb.before);

@@ -1,13 +1,13 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
+import { CourseSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectOrInsertCourseByPath } from '../../models/course.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
-import { CourseSchema } from '../../lib/db-types.js';
 
 const [sampleFeature1, sampleFeature2] = features.allFeatures();
 const invalidFeature = 'unknown-feature';

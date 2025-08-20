@@ -1,10 +1,10 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { CourseSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
 
 import * as util from './util.js';
-import { CourseSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 
 /**
  * Topics and tags are currently almost identical, so we test them together
