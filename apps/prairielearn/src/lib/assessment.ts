@@ -412,14 +412,14 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
 
     // check whether we need to update the statistics
     const needs_statistics_update = await sqldb.queryRow(
-      sql.select_assessment_needs_statisics_update,
+      sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
     );
     if (!needs_statistics_update) return;
 
     // update the statistics
-    await sqldb.queryOneRowAsync(sql.update_assessment_statisics, { assessment_id });
+    await sqldb.queryOneRowAsync(sql.update_assessment_statistics, { assessment_id });
   });
 }
 
