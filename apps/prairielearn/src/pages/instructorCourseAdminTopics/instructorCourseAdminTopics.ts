@@ -81,7 +81,7 @@ router.post(
             comment: topic.json_comment || undefined,
           };
         })
-        .filter((topic) => topic);
+        .filter(Boolean);
 
       courseInfo.topics = propertyValueWithDefault(
         courseInfo.topics,
