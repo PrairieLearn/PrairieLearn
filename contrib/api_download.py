@@ -108,7 +108,7 @@ def download_course_instance(args: argparse.Namespace, logfile: typing.TextIO):
             )
 
     end_time = time.time()
-    log(logfile, f"successfully completed downloaded at {local_iso_time()}")
+    log(logfile, f"successfully completed download at {local_iso_time()}")
     log(logfile, f"total time elapsed: {end_time - start_time} seconds")
 
 
