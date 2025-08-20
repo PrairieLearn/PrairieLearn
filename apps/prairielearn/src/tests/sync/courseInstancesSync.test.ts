@@ -395,16 +395,20 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // Original course instance should not exist.
-    const originalCourseInstanceRow = await findSyncedCourseInstance('a');
+    const courseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
+    const originalCourseInstanceRow = courseInstances.find((ci) => ci.short_name === 'a');
     assert.isUndefined(originalCourseInstanceRow);
 
     // New course instances should exist and have the correct UUIDs.
     const newCourseInstanceRow1 = await findSyncedUndeletedCourseInstance('b');
-    assert.isNull(newCourseInstanceRow1?.deleted_at);
-    assert.equal(newCourseInstanceRow1?.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    assert.isNull(newCourseInstanceRow1.deleted_at);
+    assert.equal(newCourseInstanceRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
     const newCourseInstanceRow2 = await findSyncedUndeletedCourseInstance('c');
-    assert.isNull(newCourseInstanceRow2?.deleted_at);
-    assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+    assert.isNull(newCourseInstanceRow2.deleted_at);
+    assert.equal(newCourseInstanceRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
   it('syncs string comments correctly', async () => {
