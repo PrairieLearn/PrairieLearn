@@ -19,12 +19,12 @@ const emptyTopic: Topic = {
 
 export function InstructorCourseAdminTopicsTable({
   topics,
-  hasCoursePermissionEdit,
+  allowEdit,
   origHash,
   csrfToken,
 }: {
   topics: Topic[];
-  hasCoursePermissionEdit: boolean;
+  allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
@@ -56,8 +56,7 @@ export function InstructorCourseAdminTopicsTable({
   };
 
   const handleDeleteTopic = (topicIndex: number) => {
-    topicsState.splice(topicIndex, 1);
-    setTopicsState([...topicsState]);
+    setTopicsState((prevTopics) => prevTopics.filter((_, index) => index !== topicIndex));
   };
 
   const handleNewTopic = () => {
@@ -73,7 +72,7 @@ export function InstructorCourseAdminTopicsTable({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>Topics</h1>
           <div class="ms-auto">
-            {hasCoursePermissionEdit && origHash ? (
+            {allowEdit && origHash ? (
               !editMode ? (
                 <button
                   class="btn btn-sm btn-light"
@@ -111,7 +110,7 @@ export function InstructorCourseAdminTopicsTable({
           <table class="table table-sm table-hover table-striped" aria-label="Topics">
             <thead>
               <tr>
-                {editMode && hasCoursePermissionEdit ? (
+                {editMode && allowEdit ? (
                   <>
                     <th>
                       <span class="visually-hidden">Edit</span>
@@ -126,14 +125,14 @@ export function InstructorCourseAdminTopicsTable({
                 <th>Number</th>
                 <th>Name</th>
                 <th>Color</th>
-                <th>Description</th>
+                <th class="col-9">Description</th>
               </tr>
             </thead>
             <tbody>
               {topicsState.map(function (topic, index) {
                 return (
                   <tr key={topic.name}>
-                    {editMode && hasCoursePermissionEdit ? (
+                    {editMode && allowEdit ? (
                       <>
                         <td class="align-middle">
                           <button
@@ -147,7 +146,7 @@ export function InstructorCourseAdminTopicsTable({
                         </td>
                         <td class="align-middle">
                           <button
-                            class="btn btn-sm"
+                            class="btn btn-sm btn-ghost"
                             type="button"
                             aria-label={`Delete topic ${topic.name}`}
                             onClick={() => handleDeleteTopic(index)}
@@ -172,7 +171,7 @@ export function InstructorCourseAdminTopicsTable({
               })}
               {editMode ? (
                 <tr>
-                  <td colSpan={6}>
+                  <td colSpan={editMode ? 6 : 4}>
                     <button class="btn btn-sm btn-ghost" type="button" onClick={handleNewTopic}>
                       <i class="fa fa-plus" aria-hidden="true" /> New Topic
                     </button>

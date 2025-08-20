@@ -1,7 +1,8 @@
+import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { type Topic } from '../../../lib/db-types.js';
-const colorOptions = [
+const COLOR_OPTIONS = [
   'red1',
   'red2',
   'red3',
@@ -49,10 +50,21 @@ export function EditTopicsModal({
   handleModalUpdate: () => void;
   addTopic: boolean;
 }) {
+  const [invalidName, setInvalidName] = useState(false);
+  const [invalidColor, setInvalidColor] = useState(false);
+  function handleSubmit() {
+    setInvalidName(!selectedTopic?.name);
+    setInvalidColor(!selectedTopic?.color);
+    if (!selectedTopic?.name || !selectedTopic?.color) {
+      return;
+    } else {
+      handleModalUpdate();
+    }
+  }
   return (
     <Modal show={show} onHide={() => setShowModal(false)}>
       <Modal.Header closeButton>
-        <Modal.Title>Edit Topic</Modal.Title>
+        <Modal.Title>{addTopic ? 'Add Topic' : 'Edit Topic'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {selectedTopic ? (
@@ -63,7 +75,7 @@ export function EditTopicsModal({
               </label>
               <input
                 type="text"
-                class="form-control"
+                class={`form-control ${invalidName ? 'is-invalid' : ''}`}
                 id="topicName"
                 value={selectedTopic.name}
                 onChange={(e) =>
@@ -73,28 +85,30 @@ export function EditTopicsModal({
                   })
                 }
               />
+              {invalidName && <div class="invalid-feedback">Topic name is required</div>}
             </div>
             <div class="mb-3">
               <label class="form-label" for="topicColor">
                 Color
               </label>
               <select
-                class="form-select"
+                class={`form-select ${invalidColor ? 'is-invalid' : ''}`}
                 id="topicColor"
                 value={selectedTopic.color ?? 'Select a color'}
                 onChange={(e) =>
                   setSelectedTopic({
                     ...selectedTopic,
-                    color: (e.target as HTMLSelectElement)?.value,
+                    color: (e.target as HTMLSelectElement)?.value ?? 'gray1',
                   })
                 }
               >
-                {colorOptions.map((color) => (
+                {COLOR_OPTIONS.map((color) => (
                   <option key={color} value={color}>
                     {color}
                   </option>
                 ))}
               </select>
+              {invalidColor && <div class="invalid-feedback">Topic color is required</div>}
             </div>
             <div class="mb-3">
               <label class="form-label" for="topicDescription">
@@ -116,7 +130,7 @@ export function EditTopicsModal({
         ) : null}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" class="btn btn-primary" onClick={handleModalUpdate}>
+        <button type="button" class="btn btn-primary" onClick={handleSubmit}>
           {addTopic ? 'Add topic' : 'Update topic'}{' '}
         </button>
         <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>

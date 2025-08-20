@@ -14,6 +14,8 @@ export function InstructorCourseAdminTopics({
   topics: Topic[];
   origHash: string | null;
 }) {
+  const allowEdit =
+    resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course;
   return PageLayout({
     resLocals,
     pageTitle: 'Topics',
@@ -35,7 +37,7 @@ export function InstructorCourseAdminTopics({
         <Hydrate>
           <InstructorCourseAdminTopicsTable
             topics={topics}
-            hasCoursePermissionEdit={resLocals.authz_data.has_course_permission_edit}
+            allowEdit={allowEdit}
             csrfToken={resLocals.__csrf_token}
             origHash={origHash}
           />
