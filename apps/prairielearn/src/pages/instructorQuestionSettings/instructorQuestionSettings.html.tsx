@@ -546,8 +546,8 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
 ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                     typeof resLocals.question.external_grading_environment === 'object'
                       ? JSON.stringify(resLocals.question.external_grading_environment, null, 2)
-                      : '{}'}</textarea
-                  >
+                      : '{}'}
+                  </textarea>
                   <small class="form-text text-muted">
                     Environment variables to set inside the grading container. Variables must be
                     specified as a JSON object (e.g. <code>{"key":"value"}</code>).
