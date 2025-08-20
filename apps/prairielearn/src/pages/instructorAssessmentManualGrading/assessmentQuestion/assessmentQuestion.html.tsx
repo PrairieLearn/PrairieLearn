@@ -12,7 +12,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import type { User } from '../../../lib/db-types.js';
+import type { AiCluster, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
@@ -24,7 +24,7 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
-  aiClustersExist,
+  aiClusters,
   rubric_data,
 }: {
   resLocals: Record<string, any>;
@@ -32,7 +32,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  aiClustersExist: boolean;
+  aiClusters: AiCluster[];
   rubric_data: RubricData | null;
 }) {
   const {
@@ -85,7 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
-          aiClustersExist,
+          aiClustersExist: aiClusters.length > 0,
         },
         'instance-question-table-data',
       )}
@@ -162,7 +162,7 @@ export function AssessmentQuestion({
                       <table class="table table-sm" aria-label="AI grading rubric item stats">
                         <thead>
                           <tr class="table-light fw-bold">
-                            <td>Rubric item</td>
+                            <td style="width: 30%;">Rubric item</td>
                             <td>AI agreement</td>
                           </tr>
                         </thead>
@@ -213,6 +213,33 @@ export function AssessmentQuestion({
                 `}
           `
         : ''}
+
+
+      ${aiGradingEnabled && aiGradingMode && aiClusters.length > 0
+        ? html`
+          <div class="card overflow-hidden mb-3">
+            <div class="table-responsive">
+              <table class="table table-sm" aria-label="AI clusters">
+                <thead>
+                  <tr class="table-light fw-bold">
+                    <td style="width: 30%;">Cluster</td>
+                    <td>Description</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${aiClusters.map(aiCluster => (
+                    html`
+                      <tr>
+                        <td>${aiCluster.cluster_name}</td>
+                        <td>${aiCluster.cluster_name}</td>
+                      </tr>
+                    `
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ` : ''}
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />

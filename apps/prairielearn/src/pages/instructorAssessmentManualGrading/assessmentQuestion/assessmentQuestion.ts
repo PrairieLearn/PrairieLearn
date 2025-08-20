@@ -14,7 +14,7 @@ import {
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { deleteAiClusteringAssignmentsForAssessmentQuestion, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import { deleteAiClusteringAssignmentsForAssessmentQuestion, getAiClusters, getAiClustersExist } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
 import {
   calculateAiGradingStats,
@@ -55,7 +55,9 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const aiClustersExist = await getAiClustersExist({ assessmentQuestionId: res.locals.assessment_question.id });
+    const aiClusters = await getAiClusters({
+      assessmentQuestionId: res.locals.assessment_question.id,
+    });
 
     res.send(
       AssessmentQuestion({
@@ -67,7 +69,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        aiClustersExist,
+        aiClusters,
         rubric_data,
       }),
     );
