@@ -119,7 +119,13 @@ def get_and_save_json(
     if args.resume and os.path.exists(full_filename):
         log(logfile, f"reusing existing file {full_filename} ...")
         with open(full_filename) as in_f:
-            return json.load(in_f)
+            try:
+                return json.load(in_f)
+            except json.JSONDecodeError:
+                log(
+                    logfile, f"error decoding JSON from {full_filename}, starting fresh"
+                )
+                # Continue without returning
 
     url = args.server + endpoint
     headers = {"Private-Token": args.token}
