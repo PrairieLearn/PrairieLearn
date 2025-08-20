@@ -16,7 +16,7 @@ SELECT
   ci.id,
   date_trunc('day', s.date, 'UTC'),
   $user_id,
-  coalesce(ai.include_in_statistics, false)
+  coalesce(ai.include_in_statistics, FALSE)
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -59,7 +59,7 @@ SELECT
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
+  coalesce(ai.include_in_statistics, FALSE),
   gj.grading_finished_at - gj.grading_received_at
 FROM
   grading_jobs AS gj
@@ -109,7 +109,7 @@ SELECT
   $cost_ai_question_generation,
   date_trunc('day', now() AT TIME ZONE 'UTC'),
   $authn_user_id,
-  false
+  FALSE
 FROM
   ai_question_generation_prompts AS p
   JOIN questions AS q ON (q.id = p.question_id)
