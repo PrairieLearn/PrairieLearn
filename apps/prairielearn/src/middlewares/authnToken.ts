@@ -45,7 +45,7 @@ export default asyncHandler(async (req, res, next) => {
   next();
 
   sqldb
-    .queryAsync(sql.update_token_last_used, {
+    .execute(sql.update_token_last_used, {
       token_id: result.rows[0].token_id,
     })
     .catch((err) => {

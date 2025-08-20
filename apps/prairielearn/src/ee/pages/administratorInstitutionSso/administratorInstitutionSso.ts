@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, execute } from '@prairielearn/postgres';
 
 import {
   getInstitution,
@@ -44,7 +44,7 @@ router.post(
     let defaultProvider = req.body.default_authn_provider_id;
     if (defaultProvider === '') defaultProvider = null;
 
-    await queryAsync(sql.update_institution_sso_config, {
+    await execute(sql.update_institution_sso_config, {
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
       default_authn_provider_id: defaultProvider,

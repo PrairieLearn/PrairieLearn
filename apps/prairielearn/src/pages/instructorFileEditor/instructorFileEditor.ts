@@ -10,7 +10,7 @@ import { isBinaryFile } from 'isbinaryfile';
 import { HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
-  queryAsync,
+  execute,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -289,7 +289,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await execute(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({

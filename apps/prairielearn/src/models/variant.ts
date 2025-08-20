@@ -6,7 +6,7 @@ import { AugmentedError } from '@prairielearn/error';
 import {
   callRow,
   loadSqlEquiv,
-  queryAsync,
+  execute,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -47,7 +47,7 @@ export async function resetVariantsForAssessmentQuestion({
   unsafe_assessment_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_assessment_question, {
+  await execute(sql.reset_variants_for_assessment_question, {
     assessment_id,
     unsafe_assessment_question_id,
     authn_user_id,
@@ -63,7 +63,7 @@ export async function resetVariantsForInstanceQuestion({
   unsafe_instance_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_instance_question, {
+  await execute(sql.reset_variants_for_instance_question, {
     assessment_instance_id,
     unsafe_instance_question_id,
     authn_user_id,

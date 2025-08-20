@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, execute, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
@@ -120,7 +120,7 @@ router.post(
         kid,
       });
 
-      await queryAsync(sql.update_keystore, {
+      await execute(sql.update_keystore, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         // true to include private keys
@@ -129,7 +129,7 @@ router.post(
       flash('success', `Key ${kid} added.`);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_keys') {
-      await queryAsync(sql.update_keystore, {
+      await execute(sql.update_keystore, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         keystore: null,
@@ -153,7 +153,7 @@ router.post(
       if (req.body.kid === key.kid) {
         keystore.remove(key);
 
-        await queryAsync(sql.update_keystore, {
+        await execute(sql.update_keystore, {
           unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
           institution_id: req.params.institution_id,
           // true to include private keys
@@ -176,7 +176,7 @@ router.post(
         token_endpoint_auth_signing_alg: 'RS256',
       };
 
-      await queryAsync(sql.update_platform, {
+      await execute(sql.update_platform, {
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
         institution_id: req.params.institution_id,
         issuer_params: req.body.issuer_params,
@@ -201,7 +201,7 @@ router.post(
         `/pl/administrator/institution/${req.params.institution_id}/lti13/${new_li}`,
       );
     } else if (req.body.__action === 'update_name') {
-      await queryAsync(sql.update_name, {
+      await execute(sql.update_name, {
         name: req.body.name,
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
@@ -209,7 +209,7 @@ router.post(
       flash('success', 'Name updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_pl_config') {
-      await queryAsync(sql.update_pl_config, {
+      await execute(sql.update_pl_config, {
         name_attribute: req.body.name_attribute,
         uid_attribute: req.body.uid_attribute,
         uin_attribute: req.body.uin_attribute,
@@ -221,7 +221,7 @@ router.post(
       flash('success', 'PrairieLearn config updated.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_instance') {
-      await queryAsync(sql.remove_instance, {
+      await execute(sql.remove_instance, {
         institution_id: req.params.institution_id,
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });

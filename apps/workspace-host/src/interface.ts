@@ -224,7 +224,7 @@ async
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.queryAsync(sql.update_load_count, {
+          await sqldb.execute(sql.update_load_count, {
             instance_id: workspace_server_settings.instance_id,
           });
         } catch (err) {

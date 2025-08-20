@@ -5,7 +5,7 @@ import { eachSeries } from 'async';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 export async function init() {
   logger.verbose('Starting DB stored procedure initialization');
@@ -81,7 +81,7 @@ export async function init() {
       logger.verbose('Loading ' + filename);
       try {
         const sql = await readFile(join(import.meta.dirname, filename), 'utf8');
-        await queryAsync(sql, []);
+        await execute(sql, []);
       } catch (err) {
         throw error.addData(err, { sqlFile: filename });
       }
