@@ -49,7 +49,7 @@ def main():
 
     logfilename = os.path.join(args.output_dir, "download_log.txt")
     print(f"opening log file {logfilename} ...")
-    with open(logfilename, "w") as logfile:
+    with open(logfilename, "a" if args.resume else "w") as logfile:
         print("successfully opened log file")
         download_course_instance(args, logfile)
 
