@@ -380,7 +380,16 @@ export function AssessmentQuestion({
         </div>
       </form>
     `,
-    postContent: [GradingConflictModal(), DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }), ClusterInfoModal()],
+    postContent: [
+      GradingConflictModal(), 
+      DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), 
+      DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }), 
+      ClusterInfoModal({
+        numOpenInstances: num_open_instances,
+        assessmentId: assessment.id,
+        urlPrefix
+      })
+    ],
   });
 }
 
@@ -430,22 +439,36 @@ function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string })
   });
 }
 
-function ClusterInfoModal() {
+function ClusterInfoModal({
+  numOpenInstances,
+  assessmentId,
+  urlPrefix,
+}: {
+  numOpenInstances: number;
+  assessmentId: string;
+  urlPrefix: string;
+}) {
   return Modal({
     id: 'cluster-confirmation-modal',
-    title: 'Clustering info',
+    title: 'Cluster all submissions',
     body: html`
-      <p>Clustering groups questions with answers precisely matching the correct one into a group, and those without into another.</p>
+      <p>
+        Clustering groups student answers based on whether they <b>match the correct answer exactly.</b>
+      </p>
 
-      <p>Answers must explicitly be provided in <code>pl-answer-panel</code>.</p>
+      <p>Answers that match go into one cluster, and those that don’t are grouped separately.</p>
 
-      <p>Clustering is currently designed for exact answer equivalence. Other work can be shown, but only the boxed or final answer will be assessed.</p>
+      <p>To enable clustering, the correct answer must be provided in <code>pl-answer-panel</code>.</p>
+
+      <p>Clustering checks for exact equivalence to the final answer, considering only the boxed or final answer to form groups.</p>
+
+      <p>Examples of what can and can't be clustered:</p>
 
       <table class="table table-sm border">
         <thead>
           <tr>
-            <th>Exact</th>
-            <th>Not Exact</th>
+            <th>Can cluster</th>
+            <th>Can't cluster</th>
           </tr>
         </thead>
         <tbody>
@@ -459,19 +482,36 @@ function ClusterInfoModal() {
           </tr>
           <tr>
             <td>Exact String Inputs</td>
-            <td>Code</td>
+            <td>Freeform Code</td>
           </tr>
         </tbody>
       </table>
-      <div class="alert alert-danger" role="alert">
-        A simple secondary alert—check it out!
-      </div>
+      ${(numOpenInstances > 0) && (
+        html`<div class="alert alert-warning gap-2 flex-wrap d-flex align-items-center justify-content-between" role="alert">
+          <div>
+            <p class="my-0">This assessment currently has ${numOpenInstances === 1 ? 'one open instance.' : `${numOpenInstances} open instances.`}</p>
+            <p class="my-0">Choose how to apply clustering:</p>
+          </div>
+          <select class="form-select" style="max-width: 300px;">
+            <option
+              value="cluster-closed-instances-only"
+            >
+              Cluster closed instances only
+            </option>
+            <option
+              value="cluster-all-instances"
+            >
+              Cluster closed and open instances
+            </option>
+          </select>
+        </div>`
+      )}
     `,
     footer: html`
       <div class="m-0">
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary">Cluster all submissions</button>
+          <button type="button" class="btn btn-primary">Cluster submissions</button>
         </div>
         <small class="text-muted my-0">AI can make mistakes. Review cluster assignments before grading.</small>
       </div>
