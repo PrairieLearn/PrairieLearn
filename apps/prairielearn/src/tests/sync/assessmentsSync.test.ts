@@ -2304,13 +2304,14 @@ describe('Assessment syncing', () => {
       ),
     );
 
+    const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
     // We should only record an error for the most deeply nested directories,
     // not any of the intermediate ones.
     for (let i = 0; i < nestedAssessmentStructure.length - 1; i++) {
       const partialNestedAssessmentStructure = nestedAssessmentStructure.slice(0, i);
       const partialAssessmentId = partialNestedAssessmentStructure.join('/');
 
-      const syncedAssessment = await findSyncedAssessment(partialAssessmentId);
+      const syncedAssessment = syncedAssessments.find((a) => a.tid === partialAssessmentId);
       assert.isUndefined(syncedAssessment);
     }
   });

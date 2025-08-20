@@ -4,12 +4,12 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
-import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 
 /**
  * Makes an empty course instance.
@@ -30,6 +30,18 @@ async function findSyncedCourseInstance(shortName: string) {
     CourseInstanceSchema,
   );
   const syncedCourseInstance = syncedCourseInstances.find((ci) => ci.short_name === shortName);
+  assert.isOk(syncedCourseInstance);
+  return syncedCourseInstance;
+}
+
+async function findSyncedUndeletedCourseInstance(shortName: string) {
+  const syncedCourseInstances = await util.dumpTableWithSchema(
+    'course_instances',
+    CourseInstanceSchema,
+  );
+  const syncedCourseInstance = syncedCourseInstances.find(
+    (ci) => ci.short_name === shortName && ci.deleted_at == null,
+  );
   assert.isOk(syncedCourseInstance);
   return syncedCourseInstance;
 }
@@ -290,7 +302,7 @@ describe('Course instance syncing', () => {
     courseInstance.courseInstance.uuid = '276eeddb-74e1-44e5-bfc5-3c39d79afa85';
     courseInstance.courseInstance.longName = 'test new long name';
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedCourseInstance = await findSyncedCourseInstance('repeatedCourseInstance');
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance('repeatedCourseInstance');
     assert.equal(syncedCourseInstance.uuid, courseInstance.courseInstance.uuid);
     assert.equal(syncedCourseInstance.long_name, courseInstance.courseInstance.longName);
   });
@@ -333,22 +345,21 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // check that the newly-synced course instance has an error
-    const syncedCourseInstances = await util.dumpTableWithSchema(
-      'course_instances',
-      CourseInstanceSchema,
-    );
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null,
-    );
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance('repeatedCourseInstance');
     assert.isDefined(syncedCourseInstance);
     assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.equal(syncedCourseInstance.uuid, newCourseInstance.courseInstance.uuid);
     assert.match(syncedCourseInstance.sync_errors, /must have required property 'longName'/);
 
     // check that the old deleted course instance does not have any errors
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     const deletedCourseInstance = syncedCourseInstances.find(
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null,
     );
+    assert.isOk(deletedCourseInstance);
     assert.equal(deletedCourseInstance?.uuid, originalCourseInstance.courseInstance.uuid);
     assert.equal(deletedCourseInstance?.sync_errors, null);
   });
@@ -383,24 +394,15 @@ describe('Course instance syncing', () => {
     };
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const courseInstances = await util.dumpTableWithSchema(
-      'course_instances',
-      CourseInstanceSchema,
-    );
-
     // Original course instance should not exist.
-    const originalCourseInstanceRow = courseInstances.find((ci) => ci.short_name === 'a');
+    const originalCourseInstanceRow = await findSyncedUndeletedCourseInstance('a');
     assert.isUndefined(originalCourseInstanceRow);
 
     // New course instances should exist and have the correct UUIDs.
-    const newCourseInstanceRow1 = courseInstances.find(
-      (ci) => ci.short_name === 'b' && ci.deleted_at === null,
-    );
+    const newCourseInstanceRow1 = await findSyncedUndeletedCourseInstance('b');
     assert.isNull(newCourseInstanceRow1?.deleted_at);
     assert.equal(newCourseInstanceRow1?.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
-    const newCourseInstanceRow2 = courseInstances.find(
-      (q) => q.short_name === 'c' && q.deleted_at === null,
-    );
+    const newCourseInstanceRow2 = await findSyncedUndeletedCourseInstance('c');
     assert.isNull(newCourseInstanceRow2?.deleted_at);
     assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
