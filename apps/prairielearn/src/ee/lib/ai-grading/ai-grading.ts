@@ -196,8 +196,6 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      console.log('submission_text', submission_text);
-
       const example_submissions = await selectClosestSubmissionInfo({
         submission_id: submission.id,
         assessment_question_id: assessment_question.id,

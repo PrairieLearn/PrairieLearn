@@ -112,62 +112,61 @@ export async function nextInstanceQuestionUrl(
   assessment_question_id: string,
   user_id: string,
   prior_instance_question_id: string | null,
-  skip_graded_submissions: boolean
+  skip_graded_submissions: boolean,
 ): Promise<string> {
   const prior_ai_cluster_id = await run(async () => {
     if (prior_instance_question_id) {
-      console.log('prior_instance_question_id', prior_instance_question_id);
-
       return (
-        await sqldb.queryOptionalRow(sql.ai_cluster_id_for_instance_question, {
-          instance_question_id: prior_instance_question_id
-        }, IdSchema.nullable())
-        ?? null
+        (await sqldb.queryOptionalRow(
+          sql.ai_cluster_id_for_instance_question,
+          {
+            instance_question_id: prior_instance_question_id,
+          },
+          IdSchema.nullable(),
+        )) ?? null
       );
     } else {
       const clusters = await selectAiClusters({
-        assessmentQuestionId: assessment_question_id
-      })[0]
+        assessmentQuestionId: assessment_question_id,
+      })[0];
       return clusters > 0 ? clusters[0].id : null;
     }
-  })
+  });
 
   let instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,
-    { 
-      assessment_id, 
-      assessment_question_id, 
-      user_id, 
-      prior_instance_question_id, 
+    {
+      assessment_id,
+      assessment_question_id,
+      user_id,
+      prior_instance_question_id,
       prior_ai_cluster_id,
-      skip_graded_submissions
+      skip_graded_submissions,
     },
     IdSchema,
   );
-
-  console.log('instance_question_id', instance_question_id);
 
   if (!instance_question_id && prior_ai_cluster_id) {
     // Get the next cluster ID for the assessment question based on its ID
     const next_ai_cluster_id = await sqldb.queryOptionalRow(
       sql.select_next_ai_cluster_id,
-      { 
+      {
         assessment_question_id: Number.parseInt(assessment_question_id),
-        prior_ai_cluster_id: Number.parseInt(prior_ai_cluster_id)
+        prior_ai_cluster_id: Number.parseInt(prior_ai_cluster_id),
       },
-      IdSchema.nullable()
+      IdSchema.nullable(),
     );
 
     // Find the next question there
     instance_question_id = await sqldb.queryOptionalRow(
       sql.select_next_instance_question,
-      { 
-        assessment_id, 
-        assessment_question_id, 
-        user_id, 
-        prior_instance_question_id: null, 
+      {
+        assessment_id,
+        assessment_question_id,
+        user_id,
+        prior_instance_question_id: null,
         prior_ai_cluster_id: next_ai_cluster_id,
-        skip_graded_submissions
+        skip_graded_submissions,
       },
       IdSchema,
     );

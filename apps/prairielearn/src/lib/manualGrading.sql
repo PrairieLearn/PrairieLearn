@@ -4,13 +4,13 @@ SELECT
 FROM
   ai_clusters as ac
 WHERE
-  ac.assessment_question_id = $assessment_question_id AND
-  ac.id > $prior_ai_cluster_id;
+  ac.assessment_question_id = $assessment_question_id
+  AND ac.id > $prior_ai_cluster_id;
 
 -- BLOCK ai_cluster_id_for_instance_question
 SELECT
   ai_cluster_id
-FROM 
+FROM
   instance_questions as iq
 WHERE
   id = $instance_question_id;
@@ -31,14 +31,15 @@ WITH
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
         iq.ai_cluster_id = $prior_ai_cluster_id
-        OR iq.ai_cluster_id IS NULL AND $prior_ai_cluster_id IS NULL  
+        OR iq.ai_cluster_id IS NULL
+        AND $prior_ai_cluster_id IS NULL
       )
       AND (
         $prior_instance_question_id::bigint IS NULL
         OR iq.id != $prior_instance_question_id
       )
       AND (
-        NOT($skip_graded_submissions) 
+        NOT ($skip_graded_submissions)
         OR iq.requires_manual_grading
       )
       AND (
@@ -60,7 +61,10 @@ SELECT
 FROM
   instance_questions_to_grade
 WHERE
-  (prior_iq_stable_order IS NULL OR iq_stable_order > prior_iq_stable_order)
+  (
+    prior_iq_stable_order IS NULL
+    OR iq_stable_order > prior_iq_stable_order
+  )
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
   assigned_grader NULLS LAST,

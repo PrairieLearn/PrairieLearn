@@ -156,9 +156,9 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 
 export const AiClusterSchema = z.object({
   assessment_question_id: IdSchema,
-  cluster_name: z.string(),
   cluster_description: z.string(),
-  id: IdSchema
+  cluster_name: z.string(),
+  id: IdSchema,
 });
 export type AiCluster = z.infer<typeof AiClusterSchema>;
 

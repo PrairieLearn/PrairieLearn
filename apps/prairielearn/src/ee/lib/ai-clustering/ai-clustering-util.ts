@@ -3,105 +3,126 @@ import { zodResponseFormat } from 'openai/helpers/zod.mjs';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import z from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { AiClusterSchema, type Course, type InstanceQuestion, type Question } from '../../../lib/db-types.js';
+import {
+  AiClusterSchema,
+  type Course,
+  type InstanceQuestion,
+  type Question,
+} from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import * as questionServers from '../../../question-servers/index.js';
-import { generateSubmissionMessage, selectLastVariantAndSubmission } from '../ai-grading/ai-grading-util.js';
+import {
+  generateSubmissionMessage,
+  selectLastVariantAndSubmission,
+} from '../ai-grading/ai-grading-util.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
 
 const STANDARD_CLUSTERS = [
-    {
-      name: 'Likely Match', 
-      description: 'The final answer likely matches the correct answer.'
-    }, {
-      name: 'Review Needed',
-      description: 'The AI model could not confidently determine that the final answer is correct.'
-    }
-]
+  {
+    name: 'Likely Match',
+    description: 'The final answer likely matches the correct answer.',
+  },
+  {
+    name: 'Review Needed',
+    description: 'The AI model could not confidently determine that the final answer is correct.',
+  },
+];
 
 /** Insert the clusters for an assessment question if they don't exist */
 export async function insertAiClusters({
-    assessment_question_id
+  assessment_question_id,
 }: {
-    assessment_question_id: string
+  assessment_question_id: string;
 }) {
-    const aiClustersExist = await getAiClustersExist({ assessmentQuestionId: assessment_question_id });
-    if (aiClustersExist) {
-        return;
-    }
+  const aiClustersExist = await getAiClustersExist({
+    assessmentQuestionId: assessment_question_id,
+  });
+  if (aiClustersExist) {
+    return;
+  }
 
-    await runInTransactionAsync(async () => {
-        for (const clusterInfo of STANDARD_CLUSTERS) {
-            await queryAsync(sql.create_ai_cluster, {
-                assessment_question_id,
-                cluster_name : clusterInfo.name, 
-                cluster_description: clusterInfo.description
-            });
-        }
-    });
+  await runInTransactionAsync(async () => {
+    for (const clusterInfo of STANDARD_CLUSTERS) {
+      await queryAsync(sql.create_ai_cluster, {
+        assessment_question_id,
+        cluster_name: clusterInfo.name,
+        cluster_description: clusterInfo.description,
+      });
+    }
+  });
 }
 
 export async function selectAiCluster(ai_cluster_id: string) {
   return await queryRow(
     sql.select_ai_cluster,
     {
-      ai_cluster_id
+      ai_cluster_id,
     },
-    AiClusterSchema
+    AiClusterSchema,
   );
 }
 
 export async function updateAiCluster({
-    instance_question_id, 
-    ai_cluster_id
+  instance_question_id,
+  ai_cluster_id,
 }: {
-    instance_question_id: string,
-    ai_cluster_id: string 
+  instance_question_id: string;
+  ai_cluster_id: string;
 }) {
-    await queryAsync(sql.update_instance_question_ai_cluster, {
-      instance_question_id,
-      ai_cluster_id
-    })
+  await queryAsync(sql.update_instance_question_ai_cluster, {
+    instance_question_id,
+    ai_cluster_id,
+  });
 }
 
 /** whether or not the AI clusters exist for a given assessment question. */
 export async function getAiClustersExist({
-    assessmentQuestionId
+  assessmentQuestionId,
 }: {
-    assessmentQuestionId: string
+  assessmentQuestionId: string;
 }) {
-    return await queryRow(sql.select_exists_ai_clusters, {
-        assessment_question_id: assessmentQuestionId
-    }, z.boolean());
+  return await queryRow(
+    sql.select_exists_ai_clusters,
+    {
+      assessment_question_id: assessmentQuestionId,
+    },
+    z.boolean(),
+  );
 }
 
-export async function selectAiClusters({
-    assessmentQuestionId
-}: {
-    assessmentQuestionId: string
-}) {
-    return await queryRows(sql.select_ai_clusters, {
-        assessment_question_id: assessmentQuestionId
-    }, AiClusterSchema);
+export async function selectAiClusters({ assessmentQuestionId }: { assessmentQuestionId: string }) {
+  return await queryRows(
+    sql.select_ai_clusters,
+    {
+      assessment_question_id: assessmentQuestionId,
+    },
+    AiClusterSchema,
+  );
 }
 
 export async function getInstanceQuestionAnswer({
   question,
   instance_question,
   course,
-  urlPrefix
-} : {
+  urlPrefix,
+}: {
   question: Question;
   instance_question: InstanceQuestion;
   course: Course;
   urlPrefix: string;
 }) {
-  const {submission, variant} = await selectLastVariantAndSubmission(instance_question.id);
+  const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     questionRenderContext: 'ai_grading',
@@ -121,7 +142,7 @@ export async function getInstanceQuestionAnswer({
 }
 
 /**
- * Given a question, the AI returns whether or not the student-provided final answer is correct. 
+ * Given a question, the AI returns whether or not the student-provided final answer is correct.
  * Specifically for handwritten submissions captured with pl-image-capture.
  */
 export async function aiEvaluateStudentResponse({
@@ -130,7 +151,7 @@ export async function aiEvaluateStudentResponse({
   instance_question,
   course,
   urlPrefix,
-  openai
+  openai,
 }: {
   question: Question;
   question_answer: string;
@@ -139,7 +160,7 @@ export async function aiEvaluateStudentResponse({
   urlPrefix: string;
   openai: OpenAI;
 }) {
-  const {submission, variant} = await selectLastVariantAndSubmission(instance_question.id);
+  const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     questionRenderContext: 'ai_grading',
@@ -155,20 +176,18 @@ export async function aiEvaluateStudentResponse({
     locals,
   );
 
-
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
   const submissionMessage = generateSubmissionMessage({
     submission_text,
     submitted_answer: submission.submitted_answer,
-    include_images_only: true
+    include_images_only: true,
   });
 
   // Extract all images
   const promptImageUrls: string[] = [];
   if (submissionMessage && submissionMessage.content) {
-    for (const part of 
-      submissionMessage.content) {
+    for (const part of submissionMessage.content) {
       if (typeof part === 'object' && part.type === 'image_url') {
         promptImageUrls.push(part.image_url.url);
       }
@@ -202,8 +221,8 @@ Ensure that all parts of the correct answer are included. Any error in the respo
 If it seems AMBIGUOUS (e.g. a few answers are present, one answer erased out, crossed out), mark it incorrect.
 
 Return a boolean corresponding to whether or not the student's response is equivalent to the correct answer.
-      `
-    }
+      `,
+    },
   ];
 
   const completion = await openai.chat.completions.parse({
@@ -215,7 +234,7 @@ Return a boolean corresponding to whether or not the student's response is equiv
         correct: z.boolean(),
       }),
       'response-evaluation',
-    )
+    ),
   });
 
   const completionContent = completion.choices[0].message.parsed;
@@ -227,14 +246,16 @@ Return a boolean corresponding to whether or not the student's response is equiv
   return completionContent.correct;
 }
 
-export async function resetInstanceQuestionsAiClusters(
-  {
-    assessment_question_id
-  }: {
-    assessment_question_id: string
-  }
-) {
-  return await queryRow(sql.reset_instance_questions_ai_clusters, {
-    assessment_question_id
-  }, z.number());
+export async function resetInstanceQuestionsAiClusters({
+  assessment_question_id,
+}: {
+  assessment_question_id: string;
+}) {
+  return await queryRow(
+    sql.reset_instance_questions_ai_clusters,
+    {
+      assessment_question_id,
+    },
+    z.number(),
+  );
 }

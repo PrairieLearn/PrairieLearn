@@ -26,7 +26,7 @@ export function GradingPanel({
   grading_job,
   clusterName,
   aiGradingInfo,
-  aiClustersExist
+  aiClustersExist,
 }: {
   resLocals: Record<string, any>;
   context: 'main' | 'existing' | 'conflicting';
@@ -47,7 +47,7 @@ export function GradingPanel({
   const submission = grading_job ?? resLocals.submission;
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
-  
+
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
@@ -89,42 +89,47 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${aiClustersExist ? html`
-          <li class="list-group-item d-flex align-items-center gap-2">
-            <span>
-              Cluster:
-            </span>
-            <div class="dropdown w-100">
-              <button
-                type="button"
-                class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
-                aria-label="Change selected cluster"
-                aria-haspopup="true"
-                aria-expanded="false"
-                data-bs-toggle="dropdown"
-                data-bs-boundary="window"
-                hx-get="/pl/course_instance/${resLocals.course_instance.id}/instructor/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}/ai_clusters/switcher"
-                hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-                hx-target="#cluster-selection-dropdown"
-              >
-                <span id="cluster-selection-dropdown-span"> ${clusterName || 'No cluster'} </span>
-              </button>
-              <div class="dropdown-menu py-0 overflow-hidden">
-                <div
-                  id="cluster-selection-dropdown"
-                  style="max-height: 50vh"
-                  class="overflow-auto py-2"
-                >
-                  <div class="d-flex justify-content-center">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                      <span class="visually-hidden">Loading clusters...</span>
+        ${aiClustersExist
+          ? html`
+              <li class="list-group-item d-flex align-items-center gap-2">
+                <span> Cluster: </span>
+                <div class="dropdown w-100">
+                  <button
+                    type="button"
+                    class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
+                    aria-label="Change selected cluster"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    data-bs-toggle="dropdown"
+                    data-bs-boundary="window"
+                    hx-get="/pl/course_instance/${resLocals.course_instance
+                      .id}/instructor/assessment/${resLocals.assessment
+                      .id}/manual_grading/instance_question/${resLocals.instance_question
+                      .id}/ai_clusters/switcher"
+                    hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
+                    hx-target="#cluster-selection-dropdown"
+                  >
+                    <span id="cluster-selection-dropdown-span">
+                      ${clusterName || 'No cluster'}
+                    </span>
+                  </button>
+                  <div class="dropdown-menu py-0 overflow-hidden">
+                    <div
+                      id="cluster-selection-dropdown"
+                      style="max-height: 50vh"
+                      class="overflow-auto py-2"
+                    >
+                      <div class="d-flex justify-content-center">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                          <span class="visually-hidden">Loading clusters...</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </li>
-        ` : ''}
+              </li>
+            `
+          : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
           ${!resLocals.rubric_data?.replace_auto_points ||
@@ -196,79 +201,83 @@ ${submission.feedback?.manual}</textarea
               ${resLocals.skip_graded_submissions ? 'checked' : ''}
             />
             <label class="form-check-label" for="skip_graded_submissions">
-                Skip graded submissions
+              Skip graded submissions
             </label>
           </div>
           <span>
             ${!disable
               ? html`
-                <div id="grade-button-with-options" class="btn-group ${clusterName ? '' : 'd-none'}">
+                  <div
+                    id="grade-button-with-options"
+                    class="btn-group ${clusterName ? '' : 'd-none'}"
+                  >
+                    <button
+                      type="submit"
+                      class="btn btn-primary"
+                      name="__action"
+                      value="add_manual_grade"
+                    >
+                      Grade
+                    </button>
+                    <button
+                      id="grade-options-dropdown"
+                      type="button"
+                      class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                      data-bs-toggle="dropdown"
+                      aria-haspopup="true"
+                      aria-expanded="false"
+                    ></button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                      <button
+                        type="submit"
+                        class="dropdown-item"
+                        name="__action"
+                        value="add_manual_grade"
+                      >
+                        This instance question
+                      </button>
+
+                      <div class="dropdown-divider"></div>
+
+                      <button
+                        type="submit"
+                        class="dropdown-item"
+                        name="__action"
+                        value="add_manual_grade_for_cluster_ungraded"
+                      >
+                        All ungraded instance questions in cluster
+                      </button>
+                      <button
+                        type="submit"
+                        class="dropdown-item"
+                        name="__action"
+                        value="add_manual_grade_for_cluster"
+                      >
+                        All instance questions in cluster
+                      </button>
+
+                      <div class="dropdown-item-text text-muted small">
+                        AI can make mistakes. Review cluster assignments before grading.
+                      </div>
+                    </div>
+                  </div>
                   <button
+                    id="grade-button"
                     type="submit"
-                    class="btn btn-primary"
+                    class="btn btn-primary ${clusterName ? 'd-none' : ''}"
                     name="__action"
                     value="add_manual_grade"
                   >
                     Grade
                   </button>
-                  <button
-                    id="grade-options-dropdown"
-                    type="button"
-                    class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                    data-bs-toggle="dropdown"
-                    aria-haspopup="true"
-                    aria-expanded="false"
-                  ></button>
-                  <div class="dropdown-menu dropdown-menu-end">
-                    <button
-                      type="submit"
-                      class="dropdown-item"
-                      name="__action"
-                      value="add_manual_grade"
-                    >
-                      This instance question
-                    </button>
-
-                    <div class="dropdown-divider"></div>
-
-                    <button
-                      type="submit"
-                      class="dropdown-item"
-                      name="__action"
-                      value="add_manual_grade_for_cluster_ungraded"
-                    >
-                      All ungraded instance questions in cluster
-                    </button>
-                    <button
-                      type="submit"
-                      class="dropdown-item"
-                      name="__action"
-                      value="add_manual_grade_for_cluster"
-                    >
-                      All instance questions in cluster
-                    </button>
-
-                    <div class="dropdown-item-text text-muted small">
-                      AI can make mistakes. Review cluster assignments before grading.
-                    </div>
-                  </div>
-                </div>
-                <button
-                  id="grade-button"
-                  type="submit"
-                  class="btn btn-primary ${clusterName ? 'd-none' : ''}"
-                  name="__action"
-                  value="add_manual_grade"
-                >
-                  Grade
-                </button>
                 `
               : ''}
             <div class="btn-group">
               <a
                 id="next-instance-question-button"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals.instance_question.id}"
+                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals
+                  .instance_question.id}"
               >
                 ${skip_text}
               </a>

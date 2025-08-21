@@ -83,17 +83,14 @@ SELECT
   s.id AS submission_id
 FROM
   instance_questions AS iq
-  JOIN assessment_instances AS ai
-    ON ai.id = iq.assessment_instance_id
-  JOIN variants as v
-    ON v.instance_question_id = iq.id
-  JOIN submissions AS s
-    ON s.variant_id = v.id
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN variants as v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
 WHERE
-  iq.ai_cluster_id            = $cluster_id
-  AND ai.assessment_id          = $assessment_id
+  iq.ai_cluster_id = $cluster_id
+  AND ai.assessment_id = $assessment_id
   AND (
-    NOT $skip_graded_submissions 
+    NOT $skip_graded_submissions
     OR iq.requires_manual_grading
   );
 

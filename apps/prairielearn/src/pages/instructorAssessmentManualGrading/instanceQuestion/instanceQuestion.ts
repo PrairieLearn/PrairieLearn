@@ -8,7 +8,12 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
-import { getAiClustersExist, selectAiCluster, selectAiClusters, updateAiCluster } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import {
+  getAiClustersExist,
+  selectAiCluster,
+  selectAiClusters,
+  updateAiCluster,
+} from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -98,16 +103,19 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-      
     const instance_question = res.locals.instance_question as InstanceQuestion;
-    const cluster = instance_question.ai_cluster_id ? await selectAiCluster(instance_question.ai_cluster_id) : null;
+    const cluster = instance_question.ai_cluster_id
+      ? await selectAiCluster(instance_question.ai_cluster_id)
+      : null;
     if (instance_question == null) {
       throw new error.HttpStatusError(404, 'Instance question not found');
     }
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    const aiClustersExist = await getAiClustersExist({ assessmentQuestionId: res.locals.assessment_question.id });
+    const aiClustersExist = await getAiClustersExist({
+      assessmentQuestionId: res.locals.assessment_question.id,
+    });
 
     /**
      * Contains the prompt and selected rubric items of the AI grader.
@@ -192,9 +200,11 @@ router.get(
 );
 
 router.get(
-  '/ai_clusters/switcher', 
+  '/ai_clusters/switcher',
   asyncHandler(async (req, res) => {
-    const aiClusters = await selectAiClusters({ assessmentQuestionId: res.locals.assessment_question.id });
+    const aiClusters = await selectAiClusters({
+      assessmentQuestionId: res.locals.assessment_question.id,
+    });
 
     res.send(
       AIClusterSwitcher({
@@ -204,28 +214,28 @@ router.get(
             assessment_question_id: res.locals.assessment_question.id,
             cluster_name: 'No cluster',
             cluster_description: 'Cluster was not assigned.',
-            id: ''
-          }
+            id: '',
+          },
         ],
-        currentClusterId:  res.locals.instance_question.ai_cluster_id ?? null
-      })
-    )
-  })
-)
+        currentClusterId: res.locals.instance_question.ai_cluster_id ?? null,
+      }),
+    );
+  }),
+);
 
 router.put(
-  '/ai_cluster', 
+  '/ai_cluster',
   asyncHandler(async (req, res) => {
     const aiClusterId = req.body.aiClusterId;
 
-    await updateAiCluster({  
+    await updateAiCluster({
       instance_question_id: res.locals.instance_question.id,
-      ai_cluster_id: aiClusterId || null
+      ai_cluster_id: aiClusterId || null,
     });
 
     res.sendStatus(204);
-  })
-)
+  }),
+);
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
@@ -304,7 +314,7 @@ const PostBodySchema = z.union([
       .nullish()
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
-      )
+      ),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -416,11 +426,14 @@ router.post(
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          res.locals.skip_graded_submissions
-        )
+          res.locals.skip_graded_submissions,
+        ),
       );
-    // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
-    } else if (body.__action === 'add_manual_grade_for_cluster_ungraded' || body.__action === 'add_manual_grade_for_cluster') {
+      // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
+    } else if (
+      body.__action === 'add_manual_grade_for_cluster_ungraded' ||
+      body.__action === 'add_manual_grade_for_cluster'
+    ) {
       const ai_cluster_id = res.locals.instance_question.ai_cluster_id;
       if (!ai_cluster_id) {
         throw new error.HttpStatusError(404, 'AI cluster not found');
@@ -431,16 +444,19 @@ router.post(
         {
           cluster_id: ai_cluster_id,
           assessment_id: res.locals.assessment.id,
-          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster_ungraded'
+          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster_ungraded',
         },
         z.object({
           instance_question_id: z.string(),
-          submission_id: z.string()
-        })
+          submission_id: z.string(),
+        }),
       );
 
       if (instanceQuestionsInCluster.length === 0) {
-        flash('warning', `No ${body.__action === 'add_manual_grade_for_cluster_ungraded' ? 'ungraded ' : ''}instance questions in the cluster.`);
+        flash(
+          'warning',
+          `No ${body.__action === 'add_manual_grade_for_cluster_ungraded' ? 'ungraded ' : ''}instance questions in the cluster.`,
+        );
         return res.redirect(req.baseUrl);
       }
 
@@ -453,35 +469,34 @@ router.post(
             adjust_points: body.score_manual_adjust_points || null,
           }
         : undefined;
-    
+
       for (const instanceQuestion of instanceQuestionsInCluster) {
-        const { modified_at_conflict } =
-          await manualGrading.updateInstanceQuestionScore(
-            res.locals.assessment.id,
-            instanceQuestion.instance_question_id,
-            instanceQuestion.submission_id,
-            null,
-            {
-              manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
-              manual_points: body.use_score_perc ? null : body.score_manual_points,
-              auto_score_perc: body.use_score_perc ? body.score_auto_percent : null, // maybe different
-              auto_points: body.use_score_perc ? null : body.score_auto_points, // maybe different
-              feedback: { manual: body.submission_note },
-              manual_rubric_data,
-            },
-            res.locals.authn_user.user_id,
-          );
+        const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore(
+          res.locals.assessment.id,
+          instanceQuestion.instance_question_id,
+          instanceQuestion.submission_id,
+          null,
+          {
+            manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
+            manual_points: body.use_score_perc ? null : body.score_manual_points,
+            auto_score_perc: body.use_score_perc ? body.score_auto_percent : null, // maybe different
+            auto_points: body.use_score_perc ? null : body.score_auto_points, // maybe different
+            feedback: { manual: body.submission_note },
+            manual_rubric_data,
+          },
+          res.locals.authn_user.user_id,
+        );
 
         if (modified_at_conflict) {
           flash('error', 'A conflict occurred while grading the submission. Please try again.');
           return res.redirect(req.baseUrl);
         }
-      }      
+      }
 
       flash(
         'success',
-        `Successfully applied grade and feedback to ${instanceQuestionsInCluster.length} instance questions.`
-      )
+        `Successfully applied grade and feedback to ${instanceQuestionsInCluster.length} instance questions.`,
+      );
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
@@ -490,8 +505,8 @@ router.post(
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          res.locals.skip_graded_submissions
-        )
+          res.locals.skip_graded_submissions,
+        ),
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
@@ -537,7 +552,7 @@ router.post(
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          false
+          false,
         ),
       );
     } else if (body.__action === 'report_issue') {

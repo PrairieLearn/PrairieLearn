@@ -30,7 +30,7 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
-    aiClustersExist
+    aiClustersExist,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -223,17 +223,18 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
-        (aiGradingMode && aiClustersExist) ? {
-          field: 'ai_cluster_name',
-          title: 'Cluster',
-          visible: aiGradingMode,
-          filterControl: 'select',
-          class: 'text-center',
-          formatter: (value: string | null) => (value ?? '&mdash;'),
-          sortable: true,
-          searchable: true,
-
-        } : null,
+        aiGradingMode && aiClustersExist
+          ? {
+              field: 'ai_cluster_name',
+              title: 'Cluster',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              class: 'text-center',
+              formatter: (value: string | null) => value ?? '&mdash;',
+              sortable: true,
+              searchable: true,
+            }
+          : null,
         {
           field: 'user_or_group_name',
           title: groupWork ? 'Group Name' : 'Name',
@@ -562,10 +563,7 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const action = formData.get('__action');
   const batchAction = formData.get('batch_action');
 
-  const newPageBatchActions = new Set([
-    'ai_grade_assessment_selected',
-    'ai_cluster_selected',
-  ]);
+  const newPageBatchActions = new Set(['ai_grade_assessment_selected', 'ai_cluster_selected']);
 
   if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.

@@ -6,7 +6,10 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { resetInstanceQuestionsAiClusters, selectAiClusters } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+import {
+  resetInstanceQuestionsAiClusters,
+  selectAiClusters,
+} from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
 import {
   calculateAiGradingStats,
@@ -109,8 +112,8 @@ router.get(
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
         req.query.prior_instance_question_id ?? null,
-        res.locals.skip_graded_submissions
-      )
+        res.locals.skip_graded_submissions,
+      ),
     );
   }),
 );
@@ -163,7 +166,7 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
           instance_question_ids,
-          closed_instance_questions_only: req.body.closed_instance_questions_only === 'true'
+          closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -243,9 +246,7 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (
-      req.body.__action === 'ai_cluster_assessment_all'
-    ) {
+    } else if (req.body.__action === 'ai_cluster_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
@@ -258,7 +259,7 @@ router.post(
         urlPrefix: res.locals.urlPrefix,
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
-        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true'
+        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -287,10 +288,7 @@ router.post(
         assessment_question_id: res.locals.assessment_question.id,
       });
 
-      flash(
-        'success',
-        `Deleted AI clustering results for ${numDeleted} questions.`
-      );
+      flash('success', `Deleted AI clustering results for ${numDeleted} questions.`);
 
       res.redirect(req.originalUrl);
     } else {

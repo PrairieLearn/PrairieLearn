@@ -213,33 +213,32 @@ export function AssessmentQuestion({
                 `}
           `
         : ''}
-
-
       ${aiGradingEnabled && aiGradingMode && aiClusters.length > 0
         ? html`
-          <div class="card overflow-hidden mb-3">
-            <div class="table-responsive">
-              <table class="table table-sm" aria-label="AI clusters">
-                <thead>
-                  <tr class="table-light fw-bold">
-                    <td style="width: 30%;">Cluster</td>
-                    <td>Description</td>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${aiClusters.map(aiCluster => (
-                    html`
-                      <tr>
-                        <td>${aiCluster.cluster_name}</td>
-                        <td>${aiCluster.cluster_description}</td>
-                      </tr>
-                    `
-                  ))}
-                </tbody>
-              </table>
+            <div class="card overflow-hidden mb-3">
+              <div class="table-responsive">
+                <table class="table table-sm" aria-label="AI clusters">
+                  <thead>
+                    <tr class="table-light fw-bold">
+                      <td style="width: 30%;">Cluster</td>
+                      <td>Description</td>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${aiClusters.map(
+                      (aiCluster) => html`
+                        <tr>
+                          <td>${aiCluster.cluster_name}</td>
+                          <td>${aiCluster.cluster_description}</td>
+                        </tr>
+                      `,
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        ` : ''}
+          `
+        : ''}
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />
@@ -402,19 +401,19 @@ export function AssessmentQuestion({
         ${ClusterInfoModal({
           modalFor: 'selected',
           numOpenInstances: num_open_instances,
-          csrfToken: __csrf_token
+          csrfToken: __csrf_token,
         })}
       </form>
     `,
     postContent: [
-      GradingConflictModal(), 
-      DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }), 
-      DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }), 
+      GradingConflictModal(),
+      DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
+      DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }),
       ClusterInfoModal({
         modalFor: 'all',
         numOpenInstances: num_open_instances,
-        csrfToken: __csrf_token
-      })
+        csrfToken: __csrf_token,
+      }),
     ],
   });
 }
@@ -453,8 +452,8 @@ function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string })
     id: 'delete-all-ai-clustering-results-modal',
     title: 'Delete all AI clustering results',
     body: html`
-      Are you sure you want to delete <strong>all AI clustering results</strong> for this assessment?
-      This action cannot be undone.
+      Are you sure you want to delete <strong>all AI clustering results</strong> for this
+      assessment? This action cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -468,7 +467,7 @@ function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string })
 function ClusterInfoModal({
   modalFor,
   numOpenInstances,
-  csrfToken
+  csrfToken,
 }: {
   modalFor: 'all' | 'selected';
   numOpenInstances: number;
@@ -479,26 +478,31 @@ function ClusterInfoModal({
     title: modalFor === 'all' ? 'Cluster all submissions' : 'Cluster selected submissions',
     form: modalFor === 'all',
     body: html`
-      ${modalFor === 'all' ? html`
-        <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      `: ''}
+      ${modalFor === 'all'
+        ? html`
+            <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
+            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+          `
+        : ''}
       <p>
-        Clustering groups student answers based on whether they <b>match the correct answer exactly.</b>
+        Clustering groups student answers based on whether they
+        <b>match the correct answer exactly.</b>
       </p>
 
       <p>Answers that match go into one cluster, and those that don’t are grouped separately.</p>
 
-      <p>To enable clustering, the correct answer must be provided in <code>pl-answer-panel</code>.</p>
+      <p>
+        To enable clustering, the correct answer must be provided in <code>pl-answer-panel</code>.
+      </p>
 
-      <p>Clustering checks for exact equivalence to the final answer, considering only the boxed or final answer to form groups.</p>
+      <p>
+        Clustering checks for exact equivalence to the final answer, considering only the boxed or
+        final answer to form groups.
+      </p>
 
       <p>Examples of what can and can't be clustered:</p>
-      
-      <div
-        class="d-grid border rounded overflow-hidden"
-        style="grid-template-columns: 1fr 1fr;"
-      >
+
+      <div class="d-grid border rounded overflow-hidden" style="grid-template-columns: 1fr 1fr;">
         <!-- Header row -->
         <div class="px-2 py-1 bg-light fw-bold border-end">Can cluster</div>
         <div class="px-2 py-1 bg-light fw-bold">Can't cluster</div>
@@ -515,58 +519,49 @@ function ClusterInfoModal({
         <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
         <div class="px-2 py-1 border-top">Freeform Code</div>
       </div>
-      ${(numOpenInstances > 0) && (
-       html`
-       <div class="alert alert-warning mt-3" role="alert">
+      ${numOpenInstances > 0 &&
+      html` <div class="alert alert-warning mt-3" role="alert">
         <div class="row g-2">
           <div class="col-12 col-md-6">
             <p class="my-0">
-              This assessment has ${numOpenInstances === 1 ? 'one open instance that ' : `${numOpenInstances} open instances, which `} may contain submissions selected for clustering.
+              This assessment has
+              ${numOpenInstances === 1
+                ? 'one open instance that '
+                : `${numOpenInstances} open instances, which `}
+              may contain submissions selected for clustering.
             </p>
           </div>
           <div class="col-12 col-md-6 d-flex flex-column gap-2">
             <p class="my-0">Choose how to apply clustering:</p>
-            <select
-              class="form-select w-auto flex-shrink-0"
-              name="closed_instance_questions_only"
-            >
-              <option value="true" selected>
-                Only cluster closed submissions
-              </option>
-              <option value="false">
-                Cluster open & closed submissions
-              </option>
+            <select class="form-select w-auto flex-shrink-0" name="closed_instance_questions_only">
+              <option value="true" selected>Only cluster closed submissions</option>
+              <option value="false">Cluster open & closed submissions</option>
             </select>
           </div>
         </div>
-      </div>`
-      )}
+      </div>`}
     `,
     footer: html`
       <div class="m-0">
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-          ${modalFor === 'all' ? html`
-            <button
-              class="btn btn-primary"
-              type="submit"
-            >
-              Cluster submissions
-            </button>
-          `: html`
-            <button
-              class="btn btn-primary"
-              type="submit"
-              name="batch_action"
-              value="ai_cluster_selected"
-            >
-              Cluster submissions
-            </button>
-          `}
+          ${modalFor === 'all'
+            ? html` <button class="btn btn-primary" type="submit">Cluster submissions</button> `
+            : html`
+                <button
+                  class="btn btn-primary"
+                  type="submit"
+                  name="batch_action"
+                  value="ai_cluster_selected"
+                >
+                  Cluster submissions
+                </button>
+              `}
         </div>
-        <small class="text-muted my-0 text-end">AI can make mistakes. Review cluster assignments before grading.</small>
+        <small class="text-muted my-0 text-end"
+          >AI can make mistakes. Review cluster assignments before grading.</small
+        >
       </div>
-    `
-  })
+    `,
+  });
 }
-

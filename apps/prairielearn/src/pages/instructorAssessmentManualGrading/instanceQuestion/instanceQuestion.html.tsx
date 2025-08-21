@@ -33,7 +33,7 @@ export function InstanceQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
-  aiClustersExist
+  aiClustersExist,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData | null;
@@ -83,11 +83,14 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
-      ${EncodedData({
-        course_instance_id: resLocals.course_instance.id,
-        assessment_id: resLocals.assessment.id,
-        instance_question_id: resLocals.instance_question.id
-      }, 'instance-question-data')}
+      ${EncodedData(
+        {
+          course_instance_id: resLocals.course_instance.id,
+          assessment_id: resLocals.assessment.id,
+          instance_question_id: resLocals.instance_question.id,
+        },
+        'instance-question-data',
+      )}
     `,
     preContent: html`
       <div class="container-fluid">
@@ -176,9 +179,9 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                clusterName, 
+                clusterName,
                 aiGradingInfo,
-                aiClustersExist
+                aiClustersExist,
               })}
             </div>
           </div>
@@ -225,7 +228,7 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
-  aiClustersExist
+  aiClustersExist,
 }: {
   resLocals: Record<string, any>;
   conflict_grading_job: GradingJobData;
@@ -269,7 +272,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    aiClustersExist
+                    aiClustersExist,
                   })}
                 </div>
               </div>
@@ -294,7 +297,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    aiClustersExist
+                    aiClustersExist,
                   })}
                 </div>
               </div>

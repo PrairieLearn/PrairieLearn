@@ -184,7 +184,7 @@ export async function generatePrompt({
 export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
-  include_images_only = false
+  include_images_only = false,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
@@ -197,7 +197,7 @@ export function generateSubmissionMessage({
       type: 'text',
       text: 'The student submitted the following response: \n<response>\n',
     });
-}
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -259,7 +259,7 @@ export function generateSubmissionMessage({
       text: submissionTextSegment,
     });
   }
-  
+
   if (!include_images_only) {
     message_content.push({
       type: 'text',
@@ -356,7 +356,7 @@ export function parseAiRubricItems({
 
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
-  closed_instance_questions_only = false
+  closed_instance_questions_only = false,
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,

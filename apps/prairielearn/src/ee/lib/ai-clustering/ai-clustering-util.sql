@@ -1,53 +1,61 @@
 -- BLOCK create_ai_cluster
-INSERT INTO ai_clusters
-    (assessment_question_id, cluster_name, cluster_description)
+INSERT INTO
+  ai_clusters (
+    assessment_question_id,
+    cluster_name,
+    cluster_description
+  )
 VALUES
-    ($assessment_question_id, $cluster_name, $cluster_description)
-
--- BLOCK select_exists_ai_clusters
+  (
+    $assessment_question_id,
+    $cluster_name,
+    $cluster_description
+  )
+  -- BLOCK select_exists_ai_clusters
 SELECT
-    EXISTS (
-        SELECT
-            1
-        FROM
-            ai_clusters
-        WHERE
-            assessment_question_id = $assessment_question_id
-    );
+  EXISTS (
+    SELECT
+      1
+    FROM
+      ai_clusters
+    WHERE
+      assessment_question_id = $assessment_question_id
+  );
 
 -- BLOCK select_ai_cluster
 SELECT
-    * 
-FROM 
-    ai_clusters
+  *
+FROM
+  ai_clusters
 WHERE
-    id = $ai_cluster_id;
+  id = $ai_cluster_id;
 
 -- BLOCK select_ai_clusters
-SELECT 
-    *
+SELECT
+  *
 FROM
-    ai_clusters 
+  ai_clusters
 WHERE
-    assessment_question_id = $assessment_question_id;
+  assessment_question_id = $assessment_question_id;
 
 -- BLOCK update_instance_question_ai_cluster
-UPDATE 
-    instance_questions
-SET 
-    ai_cluster_id = $ai_cluster_id
+UPDATE instance_questions
+SET
+  ai_cluster_id = $ai_cluster_id
 WHERE
-    id = $instance_question_id
-
-
--- BLOCK reset_instance_questions_ai_clusters
-WITH updated AS (
-    UPDATE
-        instance_questions
+  id = $instance_question_id
+  -- BLOCK reset_instance_questions_ai_clusters
+WITH
+  updated AS (
+    UPDATE instance_questions
     SET
-        ai_cluster_id = NULL
+      ai_cluster_id = NULL
     WHERE
-        assessment_question_id = $assessment_question_id
-    RETURNING *
-)
-SELECT COUNT(*)::int FROM updated;
+      assessment_question_id = $assessment_question_id
+    RETURNING
+      *
+  )
+SELECT
+  COUNT(*)::int
+FROM
+  updated;

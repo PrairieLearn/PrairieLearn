@@ -10,7 +10,7 @@ import {
   type AssessmentQuestion,
   IdSchema,
   type RubricItem,
-  RubricItemSchema
+  RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectAiClusters } from '../ai-clustering/ai-clustering-util.js';
@@ -48,7 +48,9 @@ export interface AiGradingGeneralStats {
  * This includes organizing information about past graders
  * and calculating point and/or rubric difference between human and AI.
  */
-export async function fillInstanceQuestionColumns<T extends { id: string, ai_cluster_id: string | null}>(
+export async function fillInstanceQuestionColumns<
+  T extends { id: string; ai_cluster_id: string | null },
+>(
   instance_questions: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<WithAIGradingStats<T>[]> {
@@ -59,10 +61,12 @@ export async function fillInstanceQuestionColumns<T extends { id: string, ai_clu
   );
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
-  
-  const aiClusterIdToName = (await selectAiClusters({
-    assessmentQuestionId: assessment_question.id
-  })).reduce((acc, curr) => {
+
+  const aiClusterIdToName = (
+    await selectAiClusters({
+      assessmentQuestionId: assessment_question.id,
+    })
+  ).reduce((acc, curr) => {
     acc[curr.id] = curr.cluster_name;
     return acc;
   }, {});
@@ -129,7 +133,9 @@ export async function fillInstanceQuestionColumns<T extends { id: string, ai_clu
     }
 
     // Retrieve the current cluster of the instance question
-    instance_question.ai_cluster_name = instance_question.ai_cluster_id ? aiClusterIdToName[instance_question.ai_cluster_id] : null;
+    instance_question.ai_cluster_name = instance_question.ai_cluster_id
+      ? aiClusterIdToName[instance_question.ai_cluster_id]
+      : null;
   }
   return results;
 }
