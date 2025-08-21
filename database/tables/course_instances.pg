@@ -4,12 +4,12 @@ columns
     deleted_at: timestamp with time zone
     display_timezone: text not null
     enrollment_limit: integer
-    enrollment_lti_enforced_after: timestamp with time zone
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
-    self_enrollment_enabled_before: timestamp with time zone
+    self_enrollment_enabled: boolean default true
+    self_enrollment_enabled_before_date: timestamp with time zone
     self_enrollment_requires_secret_link: boolean default false
     share_source_publicly: boolean not null default false
     short_name: text
