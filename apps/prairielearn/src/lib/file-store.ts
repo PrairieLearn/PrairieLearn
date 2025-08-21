@@ -217,6 +217,6 @@ export async function getFile(
       file,
     };
   } else {
-    assertNever(file.storage_type, 'Unknown storage type');
+    assertNever(file.storage_type);
   }
 }

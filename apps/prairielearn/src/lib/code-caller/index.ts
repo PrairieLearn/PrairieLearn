@@ -78,7 +78,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
               dropPrivileges: false,
             });
           } else {
-            assertNever(workersExecutionMode, 'Unexpected workersExecutionMode');
+            assertNever(workersExecutionMode);
           }
         });
 

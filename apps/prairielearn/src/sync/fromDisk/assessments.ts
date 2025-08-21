@@ -205,7 +205,7 @@ function getParamsForAssessment(
             pointsList: undefined,
           };
         } else {
-          assertNever(assessment.type, 'Unknown assessment type');
+          assertNever(assessment.type);
         }
       });
 

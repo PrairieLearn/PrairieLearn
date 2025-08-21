@@ -1,5 +1,5 @@
 import { type FlashMessageType, flash } from '@prairielearn/flash';
-import { html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
@@ -188,7 +188,7 @@ function NavbarByType({
       } else if (navbarType === 'institution') {
         return NavbarInstitution({ resLocals });
       } else {
-        assertNever(navbarType, 'Unknown navbarType');
+        assertNever(navbarType);
       }
     }
   }
@@ -214,13 +214,15 @@ function UserDropdownMenu({
     authn_is_administrator,
   } = resLocals;
 
-  let displayedName = '';
+  let displayedName: HtmlValue;
   if (authz_data) {
-    displayedName = authz_data.user.name || authz_data.user.uid;
-
-    if (authz_data.mode != null && authz_data.mode !== 'Public') {
-      displayedName += ` (${authz_data.mode})`;
-    }
+    displayedName = run(() => {
+      const name = authz_data.user.name || authz_data.user.uid;
+      if (authz_data.mode != null && authz_data.mode !== 'Public') {
+        return `${name} (${authz_data.mode})`;
+      }
+      return name;
+    });
   } else if (authn_user) {
     displayedName = authn_user.name || authn_user.uid;
   } else {
@@ -233,14 +235,11 @@ function UserDropdownMenu({
     (authz_data.authn_has_course_permission_preview ||
       authz_data.authn_has_course_instance_permission_view)
   ) {
-    displayedName = html`${displayedName}
-      <span class="badge text-bg-warning">student</span>`.toString();
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
   } else if (authz_data?.overrides) {
-    displayedName = html`${displayedName}
-      <span class="badge text-bg-warning">modified</span>`.toString();
+    displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
-    displayedName = html`${displayedName}
-      <span class="badge text-bg-success">staff</span>`.toString();
+    displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
   }
 
   return html`

@@ -52,11 +52,8 @@ export default function (options = { publicQuestionPreview: false }) {
   router.get(
     '/',
     asyncHandler(async (req, res) => {
-      if (!req.query.file_name || !req.params.variant_id) {
-        throw new HttpStatusError(
-          400,
-          'file_name query parameter and variant_id path parameter are required',
-        );
+      if (!req.query.file_name) {
+        throw new HttpStatusError(400, 'file_name query parameter is required');
       }
       res.send(
         ExternalImageCapture({
@@ -72,11 +69,11 @@ export default function (options = { publicQuestionPreview: false }) {
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      const variantId = req.params.variant_id;
       const fileName = req.body.file_name as string | undefined;
+      const variantId = req.params.variant_id;
 
-      if (!fileName || !variantId) {
-        throw new HttpStatusError(400, 'file_name and variant_id are required');
+      if (!fileName) {
+        throw new HttpStatusError(400, 'file_name is required');
       }
 
       if (!req.file?.buffer) {

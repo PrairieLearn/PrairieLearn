@@ -126,7 +126,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
     if (elementType === 'core') return ElementCoreJsonSchema;
     if (elementType === 'course') return ElementCourseJsonSchema;
-    assertNever(elementType, 'Unknown element type');
+    assertNever(elementType);
   });
 
   let files: string[];
@@ -1126,28 +1126,28 @@ export async function render(
       }
 
       const extensions = context.course_element_extensions;
-      const dependencies = {
-        coreStyles: [] as string[],
-        coreScripts: [] as string[],
-        nodeModulesStyles: [] as string[],
-        nodeModulesScripts: [] as string[],
-        coreElementStyles: [] as string[],
-        coreElementScripts: [] as string[],
-        courseElementStyles: [] as string[],
-        courseElementScripts: [] as string[],
-        extensionStyles: [] as string[],
-        extensionScripts: [] as string[],
-        clientFilesCourseStyles: [] as string[],
-        clientFilesCourseScripts: [] as string[],
-        clientFilesQuestionStyles: [] as string[],
-        clientFilesQuestionScripts: [] as string[],
+      const dependencies: Record<string, string[]> = {
+        coreStyles: [],
+        coreScripts: [],
+        nodeModulesStyles: [],
+        nodeModulesScripts: [],
+        coreElementStyles: [],
+        coreElementScripts: [],
+        courseElementStyles: [],
+        courseElementScripts: [],
+        extensionStyles: [],
+        extensionScripts: [],
+        clientFilesCourseStyles: [],
+        clientFilesCourseScripts: [],
+        clientFilesQuestionStyles: [],
+        clientFilesQuestionScripts: [],
       };
-      const dynamicDependencies = {
+      const dynamicDependencies: Record<string, Record<string, string>> = {
         nodeModulesScripts: {},
         coreElementScripts: {},
         courseElementScripts: {},
         extensionScripts: {},
-        clientFilesCourseScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {},
       };
 
       for (const type in question.dependencies) {

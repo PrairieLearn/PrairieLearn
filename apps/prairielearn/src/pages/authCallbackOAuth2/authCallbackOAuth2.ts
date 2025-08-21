@@ -27,8 +27,7 @@ router.get(
     if (code == null) {
       throw new Error('No "code" query parameter for authCallbackOAuth2');
     } else if (typeof code !== 'string') {
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-      throw new Error(`Invalid 'code' query parameter for authCallbackOAuth2: ${code}`);
+      throw new Error(`Invalid 'code' query parameter for authCallbackOAuth2: ${code.toString()}`);
     }
     // FIXME: should check req.query.state to avoid CSRF
     const oauth2Client = new OAuth2Client(

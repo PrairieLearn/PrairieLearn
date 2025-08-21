@@ -375,7 +375,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      assertNever(r, 'Invalid route');
+      assertNever(r);
     }
   });
 }

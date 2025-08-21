@@ -2043,7 +2043,7 @@ export async function startServer(app: express.Express) {
     server = http.createServer(app);
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
-    assertNever(config.serverType, 'unknown serverType');
+    assertNever(config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2463,7 +2463,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (config.initNewsItems) {
       // We initialize news items asynchronously so that servers can boot up
       // in production as quickly as possible.
-      await news_items.initInBackground({
+      void news_items.initInBackground({
         // Always notify in production environments.
         notifyIfPreviouslyEmpty: !config.devMode,
       });

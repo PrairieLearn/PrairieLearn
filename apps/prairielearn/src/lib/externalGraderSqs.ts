@@ -10,6 +10,7 @@ import * as tar from 'tar';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { type Config, config as globalConfig } from './config.js';
@@ -74,7 +75,11 @@ export class ExternalGraderSqs implements Grader {
         async () => sendJobToQueue(grading_job.id, question, config),
       ],
       (err) => {
-        void fs.remove(dir);
+        fs.remove(dir).catch((err) => {
+          logger.error('Error removing directory', err);
+          Sentry.captureException(err);
+        });
+
         if (err) {
           emitter.emit('error', err);
         } else {
