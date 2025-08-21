@@ -43,14 +43,18 @@ export const AssessmentAccessRuleJsonSchema = z
       .describe(
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
-      .optional(),
+      .optional()
+      .nullable()
+      .default(null),
     role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
     uids: z
       .array(z.string())
       .describe(
         "A list of UIDs (like 'username@example.com'), one of which is required for access.",
       )
-      .optional(),
+      .optional()
+      .nullable()
+      .default(null),
     credit: z
       .number()
       .int()
@@ -58,16 +62,35 @@ export const AssessmentAccessRuleJsonSchema = z
       .describe(
         'How much credit is awarded for doing the homework, as a percentage (100 means full credit).',
       )
-      .optional(),
-    startDate: z.string().describe('The earliest date on which access is permitted.').optional(),
-    endDate: z.string().describe('The latest date on which access is permitted.').optional(),
+      .optional()
+      .nullable()
+      .default(null),
+    startDate: z
+      .string()
+      .describe('The earliest date on which access is permitted.')
+      .optional()
+      .nullable()
+      .default(null),
+    endDate: z
+      .string()
+      .describe('The latest date on which access is permitted.')
+      .optional()
+      .nullable()
+      .default(null),
     timeLimitMin: z
       .number()
       .int()
       .gte(0)
       .describe('The time limit to complete the assessment, in minutes (only for Exams).')
-      .optional(),
-    password: z.string().describe('Password to begin the assessment (only for Exams).').optional(),
+      .optional()
+      .nullable()
+      .default(null),
+    password: z
+      .string()
+      .describe('Password to begin the assessment (only for Exams).')
+      .optional()
+      .nullable()
+      .default(null),
     showClosedAssessment: z
       .boolean()
       .describe('Whether the student can view the assessment after it has been closed')
@@ -124,19 +147,20 @@ export const AdvanceScorePercJsonSchema = z
   .describe('Minimum score percentage to unlock access to subsequent questions.');
 
 const QuestionPointsJsonSchema = z.object({
-  points: PointsJsonSchema.optional(),
-  autoPoints: PointsJsonSchema.optional(),
-  maxPoints: PointsSingleJsonSchema.optional(),
-  maxAutoPoints: PointsSingleJsonSchema.optional(),
-  manualPoints: PointsSingleJsonSchema.optional(),
+  points: PointsJsonSchema.optional().nullable().default(null),
+  autoPoints: PointsJsonSchema.optional().nullable().default(null),
+  maxPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  maxAutoPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  manualPoints: PointsSingleJsonSchema.optional().nullable().default(null),
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
+export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   id: QuestionIdJsonSchema,
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
@@ -152,15 +176,17 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
 });
 
+export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
+
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
-  points: PointsJsonSchema.optional(),
-  autoPoints: PointsJsonSchema.optional(),
-  maxPoints: PointsSingleJsonSchema.optional(),
-  maxAutoPoints: PointsSingleJsonSchema.optional(),
-  manualPoints: PointsSingleJsonSchema.optional(),
+  points: PointsJsonSchema.optional().nullable().default(null),
+  autoPoints: PointsJsonSchema.optional().nullable().default(null),
+  maxPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  maxAutoPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  manualPoints: PointsSingleJsonSchema.optional().nullable().default(null),
   id: QuestionIdJsonSchema.optional(),
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
   alternatives: z
     .array(QuestionAlternativeJsonSchema)
     .min(1)
@@ -199,6 +225,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional()
     .default([]),
 });
+
+export type ZoneQuestionJson = z.infer<typeof ZoneQuestionJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -241,12 +269,14 @@ export const ZoneAssessmentJsonSchema = z.object({
     .describe(
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
   canView: uniqueArray(z.string())
     .describe(
       'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
 });
 
 export const AssessmentJsonSchema = z
@@ -278,15 +308,17 @@ export const AssessmentJsonSchema = z
       .default(false),
     shuffleQuestions: z
       .boolean()
-      .describe('Whether the questions will be shuffled in the student view of an assessment')
-      .optional()
-      .default(false),
+      .describe(
+        'Whether the questions will be shuffled in the student view of an assessment. If the assessment type is Exam, this is true by default, and otherwise false.',
+      )
+      .optional(),
     allowAccess: z
       .array(AssessmentAccessRuleJsonSchema)
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
@@ -301,7 +333,8 @@ export const AssessmentJsonSchema = z
     allowPersonalNotes: z
       .boolean()
       .describe('Whether students are allowed to upload personal notes for this assessment.')
-      .optional(),
+      .optional()
+      .default(true),
     autoClose: z
       .boolean()
       .describe('Whether to automatically close the assessment after a period of inactivity.')
@@ -312,7 +345,8 @@ export const AssessmentJsonSchema = z
       .describe(
         'Array of "zones" in the assessment, each containing questions that can be randomized within the zone.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     constantQuestionValue: z
       .boolean()
       .describe(
@@ -345,12 +379,23 @@ export const AssessmentJsonSchema = z
       .describe('Whether the assessment will support group work.')
       .optional()
       .default(false),
-    groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
-    groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
+    groupMaxSize: z
+      .number()
+      .describe('Maximum number of students in a group.')
+      .optional()
+      .nullable()
+      .default(null),
+    groupMinSize: z
+      .number()
+      .describe('Minimum number of students in a group.')
+      .optional()
+      .nullable()
+      .default(null),
     groupRoles: z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
-      .optional(),
+      .optional()
+      .default([]),
     canSubmit: uniqueArray(z.string())
       .describe(
         'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',

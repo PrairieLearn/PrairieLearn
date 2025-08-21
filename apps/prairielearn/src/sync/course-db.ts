@@ -7,6 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
+import { type ZodSchema, type z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
@@ -17,11 +18,14 @@ import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
+  type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJson,
+  type CourseInstanceJsonInput,
   type CourseJson,
   type QuestionJson,
-  type QuestionPointsJson,
+  type QuestionJsonInput,
+  type QuestionPointsJsonInput,
   type TagJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
@@ -506,10 +510,13 @@ export async function loadCourseInfo({
   tagsInUse: Set<string>;
   sharingEnabled: boolean;
 }): Promise<InfoFile<CourseJson>> {
-  const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
+  const maybeNullLoadedData = await loadAndValidateJson({
     coursePath,
     filePath: 'infoCourse.json',
+    defaults: undefined,
     schema: schemas.infoCourse,
+    zodSchema: schemas.CourseJsonSchema,
+    validate: async () => ({ warnings: [], errors: [] }),
   });
 
   if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
@@ -673,11 +680,12 @@ export async function loadCourseInfo({
   return loadedData;
 }
 
-async function loadAndValidateJson<T extends { uuid: string }>({
+async function loadAndValidateJson<T extends ZodSchema>({
   coursePath,
   filePath,
   defaults,
   schema,
+  zodSchema,
   validate,
   tolerateMissing,
 }: {
@@ -685,11 +693,12 @@ async function loadAndValidateJson<T extends { uuid: string }>({
   filePath: string;
   defaults: any;
   schema: any;
+  zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
-}): Promise<InfoFile<T> | null> {
-  const loadedJson: InfoFile<T> | null = await loadInfoFile({
+  validate: (info: z.input<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+}): Promise<InfoFile<z.infer<T>> | null> {
+  const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
     filePath,
     schema,
@@ -711,7 +720,13 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
+  // Fill in default values
   loadedJson.data = { ...defaults, ...loadedJson.data };
+
+  // If we didn't get any errors with the ajv schema, we will re-parse with Zod, which will fill in default values and let us
+  // use the output type.
+  loadedJson.data = zodSchema.parse(loadedJson.data);
+
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }
@@ -719,12 +734,13 @@ async function loadAndValidateJson<T extends { uuid: string }>({
 /**
  * Loads and schema-validates all info files in a directory.
  */
-async function loadInfoForDirectory<T extends { uuid: string }>({
+async function loadInfoForDirectory<T extends ZodSchema>({
   coursePath,
   directory,
   infoFilename,
   defaultInfo,
   schema,
+  zodSchema,
   validate,
   recursive = false,
 }: {
@@ -735,10 +751,11 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   infoFilename: string;
   defaultInfo: any;
   schema: any;
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  zodSchema: T;
+  validate: (info: z.input<T>) => Promise<{ warnings: string[]; errors: string[] }>;
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
-}): Promise<Record<string, InfoFile<T>>> {
+}): Promise<Record<string, InfoFile<z.infer<T>>>> {
   // Recursive lookup might not be enabled for some info types - if it's
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
@@ -757,6 +774,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
         filePath: infoFilePath,
         defaults: defaultInfo,
         schema,
+        zodSchema,
         validate,
         // If we aren't operating in recursive mode, we want to ensure
         // that missing files are correctly reflected as errors.
@@ -873,7 +891,7 @@ function parseAllowAccessDate(date: string): Date | null {
  * Checks that dates, if present, are valid and sequenced correctly.
  * @returns A list of errors, if any, and whether it allows access in the future
  */
-function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): {
+function checkAllowAccessDates(rule: { startDate?: string | null; endDate?: string | null }): {
   errors: string[];
   accessibleInFuture: boolean;
 } {
@@ -918,7 +936,7 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
  * are pretty loose in what we accept as UIDs, they should never contain commas or
  * whitespace, so we'll warn about that.
  */
-function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
+function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   const warnings: string[] = [];
 
   const uidsWithWhitespace = (rule.uids ?? []).filter((uid) => /\s/.test(uid));
@@ -942,7 +960,7 @@ async function validateQuestion({
   question,
   sharingEnabled,
 }: {
-  question: QuestionJson;
+  question: QuestionJsonInput;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1002,7 +1020,7 @@ async function validateAssessment({
   sharingEnabled,
   courseInstanceExpired,
 }: {
-  assessment: AssessmentJson;
+  assessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
@@ -1039,7 +1057,7 @@ async function validateAssessment({
   }
 
   // Check assessment access rules.
-  (assessment.allowAccess || []).forEach((rule) => {
+  assessment.allowAccess?.forEach((rule) => {
     const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
@@ -1054,7 +1072,7 @@ async function validateAssessment({
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
   if (!courseInstanceExpired) {
-    (assessment.allowAccess || []).forEach((rule) => {
+    assessment.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
@@ -1086,8 +1104,8 @@ async function validateAssessment({
       draftQids.add(qid);
     }
   };
-  (assessment.zones || []).forEach((zone) => {
-    (zone.questions || []).map((zoneQuestion) => {
+  assessment.zones?.forEach((zone) => {
+    zone.questions.map((zoneQuestion) => {
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
@@ -1096,10 +1114,10 @@ async function validateAssessment({
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPointsJson[] = [];
-      if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
+      let alternatives: QuestionPointsJsonInput[] = [];
+      if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
-      } else if (zoneQuestion?.alternatives) {
+      } else if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           const autoPoints = alternative.autoPoints ?? alternative.points;
@@ -1133,34 +1151,36 @@ async function validateAssessment({
 
       alternatives.forEach((alternative) => {
         if (
-          alternative.points === undefined &&
-          alternative.autoPoints === undefined &&
-          alternative.manualPoints === undefined
+          alternative.points == null &&
+          alternative.autoPoints == null &&
+          alternative.manualPoints == null
         ) {
           errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
         }
         if (
-          alternative.points !== undefined &&
-          (alternative.autoPoints !== undefined ||
-            alternative.manualPoints !== undefined ||
-            alternative.maxAutoPoints !== undefined)
+          alternative.points != null &&
+          (alternative.autoPoints != null ||
+            alternative.manualPoints != null ||
+            alternative.maxAutoPoints != null)
         ) {
           errors.push(
             'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
           );
         }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+          if (alternative.maxPoints != null || alternative.maxAutoPoints != null) {
             errors.push(
               'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment',
             );
           }
 
           const hasSplitPoints =
-            alternative.autoPoints !== undefined ||
-            alternative.maxAutoPoints !== undefined ||
-            alternative.manualPoints !== undefined;
-          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+            alternative.autoPoints != null ||
+            alternative.maxAutoPoints != null ||
+            alternative.manualPoints != null;
+          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) as
+            | number
+            | number[];
           const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const isNonIncreasing = pointsList.every(
             (points, index) => index === 0 || points <= pointsList[index - 1],
@@ -1171,10 +1191,10 @@ async function validateAssessment({
         }
         if (assessment.type === 'Homework') {
           if (
-            alternative.maxPoints !== undefined &&
-            (alternative.autoPoints !== undefined ||
-              alternative.manualPoints !== undefined ||
-              alternative.maxAutoPoints !== undefined)
+            alternative.maxPoints != null &&
+            (alternative.autoPoints != null ||
+              alternative.manualPoints != null ||
+              alternative.maxAutoPoints != null)
           ) {
             errors.push(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
@@ -1190,7 +1210,7 @@ async function validateAssessment({
           if (!courseInstanceExpired) {
             if (
               alternative.points === 0 &&
-              alternative.maxPoints !== undefined &&
+              alternative.maxPoints != null &&
               alternative.maxPoints > 0
             ) {
               errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
@@ -1198,7 +1218,7 @@ async function validateAssessment({
 
             if (
               alternative.autoPoints === 0 &&
-              alternative.maxAutoPoints !== undefined &&
+              alternative.maxAutoPoints != null &&
               alternative.maxAutoPoints > 0
             ) {
               errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
@@ -1228,7 +1248,7 @@ async function validateAssessment({
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum !== undefined && role.minimum >= 1,
+      (role) => role.canAssignRoles && role.minimum != null && role.minimum >= 1,
     );
 
     if (!foundCanAssignRoles) {
@@ -1238,8 +1258,8 @@ async function validateAssessment({
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
       if (
-        role.minimum !== undefined &&
         assessment.groupMinSize &&
+        role.minimum != null &&
         role.minimum > assessment.groupMinSize
       ) {
         warnings.push(
@@ -1247,8 +1267,8 @@ async function validateAssessment({
         );
       }
       if (
-        role.minimum !== undefined &&
         assessment.groupMaxSize &&
+        role.minimum != null &&
         role.minimum > assessment.groupMaxSize
       ) {
         errors.push(
@@ -1256,7 +1276,7 @@ async function validateAssessment({
         );
       }
       if (
-        role.maximum !== undefined &&
+        role.maximum != null &&
         assessment.groupMaxSize &&
         role.maximum > assessment.groupMaxSize
       ) {
@@ -1264,7 +1284,7 @@ async function validateAssessment({
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
-      if (role.minimum !== undefined && role.maximum !== undefined && role.minimum > role.maximum) {
+      if (role.maximum != null && role.minimum != null && role.minimum > role.maximum) {
         errors.push(
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
@@ -1272,13 +1292,13 @@ async function validateAssessment({
     });
 
     const validRoleNames = new Set();
-    assessment.groupRoles?.forEach((role) => {
+    assessment.groupRoles.forEach((role) => {
       validRoleNames.add(role.name);
     });
 
     const validateViewAndSubmitRolePermissions = (
-      canView: string[] | null | undefined,
-      canSubmit: string[] | null | undefined,
+      canView: string[] | undefined,
+      canSubmit: string[] | undefined,
       area: string,
     ): void => {
       canView?.forEach((roleName) => {
@@ -1302,10 +1322,10 @@ async function validateAssessment({
     validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
 
     // Validate role names for each zone
-    (assessment.zones || []).forEach((zone) => {
+    assessment.zones?.forEach((zone) => {
       validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
       // Validate role names for each question
-      (zone.questions || []).forEach((zoneQuestion) => {
+      zone.questions.forEach((zoneQuestion) => {
         validateViewAndSubmitRolePermissions(
           zoneQuestion.canView,
           zoneQuestion.canSubmit,
@@ -1322,7 +1342,7 @@ async function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
-  courseInstance: CourseInstanceJson;
+  courseInstance: CourseInstanceJsonInput;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1345,7 +1365,7 @@ async function validateCourseInstance({
   }
 
   let accessibleInFuture = false;
-  (courseInstance.allowAccess || []).forEach((rule) => {
+  courseInstance.allowAccess?.forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1356,7 +1376,7 @@ async function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    (courseInstance.allowAccess || []).forEach((rule) => {
+    courseInstance.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 
@@ -1397,8 +1417,9 @@ export async function loadQuestions({
     directory: 'questions',
     infoFilename: 'info.json',
     defaultInfo: DEFAULT_QUESTION_INFO,
+    zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
+    validate: (question: QuestionJsonInput) => validateQuestion({ question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1431,7 +1452,8 @@ export async function loadCourseInstances({
     infoFilename: 'infoCourseInstance.json',
     defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
     schema: schemas.infoCourseInstance,
-    validate: (courseInstance: CourseInstanceJson) =>
+    zodSchema: schemas.CourseInstanceJsonSchema,
+    validate: (courseInstance: CourseInstanceJsonInput) =>
       validateCourseInstance({ courseInstance, sharingEnabled }),
     recursive: true,
   });
@@ -1465,7 +1487,8 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: (assessment: AssessmentJson) =>
+    zodSchema: schemas.AssessmentJsonSchema,
+    validate: (assessment: AssessmentJsonInput) =>
       validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
     recursive: true,
   });

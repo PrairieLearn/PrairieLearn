@@ -14,10 +14,27 @@ const AccessRuleJsonSchema = z
       .describe(
         "A list of UIDs (like 'username@example.com'), one of which is required for access.",
       )
-      .optional(),
-    startDate: z.string().describe('The earliest date on which access is permitted.').optional(),
-    endDate: z.string().describe('The latest date on which access is permitted.').optional(),
-    institution: z.string().describe('The institution from which access is permitted.').optional(),
+      .optional()
+      .nullable()
+      .default(null),
+    startDate: z
+      .string()
+      .describe('The earliest date on which access is permitted.')
+      .optional()
+      .nullable()
+      .default(null),
+    endDate: z
+      .string()
+      .describe('The latest date on which access is permitted.')
+      .optional()
+      .nullable()
+      .default(null),
+    institution: z
+      .string()
+      .describe('The institution from which access is permitted.')
+      .optional()
+      .nullable()
+      .default(null),
   })
   .strict()
   .describe(
@@ -44,7 +61,9 @@ export const CourseInstanceJsonSchema = z
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
-      .optional(),
+      .optional()
+      .nullable()
+      .default(null),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
     hideInEnrollPage: z
       .boolean()
@@ -54,7 +73,7 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional(),
+    allowAccess: AccessControlJsonSchema.optional().default([]),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

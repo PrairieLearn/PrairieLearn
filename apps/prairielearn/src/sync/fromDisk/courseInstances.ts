@@ -18,25 +18,25 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const accessRules = (courseInstance.allowAccess || [])
+  const accessRules = courseInstance.allowAccess
     .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
     .map((accessRule) => ({
-      uids: accessRule.uids ?? null,
-      start_date: accessRule.startDate ?? null,
-      end_date: accessRule.endDate ?? null,
-      institution: accessRule.institution ?? null,
+      uids: accessRule.uids,
+      start_date: accessRule.startDate,
+      end_date: accessRule.endDate,
+      institution: accessRule.institution,
       comment: accessRule.comment,
     }));
 
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone: courseInstance.timezone || null,
+    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    display_timezone: courseInstance.timezone,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
-    share_source_publicly: courseInstance.shareSourcePublicly || false,
+    share_source_publicly: courseInstance.shareSourcePublicly,
   };
 }
 
@@ -47,8 +47,8 @@ export async function sync(
   if (config.checkInstitutionsOnSync) {
     // Collect all institutions from course instance access rules.
     const institutions = Object.values(courseData.courseInstances)
-      .flatMap(({ courseInstance }) => courseInstance.data?.allowAccess)
-      .map((accessRule) => accessRule?.institution)
+      .flatMap(({ courseInstance }) => courseInstance.data?.allowAccess ?? [])
+      .map((accessRule) => accessRule.institution)
       .filter((institution) => institution != null);
 
     // Select only the valid institution names.
