@@ -2,7 +2,7 @@ CREATE FUNCTION
     administrators_delete_by_user_id(
         user_id bigint,
         authn_user_id bigint
-    ) returns void
+    ) RETURNS void
 AS $$
 DECLARE
     old_row administrators%ROWTYPE;

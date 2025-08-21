@@ -27,6 +27,7 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
+import type { AssessmentJson } from '../schemas/index.js';
 import * as courseDB from '../sync/course-db.js';
 import { attemptFastSync, getFastSyncStrategy } from '../sync/fast/index.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -178,7 +179,7 @@ export function getUniqueNames({
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -198,7 +199,7 @@ export function getUniqueNames({
       const found =
         oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -209,7 +210,7 @@ export function getUniqueNames({
 
   const numberShortName = getNumberShortName(shortNames);
   const numberLongName = getNumberLongName(longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
 
   if (number === 1 && shortName !== 'New' && longName !== 'New') {
     // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
@@ -235,7 +236,7 @@ export function getUniqueNames({
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
  */
-export function propertyValueWithDefault(existingValue, newValue, defaultValue) {
+export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -525,7 +526,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).reverse();
+    const reverseFolders = idSplit.slice(0, -1).toReversed();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -602,7 +603,7 @@ function getNamesForCopy(
   longNames: string[],
 ): { shortName: string; longName: string } {
   function getBaseShortName(oldname: string): string {
-    const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
+    const found = oldname.match(/^(.*)_copy[0-9]+$/);
     if (found) {
       return found[1];
     } else {
@@ -613,7 +614,7 @@ function getNamesForCopy(
   function getBaseLongName(oldname: string | null): string {
     if (typeof oldname !== 'string') return 'Unknown';
     debug(oldname);
-    const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
+    const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
     debug(found);
     if (found) {
       return found[1];
@@ -627,7 +628,7 @@ function getNamesForCopy(
     oldnames.forEach((oldname) => {
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -642,7 +643,7 @@ function getNamesForCopy(
       if (typeof oldname !== 'string') return;
       const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = parseInt(found[1]);
+        const foundNumber = Number.parseInt(found[1]);
         if (foundNumber >= number) {
           number = foundNumber + 1;
         }
@@ -655,7 +656,7 @@ function getNamesForCopy(
   const baseLongName = getBaseLongName(oldLongName);
   const numberShortName = getNumberShortName(baseShortName, shortNames);
   const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+  const number = Math.max(numberShortName, numberLongName);
   return {
     shortName: `${baseShortName}_copy${number}`,
     longName: `${baseLongName} (copy ${number})`,
@@ -1639,7 +1640,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string | null>;
 
   constructor(
@@ -1827,14 +1827,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson = await fs.readJson(infoPath);
+      const infoJson: AssessmentJson = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
       let found = false;
-      infoJson.zones.forEach((zone) => {
+      infoJson.zones?.forEach((zone) => {
         zone.questions.forEach((question) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative) => {
+            question.alternatives.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;

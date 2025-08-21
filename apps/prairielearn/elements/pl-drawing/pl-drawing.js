@@ -138,8 +138,8 @@ window.PLDrawingApi = {
    */
   restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
-      const newObj = JSON.parse(JSON.stringify(obj));
+      this._idCounter = Math.max(Number.parseInt(id) + 1, this._idCounter);
+      const newObj = structuredClone(obj);
       this.createElement(canvas, newObj, submittedAnswer);
     }
   },
@@ -153,8 +153,8 @@ window.PLDrawingApi = {
    */
   setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
-    const canvas_width = parseFloat(elem_options.width);
-    const canvas_height = parseFloat(elem_options.height);
+    const canvas_width = Number.parseFloat(elem_options.width);
+    const canvas_height = Number.parseFloat(elem_options.height);
     const html_input = $(root_elem).find('input');
 
     const parseElemOptions = function (elem) {
@@ -163,7 +163,7 @@ window.PLDrawingApi = {
       // Parse any numerical options from string to floating point
       for (const key in opts) {
         const parsed = Number(opts[key]);
-        if (!isNaN(parsed)) {
+        if (!Number.isNaN(parsed)) {
           opts[key] = parsed;
         }
       }
@@ -241,7 +241,7 @@ window.PLDrawingApi = {
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
-      var obj = e.target;
+      const obj = e.target;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;

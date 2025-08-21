@@ -8,8 +8,8 @@ SET
   sub = $sub;
 
 -- BLOCK select_lti13_instance_identities_for_course_instance
-SELECT
-  to_jsonb(lti13_instances.*) AS lti13_instance,
+SELECT DISTINCT
+  ON (lti13_instances.id) to_jsonb(lti13_instances.*) AS lti13_instance,
   lti13_users.id AS lti13_user_id
 FROM
   lti13_course_instances

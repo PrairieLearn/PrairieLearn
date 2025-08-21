@@ -18,7 +18,7 @@ function showWarningPopup(id: string, message: string) {
   }
   // Only show one popup with the same ID at the same time
   if (!document.querySelector('#popup-' + id)) {
-    popup.appendChild(
+    popup.append(
       parseHTMLElement<HTMLDivElement>(
         document,
         html`<div

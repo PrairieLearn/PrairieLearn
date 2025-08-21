@@ -75,9 +75,9 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol =
-    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
-    1;
+  const showAdvanceScorePercCol = questionRows.some(
+    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+  );
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -136,6 +136,7 @@ export function InstructorAssessmentQuestionsTable({
             <tbody>
               {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
                 const { question, assessment_question, other_assessments } = questionRow;
+
                 return (
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
@@ -160,9 +161,9 @@ export function InstructorAssessmentQuestionsTable({
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.course_id)
+                        {idsEqual(course.id, questionRow.course.id)
                           ? question.qid
-                          : `@${course.sharing_name}/${question.qid}`}
+                          : `@${questionRow.course.sharing_name}/${question.qid}`}
                       </td>
                       <td>
                         <TopicBadge topic={questionRow.topic} />
