@@ -26,7 +26,7 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
+const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o';
 
 const STANDARD_CLUSTERS = [
   {
