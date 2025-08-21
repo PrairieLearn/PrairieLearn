@@ -413,4 +413,3 @@ def collect_answer_options(
                 )
 
     return answer_options
-
