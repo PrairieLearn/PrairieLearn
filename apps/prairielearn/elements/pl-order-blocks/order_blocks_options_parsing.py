@@ -52,10 +52,6 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
-FIRST_WRONG_TYPES = frozenset([
-    FeedbackType.FIRST_WRONG,
-    FeedbackType.FIRST_WRONG_VERBOSE,
-])
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTION_DEFAULT = 4

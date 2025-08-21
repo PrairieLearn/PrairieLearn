@@ -11,7 +11,6 @@ import lxml.html
 import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from order_blocks_options_parsing import (
-    FIRST_WRONG_TYPES,
     LCS_GRADABLE_TYPES,
     FeedbackType,
     FormatType,
@@ -38,6 +37,12 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_feedback: str | None
     ordering_feedback: str | None
     uuid: str
+
+
+FIRST_WRONG_TYPES = frozenset([
+    FeedbackType.FIRST_WRONG,
+    FeedbackType.FIRST_WRONG_VERBOSE,
+])
 
 
 TAB_SIZE_PX = 50
