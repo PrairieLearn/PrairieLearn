@@ -128,8 +128,8 @@ export async function nextInstanceQuestionUrl(
     } else {
       const clusters = await selectAiClusters({
         assessmentQuestionId: assessment_question_id,
-      })[0];
-      return clusters > 0 ? clusters[0].id : null;
+      });
+      return clusters.length > 0 ? clusters[0].id : null;
     }
   });
 
