@@ -193,23 +193,19 @@ def get_distractors(
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     order_blocks_options = OrderBlocksOptions(element)
-
     answer_name = order_blocks_options.answers_name
-    format_type = order_blocks_options.format
     inline = order_blocks_options.inline
-
     dropzone_layout = order_blocks_options.solution_placement
 
     block_formatting = (
-        "pl-order-blocks-code" if format_type is FormatType.CODE else "list-group-item"
+        "pl-order-blocks-code"
+        if order_blocks_options.format is FormatType.CODE
+        else "list-group-item"
     )
     grading_method = order_blocks_options.grading_method
 
     if data["panel"] == "question":
         editable = data["editable"]
-
-        source_header = order_blocks_options.source_header
-        solution_header = order_blocks_options.solution_header
 
         # We aren't allowed to mutate the `data` object during render, so we'll
         # make a deep copy of the submitted answer so we can update the `indent`
@@ -231,9 +227,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 submission_indent = int(submission_indent) * TAB_SIZE_PX
             option["indent"] = submission_indent
 
-        check_indentation = order_blocks_options.indentation
-        max_indent = order_blocks_options.max_indent
-
         help_text = (
             "Drag answer tiles into the answer area to the "
             + dropzone_layout.value
@@ -247,6 +240,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
+        check_indentation = order_blocks_options.indentation
         if check_indentation:
             help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
 
@@ -256,8 +250,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params = {
             "question": True,
             "answer_name": answer_name,
-            "source-header": source_header,
-            "solution-header": solution_header,
+            "source-header": order_blocks_options.source_header,
+            "solution-header": order_blocks_options.solution_header,
             "options": source_blocks,
             "submission_dict": student_previous_submission,
             "dropzone_layout": (
@@ -268,7 +262,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "inline": str(inline).lower(),
             "check_indentation": "true" if check_indentation else "false",
             "help_text": help_text,
-            "max_indent": max_indent,
+            "max_indent": order_blocks_options.max_indent,
             "uuid": uuid,
             "block_formatting": block_formatting,
             "editable": editable,
@@ -449,7 +443,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["ordering_feedback"] = matching_block.get("ordering_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
-
         answer_code = ""
         for answer in student_answer:
             indent = int(answer["indent"] or 0)
@@ -582,7 +575,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             if first_wrong is not None:
                 student_answer[first_wrong]["badge_type"] = "text-bg-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
-                if order_blocks_options.feedback is not FeedbackType.FIRST_WRONG_VERBOSE:
+                if (
+                    order_blocks_options.feedback
+                    is not FeedbackType.FIRST_WRONG_VERBOSE
+                ):
                     student_answer[first_wrong]["distractor_feedback"] = ""
                     student_answer[first_wrong]["ordering_feedback"] = ""
 
