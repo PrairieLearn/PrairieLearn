@@ -9,7 +9,6 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import { type User } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 import {
@@ -19,14 +18,12 @@ import {
 
 export function InstructorGradebook({
   resLocals,
-  courseOwners,
   csvFilename,
   courseAssessments,
 }: {
   resLocals: Record<string, any>;
-  courseOwners: User[];
   csvFilename: string;
-  courseAssessments?: CourseAssessmentRow[];
+  courseAssessments: CourseAssessmentRow[];
 }) {
   const { authz_data, urlPrefix, __csrf_token } = resLocals;
 
@@ -64,7 +61,7 @@ export function InstructorGradebook({
           csvFilename,
           csrfToken: __csrf_token,
           hasCourseInstancePermissionEdit: authz_data.has_course_instance_permission_edit,
-          courseAssessments: courseAssessments ?? [],
+          courseAssessments,
         },
         'gradebook-data',
       )}
@@ -78,66 +75,19 @@ export function InstructorGradebook({
           urlPrefix={urlPrefix}
         />,
       )}
-      ${!authz_data.has_course_instance_permission_view
-        ? StudentDataViewMissing({
-            courseOwners,
-            hasCoursePermissionOwn: authz_data.has_course_permission_own,
-            urlPrefix,
-          })
-        : html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
-                <h1>Gradebook</h1>
-              </div>
-              <table id="gradebook-table" aria-label="Gradebook"></table>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>Gradebook</h1>
+        </div>
+        <table id="gradebook-table" aria-label="Gradebook"></table>
 
-              <div class="spinning-wheel card-body spinner-border">
-                <span class="visually-hidden">Loading...</span>
-              </div>
-            </div>
-            ${RoleDescriptionModal()}
-          `}
+        <div class="spinning-wheel card-body spinner-border">
+          <span class="visually-hidden">Loading...</span>
+        </div>
+      </div>
+      ${RoleDescriptionModal()}
     `,
   });
-}
-
-function StudentDataViewMissing({
-  courseOwners,
-  hasCoursePermissionOwn,
-  urlPrefix,
-}: {
-  courseOwners: any[];
-  hasCoursePermissionOwn: boolean;
-  urlPrefix: string;
-}) {
-  return html`
-    <div class="card mb-4">
-      <div class="card-header bg-danger text-white">
-        <h1>Gradebook</h1>
-      </div>
-      <div class="card-body">
-        <h2>Insufficient permissions</h2>
-        <p>You must have permission to view student data in order to access the gradebook.</p>
-        ${hasCoursePermissionOwn
-          ? html`
-              <p>
-                You can grant yourself access to student data on the course's
-                <a href="${urlPrefix}/course_admin/staff">Staff tab</a>.
-              </p>
-            `
-          : courseOwners.length > 0
-            ? html`
-                <p>Contact one of the below course owners to request access.</p>
-                <ul>
-                  ${courseOwners.map(
-                    (owner) => html`<li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>`,
-                  )}
-                </ul>
-              `
-            : ''}
-      </div>
-    </div>
-  `;
 }
 
 function RoleDescriptionModal() {
