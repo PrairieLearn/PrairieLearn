@@ -228,7 +228,7 @@ export class CodeCallerNative implements CodeCaller {
     } else if (type === 'restart' || type === 'ping') {
       // Doesn't need a working directory
     } else {
-      assertNever(type, 'Unknown function call type');
+      assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
