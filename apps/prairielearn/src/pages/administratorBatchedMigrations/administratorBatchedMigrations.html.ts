@@ -75,54 +75,59 @@ export function AdministratorBatchedMigration({
         <div class="card-header bg-primary text-white">
           <h1>Migration details</h1>
         </div>
-        <table class="table table-sm two-column-description" aria-label="Migration details">
-          <tbody>
-            <tr>
-              <th>Filename</th>
-              <td>${batchedMigration.filename}</td>
-            </tr>
-            <tr>
-              <th>Minimum value</th>
-              <td>${batchedMigration.min_value}</td>
-            </tr>
-            <tr>
-              <th>Maximum value</th>
-              <td>${batchedMigration.max_value}</td>
-            </tr>
-            <tr>
-              <th>Status</th>
-              <td>${MigrationStatusBadge(batchedMigration.status)}</td>
-            </tr>
-            <tr>
-              <th>Created at</th>
-              <td>${batchedMigration.created_at.toUTCString()}</td>
-            </tr>
-            <tr>
-              <th>Updated at</th>
-              <td>${batchedMigration.updated_at.toUTCString()}</td>
-            </tr>
-            <tr>
-              <th>Started at</th>
-              <td>${batchedMigration.started_at?.toUTCString()}</td>
-            </tr>
-            <tr>
-              <th>Actions</th>
-              <td>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button
-                    type="submit"
-                    name="__action"
-                    value="retry_failed_jobs"
-                    class="btn btn-primary btn-sm"
-                  >
-                    Retry failed jobs
-                  </button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <!-- Wrapped in .table-responsive to align with project-wide convention and to guard
+             against potential horizontal overflow if filenames or timestamps become long.
+             Remove only if audited and confirmed unnecessary. -->
+        <div class="table-responsive">
+          <table class="table table-sm two-column-description" aria-label="Migration details">
+            <tbody>
+              <tr>
+                <th>Filename</th>
+                <td>${batchedMigration.filename}</td>
+              </tr>
+              <tr>
+                <th>Minimum value</th>
+                <td>${batchedMigration.min_value}</td>
+              </tr>
+              <tr>
+                <th>Maximum value</th>
+                <td>${batchedMigration.max_value}</td>
+              </tr>
+              <tr>
+                <th>Status</th>
+                <td>${MigrationStatusBadge(batchedMigration.status)}</td>
+              </tr>
+              <tr>
+                <th>Created at</th>
+                <td>${batchedMigration.created_at.toUTCString()}</td>
+              </tr>
+              <tr>
+                <th>Updated at</th>
+                <td>${batchedMigration.updated_at.toUTCString()}</td>
+              </tr>
+              <tr>
+                <th>Started at</th>
+                <td>${batchedMigration.started_at?.toUTCString()}</td>
+              </tr>
+              <tr>
+                <th>Actions</th>
+                <td>
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <button
+                      type="submit"
+                      name="__action"
+                      value="retry_failed_jobs"
+                      class="btn btn-primary btn-sm"
+                    >
+                      Retry failed jobs
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       ${MigrationJobsCard({

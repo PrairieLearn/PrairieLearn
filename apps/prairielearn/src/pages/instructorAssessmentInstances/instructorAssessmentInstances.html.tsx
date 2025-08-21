@@ -139,42 +139,48 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
             : ''}
         </div>
 
-        <table
-          id="usersTable"
-          aria-label="Assessment instances"
-          data-unique-id="assessment_instance_id"
-          data-classes="table table-sm table-hover table-bordered"
-          data-show-button-text="true"
-          data-url="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-            .id}/instances/raw_data.json"
-          data-search="true"
-          data-show-columns="true"
-          data-show-refresh="true"
-          data-auto-refresh="true"
-          data-auto-refresh-status="false"
-          data-auto-refresh-interval="30"
-          data-buttons-order="['refresh', 'autoRefresh', 'columns']"
-          data-thead-classes="table-light"
-          data-pagination="true"
-          data-pagination-v-align="both"
-          data-pagination-h-align="left"
-          data-pagination-detail-h-align="right"
-          data-toolbar=".fixed-table-pagination:nth(0)"
-          data-page-list="[10,20,50,100,200,500,unlimited]"
-          data-page-size="50"
-          data-smart-display="false"
-          data-show-extended-pagination="true"
-          data-sticky-header="true"
-          data-assessment-group-work="${resLocals.assessment.group_work}"
-          data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
-          data-assessment-number="${resLocals.assessment.number}"
-          data-url-prefix="${resLocals.urlPrefix}"
-          data-assessment-set-abbr="${resLocals.assessment_set.abbreviation}"
-          data-csrf-token="${resLocals.__csrf_token}"
-          data-has-course-instance-permission-edit="${resLocals.authz_data
-            .has_course_instance_permission_edit}"
-          data-timezone="${resLocals.course_instance.display_timezone}"
-        ></table>
+        <!-- Wrapped in .table-responsive to allow horizontal scrolling on smaller viewports.
+             This table can grow very wide due to dynamic column toggling (bootstrap-table plugin)
+             and sticky header usage. If any JS (e.g., sticky header sizing) depended on the table
+             being a direct child of the card, adjust selectors accordingly (should normally still work). -->
+        <div class="table-responsive">
+          <table
+            id="usersTable"
+            aria-label="Assessment instances"
+            data-unique-id="assessment_instance_id"
+            data-classes="table table-sm table-hover table-bordered"
+            data-show-button-text="true"
+            data-url="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+              .id}/instances/raw_data.json"
+            data-search="true"
+            data-show-columns="true"
+            data-show-refresh="true"
+            data-auto-refresh="true"
+            data-auto-refresh-status="false"
+            data-auto-refresh-interval="30"
+            data-buttons-order="['refresh', 'autoRefresh', 'columns']"
+            data-thead-classes="table-light"
+            data-pagination="true"
+            data-pagination-v-align="both"
+            data-pagination-h-align="left"
+            data-pagination-detail-h-align="right"
+            data-toolbar=".fixed-table-pagination:nth(0)"
+            data-page-list="[10,20,50,100,200,500,unlimited]"
+            data-page-size="50"
+            data-smart-display="false"
+            data-show-extended-pagination="true"
+            data-sticky-header="true"
+            data-assessment-group-work="${resLocals.assessment.group_work}"
+            data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
+            data-assessment-number="${resLocals.assessment.number}"
+            data-url-prefix="${resLocals.urlPrefix}"
+            data-assessment-set-abbr="${resLocals.assessment_set.abbreviation}"
+            data-csrf-token="${resLocals.__csrf_token}"
+            data-has-course-instance-permission-edit="${resLocals.authz_data
+              .has_course_instance_permission_edit}"
+            data-timezone="${resLocals.course_instance.display_timezone}"
+          ></table>
+        </div>
 
         <div class="spinning-wheel card-body spinner-border">
           <span class="visually-hidden">Loading...</span>

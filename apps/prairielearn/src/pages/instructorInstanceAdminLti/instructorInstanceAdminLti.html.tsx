@@ -138,91 +138,94 @@ function LtiCredentialCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover" aria-label="LTI credentials">
-        <thead>
-          <tr>
-            <th>Launch URL</th>
-            <th>Consumer key</th>
-            <th>Shared secret</th>
-            <th>Created</th>
-            <th>Deleted</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${lti_credentials
-            ? lti_credentials.map(
-                (tc) => html`
-                  <tr>
-                    <td>
-                      <code>${config.ltiRedirectUrl}</code>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-ghost"
-                        aria-label="Copy redirect URL to clipboard"
-                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      >
-                        <i class="far fa-copy"></i>
-                      </button>
-                    </td>
-                    <td>
-                      <code>${tc.consumer_key}</code>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-ghost"
-                        aria-label="Copy consumer key to clipboard"
-                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      >
-                        <i class="far fa-copy"></i>
-                      </button>
-                    </td>
-                    <td>
-                      <code>${tc.secret}</code>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-ghost"
-                        aria-label="Copy shared secret to clipboard"
-                        onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
-                      >
-                        <i class="far fa-copy"></i>
-                      </button>
-                    </td>
-                    <td>${tc.created}</td>
-                    <td>
-                      ${tc.deleted ||
-                      html`
+      <!-- Wrapped in .table-responsive to enable horizontal scroll on small screens (wide code columns). -->
+      <div class="table-responsive">
+        <table class="table table-sm table-hover" aria-label="LTI credentials">
+          <thead>
+            <tr>
+              <th>Launch URL</th>
+              <th>Consumer key</th>
+              <th>Shared secret</th>
+              <th>Created</th>
+              <th>Deleted</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lti_credentials
+              ? lti_credentials.map(
+                  (tc) => html`
+                    <tr>
+                      <td>
+                        <code>${config.ltiRedirectUrl}</code>
                         <button
                           type="button"
-                          class="btn btn-sm btn-danger"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-placement="auto"
-                          data-bs-title="Confirm delete"
-                          data-bs-content="${escapeHtml(html`
-                            <form method="post">
-                              <input type="hidden" name="__action" value="lti_del_cred" />
-                              <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                              <input type="hidden" name="lti_link_id" value="${tc.id}" />
-                              <input type="submit" class="btn btn-danger" value="Delete" />
-                            </form>
-                          `)}"
+                          class="btn btn-sm btn-ghost"
+                          aria-label="Copy redirect URL to clipboard"
+                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
                         >
-                          Delete
+                          <i class="far fa-copy"></i>
                         </button>
-                      `}
+                      </td>
+                      <td>
+                        <code>${tc.consumer_key}</code>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-ghost"
+                          aria-label="Copy consumer key to clipboard"
+                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        >
+                          <i class="far fa-copy"></i>
+                        </button>
+                      </td>
+                      <td>
+                        <code>${tc.secret}</code>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-ghost"
+                          aria-label="Copy shared secret to clipboard"
+                          onclick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"
+                        >
+                          <i class="far fa-copy"></i>
+                        </button>
+                      </td>
+                      <td>${tc.created}</td>
+                      <td>
+                        ${tc.deleted ||
+                        html`
+                          <button
+                            type="button"
+                            class="btn btn-sm btn-danger"
+                            data-bs-toggle="popover"
+                            data-bs-container="body"
+                            data-bs-html="true"
+                            data-bs-placement="auto"
+                            data-bs-title="Confirm delete"
+                            data-bs-content="${escapeHtml(html`
+                              <form method="post">
+                                <input type="hidden" name="__action" value="lti_del_cred" />
+                                <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                                <input type="hidden" name="lti_link_id" value="${tc.id}" />
+                                <input type="submit" class="btn btn-danger" value="Delete" />
+                              </form>
+                            `)}"
+                          >
+                            Delete
+                          </button>
+                        `}
+                      </td>
+                    </tr>
+                  `,
+                )
+              : html`
+                  <tr>
+                    <td colspan="5">
+                      <em>No LTI credentials have been created.</em>
                     </td>
                   </tr>
-                `,
-              )
-            : html`
-                <tr>
-                  <td colspan="5">
-                    <em>No LTI credentials have been created.</em>
-                  </td>
-                </tr>
-              `}
-        </tbody>
-      </table>
+                `}
+          </tbody>
+        </table>
+      </div>
 
       <div class="card-body">
         <form method="post">
@@ -268,60 +271,65 @@ function LtiLinkTargetsCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover" aria-label="LTI link targets">
-        <thead>
-          <tr>
-            <th>Link info</th>
-            <th>Assessment</th>
-            <th>Link first seen</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${lti_links
-            ? lti_links.map(
-                (link) => html`
+      <!-- Wrapped in .table-responsive for consistency and horizontal scroll on small devices. -->
+      <div class="table-responsive">
+        <table class="table table-sm table-hover" aria-label="LTI link targets">
+          <thead>
+            <tr>
+              <th>Link info</th>
+              <th>Assessment</th>
+              <th>Link first seen</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${lti_links
+              ? lti_links.map(
+                  (link) => html`
+                    <tr>
+                      <td title="${link.resource_link_description}">${link.resource_link_title}</td>
+                      <td>
+                        <form method="post">
+                          <input type="hidden" name="__action" value="lti_link_target" />
+                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                          <input type="hidden" name="lti_link_id" value="${link.id}" />
+                          <select
+                            class="form-select"
+                            onchange="this.form.submit();"
+                            name="newAssessment"
+                          >
+                            <option value="" ${!link.assessment_id ? 'selected' : ''}>
+                              -- None
+                            </option>
+                            ${assessments?.map(
+                              (a) => html`
+                                <option
+                                  value="${a.assessment_id}"
+                                  ${link.assessment_id &&
+                                  idsEqual(link.assessment_id, a.assessment_id)
+                                    ? 'selected'
+                                    : ''}
+                                >
+                                  ${a.label}: ${a.title} (${a.tid})
+                                </option>
+                              `,
+                            )}
+                          </select>
+                        </form>
+                      </td>
+                      <td>${link.created}</td>
+                    </tr>
+                  `,
+                )
+              : html`
                   <tr>
-                    <td title="${link.resource_link_description}">${link.resource_link_title}</td>
-                    <td>
-                      <form method="post">
-                        <input type="hidden" name="__action" value="lti_link_target" />
-                        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                        <input type="hidden" name="lti_link_id" value="${link.id}" />
-                        <select
-                          class="form-select"
-                          onchange="this.form.submit();"
-                          name="newAssessment"
-                        >
-                          <option value="" ${!link.assessment_id ? 'selected' : ''}>-- None</option>
-                          ${assessments?.map(
-                            (a) => html`
-                              <option
-                                value="${a.assessment_id}"
-                                ${link.assessment_id &&
-                                idsEqual(link.assessment_id, a.assessment_id)
-                                  ? 'selected'
-                                  : ''}
-                              >
-                                ${a.label}: ${a.title} (${a.tid})
-                              </option>
-                            `,
-                          )}
-                        </select>
-                      </form>
+                    <td colspan="3">
+                      <em>No LTI links have been created.</em>
                     </td>
-                    <td>${link.created}</td>
                   </tr>
-                `,
-              )
-            : html`
-                <tr>
-                  <td colspan="3">
-                    <em>No LTI links have been created.</em>
-                  </td>
-                </tr>
-              `}
-        </tbody>
-      </table>
+                `}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }

@@ -214,149 +214,156 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
             width: `max(${table.getTotalSize()}px, 100%)`,
           }}
         >
-          <table
-            class="table table-hover mb-0 border border-top-0"
-            style={{ tableLayout: 'fixed' }}
-            aria-label="Students"
-            role="grid"
-          >
-            <thead>
-              {headerGroups.map((headerGroup) => (
-                <tr key={headerGroup.id}>
-                  {headerGroup.headers.map((header, index) => {
-                    const isPinned = header.column.getIsPinned();
-                    const sortDirection = header.column.getIsSorted();
-                    const canSort = header.column.getCanSort();
-                    const columnName =
-                      typeof header.column.columnDef.header === 'string'
-                        ? header.column.columnDef.header
-                        : header.column.id;
+          {/* Wrapped table in .table-responsive per global directive.
+              Note: Parent container already manages its own scroll/virtualization;
+              this wrapper may be redundant but is included for consistency. */}
+          <div class="table-responsive mb-0">
+            <table
+              class="table table-hover mb-0 border border-top-0"
+              style={{ tableLayout: 'fixed' }}
+              aria-label="Students"
+              role="grid"
+            >
+              <thead>
+                {headerGroups.map((headerGroup) => (
+                  <tr key={headerGroup.id}>
+                    {headerGroup.headers.map((header, index) => {
+                      const isPinned = header.column.getIsPinned();
+                      const sortDirection = header.column.getIsSorted();
+                      const canSort = header.column.getCanSort();
+                      const columnName =
+                        typeof header.column.columnDef.header === 'string'
+                          ? header.column.columnDef.header
+                          : header.column.id;
 
-                    const style: JSX.CSSProperties = {
-                      width:
-                        header.column.id === lastColumnId
-                          ? `max(100%, ${header.getSize()}px)`
-                          : header.getSize(),
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: isPinned === 'left' ? 2 : 1,
-                      left: isPinned === 'left' ? header.getStart() : undefined,
-                      boxShadow:
-                        'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
-                    };
+                      const style: JSX.CSSProperties = {
+                        width:
+                          header.column.id === lastColumnId
+                            ? `max(100%, ${header.getSize()}px)`
+                            : header.getSize(),
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: isPinned === 'left' ? 2 : 1,
+                        left: isPinned === 'left' ? header.getStart() : undefined,
+                        boxShadow:
+                          'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
+                      };
 
-                    return (
-                      <th
-                        key={header.id}
-                        class={clsx(isPinned === 'left' && 'bg-light')}
-                        style={style}
-                        aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
-                        role="columnheader"
-                      >
-                        <button
-                          class="text-nowrap"
+                      return (
+                        <th
+                          key={header.id}
+                          class={clsx(isPinned === 'left' && 'bg-light')}
+                          style={style}
+                          aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
+                          role="columnheader"
+                        >
+                          <button
+                            class="text-nowrap"
+                            style={{
+                              cursor: canSort ? 'pointer' : 'default',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              background: 'transparent',
+                              border: 'none',
+                            }}
+                            type="button"
+                            aria-label={
+                              canSort
+                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+                                : undefined
+                            }
+                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                            onKeyDown={
+                              canSort
+                                ? (e) => {
+                                    const handleSort = header.column.getToggleSortingHandler();
+                                    if (e.key === 'Enter' && handleSort) {
+                                      e.preventDefault();
+                                      handleSort(e);
+                                    }
+                                  }
+                                : undefined
+                            }
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && (
+                              <span class="ms-2" aria-hidden="true">
+                                <SortIcon sortMethod={sortDirection || false} />
+                              </span>
+                            )}
+                            {canSort && (
+                              <span class="visually-hidden">
+                                , {getAriaSort(sortDirection)}, click to sort
+                              </span>
+                            )}
+                          </button>
+                          {tableRect?.width &&
+                          tableRect.width > table.getTotalSize() &&
+                          index === headerGroup.headers.length - 1 ? null : (
+                            <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
+                          )}
+                        </th>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {before > 0 && (
+                  <tr tabIndex={-1}>
+                    <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
+                  </tr>
+                )}
+                {virtualRows.map((virtualRow) => {
+                  const row = rows[virtualRow.index];
+                  const visibleCells = getVisibleCells(row);
+                  const rowIdx = virtualRow.index;
+
+                  return (
+                    <tr key={row.id} style={{ height: rowHeight }}>
+                      {visibleCells.map((cell, colIdx) => (
+                        <td
+                          key={cell.id}
+                          // You can tab to the most-recently focused cell.
+                          tabIndex={
+                            focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1
+                          }
+                          // We store this so you can navigate around the grid.
+                          data-grid-cell-row={rowIdx}
+                          data-grid-cell-col={colIdx}
                           style={{
-                            cursor: canSort ? 'pointer' : 'default',
+                            width:
+                              cell.column.id === lastColumnId
+                                ? `max(100%, ${cell.column.getSize()}px)`
+                                : cell.column.getSize(),
+                            position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
+                            left:
+                              cell.column.getIsPinned() === 'left'
+                                ? cell.column.getStart()
+                                : undefined,
+                            whiteSpace: 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
-                            background: 'transparent',
-                            border: 'none',
                           }}
-                          type="button"
-                          aria-label={
-                            canSort
-                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                              : undefined
-                          }
-                          onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                          onKeyDown={
-                            canSort
-                              ? (e) => {
-                                  const handleSort = header.column.getToggleSortingHandler();
-                                  if (e.key === 'Enter' && handleSort) {
-                                    e.preventDefault();
-                                    handleSort(e);
-                                  }
-                                }
-                              : undefined
-                          }
+                          onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
+                          onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
                         >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                          {canSort && (
-                            <span class="ms-2" aria-hidden="true">
-                              <SortIcon sortMethod={sortDirection || false} />
-                            </span>
-                          )}
-                          {canSort && (
-                            <span class="visually-hidden">
-                              , {getAriaSort(sortDirection)}, click to sort
-                            </span>
-                          )}
-                        </button>
-                        {tableRect?.width &&
-                        tableRect.width > table.getTotalSize() &&
-                        index === headerGroup.headers.length - 1 ? null : (
-                          <ResizeHandle header={header} setColumnSizing={table.setColumnSizing} />
-                        )}
-                      </th>
-                    );
-                  })}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {before > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: before }} />
-                </tr>
-              )}
-              {virtualRows.map((virtualRow) => {
-                const row = rows[virtualRow.index];
-                const visibleCells = getVisibleCells(row);
-                const rowIdx = virtualRow.index;
-
-                return (
-                  <tr key={row.id} style={{ height: rowHeight }}>
-                    {visibleCells.map((cell, colIdx) => (
-                      <td
-                        key={cell.id}
-                        // You can tab to the most-recently focused cell.
-                        tabIndex={focusedCell.row === rowIdx && focusedCell.col === colIdx ? 0 : -1}
-                        // We store this so you can navigate around the grid.
-                        data-grid-cell-row={rowIdx}
-                        data-grid-cell-col={colIdx}
-                        style={{
-                          width:
-                            cell.column.id === lastColumnId
-                              ? `max(100%, ${cell.column.getSize()}px)`
-                              : cell.column.getSize(),
-                          position: cell.column.getIsPinned() === 'left' ? 'sticky' : undefined,
-                          left:
-                            cell.column.getIsPinned() === 'left'
-                              ? cell.column.getStart()
-                              : undefined,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                        onFocus={() => setFocusedCell({ row: rowIdx, col: colIdx })}
-                        onKeyDown={(e) => handleGridKeyDown(e, rowIdx, colIdx)}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                {after > 0 && (
+                  <tr tabIndex={-1}>
+                    <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
                   </tr>
-                );
-              })}
-              {after > 0 && (
-                <tr tabIndex={-1}>
-                  <td colSpan={headerGroups[0].headers.length} style={{ height: after }} />
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

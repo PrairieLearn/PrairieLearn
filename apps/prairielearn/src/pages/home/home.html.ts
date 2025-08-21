@@ -185,41 +185,45 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
         <h2>Courses with instructor access</h2>
       </div>
 
-      <table
-        class="table table-sm table-hover table-striped"
-        aria-label="Courses with instructor access"
-      >
-        <tbody>
-          ${instructorCourses.map(
-            (course) => html`
-              <tr>
-                <td class="w-50 align-middle">
-                  ${course.can_open_course
-                    ? html`<a href="${config.urlPrefix}/course/${course.id}">
-                        ${course.short_name}: ${course.title}
-                      </a>`
-                    : `${course.short_name}: ${course.title}`}
-                </td>
-                <td class="js-course-instance-list">
-                  ${CourseInstanceList({
-                    course_instances: course.course_instances.filter((ci) => !ci.expired),
-                  })}
-                  ${course.course_instances.some((ci) => ci.expired)
-                    ? html`
-                        <details>
-                          <summary class="text-muted small">Older instances</summary>
-                          ${CourseInstanceList({
-                            course_instances: course.course_instances.filter((ci) => ci.expired),
-                          })}
-                        </details>
-                      `
-                    : ''}
-                </td>
-              </tr>
-            `,
-          )}
-        </tbody>
-      </table>
+      <!-- Wrapped in .table-responsive for consistency and to allow horizontal scroll if
+           combined course short name + title string is long on small screens. -->
+      <div class="table-responsive">
+        <table
+          class="table table-sm table-hover table-striped"
+          aria-label="Courses with instructor access"
+        >
+          <tbody>
+            ${instructorCourses.map(
+              (course) => html`
+                <tr>
+                  <td class="w-50 align-middle">
+                    ${course.can_open_course
+                      ? html`<a href="${config.urlPrefix}/course/${course.id}">
+                          ${course.short_name}: ${course.title}
+                        </a>`
+                      : `${course.short_name}: ${course.title}`}
+                  </td>
+                  <td class="js-course-instance-list">
+                    ${CourseInstanceList({
+                      course_instances: course.course_instances.filter((ci) => !ci.expired),
+                    })}
+                    ${course.course_instances.some((ci) => ci.expired)
+                      ? html`
+                          <details>
+                            <summary class="text-muted small">Older instances</summary>
+                            ${CourseInstanceList({
+                              course_instances: course.course_instances.filter((ci) => ci.expired),
+                            })}
+                          </details>
+                        `
+                      : ''}
+                  </td>
+                </tr>
+              `,
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   `;
 }
@@ -290,22 +294,26 @@ function StudentCoursesCard({
                 </div>
               `
         : html`
-            <table class="table table-sm table-hover table-striped" aria-label="${heading}">
-              <tbody>
-                ${studentCourses.map(
-                  (courseInstance) => html`
-                    <tr>
-                      <td>
-                        <a href="${config.urlPrefix}/course_instance/${courseInstance.id}">
-                          ${courseInstance.course_short_name}: ${courseInstance.course_title},
-                          ${courseInstance.long_name}
-                        </a>
-                      </td>
-                    </tr>
-                  `,
-                )}
-              </tbody>
-            </table>
+            <!-- Wrapped in .table-responsive to constrain horizontal overflow for long course titles
+                 on narrow viewports. -->
+            <div class="table-responsive">
+              <table class="table table-sm table-hover table-striped" aria-label="${heading}">
+                <tbody>
+                  ${studentCourses.map(
+                    (courseInstance) => html`
+                      <tr>
+                        <td>
+                          <a href="${config.urlPrefix}/course_instance/${courseInstance.id}">
+                            ${courseInstance.course_short_name}: ${courseInstance.course_title},
+                            ${courseInstance.long_name}
+                          </a>
+                        </td>
+                      </tr>
+                    `,
+                  )}
+                </tbody>
+              </table>
+            </div>
           `}
     </div>
   `;
