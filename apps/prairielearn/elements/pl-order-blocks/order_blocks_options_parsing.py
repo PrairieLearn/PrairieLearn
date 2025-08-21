@@ -52,6 +52,7 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
+
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
@@ -87,7 +88,7 @@ class OrderBlocksOptions:
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
-        self.weight = pl.get_integer_attrib(html_element, "weight", None)
+        self.weight = pl.get_integer_attrib(html_element, "weight", WEIGHT_DEFAULT)
         self.grading_method = pl.get_enum_attrib(
             html_element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT
         )
@@ -224,6 +225,11 @@ class OrderBlocksOptions:
         if self.min_incorrect > self.max_incorrect:
             raise ValueError(
                 "The attribute min-incorrect must be smaller than max-incorrect."
+            )
+
+        if self.inline and self.indentation:
+            raise ValueError(
+                "The indentation attribute may not be used when inline is true."
             )
 
     def _validate_answer_options(self) -> None:
