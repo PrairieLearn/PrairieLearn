@@ -2,11 +2,12 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let user_id = null;
+let user_id: string | null = null;
 
 async function createCenterExamReservation() {
   await sqldb.queryAsync(sql.create_center_exam_reservation, { user_id });
@@ -19,8 +20,7 @@ async function createCourseExamReservation() {
 describe('sproc ip_to_mode tests', function () {
   beforeAll(async function () {
     await helperDb.before();
-    const result = await sqldb.queryAsync(sql.setup, {});
-    user_id = result.rows[0].user_id;
+    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.uid);
   });
 
   afterAll(helperDb.after);

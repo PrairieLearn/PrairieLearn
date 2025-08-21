@@ -118,24 +118,24 @@ export async function init() {
   ];
 
   if (isEnterprise()) {
-    jobs.push({
-      name: 'externalGraderLoad',
-      module: await import('../ee/cron/externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
-    });
-
-    jobs.push({
-      name: 'workspaceHostLoads',
-      module: await import('../ee/cron/workspaceHostLoads.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
-    });
-
-    jobs.push({
-      name: 'chunksHostAutoScaling',
-      module: await import('../ee/cron/chunksHostAutoScaling.js'),
-      intervalSec:
-        config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
-    });
+    jobs.push(
+      {
+        name: 'externalGraderLoad',
+        module: await import('../ee/cron/externalGraderLoad.js'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+      },
+      {
+        name: 'workspaceHostLoads',
+        module: await import('../ee/cron/workspaceHostLoads.js'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
+      },
+      {
+        name: 'chunksHostAutoScaling',
+        module: await import('../ee/cron/chunksHostAutoScaling.js'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      },
+    );
   }
 
   const enabledJobs = config.cronEnabledJobs;
@@ -379,8 +379,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   logger.verbose('cron: ' + job.name + ' job was not recently run', {
     cronUuid,
   });
-  const params = { name: job.name };
-  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  await sqldb.queryAsync(sql.update_cron_job_time, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
   logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
   await runJob(job, cronUuid);

@@ -258,7 +258,7 @@ router.post(
         AiQuestionGenerationPromptSchema,
       );
 
-      if (prompts.length < 1) {
+      if (prompts.length === 0) {
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 

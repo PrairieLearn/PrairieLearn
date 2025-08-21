@@ -68,7 +68,7 @@ function anonymizeFile(filename, contents) {
   } else if (filename === 'download_log.txt') {
     return contents;
   } else {
-    console.error('Unrecognized File Type: ', filename);
+    console.error('Unrecognized File Type:', filename);
   }
 }
 
