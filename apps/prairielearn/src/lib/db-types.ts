@@ -11,8 +11,6 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-// elements, elementExtensions, clientFilesCourse, serverFilesCourse, clientFilesCourseInstance, clientFilesAssessment, question
-
 export const EnumChunkTypeSchema = z.enum([
   'elements',
   'elementExtensions',

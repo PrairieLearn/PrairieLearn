@@ -1837,7 +1837,7 @@ describe('Assessment syncing', () => {
         questions: [
           {
             id: '@example-course/i do not exist',
-            points: [1, 2, 3],
+            points: [3, 2, 1],
           },
         ],
       });
