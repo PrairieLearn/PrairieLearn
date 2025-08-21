@@ -388,6 +388,8 @@ def collect_answer_options(
             case "pl-block-group":
                 group_tag, group_depends = get_graph_info(inner_element)
                 for answer_element in inner_element:
+                    if isinstance(answer_element, _Comment):
+                        continue
                     options = AnswerOptions(
                         answer_element,
                         {"tag": group_tag, "depends": group_depends},
