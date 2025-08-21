@@ -1902,10 +1902,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator',
     asyncHandler(async (req, res, next) => {
-      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
         user_id: res.locals.authn_user.user_id,
       });
-      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
       next();
     }),
   );

@@ -157,10 +157,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     res.locals.authz_data.has_student_access = permissions_course_instance.has_student_access;
   }
 
-  res.locals.has_enhanced_navigation = await features.enabledFromLocals(
-    'enhanced-navigation',
-    res.locals,
-  );
+  const usesLegacyNavigation = await features.enabledFromLocals('legacy-navigation', res.locals);
+  res.locals.has_enhanced_navigation = !usesLegacyNavigation;
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,
