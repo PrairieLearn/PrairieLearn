@@ -1,10 +1,11 @@
 import clsx from 'clsx';
 
 import { type HtmlValue, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { isEnterprise } from '../lib/license.js';
 
-import { IssueBadge } from './IssueBadge.js';
+import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
 import { ProgressCircle } from './ProgressCircle.js';
 
@@ -18,7 +19,7 @@ interface SideNavTabInfo {
    * For all other navPages, only the current navPage must be in activePages.
    *
    * If not specified, activeSubPages will be checked on all pages.
-   **/
+   */
   checkActiveSubPageForPages?: NavPage[];
   /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
   activeSubPages: NavSubPage[];
@@ -36,7 +37,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['getting_started'],
       urlSuffix: '/course_admin/getting_started',
-      iconClasses: 'fa fa-tasks fa-fw',
+      iconClasses: 'fa fa-tasks',
       tabLabel: 'Getting Started',
       htmlSuffix: ({
         navbarCompleteGettingStartedTasksCount,
@@ -45,7 +46,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          className: 'ms-auto',
+          class: 'ms-auto',
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
@@ -54,7 +55,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['instances'],
       urlSuffix: '/course_admin/instances',
-      iconClasses: 'fas fa-chalkboard-teacher fa-fw',
+      iconClasses: 'fas fa-chalkboard-teacher',
       tabLabel: 'Course instances',
     },
     {
@@ -62,24 +63,23 @@ const sideNavPagesTabs = {
       checkActiveSubPageForPages: ['course_admin'],
       activeSubPages: ['questions'],
       urlSuffix: '/course_admin/questions',
-      iconClasses: 'fa fa-question fa-fw',
+      iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['course_admin'],
       activeSubPages: ['issues'],
       urlSuffix: '/course_admin/issues',
-      iconClasses: 'fas fa-bug fa-fw',
+      iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: ({ navbarOpenIssueCount }) =>
-        IssueBadge({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
+        IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true, class: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],
       activeSubPages: ['staff'],
       urlSuffix: '/course_admin/staff',
-      iconClasses: 'fas fa-users fa-fw',
+      iconClasses: 'fas fa-users',
       tabLabel: 'Staff',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
@@ -87,7 +87,7 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['syncs'],
       urlSuffix: '/course_admin/syncs',
-      iconClasses: 'fas fa-sync-alt fa-fw',
+      iconClasses: 'fas fa-sync-alt',
       tabLabel: 'Sync',
       renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
@@ -96,17 +96,16 @@ const sideNavPagesTabs = {
       activePages: ['course_admin'],
       activeSubPages: ['file_view', 'file_edit'],
       urlSuffix: '/course_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
-      tabLabel: 'Files',
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Course files',
       tabTooltip: 'Course files',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
       activePages: ['course_admin'],
       activeSubPages: ['settings', 'sets', 'modules', 'tags', 'topics', 'sharing'],
       urlSuffix: '/course_admin/settings',
-      iconClasses: 'fas fa-cog fa-fw',
-      tabLabel: 'Settings',
+      iconClasses: 'fas fa-cog',
+      tabLabel: 'Course settings',
       tabTooltip: 'Course settings',
     },
   ],
@@ -116,39 +115,45 @@ const sideNavPagesTabs = {
       checkActiveSubPageForPages: ['instance_admin'],
       activeSubPages: ['assessments'],
       urlSuffix: '/instance_admin/assessments',
-      iconClasses: 'fa fa-list fa-fw',
+      iconClasses: 'fa fa-list',
       tabLabel: 'Assessments',
     },
     {
       activePages: ['instance_admin'],
       activeSubPages: ['gradebook'],
       urlSuffix: '/instance_admin/gradebook',
-      iconClasses: 'fas fa-balance-scale fa-fw',
+      iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['file_view', 'file_edit'],
-      urlSuffix: '/instance_admin/file_view',
-      iconClasses: 'fa fa-edit fa-fw',
-      tabLabel: 'Files',
-      tabTooltip: 'Course instance files',
+      activeSubPages: ['students'],
+      urlSuffix: '/instance_admin/students',
+      iconClasses: 'fas fa-users-line',
+      tabLabel: 'Students',
     },
     {
       activePages: ['instance_admin'],
       activeSubPages: ['integrations'],
       urlSuffix: '/instance_admin/lti13_instance',
-      iconClasses: 'fas fa-school-flag fa-fw',
+      iconClasses: 'fas fa-school-flag',
       tabLabel: 'Integrations',
       renderCondition: () => isEnterprise(),
     },
     {
       activePages: ['instance_admin'],
+      activeSubPages: ['file_view', 'file_edit'],
+      urlSuffix: '/instance_admin/file_view',
+      iconClasses: 'fa fa-edit',
+      tabLabel: 'Instance files',
+      tabTooltip: 'Course instance files',
+    },
+    {
+      activePages: ['instance_admin'],
       activeSubPages: ['settings', 'access', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
-      iconClasses: 'fas fa-cog fa-fw',
-      tabLabel: 'Settings',
+      iconClasses: 'fas fa-cog',
+      tabLabel: 'Instance settings',
       tabTooltip: 'Course instance settings',
     },
   ],
@@ -163,17 +168,34 @@ export function SideNav({
   page: NavPage;
   subPage: NavSubPage;
 }) {
+  // We recompute `urlPrefix` instead of using the one from `resLocals` because
+  // it may not be populated correctly in the case of an access error, specifically
+  // when the user has access to the course but tries to change to an effective user
+  // that does not have access to a course instance.
+  //
+  // In that case, `urlPrefix` would just be `/pl`, which would result in broken
+  // links. We want all sidebar links to work even in this weird state.
+  const urlPrefix = run(() => {
+    if (resLocals.course_instance) {
+      return `/pl/course_instance/${resLocals.course_instance.id}/instructor`;
+    }
+
+    return `/pl/course/${resLocals.course.id}`;
+  });
+
   return html`
     ${CourseNav({
       resLocals,
       page,
       subPage,
+      urlPrefix,
     })}
     ${resLocals.course_instance
       ? CourseInstanceNav({
           resLocals,
           page,
           subPage,
+          urlPrefix,
         })
       : ''}
   `;
@@ -183,10 +205,12 @@ function CourseNav({
   resLocals,
   page,
   subPage,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  urlPrefix: string;
 }) {
   const courseSideNavPageTabs = sideNavPagesTabs.course_admin;
 
@@ -245,6 +269,7 @@ function CourseNav({
           navPage: page,
           navSubPage: subPage,
           tabInfo,
+          urlPrefix,
         }),
       )}
     </div>
@@ -255,13 +280,14 @@ function CourseInstanceNav({
   resLocals,
   page,
   subPage,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   page: NavPage;
   subPage: NavSubPage;
+  urlPrefix: string;
 }) {
   const courseInstanceSideNavPageTabs = sideNavPagesTabs.instance_admin;
-
   return html`
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
@@ -305,6 +331,7 @@ function CourseInstanceNav({
                 navPage: page,
                 navSubPage: subPage,
                 tabInfo,
+                urlPrefix,
               }),
             )
           : ''}
@@ -318,13 +345,14 @@ function SideNavLink({
   navPage,
   navSubPage,
   tabInfo,
+  urlPrefix,
 }: {
   resLocals: Record<string, any>;
   navPage: NavPage;
   navSubPage: NavSubPage;
   tabInfo: SideNavTabInfo;
+  urlPrefix: string;
 }) {
-  const { urlPrefix } = resLocals;
   const {
     activePages,
     checkActiveSubPageForPages,

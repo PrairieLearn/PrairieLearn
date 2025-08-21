@@ -5,12 +5,12 @@ import { run } from '@prairielearn/run';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
-import { IssueBadge } from '../../components/IssueBadge.js';
+import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -58,7 +58,7 @@ export function InstructorAssessments({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={resLocals.course_instance}
           course={course}
           urlPrefix={urlPrefix}
@@ -120,12 +120,12 @@ export function InstructorAssessments({
                           </td>
                           <td class="align-middle">
                             ${row.sync_errors
-                              ? SyncProblemButton({
+                              ? SyncProblemButtonHtml({
                                   type: 'error',
                                   output: row.sync_errors,
                                 })
                               : row.sync_warnings
-                                ? SyncProblemButton({
+                                ? SyncProblemButtonHtml({
                                     type: 'warning',
                                     output: row.sync_warnings,
                                   })
@@ -136,7 +136,7 @@ export function InstructorAssessments({
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
-                            ${IssueBadge({
+                            ${IssueBadgeHtml({
                               count: row.open_issue_count,
                               urlPrefix,
                               issueAid: row.tid,

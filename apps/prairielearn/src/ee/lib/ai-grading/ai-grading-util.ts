@@ -8,15 +8,19 @@ import type {
 import { z } from 'zod';
 
 import {
+  callAsync,
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
+  AssessmentQuestionSchema,
   type Course,
+  GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -30,6 +34,7 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -64,7 +69,7 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
   // Pricings are updated according to https://platform.openai.com/docs/pricing
   const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
-  const completion_cost = 10.0 / 10 ** 6;
+  const completion_cost = 10 / 10 ** 6;
 
   return (
     cached_input_tokens * cached_input_cost +
@@ -103,24 +108,26 @@ export async function generatePrompt({
       }
       rubric_info += '\n';
     }
-    messages.push({
-      role: 'system',
-      content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
-        (example_submissions.length
-          ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : ''),
-    });
-    messages.push({
-      role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
-    });
+    messages.push(
+      {
+        role: 'system',
+        content:
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          (example_submissions.length > 0
+            ? ' I will provide some example student responses and their corresponding selected rubric items.'
+            : ''),
+      },
+      {
+        role: 'system',
+        content: `Here are the rubric items:\n\n${rubric_info}`,
+      },
+    );
   } else {
     messages.push({
       role: 'system',
       content:
         "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is correct." +
-        (example_submissions.length
+        (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
     });
@@ -346,9 +353,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion(
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     InstanceQuestionSchema,
   );
 }
@@ -358,9 +363,7 @@ export async function selectRubricGradingItems(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_grading_items,
-    {
-      manual_rubric_grading_id,
-    },
+    { manual_rubric_grading_id },
     RubricItemSchema,
   );
 }
@@ -432,9 +435,7 @@ export async function selectRubricForGrading(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_for_grading,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     RubricItemSchema,
   );
 }
@@ -451,4 +452,70 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteAiGradingJobs({
+  assessment_question_ids,
+  authn_user_id,
+}: {
+  assessment_question_ids: string[];
+  authn_user_id: string;
+}) {
+  // TODO: revisit this before general availability of AI grading. This implementation
+  // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
+  // correctly in call cases; see the TODOs in the SQL query for more details.
+  //
+  // TODO: we should add locking here. Specifically, we should process each
+  // assessment instance + instance question one at a time in separate
+  // transactions so that we don't need to lock all relevant assessment instances
+  // and assessment questions at once.
+  const iqs = await runInTransactionAsync(async () => {
+    const iqs = await queryRows(
+      sql.delete_ai_grading_jobs,
+      {
+        authn_user_id,
+        assessment_question_ids,
+      },
+      z.object({
+        id: IdSchema,
+        assessment_instance_id: IdSchema,
+        max_points: AssessmentQuestionSchema.shape.max_points,
+        max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+        max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+        points: InstanceQuestionSchema.shape.points,
+        score_perc: InstanceQuestionSchema.shape.score_perc,
+        auto_points: InstanceQuestionSchema.shape.auto_points,
+        manual_points: InstanceQuestionSchema.shape.manual_points,
+        most_recent_manual_grading_job: GradingJobSchema.nullable(),
+      }),
+    );
+
+    for (const iq of iqs) {
+      await callAsync('assessment_instances_grade', [
+        iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        100, // credit
+        false, // only_log_if_score_updated
+        true, // allow_decrease
+      ]);
+    }
+
+    return iqs;
+  });
+
+  // Important: this is done outside of the above transaction so that we don't
+  // hold a database connection open while we do network calls.
+  //
+  // This is here for consistency with other assessment score updating code. We
+  // shouldn't hit this for the vast majority of assessments.
+  for (const iq of iqs) {
+    await ltiOutcomes.updateScore(iq.assessment_instance_id);
+  }
+
+  return iqs;
+}
+
+export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
+  await queryAsync(sql.toggle_ai_grading_mode, { assessment_question_id });
 }

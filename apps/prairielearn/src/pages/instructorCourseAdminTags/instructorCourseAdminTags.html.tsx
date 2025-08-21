@@ -28,7 +28,7 @@ export function InstructorCourseAdminTags({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
@@ -52,7 +52,7 @@ export function InstructorCourseAdminTags({
                 (tag) => html`
                   <tr>
                     <td class="align-middle">${tag.number}</td>
-                    <td class="align-middle">${TagBadge(tag)}</td>
+                    <td class="align-middle">${renderHtml(<TagBadge tag={tag} />)}</td>
                     <td class="align-middle">${tag.color}</td>
                     <td class="align-middle">${TagDescription(tag)}</td>
                   </tr>

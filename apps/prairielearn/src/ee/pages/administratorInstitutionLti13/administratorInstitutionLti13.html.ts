@@ -47,7 +47,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap"> ${i.name ?? `#${i.id}`} </span>
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;
@@ -95,7 +95,7 @@ function LTI13Instance(
         </button>
       </p>
 
-      <div class="modal fade" id="instanceData" tabindex="-1" aria-hidden="true">
+      <div class="modal fade" id="instanceData" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
@@ -346,7 +346,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">Email attribute</label>
+          <label class="form-label" for="email_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"
@@ -358,6 +358,27 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="emailAttributeHelp" class="form-text text-muted">
             This attribute should contain the email address of the user. If present, PrairieLearn
             will use this to send email to the user.
+          </small>
+        </div>
+
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            name="require_linked_lti_user"
+            id="require_linked_lti_user"
+            value="true"
+            aria-describedby="requireLtiUserHelp"
+            ${instance.require_linked_lti_user ? 'checked' : ''}
+          />
+          <label class="form-check-label" for="require_linked_lti_user">
+            Require LTI authentication
+          </label>
+          <small id="requireLtiUserHelp" class="form-text text-muted d-block">
+            When enabled, students who authenticate via a non-LTI provider will be required to
+            authenticate via the LTI platform before they can access any course instances linked to
+            this LTI instance. This should not be enabled in most cases. It is primarily useful for
+            institutions that don't provide UIDs or useful emails to PrairieLearn via LTI.
           </small>
         </div>
 

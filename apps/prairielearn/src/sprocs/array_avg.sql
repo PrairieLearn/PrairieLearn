@@ -1,7 +1,7 @@
 CREATE FUNCTION
     array_avg_sfunc (
         state array_and_number,
-        input DOUBLE PRECISION[]
+        input double precision[]
     ) RETURNS array_and_number AS $$
 DECLARE
     sums DOUBLE PRECISION[];
@@ -19,7 +19,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE FUNCTION
     array_avg_ffunc (
         state array_and_number
-    ) RETURNS DOUBLE PRECISION[] AS $$
+    ) RETURNS double precision[] AS $$
 BEGIN
     IF state IS NULL THEN
         RETURN NULL;
@@ -30,7 +30,7 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE AGGREGATE array_avg (DOUBLE PRECISION[]) (
-    SFUNC = array_avg_sfunc,
-    STYPE = array_and_number,
-    FINALFUNC = array_avg_ffunc
+    sfunc = array_avg_sfunc,
+    stype = array_and_number,
+    finalfunc = array_avg_ffunc
 );

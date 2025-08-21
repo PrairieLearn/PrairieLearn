@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import type { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
@@ -81,7 +83,7 @@ async.series(
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
-      function idleErrorHandler(err) {
+      function idleErrorHandler(err: Error & { data?: { lastQuery?: string } }) {
         globalLogger.error('idle client error', err);
         Sentry.captureException(err, {
           level: 'fatal',

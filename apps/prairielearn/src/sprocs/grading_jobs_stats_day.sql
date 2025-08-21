@@ -1,6 +1,6 @@
 CREATE FUNCTION
     grading_jobs_stats_day(
-        OUT count bigint,
+        OUT count int,
         OUT delta_total double precision,
         OUT delta_submitted_at double precision,
         OUT delta_received_at double precision,
@@ -31,7 +31,7 @@ BEGIN
             AND gj.grading_method = 'External'
     )
     SELECT
-        count(*)::bigint,
+        count(*)::int,
         coalesce(avg(rj.delta_total), 0)::double precision,
         coalesce(avg(rj.delta_submitted_at), 0)::double precision,
         coalesce(avg(rj.delta_received_at), 0)::double precision,

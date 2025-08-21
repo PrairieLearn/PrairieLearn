@@ -6,7 +6,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { config } from '../../../lib/config.js';
 import { type RubricData } from '../../../lib/manualGrading.js';
 
-// Popover for users to import rubric settings from a JSON file.
+/** Popover for users to import rubric settings from a JSON file. */
 function ImportRubricSettingsPopover() {
   return html`
     <form
@@ -58,7 +58,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
         >
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="modify_rubric_settings" />
-          <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
+          <input
+            type="hidden"
+            name="modified_at"
+            value="${rubric_data?.modified_at.toISOString()}"
+          />
           <input type="hidden" name="use_rubric" value="true" />
 
           ${EncodedData<{

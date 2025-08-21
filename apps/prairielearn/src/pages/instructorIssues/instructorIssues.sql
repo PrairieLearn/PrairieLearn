@@ -17,8 +17,8 @@ SELECT
 FROM
   (
     VALUES
-      (true),
-      (false)
+      (TRUE),
+      (FALSE)
   ) AS tmp (open)
   LEFT JOIN counts USING (open)
 ORDER BY
@@ -97,7 +97,7 @@ SELECT
   u.name AS user_name,
   u.email AS user_email,
   v.variant_seed,
-  COUNT(*) OVER ()::INTEGER AS issue_count
+  COUNT(*) OVER ()::integer AS issue_count
 FROM
   selected_issues
   JOIN issues AS i ON (i.id = selected_issues.issue_id)
@@ -128,7 +128,7 @@ WITH
       i.course_id = $course_id
       AND i.course_caused
       AND i.open IS TRUE
-      AND i.id = ANY ($issue_ids::BIGINT[])
+      AND i.id = ANY ($issue_ids::bigint[])
     RETURNING
       i.id,
       i.open

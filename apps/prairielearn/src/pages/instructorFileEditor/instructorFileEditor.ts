@@ -26,6 +26,7 @@ import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   type DraftEdit,
@@ -38,12 +39,21 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_edit'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners: [],
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',
@@ -59,6 +69,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners,
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',

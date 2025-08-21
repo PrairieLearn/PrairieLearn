@@ -148,16 +148,16 @@ export function PageLayout({
             </div>
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav bg-light border-end">
+                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
                       subPage: navContext.subPage,
                     })}
-                  </div>
+                  </nav>
                 `
               : ''}
-            <div class="${sideNavEnabled ? 'app-main' : ''}">
+            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                   ? AssessmentNavigation({

@@ -74,6 +74,8 @@ export async function checkBelongs(
  * Render the "text" property of an assessment.
  *
  * @param assessment - The assessment to render the text for.
+ * @param assessment.id - The assessment ID.
+ * @param assessment.text - The assessment text.
  * @param urlPrefix - The current server urlPrefix.
  * @returns The rendered text.
  */
@@ -95,13 +97,14 @@ export function renderText(
 
 /**
  * Create a new assessment instance and all the questions in it.
- *
- * @param assessment - The assessment to create the assessment instance for.
- * @param user_id - The user who will own the new assessment instance.
- * @param authn_user_id - The current authenticated user.
- * @param mode - The mode for the new assessment instance.
- * @param time_limit_min - The time limit for the new assessment instance.
- * @param date - The date of creation for the new assessment instance.
+ * @param params
+ * @param params.assessment - The assessment to create the assessment instance for.
+ * @param params.user_id - The user who will own the new assessment instance.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.mode - The mode for the new assessment instance.
+ * @param params.time_limit_min - The time limit for the new assessment instance.
+ * @param params.date - The date of creation for the new assessment instance.
+ * @param params.client_fingerprint_id - The client fingerprint ID.
  * @returns The ID of the new assessment instance.
  */
 export async function makeAssessmentInstance({
@@ -198,12 +201,20 @@ export async function updateAssessmentInstance(
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callOneRowAsync('assessment_instances_grade', [
-        assessment_instance_id,
-        authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ]);
+      await sqldb.callRow(
+        'assessment_instances_grade',
+        [
+          assessment_instance_id,
+          authn_user_id,
+          null, // credit
+          true, // only_log_if_score_updated
+        ],
+        z.object({
+          updated: z.boolean(),
+          new_points: z.number(),
+          new_score_perc: z.number(),
+        }),
+      );
     }
     return true;
   });
@@ -401,14 +412,14 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
 
     // check whether we need to update the statistics
     const needs_statistics_update = await sqldb.queryRow(
-      sql.select_assessment_needs_statisics_update,
+      sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
     );
     if (!needs_statistics_update) return;
 
     // update the statistics
-    await sqldb.queryOneRowAsync(sql.update_assessment_statisics, { assessment_id });
+    await sqldb.queryOneRowAsync(sql.update_assessment_statistics, { assessment_id });
   });
 }
 
@@ -489,7 +500,7 @@ export async function selectAssessmentInstanceLogCursor(
   assessment_instance_id,
   include_files,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
-  return sqldb.queryValidatedCursor(
+  return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,
@@ -575,7 +586,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
  * the menu appears for both "student view" and "student view without access
  * restrictions".
  *
- * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
+ * @returns Whether or not the user should be allowed to delete the assessment instance.
  */
 export function canDeleteAssessmentInstance(resLocals): boolean {
   return (

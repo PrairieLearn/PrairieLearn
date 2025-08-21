@@ -38,29 +38,26 @@ export function getDetailsForFile(filePath: string): FileDetails {
   } else if (
     pathComponents.length >= 3 &&
     pathComponents[0] === 'courseInstances' &&
-    pathComponents[pathComponents.length - 1] === 'infoCourseInstance.json'
+    pathComponents.at(-1) === 'infoCourseInstance.json'
   ) {
-    const ciid = pathComponents.slice(1, pathComponents.length - 1).join(path.posix.sep);
+    const ciid = pathComponents.slice(1, -1).join(path.posix.sep);
     return { type: 'courseInstance', ciid };
   } else if (
     pathComponents.length >= 3 &&
     pathComponents[0] === 'questions' &&
-    pathComponents[pathComponents.length - 1] === 'info.json'
+    pathComponents.at(-1) === 'info.json'
   ) {
-    const qid = pathComponents.slice(1, pathComponents.length - 1).join(path.posix.sep);
+    const qid = pathComponents.slice(1, -1).join(path.posix.sep);
     return { type: 'question', qid };
   } else if (
     pathComponents.length >= 5 &&
     pathComponents[0] === 'courseInstances' &&
-    pathComponents.slice(2, pathComponents.length - 2).some((e) => e === 'assessments') &&
-    pathComponents[pathComponents.length - 1] === 'infoAssessment.json'
+    pathComponents.slice(2, -2).includes('assessments') &&
+    pathComponents.at(-1) === 'infoAssessment.json'
   ) {
-    const assessment_index =
-      pathComponents.slice(2, pathComponents.length - 2).findIndex((e) => e === 'assessments') + 2;
+    const assessment_index = pathComponents.slice(2, -2).indexOf('assessments') + 2;
     const ciid = pathComponents.slice(1, assessment_index).join(path.posix.sep);
-    const aid = pathComponents
-      .slice(assessment_index + 1, pathComponents.length - 1)
-      .join(path.posix.sep);
+    const aid = pathComponents.slice(assessment_index + 1, -1).join(path.posix.sep);
     return { type: 'assessment', ciid, aid };
   } else {
     return { type: 'file' };
