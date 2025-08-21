@@ -403,12 +403,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     order_block_options = OrderBlocksOptions(element)
     answer_name = order_block_options.answers_name
-    allow_blank_submission = order_block_options.allow_blank
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
     student_answer = json.loads(student_answer)
 
-    if (not allow_blank_submission) and (
+    if (not order_block_options.allow_blank) and (
         student_answer is None or student_answer == []
     ):
         data["format_errors"][answer_name] = (
@@ -450,7 +449,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["ordering_feedback"] = matching_block.get("ordering_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
-        file_name = order_block_options.file_name
 
         answer_code = ""
         for answer in student_answer:
@@ -466,7 +464,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         else:
             pl.add_submitted_file(
                 data,
-                file_name,
+                order_block_options.file_name,
                 base64.b64encode(answer_code.encode("utf-8")).decode("utf-8"),
             )
 
@@ -507,18 +505,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     answer_name = order_blocks_options.answers_name
     student_answer = data["submitted_answers"][answer_name]
     grading_method = order_blocks_options.grading_method
-    check_indentation = order_blocks_options.indentation
-    feedback_type = order_blocks_options.feedback
-    answer_weight = order_blocks_options.weight
 
-    partial_credit_type = order_blocks_options.partial_credit
     true_answer_list = data["correct_answers"][answer_name]
 
     final_score = 0
     feedback = ""
     first_wrong = None
 
-    if check_indentation:
+    if order_blocks_options.indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
             indentation = indentations.get(ans["uuid"])
@@ -578,7 +572,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             None if num_initial_correct == len(submission) else num_initial_correct
         )
 
-        if feedback_type in FIRST_WRONG_TYPES:
+        if order_blocks_options.feedback in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
                 block["badge_type"] = "text-bg-success"
                 block["icon"] = "fa-check"
@@ -588,7 +582,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             if first_wrong is not None:
                 student_answer[first_wrong]["badge_type"] = "text-bg-danger"
                 student_answer[first_wrong]["icon"] = "fa-xmark"
-                if feedback_type is not FeedbackType.FIRST_WRONG_VERBOSE:
+                if order_blocks_options.feedback is not FeedbackType.FIRST_WRONG_VERBOSE:
                     student_answer[first_wrong]["distractor_feedback"] = ""
                     student_answer[first_wrong]["ordering_feedback"] = ""
 
@@ -602,12 +596,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             submission, depends_graph, group_belonging
         )
 
-        if partial_credit_type is PartialCreditType.NONE:
+        if order_blocks_options.partial_credit is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
             elif num_initial_correct < true_answer_length:
                 final_score = 0
-        elif partial_credit_type is PartialCreditType.LCS:
+        elif order_blocks_options.partial_credit is PartialCreditType.LCS:
             edit_distance = lcs_partial_credit(
                 submission, depends_graph, group_belonging
             )
@@ -625,17 +619,17 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 )
             }
             feedback = construct_feedback(
-                feedback_type,
+                order_blocks_options.feedback,
                 first_wrong,
                 group_belonging,
-                check_indentation,
+                order_blocks_options.indentation,
                 first_wrong_is_distractor,
             )
 
     data["partial_scores"][answer_name] = {
         "score": round(final_score, 2),
         "feedback": feedback,
-        "weight": answer_weight,
+        "weight": order_blocks_options.weight,
     }
 
 
@@ -657,11 +651,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     grading_method = order_block_options.grading_method
     answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
-    weight = order_block_options.weight
-    check_indentation = order_block_options.indentation
-    feedback_type = order_block_options.feedback
-
-    partial_credit_type = order_block_options.partial_credit
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -677,7 +666,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": 1,
-            "weight": weight,
+            "weight": order_block_options.weight,
             "feedback": "",
         }
 
@@ -689,7 +678,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
             grading_method in LCS_GRADABLE_TYPES
-            and partial_credit_type is PartialCreditType.LCS
+            and order_block_options.partial_credit is PartialCreditType.LCS
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
@@ -709,10 +698,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 )
             }
             feedback = construct_feedback(
-                feedback_type,
+                order_block_options.feedback,
                 first_wrong,
                 group_belonging,
-                check_indentation,
+                order_block_options.indentation,
                 first_wrong_is_distractor,
             )
         else:
@@ -721,7 +710,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": score,
-            "weight": weight,
+            "weight": order_block_options.weight,
             "feedback": feedback,
         }
 
