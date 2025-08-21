@@ -172,7 +172,8 @@ export const QuestionJsonSchema = z
       .describe('Unique identifier (UUID v4).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
-      .describe('Type of the question.'),
+      .describe('Type of the question.')
+      .default('v3'),
     title: z
       .string()
       .describe(
@@ -186,9 +187,9 @@ export const QuestionJsonSchema = z
       .default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client (defaults to ["client.js"]).')
+      .describe('The list of question files accessible by the client.')
       .optional()
-      .default([]),
+      .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')

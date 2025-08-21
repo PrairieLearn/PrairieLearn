@@ -36,15 +36,6 @@ import { isDraftQid } from './question.js';
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
 
-const DEFAULT_QUESTION_INFO = {
-  type: 'Calculation',
-  clientFiles: ['client.js', 'question.html', 'answer.html'],
-};
-const DEFAULT_COURSE_INSTANCE_INFO = {
-  groupAssessmentsBy: 'Set',
-};
-const DEFAULT_ASSESSMENT_INFO = {};
-
 const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
     abbreviation: 'HW',
@@ -513,7 +504,6 @@ export async function loadCourseInfo({
   const maybeNullLoadedData = await loadAndValidateJson({
     coursePath,
     filePath: 'infoCourse.json',
-    defaults: undefined,
     schema: schemas.infoCourse,
     zodSchema: schemas.CourseJsonSchema,
     validate: async () => ({ warnings: [], errors: [] }),
@@ -683,7 +673,6 @@ export async function loadCourseInfo({
 async function loadAndValidateJson<T extends ZodSchema>({
   coursePath,
   filePath,
-  defaults,
   schema,
   zodSchema,
   validate,
@@ -691,7 +680,6 @@ async function loadAndValidateJson<T extends ZodSchema>({
 }: {
   coursePath: string;
   filePath: string;
-  defaults: any;
   schema: any;
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
@@ -720,9 +708,6 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  // Fill in default values
-  loadedJson.data = { ...defaults, ...loadedJson.data };
-
   // If we didn't get any errors with the ajv schema, we will re-parse with Zod, which will fill in default values and let us
   // use the output type.
   loadedJson.data = zodSchema.parse(loadedJson.data);
@@ -738,7 +723,6 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   coursePath,
   directory,
   infoFilename,
-  defaultInfo,
   schema,
   zodSchema,
   validate,
@@ -749,7 +733,6 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   /** The path of the directory relative to `coursePath` */
   directory: string;
   infoFilename: string;
-  defaultInfo: any;
   schema: any;
   zodSchema: T;
   validate: (info: z.input<T>) => Promise<{ warnings: string[]; errors: string[] }>;
@@ -772,7 +755,6 @@ async function loadInfoForDirectory<T extends ZodSchema>({
       const info = await loadAndValidateJson({
         coursePath,
         filePath: infoFilePath,
-        defaults: defaultInfo,
         schema,
         zodSchema,
         validate,
@@ -1416,7 +1398,6 @@ export async function loadQuestions({
     coursePath,
     directory: 'questions',
     infoFilename: 'info.json',
-    defaultInfo: DEFAULT_QUESTION_INFO,
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
     validate: (question: QuestionJsonInput) => validateQuestion({ question, sharingEnabled }),
@@ -1450,7 +1431,6 @@ export async function loadCourseInstances({
     coursePath,
     directory: 'courseInstances',
     infoFilename: 'infoCourseInstance.json',
-    defaultInfo: DEFAULT_COURSE_INSTANCE_INFO,
     schema: schemas.infoCourseInstance,
     zodSchema: schemas.CourseInstanceJsonSchema,
     validate: (courseInstance: CourseInstanceJsonInput) =>
@@ -1485,7 +1465,6 @@ export async function loadAssessments({
     coursePath,
     directory: assessmentsPath,
     infoFilename: 'infoAssessment.json',
-    defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
     zodSchema: schemas.AssessmentJsonSchema,
     validate: (assessment: AssessmentJsonInput) =>
