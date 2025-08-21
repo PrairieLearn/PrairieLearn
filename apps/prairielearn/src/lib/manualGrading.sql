@@ -7,6 +7,14 @@ WHERE
   ac.assessment_question_id = $assessment_question_id AND
   ac.id > $prior_ai_cluster_id;
 
+-- BLOCK ai_cluster_id_for_instance_question
+SELECT
+  ai_cluster_id
+FROM 
+  instance_questions as iq
+WHERE
+  id = $instance_question_id;
+
 -- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
@@ -18,13 +26,12 @@ WITH
     FROM
       instance_questions AS iq
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-      LEFT JOIN ai_cluster_assignments AS aca ON aca.instance_question_id = iq.id
     WHERE
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
-        aca.ai_cluster_id = $prior_ai_cluster_id
-        OR aca.ai_cluster_id IS NULL AND $prior_ai_cluster_id IS NULL  
+        iq.ai_cluster_id = $prior_ai_cluster_id
+        OR iq.ai_cluster_id IS NULL AND $prior_ai_cluster_id IS NULL  
       )
       AND (
         $prior_instance_question_id::bigint IS NULL
@@ -532,11 +539,3 @@ FROM
   updated_instance_question uiq
 RETURNING
   *;
-
--- SELECT ai_cluster_id_for_instance_question
-SELECT
-  ai_cluster_id
-FROM 
-  instance_questions
-WHERE
-  id = $instance_question_id;

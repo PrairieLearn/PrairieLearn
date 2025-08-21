@@ -116,8 +116,12 @@ export async function nextInstanceQuestionUrl(
 ): Promise<string> {
   const prior_ai_cluster_id = await run(async () => {
     if (prior_instance_question_id) {
+      console.log('prior_instance_question_id', prior_instance_question_id);
+
       return (
-        await sqldb.queryOptionalRow(sql.ai_cluster_id_for_instance_question, z.number()) 
+        await sqldb.queryOptionalRow(sql.ai_cluster_id_for_instance_question, {
+          instance_question_id: prior_instance_question_id
+        }, IdSchema.nullable())
         ?? null
       );
     } else {

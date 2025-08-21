@@ -40,11 +40,12 @@ columns
 
 indexes
     instance_questions_pkey: PRIMARY KEY (id) USING btree (id)
-    instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
+    instance_questions_assessment_question_id_assessment_instance_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
     instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
     instance_questions_modified_at_key: USING btree (modified_at)
 
 foreign-key constraints
+    instance_questions_ai_cluster_id_fkey: FOREIGN KEY (ai_cluster_id) REFERENCES ai_clusters(id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assigned_grader_fkey: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL

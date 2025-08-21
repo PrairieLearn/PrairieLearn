@@ -79,12 +79,10 @@ FROM
 
 -- BLOCK select_instance_question_ids_in_cluster
 SELECT
-  aca.instance_question_id,
+  iq.id AS instance_question_id,
   s.id AS submission_id
 FROM
-  ai_cluster_assignments AS aca
-  JOIN instance_questions AS iq
-    ON iq.id = aca.instance_question_id
+  instance_questions AS iq
   JOIN assessment_instances AS ai
     ON ai.id = iq.assessment_instance_id
   JOIN variants as v
@@ -92,7 +90,7 @@ FROM
   JOIN submissions AS s
     ON s.variant_id = v.id
 WHERE
-  aca.ai_cluster_id            = $cluster_id
+  iq.ai_cluster_id            = $cluster_id
   AND ai.assessment_id          = $assessment_id
   AND (
     NOT $skip_graded_submissions 

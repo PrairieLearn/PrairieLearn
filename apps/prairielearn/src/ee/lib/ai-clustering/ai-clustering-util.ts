@@ -36,10 +36,11 @@ export async function insertAiClusters({
     }
 
     await runInTransactionAsync(async () => {
-        for (const cluster_name of STANDARD_CLUSTERS) {
+        for (const clusterInfo of STANDARD_CLUSTERS) {
             await queryAsync(sql.create_ai_cluster, {
                 assessment_question_id,
-                cluster_name 
+                cluster_name : clusterInfo.name, 
+                cluster_description: clusterInfo.description
             });
         }
     });

@@ -12,4 +12,4 @@ foreign-key constraints
     ai_clusters_unique_constraint: UNIQUE (assessment_question_id, cluster_name)
 
 referenced by
-    ai_cluster_assignments: FOREIGN KEY (ai_cluster_id) REFERENCES ai_clusters(id) ON DELETE CASCADE
+    instance_questions: FOREIGN KEY (ai_cluster_id) REFERENCES ai_clusters(id) ON UPDATE CASCADE ON DELETE SET NULL

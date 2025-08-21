@@ -494,49 +494,53 @@ function ClusterInfoModal({
       <p>Clustering checks for exact equivalence to the final answer, considering only the boxed or final answer to form groups.</p>
 
       <p>Examples of what can and can't be clustered:</p>
+      
+      <div
+        class="d-grid border rounded overflow-hidden"
+        style="grid-template-columns: 1fr 1fr;"
+      >
+        <!-- Header row -->
+        <div class="px-2 py-1 bg-light fw-bold border-end">Can cluster</div>
+        <div class="px-2 py-1 bg-light fw-bold">Can't cluster</div>
 
-      <table class="table table-sm border">
-        <thead>
-          <tr>
-            <th>Can cluster</th>
-            <th>Can't cluster</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td>Mathematical Equations</td>
-            <td>Essays</td>
-          </tr>
-          <tr>
-            <td>Mechanical Formulas</td>
-            <td>Free Response Questions</td>
-          </tr>
-          <tr>
-            <td>Exact String Inputs</td>
-            <td>Freeform Code</td>
-          </tr>
-        </tbody>
-      </table>
+        <!-- Row 1 -->
+        <div class="px-2 py-1 border-top border-end">Mathematical Equations</div>
+        <div class="px-2 py-1 border-top">Essays</div>
+
+        <!-- Row 2 -->
+        <div class="px-2 py-1 border-top border-end">Mechanical Formulas</div>
+        <div class="px-2 py-1 border-top">Free Response Questions</div>
+
+        <!-- Row 3 -->
+        <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
+        <div class="px-2 py-1 border-top">Freeform Code</div>
+      </div>
       ${(numOpenInstances > 0) && (
-        html`<div class="alert alert-warning gap-2 flex-wrap d-flex align-items-center justify-content-between" role="alert">
-          <div class="flex-1">
-            <p class="my-0">This assessment currently has ${numOpenInstances === 1 ? 'one open instance.' : `${numOpenInstances} open instances.`}</p>
-            <p class="my-0">Choose how to apply clustering:</p>
-          </div>
-          <select class="form-select flex-1" style="max-width: 300px;" name="closed_instance_questions_only">
-            <option
-              value="true"
-              selected
-            >
-              Cluster closed instances only
-            </option>
-            <option
-              value="false"
-            >
-              Cluster closed and open instances
-            </option>
-          </select>
-        </div>`
+       html`<div class="alert alert-warning mt-3" role="alert">
+  <div class="row g-2">
+    <div class="col-12 col-md-6">
+      <p class="my-0">
+        ${numOpenInstances === 1
+          ? html`<b>1 submission</b> awaiting clustering in an open assessment instance.`
+          : html`<b>${numOpenInstances} submissions</b> awaiting clustering are in open assessment instances.`}
+      </p>
+    </div>
+    <div class="col-12 col-md-6 d-flex flex-column gap-2">
+      <p class="my-0">Choose how to apply clustering:</p>
+      <select
+        class="form-select w-auto flex-shrink-0"
+        name="closed_instance_questions_only"
+      >
+        <option value="true" selected>
+          Only cluster closed submissions
+        </option>
+        <option value="false">
+          Cluster open & closed submissions
+        </option>
+      </select>
+    </div>
+  </div>
+</div>`
       )}
     `,
     footer: html`
@@ -561,7 +565,7 @@ function ClusterInfoModal({
             </button>
           `}
         </div>
-        <small class="text-muted my-0">AI can make mistakes. Review cluster assignments before grading.</small>
+        <small class="text-muted my-0 text-end">AI can make mistakes. Review cluster assignments before grading.</small>
       </div>
     `
   })

@@ -228,6 +228,9 @@ ${submission.feedback?.manual}</textarea
                     >
                       This instance question
                     </button>
+
+                    <div class="dropdown-divider"></div>
+
                     <button
                       type="submit"
                       class="dropdown-item"
@@ -244,6 +247,10 @@ ${submission.feedback?.manual}</textarea
                     >
                       All instance questions in cluster
                     </button>
+
+                    <div class="dropdown-item-text text-muted small">
+                      AI can make mistakes. Review cluster assignments before grading.
+                    </div>
                   </div>
                 </div>
                 <button

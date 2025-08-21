@@ -1,8 +1,8 @@
 -- BLOCK create_ai_cluster
 INSERT INTO ai_clusters
-    (assessment_question_id, cluster_name)
+    (assessment_question_id, cluster_name, cluster_description)
 VALUES
-    ($assessment_question_id, $cluster_name)
+    ($assessment_question_id, $cluster_name, $cluster_description)
 
 -- BLOCK select_exists_ai_clusters
 SELECT
@@ -19,9 +19,9 @@ SELECT
 SELECT
     * 
 FROM 
-    instance_questions
+    ai_clusters
 WHERE
-    id = $instance_question_id;
+    id = $ai_cluster_id;
 
 -- BLOCK select_ai_clusters
 SELECT 
