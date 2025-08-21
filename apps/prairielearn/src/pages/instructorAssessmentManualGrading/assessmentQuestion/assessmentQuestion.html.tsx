@@ -516,31 +516,30 @@ function ClusterInfoModal({
         <div class="px-2 py-1 border-top">Freeform Code</div>
       </div>
       ${(numOpenInstances > 0) && (
-       html`<div class="alert alert-warning mt-3" role="alert">
-  <div class="row g-2">
-    <div class="col-12 col-md-6">
-      <p class="my-0">
-        ${numOpenInstances === 1
-          ? html`<b>1 submission</b> awaiting clustering in an open assessment instance.`
-          : html`<b>${numOpenInstances} submissions</b> awaiting clustering are in open assessment instances.`}
-      </p>
-    </div>
-    <div class="col-12 col-md-6 d-flex flex-column gap-2">
-      <p class="my-0">Choose how to apply clustering:</p>
-      <select
-        class="form-select w-auto flex-shrink-0"
-        name="closed_instance_questions_only"
-      >
-        <option value="true" selected>
-          Only cluster closed submissions
-        </option>
-        <option value="false">
-          Cluster open & closed submissions
-        </option>
-      </select>
-    </div>
-  </div>
-</div>`
+       html`
+       <div class="alert alert-warning mt-3" role="alert">
+        <div class="row g-2">
+          <div class="col-12 col-md-6">
+            <p class="my-0">
+              This assessment has ${numOpenInstances === 1 ? 'one open instance that ' : `${numOpenInstances} open instances, which `} may contain submissions selected for clustering.
+            </p>
+          </div>
+          <div class="col-12 col-md-6 d-flex flex-column gap-2">
+            <p class="my-0">Choose how to apply clustering:</p>
+            <select
+              class="form-select w-auto flex-shrink-0"
+              name="closed_instance_questions_only"
+            >
+              <option value="true" selected>
+                Only cluster closed submissions
+              </option>
+              <option value="false">
+                Cluster open & closed submissions
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>`
       )}
     `,
     footer: html`
