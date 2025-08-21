@@ -43,16 +43,16 @@
       "default": false
     },
     "shuffleQuestions": {
-      "description": "Whether the questions will be shuffled in the student view of an assessment",
-      "type": "boolean",
-      "default": false
+      "description": "Whether the questions will be shuffled in the student view of an assessment. If the assessment type is Exam, this is true by default, and otherwise false.",
+      "type": "boolean"
     },
     "allowAccess": {
       "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      }
+      },
+      "default": []
     },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
@@ -68,7 +68,8 @@
     },
     "allowPersonalNotes": {
       "description": "Whether students are allowed to upload personal notes for this assessment.",
-      "type": "boolean"
+      "type": "boolean",
+      "default": true
     },
     "autoClose": {
       "description": "Whether to automatically close the assessment after a period of inactivity.",
@@ -80,7 +81,8 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/ZoneAssessmentJsonSchema"
-      }
+      },
+      "default": []
     },
     "constantQuestionValue": {
       "description": "Whether to keep the value of a question constant after a student solves it correctly.",
@@ -108,18 +110,53 @@
     },
     "groupMaxSize": {
       "description": "Maximum number of students in a group.",
-      "type": "number"
+      "anyOf": [
+        {
+          "description": "Maximum number of students in a group.",
+          "anyOf": [
+            {
+              "not": {}
+            },
+            {
+              "description": "Maximum number of students in a group.",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "groupMinSize": {
       "description": "Minimum number of students in a group.",
-      "type": "number"
+      "anyOf": [
+        {
+          "description": "Minimum number of students in a group.",
+          "anyOf": [
+            {
+              "not": {}
+            },
+            {
+              "description": "Minimum number of students in a group.",
+              "type": "number"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "groupRoles": {
       "description": "Array of custom user roles in a group.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/GroupRoleJsonSchema"
-      }
+      },
+      "default": []
     },
     "canSubmit": {
       "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
@@ -220,8 +257,25 @@
         },
         "examUuid": {
           "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
-          "type": "string",
-          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+          "anyOf": [
+            {
+              "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
+                  "type": "string",
+                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "role": {
           "description": "DEPRECATED -- do not use.",
@@ -231,32 +285,134 @@
         },
         "uids": {
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
+          "anyOf": [
+            {
+              "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "credit": {
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-          "type": "integer",
-          "minimum": 0
+          "anyOf": [
+            {
+              "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "startDate": {
           "description": "The earliest date on which access is permitted.",
-          "type": "string"
+          "anyOf": [
+            {
+              "description": "The earliest date on which access is permitted.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "The earliest date on which access is permitted.",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "endDate": {
           "description": "The latest date on which access is permitted.",
-          "type": "string"
+          "anyOf": [
+            {
+              "description": "The latest date on which access is permitted.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "The latest date on which access is permitted.",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "timeLimitMin": {
           "description": "The time limit to complete the assessment, in minutes (only for Exams).",
-          "type": "integer",
-          "minimum": 0
+          "anyOf": [
+            {
+              "description": "The time limit to complete the assessment, in minutes (only for Exams).",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "The time limit to complete the assessment, in minutes (only for Exams).",
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "password": {
           "description": "Password to begin the assessment (only for Exams).",
-          "type": "string"
+          "anyOf": [
+            {
+              "description": "Password to begin the assessment (only for Exams).",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "description": "Password to begin the assessment (only for Exams).",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "showClosedAssessment": {
           "description": "Whether the student can view the assessment after it has been closed",
@@ -351,22 +507,100 @@
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "$ref": "#/definitions/PointsJsonSchema"
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "autoPoints": {
-          "$ref": "#/definitions/PointsJsonSchema"
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "maxPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "maxAutoPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "manualPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "id": {
           "description": "Question ID (directory name of the question).",
@@ -374,7 +608,8 @@
         },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
+          "default": false
         },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
@@ -433,29 +668,108 @@
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "$ref": "#/definitions/PointsJsonSchema"
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "autoPoints": {
-          "$ref": "#/definitions/PointsJsonSchema"
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "maxPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "maxAutoPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "manualPoints": {
           "description": "A single point value.",
-          "$ref": "#/definitions/PointsSingleJsonSchema"
+          "anyOf": [
+            {
+              "description": "A single point value.",
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "$ref": "#/definitions/PointsSingleJsonSchema"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "id": {
           "$ref": "#/definitions/QuestionIdJsonSchema"
         },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
+          "default": false
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",

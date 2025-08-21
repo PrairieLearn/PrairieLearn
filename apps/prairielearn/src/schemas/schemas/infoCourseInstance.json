@@ -26,7 +26,24 @@
     },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
-      "type": "string"
+      "anyOf": [
+        {
+          "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
+          "anyOf": [
+            {
+              "not": {}
+            },
+            {
+              "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
+              "type": "string"
+            }
+          ]
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
     },
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
@@ -66,25 +83,94 @@
           },
           "uids": {
             "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "anyOf": [
+              {
+                "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
+                "anyOf": [
+                  {
+                    "not": {}
+                  },
+                  {
+                    "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",
-            "type": "string"
+            "anyOf": [
+              {
+                "description": "The earliest date on which access is permitted.",
+                "anyOf": [
+                  {
+                    "not": {}
+                  },
+                  {
+                    "description": "The earliest date on which access is permitted.",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "endDate": {
             "description": "The latest date on which access is permitted.",
-            "type": "string"
+            "anyOf": [
+              {
+                "description": "The latest date on which access is permitted.",
+                "anyOf": [
+                  {
+                    "not": {}
+                  },
+                  {
+                    "description": "The latest date on which access is permitted.",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           },
           "institution": {
             "description": "The institution from which access is permitted.",
-            "type": "string"
+            "anyOf": [
+              {
+                "description": "The institution from which access is permitted.",
+                "anyOf": [
+                  {
+                    "not": {}
+                  },
+                  {
+                    "description": "The institution from which access is permitted.",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null
           }
         }
-      }
+      },
+      "default": []
     },
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
