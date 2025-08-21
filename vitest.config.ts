@@ -128,23 +128,16 @@ export const sharedConfig = defineConfig({
   },
 });
 
-export default defineConfig(async ({ mode, command }) => {
-  // We need to deliberately forward the mode to the PrairieLearn config.
-  // If we just referenced the project by the path, `mode` would not be passed correctly.
-  const prairielearnConfigModule = await import('./apps/prairielearn/vitest.config');
-  const prairielearnConfig = prairielearnConfigModule.default({ mode, command });
-
-  return mergeConfig(
-    sharedConfig,
-    defineConfig({
-      test: {
-        projects: ['packages/*', 'apps/grader-host', 'apps/workspace-host', prairielearnConfig],
-        coverage: {
-          all: true,
-          reporter: ['html', 'text-summary', 'cobertura'],
-          include: ['{apps,packages}/*/src/**'],
-        },
+export default mergeConfig(
+  sharedConfig,
+  defineConfig({
+    test: {
+      projects: ['apps/grader-host', 'apps/prairielearn', 'apps/workspace-host', 'packages/*'],
+      coverage: {
+        all: true,
+        reporter: ['html', 'text-summary', 'cobertura'],
+        include: ['{apps,packages}/*/src/**'],
       },
-    }),
-  );
-});
+    },
+  }),
+);
