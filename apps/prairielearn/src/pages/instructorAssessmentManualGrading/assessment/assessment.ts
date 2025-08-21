@@ -29,9 +29,9 @@ import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessme
 
 const START_INDEX = 0; 
 const MAX_ASSESSMENT_QUESTIONS_TO_PROCESS = 20;
-const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 60;
+const MAX_INSTANCE_QUESTIONS_TO_PROCESS = 330;
 const PARALLEL_LIMIT = 20;
-const SKIP_CLUSTERED_INSTANCE_QUESTIONS = false;
+const SKIP_CLUSTERED_INSTANCE_QUESTIONS = true;
 const INCLUDE_IMAGES = false;
 const INSTANCE_QUESTIONS_TO_TEST: string[] = [];
 // ['19136',
