@@ -316,8 +316,7 @@ export async function writeAndSyncCourseData(courseData: CourseData): Promise<{
  */
 export async function overwriteAndSyncCourseData(courseData: CourseData, courseDir: string) {
   await writeCourseToDirectory(courseData, courseDir);
-  const result = await syncCourseData(courseDir);
-  console.log(result);
+  await syncCourseData(courseDir);
 }
 
 /**

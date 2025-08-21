@@ -1258,8 +1258,8 @@ async function validateAssessment({
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
       if (
-        assessment.groupMinSize &&
         role.minimum != null &&
+        assessment.groupMinSize &&
         role.minimum > assessment.groupMinSize
       ) {
         warnings.push(
@@ -1267,8 +1267,8 @@ async function validateAssessment({
         );
       }
       if (
-        assessment.groupMaxSize &&
         role.minimum != null &&
+        assessment.groupMaxSize &&
         role.minimum > assessment.groupMaxSize
       ) {
         errors.push(

@@ -144,8 +144,6 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('newexam');
 
-    console.log(syncedData);
-
     assert.lengthOf(syncedData.zones, 2);
     assert.equal(syncedData.zones[0].title, 'zone 1');
     assert.equal(syncedData.zones[1].title, 'zone 2');

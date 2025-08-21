@@ -47,8 +47,8 @@ export async function sync(
   if (config.checkInstitutionsOnSync) {
     // Collect all institutions from course instance access rules.
     const institutions = Object.values(courseData.courseInstances)
-      .flatMap(({ courseInstance }) => courseInstance.data?.allowAccess ?? [])
-      .map((accessRule) => accessRule.institution)
+      .flatMap(({ courseInstance }) => courseInstance.data?.allowAccess)
+      .map((accessRule) => accessRule?.institution)
       .filter((institution) => institution != null);
 
     // Select only the valid institution names.
