@@ -58,11 +58,11 @@ export const CourseInstanceJsonSchema = z
     shortName: z.string().describe('DEPRECATED -- do not use.').optional(),
     timezone: z
       .string()
+      .nullable()
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
       .optional()
-      .nullable()
       .default(null),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
     hideInEnrollPage: z

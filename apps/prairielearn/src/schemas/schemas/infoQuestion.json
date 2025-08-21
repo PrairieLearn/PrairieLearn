@@ -4,7 +4,7 @@
   "description": "Info files for questions.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["uuid", "type", "title", "topic"],
+  "required": ["uuid", "title", "topic"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
@@ -18,7 +18,8 @@
     "type": {
       "description": "Type of the question.",
       "type": "string",
-      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
+      "default": "v3"
     },
     "title": {
       "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
@@ -38,13 +39,13 @@
       "default": []
     },
     "clientFiles": {
-      "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
+      "description": "The list of question files accessible by the client.",
       "type": "array",
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
       },
-      "default": []
+      "default": ["client.js", "question.html", "answer.html"]
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",
@@ -310,7 +311,7 @@
       "default": false
     },
     "shareSourcePublicly": {
-      "description": "Whether this questions's source code is publicly shared.",
+      "description": "Whether this question's source code is publicly shared.",
       "type": "boolean",
       "default": false
     }

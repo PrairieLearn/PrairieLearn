@@ -173,6 +173,7 @@ export const QuestionJsonSchema = z
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
       .describe('Type of the question.')
+      .optional()
       .default('v3'),
     title: z
       .string()
@@ -240,7 +241,7 @@ export const QuestionJsonSchema = z
       .default(false),
     shareSourcePublicly: z
       .boolean()
-      .describe("Whether this questions's source code is publicly shared.")
+      .describe("Whether this question's source code is publicly shared.")
       .optional()
       .default(false),
   })
