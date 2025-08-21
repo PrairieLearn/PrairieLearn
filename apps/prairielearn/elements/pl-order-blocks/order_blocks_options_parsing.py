@@ -52,11 +52,6 @@ LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.ORDERED,
 ])
 
-FIRST_WRONG_TYPES = frozenset([
-    FeedbackType.FIRST_WRONG,
-    FeedbackType.FIRST_WRONG_VERBOSE,
-])
-
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
 MAX_INDENTION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
@@ -626,11 +621,6 @@ class OrderBlocksOptions:
         if self.min_incorrect > self.max_incorrect:
             raise ValueError(
                 "The attribute min-incorrect must be smaller than max-incorrect."
-            )
-
-        if self.inline and self.indentation:
-            raise ValueError(
-                "The indentation attribute may not be used when inline is true."
             )
 
     def _validate_answer_options(self) -> None:
