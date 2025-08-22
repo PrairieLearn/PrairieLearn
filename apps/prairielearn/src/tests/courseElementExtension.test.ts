@@ -102,9 +102,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
     test.sequential('find the example question in the database', async () => {
       locals.question = await sqldb.queryRow(
         sql.select_question_by_qid,
-        {
-          qid: testQid,
-        },
+        { qid: testQid },
         QuestionSchema,
       );
     });
