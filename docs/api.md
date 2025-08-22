@@ -22,7 +22,7 @@ Here is an example of using `curl` for a `POST` request:
 curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
-For other HTTP methods, replace the word `POST` with the required method type. Each endpoint below will indicate the method required before listing the URL path of the endpoint.
+For other HTTP methods, replace `POST` with the required method, which is listed for each endpoint below.
 
 ## Providing data to an endpoint
 
