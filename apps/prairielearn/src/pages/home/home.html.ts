@@ -185,8 +185,6 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
         <h2>Courses with instructor access</h2>
       </div>
 
-      <!-- Wrapped in .table-responsive for consistency and to allow horizontal scroll if
-           combined course short name + title string is long on small screens. -->
       <div class="table-responsive">
         <table
           class="table table-sm table-hover table-striped"
@@ -294,8 +292,6 @@ function StudentCoursesCard({
                 </div>
               `
         : html`
-            <!-- Wrapped in .table-responsive to constrain horizontal overflow for long course titles
-                 on narrow viewports. -->
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped" aria-label="${heading}">
                 <tbody>
