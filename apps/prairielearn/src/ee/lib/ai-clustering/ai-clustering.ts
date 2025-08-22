@@ -25,7 +25,9 @@ import {
 const PARALLEL_SUBMISSION_CLUSTERING_LIMIT = 20;
 
 /**
- * Groups instance questions into "Correct" and "Potentially not correct" clusters using AI.
+ * Clusters student submissions based on if their answers match the correct answer exactly. This answer must be in pl-answer-panel.
+ * Answers that match go into one cluster, and those that don’t are grouped separately.
+ * Clustering checks for exact equivalence to the final answer, considering only the boxed or final answer to form groups.
  */
 export async function aiCluster({
   course,
