@@ -26,6 +26,7 @@ import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
@@ -42,7 +43,10 @@ import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
+async function prepareLocalsForRender(
+  query: Record<string, any>,
+  resLocals: ResLocalsForPage['instructor-instance-question'],
+) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behaviour, so we select the last
@@ -58,7 +62,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.questionRenderContext = 'manual_grading';
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -87,7 +91,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
@@ -184,7 +188,7 @@ router.get(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
@@ -219,7 +223,7 @@ router.get(
 
 router.get(
   '/grading_rubric_panels',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
       const gradingPanel = GradingPanel({

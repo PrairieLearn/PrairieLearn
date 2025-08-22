@@ -11,6 +11,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   FileSchema,
+  type GroupConfig,
   GroupSchema,
   IdSchema,
   InstanceQuestionSchema,
@@ -19,7 +20,14 @@ import {
   SprocInstanceQuestionsNextAllowedGradeSchema,
   UserSchema,
 } from '../lib/db-types.js';
-import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
+import {
+  type GroupInfo,
+  type QuestionGroupPermissions,
+  getGroupConfig,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+} from '../lib/groups.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -37,6 +45,7 @@ const InstanceQuestionInfoSchema = z.object({
   sequence_locked: z.boolean(),
   instructor_question_number: z.string(),
 });
+type InstanceQuestionInfo = z.infer<typeof InstanceQuestionInfoSchema>;
 
 const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance: AssessmentInstanceSchema.extend({
@@ -62,6 +71,19 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_label: z.string(),
   file_list: z.array(FileSchema),
 });
+
+export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQuestionSchema> & {
+  instance_question_info: InstanceQuestionInfo & {
+    previous_variants?: SimpleVariantWithScore[];
+  };
+
+  /** These are only set if the assessment has group work. */
+  prev_instance_question_role_permissions?: QuestionGroupPermissions;
+  next_instance_question_role_permissions?: QuestionGroupPermissions;
+  group_config?: GroupConfig;
+  group_info?: GroupInfo;
+  group_role_permissions?: QuestionGroupPermissions;
+};
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(

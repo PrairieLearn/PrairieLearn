@@ -15,7 +15,7 @@ import {
   type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
