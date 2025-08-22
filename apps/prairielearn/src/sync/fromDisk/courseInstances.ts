@@ -19,7 +19,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
   const accessRules = courseInstance.allowAccess
-    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
+    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids,
       start_date: accessRule.startDate,
