@@ -4,7 +4,7 @@
   "description": "Info files for questions.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["uuid", "title", "topic"],
+  "required": ["uuid", "type", "title", "topic"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
@@ -16,10 +16,9 @@
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "type": {
-      "description": "Type of the question.",
+      "description": "Type of the question. This should be set to \"v3\" for most questions.",
       "type": "string",
-      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
-      "default": "v3"
+      "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
     },
     "title": {
       "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
