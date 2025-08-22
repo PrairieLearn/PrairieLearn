@@ -6,91 +6,31 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
-  RubricGradingItemSchema,
-  RubricGradingSchema,
-  type RubricItem,
   RubricItemSchema,
   RubricSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import {
+  type AppliedRubricItem,
+  AppliedRubricItemSchema,
+  InstanceQuestionToUpdateSchema,
+  PartialScoresSchema,
+  type RubricData,
+  RubricDataSchema,
+  RubricGradingDataSchema,
+  type RubricItemInput,
+  SubmissionForScoreUpdateSchema,
+} from './manualGrading.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const AppliedRubricItemSchema = z.object({
-  /** ID of the rubric item to be applied. */
-  rubric_item_id: IdSchema,
-  /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
-  score: z.coerce.number().nullish(),
-});
-type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
-
-export const RubricDataSchema = RubricSchema.extend({
-  rubric_items: z.array(
-    RubricItemSchema.extend({
-      num_submissions: z.number(),
-      description_rendered: z.string().optional(),
-      explanation_rendered: z.string().optional(),
-      grader_note_rendered: z.string().optional(),
-    }),
-  ),
-});
-export type RubricData = z.infer<typeof RubricDataSchema>;
-
-const RubricGradingDataSchema = RubricGradingSchema.extend({
-  rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
-});
-export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
-
-const PartialScoresSchema = z
-  .record(
-    z.string(),
-    z
-      .object({
-        score: z.coerce.number().nullish(),
-        weight: z.coerce.number().nullish(),
-      })
-      .passthrough(),
-  )
-  .nullable();
-
-// Some historical cases of points and score ended up with NaN values stored in
-// the database. In these cases, manual grading will convert the NaN to zero, so
-// that the instructor can still have a chance to fix the issue.
-const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
-
-const SubmissionForScoreUpdateSchema = z.object({
-  submission_id: IdSchema.nullable(),
-  instance_question_id: IdSchema,
-  assessment_instance_id: IdSchema,
-  max_points: PointsSchema,
-  max_auto_points: PointsSchema,
-  max_manual_points: PointsSchema,
-  manual_rubric_id: IdSchema.nullable(),
-  partial_scores: PartialScoresSchema,
-  auto_points: PointsSchema,
-  manual_points: PointsSchema,
-  manual_rubric_grading_id: IdSchema.nullable(),
-  modified_at_conflict: z.boolean(),
-});
-
-const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
-  assessment_id: IdSchema,
-  assessment_instance_id: IdSchema,
-  instance_question_id: IdSchema,
-  submission_id: IdSchema,
-  rubric_settings_changed: z.boolean(),
-  applied_rubric_items: RubricGradingItemSchema.array().nullable(),
-  rubric_items_changed: z.boolean(),
-  is_ai_graded: z.boolean(),
-});
-
-type RubricItemInput = Partial<RubricItem> & { order: number };
 
 /**
  * Builds the URL of an instance question tagged to be manually graded for a particular
@@ -132,7 +72,7 @@ export async function selectRubricData({
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission?: Submission;
+  submission?: Submission | SubmissionForRender | null;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -169,20 +109,6 @@ export async function selectRubricData({
   }
 
   return rubric_data;
-}
-
-/**
- * Populates the locals objects for rubric data. Assigns values to `rubric_data`
- * in the locals.
- *
- * The `assessment_question` is expected to have been retrieved before this call,
- * as well as any value that impacts the mustache rendering, such as `submission`.
- */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
-  locals.rubric_data = await selectRubricData({
-    assessment_question: locals.assessment_question,
-    submission: locals.submission,
-  });
 }
 
 /**

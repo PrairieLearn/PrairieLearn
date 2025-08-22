@@ -55,7 +55,7 @@ router.get(
         navContext: {
           type: 'instructor',
           page: 'instance_admin',
-          subPage: 'gradebook',
+          subPage: 'students',
         },
         content: (
           <Hydrate>

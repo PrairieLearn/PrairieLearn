@@ -1,8 +1,14 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
+import {
+  CourseInstancePermissionSchema,
+  CoursePermissionSchema,
+  UserSchema,
+} from '../../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
@@ -10,16 +16,24 @@ import * as helperServer from '../helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function checkPermissions(users) {
-  const result = await sqldb.queryAsync(sql.select_permissions, {
-    course_id: 1,
-    course_instance_id: 1,
-  });
+  const result = await sqldb.queryRows(
+    sql.select_permissions,
+    {
+      course_id: 1,
+      course_instance_id: 1,
+    },
+    z.object({
+      uid: UserSchema.shape.uid,
+      course_role: CoursePermissionSchema.shape.course_role,
+      course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+    }),
+  );
   assert.includeMembers(
     users.map((user) => user.uid),
-    result.rows.map((row) => row.uid),
+    result.map((row) => row.uid),
   );
   users.forEach((user) => {
-    const row = result.rows.find((row) => row.uid === user.uid);
+    const row = result.find((row) => row.uid === user.uid);
     if (!user.cr) {
       assert.isNotOk(row);
     } else {
@@ -85,7 +99,7 @@ function runTest(context) {
 
   let new_user = 'garbage@example.com';
 
-  beforeAll(helperServer.before().bind(this));
+  beforeAll(helperServer.before());
 
   beforeAll(async function () {
     // Insert necessary users.
@@ -106,8 +120,8 @@ function runTest(context) {
       course_role: 'Owner',
       authn_user_id: '1',
     });
-    const result = await sqldb.queryAsync(sql.select_non_existent_user, {});
-    if (result.rowCount) new_user = result.rows[0].uid;
+    const new_user_uid = await sqldb.queryOptionalRow(sql.select_non_existent_user, z.string());
+    if (new_user_uid) new_user = new_user_uid;
   });
 
   afterAll(helperServer.after);

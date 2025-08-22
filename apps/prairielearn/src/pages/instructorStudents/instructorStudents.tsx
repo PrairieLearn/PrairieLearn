@@ -148,9 +148,14 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'students',
+          },
           courseOwners,
           pageTitle: 'Students',
-          requiredPermissions: 'Instructor',
+          requiredPermissions: 'Student Data Viewer',
         }),
       );
       return;
@@ -187,7 +192,7 @@ router.get(
         content: (
           <>
             <CourseInstanceSyncErrorsAndWarnings
-              authz_data={{
+              authzData={{
                 has_course_instance_permission_edit:
                   authz_data.has_course_instance_permission_edit ?? false,
               }}
