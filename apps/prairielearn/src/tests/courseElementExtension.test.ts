@@ -8,6 +8,7 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { QuestionSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
 import * as freeform from '../question-servers/freeform.js';
 
@@ -99,12 +100,13 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
     test.sequential('find the example question in the database', async () => {
-      const results = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, {
-        qid: testQid,
-      });
-      assert(results.rowCount === 1, `could not find question ${testQid}`);
-
-      locals.question = results.rows[0];
+      locals.question = await sqldb.queryRow(
+        sql.select_question_by_qid,
+        {
+          qid: testQid,
+        },
+        QuestionSchema,
+      );
     });
     test.sequential('check the question page for extension css and js files', async () => {
       const questionUrl =

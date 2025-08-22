@@ -13,6 +13,7 @@ import {
   IssueSchema,
   JobSchema,
   JobSequenceSchema,
+  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
@@ -596,9 +597,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
-        const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, { qid });
-        assert.equal(result.rowCount, 1);
-        locals.question = result.rows[0];
+        locals.question = await sqldb.queryRow(sql.select_question_by_qid, { qid }, QuestionSchema);
       });
       it('should be a Freeform question', function () {
         assert.equal(locals.question?.type, 'Freeform');
