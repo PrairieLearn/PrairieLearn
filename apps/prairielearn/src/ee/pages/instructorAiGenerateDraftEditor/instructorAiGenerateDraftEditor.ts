@@ -27,7 +27,6 @@ import { selectQuestionById } from '../../../models/question.js';
 import {
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
-  getAiQuestionGenerationCache,
   getIntervalUsage,
   regenerateQuestion,
 } from '../../lib/aiQuestionGeneration.js';
@@ -40,8 +39,6 @@ import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEdit
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
-
-const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 async function saveGeneratedQuestion(
   res: Response,
@@ -264,7 +261,6 @@ router.post(
       }
 
       const intervalCost = await getIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
       });
 
@@ -297,7 +293,6 @@ router.post(
       );
 
       addCompletionCostToIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
