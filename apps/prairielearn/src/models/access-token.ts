@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
-export async function insertAccessToken(user_id, token_name) {
+export async function insertAccessToken(user_id: string, token_name: string) {
   const sql = sqldb.loadSqlEquiv(import.meta.url);
 
   const name = token_name;
