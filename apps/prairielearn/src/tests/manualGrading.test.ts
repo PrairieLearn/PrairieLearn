@@ -565,23 +565,20 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         },
       );
 
-      test.sequential(
-        'next button should point to existing instance for all graders',
-        async () => {
-          setUser(defaultUser);
-          let nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
-          assert.equal(nextUrl.status, 302);
-          assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-          setUser(mockStaff[0]);
-          nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
-          assert.equal(nextUrl.status, 302);
-          assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-          setUser(mockStaff[1]);
-          nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
-          assert.equal(nextUrl.status, 302);
-          assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-        },
-      );
+      test.sequential('next button should point to existing instance for all graders', async () => {
+        setUser(defaultUser);
+        let nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        setUser(mockStaff[0]);
+        nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        setUser(mockStaff[1]);
+        nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+      });
     });
 
     describe('Assigning grading to staff members', () => {
