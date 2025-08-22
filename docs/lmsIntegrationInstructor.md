@@ -4,8 +4,6 @@ PrairieLearn can connect to Learning Management Systems (LMSes) using [LTI 1.3](
 
 PrairieLearn LTI 1.3 integration is primarily designed and documented for Canvas. Support for other LMS platforms will be coming in the future.
 
-## Prerequisites
-
 ## Make sure you have the right permissions
 
 Linking a PrairieLearn course instance with a Canvas course requires the following permissions:
