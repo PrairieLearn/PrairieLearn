@@ -485,12 +485,8 @@ export async function getAndRenderVariant(
     issuesLoadExtraData?: boolean;
   } = {},
 ) {
-  // We write a fair amount of unstructured data back into locals,
-  // so we'll cast it to `any` once so we don't have to do it every time.
-  const resultLocals = locals;
-
   const question_course = await getQuestionCourse(locals.question, locals.course);
-  resultLocals.question_is_shared = await sqldb.queryRow(
+  locals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
@@ -530,7 +526,7 @@ export async function getAndRenderVariant(
     }
   });
 
-  resultLocals.variant = variant;
+  locals.variant = variant;
 
   const {
     urlPrefix,
@@ -619,19 +615,20 @@ export async function getAndRenderVariant(
   });
 
   const submission = submissions[0] ?? null;
-  resultLocals.submissions = submissions;
-  resultLocals.submission = submission;
+  locals.submissions = submissions;
+  locals.submission = submission;
 
   if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
     // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-    resultLocals.showTrueAnswer = true;
+    locals.showTrueAnswer = true;
   }
-  // if this isn't true, don't set `resultLocals.showTrueAnswer = false`
+  // We don't want to unconditionally hide things in the "else" case here,
+  // there's other code elsewhere that could have set showTrueAnswer to true, and we should respect that.
 
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: resultLocals.showTrueAnswer ?? false,
+    answer: locals.showTrueAnswer ?? false,
   };
   const htmls = await render(
     course,
@@ -643,13 +640,13 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   );
-  resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
-  resultLocals.questionHtml = htmls.questionHtml;
-  resultLocals.submissionHtmls = htmls.submissionHtmls;
-  resultLocals.answerHtml = htmls.answerHtml;
+  locals.extraHeadersHtml = htmls.extraHeadersHtml;
+  locals.questionHtml = htmls.questionHtml;
+  locals.submissionHtmls = htmls.submissionHtmls;
+  locals.answerHtml = htmls.answerHtml;
 
   // Load issues last in case rendering produced any new ones.
-  resultLocals.issues = await sqldb.queryRows(
+  locals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
       variant_id: variant.id,
@@ -680,12 +677,12 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
+      trueAnswer: locals.showTrueAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    resultLocals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
+    locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
   }
 }
 
