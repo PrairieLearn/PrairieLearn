@@ -108,13 +108,13 @@ router.post(
 
     validateCourseRole({ course_role });
 
-    const job = await insertCoursePermissionsByUserUid({
+    const user = await insertCoursePermissionsByUserUid({
       course_id: req.params.course_id,
       uid,
       course_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ user: job });
+    res.status(200).json({ user: user });
   }),
 );
 
