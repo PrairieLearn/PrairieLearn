@@ -76,10 +76,10 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   instance_question_info: InstanceQuestionInfo & {
     previous_variants?: SimpleVariantWithScore[];
   };
+
+  // These are only set if the assessment has group work.
   prev_instance_question_role_permissions?: QuestionGroupPermissions;
   next_instance_question_role_permissions?: QuestionGroupPermissions;
-  // These are only set if the assessment has group work.
-
   group_config?: GroupConfig;
   group_info?: GroupInfo;
   group_role_permissions?: QuestionGroupPermissions;
