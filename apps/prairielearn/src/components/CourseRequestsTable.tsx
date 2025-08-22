@@ -143,10 +143,11 @@ export function CourseRequestsTable({
                       <tr>
                         <td colspan="${showAll ? 11 : 10}" class="p-0">
                           <div id="course-requests-job-list-${row.id}" class="collapse">
-                            <table
-                              class="table table-sm table-active mb-0"
-                              aria-label="Course request jobs"
-                            >
+                            <div class="table-responsive">
+                              <table
+                                class="table table-sm table-active mb-0"
+                                aria-label="Course request jobs"
+                              >
                               <thead>
                                 <th>Number</th>
                                 <th>Start Date</th>
@@ -175,6 +176,7 @@ export function CourseRequestsTable({
                                 `;
                               })}
                             </table>
+                            </div>
                           </div>
                         </td>
                       </tr>

@@ -580,7 +580,8 @@ function DirectoryBrowserBody({
   csrfToken: string;
 }) {
   return html`
-    <table class="table table-sm table-hover" aria-label="Directories and files">
+    <div class="table-responsive">
+      <table class="table table-sm table-hover" aria-label="Directories and files">
       <thead class="visually-hidden">
         <tr>
           <th>File</th>
@@ -699,6 +700,7 @@ function DirectoryBrowserBody({
         )}
       </tbody>
     </table>
+    </div>
   `;
 }
 

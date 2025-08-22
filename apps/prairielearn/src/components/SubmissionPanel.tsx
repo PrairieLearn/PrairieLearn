@@ -409,10 +409,12 @@ function SubmissionInfoModal({
     id: `submissionInfoModal-${submission.id}`,
     title: 'Submission info',
     body: html`
-      <table
-        class="table table-sm table-borderless two-column-description mb-0"
-        aria-label="Submission info"
-      >
+      <!-- Modal table - table-responsive likely not necessary but added for consistency -->
+      <div class="table-responsive">
+        <table
+          class="table table-sm table-borderless two-column-description mb-0"
+          aria-label="Submission info"
+        >
         <tbody>
           <tr>
             <th>Submission time</th>
@@ -456,6 +458,7 @@ function SubmissionInfoModal({
             : ''}
         </tbody>
       </table>
+      </div>
       ${gradingJobStats ? '' : html`<p class="mt-2">This submission has not been graded.</p>`}
       ${gradingJobStats?.grading_method === 'External'
         ? html`

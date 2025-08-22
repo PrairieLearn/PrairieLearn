@@ -265,10 +265,11 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table
-        class="table table-sm table-hover two-column-description"
-        aria-label="Issue information"
-      >
+      <div class="table-responsive">
+        <table
+          class="table table-sm table-hover two-column-description"
+          aria-label="Issue information"
+        >
         <tbody>
           ${showUserName
             ? html`
@@ -314,6 +315,7 @@ export function IssuePanel({
           </tr>
         </tbody>
       </table>
+      </div>
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`

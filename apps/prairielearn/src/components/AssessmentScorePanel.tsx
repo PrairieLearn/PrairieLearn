@@ -35,7 +35,9 @@ export function AssessmentScorePanel({
           </a>
         </div>
       </div>
-      <table class="table table-sm" aria-label="Assessment score">
+      <!-- Simple score table - table-responsive likely not necessary but added for consistency -->
+      <div class="table-responsive">
+        <table class="table table-sm" aria-label="Assessment score">
         <tbody>
           <tr>
             <td>Total points:</td>
@@ -51,6 +53,7 @@ export function AssessmentScorePanel({
           </tr>
         </tbody>
       </table>
+      </div>
     </div>
   `;
 }

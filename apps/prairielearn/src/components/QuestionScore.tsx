@@ -79,11 +79,13 @@ export function QuestionScorePanelContent({
       instance_question.requires_manual_grading);
 
   return html`
-    <table
-      class="table table-sm two-column-description-no-header"
-      aria-label="Question score"
-      id="question-score-panel-content"
-    >
+    <!-- Score breakdown table - table-responsive likely not necessary but added for consistency -->
+    <div class="table-responsive">
+      <table
+        class="table table-sm two-column-description-no-header"
+        aria-label="Question score"
+        id="question-score-panel-content"
+      >
       <tbody>
         ${assessment.type === 'Exam'
           ? html`
@@ -201,6 +203,7 @@ export function QuestionScorePanelContent({
           : ''}
       </tbody>
     </table>
+    </div>
   `;
 }
 
