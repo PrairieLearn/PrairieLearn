@@ -576,6 +576,7 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
+  joined_at: DateFromISOString.nullable(),
   lti_managed: z.boolean(),
   pending_lti13_email: z.string().nullable(),
   pending_lti13_instance_id: IdSchema.nullable(),
