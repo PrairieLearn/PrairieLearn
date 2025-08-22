@@ -116,9 +116,9 @@ export function UserSettings({
                       <div class="small text-muted">
                         Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
-                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank">
-                          Share your feedback
-                        </a>
+                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank"
+                          >Share your feedback</a
+                        >
                         to help us improve the new design.
                       </div>
                     </div>

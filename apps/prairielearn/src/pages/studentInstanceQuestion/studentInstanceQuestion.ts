@@ -277,7 +277,7 @@ router.get(
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.group_role_permissions,
+      groupRolePermissions: res.locals.group_role_permissions ?? null,
     });
     res.json(panels);
   }),
@@ -344,6 +344,10 @@ router.get(
       res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
+      assert(
+        res.locals.assessment_instance.group_id !== null,
+        'assessment_instance.group_id is null',
+      );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
         res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.prev_instance_question.id,

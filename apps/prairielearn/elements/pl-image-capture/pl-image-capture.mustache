@@ -93,7 +93,6 @@ $(function() {
       </div>
       {{/editable}}
     </div>
-
     {{#editable}}
     <div class="d-flex gap-2 flex-wrap p-2 justify-content-end border-top">
       <button
@@ -103,55 +102,84 @@ $(function() {
         <i class="bi bi-crop me-1"></i>
         Crop/rotate
       </button>
-      <button
-        type="button"
-        class="js-capture-with-local-camera-button btn btn-info btn-sm"
-      >
-        <i class="bi bi-camera-fill me-1"></i>
-        <span>Use webcam</span>
-      </button>
-      {{#mobile_capture_enabled}}
+      <div class="js-capture-buttons-horizontal d-flex gap-2 flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="js-capture-with-local-camera-button btn btn-info btn-sm"
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          <span>Use webcam</span>
+        </button>
+        {{#mobile_capture_enabled}}
         <button 
           type="button" 
           class="js-capture-with-mobile-device-button btn btn-info btn-sm"
-          data-bs-toggle="popover"
-          data-bs-container="body"
-          data-bs-html="true"
-          data-bs-placement="auto"
-          data-bs-title="Capture with mobile device"
-          data-bs-content='
-          <div class="w-100 d-flex flex-column align-items-center">
-            {{#external_image_capture_available}}
-              <div id="qr-code-{{uuid}}" class="mb-3 bg-body-secondary d-flex justify-content-center align-items-center border" style="width:200px;height:200px">
-                <div class="spinning-wheel spinner-border">
-                  <span class="visually-hidden">Loading...</span>
-                </div>
-              </div>
-              <p class="small text-muted mb-0">
-                Scan the QR code with your mobile device to capture an image of your work. 
-              </p>
-            {{/external_image_capture_available}}
-            {{^external_image_capture_available}}
-              <p class="small text-muted mb-0">
-                Mobile device capture is not available in this environment.
-              </p>
-              <p class="small text-muted mb-0 mt-3">
-                It will be available once the question is deployed to production.
-              </p>
-              <p class="small text-muted mb-0 mt-3">
-                For setup instructions to enable mobile capture locally, refer to the <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
-              </p>
-            {{/external_image_capture_available}}
-          </div>
-          '
         >
           <i class="bi bi-qr-code-scan me-1"></i>
           <span>Use phone</span>
         </button>
+        {{/mobile_capture_enabled}}
+      </div>
+      {{#mobile_capture_enabled}}
+        <div class="js-capture-buttons-dropdown dropdown d-none">
+          <button 
+            id="retake-dropdown-button" 
+            type="button" 
+            class="btn btn-sm btn-info dropdown-toggle" 
+            aria-expanded="false" 
+            data-bs-toggle="dropdown" 
+            data-bs-auto-close="outside"
+          >
+            Retake...
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="retake-dropdown-button">
+            <li>
+              <button
+                type="button"
+                class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-camera-fill me-1"></i>
+                <span>Use webcam</span>
+              </button>
+            </li>
+            <li>
+              <button 
+                type="button" 
+                class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-qr-code-scan me-1"></i>
+                <span>Use phone</span>
+              </button>
+            </li>
+          </ul>
+        </div>
       {{/mobile_capture_enabled}}
+      <button
+        type="button"
+        class="js-delete-captured-image-button btn btn-sm btn-danger d-none"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-title="Confirm deletion"
+        data-bs-content='
+        <div class="w-100">
+          <p class="text-muted">
+            Are you sure? This will delete your image permanently.
+          </p>
+          <div class="d-flex justify-content-end gap-2">
+            <button id="confirm-delete-{{uuid}}" class="btn btn-danger btn-sm" data-bs-dismiss="popover">Delete</button>
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="popover">Cancel</button>
+          </div>
+        </div>
+        '
+      >
+        <i class="bi bi-trash-fill me-1"></i>
+        <span>Delete</span>
+      </button>
     </div>
-    {{/editable}}
   </div>
+  {{/editable}}
   {{#editable}}
   <div class="js-local-camera-capture-container d-none flex-column">
     <div class="position-relative border-bottom">
@@ -237,7 +265,7 @@ $(function() {
 
         <button 
           type="button"
-          class="js-flip-horizontal-button btn btn-light border"
+          class="js-flip-horizontal-button btn btn-light border btn-sm"
           title="Flip horizontally"
           data-bs-toggle="tooltip"
           data-bs-placement="top"
@@ -247,13 +275,25 @@ $(function() {
         </button>
         <button 
           type="button"
-          class="js-flip-vertical-button btn btn-light border"
+          class="js-flip-vertical-button btn btn-light border btn-sm"
           title="Flip vertically"
           data-bs-toggle="tooltip"
           data-bs-placement="top"
           aria-label="Flip vertically"
         >
           <i class="bi bi-symmetry-horizontal"></i>
+        </button>
+
+        <button 
+          type="button" 
+          class="js-crop-rotate-reset-button btn btn-danger btn-sm"
+          title="Reset crop/rotation"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          data-bs-trigger="hover"
+          aria-label="Reset crop/rotation"
+        >
+          Reset
         </button>
       </div>
       <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">

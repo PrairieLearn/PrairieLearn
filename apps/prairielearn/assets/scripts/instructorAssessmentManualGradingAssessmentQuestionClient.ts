@@ -4,7 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import { type RubricData } from '../../src/lib/manualGrading.js';
+import { type RubricData } from '../../src/lib/manualGrading.types.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -595,7 +595,7 @@ function updatePointsPopoverHandlers(this: Element) {
 function updateGradingTagButton() {
   $('.grading-tag-button').prop(
     'disabled',
-    !$('#grading-table').bootstrapTable('getSelections').length,
+    $('#grading-table').bootstrapTable('getSelections').length === 0,
   );
 }
 

@@ -1,10 +1,10 @@
 CREATE FUNCTION
     sync_assessments(
-        IN disk_assessments_data JSONB[],
+        IN disk_assessments_data jsonb[],
         IN syncing_course_id bigint,
         IN syncing_course_instance_id bigint,
         IN check_sharing_on_sync boolean,
-        OUT name_to_id_map JSONB
+        OUT name_to_id_map jsonb
     )
 AS $$
 DECLARE

@@ -95,6 +95,7 @@ jobs:
     name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
@@ -190,6 +191,7 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
   merge-native-test-reports:
     name: Native (merge test reports)
     if: ${{ !cancelled() }}

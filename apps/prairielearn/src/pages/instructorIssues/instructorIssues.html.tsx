@@ -93,7 +93,7 @@ export function InstructorIssues({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           course={course}
           urlPrefix={urlPrefix}
         />,
@@ -308,7 +308,7 @@ function IssueRow({
         ${issue.assessment && issue.course_instance_id
           ? AssessmentBadgeHtml({
               plainUrlPrefix,
-              course_instance_id: issue.course_instance_id,
+              courseInstanceId: issue.course_instance_id,
               hideLink: issue.hideAssessmentLink,
               assessment: issue.assessment,
             })

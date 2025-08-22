@@ -357,7 +357,7 @@ export async function createGroup(
         'The group name is too long. Use at most 30 alphanumerical characters.',
       );
     }
-    if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+    if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
       throw new GroupOperationError(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
@@ -445,9 +445,11 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {}).flat();
 
-  const leavingUserRoleIds = groupRoleAssignments
-    .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-    .map(({ group_role_id }) => group_role_id);
+  const leavingUserRoleIds = new Set(
+    groupRoleAssignments
+      .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
+      .map(({ group_role_id }) => group_role_id),
+  );
 
   const roleIdsToReassign =
     groupInfo.rolesInfo?.groupRoles
@@ -455,7 +457,7 @@ export function getGroupRoleReassignmentsAfterLeave(
         (role) =>
           (role.minimum ?? 0) > 0 &&
           role.count <= (role.minimum ?? 0) &&
-          leavingUserRoleIds.includes(role.id),
+          leavingUserRoleIds.has(role.id),
       )
       .map((role) => role.id) ?? [];
 

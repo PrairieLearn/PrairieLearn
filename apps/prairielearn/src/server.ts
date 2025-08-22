@@ -1261,6 +1261,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/student',
+    (await import('./pages/instructorStudentDetail/instructorStudentDetail.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students',
     (await import('./pages/instructorStudents/instructorStudents.js')).default,
   );
@@ -1891,10 +1895,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator',
     asyncHandler(async (req, res, next) => {
-      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
         user_id: res.locals.authn_user.user_id,
       });
-      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
       next();
     }),
   );
@@ -1985,7 +1989,7 @@ export async function initExpress(): Promise<Express> {
     const rawCode = err?.data?.sqlError?.code;
     if (!rawCode?.startsWith('ST')) return null;
 
-    const parsedCode = Number(rawCode.toString().substring(2));
+    const parsedCode = Number(rawCode.toString().slice(2));
     if (Number.isNaN(parsedCode)) return null;
 
     return parsedCode;
@@ -2060,6 +2064,7 @@ export async function startServer(app: express.Express) {
         valueType: opentelemetry.ValueType.INT,
         interval: 1000,
       },
+      // @ts-expect-error TODO: type correctly
       () => {
         return util.promisify(server.getConnections.bind(server))();
       },
