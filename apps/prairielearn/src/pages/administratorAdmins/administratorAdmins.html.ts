@@ -140,7 +140,7 @@ function AdministratorDeleteForm({
       <div class="mb-3"><strong>UID:</strong> ${uid}</div>
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Remove access</button>
+        <button type="submit" class="btn btn-danger">Remove access</button>
       </div>
     </form>
   `;

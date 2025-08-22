@@ -88,7 +88,7 @@ export function InstructorCourseAdminStaff({
           <div class="ms-auto">
             <button
               type="button"
-              class="btn btn-light btn-sm"
+              class="btn btn-danger btn-sm"
               aria-label="Remove all student data access"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -107,7 +107,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm"
+              class="btn btn-danger btn-sm"
               aria-label="Delete users with no access"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -126,7 +126,7 @@ export function InstructorCourseAdminStaff({
             </button>
             <button
               type="button"
-              class="btn btn-light btn-sm"
+              class="btn btn-danger btn-sm"
               aria-label="Delete non-owners"
               data-bs-toggle="popover"
               data-bs-container="body"
@@ -354,7 +354,7 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete non-owners</button>
+        <button type="submit" class="btn btn-danger">Delete non-owners</button>
       </div>
     </form>
   `;
@@ -679,7 +679,7 @@ function StaffTable({
                         <input type="hidden" name="__action" value="course_permissions_delete" />
                         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                         <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                        <button type="submit" class="btn btn-sm btn-outline-dark">
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
                           <i class="fa fa-times"></i> Delete user
                         </button>
                       </form>
