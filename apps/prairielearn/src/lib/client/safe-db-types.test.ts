@@ -266,9 +266,13 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
   id: '1',
-  lti_synced: false,
+  lti_managed: false,
+  pending_lti13_email: null,
   pending_uid: null,
+  pending_lti13_instance_id: null,
+  pending_lti13_name: null,
   status: 'joined',
+  user_id: null,
 };
 
 const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {

@@ -187,9 +187,13 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
   id: true,
-  lti_synced: true,
+  lti_managed: true,
+  pending_lti13_email: true,
+  pending_lti13_instance_id: true,
+  pending_lti13_name: true,
   pending_uid: true,
   status: true,
+  user_id: true,
 });
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;

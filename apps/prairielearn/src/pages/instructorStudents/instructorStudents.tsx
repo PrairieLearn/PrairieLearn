@@ -103,11 +103,11 @@ router.post(
         return;
       }
 
-      // Case 2: the user has a pending non-LTI invitation, and we can't invite them again.
-      const isPending = existingEnrollment.status === 'invited' && !existingEnrollment.lti_synced;
+      // Case 2: the user has a existing invitation, we can't invite them again.
+      const hasExistingInvitation = existingEnrollment.status === 'invited';
 
-      if (isPending) {
-        res.status(400).json({ error: 'The user has a pending invitation' });
+      if (hasExistingInvitation) {
+        res.status(400).json({ error: 'The user has a existing invitation' });
         return;
       }
 
