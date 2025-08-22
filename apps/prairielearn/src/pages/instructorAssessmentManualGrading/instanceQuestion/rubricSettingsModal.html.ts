@@ -4,7 +4,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../../../lib/config.js';
-import { type RubricData } from '../../../lib/manualGrading.js';
+import { type RubricData } from '../../../lib/manualGrading.types.js';
 
 /** Popover for users to import rubric settings from a JSON file. */
 function ImportRubricSettingsPopover() {

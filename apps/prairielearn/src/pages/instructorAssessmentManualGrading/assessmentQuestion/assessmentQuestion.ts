@@ -18,6 +18,7 @@ import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -33,7 +34,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-assessment-question'>(async (req, res) => {
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
