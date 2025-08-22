@@ -204,7 +204,7 @@ Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]
     {{#feedback.value1}}<div>Feedback: {{.}}</div>{{/feedback.value1}}
     ```
 
-Overall question feedback in `data["feedback"][NAME]` needs to be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]`, if supported by the element, will be rendered automatically by the elements, assuming the element is visible.
+Overall question feedback in `data["feedback"][NAME]` needs to be rendered explicitly in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]`, if supported by the element, will be rendered automatically by the elements, assuming the element is visible.
 
 ### Grading floating-point answers
 
