@@ -6,7 +6,7 @@ import {
   IdSchema,
   InstanceQuestionSchema,
 } from '../../../lib/db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.js';
+import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_open: z.boolean(),
