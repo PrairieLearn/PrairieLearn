@@ -710,7 +710,18 @@ async function loadAndValidateJson<T extends ZodSchema>({
 
   // If we didn't get any errors with the ajv schema, we will re-parse with Zod, which will fill in default values and let us
   // use the output type.
-  loadedJson.data = zodSchema.parse(loadedJson.data);
+  const result = zodSchema.safeParse(loadedJson.data);
+  if (!result.success) {
+    infofile.addErrors(
+      loadedJson,
+      result.error.issues.map(
+        (e) =>
+          `code: ${e.code}, path: ${e.path.join('.')}, message: ${e.message}. Report this error to the PL team, this should not happen.`,
+      ),
+    );
+    return loadedJson;
+  }
+  loadedJson.data = result.data;
 
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
