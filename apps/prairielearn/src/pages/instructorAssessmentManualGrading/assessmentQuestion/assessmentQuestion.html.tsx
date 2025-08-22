@@ -544,9 +544,14 @@ function ClusterInfoModal({
     footer: html`
       <div class="m-0">
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
           ${modalFor === 'all'
-            ? html` <button class="btn btn-primary" type="submit">Cluster submissions</button> `
+            ? html` 
+              <button 
+                class="btn btn-primary" 
+                type="submit"
+              >
+                Cluster submissions
+              </button> `
             : html`
                 <button
                   class="btn btn-primary"
