@@ -275,8 +275,6 @@ export function StudentAssessmentInstance({
             : ''}
         </div>
 
-        <!-- Wrapped in .table-responsive due to potentially large number of dynamic columns (auto/manual/total, variant history,
-             available points, etc.) which can overflow on smaller screens or when accessibility tools increase font size. -->
         <div class="table-responsive">
           <table
             class="table table-sm table-hover"
