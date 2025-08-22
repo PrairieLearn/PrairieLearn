@@ -110,44 +110,12 @@
     },
     "groupMaxSize": {
       "description": "Maximum number of students in a group.",
-      "anyOf": [
-        {
-          "description": "Maximum number of students in a group.",
-          "anyOf": [
-            {
-              "not": {}
-            },
-            {
-              "description": "Maximum number of students in a group.",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "type": ["number", "null"],
       "default": null
     },
     "groupMinSize": {
       "description": "Minimum number of students in a group.",
-      "anyOf": [
-        {
-          "description": "Minimum number of students in a group.",
-          "anyOf": [
-            {
-              "not": {}
-            },
-            {
-              "description": "Minimum number of students in a group.",
-              "type": "number"
-            }
-          ]
-        },
-        {
-          "type": "null"
-        }
-      ],
+      "type": ["number", "null"],
       "default": null
     },
     "groupRoles": {
@@ -259,17 +227,8 @@
           "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
           "anyOf": [
             {
-              "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
-                  "type": "string",
-                  "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-                }
-              ]
+              "type": "string",
+              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
             },
             {
               "type": "null"
@@ -287,19 +246,10 @@
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
           "anyOf": [
             {
-              "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-                  "type": "array",
-                  "items": {
-                    "type": "string"
-                  }
-                }
-              ]
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
             },
             {
               "type": "null"
@@ -311,17 +261,8 @@
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
           "anyOf": [
             {
-              "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-                  "type": "integer",
-                  "minimum": 0
-                }
-              ]
+              "type": "integer",
+              "minimum": 0
             },
             {
               "type": "null"
@@ -331,61 +272,20 @@
         },
         "startDate": {
           "description": "The earliest date on which access is permitted.",
-          "anyOf": [
-            {
-              "description": "The earliest date on which access is permitted.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "The earliest date on which access is permitted.",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "type": ["string", "null"],
           "default": null
         },
         "endDate": {
           "description": "The latest date on which access is permitted.",
-          "anyOf": [
-            {
-              "description": "The latest date on which access is permitted.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "The latest date on which access is permitted.",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "type": ["string", "null"],
           "default": null
         },
         "timeLimitMin": {
           "description": "The time limit to complete the assessment, in minutes (only for Exams).",
           "anyOf": [
             {
-              "description": "The time limit to complete the assessment, in minutes (only for Exams).",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "The time limit to complete the assessment, in minutes (only for Exams).",
-                  "type": "integer",
-                  "minimum": 0
-                }
-              ]
+              "type": "integer",
+              "minimum": 0
             },
             {
               "type": "null"
@@ -395,23 +295,7 @@
         },
         "password": {
           "description": "Password to begin the assessment (only for Exams).",
-          "anyOf": [
-            {
-              "description": "Password to begin the assessment (only for Exams).",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "description": "Password to begin the assessment (only for Exams).",
-                  "type": "string"
-                }
-              ]
-            },
-            {
-              "type": "null"
-            }
-          ],
+          "type": ["string", "null"],
           "default": null
         },
         "showClosedAssessment": {
@@ -509,14 +393,7 @@
         "points": {
           "anyOf": [
             {
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsJsonSchema"
             },
             {
               "type": "null"
@@ -527,14 +404,7 @@
         "autoPoints": {
           "anyOf": [
             {
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsJsonSchema"
             },
             {
               "type": "null"
@@ -546,15 +416,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"
@@ -566,15 +428,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"
@@ -586,15 +440,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"
@@ -670,14 +516,7 @@
         "points": {
           "anyOf": [
             {
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsJsonSchema"
             },
             {
               "type": "null"
@@ -688,14 +527,7 @@
         "autoPoints": {
           "anyOf": [
             {
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsJsonSchema"
             },
             {
               "type": "null"
@@ -707,15 +539,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"
@@ -727,15 +551,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"
@@ -747,15 +563,7 @@
           "description": "A single point value.",
           "anyOf": [
             {
-              "description": "A single point value.",
-              "anyOf": [
-                {
-                  "not": {}
-                },
-                {
-                  "$ref": "#/definitions/PointsSingleJsonSchema"
-                }
-              ]
+              "$ref": "#/definitions/PointsSingleJsonSchema"
             },
             {
               "type": "null"

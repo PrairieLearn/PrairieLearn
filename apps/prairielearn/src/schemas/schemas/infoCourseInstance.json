@@ -69,19 +69,10 @@
             "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
             "anyOf": [
               {
-                "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-                "anyOf": [
-                  {
-                    "not": {}
-                  },
-                  {
-                    "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                ]
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               },
               {
                 "type": "null"
@@ -91,65 +82,17 @@
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",
-            "anyOf": [
-              {
-                "description": "The earliest date on which access is permitted.",
-                "anyOf": [
-                  {
-                    "not": {}
-                  },
-                  {
-                    "description": "The earliest date on which access is permitted.",
-                    "type": "string"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": ["string", "null"],
             "default": null
           },
           "endDate": {
             "description": "The latest date on which access is permitted.",
-            "anyOf": [
-              {
-                "description": "The latest date on which access is permitted.",
-                "anyOf": [
-                  {
-                    "not": {}
-                  },
-                  {
-                    "description": "The latest date on which access is permitted.",
-                    "type": "string"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": ["string", "null"],
             "default": null
           },
           "institution": {
             "description": "The institution from which access is permitted.",
-            "anyOf": [
-              {
-                "description": "The institution from which access is permitted.",
-                "anyOf": [
-                  {
-                    "not": {}
-                  },
-                  {
-                    "description": "The institution from which access is permitted.",
-                    "type": "string"
-                  }
-                ]
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": ["string", "null"],
             "default": null
           }
         }

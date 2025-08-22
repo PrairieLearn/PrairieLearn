@@ -11,29 +11,29 @@ const AccessRuleJsonSchema = z
       .optional(),
     uids: z
       .array(z.string())
+      .nullable()
       .describe(
         "A list of UIDs (like 'username@example.com'), one of which is required for access.",
       )
       .optional()
-      .nullable()
       .default(null),
     startDate: z
       .string()
+      .nullable()
       .describe('The earliest date on which access is permitted.')
       .optional()
-      .nullable()
       .default(null),
     endDate: z
       .string()
+      .nullable()
       .describe('The latest date on which access is permitted.')
       .optional()
-      .nullable()
       .default(null),
     institution: z
       .string()
+      .nullable()
       .describe('The institution from which access is permitted.')
       .optional()
-      .nullable()
       .default(null),
   })
   .strict()

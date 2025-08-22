@@ -40,56 +40,56 @@ export const AssessmentAccessRuleJsonSchema = z
     examUuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
+      .nullable()
       .describe(
         'The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.',
       )
       .optional()
-      .nullable()
       .default(null),
     role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
     uids: z
       .array(z.string())
+      .nullable()
       .describe(
         "A list of UIDs (like 'username@example.com'), one of which is required for access.",
       )
       .optional()
-      .nullable()
       .default(null),
     credit: z
       .number()
       .int()
       .gte(0)
+      .nullable()
       .describe(
         'How much credit is awarded for doing the homework, as a percentage (100 means full credit).',
       )
       .optional()
-      .nullable()
       .default(null),
     startDate: z
       .string()
+      .nullable()
       .describe('The earliest date on which access is permitted.')
       .optional()
-      .nullable()
       .default(null),
     endDate: z
       .string()
+      .nullable()
       .describe('The latest date on which access is permitted.')
       .optional()
-      .nullable()
       .default(null),
     timeLimitMin: z
       .number()
       .int()
       .gte(0)
+      .nullable()
       .describe('The time limit to complete the assessment, in minutes (only for Exams).')
       .optional()
-      .nullable()
       .default(null),
     password: z
       .string()
+      .nullable()
       .describe('Password to begin the assessment (only for Exams).')
       .optional()
-      .nullable()
       .default(null),
     showClosedAssessment: z
       .boolean()
@@ -121,8 +121,8 @@ export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSc
 export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
-  .describe('A single point value.')
-  .default(0);
+  .default(0)
+  .describe('A single point value.');
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
@@ -147,11 +147,11 @@ export const AdvanceScorePercJsonSchema = z
   .describe('Minimum score percentage to unlock access to subsequent questions.');
 
 const QuestionPointsJsonSchema = z.object({
-  points: PointsJsonSchema.optional().nullable().default(null),
-  autoPoints: PointsJsonSchema.optional().nullable().default(null),
-  maxPoints: PointsSingleJsonSchema.optional().nullable().default(null),
-  maxAutoPoints: PointsSingleJsonSchema.optional().nullable().default(null),
-  manualPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  points: PointsJsonSchema.nullable().optional().default(null),
+  autoPoints: PointsJsonSchema.nullable().optional().default(null),
+  maxPoints: PointsSingleJsonSchema.nullable().optional().default(null),
+  maxAutoPoints: PointsSingleJsonSchema.nullable().optional().default(null),
+  manualPoints: PointsSingleJsonSchema.nullable().optional().default(null),
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
@@ -180,11 +180,11 @@ export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSche
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
-  points: PointsJsonSchema.optional().nullable().default(null),
-  autoPoints: PointsJsonSchema.optional().nullable().default(null),
-  maxPoints: PointsSingleJsonSchema.optional().nullable().default(null),
-  maxAutoPoints: PointsSingleJsonSchema.optional().nullable().default(null),
-  manualPoints: PointsSingleJsonSchema.optional().nullable().default(null),
+  points: PointsJsonSchema.nullable().optional().default(null),
+  autoPoints: PointsJsonSchema.nullable().optional().default(null),
+  maxPoints: PointsSingleJsonSchema.nullable().optional().default(null),
+  maxAutoPoints: PointsSingleJsonSchema.nullable().optional().default(null),
+  manualPoints: PointsSingleJsonSchema.nullable().optional().default(null),
   id: QuestionIdJsonSchema.optional(),
   forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
   alternatives: z
@@ -381,15 +381,15 @@ export const AssessmentJsonSchema = z
       .default(false),
     groupMaxSize: z
       .number()
+      .nullable()
       .describe('Maximum number of students in a group.')
       .optional()
-      .nullable()
       .default(null),
     groupMinSize: z
       .number()
+      .nullable()
       .describe('Minimum number of students in a group.')
       .optional()
-      .nullable()
       .default(null),
     groupRoles: z
       .array(GroupRoleJsonSchema)
