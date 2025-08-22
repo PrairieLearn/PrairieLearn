@@ -109,9 +109,9 @@ export default tseslint.config([
       '@html-eslint': html,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
+      '@tanstack/query': pluginQuery,
       perfectionist,
       unicorn: eslintPluginUnicorn,
-      '@tanstack/query': pluginQuery,
     },
 
     rules: {
