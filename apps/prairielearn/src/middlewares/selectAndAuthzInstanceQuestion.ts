@@ -102,9 +102,6 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
 
   Object.assign(res.locals, row);
 
-  // Graded submissions are skipped by default.
-  res.locals.skip_graded_submissions = req.session?.skip_graded_submissions ?? true;
-
   if (res.locals.assessment.group_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(

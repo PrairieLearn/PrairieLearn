@@ -180,7 +180,8 @@ ${submission.feedback?.manual}</textarea
             <div class="btn-group">
               <a
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals.instance_question.id}"
+                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals
+                  .instance_question.id}"
               >
                 ${skip_text}
               </a>
