@@ -16,10 +16,10 @@
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "type": {
-      "description": "Type of the question.",
+      "description": "Type of the question. This should be set to \"v3\" for most questions.",
       "type": "string",
       "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"],
-      "default": "v3"
+      "default": "Calculation"
     },
     "title": {
       "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
