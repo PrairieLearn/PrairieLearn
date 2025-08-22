@@ -1,6 +1,14 @@
-import { IdSchema } from '@prairielearn/zod';
 import { z } from 'zod';
-import { RubricGradingItemSchema, RubricGradingSchema, RubricItemSchema, RubricSchema, type RubricItem } from './db-types.js';
+
+import { IdSchema } from '@prairielearn/zod';
+
+import {
+  RubricGradingItemSchema,
+  RubricGradingSchema,
+  type RubricItem,
+  RubricItemSchema,
+  RubricSchema,
+} from './db-types.js';
 
 export const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */

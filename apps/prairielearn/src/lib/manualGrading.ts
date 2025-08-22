@@ -15,11 +15,21 @@ import {
   IdSchema,
   RubricItemSchema,
   RubricSchema,
-  type Submission
+  type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import { AppliedRubricItemSchema, InstanceQuestionToUpdateSchema, PartialScoresSchema, RubricDataSchema, RubricGradingDataSchema, SubmissionForScoreUpdateSchema, type AppliedRubricItem, type RubricData, type RubricItemInput } from './manualGrading.types.js';
+import {
+  type AppliedRubricItem,
+  AppliedRubricItemSchema,
+  InstanceQuestionToUpdateSchema,
+  PartialScoresSchema,
+  type RubricData,
+  RubricDataSchema,
+  RubricGradingDataSchema,
+  type RubricItemInput,
+  SubmissionForScoreUpdateSchema,
+} from './manualGrading.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
