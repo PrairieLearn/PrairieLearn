@@ -526,7 +526,7 @@ function GroupInfoModal({
             <p class="my-0">
               This assessment has
               ${numOpenInstances === 1
-                ? 'one open instance that '
+                ? '1 open instance that '
                 : `${numOpenInstances} open instances, which `}
               may contain submissions selected for grouping.
             </p>
