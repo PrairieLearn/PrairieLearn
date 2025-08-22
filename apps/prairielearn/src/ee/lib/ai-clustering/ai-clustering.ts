@@ -54,9 +54,8 @@ export async function aiCluster({
    */
   instance_question_ids?: string[];
 }) {
-  // If OpenAI API Key and Organization are not provided, throw an error
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-    throw new HttpStatusError(403, 'Not implemented (feature not available)');
+    throw new HttpStatusError(403, 'Feature not available.');
   }
 
   const openai = new OpenAI({
@@ -102,6 +101,8 @@ export async function aiCluster({
     const clusters = await selectAiClusters({
       assessmentQuestionId: assessment_question.id,
     });
+
+    // TODO: Match the official cluster list to these clusters. Throw an error.
 
     const likelyMatchCluster = clusters.find((c) => c.cluster_name === 'Likely Match');
     const reviewNeededCluster = clusters.find((c) => c.cluster_name === 'Review Needed');
