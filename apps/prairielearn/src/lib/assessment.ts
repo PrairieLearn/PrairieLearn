@@ -412,7 +412,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
 
     // check whether we need to update the statistics
     const needs_statistics_update = await sqldb.queryRow(
-      sql.select_assessment_needs_statisics_update,
+      sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
     );

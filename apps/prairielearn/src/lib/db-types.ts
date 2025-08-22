@@ -11,8 +11,6 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
-// elements, elementExtensions, clientFilesCourse, serverFilesCourse, clientFilesCourseInstance, clientFilesAssessment, question
-
 export const EnumChunkTypeSchema = z.enum([
   'elements',
   'elementExtensions',
@@ -23,6 +21,16 @@ export const EnumChunkTypeSchema = z.enum([
   'question',
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
+
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+  'lti13_pending',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
@@ -568,7 +576,14 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  user_id: IdSchema,
+  lti_managed: z.boolean(),
+  pending_lti13_email: z.string().nullable(),
+  pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_name: z.string().nullable(),
+  pending_lti13_sub: z.string().nullable(),
+  pending_uid: z.string().nullable(),
+  status: EnumEnrollmentStatusSchema,
+  user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
@@ -1058,9 +1073,13 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
-
 export const QuestionScoreLogSchema = null;
-export const QuestionTagSchema = null;
+export const QuestionTagSchema = z.object({
+  id: IdSchema,
+  question_id: IdSchema,
+  tag_id: IdSchema,
+});
+export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const ReservationSchema = null;
 
 export const RubricSchema = z.object({

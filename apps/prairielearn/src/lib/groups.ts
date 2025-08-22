@@ -171,6 +171,12 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
   };
 }
 
+const QuestionGroupPermissionsSchema = z.object({
+  can_submit: z.boolean(),
+  can_view: z.boolean(),
+});
+export type QuestionGroupPermissions = z.infer<typeof QuestionGroupPermissionsSchema>;
+
 /**
  * This function assumes that the group has roles, so any caller must ensure
  * that it is only called in that scenario
@@ -179,11 +185,11 @@ export async function getQuestionGroupPermissions(
   instance_question_id: string,
   group_id: string,
   user_id: string,
-): Promise<{ can_submit: boolean; can_view: boolean }> {
+): Promise<QuestionGroupPermissions> {
   const userPermissions = await sqldb.queryOptionalRow(
     sql.select_question_permissions,
     { instance_question_id, group_id, user_id },
-    z.object({ can_submit: z.boolean(), can_view: z.boolean() }),
+    QuestionGroupPermissionsSchema,
   );
   return userPermissions ?? { can_submit: false, can_view: false };
 }
