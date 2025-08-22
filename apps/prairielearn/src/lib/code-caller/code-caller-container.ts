@@ -349,8 +349,8 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.state === CREATED) {
       this.state = EXITED;
     } else if (this.state === WAITING) {
-      void this._cleanup();
       this.state = EXITING;
+      void this._cleanup();
     }
     this._checkState();
     this.debug('exit done()');
@@ -480,8 +480,8 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
     this.timeoutID = null;
-    void this._cleanup();
     this.state = EXITING;
+    void this._cleanup();
     this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
   }
