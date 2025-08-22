@@ -10,8 +10,8 @@ import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
-
 import { insertAccessToken } from '../../models/access-token.js';
+
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
 const router = Router();
