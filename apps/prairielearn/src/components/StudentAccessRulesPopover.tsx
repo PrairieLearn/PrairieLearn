@@ -32,9 +32,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
 
 function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
-    <!-- Small popover table - table-responsive likely not necessary but added for consistency -->
-    <div class="table-responsive">
-      <table class="table" aria-label="Access details">
+    <table class="table" aria-label="Access details">
       <tr>
         <th>Credit</th>
         <th>Start</th>
@@ -50,6 +48,5 @@ function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzA
         `,
       )}
     </table>
-    </div>
   `;
 }

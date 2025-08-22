@@ -95,8 +95,7 @@ export const PERMISSIONS_META = [
 
 function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
-    <div class="table-responsive">
-      <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
+    <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
       <thead>
         <tr>
           <th>Permission</th>
@@ -130,7 +129,6 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
         ))}
       </tbody>
     </table>
-    </div>
   );
 }
 function clearEffectiveUserCookies() {
