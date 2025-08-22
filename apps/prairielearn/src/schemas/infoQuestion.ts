@@ -172,9 +172,9 @@ export const QuestionJsonSchema = z
       .describe('Unique identifier (UUID v4).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
-      .describe('Type of the question. This should be set to "v3" for most questions.')
+      .describe('Type of the question.')
       .optional()
-      .default('Calculation'),
+      .default('v3'),
     title: z
       .string()
       .describe(
