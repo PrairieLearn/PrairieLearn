@@ -22,12 +22,12 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
-export const EnumCourseInstancePermissionSchema = z.enum([
+export const EnumCourseInstanceRoleSchema = z.enum([
   'None',
   'Student Data Viewer',
   'Student Data Editor',
 ]);
-export type EnumCourseInstancePermission = z.infer<typeof EnumCourseInstancePermissionSchema>;
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
 
 export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
 export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
@@ -513,7 +513,7 @@ export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSc
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
-  course_instance_role: EnumCourseInstancePermissionSchema.nullable(),
+  course_instance_role: EnumCourseInstanceRoleSchema.nullable(),
   course_permission_id: IdSchema,
   id: IdSchema,
 });

@@ -8,7 +8,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  EnumCourseInstancePermissionSchema,
+  EnumCourseInstanceRoleSchema,
   EnumCourseRoleSchema,
   UserSchema,
 } from '../../../../lib/db-types.js';
@@ -50,7 +50,7 @@ function validateCourseInstanceRole({ course_instance_role }) {
     throw new error.HttpStatusError(400, 'Missing required field: course_instance_role');
   }
 
-  const validate_role = EnumCourseInstancePermissionSchema.safeParse(course_instance_role);
+  const validate_role = EnumCourseInstanceRoleSchema.safeParse(course_instance_role);
 
   if (!validate_role.success) {
     throw new error.HttpStatusError(400, 'Role not found');
