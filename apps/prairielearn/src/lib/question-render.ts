@@ -156,7 +156,7 @@ async function render(
   return data;
 }
 
-interface QuestionUrls {
+export interface QuestionUrls {
   questionUrl: string;
   newVariantUrl: string;
   tryAgainUrl: string;
@@ -412,10 +412,9 @@ function buildLocals({
 /**
  * All properties that are added to the locals by {@link getAndRenderVariant}.
  */
-export interface ResLocalsQuestionRenderAdded {
+export interface ResLocalsQuestionRenderAdded extends QuestionUrls {
   question_is_shared: boolean;
   variant: Variant;
-  urls: QuestionUrls;
   showTrueAnswer: boolean;
   submission: SubmissionForRender | null;
   submissions: SubmissionForRender[];

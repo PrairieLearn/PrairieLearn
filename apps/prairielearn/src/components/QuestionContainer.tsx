@@ -417,9 +417,9 @@ interface QuestionFooterResLocals {
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any>;
-  group_config: GroupConfig | null;
-  group_info: GroupInfo | null;
-  group_role_permissions: {
+  group_config?: GroupConfig | null;
+  group_info?: GroupInfo | null;
+  group_role_permissions?: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
@@ -763,6 +763,7 @@ function QuestionPanel({
 }) {
   const instance_question_info =
     'instance_question_info' in resLocals ? resLocals.instance_question_info : null;
+  const hasInstanceQuestion = 'instance_question' in resLocals;
   const { question, questionHtml, course } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
@@ -841,10 +842,10 @@ function QuestionPanel({
           ? AiGradingHtmlPreview(questionHtml)
           : unsafeHtml(questionHtml)}
       </div>
-      ${showFooter
+      ${showFooter && hasInstanceQuestion
         ? QuestionFooter({
             // TODO: propagate more precise types upwards.
-            resLocals: resLocals as any,
+            resLocals,
             questionContext,
           })
         : ''}
