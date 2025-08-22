@@ -473,7 +473,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           assert.equal(nextButton.length, 1);
           manualGradingAssessmentQuestionUrl =
             siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next';
         },
       );
 
@@ -1127,7 +1127,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           assert.equal(count, '1/1');
           manualGradingAssessmentQuestionUrl =
             siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+          manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next';
         },
       );
 
