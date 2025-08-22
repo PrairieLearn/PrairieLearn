@@ -138,7 +138,6 @@ function LtiCredentialCard({
         </p>
       </div>
 
-      <!-- Wrapped in .table-responsive to enable horizontal scroll on small screens (wide code columns). -->
       <div class="table-responsive">
         <table class="table table-sm table-hover" aria-label="LTI credentials">
           <thead>
@@ -271,7 +270,6 @@ function LtiLinkTargetsCard({
         </p>
       </div>
 
-      <!-- Wrapped in .table-responsive for consistency and horizontal scroll on small devices. -->
       <div class="table-responsive">
         <table class="table table-sm table-hover" aria-label="LTI link targets">
           <thead>

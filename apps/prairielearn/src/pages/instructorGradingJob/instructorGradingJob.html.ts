@@ -53,7 +53,6 @@ export function InstructorGradingJob({
             <div class="card-header bg-primary text-white">
               <h1>Grading Job ${gradingJobRow.grading_job.id}</h1>
             </div>
-            <!-- Added responsive wrapper though two-column-description rarely overflows; ensures consistency and horizontal scroll if needed on very narrow screens. -->
             <div class="table-responsive">
               <table
                 class="table table-sm table-hover two-column-description"
@@ -101,7 +100,6 @@ export function InstructorGradingJob({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">Downloads</div>
-                  <!-- Added responsive wrapper for potential long file descriptions. -->
                   <div class="table-responsive">
                     <table class="table table-sm table-hover" aria-label="Grading job downloads">
                       <thead>
