@@ -53,6 +53,7 @@ export async function nextInstanceQuestionUrl(
   prior_instance_question_id: string | null,
   skip_graded_submissions: boolean,
 ): Promise<string> {
+<<<<<<< HEAD
   const prior_ai_cluster_id = await run(async () => {
     if (prior_instance_question_id) {
       return (
@@ -73,6 +74,9 @@ export async function nextInstanceQuestionUrl(
   });
 
   let instance_question_id = await sqldb.queryOptionalRow(
+=======
+  const instance_question_id = await sqldb.queryOptionalRow(
+>>>>>>> 5158e7808 (Ran linter)
     sql.select_next_instance_question,
     {
       assessment_id,

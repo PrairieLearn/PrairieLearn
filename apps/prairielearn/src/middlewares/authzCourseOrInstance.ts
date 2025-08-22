@@ -107,6 +107,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   has_enhanced_navigation: boolean;
+  skip_graded_submissions: boolean;
   question_sharing_enabled: boolean;
 }
 

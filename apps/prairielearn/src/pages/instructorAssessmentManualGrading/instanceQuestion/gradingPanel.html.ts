@@ -283,7 +283,8 @@ ${submission.feedback?.manual}</textarea
               <a
                 id="next-instance-question-button"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals.instance_question.id}"
+                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals
+                  .instance_question.id}"
               >
                 ${skip_text}
               </a>
