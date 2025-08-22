@@ -1,12 +1,6 @@
-import { type ZodSchema, z } from 'zod';
+import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
-
-function uniqueArray<T extends ZodSchema>(schema: T) {
-  return z.array(schema).refine((items) => new Set(items).size === items.length, {
-    message: 'All items must be unique, no duplicate values allowed',
-  });
-}
 
 export const GroupRoleJsonSchema = z
   .object({
@@ -186,13 +180,15 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional()
     .default([]),
-  canView: uniqueArray(z.string())
+  canView: z
+    .array(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
@@ -237,12 +233,14 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .array(z.string())
     .describe(
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
     .optional(),
-  canView: uniqueArray(z.string())
+  canView: z
+    .array(z.string())
     .describe(
       'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
     )
@@ -351,13 +349,15 @@ export const AssessmentJsonSchema = z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
-    canSubmit: uniqueArray(z.string())
+    canSubmit: z
+      .array(z.string())
       .describe(
         'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
       )
       .optional()
       .default([]),
-    canView: uniqueArray(z.string())
+    canView: z
+      .array(z.string())
       .describe(
         'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
       )
