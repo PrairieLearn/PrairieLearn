@@ -114,7 +114,7 @@ router.post(
       course_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ user: user });
+    res.status(200).json({ user });
   }),
 );
 
