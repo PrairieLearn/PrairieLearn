@@ -52,7 +52,6 @@ export function StudentGradebook({
           </div>
         ) : (
           <div class="table-responsive">
-            {/* Wrapped in .table-responsive for mobile horizontal scrolling when many assessment set headings or long titles appear. */}
             <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>

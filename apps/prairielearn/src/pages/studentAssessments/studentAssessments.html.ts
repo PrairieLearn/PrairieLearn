@@ -57,9 +57,6 @@ export function StudentAssessments({
           <h1>Assessments</h1>
         </div>
 
-        <!-- Wrapped in .table-responsive for consistent horizontal scroll behavior on narrow devices.
-       Even though this table is relatively narrow today, columns (e.g., badges, long titles,
-       access rule popovers) can force overflow. -->
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Assessments">
             <thead>
