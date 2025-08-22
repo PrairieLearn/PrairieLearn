@@ -8,8 +8,6 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { UserSchema } from '../lib/db-types.js';
-
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
