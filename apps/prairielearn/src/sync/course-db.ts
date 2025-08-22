@@ -297,13 +297,13 @@ function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
   if (infofile.hasErrors(infoFile)) {
     infoFile.errors.forEach((error) => {
       const indentedError = error.replaceAll('\n', '\n    ');
-      writeLine(chalk.red(`  ✖ ${indentedError}`));
+      writeLine(chalk.redBright(`  ✖ ${indentedError}`));
     });
   }
   if (infofile.hasWarnings(infoFile)) {
     infoFile.warnings.forEach((warning) => {
       const indentedWarning = warning.replaceAll('\n', '\n    ');
-      writeLine(chalk.yellow(`  ⚠ ${indentedWarning}`));
+      writeLine(chalk.yellowBright(`  ⚠ ${indentedWarning}`));
     });
   }
 }

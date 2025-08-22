@@ -2,11 +2,12 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let user_id = null;
+let user_id: string | null = null;
 
 async function createCenterExamReservation() {
   await sqldb.queryAsync(sql.create_center_exam_reservation, { user_id });
@@ -19,8 +20,7 @@ async function createCourseExamReservation() {
 describe('sproc ip_to_mode tests', function () {
   beforeAll(async function () {
     await helperDb.before();
-    const result = await sqldb.queryAsync(sql.setup, {});
-    user_id = result.rows[0].user_id;
+    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.uid);
   });
 
   afterAll(helperDb.after);
@@ -35,19 +35,29 @@ describe('sproc ip_to_mode tests', function () {
 
   describe('Center exam with IP restrictions', () => {
     describe('before check-in', () => {
+      // This test is oddly flaky in CI (it times out), but not locally. In an
+      // effort to figure out what's happening, we're temporarily adding some
+      // extra logging here.
       it('should return "Exam" with a correct IP address when session is starting soon', async () => {
+        console.log('before transaction');
         await helperDb.runInTransactionAndRollback(async () => {
+          console.log('before reservation creation');
           await createCenterExamReservation();
 
+          console.log('before ip_to_mode query');
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
             // 10 minutes ago.
             new Date(Date.now() - 1000 * 60 * 10),
             user_id,
           ]);
+
+          console.log('before assertions');
           assert.equal(result.rows[0].mode, 'Exam');
           assert.equal(result.rows[0].mode_reason, 'PrairieTest');
+          console.log('after assertions');
         });
+        console.log('after transaction');
       });
 
       it('should return "Exam" with a correct IP address when session started recently', async () => {
