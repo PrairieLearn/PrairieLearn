@@ -96,12 +96,13 @@ router.get(
       throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
     res.redirect(
-      await manualGrading.nextUngradedInstanceQuestionUrl(
+      await manualGrading.nextInstanceQuestionUrl(
         res.locals.urlPrefix,
         res.locals.assessment.id,
         res.locals.assessment_question.id,
         res.locals.authz_data.user.user_id,
         req.query.prior_instance_question_id ?? null,
+        res.locals.skip_graded_submissions,
       ),
     );
   }),

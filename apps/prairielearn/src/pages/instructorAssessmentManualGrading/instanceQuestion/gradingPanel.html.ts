@@ -22,7 +22,6 @@ export function GradingPanel({
   context,
   graders,
   disable,
-  hide_back_to_question,
   skip_text,
   custom_points,
   custom_auto_points,
@@ -34,7 +33,6 @@ export function GradingPanel({
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
-  hide_back_to_question?: boolean;
   skip_text?: string;
   custom_points?: number;
   custom_auto_points?: number;
@@ -52,7 +50,7 @@ export function GradingPanel({
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
-  skip_text = skip_text || (disable ? 'Next' : 'Skip');
+  skip_text = skip_text || 'Next';
 
   return html`
     <form
@@ -152,15 +150,20 @@ ${submission.feedback?.manual}</textarea
               </li>
             `
           : ''}
-        <li class="list-group-item d-flex align-items-center">
-          ${!hide_back_to_question
-            ? html`
-                <a class="btn btn-primary" href="${assessment_question_url}">
-                  <i class="fas fa-arrow-left"></i>
-                  Back to Question
-                </a>
-              `
-            : ''}
+        <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
+          <div class="form-check">
+            <input
+              id="skip_graded_submissions"
+              type="checkbox"
+              class="form-check-input"
+              name="skip_graded_submissions"
+              value="true"
+              ${resLocals.skip_graded_submissions ? 'checked' : ''}
+            />
+            <label class="form-check-label" for="skip_graded_submissions">
+              Skip graded submissions
+            </label>
+          </div>
           <span class="ms-auto">
             ${!disable
               ? html`
@@ -170,7 +173,7 @@ ${submission.feedback?.manual}</textarea
                     name="__action"
                     value="add_manual_grade"
                   >
-                    Submit
+                    Grade
                   </button>
                 `
               : ''}

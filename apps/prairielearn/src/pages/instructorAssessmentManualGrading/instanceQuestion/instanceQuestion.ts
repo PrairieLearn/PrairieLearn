@@ -364,12 +364,13 @@ router.post(
         });
       }
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
+          res.locals.skip_graded_submissions,
         ),
       );
     } else if (body.__action === 'modify_rubric_settings') {
@@ -410,12 +411,13 @@ router.post(
       });
 
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
+          res.locals.skip_graded_submissions,
         ),
       );
     } else if (body.__action === 'report_issue') {

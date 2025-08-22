@@ -41,17 +41,25 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param assessment_question_id - The assessment question being graded.
  * @param user_id - The user_id of the current grader. Typically the current effective user.
  * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param skip_graded_submissions - Whether or not to skip already-graded student submissions. When false, moves to the next submission by pseudorandom order.
  */
-export async function nextUngradedInstanceQuestionUrl(
+export async function nextInstanceQuestionUrl(
   urlPrefix: string,
   assessment_id: string,
   assessment_question_id: string,
   user_id: string,
   prior_instance_question_id: string | null,
+  skip_graded_submissions: boolean,
 ): Promise<string> {
   const instance_question_id = await sqldb.queryOptionalRow(
-    sql.select_next_ungraded_instance_question,
-    { assessment_id, assessment_question_id, user_id, prior_instance_question_id },
+    sql.select_next_instance_question,
+    {
+      assessment_id,
+      assessment_question_id,
+      user_id,
+      prior_instance_question_id,
+      skip_graded_submissions,
+    },
     IdSchema,
   );
 

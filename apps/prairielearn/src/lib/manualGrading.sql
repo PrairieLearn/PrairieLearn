@@ -1,4 +1,4 @@
--- BLOCK select_next_ungraded_instance_question
+-- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
     SELECT
@@ -16,7 +16,10 @@ WITH
         $prior_instance_question_id::bigint IS NULL
         OR iq.id != $prior_instance_question_id
       )
-      AND iq.requires_manual_grading
+      AND (
+        NOT ($skip_graded_submissions)
+        OR iq.requires_manual_grading
+      )
       AND (
         iq.assigned_grader = $user_id
         OR iq.assigned_grader IS NULL
@@ -35,6 +38,12 @@ SELECT
   id
 FROM
   instance_questions_to_grade
+WHERE
+  (
+    $skip_graded_submissions
+    OR prior_iq_stable_order IS NULL
+    OR iq_stable_order > prior_iq_stable_order
+  )
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
   assigned_grader NULLS LAST,
