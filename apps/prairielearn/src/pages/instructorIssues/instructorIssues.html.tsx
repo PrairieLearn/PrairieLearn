@@ -373,7 +373,6 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <!-- Wrapped in .table-responsive to prevent wide qualifier descriptions from forcing overall page scroll on smaller devices. -->
       <div class="table-responsive">
         <table class="table table-bordered" aria-label="Filtering qualifiers">
           <thead>
