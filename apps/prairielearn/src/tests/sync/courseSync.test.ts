@@ -4,6 +4,7 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { selectOrInsertCourseByPath } from '../../models/course.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -20,7 +21,6 @@ describe('Course syncing', () => {
   it('syncs for known features as object', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: { [sampleFeature1]: true },
     };
 
@@ -36,7 +36,6 @@ describe('Course syncing', () => {
   it('syncs for known features as array', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: [sampleFeature1],
     };
 
@@ -52,7 +51,6 @@ describe('Course syncing', () => {
   it('adds a warning for an unknown feature', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
-      useNewQuestionRenderer: true,
       devModeFeatures: { [invalidFeature]: true },
     };
 
@@ -75,7 +73,6 @@ describe('Course syncing', () => {
 
       const courseData = util.getCourseData();
       courseData.course.options = {
-        useNewQuestionRenderer: true,
         devModeFeatures: {
           [sampleFeature1]: true,
           [sampleFeature2]: true,
@@ -140,5 +137,19 @@ describe('Course syncing', () => {
       comment: 'Course comment',
       comment2: 'Course comment 2',
     });
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.sharingSets = [{ name: 'set1', description: 'Set 1' }];
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedCourses = await util.dumpTable('pl_courses');
+    assert.lengthOf(syncedCourses, 1);
+    assert.match(syncedCourses[0].sync_errors, /"sharingSets" cannot be used/);
   });
 });

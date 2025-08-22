@@ -1,7 +1,8 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
+import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.js';
+import { getStudentDetailUrl } from '../../src/lib/client/url.js';
 import {
   type AssessmentInstanceScoreResult,
   type GradebookRow,
@@ -71,6 +72,18 @@ onDocumentReady(() => {
         .forEach((el) => (el.style.display = ''));
       $('button.edit-score').popover('hide');
     },
+    onPostHeader() {
+      document.querySelectorAll<HTMLLinkElement>('#gradebook-table thead a').forEach((el) => {
+        el.addEventListener('click', (event) => {
+          // It should still be possible to click any link in the header (e.g.,
+          // the assessment badges) to go to the link target page, but clicking
+          // it should not trigger a sort. While usually the link causes a
+          // different page to load (so sorting would be irrelevant), it still
+          // affects users Ctrl+clicking the link to open it in a new tab.
+          event.stopPropagation();
+        });
+      });
+    },
     onResetView() {
       setupEditScorePopovers(csrfToken);
       document
@@ -98,7 +111,12 @@ onDocumentReady(() => {
         title: 'Name',
         sortable: true,
         class: 'text-nowrap',
-        formatter: (name: string | null) => html`${name ?? ''}`.toString(),
+        formatter: (name: string | null, row: GradebookRow) => {
+          if (!name) return '';
+          return html`
+            <a href="${getStudentDetailUrl(urlPrefix, row.user_id)}"> ${name} </a>
+          `.toString();
+        },
       },
       {
         field: 'role',
@@ -117,7 +135,7 @@ onDocumentReady(() => {
       },
       ...courseAssessments.map((assessment) => ({
         field: `scores.${assessment.assessment_id}.score_perc`,
-        title: AssessmentBadge({ urlPrefix, assessment }).toString(),
+        title: AssessmentBadgeHtml({ urlPrefix, assessment }).toString(),
         class: 'text-nowrap',
         searchable: false,
         sortable: true,

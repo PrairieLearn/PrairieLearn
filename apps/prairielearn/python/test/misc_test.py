@@ -767,6 +767,40 @@ def test_get_boolean_attrib_invalid(html_str: str) -> None:
 
 
 @pytest.mark.parametrize(
+    ("html_str", "expected_result"),
+    [
+        ('<pl-thing checked="true"></pl-thing>', True),
+        ('<pl-thing checked="false"></pl-thing>', True),
+        ('<pl-thing checked="checked"></pl-thing>', True),
+        ('<pl-thing checked=""></pl-thing>', True),
+        ("<pl-thing checked></pl-thing>", True),
+        ("<pl-thing></pl-thing>", False),
+    ],
+)
+def test_get_boolean_attrib_libxml(html_str: str, expected_result: bool | None) -> None:  # noqa: FBT001
+    """Test that using HTML boolean attributes is only valid when reading as boolean with default False."""
+    element = lxml.html.fragment_fromstring(html_str)
+    result = pl.get_boolean_attrib(element, "checked", False)  # noqa: FBT003
+    assert result == expected_result
+    if not expected_result:
+        expected_result = None
+    result = pl.get_boolean_attrib(element, "checked")
+    assert result == expected_result
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_boolean_attrib(element, "checked", True)  # noqa: FBT003
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_string_attrib(element, "checked", "")
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_integer_attrib(element, "checked", 0)
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_float_attrib(element, "checked", 0)
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_color_attrib(element, "checked", "red1")
+    with pytest.raises(ValueError, match="boolean attribute"):
+        pl.get_enum_attrib(element, "checked", DummyEnum)
+
+
+@pytest.mark.parametrize(
     ("html_str", "expected_result", "default"),
     [
         # Basic integer parsing
@@ -1224,6 +1258,7 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     # Test adding first file
     base64_msg1 = base64.b64encode(b"msg1").decode("utf-8")
     base64_msg2 = base64.b64encode(b"msg2").decode("utf-8")
+    base64_msg3 = base64.b64encode(b"msg3").decode("utf-8")
     pl.add_submitted_file(question_data, "test1.txt", base64_msg1)
     assert question_data["submitted_answers"]["_files"] == [
         {"name": "test1.txt", "contents": base64_msg1}
@@ -1234,6 +1269,23 @@ def test_add_submitted_file(question_data: pl.QuestionData) -> None:
     assert question_data["submitted_answers"]["_files"] == [
         {"name": "test1.txt", "contents": base64_msg1},
         {"name": "test2.txt", "contents": base64_msg2},
+    ]
+
+    # Test adding third file with raw content
+    pl.add_submitted_file(question_data, "test3.txt", raw_contents="msg3")
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
+        {"name": "test3.txt", "contents": base64_msg3},
+    ]
+
+    # Test adding fourth file with no content
+    with pytest.raises(ValueError, match="No content provided for file"):
+        pl.add_submitted_file(question_data, "test4.txt")
+    assert question_data["submitted_answers"]["_files"] == [
+        {"name": "test1.txt", "contents": base64_msg1},
+        {"name": "test2.txt", "contents": base64_msg2},
+        {"name": "test3.txt", "contents": base64_msg3},
     ]
 
 
@@ -1259,3 +1311,10 @@ def test_check_answers_names(
     else:
         # Should not raise an exception
         pl.check_answers_names(question_data, name)
+
+
+def test_partition() -> None:
+    nums = [1, 2, 3, 4, 6, 5]
+    evens, odds = pl.partition(nums, lambda x: x % 2 == 0)
+    assert odds == [1, 3, 5]
+    assert evens == [2, 4, 6]

@@ -15,7 +15,13 @@ const DEFAULT_OPTIONS = {
   publicPath: '/build/',
 };
 
-type AssetsManifest = Record<string, string>;
+export type AssetsManifest = Record<
+  string,
+  {
+    assetPath: string;
+    preloads: string[];
+  }
+>;
 
 export interface CompiledAssetsOptions {
   /**
@@ -33,8 +39,13 @@ export interface CompiledAssetsOptions {
 }
 
 let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
+
 let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
+
+let splitEsbuildContext: esbuild.BuildContext | null = null;
+let splitEsbuildServer: esbuild.ServeResult | null = null;
+
 let relativeSourcePaths: string[] | null = null;
 
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
@@ -73,9 +84,41 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
       entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
     });
-
     esbuildServer = await esbuildContext.serve({ host: '0.0.0.0' });
+
+    const splitSourceGlob = path.join(
+      options.sourceDirectory,
+      'scripts',
+      'esm-bundles',
+      '**',
+      '*.{js,ts,jsx,tsx}',
+    );
+    const splitSourcePaths = await globby(splitSourceGlob);
+
+    relativeSourcePaths.push(
+      ...splitSourcePaths.map((p) => path.relative(options.sourceDirectory, p)),
+    );
+
+    splitEsbuildContext = await esbuild.context({
+      entryPoints: splitSourcePaths,
+      target: 'es2017',
+      format: 'esm',
+      sourcemap: 'inline',
+      bundle: true,
+      splitting: true,
+      write: false,
+      outbase: options.sourceDirectory,
+      outdir: options.buildDirectory,
+      entryNames: '[dir]/[name]',
+      define: {
+        'process.env.NODE_ENV': '"development"',
+      },
+    });
+    splitEsbuildServer = await splitEsbuildContext.serve({ host: '0.0.0.0' });
   }
 }
 
@@ -84,6 +127,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
  */
 export async function close() {
   esbuildContext?.dispose();
+  splitEsbuildContext?.dispose();
 }
 
 export function assertConfigured(): void {
@@ -110,15 +154,21 @@ export function handler() {
     });
   }
 
-  if (!esbuildServer) {
+  if (!esbuildServer || !splitEsbuildServer) {
     throw new Error('esbuild server not initialized');
   }
 
   const { port } = esbuildServer;
+  const { port: splitPort } = splitEsbuildServer;
 
   // We're running in dev mode, so we need to boot up esbuild to start building
   // and watching our assets.
   return function (req: IncomingMessage, res: ServerResponse) {
+    const isSplitBundle =
+      req.url?.startsWith('/scripts/esm-bundles') ||
+      // Chunked assets must be served by the split server.
+      req.url?.startsWith('/chunk-');
+
     // esbuild will reject requests that come from hosts other than the host on
     // which the esbuild dev server is listening:
     // https://github.com/evanw/esbuild/commit/de85afd65edec9ebc44a11e245fd9e9a2e99760d
@@ -135,7 +185,7 @@ export function handler() {
     const proxyReq = http.request(
       {
         hostname: '127.0.0.1',
-        port,
+        port: isSplitBundle ? splitPort : port,
         path: req.url,
         method: req.method,
         headers,
@@ -178,12 +228,12 @@ function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): stri
   }
 
   const manifest = readManifest();
-  const assetPath = manifest[sourceFilePath];
-  if (!assetPath) {
+  const asset = manifest[sourceFilePath];
+  if (!asset) {
     throw new Error(`Unknown ${type} asset: ${sourceFile}`);
   }
 
-  return options.publicPath + assetPath;
+  return options.publicPath + asset.assetPath;
 }
 
 export function compiledScriptPath(sourceFile: string): string {
@@ -195,6 +245,7 @@ export function compiledStylesheetPath(sourceFile: string): string {
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
+  // Creates a script tag for an IIFE bundle.
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
@@ -202,10 +253,32 @@ export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
   return html`<link rel="stylesheet" href="${compiledStylesheetPath(sourceFile)}" />`;
 }
 
-async function buildAssets(sourceDirectory: string, buildDirectory: string) {
+export function compiledScriptModuleTag(sourceFile: string): HtmlSafeString {
+  // Creates a module script tag for an ESM bundle.
+  return html`<script type="module" src="${compiledScriptPath(sourceFile)}"></script>`;
+}
+
+export function compiledScriptPreloadPaths(sourceFile: string): string[] {
+  assertConfigured();
+
+  // In dev mode, we don't have a manifest, so we can't preload anything.
+  if (options.dev) return [];
+
+  const manifest = readManifest();
+  const asset = manifest[`scripts/${sourceFile}`];
+  if (!asset) {
+    throw new Error(`Unknown script asset: ${sourceFile}`);
+  }
+
+  return asset.preloads.map((preload) => options.publicPath + preload);
+}
+
+async function buildAssets(sourceDirectory: string, buildDirectory: string): Promise<Metafile> {
   await fs.ensureDir(buildDirectory);
 
-  const files = await globby(path.join(sourceDirectory, '*/*.{js,jsx,ts,tsx,css}'));
+  const scriptFiles = await globby(path.join(sourceDirectory, 'scripts', '*.{js,jsx,ts,tsx}'));
+  const styleFiles = await globby(path.join(sourceDirectory, 'stylesheets', '*.css'));
+  const files = [...scriptFiles, ...styleFiles];
   const buildResult = await esbuild.build({
     entryPoints: files,
     target: 'es2017',
@@ -220,25 +293,81 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
     entryNames: '[dir]/[name]-[hash]',
     outbase: sourceDirectory,
     outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
+    metafile: true, // Write metadata about the build
+  });
+
+  // For now, we only build ESM bundles for scripts that are split into chunks (i.e. Preact components)
+  // Using 'type=module' in the script tag for ESM means that it is loaded after all 'classic' scripts,
+  // which causes issues with bootstrap-table. See https://github.com/PrairieLearn/PrairieLearn/pull/12180.
+  const scriptBundleFiles = await globby(
+    path.join(sourceDirectory, 'scripts', 'esm-bundles', '**/*.{js,jsx,ts,tsx}'),
+  );
+  const esmBundleBuildResult = await esbuild.build({
+    entryPoints: scriptBundleFiles,
+    target: 'es2017',
+    format: 'esm',
+    sourcemap: 'linked',
+    bundle: true,
+    splitting: true,
+    minify: true,
+    entryNames: '[dir]/[name]-[hash]',
+    outbase: sourceDirectory,
+    outdir: buildDirectory,
+    define: {
+      'process.env.NODE_ENV': '"production"',
+    },
     metafile: true,
   });
 
-  return buildResult.metafile;
+  // Merge the resulting metafiles.
+  const metafile: Metafile = {
+    inputs: { ...buildResult.metafile.inputs, ...esmBundleBuildResult.metafile.inputs },
+    outputs: { ...buildResult.metafile.outputs, ...esmBundleBuildResult.metafile.outputs },
+  };
+
+  return metafile;
 }
 
 function makeManifest(
   metafile: Metafile,
   sourceDirectory: string,
   buildDirectory: string,
-): Record<string, string> {
-  const manifest: Record<string, string> = {};
+): AssetsManifest {
+  const manifest: AssetsManifest = {};
+
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
+    // Compute all the necessary preloads for each entrypoint. This includes
+    // any code-split chunks, as well as any files that are dynamically imported.
+    const preloads = new Set<string>();
+
+    // Recursively walk the `imports` dependency tree
+    const visit = (entry: (typeof meta)['imports'][number]) => {
+      if (!['import-statement', 'dynamic-import'].includes(entry.kind)) return;
+      const preloadPath = path.relative(buildDirectory, entry.path);
+      if (preloads.has(preloadPath)) return;
+      preloads.add(preloadPath);
+      for (const imp of metafile.inputs[entry.path]?.imports ?? []) {
+        visit(imp);
+      }
+    };
+
+    for (const imp of meta.imports) {
+      visit(imp);
+    }
+
     const entryPath = path.relative(sourceDirectory, meta.entryPoint);
     const assetPath = path.relative(buildDirectory, outputPath);
-    manifest[entryPath] = assetPath;
+    manifest[entryPath] = {
+      assetPath,
+      preloads: [...preloads],
+    };
   });
+
   return manifest;
 }
 

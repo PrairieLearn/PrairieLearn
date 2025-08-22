@@ -10,9 +10,27 @@ import { logger } from '@prairielearn/logger';
 
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
-const DEV_MODE = process.env.NODE_ENV !== 'production';
+export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
-const ConfigSchema = z.object({
+// We don't compare against 'test' since we use the 'MODE' environment variable
+// for running a subset of our tests.
+const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
+const IS_VITE = (import.meta as any).env?.MODE === 'development';
+export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
+
+export const STANDARD_COURSE_DIRS = [
+  '/course',
+  '/course2',
+  '/course3',
+  '/course4',
+  '/course5',
+  '/course6',
+  '/course7',
+  '/course8',
+  '/course9',
+];
+
+export const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
   postgresqlUser: z.string().default('postgres'),
   postgresqlPassword: z.string().nullable().default(null),
@@ -47,19 +65,7 @@ const ConfigSchema = z.object({
   namedLocksRenewIntervalMs: z.number().default(60_000),
   courseDirs: z
     .array(z.string())
-    .default([
-      '/course',
-      '/course2',
-      '/course3',
-      '/course4',
-      '/course5',
-      '/course6',
-      '/course7',
-      '/course8',
-      '/course9',
-      EXAMPLE_COURSE_PATH,
-      TEST_COURSE_PATH,
-    ]),
+    .default([...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, TEST_COURSE_PATH]),
   courseRepoDefaultBranch: z.string().default('master'),
   urlPrefix: z.string().default('/pl'),
   homeUrl: z.string().default('/'),
@@ -72,6 +78,13 @@ const ConfigSchema = z.object({
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
+  /**
+   * Used when nonVolatileCacheType is set to redis. If configured, should
+   * not evict data when facing memory pressure. The instance should be
+   * appropriately sized such that it will not run out of memory during
+   * normal usage.
+   */
+  nonVolatileRedisUrl: z.string().nullable().default(null),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -304,6 +317,7 @@ const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   hasLti: z.boolean().default(false),
@@ -551,6 +565,11 @@ const ConfigSchema = z.object({
   aiGradingOpenAiOrganization: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiApiKey: z.string().nullable().default(null),
   aiQuestionGenerationOpenAiOrganization: z.string().nullable().default(null),
+  /**
+   * The hourly spending rate limit for AI question generation, in US dollars.
+   * Accounts for both input and output tokens.
+   */
+  aiQuestionGenerationRateLimitDollars: z.number().default(1),
   requireTermsAcceptance: z.boolean().default(false),
   pyroscopeEnabled: z.boolean().default(false),
   pyroscopeServerAddress: z.string().nullable().default(null),
@@ -572,10 +591,11 @@ const ConfigSchema = z.object({
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
   /**
-   * For the GPT-4o model as of 5/1/2025, in US dollars. Prices obtained from https://openai.com/api/pricing/.
+   * For the GPT-4o model as of 16 June 2025, in US dollars.
+   * Prices obtained from https://openai.com/api/pricing/.
    */
-  costPerMillionPromptTokens: z.number().default(3.75),
-  costPerMillionCompletionTokens: z.number().default(15),
+  costPerMillionPromptTokens: z.number().default(2.5),
+  costPerMillionCompletionTokens: z.number().default(10),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -619,6 +639,10 @@ export async function loadConfig(paths: string[]) {
   if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
     throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
+}
+
+export async function resetConfig() {
+  loader.reset();
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {

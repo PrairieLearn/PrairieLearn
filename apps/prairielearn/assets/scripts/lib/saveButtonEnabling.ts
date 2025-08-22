@@ -6,7 +6,7 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // This is important so we don't have to read all values for each input on every
   // change event when we check if there are differences.
   const valueHasChanged: Record<string, boolean> = {};
-  form.querySelectorAll('input, select').forEach((element) => {
+  form.querySelectorAll('input, select, textarea').forEach((element) => {
     valueHasChanged[element.id] = false;
   });
 
@@ -25,11 +25,15 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // set valueHasChanged{} to false. Then call checkDifferences() to see if the save
   // button should be enabled.
   form.addEventListener('input', (e) => {
-    if (!(e.target instanceof HTMLInputElement)) return;
+    if (!(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+      return;
+    }
 
     if (
-      (e.target.type === 'checkbox' && e.target.checked === e.target.defaultChecked) ||
-      (e.target.type !== 'checkbox' && e.target.value === e.target.defaultValue)
+      (e.target instanceof HTMLInputElement &&
+        ((e.target.type === 'checkbox' && e.target.checked === e.target.defaultChecked) ||
+          (e.target.type !== 'checkbox' && e.target.value === e.target.defaultValue))) ||
+      (e.target instanceof HTMLTextAreaElement && e.target.value === e.target.defaultValue)
     ) {
       valueHasChanged[(e.target as HTMLElement).id] = false;
     } else {
@@ -55,8 +59,10 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
     checkDifferences();
   });
 
-  // Check if any values have changed, as indicated by a `true` value in `valueHasChanged`.
-  // If so, enable the save button and return. If there are no changes, disable the save button.
+  /**
+   * Check if any values have changed, as indicated by a `true` value in `valueHasChanged`.
+   * If so, enable the save button and return. If there are no changes, disable the save button.
+   */
   function checkDifferences() {
     for (const element in valueHasChanged) {
       if (valueHasChanged[element] === true) {

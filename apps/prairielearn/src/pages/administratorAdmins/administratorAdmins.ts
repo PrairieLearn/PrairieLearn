@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -8,13 +8,13 @@ import { UserSchema } from '../../lib/db-types.js';
 
 import { AdministratorAdmins } from './administratorAdmins.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const admins = await sqldb.queryRows(sql.select_admins, [], UserSchema);
+    const admins = await sqldb.queryRows(sql.select_admins, UserSchema);
     res.send(AdministratorAdmins({ admins, resLocals: res.locals }));
   }),
 );

@@ -70,7 +70,7 @@ describe('Auto-test questions in exampleCourse', () => {
         questionsWithIncorrectTopics.push(qid);
       }
     }
-    if (questionsWithIncorrectTopics.length) {
+    if (questionsWithIncorrectTopics.length > 0) {
       const qids = questionsWithIncorrectTopics.map((qid) => `"${qid}"`).join(', ');
       throw new Error(`The following template questions have incorrect topics: ${qids}`);
     }
@@ -85,27 +85,4 @@ describe('Auto-test questions in exampleCourse', () => {
       helperQuestion.autoTestQuestion(locals, qid),
     );
   });
-
-  describe(
-    'Auto-test questions in exampleCourse with process-questions-in-server enabled',
-    { timeout: 60_000 },
-    function () {
-      beforeAll(helperServer.before(EXAMPLE_COURSE_PATH));
-
-      afterAll(helperServer.after);
-
-      const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
-      beforeAll(() => {
-        config.features['process-questions-in-server'] = true;
-      });
-      afterAll(() => {
-        config.features['process-questions-in-server'] = originalProcessQuestionsInServer;
-      });
-
-      // Only test the first 10 questions so that this test doesn't take too long.
-      [...qidsExampleCourse, ...templateQuestionQids]
-        .slice(0, 10)
-        .forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));
-    },
-  );
 });

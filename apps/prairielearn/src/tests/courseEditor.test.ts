@@ -6,17 +6,21 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
+import * as syncUtil from './sync/util.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const locals: Record<string, any> = {};
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
@@ -46,7 +50,17 @@ const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/set
 const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
 const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
-const testEditData = [
+interface EditData {
+  url?: string;
+  formSelector: string;
+  button?: string;
+  action?: string;
+  files: Set<string>;
+  info?: string;
+  data?: Record<string, string | number>;
+}
+
+const testEditData: EditData[] = [
   {
     url: questionsUrl,
     formSelector: '#createQuestionModal',
@@ -55,7 +69,7 @@ const testEditData = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty question',
+      start_from: 'empty',
     },
     files: new Set([
       'README.md',
@@ -79,7 +93,7 @@ const testEditData = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty question',
+      start_from: 'empty',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
@@ -296,14 +310,80 @@ const testEditData = [
   },
 ];
 
+const publicCopyTestData: EditData[] = [
+  {
+    url: `${baseUrl}/public/course/2/question/2/preview`,
+    formSelector: 'form.js-copy-question-form',
+    data: {
+      course_id: 2,
+      question_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+    ]),
+  },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
+  {
+    url: `${baseUrl}/public/course_instance/2/assessments`,
+    formSelector: 'form.js-copy-course-instance-form',
+    data: {
+      course_instance_id: 2,
+    },
+    info: 'questions/shared-publicly/info.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa19/infoCourseInstance.json',
+      'courseInstances/Fa19_copy1/infoCourseInstance.json',
+      'questions/shared-publicly/info.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'questions/test-course/shared-source-publicly/info.json',
+      'questions/test-course/shared-source-publicly_copy1/info.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'courseInstances/Fa19/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/test/infoAssessment.json',
+      'courseInstances/Fa19/assessments/nested/dir/test/infoAssessment.json',
+      'courseInstances/Fa19_copy1/assessments/nested/dir/test/infoAssessment.json',
+    ]),
+  },
+];
+
 describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
-    beforeAll(async () => {
-      await createCourseFiles();
-    });
-    afterAll(async () => {
-      await deleteCourseFiles();
-    });
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
 
     beforeAll(helperServer.before(courseDir));
     afterAll(helperServer.after);
@@ -315,16 +395,41 @@ describe('test course editor', { timeout: 20_000 }, function () {
       });
     });
 
-    describe('the locals object', function () {
-      it('should be cleared', function () {
-        for (const prop in locals) {
-          delete locals[prop];
-        }
-      });
-    });
-
     describe('verify edits', function () {
       testEditData.forEach((element) => {
+        testEdit(element);
+      });
+    });
+  });
+
+  describe('Copy from another course', function () {
+    beforeAll(createCourseFiles);
+    afterAll(deleteCourseFiles);
+
+    beforeAll(helperServer.before(courseDir));
+    afterAll(helperServer.after);
+
+    beforeAll(async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: courseLiveDir,
+        course_repository: courseOriginDir,
+      });
+      await features.enable('question-sharing');
+      config.checkSharingOnSync = true;
+    });
+
+    afterAll(() => {
+      config.checkSharingOnSync = false;
+    });
+
+    beforeAll(createSharedCourse);
+
+    beforeAll(async () => {
+      await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
+    });
+
+    describe('verify edits', async function () {
+      publicCopyTestData.forEach((element) => {
         testEdit(element);
       });
     });
@@ -370,60 +475,79 @@ async function getFiles(options): Promise<Set<string>> {
   });
 }
 
-function testEdit(params) {
+// Some tests follow a redirect, and so we have a couple of globals to keep
+// information about the current page to persist to the next test
+let currentUrl: string;
+let currentPage$: cheerio.CheerioAPI;
+function testEdit(params: EditData) {
+  let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
+      const url = params.url;
       it('should load successfully', async () => {
-        const res = await fetch(params.url);
+        const res = await fetch(url);
 
         assert.isOk(res.ok);
-        locals.$ = cheerio.load(await res.text());
+        currentPage$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
+      let maybeToken: string | undefined;
       if (params.button) {
-        let elemList = locals.$(params.button);
-        assert.lengthOf(elemList, 1);
-
-        const $ = cheerio.load(elemList[0].attribs['data-bs-content']);
-        elemList = $(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
+        let elem = currentPage$(params.button);
+        assert.lengthOf(elem, 1);
+        const formContent = elem.attr('data-bs-content');
+        assert.ok(formContent);
+        const $ = cheerio.load(formContent);
+        elem = $(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       } else {
-        const elemList = locals.$(`${params.formSelector} input[name="__csrf_token"]`);
-        assert.lengthOf(elemList, 1);
-        assert.nestedProperty(elemList[0], 'attribs.value');
-        locals.__csrf_token = elemList[0].attribs.value;
-        assert.isString(locals.__csrf_token);
+        const elem = currentPage$(`${params.formSelector} input[name="__csrf_token"]`);
+        assert.lengthOf(elem, 1);
+        maybeToken = elem.attr('value');
       }
+      assert.ok(maybeToken);
+      __csrf_token = maybeToken;
     });
   });
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const res = await fetch(params.url || locals.url, {
+      const url = run(() => {
+        // to handle the difference between POSTing to the same URL as the page you are
+        // on vs. POSTing to a different URL
+        if (!params.action) {
+          const elem = currentPage$(params.formSelector);
+          assert.lengthOf(elem, 1);
+          return `${siteUrl}${elem.attr('action')}`;
+        } else {
+          return params.url || currentUrl;
+        }
+      });
+      const urlParams: Record<string, string> = {
+        __csrf_token,
+        ...(params.action ? { __action: params.action } : {}),
+        ...params?.data,
+      };
+      const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams({
-          __action: params.action,
-          __csrf_token: locals.__csrf_token,
-          ...(params?.data ?? {}),
-        }),
+        body: new URLSearchParams(urlParams),
       });
       assert.isOk(res.ok);
-      locals.url = res.url;
-      locals.$ = cheerio.load(await res.text());
+      currentUrl = res.url;
+      currentPage$ = cheerio.load(await res.text());
     });
   });
 
   describe('The job sequence', () => {
+    let job_sequence_id: string;
     it('should have an id', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      locals.job_sequence_id = result.rows[0].id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
-      await helperServer.waitForJobSequenceSuccess(locals.job_sequence_id);
+      await helperServer.waitForJobSequenceSuccess(job_sequence_id);
     });
   });
 
@@ -448,8 +572,9 @@ function testEdit(params) {
     });
 
     if (params.info) {
+      const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir, params.info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
@@ -486,6 +611,54 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
+}
+
+async function createSharedCourse() {
+  const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
+  const PUBLICLY_SHARED_SOURCE_QUESTION_QID = 'shared-source-publicly';
+
+  const sharingCourseData = syncUtil.getCourseData();
+  sharingCourseData.course.name = 'SHARING 101';
+  sharingCourseData.questions = {
+    [PUBLICLY_SHARED_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111111',
+      type: 'v3',
+      title: 'Shared publicly',
+      topic: 'TOPIC HERE',
+      sharePublicly: true,
+      shareSourcePublicly: true,
+    },
+    [PUBLICLY_SHARED_SOURCE_QUESTION_QID]: {
+      uuid: '11111111-1111-1111-1111-111111111112',
+      type: 'v3',
+      title: 'Shared source publicly',
+      topic: 'TOPIC HERE',
+      shareSourcePublicly: true,
+    },
+  };
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
+    {
+      questions: [
+        {
+          id: PUBLICLY_SHARED_QUESTION_QID,
+          points: 1,
+        },
+        {
+          id: PUBLICLY_SHARED_SOURCE_QUESTION_QID,
+          points: 1,
+        },
+      ],
+    },
+  ];
+  sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
+  sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
+
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
+    sharingCourseData.courseInstances['Fa19'].assessments['test'],
+  );
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
+
+  await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
 
 async function deleteCourseFiles() {

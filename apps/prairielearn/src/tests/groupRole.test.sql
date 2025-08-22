@@ -4,12 +4,12 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN group_configs as gc ON (gc.assessment_id = a.id)
+  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work is TRUE
-  AND gc.has_roles is TRUE;
+  AND a.group_work IS TRUE
+  AND gc.has_roles IS TRUE;
 
 -- BLOCK select_group_work_assessment_without_roles
 SELECT
@@ -18,23 +18,20 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN group_configs as gc ON (gc.assessment_id = a.id)
+  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work is TRUE
-  AND gc.has_roles is FALSE;
+  AND a.group_work IS TRUE
+  AND gc.has_roles IS FALSE;
 
 -- BLOCK select_assessment_group_roles
 SELECT
-  gr.id,
-  gr.role_name,
-  gr.minimum,
-  gr.maximum
+  *
 FROM
-  group_roles AS gr
+  group_roles
 WHERE
-  gr.assessment_id = $assessment_id;
+  assessment_id = $assessment_id;
 
 -- BLOCK select_group_user_roles
 SELECT

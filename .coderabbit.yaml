@@ -4,12 +4,12 @@ reviews:
   profile: chill
   request_changes_workflow: false # Do not approve after comments resolved
   high_level_summary: false
-  review_status: true
+  review_status: false # Do not make comments on PRs that are not ready for review
   collapse_walkthrough: true
   changed_files_summary: true
   sequence_diagrams: false
-  related_issues: true
-  related_prs: true
+  related_issues: false
+  related_prs: false
   suggested_labels: true
   auto_apply_labels: false
   suggested_reviewers: true
@@ -21,7 +21,7 @@ reviews:
     enabled: true
     auto_incremental_review: true
     ignore_title_keywords: []
-    drafts: true
+    drafts: false
     base_branches:
       - master
   finishing_touches:

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
+import { HeadContents } from '../../../components/HeadContents.js';
 
 export const SamlTest = ({
   uid,

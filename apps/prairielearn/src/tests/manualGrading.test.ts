@@ -7,7 +7,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
-import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -196,7 +195,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
       assert.equal(count, '0/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 0);
@@ -266,7 +265,10 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-bs-content'),
+              container
+                .find('[data-testid="rubric-item-explanation"]')
+                .attr('data-bs-content')
+                ?.trim(),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {
@@ -383,16 +385,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    const courseInstance = await selectCourseInstanceByShortName({
-      course_id: '1',
-      short_name: 'Sp15',
-    });
     const assessment = await selectAssessmentByTid({
-      course_instance_id: courseInstance.id,
+      course_instance_id: '1',
       tid: 'hw9-internalExternalManual',
     });
-    manualGradingAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading`;
-    instancesAssessmentUrl = `${baseUrl}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/instances`;
+    manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
+    instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;
   });
 
   beforeAll(async () => {
@@ -466,7 +464,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -632,7 +633,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           $manualGradingPage = cheerio.load(manualGradingPage);
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -647,7 +651,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           $manualGradingPage = cheerio.load(manualGradingPage);
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 0);
@@ -1048,7 +1055,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            action: 'unlimited',
+            action: 'remove',
             time_add: '0',
             reopen_closed: 'on',
           }).toString(),
@@ -1113,7 +1120,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           manualGradingAssessmentQuestionUrl =
             siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');

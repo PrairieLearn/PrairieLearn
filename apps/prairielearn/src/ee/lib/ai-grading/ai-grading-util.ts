@@ -1,17 +1,26 @@
+import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
-import type { ParsedChatCompletion } from 'openai/resources/beta/chat/completions.mjs';
+import type {
+  ChatCompletionContentPart,
+  ChatCompletionMessageParam,
+  ParsedChatCompletion,
+} from 'openai/resources/chat/completions.mjs';
 import { z } from 'zod';
 
 import {
+  callAsync,
   loadSqlEquiv,
   queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import {
+  AssessmentQuestionSchema,
   type Course,
+  GradingJobSchema,
   IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -25,6 +34,7 @@ import {
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
+import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -59,7 +69,7 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
   // Pricings are updated according to https://platform.openai.com/docs/pricing
   const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
-  const completion_cost = 10.0 / 10 ** 6;
+  const completion_cost = 10 / 10 ** 6;
 
   return (
     cached_input_tokens * cached_input_cost +
@@ -71,23 +81,19 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
 export async function generatePrompt({
   questionPrompt,
   submission_text,
+  submitted_answer,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
   submission_text: string;
+  submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
 }): Promise<{
-  messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  messages: ChatCompletionMessageParam[];
 }> {
-  const messages: {
-    role: 'system' | 'user';
-    content: string;
-  }[] = [];
+  const messages: ChatCompletionMessageParam[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -102,24 +108,26 @@ export async function generatePrompt({
       }
       rubric_info += '\n';
     }
-    messages.push({
-      role: 'system',
-      content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
-        (example_submissions.length
-          ? ' I will provide some example student responses and their corresponding selected rubric items.'
-          : ''),
-    });
-    messages.push({
-      role: 'system',
-      content: `Here are the rubric items:\n\n${rubric_info}`,
-    });
+    messages.push(
+      {
+        role: 'system',
+        content:
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          (example_submissions.length > 0
+            ? ' I will provide some example student responses and their corresponding selected rubric items.'
+            : ''),
+      },
+      {
+        role: 'system',
+        content: `Here are the rubric items:\n\n${rubric_info}`,
+      },
+    );
   } else {
     messages.push({
       role: 'system',
       content:
         "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is correct." +
-        (example_submissions.length
+        (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
     });
@@ -160,12 +168,103 @@ export async function generatePrompt({
   }
 
   // Student response
-  messages.push({
-    role: 'user',
-    content: `The student submitted the following response: \n<response>\n${submission_text} \n<response>\nHow would you grade this? Please return the JSON object.`,
-  });
+  messages.push(
+    generateSubmissionMessage({
+      submission_text,
+      submitted_answer,
+    }),
+  );
 
   return { messages };
+}
+
+/**
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ */
+function generateSubmissionMessage({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): ChatCompletionMessageParam {
+  const message_content: ChatCompletionContentPart[] = [];
+
+  message_content.push({
+    type: 'text',
+    text: 'The student submitted the following response: \n<response>\n',
+  });
+
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
+  // to the message content to construct an AI-readable version of the submission.
+
+  const $submission_html = cheerio.load(submission_text);
+  let submissionTextSegment = '';
+
+  $submission_html
+    .root()
+    .find('body')
+    .contents()
+    .each((_, node) => {
+      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      if (imageCaptureUUID) {
+        if (submissionTextSegment) {
+          // Push and reset the current text segment before adding the image.
+          message_content.push({
+            type: 'text',
+            text: submissionTextSegment,
+          });
+          submissionTextSegment = '';
+        }
+
+        const options = $submission_html(node).data('options') as Record<string, string>;
+        const submittedImageName = options.submitted_file_name;
+        if (!submittedImageName) {
+          // If no submitted filename is available, no image was captured.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${options.file_name} was not captured.`,
+          });
+          return;
+        }
+
+        // submitted_answer contains the base-64 encoded image data for the image capture.
+
+        if (!submitted_answer) {
+          throw new Error('No submitted answers found.');
+        }
+
+        if (!submitted_answer[submittedImageName]) {
+          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        }
+
+        message_content.push({
+          type: 'image_url',
+          image_url: {
+            url: submitted_answer[submittedImageName],
+          },
+        });
+      } else {
+        submissionTextSegment += $submission_html(node).text();
+      }
+    });
+
+  if (submissionTextSegment) {
+    message_content.push({
+      type: 'text',
+      text: submissionTextSegment,
+    });
+  }
+
+  message_content.push({
+    type: 'text',
+    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+  });
+
+  return {
+    role: 'user',
+    content: message_content,
+  } satisfies ChatCompletionMessageParam;
 }
 
 export async function generateSubmissionEmbedding({
@@ -249,64 +348,12 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export function pearsonCorrelation(x: number[], y: number[]): number {
-  if (x.length !== y.length || x.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = x.length;
-  const sumX = x.reduce((acc, val) => acc + val, 0);
-  const sumY = y.reduce((acc, val) => acc + val, 0);
-  const sumXY = x.reduce((acc, _, i) => acc + x[i] * y[i], 0);
-  const sumX2 = x.reduce((acc, val) => acc + val * val, 0);
-  const sumY2 = y.reduce((acc, val) => acc + val * val, 0);
-
-  const numerator = n * sumXY - sumX * sumY;
-  const denominator = Math.sqrt((n * sumX2 - sumX ** 2) * (n * sumY2 - sumY ** 2));
-
-  return denominator === 0 ? 0 : Math.round((numerator / denominator) * 10000) / 10000;
-}
-
-export function rootMeanSquaredError(actual: number[], predicted: number[]): number {
-  if (actual.length !== predicted.length || actual.length === 0) {
-    throw new Error('Both arrays must have the same nonzero length.');
-  }
-
-  const n = actual.length;
-  const squaredErrors = actual.map((a, i) => (a - predicted[i]) ** 2);
-  const meanSquaredError = squaredErrors.reduce((acc, val) => acc + val, 0) / n;
-
-  return Math.round(Math.sqrt(meanSquaredError) * 100) / 100;
-}
-
-export function rubricItemAccuracy(
-  testRubricResults: {
-    reference_items: Set<string>;
-    ai_items: Set<string>;
-  }[],
-  item: RubricItem,
-): number {
-  let match = 0;
-  testRubricResults.forEach((test) => {
-    if (
-      (test.ai_items.has(item.description) && test.reference_items.has(item.description)) ||
-      (!test.ai_items.has(item.description) && !test.reference_items.has(item.description))
-    ) {
-      match++;
-    }
-  });
-  const accuracy = Math.round((match / testRubricResults.length) * 100) / 100;
-  return accuracy;
-}
-
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     InstanceQuestionSchema,
   );
 }
@@ -316,9 +363,7 @@ export async function selectRubricGradingItems(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_grading_items,
-    {
-      manual_rubric_grading_id,
-    },
+    { manual_rubric_grading_id },
     RubricItemSchema,
   );
 }
@@ -333,10 +378,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: {
-    role: 'system' | 'user';
-    content: string;
-  }[];
+  prompt: ChatCompletionMessageParam[];
   completion: ParsedChatCompletion<any>;
   course_id: string;
   course_instance_id?: string;
@@ -393,9 +435,7 @@ export async function selectRubricForGrading(
 ): Promise<RubricItem[]> {
   return await queryRows(
     sql.select_rubric_for_grading,
-    {
-      assessment_question_id,
-    },
+    { assessment_question_id },
     RubricItemSchema,
   );
 }
@@ -412,4 +452,70 @@ export async function selectEmbeddingForSubmission(
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
+}
+
+export async function deleteAiGradingJobs({
+  assessment_question_ids,
+  authn_user_id,
+}: {
+  assessment_question_ids: string[];
+  authn_user_id: string;
+}) {
+  // TODO: revisit this before general availability of AI grading. This implementation
+  // was added primarily to facilitate demos at ASEE 2025. It may not behave completely
+  // correctly in call cases; see the TODOs in the SQL query for more details.
+  //
+  // TODO: we should add locking here. Specifically, we should process each
+  // assessment instance + instance question one at a time in separate
+  // transactions so that we don't need to lock all relevant assessment instances
+  // and assessment questions at once.
+  const iqs = await runInTransactionAsync(async () => {
+    const iqs = await queryRows(
+      sql.delete_ai_grading_jobs,
+      {
+        authn_user_id,
+        assessment_question_ids,
+      },
+      z.object({
+        id: IdSchema,
+        assessment_instance_id: IdSchema,
+        max_points: AssessmentQuestionSchema.shape.max_points,
+        max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+        max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+        points: InstanceQuestionSchema.shape.points,
+        score_perc: InstanceQuestionSchema.shape.score_perc,
+        auto_points: InstanceQuestionSchema.shape.auto_points,
+        manual_points: InstanceQuestionSchema.shape.manual_points,
+        most_recent_manual_grading_job: GradingJobSchema.nullable(),
+      }),
+    );
+
+    for (const iq of iqs) {
+      await callAsync('assessment_instances_grade', [
+        iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        100, // credit
+        false, // only_log_if_score_updated
+        true, // allow_decrease
+      ]);
+    }
+
+    return iqs;
+  });
+
+  // Important: this is done outside of the above transaction so that we don't
+  // hold a database connection open while we do network calls.
+  //
+  // This is here for consistency with other assessment score updating code. We
+  // shouldn't hit this for the vast majority of assessments.
+  for (const iq of iqs) {
+    await ltiOutcomes.updateScore(iq.assessment_instance_id);
+  }
+
+  return iqs;
+}
+
+export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
+  await queryAsync(sql.toggle_ai_grading_mode, { assessment_question_id });
 }

@@ -24,9 +24,10 @@ BUILDER_NAME = "prairielearn-builder"
 # A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
 BASE_IMAGE_MAPPING = {
     # Core images.
-    "prairielearn/prairielearn": "prairielearn/plbase",
     "prairielearn/executor": "prairielearn/prairielearn",
     # Workspace images.
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
@@ -51,9 +52,6 @@ def get_image_path(image: str) -> str:
     if image.startswith("grader-"):
         image = image[len("grader-") :]
         return f"graders/{image}"
-
-    if image == "plbase":
-        return "images/plbase"
 
     if image == "executor":
         return "images/executor"
@@ -214,7 +212,7 @@ def build_image(
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
-        name_without_scope = image.split("/")[-1]
+        name_without_scope = image.rsplit("/", maxsplit=1)[-1]
         hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
         metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
         with open(os.path.join(metadata_dir, metadata_filename), "w") as f:

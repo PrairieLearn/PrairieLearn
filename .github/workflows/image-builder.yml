@@ -24,6 +24,7 @@ env:
 
 jobs:
   build-images:
+    name: Build
     strategy:
       fail-fast: false
       matrix:
@@ -63,6 +64,7 @@ jobs:
           overwrite: true
 
   combine-images:
+    name: Combine
     needs: [build-images]
 
     runs-on: ubuntu-24.04
@@ -87,7 +89,7 @@ jobs:
 
       - name: Download metadata
         if: ${{ env.CAN_PUSH_IMAGE == 'true' }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: image-metadata-${{ inputs.group }}-*-${{ env.COMMIT_SHA }}
           path: ${{ runner.temp }}/image-metadata-${{ inputs.group }}

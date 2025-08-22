@@ -87,9 +87,9 @@ export async function checkInvalidSharingSetDeletions(
   );
 
   const invalidSharingSetDeletions: string[] = [];
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
   sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames.includes(sharingSet)) {
+    if (!sharingSetNames.has(sharingSet)) {
       invalidSharingSetDeletions.push(sharingSet);
     }
   });
@@ -108,13 +108,13 @@ export function checkInvalidSharingSetAdditions(
   logger: ServerJobLogger,
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
 
   for (const qid in courseData.questions) {
     const question = courseData.questions[qid];
     const questionSharingSets = question.data?.sharingSets || [];
     questionSharingSets.forEach((sharingSet) => {
-      if (!sharingSetNames.includes(sharingSet)) {
+      if (!sharingSetNames.has(sharingSet)) {
         if (!invalidSharingSetAdditions[qid]) {
           invalidSharingSetAdditions[qid] = [];
         }
@@ -207,9 +207,7 @@ export function checkInvalidSharedAssessments(
             continue;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharePublicly) {
-            // Only `sharePublicly` and not `shareSourcePublicly` because we want to import the questions,
-            // not copy the questions into the destination course
+          if (!infoJson?.data?.sharePublicly && !infoJson?.data?.shareSourcePublicly) {
             invalidSharedAssessments.add(tid);
           }
         }
@@ -227,7 +225,6 @@ export function checkInvalidSharedAssessments(
 }
 
 export function checkInvalidSharedCourseInstances(
-  sharingEnabled: boolean,
   courseData: CourseData,
   logger: ServerJobLogger,
 ): boolean {
@@ -235,14 +232,7 @@ export function checkInvalidSharedCourseInstances(
 
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
-    if (!courseInstance.courseInstance.data?.shareSourcePublicly) {
-      continue;
-    } else if (!sharingEnabled) {
-      logger.error(
-        `✖ Course sync completely failed. You have attempted to share the course instance ${courseInstance.courseInstance.data?.longName} with 'shareSourcePublicly: "true"' but content sharing is not enabled for your course.",`,
-      );
-      return true;
-    }
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
 
     for (const tid in courseInstance.assessments) {
       const assessment = courseInstance.assessments[tid];

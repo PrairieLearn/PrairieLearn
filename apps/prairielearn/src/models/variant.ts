@@ -102,11 +102,6 @@ export async function selectUserOwnsVariant({
   return await queryRow(sql.select_user_owns_variant, { user_id, variant_id }, z.boolean());
 }
 
-/**
- * TODO: We need to add checks for public question previews. That page should
- * only allow viewing of variants that are owned by the current user and that
- * were created on the public question preview page.
- */
 export async function selectAndAuthzVariant(options: {
   unsafe_variant_id: string;
   variant_course: Course;
@@ -241,4 +236,20 @@ export async function selectAndAuthzVariant(options: {
   }
 
   return variant;
+}
+
+/**
+ * Locks the variant before a grading operation can proceed. If the variant is
+ * associated to an assessment instance, lock the assessment instance instead.
+ * Assumes that the caller is already within a transaction.
+ */
+export async function lockVariant({ variant_id }: { variant_id: string }) {
+  const locked = await queryOptionalRow(
+    sql.select_and_lock_assessment_instance_or_variant,
+    { variant_id },
+    z.boolean(),
+  );
+  if (!locked) {
+    throw new Error('Variant or assessment instance could not be locked.');
+  }
 }

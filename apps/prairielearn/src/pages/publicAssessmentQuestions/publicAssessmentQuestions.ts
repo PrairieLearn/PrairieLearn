@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -12,7 +12,7 @@ import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
 import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',
@@ -32,12 +32,16 @@ router.get(
     assert(assessment.assessment_set_id);
     const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
 
-    const questions = await selectAssessmentQuestions(assessment_id);
+    const questions = await selectAssessmentQuestions({
+      assessment_id,
+    });
 
     // Filter out non-public assessments
     for (const question of questions) {
       question.other_assessments =
-        question.other_assessments?.filter((assessment) => assessment.share_source_publicly) ?? [];
+        question.other_assessments?.filter(
+          (assessment) => assessment.assessment_share_source_publicly,
+        ) ?? [];
     }
 
     res.send(

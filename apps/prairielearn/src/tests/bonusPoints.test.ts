@@ -1,9 +1,12 @@
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -18,8 +21,11 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    const results = await sqldb.queryOneRowAsync(sql.select_exam, []);
-    context.assessmentId = results.rows[0].id;
+    const { id: assessmentId } = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw7-bonusPoints',
+    });
+    context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
   });
 
@@ -62,13 +68,16 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   });
 
   test.sequential('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
-    const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
-    assert.equal(results.rowCount, 1);
-    assert.equal(results.rows[0].points, 6);
-    assert.equal(results.rows[0].score_perc, 60);
+    const result = await sqldb.queryRow(
+      sql.read_assessment_instance_points,
+      { assessment_id: context.assessmentId },
+      z.object({
+        points: AssessmentInstanceSchema.shape.points,
+        score_perc: AssessmentInstanceSchema.shape.score_perc,
+      }),
+    );
+    assert.equal(result.points, 6);
+    assert.equal(result.score_perc, 60);
   });
 
   test.sequential('visit second question', async () => {
@@ -94,13 +103,16 @@ describe('Exam assessment with bonus points', { timeout: 60_000 }, function () {
   });
 
   test.sequential('check assessment points', async () => {
-    const params = {
-      assessment_id: context.assessmentId,
-    };
-    const results = await sqldb.queryOneRowAsync(sql.read_assessment_instance_points, params);
-    assert.equal(results.rowCount, 1);
+    const result = await sqldb.queryRow(
+      sql.read_assessment_instance_points,
+      { assessment_id: context.assessmentId },
+      z.object({
+        points: AssessmentInstanceSchema.shape.points,
+        score_perc: AssessmentInstanceSchema.shape.score_perc,
+      }),
+    );
     // 6+8 is 14, but limit should be 10+2 (max plus bonus)
-    assert.equal(results.rows[0].points, 12);
-    assert.equal(results.rows[0].score_perc, 120);
+    assert.equal(result.points, 12);
+    assert.equal(result.score_perc, 120);
   });
 });

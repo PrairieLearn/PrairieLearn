@@ -1,3 +1,5 @@
+/* eslint-disable jsdoc/require-returns-type */
+/* eslint-disable jsdoc/require-param-type */
 /* global _, fabric, mechanicsObjects */
 
 /**
@@ -8,9 +10,9 @@ class PLDrawingBaseElement {
   /**
    * Generates a canvas representation of an element from given options.
    * This should set up all handlers for saving the element to the submittedAnswer.
-   * @param canvas Fabric canvas to create the object onto.
-   * @param options Element options
-   * @param submittedAnswer Answer state.
+   * @param _canvas Fabric canvas to create the object onto.
+   * @param _options Element options
+   * @param _submittedAnswer Answer state.
    */
   static generate(_canvas, _options, _submittedAnswer) {
     return null;
@@ -136,8 +138,8 @@ window.PLDrawingApi = {
    */
   restoreAnswer(canvas, submittedAnswer) {
     for (const [id, obj] of Object.entries(submittedAnswer._answerData)) {
-      this._idCounter = Math.max(parseInt(id) + 1, this._idCounter);
-      const newObj = JSON.parse(JSON.stringify(obj));
+      this._idCounter = Math.max(Number.parseInt(id) + 1, this._idCounter);
+      const newObj = structuredClone(obj);
       this.createElement(canvas, newObj, submittedAnswer);
     }
   },
@@ -151,8 +153,8 @@ window.PLDrawingApi = {
    */
   setupCanvas(root_elem, elem_options, existing_answer_submission) {
     const canvas_elem = $(root_elem).find('canvas')[0];
-    const canvas_width = parseFloat(elem_options.width);
-    const canvas_height = parseFloat(elem_options.height);
+    const canvas_width = Number.parseFloat(elem_options.width);
+    const canvas_height = Number.parseFloat(elem_options.height);
     const html_input = $(root_elem).find('input');
 
     const parseElemOptions = function (elem) {
@@ -161,7 +163,7 @@ window.PLDrawingApi = {
       // Parse any numerical options from string to floating point
       for (const key in opts) {
         const parsed = Number(opts[key]);
-        if (!isNaN(parsed)) {
+        if (!Number.isNaN(parsed)) {
           opts[key] = parsed;
         }
       }
@@ -239,7 +241,7 @@ window.PLDrawingApi = {
     // Restrict objects from being able to be dragged off-canvas
     // From: https://stackoverflow.com/questions/22910496/move-object-within-canvas-boundary-limit
     canvas.on('object:moving', function (e) {
-      var obj = e.target;
+      const obj = e.target;
       // if object is too big ignore,
       if (obj.currentHeight > canvas_width || obj.currentWidth > canvas_height) {
         return;
@@ -356,7 +358,7 @@ class PLDrawingAnswerState {
    * Any properties that should be saved should be copied from canvas_object into
    * submitted_object.  If this is omitted, all properties from the canvas object
    * are copied as-is.
-   * @removeHandler {optional} Function that is run whenever the canvas object is deleted.
+   * @param removeHandler {optional} Function that is run whenever the canvas object is deleted.
    */
   registerAnswerObject(options, object, modifyHandler, removeHandler) {
     const submitted_object = { ...options };
@@ -414,9 +416,11 @@ class PLDrawingAnswerState {
     static get_button_icon() {
       return 'delete';
     }
+
     static get_button_tooltip() {
       return 'Delete selected object';
     }
+
     static button_press(canvas, _options, _submittedAnswer) {
       canvas.remove(canvas.getActiveObject());
     }
@@ -440,9 +444,11 @@ class PLDrawingAnswerState {
       const opts = { ...def, ...options, type: 'pl-line' };
       window.PLDrawingApi.createElement(canvas, opts, submittedAnswer);
     }
+
     static get_button_icon() {
       return 'help-line';
     }
+
     static get_button_tooltip() {
       return 'Add help line';
     }

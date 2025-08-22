@@ -15,7 +15,7 @@ VALUES
     $assessment_id,
     $user_id,
     $instance_number,
-    false -- Assume closed by default when recreating
+    FALSE -- Assume closed by default when recreating
   )
 RETURNING
   id AS assessment_instance_id;
@@ -50,9 +50,7 @@ INSERT INTO
     params,
     true_answer,
     options,
-    number,
-    -- TODO: remove once this column has a default
-    modified_at
+    number
   )
 VALUES
   (
@@ -65,8 +63,7 @@ VALUES
     $params,
     $true_answer,
     $options,
-    $number,
-    NOW()
+    $number
   )
 RETURNING
   id AS variant_id;
@@ -81,8 +78,6 @@ INSERT INTO
     params,
     true_answer,
     date
-    -- TODO: remove once this column has a default
-    modified_at
   )
 VALUES
   (
@@ -92,8 +87,7 @@ VALUES
     '{}'::jsonb, -- We don't have any useful value for `raw_submitted_answer` here.
     $params,
     $true_answer,
-    $submission_date,
-    NOW()
+    $submission_date
   )
 RETURNING
   id AS submission_id;

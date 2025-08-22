@@ -19,7 +19,7 @@ WITH
       ai.assessment_id = $assessment_id
       AND (
         CASE
-          WHEN $group_id::BIGINT IS NOT NULL THEN ai.group_id = $group_id
+          WHEN $group_id::bigint IS NOT NULL THEN ai.group_id = $group_id
           ELSE ai.user_id = $user_id
         END
       )
@@ -46,14 +46,14 @@ WITH
       $authn_user_id,
       $assessment_id,
       CASE
-        WHEN $group_id::BIGINT IS NULL THEN $user_id
+        WHEN $group_id::bigint IS NULL THEN $user_id
       END,
       $group_id,
       $mode,
       a.auto_close
       AND a.type = 'Exam',
       CASE
-        WHEN $time_limit_min::INTEGER IS NOT NULL THEN $date::TIMESTAMPTZ + make_interval(mins => $time_limit_min)
+        WHEN $time_limit_min::integer IS NOT NULL THEN $date::timestamptz + make_interval(mins => $time_limit_min)
       END,
       COALESCE(lai.number, 0) + 1,
       NOT users_is_instructor_in_course_instance ($user_id, a.course_instance_id),
@@ -97,7 +97,7 @@ WITH
       $group_id,
       current_timestamp
     WHERE
-      $group_id::BIGINT IS NOT NULL
+      $group_id::bigint IS NOT NULL
     ON CONFLICT (group_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -109,7 +109,7 @@ WITH
       $user_id,
       current_timestamp
     WHERE
-      $group_id::BIGINT IS NULL
+      $group_id::bigint IS NULL
     ON CONFLICT (user_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -450,7 +450,7 @@ WITH
       JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE
       a.type != 'Homework'
-      OR gap < '1 hour'::INTERVAL
+      OR gap < '1 hour'::interval
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
@@ -464,7 +464,7 @@ WITH
           FROM
             total_gap
         ),
-        '0 seconds'::INTERVAL
+        '0 seconds'::interval
       ),
       modified_at = now(),
       -- Mark the assessment instance as in need of grading. We'll start
@@ -542,7 +542,7 @@ WHERE
   a.id = $assessment_id
 FOR NO KEY UPDATE;
 
--- BLOCK select_assessment_needs_statisics_update
+-- BLOCK select_assessment_needs_statistics_update
 SELECT
   EXISTS (
     SELECT
@@ -558,7 +558,7 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK update_assessment_statisics
+-- BLOCK update_assessment_statistics
 WITH
   student_assessment_scores AS (
     SELECT
@@ -840,20 +840,20 @@ WITH
     (
       SELECT
         1 AS event_order,
-        'Begin'::TEXT AS event_name,
-        'gray3'::TEXT AS event_color,
+        'Begin'::text AS event_name,
+        'gray3'::text AS event_color,
         ai.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
-        NULL::BIGINT AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
-        NULL::JSONB AS data
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
+        NULL::bigint AS log_id,
+        NULL::bigint AS client_fingerprint_id,
+        NULL::jsonb AS data
       FROM
         assessment_instances AS ai
         LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
@@ -864,8 +864,8 @@ WITH
     (
       SELECT
         2 AS event_order,
-        'New variant'::TEXT AS event_name,
-        'gray1'::TEXT AS event_color,
+        'New variant'::text AS event_name,
+        'gray1'::text AS event_color,
         v.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -874,7 +874,7 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::integer AS submission_id,
         v.id AS log_id,
         v.client_fingerprint_id AS client_fingerprint_id,
         jsonb_build_object(
@@ -903,8 +903,8 @@ WITH
     (
       SELECT
         2.5 AS event_order,
-        'Broken variant'::TEXT AS event_name,
-        'red3'::TEXT AS event_color,
+        'Broken variant'::text AS event_name,
+        'red3'::text AS event_color,
         v.broken_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -913,10 +913,10 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::integer AS submission_id,
         v.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
-        NULL::JSONB AS data
+        NULL::bigint AS client_fingerprint_id,
+        NULL::jsonb AS data
       FROM
         variants AS v
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
@@ -931,8 +931,8 @@ WITH
     (
       SELECT
         3 AS event_order,
-        'Submission'::TEXT AS event_name,
-        'blue3'::TEXT AS event_color,
+        'Submission'::text AS event_name,
+        'blue3'::text AS event_color,
         s.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -980,8 +980,8 @@ WITH
     (
       SELECT
         3.5 AS event_order,
-        'External grading results'::TEXT AS event_name,
-        'blue1'::TEXT AS event_color,
+        'External grading results'::text AS event_name,
+        'blue1'::text AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -992,7 +992,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         to_jsonb(gj.*) AS data
       FROM
         grading_jobs AS gj
@@ -1012,10 +1012,10 @@ WITH
       SELECT
         3.7 AS event_order,
         CASE
-          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::TEXT
-          ELSE 'AI grading results'::TEXT
+          WHEN gj.grading_method = 'Manual' THEN 'Manual grading results'::text
+          ELSE 'AI grading results'::text
         END AS event_name,
-        'blue2'::TEXT AS event_color,
+        'blue2'::text AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -1026,7 +1026,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -1078,15 +1078,48 @@ WITH
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
+        -- TODO: we want to show logs for grading job soft-deletions too.
         AND gj.grading_method IN ('Manual', 'AI')
         AND gj.graded_at IS NOT NULL
     )
     UNION
     (
       SELECT
+        3.8 AS event_order,
+        'AI grading results deleted'::text AS event_name,
+        'red2'::text AS event_color,
+        gj.deleted_at AS date,
+        u.user_id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        iq.id AS instance_question_id,
+        v.id AS variant_id,
+        v.number AS variant_number,
+        gj.id AS submission_id,
+        gj.id AS log_id,
+        NULL::bigint AS client_fingerprint_id,
+        NULL::jsonb AS data
+      FROM
+        grading_jobs AS gj
+        JOIN submissions AS s ON (s.id = gj.submission_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        -- Show the user that actually deleted the grading job, if available.
+        LEFT JOIN users AS u ON (u.user_id = gj.deleted_by)
+      WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+        AND gj.grading_method IN ('AI')
+        AND gj.deleted_at IS NOT NULL
+    )
+    UNION
+    (
+      SELECT
         4 AS event_order,
-        'Grade submission'::TEXT AS event_name,
-        'orange3'::TEXT AS event_color,
+        'Grade submission'::text AS event_name,
+        'orange3'::text AS event_color,
         gj.graded_at AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -1097,7 +1130,7 @@ WITH
         v.number AS variant_number,
         gj.id AS submission_id,
         gj.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_build_object(
           'correct',
           gj.correct,
@@ -1130,8 +1163,8 @@ WITH
     (
       SELECT
         5 AS event_order,
-        'Score question'::TEXT AS event_name,
-        'brown1'::TEXT AS event_color,
+        'Score question'::text AS event_name,
+        'brown1'::text AS event_color,
         qsl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -1140,9 +1173,9 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::integer AS submission_id,
         qsl.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           qsl.points,
@@ -1169,19 +1202,19 @@ WITH
     (
       SELECT
         6 AS event_order,
-        'Score assessment'::TEXT AS event_name,
-        'brown3'::TEXT AS event_color,
+        'Score assessment'::text AS event_name,
+        'brown3'::text AS event_color,
         asl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
         asl.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_build_object(
           'points',
           asl.points,
@@ -1201,19 +1234,19 @@ WITH
       SELECT
         7 AS event_order,
         CASE
-          WHEN asl.open THEN 'Open'::TEXT
-          ELSE 'Close'::TEXT
+          WHEN asl.open THEN 'Open'::text
+          ELSE 'Close'::text
         END AS event_name,
-        'gray3'::TEXT AS event_color,
+        'gray3'::text AS event_color,
         asl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
         asl.id AS log_id,
         asl.client_fingerprint_id AS client_fingerprint_id,
         CASE
@@ -1234,7 +1267,7 @@ WITH
               ELSE format_interval (asl.date_limit - asl.date)
             END
           )
-          ELSE NULL::JSONB
+          ELSE NULL::jsonb
         END AS data
       FROM
         assessment_state_logs AS asl
@@ -1249,19 +1282,19 @@ WITH
     (
       SELECT
         7.5 AS event_order,
-        'Time limit expiry'::TEXT AS event_name,
-        'red2'::TEXT AS event_color,
+        'Time limit expiry'::text AS event_name,
+        'red2'::text AS event_color,
         asl.date_limit AS date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
         asl.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_build_object(
           'time_limit',
           format_interval (asl.date_limit - ai.date)
@@ -1294,8 +1327,8 @@ WITH
     (
       SELECT
         8 AS event_order,
-        'View variant'::TEXT AS event_name,
-        'green3'::TEXT AS event_color,
+        'View variant'::text AS event_name,
+        'green3'::text AS event_color,
         pvl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
@@ -1304,10 +1337,10 @@ WITH
         iq.id AS instance_question_id,
         v.id AS variant_id,
         v.number AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id AS client_fingerprint_id,
-        NULL::JSONB AS data
+        NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl
         JOIN variants AS v ON (v.id = pvl.variant_id)
@@ -1322,20 +1355,20 @@ WITH
     (
       SELECT
         9 AS event_order,
-        'View assessment overview'::TEXT AS event_name,
-        'green1'::TEXT AS event_color,
+        'View assessment overview'::text AS event_name,
+        'green1'::text AS event_color,
         pvl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
         pvl.id AS log_id,
         pvl.client_fingerprint_id AS client_fingerprint_id,
-        NULL::JSONB AS data
+        NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl
         JOIN users AS u ON (u.user_id = pvl.authn_user_id)
@@ -1347,19 +1380,19 @@ WITH
     (
       SELECT
         10 AS event_order,
-        ('Group ' || gl.action)::TEXT AS event_name,
-        'gray2'::TEXT AS event_color,
+        ('Group ' || gl.action)::text AS event_name,
+        'gray2'::text AS event_color,
         gl.date,
         u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
-        NULL::TEXT AS qid,
-        NULL::INTEGER AS question_id,
-        NULL::INTEGER AS instance_question_id,
-        NULL::INTEGER AS variant_id,
-        NULL::INTEGER AS variant_number,
-        NULL::INTEGER AS submission_id,
+        NULL::text AS qid,
+        NULL::integer AS question_id,
+        NULL::integer AS instance_question_id,
+        NULL::integer AS variant_id,
+        NULL::integer AS variant_number,
+        NULL::integer AS submission_id,
         gl.id AS log_id,
-        NULL::BIGINT AS client_fingerprint_id,
+        NULL::bigint AS client_fingerprint_id,
         jsonb_strip_nulls(
           jsonb_build_object('user', gu.uid, 'roles', gl.roles)
         ) AS data
@@ -1488,7 +1521,7 @@ WITH
       ntile(5) OVER (
         ORDER BY
           assessment_scores_by_user_or_group.score_perc
-      ) as quintile
+      ) AS quintile
     FROM
       assessment_scores_by_user_or_group
   ),

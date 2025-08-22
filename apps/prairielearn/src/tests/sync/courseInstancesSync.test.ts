@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
+import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
 
@@ -316,7 +317,7 @@ describe('Course instance syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID and long name of the course instance and re-sync
-    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    const newCourseInstance = structuredClone(originalCourseInstance);
     newCourseInstance.courseInstance.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
     newCourseInstance.courseInstance.longName = 'changed long name';
     courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
@@ -336,8 +337,9 @@ describe('Course instance syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // now change the UUID of the course instance, add an error and re-sync
-    const newCourseInstance = JSON.parse(JSON.stringify(originalCourseInstance));
+    const newCourseInstance = structuredClone(originalCourseInstance);
     newCourseInstance.courseInstance.uuid = '7902a94b-b025-4a33-9987-3b8196581bd2';
+    // @ts-expect-error we are intentionally breaking the type
     delete newCourseInstance.courseInstance.longName; // will make the course instance broken
     courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -501,5 +503,22 @@ describe('Course instance syncing', () => {
       syncedCourseInstance?.sync_warnings,
       /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
     );
+  });
+
+  it('forbids sharing settings when sharing is not enabled', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.shareSourcePublicly = true;
+
+    await withConfig({ checkSharingOnSync: true }, async () => {
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+    });
+
+    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstance = syncedCourseInstances.find(
+      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
+    );
+    assert.isOk(syncedCourseInstance);
+    assert.match(syncedCourseInstance?.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

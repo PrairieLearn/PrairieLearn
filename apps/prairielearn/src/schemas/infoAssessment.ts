@@ -254,9 +254,7 @@ export const AssessmentJsonSchema = z
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
-      .regex(
-        new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
-      )
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     type: z.enum(['Homework', 'Exam']).describe('Type of the assessment.'),
     title: z
@@ -331,9 +329,17 @@ export const AssessmentJsonSchema = z
       .default(true),
     requireHonorCode: z
       .boolean()
-      .describe('Requires the student to accept an honor code before starting exam assessments.')
+      .describe(
+        'Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.',
+      )
       .optional()
       .default(true),
+    honorCode: z
+      .string()
+      .describe(
+        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+      )
+      .optional(),
     groupWork: z
       .boolean()
       .describe('Whether the assessment will support group work.')
@@ -362,6 +368,13 @@ export const AssessmentJsonSchema = z
       .describe('Whether students can create groups.')
       .optional()
       .default(false),
+    studentGroupChooseName: z
+      .boolean()
+      .describe(
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.',
+      )
+      .optional()
+      .default(true),
     studentGroupJoin: z
       .boolean()
       .describe('Whether students can join groups.')

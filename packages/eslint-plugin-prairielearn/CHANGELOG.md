@@ -1,5 +1,41 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.2
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 2.2.1
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 2.2.0
+
+### Minor Changes
+
+- edcd248: Introduce `no-unused-sql-blocks` lint rule
+
+## 2.1.7
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.1.6
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 2.1.5
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
 ## 2.1.4
 
 ### Patch Changes

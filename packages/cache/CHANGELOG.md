@@ -1,5 +1,51 @@
 # @prairielearn/cache
 
+## 2.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/sentry@4.0.1
+
+## 2.0.21
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [a7d1ad9]
+- Updated dependencies [23adb05]
+  - @prairielearn/sentry@4.0.0
+  - @prairielearn/logger@2.0.18
+
+## 2.0.20
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/logger@2.0.17
+  - @prairielearn/sentry@3.0.7
+
+## 2.0.19
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+- Updated dependencies [d97b97a]
+  - @prairielearn/logger@2.0.16
+  - @prairielearn/sentry@3.0.6
+
+## 2.0.18
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/logger@2.0.15
+  - @prairielearn/sentry@3.0.5
+
 ## 2.0.17
 
 ### Patch Changes

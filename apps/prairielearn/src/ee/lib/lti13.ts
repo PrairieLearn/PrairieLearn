@@ -18,14 +18,13 @@ import {
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import {
-  AssessmentInstanceSchema,
   AssessmentSchema,
   DateFromISOString,
+  IdSchema,
   Lti13CourseInstanceSchema,
   Lti13InstanceSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectUsersWithCourseInstanceAccess } from '../../models/course-instances.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -334,17 +333,9 @@ export class Lti13Claim {
 export async function validateLti13CourseInstance(
   resLocals: Record<string, any>,
 ): Promise<boolean> {
-  const feature_enabled = await features.enabledFromLocals('lti13', resLocals);
-
-  if (!feature_enabled) {
-    return false;
-  }
-
   const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
-    {
-      course_instance_id: resLocals.course_instance.id,
-    },
+    { course_instance_id: resLocals.course_instance.id },
     z.boolean(),
   );
 
@@ -564,12 +555,29 @@ export async function linkAssessment(
   });
 }
 
-/* Throttling notes
-// https://canvas.instructure.com/doc/api/file.throttling.html
-// 403 Forbidden (Rate Limit Exceeded)
-// X-Request-Cost
-// X-Rate-Limit-Remaining
-*/
+/**
+ * Recurse through nested object(s) to find the first instance of a key with a given name
+ * and return that key's value.
+ *
+ * @param obj Object to inspect
+ * @param targetKey Key to find
+ * @returns Contents of the targetKey variable
+ */
+export function findValueByKey(obj: unknown, targetKey: string): unknown {
+  if (typeof obj !== 'object' || obj === null) return undefined;
+  if (Object.hasOwn(obj, targetKey)) {
+    return obj[targetKey];
+  }
+  for (const key in obj) {
+    if (typeof obj[key] === 'object') {
+      const result = findValueByKey(obj[key], targetKey);
+      if (result !== undefined) {
+        return result;
+      }
+    }
+  }
+  return undefined;
+}
 
 /**
  * Make HTTP fetch requests with retries
@@ -577,6 +585,8 @@ export async function linkAssessment(
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Node fetch response object
  */
 export async function fetchRetry(
@@ -595,41 +605,63 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    switch (response.status) {
-      // 422 Unprocessable Entity, User not found in course or is not a student
-      case 422:
-        return response;
+    if (response.ok) {
+      return response;
     }
 
-    if (!response.ok) {
-      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
-        data: {
-          status: response.status,
-          statusText: response.statusText,
-          body: await response.text(),
-        },
-      });
+    let errorMsg: string;
+    const resString = await response.text();
+
+    try {
+      // Try to pull the "message" property out of the error and highlight it.
+      // Fall back to showing the full error text.
+      //
+      // Examples of LMS error messages are in the lti13.test.ts file.
+      const resObject = JSON.parse(resString);
+
+      errorMsg = (findValueByKey(resObject, 'message') ?? resString).toString();
+    } catch {
+      errorMsg = resString;
     }
-    return response;
+
+    throw new AugmentedError(`LTI 1.3 fetch error: ${response.statusText}: ${errorMsg}`, {
+      status: response.status,
+      data: {
+        statusText: response.statusText,
+        body: resString,
+      },
+    });
   } catch (err) {
-    fetchRetryOpts.retryLeft -= 1;
-    if (fetchRetryOpts.retryLeft === 0) {
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    if (
+      // Common retry codes
+      [403, 429, 502, 503, 504].includes(err.status) ||
+      // node-fetch transient errors
+      err.name === 'FetchError' ||
+      err.code === 'ECONNRESET'
+    ) {
+      // Retry logic
+      fetchRetryOpts.retryLeft -= 1;
+      if (fetchRetryOpts.retryLeft === 0) {
+        throw err;
+      }
+      await sleep(fetchRetryOpts.sleepMs);
+      return await fetchRetry(input, opts, fetchRetryOpts);
+    } else {
+      // Error immediately
       throw err;
     }
-    await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
   }
 }
 
 /**
  * Pagination wrapper around fetchRetry
- *
- * @param input
- * @param opts
- * @param incomingfetchRetryOpts
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param incomingfetchRetryOpts.retryLeft - Number of retries left
+ * @param incomingfetchRetryOpts.sleepMs - Time to sleep between retries
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetryPaginated(
@@ -805,13 +837,13 @@ export async function updateLti13Scores(
 
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
-    {
-      assessment_id: assessment.id,
-    },
-    AssessmentInstanceSchema.extend({
-      score_perc: z.number(), // not .nullable() from SQL query
-      date: DateFromISOString, // not .nullable() from SQL query
-      users: UserWithLti13SubSchema.array(),
+    { assessment_id: assessment.id },
+    z.object({
+      id: IdSchema,
+      score_perc: z.number(),
+      date: DateFromISOString,
+      open: z.boolean(),
+      user: UserWithLti13SubSchema,
     }),
   );
 
@@ -831,58 +863,59 @@ export async function updateLti13Scores(
   };
 
   for (const assessment_instance of assessment_instances) {
-    for (const user of assessment_instance.users) {
-      // Get/Refresh the token in the main loop in case it expires during the run.
-      const token = await getAccessToken(instance.lti13_instance.id);
+    // Get/Refresh the token in the main loop in case it expires during the run.
+    const token = await getAccessToken(instance.lti13_instance.id);
 
-      const ltiUser = memberships.lookup(user);
-      const isCourseStaff = courseStaffUids.has(user.uid);
+    const user = assessment_instance.user;
+    const ltiUser = memberships.lookup(user);
+    const isCourseStaff = courseStaffUids.has(user.uid);
 
-      // User not found in LTI, reporting only
-      if (ltiUser === null) {
-        job.info(
-          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
-            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
-        );
-        counts.not_sent++;
-        continue;
-      }
+    // User not found in LTI, reporting only
+    if (ltiUser === null) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` Could not find ${isCourseStaff ? 'course staff' : 'student'} ${user.uid}` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
 
-      // User is not a student in LTI, reporting only
-      if (!ltiUser.roles.includes(STUDENT_ROLE)) {
-        job.info(
-          `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
-            ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
-            ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
-        );
-        counts.not_sent++;
-        continue;
-      }
+    // User is not a student in LTI, reporting only
+    if (!ltiUser.roles.includes(STUDENT_ROLE)) {
+      job.info(
+        `Not sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.` +
+          ` ${isCourseStaff ? 'Course staff' : 'Student'} ${user.uid} is not a student` +
+          ` in ${instance.lti13_instance.name} course ${instance.lti13_course_instance.context_label}`,
+      );
+      counts.not_sent++;
+      continue;
+    }
 
-      job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
+    job.info(`Sending grade ${assessment_instance.score_perc.toFixed(2)}% for ${user.uid}.`);
 
-      const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
+    const submittedAt = await selectAssessmentInstanceLastSubmissionDate(assessment_instance.id);
 
-      /*
+    /*
        https://www.imsglobal.org/spec/lti-ags/v2p0#score-service-media-type-and-schema
        Canvas has extensions we could use described at
        https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       */
-      const score: Lti13Score = {
-        timestamp,
-        scoreGiven: assessment_instance.score_perc,
-        scoreMaximum: 100,
-        activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
-        gradingProgress: 'FullyGraded',
-        userId: ltiUser.user_id,
-        submission: {
-          startedAt: assessment_instance.date,
-          submittedAt: submittedAt ?? undefined,
-        },
-      };
+    const score: Lti13Score = {
+      timestamp,
+      scoreGiven: assessment_instance.score_perc,
+      scoreMaximum: 100,
+      activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
+      gradingProgress: 'FullyGraded',
+      userId: ltiUser.user_id,
+      submission: {
+        startedAt: assessment_instance.date,
+        submittedAt: submittedAt ?? undefined,
+      },
+    };
 
-      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+    try {
+      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -890,16 +923,12 @@ export async function updateLti13Scores(
         },
         body: JSON.stringify(score),
       });
-
-      if (res.ok) {
-        counts.success++;
-      } else {
-        counts.error++;
-        const results = await res.json();
-
-        // Default to showing the whole error
-        job.warn(`\t${res.statusText}`);
-        job.warn(`\t${JSON.stringify(results)}`);
+      counts.success++;
+    } catch (error) {
+      counts.error++;
+      job.warn(`\t${error.message}`);
+      if (error instanceof AugmentedError && error.data.body) {
+        job.verbose(error.data.body);
       }
     }
   }

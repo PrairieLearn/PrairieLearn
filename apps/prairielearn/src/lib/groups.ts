@@ -4,7 +4,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
@@ -220,7 +220,7 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectCourseInstanceById(course_instance_id);
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
     if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
@@ -340,20 +340,22 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  group_name: string,
+  group_name: string | null,
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
 ): Promise<void> {
-  if (group_name.length > 30) {
-    throw new GroupOperationError(
-      'The group name is too long. Use at most 30 alphanumerical characters.',
-    );
-  }
-  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
-    throw new GroupOperationError(
-      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
-    );
+  if (group_name) {
+    if (group_name.length > 30) {
+      throw new GroupOperationError(
+        'The group name is too long. Use at most 30 alphanumerical characters.',
+      );
+    }
+    if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
+      throw new GroupOperationError(
+        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -390,7 +392,13 @@ export async function createGroup(
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      if (group_name) {
+        throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      } else {
+        throw new GroupOperationError(
+          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+        );
+      }
     }
     throw err;
   }
@@ -424,11 +432,6 @@ export async function createOrAddToGroup(
   });
 }
 
-/**
- * @param {GroupInfo} groupInfo
- * @param {string} leavingUserId
- * @returns {GroupRoleAssignment[]}
- */
 export function getGroupRoleReassignmentsAfterLeave(
   groupInfo: GroupInfo,
   leavingUserId: string,
@@ -436,9 +439,11 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {}).flat();
 
-  const leavingUserRoleIds = groupRoleAssignments
-    .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-    .map(({ group_role_id }) => group_role_id);
+  const leavingUserRoleIds = new Set(
+    groupRoleAssignments
+      .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
+      .map(({ group_role_id }) => group_role_id),
+  );
 
   const roleIdsToReassign =
     groupInfo.rolesInfo?.groupRoles
@@ -446,7 +451,7 @@ export function getGroupRoleReassignmentsAfterLeave(
         (role) =>
           (role.minimum ?? 0) > 0 &&
           role.count <= (role.minimum ?? 0) &&
-          leavingUserRoleIds.includes(role.id),
+          leavingUserRoleIds.has(role.id),
       )
       .map((role) => role.id) ?? [];
 
@@ -460,8 +465,7 @@ export function getGroupRoleReassignmentsAfterLeave(
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => idsEqual(user_id, m.user_id)) ===
-          undefined,
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({

@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
@@ -20,7 +20,7 @@ import {
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
@@ -31,7 +31,7 @@ import {
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
@@ -49,7 +49,7 @@ import {
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
@@ -138,10 +138,10 @@ router.post(
             .string()
             .transform((s) => shlex.split(s || ''))
             .optional(),
-          workspace_rewrite_url: BooleanFromCheckboxSchema.optional(),
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
           // This will not correctly handle any filenames that have a comma in them.
           // Currently, we do not have any such filenames in prod so we don't think that
-          // escaping commas in indiviudal filenames is necessary.
+          // escaping commas in individual filenames is necessary.
           workspace_graded_files: z
             .string()
             .transform((s) =>
@@ -151,7 +151,7 @@ router.post(
                 .filter((s) => s !== ''),
             )
             .optional(),
-          workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
+          workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
         })
         .parse(req.body);
@@ -198,7 +198,7 @@ router.post(
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
         image: propertyValueWithDefault(
           questionInfo.workspaceOptions?.image,
-          body.workspace_image,
+          body.workspace_image?.trim(),
           '',
         ),
         port: propertyValueWithDefault(
@@ -208,7 +208,7 @@ router.post(
         ),
         home: propertyValueWithDefault(
           questionInfo.workspaceOptions?.home,
-          body.workspace_home,
+          body.workspace_home?.trim(),
           '',
         ),
         args: propertyValueWithDefault(
@@ -219,7 +219,7 @@ router.post(
         rewriteUrl: propertyValueWithDefault(
           questionInfo.workspaceOptions?.rewriteUrl,
           body.workspace_rewrite_url,
-          false,
+          true,
         ),
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
@@ -238,19 +238,26 @@ router.post(
         ),
       };
 
-      const filteredOptions = Object.fromEntries(
-        Object.entries(
-          propertyValueWithDefault(
-            questionInfo.workspaceOptions,
-            workspaceOptions,
-            (val) => !val || Object.keys(val).length === 0,
-          ),
-        ).filter(([_, value]) => value !== undefined),
-      );
-      questionInfo.workspaceOptions =
-        Object.keys(filteredOptions).length > 0
-          ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
-          : undefined;
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -303,6 +310,10 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course_short_name: res.locals.course.short_name,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {
@@ -369,16 +380,10 @@ router.get(
       config.secretKey,
     );
 
-    let questionGHLink: string | null = null;
-    if (res.locals.course.example_course) {
-      // The example course is not found at the root of its repository, so its path is hardcoded
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
-    } else if (res.locals.course.repository) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
-      }
-    }
+    const questionGHLink = courseRepoContentUrl(
+      res.locals.course,
+      `questions/${res.locals.question.qid}`,
+    );
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 

@@ -64,7 +64,8 @@ export const WorkspaceOptionsJsonSchema = z
       .describe(
         'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
       )
-      .optional(),
+      .optional()
+      .default(true),
     gradedFiles: z
       .array(
         z

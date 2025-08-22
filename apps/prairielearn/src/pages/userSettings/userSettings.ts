@@ -1,6 +1,6 @@
 import * as crypto from 'crypto';
 
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +16,7 @@ import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -27,9 +27,7 @@ router.get(
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
-      {
-        user_id: authn_user.user_id,
-      },
+      { user_id: authn_user.user_id },
       AccessTokenSchema,
     );
 
@@ -57,10 +55,10 @@ router.get(
       authn_user_id: authn_user.user_id,
     });
 
-    const showEnhancedNavigationToggle = await features.enabled('enhanced-navigation-user-toggle', {
+    const showEnhancedNavigationToggle = await features.enabled('legacy-navigation-user-toggle', {
       user_id: authn_user.user_id,
     });
-    const enhancedNavigationEnabled = await features.enabled('enhanced-navigation', {
+    const usesLegacyNavigation = await features.enabled('legacy-navigation', {
       user_id: authn_user.user_id,
     });
 
@@ -74,7 +72,7 @@ router.get(
         purchases,
         isExamMode: mode !== 'Public',
         showEnhancedNavigationToggle,
-        enhancedNavigationEnabled,
+        enhancedNavigationEnabled: !usesLegacyNavigation,
         resLocals: res.locals,
       }),
     );
@@ -87,11 +85,12 @@ router.post(
     if (req.body.__action === 'update_features') {
       const context = { user_id: res.locals.authn_user.user_id };
 
-      if (await features.enabled('enhanced-navigation-user-toggle', context)) {
+      if (await features.enabled('legacy-navigation-user-toggle', context)) {
+        // Checkbox indicates enhanced navigation ON when checked; legacy is inverse
         if (req.body.enhanced_navigation) {
-          await features.enable('enhanced-navigation', context);
+          await features.disable('legacy-navigation', context);
         } else {
-          await features.disable('enhanced-navigation', context);
+          await features.enable('legacy-navigation', context);
         }
       }
 

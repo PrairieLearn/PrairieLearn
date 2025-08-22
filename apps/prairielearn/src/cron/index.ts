@@ -8,6 +8,7 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { SpanStatusCode, context, suppressTracing, trace } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import { config } from '../lib/config.js';
@@ -117,24 +118,24 @@ export async function init() {
   ];
 
   if (isEnterprise()) {
-    jobs.push({
-      name: 'externalGraderLoad',
-      module: await import('../ee/cron/externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
-    });
-
-    jobs.push({
-      name: 'workspaceHostLoads',
-      module: await import('../ee/cron/workspaceHostLoads.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
-    });
-
-    jobs.push({
-      name: 'chunksHostAutoScaling',
-      module: await import('../ee/cron/chunksHostAutoScaling.js'),
-      intervalSec:
-        config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
-    });
+    jobs.push(
+      {
+        name: 'externalGraderLoad',
+        module: await import('../ee/cron/externalGraderLoad.js'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+      },
+      {
+        name: 'workspaceHostLoads',
+        module: await import('../ee/cron/workspaceHostLoads.js'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
+      },
+      {
+        name: 'chunksHostAutoScaling',
+        module: await import('../ee/cron/chunksHostAutoScaling.js'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      },
+    );
   }
 
   const enabledJobs = config.cronEnabledJobs;
@@ -266,7 +267,6 @@ function queueDailyJobs(jobsList: CronJob[]) {
   jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
 }
 
-// run a list of jobs
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
   const cronUuid = uuidv4();
@@ -318,7 +318,9 @@ async function runJobs(jobsList: CronJob[]) {
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 
-// try and get the job lock, and run the job if we get it
+/**
+ * Tries to get the job lock; executes the job if the lock is acquired.
+ */
 async function tryJobWithLock(job: CronJob, cronUuid: string) {
   debug(`tryJobWithLock(): ${job.name}`);
   const lockName = 'cron:' + job.name;
@@ -346,19 +348,22 @@ async function tryJobWithLock(job: CronJob, cronUuid: string) {
   }
 }
 
-// See how long it is since we last ran the job and only run it if
-// enough time has elapsed. We are protected by a lock here so we
-// have exclusive access.
+/**
+ * See how long it is since we last ran the job and only run it if
+ * enough time has elapsed. We are protected by a lock here so we
+ * have exclusive access.
+ */
 async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}`);
-  let interval_secs;
-  if (Number.isInteger(job.intervalSec)) {
-    interval_secs = job.intervalSec;
-  } else if (job.intervalSec === 'daily') {
-    interval_secs = 12 * 60 * 60;
-  } else {
-    throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
-  }
+  const interval_secs = run(() => {
+    if (Number.isInteger(job.intervalSec)) {
+      return job.intervalSec;
+    } else if (job.intervalSec === 'daily') {
+      return 12 * 60 * 60;
+    } else {
+      throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
+    }
+  });
   const result = await sqldb.queryAsync(sql.select_recent_cron_job, {
     name: job.name,
     interval_secs,
@@ -374,8 +379,7 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   logger.verbose('cron: ' + job.name + ' job was not recently run', {
     cronUuid,
   });
-  const params = { name: job.name };
-  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  await sqldb.queryAsync(sql.update_cron_job_time, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
   logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
   await runJob(job, cronUuid);
@@ -384,7 +388,6 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
 }
 
-// actually run the job
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
