@@ -227,13 +227,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
-  aiClustersExist,
+  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
-  aiClustersExist?: boolean;
+  aiSubmissionGroupsExist?: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -271,7 +271,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    aiClustersExist,
+                    aiSubmissionGroupsExist,
                   })}
                 </div>
               </div>
@@ -297,7 +297,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    aiClustersExist,
+                    aiSubmissionGroupsExist,
                   })}
                 </div>
               </div>

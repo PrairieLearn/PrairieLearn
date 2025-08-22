@@ -368,16 +368,16 @@ export function AssessmentQuestion({
                         <button
                           class="dropdown-item grading-tag-button"
                           data-bs-toggle="modal"
-                          data-bs-target="#cluster-confirmation-modal-selected"
+                          data-bs-target="#group-confirmation-modal-selected"
                         >
-                          Cluster selected
+                          Group selected
                         </button>
                         <button
                           class="dropdown-item"
                           data-bs-toggle="modal"
-                          data-bs-target="#cluster-confirmation-modal-all"
+                          data-bs-target="#group-confirmation-modal-all"
                         >
-                          Cluster all
+                          Group all
                         </button>
 
                         <hr class="dropdown-divider" />
@@ -398,7 +398,7 @@ export function AssessmentQuestion({
           </div>
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>
         </div>
-        ${ClusterInfoModal({
+        ${GroupInfoModal({
           modalFor: 'selected',
           numOpenInstances: num_open_instances,
           csrfToken: __csrf_token,
@@ -409,7 +409,7 @@ export function AssessmentQuestion({
       GradingConflictModal(),
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
       DeleteAllAISubmissionGroupingResultsModal({ csrfToken: __csrf_token }),
-      ClusterInfoModal({
+      GroupInfoModal({
         modalFor: 'all',
         numOpenInstances: num_open_instances,
         csrfToken: __csrf_token,
@@ -464,7 +464,7 @@ function DeleteAllAISubmissionGroupingResultsModal({ csrfToken }: { csrfToken: s
   });
 }
 
-function ClusterInfoModal({
+function GroupInfoModal({
   modalFor,
   numOpenInstances,
   csrfToken,
@@ -474,7 +474,7 @@ function ClusterInfoModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: `cluster-confirmation-modal-${modalFor}`,
+    id: `group-confirmation-modal-${modalFor}`,
     title: modalFor === 'all' ? 'Group all submissions' : 'Group selected submissions',
     form: modalFor === 'all',
     body: html`
@@ -485,27 +485,27 @@ function ClusterInfoModal({
           `
         : ''}
       <p>
-        Clustering groups student answers based on whether they
+        Groups student submission answers based on whether they
         <b>match the correct answer exactly.</b>
       </p>
 
-      <p>Answers that match go into one cluster, and those that don’t are grouped separately.</p>
+      <p>Answers that match go into one group, and those that don’t are grouped separately.</p>
 
       <p>
-        To enable clustering, the correct answer must be provided in <code>pl-answer-panel</code>.
+        To enable grouping, the correct answer must be provided in <code>pl-answer-panel</code>.
       </p>
 
       <p>
-        Clustering checks for exact equivalence to the final answer, considering only the boxed or
+        Grouping checks for exact equivalence to the final answer, considering only the boxed or
         final answer to form groups.
       </p>
 
-      <p>Examples of what can and can't be clustered:</p>
+      <p>Examples of what can and can't be grouped:</p>
 
       <div class="d-grid border rounded overflow-hidden" style="grid-template-columns: 1fr 1fr;">
         <!-- Header row -->
-        <div class="px-2 py-1 bg-light fw-bold border-end">Can cluster</div>
-        <div class="px-2 py-1 bg-light fw-bold">Can't cluster</div>
+        <div class="px-2 py-1 bg-light fw-bold border-end">Can group</div>
+        <div class="px-2 py-1 bg-light fw-bold">Can't group</div>
 
         <!-- Row 1 -->
         <div class="px-2 py-1 border-top border-end">Mathematical Equations</div>
@@ -528,14 +528,14 @@ function ClusterInfoModal({
               ${numOpenInstances === 1
                 ? 'one open instance that '
                 : `${numOpenInstances} open instances, which `}
-              may contain submissions selected for clustering.
+              may contain submissions selected for grouping.
             </p>
           </div>
           <div class="col-12 col-md-6 d-flex flex-column gap-2">
-            <p class="my-0">Choose how to apply clustering:</p>
+            <p class="my-0">Choose how to apply grouping:</p>
             <select class="form-select w-auto flex-shrink-0" name="closed_instance_questions_only">
-              <option value="true" selected>Only cluster closed submissions</option>
-              <option value="false">Cluster open & closed submissions</option>
+              <option value="true" selected>Only group closed submissions</option>
+              <option value="false">Group open & closed submissions</option>
             </select>
           </div>
         </div>
@@ -545,7 +545,7 @@ function ClusterInfoModal({
       <div class="m-0">
         <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
           ${modalFor === 'all'
-            ? html` <button class="btn btn-primary" type="submit">Cluster submissions</button> `
+            ? html` <button class="btn btn-primary" type="submit">Group submissions</button> `
             : html`
                 <button
                   class="btn btn-primary"
@@ -553,12 +553,12 @@ function ClusterInfoModal({
                   name="batch_action"
                   value="ai_submission_group_selected"
                 >
-                  Cluster submissions
+                  Group submissions
                 </button>
               `}
         </div>
         <small class="text-muted my-0 text-end"
-          >AI can make mistakes. Review cluster assignments before grading.</small
+          >AI can make mistakes. Review groups before grading.</small
         >
       </div>
     `,

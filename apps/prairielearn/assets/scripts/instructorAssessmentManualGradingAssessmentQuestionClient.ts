@@ -562,7 +562,10 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const action = formData.get('__action');
   const batchAction = formData.get('batch_action');
 
-  const newPageBatchActions = new Set(['ai_grade_assessment_selected', 'ai_submission_group_selected']);
+  const newPageBatchActions = new Set([
+    'ai_grade_assessment_selected',
+    'ai_submission_group_selected',
+  ]);
 
   if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.

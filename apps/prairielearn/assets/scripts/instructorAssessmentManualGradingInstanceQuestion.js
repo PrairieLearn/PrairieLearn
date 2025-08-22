@@ -945,7 +945,9 @@ function addSkipGradeSubmissionsListener() {
 
 function addSubmissionGroupSelectionDropdownListeners() {
   const { instance_question_id } = decodeData('instance-question-id');
-  const submissionGroupSelectionDropdown = document.querySelector('#submission-group-selection-dropdown');
+  const submissionGroupSelectionDropdown = document.querySelector(
+    '#submission-group-selection-dropdown',
+  );
 
   const gradeButton = document.querySelector('#grade-button');
   const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
@@ -958,9 +960,7 @@ function addSubmissionGroupSelectionDropdownListeners() {
   });
 
   submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedSubmissionGroupDropdownItem = e.target.closest(
-      '.dropdown-item',
-    );
+    const selectedSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
 
     await fetch(`${instance_question_id}/ai_submission_group`, {
       method: 'PUT',
@@ -979,13 +979,19 @@ function addSubmissionGroupSelectionDropdownListeners() {
 
     // If the user selected a submission group, show the grade button with a dropdown that lets them
     // grade the whole submission group. Otherwise, show the grade button without a dropdown.
-    gradeButton.classList.toggle('d-none', selectedSubmissionGroupDropdownItem.getAttribute('value'));
+    gradeButton.classList.toggle(
+      'd-none',
+      selectedSubmissionGroupDropdownItem.getAttribute('value'),
+    );
     gradeButtonWithDropdown.classList.toggle(
       'd-none',
       !selectedSubmissionGroupDropdownItem.getAttribute('value'),
     );
 
-    const submissionGroupSelectionDropdownSpan = document.querySelector('#submission-group-selection-dropdown-span');
-    submissionGroupSelectionDropdownSpan.innerHTML = selectedSubmissionGroupDropdownItem.textContent;
+    const submissionGroupSelectionDropdownSpan = document.querySelector(
+      '#submission-group-selection-dropdown-span',
+    );
+    submissionGroupSelectionDropdownSpan.innerHTML =
+      selectedSubmissionGroupDropdownItem.textContent;
   });
 }

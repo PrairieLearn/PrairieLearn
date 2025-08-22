@@ -13,7 +13,7 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
-import { selectAiClusters } from '../ai-submission-grouping/ai-submission-grouping-util.js';
+import { selectAiSubmissionGroups } from '../ai-submission-grouping/ai-submission-grouping-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
@@ -49,7 +49,7 @@ export interface AiGradingGeneralStats {
  * and calculating point and/or rubric difference between human and AI.
  */
 export async function fillInstanceQuestionColumns<
-  T extends { id: string; ai_cluster_id: string | null },
+  T extends { id: string; ai_submission_group_id: string | null },
 >(
   instance_questions: T[],
   assessment_question: AssessmentQuestion,
@@ -62,12 +62,12 @@ export async function fillInstanceQuestionColumns<
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 
-  const aiClusterIdToName = (
-    await selectAiClusters({
+  const aiSubmissionGroupIdToName = (
+    await selectAiSubmissionGroups({
       assessmentQuestionId: assessment_question.id,
     })
   ).reduce((acc, curr) => {
-    acc[curr.id] = curr.cluster_name;
+    acc[curr.id] = curr.submission_group_name;
     return acc;
   }, {});
 
@@ -80,7 +80,7 @@ export async function fillInstanceQuestionColumns<
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
-      ai_cluster_name: null,
+      ai_submission_group_name: null,
       rubric_similarity: null,
     };
     results.push(instance_question);
@@ -132,9 +132,9 @@ export async function fillInstanceQuestionColumns<
       instance_question.rubric_difference = fnItems.concat(fpItems);
     }
 
-    // Retrieve the current cluster of the instance question
-    instance_question.ai_cluster_name = instance_question.ai_cluster_id
-      ? aiClusterIdToName[instance_question.ai_cluster_id]
+    // Retrieve the current submission group of the instance question
+    instance_question.ai_submission_group_name = instance_question.ai_submission_group_id
+      ? aiSubmissionGroupIdToName[instance_question.ai_submission_group_id]
       : null;
   }
   return results;

@@ -9,17 +9,17 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  selectAiSubmissionGroup,
-  selectAiSubmissionGroups,
-  selectAssessmentQuestionHasAiSubmissionGroups,
-  updateAiSubmissionGroup,
-} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
-import {
   selectLastSubmissionId,
   selectRubricGradingItems,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import {
+  selectAiSubmissionGroup,
+  selectAiSubmissionGroups,
+  selectAssessmentQuestionHasAiSubmissionGroups,
+  updateAiSubmissionGroup,
+} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 import {
   AiGradingJobSchema,
   DateFromISOString,
@@ -433,7 +433,6 @@ router.post(
           res.locals.skip_graded_submissions,
         ),
       );
-      // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
     } else if (
       body.__action === 'add_manual_grade_for_submission_group_ungraded' ||
       body.__action === 'add_manual_grade_for_submission_group'
@@ -448,7 +447,8 @@ router.post(
         {
           submission_group_id: ai_submission_group_id,
           assessment_id: res.locals.assessment.id,
-          skip_graded_submissions: body.__action === 'add_manual_grade_for_submission_group_ungraded',
+          skip_graded_submissions:
+            body.__action === 'add_manual_grade_for_submission_group_ungraded',
         },
         z.object({
           instance_question_id: z.string(),

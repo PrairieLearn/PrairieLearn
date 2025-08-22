@@ -7,11 +7,6 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
-  resetInstanceQuestionsAiSubmissionGroups,
-  selectAiSubmissionGroups,
-} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
-import { aiSubmissionGrouping } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping.js';
-import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
@@ -20,6 +15,11 @@ import {
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import {
+  resetInstanceQuestionsAiSubmissionGroups,
+  selectAiSubmissionGroups,
+} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
+import { aiSubmissionGrouping } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -280,7 +280,7 @@ router.post(
       );
 
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_ai_clustering_results') {
+    } else if (req.body.__action === 'delete_ai_submission_grouping_results') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }

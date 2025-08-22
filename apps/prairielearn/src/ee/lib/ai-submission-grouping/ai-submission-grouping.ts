@@ -285,9 +285,7 @@ export async function aiSubmissionGrouping({
 
       await updateAiSubmissionGroup({
         instance_question_id: instance_question.id,
-        ai_submission_group_id: responseCorrect
-          ? likelyCorrectGroup.id
-          : reviewNeededGroup.id,
+        ai_submission_group_id: responseCorrect ? likelyCorrectGroup.id : reviewNeededGroup.id,
       });
       logger.info(`Grouped instance question ${instance_question.id} (${index}/${total})`);
       index += 1;

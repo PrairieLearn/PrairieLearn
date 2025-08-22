@@ -128,7 +128,7 @@ export function GradingPanel({
                     >
                       <div class="d-flex justify-content-center">
                         <div class="spinner-border spinner-border-sm" role="status">
-                          <span class="visually-hidden">Loading clusters...</span>
+                          <span class="visually-hidden">Loading submission groups...</span>
                         </div>
                       </div>
                     </div>
