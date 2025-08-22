@@ -266,7 +266,6 @@ router.get(
       is_administrator: res.locals.is_administrator,
     });
 
-    assert(res.locals.group_role_permissions !== undefined, 'group_role_permissions is undefined');
     const panels = await renderPanelsForSubmission({
       unsafe_submission_id: req.params.unsafe_submission_id,
       question: res.locals.question,
