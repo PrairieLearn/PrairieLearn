@@ -39,13 +39,13 @@ const STANDARD_CLUSTERS = [
   },
 ];
 
-/** Insert the clusters for an assessment question if they don't exist */
-export async function insertAiClusters({
+/** Insert the default clusters for an assessment question if they don't exist */
+export async function insertDefaultAiClusters({
   assessment_question_id,
 }: {
   assessment_question_id: string;
 }) {
-  const aiClustersExist = await getAiClustersExist({
+  const aiClustersExist = await selectAssessmentQuestionHasAiClusters({
     assessmentQuestionId: assessment_question_id,
   });
   if (aiClustersExist) {
@@ -54,7 +54,7 @@ export async function insertAiClusters({
 
   await runInTransactionAsync(async () => {
     for (const clusterInfo of STANDARD_CLUSTERS) {
-      await queryAsync(sql.create_ai_cluster, {
+      await queryAsync(sql.insert_ai_cluster, {
         assessment_question_id,
         cluster_name: clusterInfo.name,
         cluster_description: clusterInfo.description,
@@ -73,6 +73,7 @@ export async function selectAiCluster(ai_cluster_id: string) {
   );
 }
 
+/** Set the AI cluster of an instance question. */
 export async function updateAiCluster({
   instance_question_id,
   ai_cluster_id,
@@ -86,14 +87,13 @@ export async function updateAiCluster({
   });
 }
 
-/** whether or not the AI clusters exist for a given assessment question. */
-export async function getAiClustersExist({
+export async function selectAssessmentQuestionHasAiClusters({
   assessmentQuestionId,
 }: {
   assessmentQuestionId: string;
 }) {
   return await queryRow(
-    sql.select_exists_ai_clusters,
+    sql.select_assessment_question_has_ai_clusters,
     {
       assessment_question_id: assessmentQuestionId,
     },
@@ -111,7 +111,7 @@ export async function selectAiClusters({ assessmentQuestionId }: { assessmentQue
   );
 }
 
-export async function getInstanceQuestionAnswer({
+export async function renderInstanceQuestionAnswerHtml({
   question,
   instance_question,
   course,
@@ -143,7 +143,6 @@ export async function getInstanceQuestionAnswer({
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
- * Specifically for handwritten submissions captured with pl-image-capture.
  */
 export async function aiEvaluateStudentResponse({
   question,
@@ -181,18 +180,8 @@ export async function aiEvaluateStudentResponse({
   const submissionMessage = generateSubmissionMessage({
     submission_text,
     submitted_answer: submission.submitted_answer,
-    include_images_only: true,
+    include_ai_grading_prompts: false,
   });
-
-  // Extract all images
-  const promptImageUrls: string[] = [];
-  if (submissionMessage && submissionMessage.content) {
-    for (const part of submissionMessage.content) {
-      if (typeof part === 'object' && part.type === 'image_url') {
-        promptImageUrls.push(part.image_url.url);
-      }
-    }
-  }
 
   // Prompt the LLM to determine if the submission is correct or not.
   const messages: ChatCompletionMessageParam[] = [
@@ -207,7 +196,7 @@ export async function aiEvaluateStudentResponse({
     },
     {
       role: 'user',
-      content: `CORRECT ANSWER = \n${question_answer}`,
+      content: `CORRECT ANSWER: \n${question_answer}`,
     },
     {
       role: 'user',

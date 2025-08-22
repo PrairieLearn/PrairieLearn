@@ -1,4 +1,4 @@
--- BLOCK create_ai_cluster
+-- BLOCK insert_ai_cluster
 INSERT INTO
   ai_clusters (
     assessment_question_id,
@@ -11,7 +11,7 @@ VALUES
     $cluster_name,
     $cluster_description
   )
-  -- BLOCK select_exists_ai_clusters
+  -- BLOCK select_assessment_question_has_ai_clusters
 SELECT
   EXISTS (
     SELECT

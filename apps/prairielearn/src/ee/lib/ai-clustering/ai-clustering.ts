@@ -16,8 +16,8 @@ import type { AIGradingLog, AIGradingLogger } from '../ai-grading/types.js';
 
 import {
   aiEvaluateStudentResponse,
-  getInstanceQuestionAnswer,
-  insertAiClusters,
+  insertDefaultAiClusters,
+  renderInstanceQuestionAnswerHtml,
   selectAiClusters,
   updateAiCluster,
 } from './ai-clustering-util.js';
@@ -93,7 +93,7 @@ export async function aiCluster({
 
     job.info(`Clustering ${selectedInstanceQuestions.length} instance questions...`);
 
-    await insertAiClusters({
+    await insertDefaultAiClusters({
       assessment_question_id: assessment_question.id,
     });
 
@@ -124,15 +124,14 @@ export async function aiCluster({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
-      // Render the question's answer
-      const question_answer = await getInstanceQuestionAnswer({
+      const answerHtml = await renderInstanceQuestionAnswerHtml({
         question,
         instance_question,
         course,
         urlPrefix,
       });
 
-      if (!question_answer) {
+      if (!answerHtml) {
         logger.error(
           `Instance question ${instance_question.id} has no answer. Ensure that every instance question has an answer in pl-answer-panel.`,
         );
@@ -141,7 +140,7 @@ export async function aiCluster({
 
       const responseCorrect = await aiEvaluateStudentResponse({
         question,
-        question_answer,
+        question_answer: answerHtml,
         instance_question,
         course,
         urlPrefix,

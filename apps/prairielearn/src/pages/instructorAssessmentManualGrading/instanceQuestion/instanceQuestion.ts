@@ -9,9 +9,9 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  getAiClustersExist,
   selectAiCluster,
   selectAiClusters,
+  selectAssessmentQuestionHasAiClusters,
   updateAiCluster,
 } from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
 import {
@@ -117,7 +117,7 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    const aiClustersExist = await getAiClustersExist({
+    const aiClustersExist = await selectAssessmentQuestionHasAiClusters({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 

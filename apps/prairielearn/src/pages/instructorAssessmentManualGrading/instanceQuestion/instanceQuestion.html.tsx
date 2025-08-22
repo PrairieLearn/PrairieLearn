@@ -86,11 +86,9 @@ export function InstanceQuestion({
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       ${EncodedData(
         {
-          course_instance_id: resLocals.course_instance.id,
-          assessment_id: resLocals.assessment.id,
           instance_question_id: resLocals.instance_question.id,
         },
-        'instance-question-data',
+        'instance-question-id',
       )}
     `,
     preContent: html`

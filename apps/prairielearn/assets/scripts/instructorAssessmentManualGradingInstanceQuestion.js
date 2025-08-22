@@ -37,58 +37,7 @@ $(() => {
       .modal('show');
   }
 
-  const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
-  const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
-
-  const gradeButton = document.querySelector('#grade-button');
-  const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
-
-  ensureElementsExist({
-    skipGradedSubmissionsCheckbox,
-    clusterSelectionDropdown,
-    gradeButton,
-    gradeButtonWithDropdown,
-  });
-
-  skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
-    // Update the side nav expanded state
-    await fetch('/pl/manual_grading/skip_graded_submissions', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        skip_graded_submissions: e.target.checked,
-      }),
-    });
-  });
-
-  clusterSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedItem = e.target.closest('.dropdown-item');
-    const { instance_question_id } = decodeData('instance-question-data');
-
-    await fetch(`${instance_question_id}/ai_cluster`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        aiClusterId: selectedItem.getAttribute('value'),
-      }),
-    });
-
-    const activeDropdownItem = document.querySelector('.dropdown-item.active');
-    activeDropdownItem.classList.remove('active');
-
-    selectedItem.classList.add('active');
-
-    gradeButton.classList.toggle('d-none', selectedItem.getAttribute('value'));
-    gradeButtonWithDropdown.classList.toggle('d-none', !selectedItem.getAttribute('value'));
-
-    const clusterSelectionDropdownSpan = document.querySelector('#cluster-selection-dropdown-span');
-    clusterSelectionDropdownSpan.innerHTML = selectedItem.textContent;
-  });
-
+  addClusterSelectionDropdownListeners();
   addSkipGradeSubmissionsListener();
 });
 
@@ -992,5 +941,52 @@ function addSkipGradeSubmissionsListener() {
         skip_graded_submissions: e.target.checked,
       }),
     });
+  });
+}
+
+function addClusterSelectionDropdownListeners() {
+  const { instance_question_id } = decodeData('instance-question-id');
+  const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
+
+  const gradeButton = document.querySelector('#grade-button');
+  const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
+
+  ensureElementsExist({
+    clusterSelectionDropdown,
+
+    gradeButton,
+    gradeButtonWithDropdown,
+  });
+
+  clusterSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedClusterDropdownItem = e.target.closest(
+      '#cluster-selection-dropdown .dropdown-item',
+    );
+
+    await fetch(`${instance_question_id}/ai_cluster`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        aiClusterId: selectedCluster.getAttribute('value'),
+      }),
+    });
+
+    const activeDropdownItem = document.querySelector('.dropdown-item.active');
+    activeDropdownItem.classList.remove('active');
+
+    selectedClusterDropdownItem.classList.add('active');
+
+    // If the user selected a cluster, show the grade button with a dropdown that lets them
+    // grade the whole cluster. Otherwise, show the grade button without a dropdown.
+    gradeButton.classList.toggle('d-none', selectedClusterDropdownItem.getAttribute('value'));
+    gradeButtonWithDropdown.classList.toggle(
+      'd-none',
+      !selectedClusterDropdownItem.getAttribute('value'),
+    );
+
+    const clusterSelectionDropdownSpan = document.querySelector('#cluster-selection-dropdown-span');
+    clusterSelectionDropdownSpan.innerHTML = selectedClusterDropdownItem.textContent;
   });
 }

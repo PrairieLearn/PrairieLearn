@@ -172,6 +172,7 @@ export async function generatePrompt({
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
+      include_ai_grading_prompts: false,
     }),
   );
 
@@ -184,15 +185,15 @@ export async function generatePrompt({
 export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
-  include_images_only = false,
+  include_ai_grading_prompts,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-  include_images_only?: boolean;
+  include_ai_grading_prompts: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  if (!include_images_only) {
+  if (!include_ai_grading_prompts) {
     message_content.push({
       type: 'text',
       text: 'The student submitted the following response: \n<response>\n',
@@ -212,7 +213,7 @@ export function generateSubmissionMessage({
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
       if (imageCaptureUUID) {
-        if (submissionTextSegment && !include_images_only) {
+        if (submissionTextSegment && !include_ai_grading_prompts) {
           // Push and reset the current text segment before adding the image.
           message_content.push({
             type: 'text',
@@ -223,7 +224,7 @@ export function generateSubmissionMessage({
 
         const options = $submission_html(node).data('options') as Record<string, string>;
         const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName && !include_images_only) {
+        if (!submittedImageName && !include_ai_grading_prompts) {
           // If no submitted filename is available, no image was captured.
           message_content.push({
             type: 'text',
@@ -253,14 +254,14 @@ export function generateSubmissionMessage({
       }
     });
 
-  if (submissionTextSegment && !include_images_only) {
+  if (submissionTextSegment && !include_ai_grading_prompts) {
     message_content.push({
       type: 'text',
       text: submissionTextSegment,
     });
   }
 
-  if (!include_images_only) {
+  if (!include_ai_grading_prompts) {
     message_content.push({
       type: 'text',
       text: '\n</response>\nHow would you grade this? Please return the JSON object.',
