@@ -101,6 +101,7 @@
     "debug": "^4.4.1",
     "delegated-events": "^1.1.2",
     "dockerode": "^4.0.7",
+    "domelementtype": "^2.3.0",
     "dompurify": "^3.2.6",
     "dropzone": "^5.9.3",
     "ejs": "^3.1.10",
