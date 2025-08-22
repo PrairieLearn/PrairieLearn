@@ -1074,9 +1074,13 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
-
 export const QuestionScoreLogSchema = null;
-export const QuestionTagSchema = null;
+export const QuestionTagSchema = z.object({
+  id: IdSchema,
+  question_id: IdSchema,
+  tag_id: IdSchema,
+});
+export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
