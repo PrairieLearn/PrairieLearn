@@ -542,7 +542,7 @@ WHERE
   a.id = $assessment_id
 FOR NO KEY UPDATE;
 
--- BLOCK select_assessment_needs_statisics_update
+-- BLOCK select_assessment_needs_statistics_update
 SELECT
   EXISTS (
     SELECT
@@ -558,7 +558,7 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK update_assessment_statisics
+-- BLOCK update_assessment_statistics
 WITH
   student_assessment_scores AS (
     SELECT

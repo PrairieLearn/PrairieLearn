@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as child_process from 'child_process';
 import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
@@ -9,6 +10,7 @@ import * as async from 'async';
 import fs from 'fs-extra';
 import * as tar from 'tar';
 import { v4 as uuidv4 } from 'uuid';
+import z from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
@@ -21,19 +23,17 @@ import { type CourseData } from '../sync/course-db.js';
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
 import { chalk } from './chalk.js';
 import { config } from './config.js';
-import { CourseSchema } from './db-types.js';
+import {
+  AssessmentSchema,
+  ChunkSchema,
+  CourseInstanceSchema,
+  CourseSchema,
+  IdSchema,
+  QuestionSchema,
+} from './db-types.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-type ChunkType =
-  | 'elements'
-  | 'elementExtensions'
-  | 'clientFilesCourse'
-  | 'serverFilesCourse'
-  | 'clientFilesCourseInstance'
-  | 'clientFilesAssessment'
-  | 'question';
 
 interface ElementsChunkMetadata {
   type: 'elements';
@@ -103,18 +103,18 @@ interface ServerFilesCourseChunk {
 
 interface ClientFilesCourseInstanceChunk {
   type: 'clientFilesCourseInstance';
-  courseInstanceId: string | number;
+  courseInstanceId: string;
 }
 
 interface ClientFilesAssessmentChunk {
   type: 'clientFilesAssessment';
-  courseInstanceId: string | number;
-  assessmentId: string | number;
+  courseInstanceId: string;
+  assessmentId: string;
 }
 
 export interface QuestionChunk {
   type: 'question';
-  questionId: string | number;
+  questionId: string;
 }
 
 /**
@@ -135,23 +135,61 @@ export type Chunk =
   | ClientFilesAssessmentChunk
   | QuestionChunk;
 
+const DatabaseChunkSchema = z.intersection(
+  z.object({
+    id: ChunkSchema.shape.id.nullable(),
+    uuid: ChunkSchema.shape.uuid.nullable(),
+  }),
+  z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('elements'),
+    }),
+    z.object({
+      type: z.literal('elementExtensions'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('serverFilesCourse'),
+    }),
+    z.object({
+      type: z.literal('clientFilesCourseInstance'),
+      course_instance_id: IdSchema.nullable(),
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('clientFilesAssessment'),
+      assessment_id: IdSchema.nullable(),
+      assessment_name: z.string(),
+      course_instance_id: IdSchema.nullable(),
+      course_instance_name: z.string(),
+    }),
+    z.object({
+      type: z.literal('question'),
+      question_id: IdSchema.nullable(),
+      question_name: z.string(),
+    }),
+  ]),
+);
+
 /**
  * {@link DatabaseChunk} objects represent chunks that we've fetched from the
  * database. They're sort of a superset of {@link Chunk} and {@link ChunkMetadata}
  * objects that contain both the IDs and human-readable names of the chunks.
  */
-interface DatabaseChunk {
-  id: string | number | null;
-  type: ChunkType;
-  uuid: string;
-  course_id: string | number;
-  course_instance_id?: string | number;
-  course_instance_name?: string;
-  assessment_id?: string | number;
-  assessment_name?: string;
-  question_id?: string | number;
-  question_name?: string;
-}
+export type DatabaseChunk = z.infer<typeof DatabaseChunkSchema>;
+
+const RawCourseChunkSchema = z.object({
+  ...ChunkSchema.shape,
+  question_uuid: QuestionSchema.shape.uuid,
+  question_name: QuestionSchema.shape.qid,
+  assessment_uuid: AssessmentSchema.shape.uuid,
+  assessment_name: AssessmentSchema.shape.tid,
+  course_instance_uuid: CourseInstanceSchema.shape.uuid,
+  course_instance_name: CourseInstanceSchema.shape.short_name,
+});
+export type RawCourseChunk = z.infer<typeof RawCourseChunkSchema>;
 
 interface CourseInstanceChunks {
   clientFilesCourseInstance: boolean;
@@ -427,10 +465,12 @@ export function identifyChunksFromChangedFiles(
  * Returns all the chunks the are currently stored for the given course.
  */
 export async function getAllChunksForCourse(courseId: string) {
-  const result = await sqldb.queryAsync(sql.select_course_chunks, {
-    course_id: courseId,
-  });
-  return result.rows;
+  const result = await sqldb.queryRows(
+    sql.select_course_chunks,
+    { course_id: courseId },
+    RawCourseChunkSchema,
+  );
+  return result;
 }
 
 interface DiffChunksOptions {
@@ -477,10 +517,12 @@ export async function diffChunks({
         existingCourseChunks[courseChunk.type] = true;
         break;
       case 'question':
+        assert(courseChunk.question_name != null, 'question_name is required');
         existingCourseChunks.questions.add(courseChunk.question_name);
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
+        assert(courseInstanceName != null, 'course_instance_name is required');
         if (!existingCourseChunks.courseInstances[courseInstanceName]) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
@@ -493,6 +535,8 @@ export async function diffChunks({
       case 'clientFilesAssessment': {
         const courseInstanceName = courseChunk.course_instance_name;
         const assessmentName = courseChunk.assessment_name;
+        assert(courseInstanceName != null, 'course_instance_name is required');
+        assert(assessmentName != null, 'assessment_name is required');
         if (!existingCourseChunks.courseInstances[courseInstanceName]) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
@@ -854,11 +898,12 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
 }
 
 const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
+  assert(chunk.uuid != null, 'chunk.uuid is required');
   const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   const downloadPath = path.join(courseChunksDirs.downloads, `${chunk.uuid}.tar.gz`);
   const chunkPath = path.join(courseChunksDirs.chunks, `${chunk.uuid}.tar.gz`);
   const unpackPath = path.join(courseChunksDirs.unpacked, chunk.uuid);
-  let relativeTargetPath;
+  let relativeTargetPath: string;
   switch (chunk.type) {
     case 'elements':
     case 'elementExtensions':
@@ -867,9 +912,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       relativeTargetPath = chunk.type;
       break;
     case 'clientFilesCourseInstance':
-      if (!chunk.course_instance_name) {
-        throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -877,12 +919,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'clientFilesAssessment':
-      if (!chunk.course_instance_name) {
-        throw new Error(`course_instance_name is missing for chunk ${chunk.uuid}`);
-      }
-      if (!chunk.assessment_name) {
-        throw new Error(`assessment_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join(
         'courseInstances',
         chunk.course_instance_name,
@@ -892,9 +928,6 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       );
       break;
     case 'question':
-      if (!chunk.question_name) {
-        throw new Error(`question_name is missing for chunk ${chunk.uuid}`);
-      }
       relativeTargetPath = path.join('questions', chunk.question_name);
       break;
     default:
@@ -1011,10 +1044,14 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
 
   // First, query the database to identify the UUID + associated name(s) of each desired chunk
   // "Names" in this case refers to question/course instance/assessment names.
-  const dbChunks = await sqldb.queryAsync(sql.select_metadata_for_chunks, {
-    course_id: courseId,
-    chunks_arr: JSON.stringify(chunks),
-  });
+  const dbChunks = await sqldb.queryRows(
+    sql.select_metadata_for_chunks,
+    {
+      course_id: courseId,
+      chunks_arr: JSON.stringify(chunks),
+    },
+    DatabaseChunkSchema,
+  );
 
   // The results from the database contain information for chunks that exist in
   // the database, and also for chunks that do _not_ exist in the database. We
@@ -1023,12 +1060,15 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
   // presence of an `id` field in the response.
   //
   // See the end of this function for more details.
-  const validChunks = dbChunks.rows.filter((chunk) => chunk.id != null);
-  const missingChunks = dbChunks.rows.filter((chunk) => chunk.id == null);
+  const validChunks = dbChunks.filter((chunk) => chunk.id != null);
+  const missingChunks = dbChunks.filter((chunk) => chunk.id == null);
 
   // Now, ensure each individual chunk is loaded and untarred to the correct
   // place on disk.
   await async.eachLimit(validChunks, config.chunksMaxParallelDownload, async (chunk) => {
+    // TypeScript can't handle Omit<DatabaseChunk, 'uuid'> & { uuid: string }
+    // since DatabaseChunk is a union. See https://github.com/microsoft/TypeScript/issues/31501
+    assert(chunk.uuid != null, 'chunk.uuid is required');
     const pendingChunkKey = `${courseId}-${chunk.uuid}`;
     const pendingChunkPromise = pendingChunksMap.get(pendingChunkKey);
     if (pendingChunkPromise) {
@@ -1087,10 +1127,11 @@ export async function getTemplateQuestionIds(
   question: QuestionWithTemplateDirectory,
 ): Promise<string[]> {
   if (!question.template_directory) return [];
-  const result = await sqldb.queryAsync(sql.select_template_question_ids, {
-    question_id: question.id,
-  });
-  const questionIds = result.rows.map((r) => r.id);
+  const questionIds = await sqldb.queryRows(
+    sql.select_template_question_ids,
+    { question_id: question.id },
+    IdSchema,
+  );
   return questionIds;
 }
 
