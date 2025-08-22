@@ -1,12 +1,8 @@
-import * as crypto from 'crypto';
-import * as path from 'node:path';
-
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
+import { insertAccessToken } from '../models/access-token.js';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -647,19 +643,7 @@ describe('API', { timeout: 60_000 }, function () {
         email: 'editor@example.com',
       });
 
-      const sql = sqldb.loadSql(
-        path.join(import.meta.dirname, '..', 'pages/userSettings/userSettings.sql'),
-      );
-      const name = 'invalidToken';
-      const token = uuidv4();
-      const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
-
-      await sqldb.queryAsync(sql.insert_access_token, {
-        user_id: editor.user_id,
-        name,
-        token,
-        token_hash,
-      });
+      const token = await insertAccessToken(editor.user_id, 'invalidToken');
 
       const res = await fetch(locals.apiCourseStaffUrl, {
         headers: {

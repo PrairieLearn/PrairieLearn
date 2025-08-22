@@ -15,6 +15,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
+import { insertAccessToken } from '../../models/access-token.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -105,18 +106,8 @@ router.post(
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
       }
 
-      const name = req.body.token_name;
-      const token = uuidv4();
-      const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+      await insertAccessToken(res.locals.authn_user.user_id, req.body.token_name);
 
-      await sqldb.queryAsync(sql.insert_access_token, {
-        user_id: res.locals.authn_user.user_id,
-        name,
-        // The token will only be persisted until the next page render.
-        // After that, we'll remove it from the database.
-        token,
-        token_hash,
-      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
       await sqldb.queryAsync(sql.delete_access_token, {
