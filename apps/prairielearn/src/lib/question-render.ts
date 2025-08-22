@@ -65,8 +65,8 @@ import { ensureVariant, getQuestionCourse } from './question-variant.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
+  formatted_date: z.string(),
+  user_uid: z.string(),
   user_name: z.string().nullable(),
   user_email: z.string().nullable(),
 });

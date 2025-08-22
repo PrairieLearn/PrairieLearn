@@ -39,8 +39,11 @@ export interface ResLocalsForPage {
       questionRenderContext: 'manual_grading' | 'ai_grading';
       navbarType: 'instructor';
     };
-  'course-question': ResLocals & ResLocalsCourse & ResLocalsInstructorQuestion;
-  'instructor-question': ResLocals &
+  'course-question': ResLocals &
+    ResLocalsCourse &
+    ResLocalsQuestionRender &
+    ResLocalsInstructorQuestion;
+  'course-instance-question': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender;
@@ -86,7 +89,7 @@ export function getResLocalsForPage<T extends PageType>(
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.
  * - `public-question`: A public question page.
- * - `instructor-question`: An instructor question page.
+ * - `course-instance-question`: An instructor question page.
  * - `instructor-assessment-question`: An instructor assessment question page.
  * - `instance-question`: An instance question page.
  * - `assessment-question`: An assessment question page.

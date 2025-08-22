@@ -107,7 +107,7 @@ router.post(
 
 router.post(
   '/',
-  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+  typedAsyncHandler<'course-instance-question'>(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }

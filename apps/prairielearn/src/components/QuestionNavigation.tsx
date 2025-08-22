@@ -11,11 +11,11 @@ export function QuestionNavSideGroup({
   userGroupRoles,
 }: {
   urlPrefix: string;
-  prevInstanceQuestionId: string;
-  nextInstanceQuestionId: string;
+  prevInstanceQuestionId: string | null;
+  nextInstanceQuestionId: string | null;
   sequenceLocked: boolean | null;
-  prevGroupRolePermissions: { can_view?: boolean } | null;
-  nextGroupRolePermissions: { can_view?: boolean } | null;
+  prevGroupRolePermissions?: { can_view?: boolean };
+  nextGroupRolePermissions?: { can_view?: boolean };
   advanceScorePerc: number | null;
   userGroupRoles: string | null;
 }) {
@@ -52,7 +52,7 @@ export function QuestionNavSideButton({
 }: {
   instanceQuestionId: string | null;
   sequenceLocked?: boolean | null;
-  groupRolePermissions: { can_view?: boolean } | null;
+  groupRolePermissions?: { can_view?: boolean } | null;
   whichButton: 'next' | 'previous';
   urlPrefix: string;
   advanceScorePerc?: number | null;

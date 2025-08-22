@@ -12,6 +12,7 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
@@ -19,7 +20,7 @@ export function InstructorAiGenerateDraftEditor({
   question,
   variantId,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['course-question'];
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
   variantId?: string | undefined;
@@ -251,7 +252,7 @@ function QuestionAndFilePreview({
   resLocals,
 }: {
   prompts: AiQuestionGenerationPrompt[];
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['course-question'];
 }) {
   return html`
     <div class="tab-content" style="height: 100%">

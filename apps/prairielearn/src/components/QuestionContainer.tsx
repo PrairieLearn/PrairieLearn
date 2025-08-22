@@ -17,6 +17,7 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { ResLocalsForPage } from '../lib/res-locals.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +38,10 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -47,13 +51,13 @@ export function QuestionContainer({
   questionCopyTargets?: CopyTarget[] | null;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
+  const course_instance = 'course_instance' in resLocals ? resLocals.course_instance : null;
   const {
     question,
     issues,
     variant,
     variantToken,
     questionJsonBase64,
-    course_instance,
     authz_data,
     is_administrator,
     showTrueAnswer,
@@ -73,7 +77,11 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${course_instance != null
+        ? issues.map((issue) =>
+            IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+          )
+        : ''}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -380,11 +388,11 @@ export function QuestionTitle({
 }: {
   questionContext: QuestionContext;
   question: Question;
-  questionNumber: string;
+  questionNumber?: string;
 }) {
-  if (questionContext === 'student_homework') {
+  if (questionNumber != null && questionContext === 'student_homework') {
     return `${questionNumber}. ${question.title}`;
-  } else if (questionContext === 'student_exam') {
+  } else if (questionNumber != null && questionContext === 'student_exam') {
     return `Question ${questionNumber}: ${question.title}`;
   } else {
     return question.title;
@@ -742,7 +750,10 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -750,7 +761,9 @@ function QuestionPanel({
   aiGradingPreviewUrl?: string;
   questionCopyTargets?: CopyTarget[] | null;
 }) {
-  const { question, questionHtml, course, instance_question_info } = resLocals;
+  const instance_question_info =
+    'instance_question_info' in resLocals ? resLocals.instance_question_info : null;
+  const { question, questionHtml, course } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
 

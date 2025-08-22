@@ -191,7 +191,6 @@ router.get(
       },
       AiQuestionGenerationPromptSchema,
     );
-
     if (prompts.length === 0) {
       // This is probably a draft question that was created on a different server
       // and thus doesn't have any prompt history. We currently rely on the prompt
