@@ -229,6 +229,7 @@
     "@types/crypto-js": "^4.2.2",
     "@types/dockerode": "^3.3.42",
     "@types/express": "^4.17.23",
+    "@types/express-serve-static-core": "^4.19.5",
     "@types/folder-hash": "^4.0.4",
     "@types/fs-extra": "^11.0.4",
     "@types/jju": "^1.4.5",

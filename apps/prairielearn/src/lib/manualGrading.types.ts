@@ -1,8 +1,7 @@
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 import {
+  IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
   type RubricItem,
@@ -50,7 +49,7 @@ export const PartialScoresSchema = z
 // Some historical cases of points and score ended up with NaN values stored in
 // the database. In these cases, manual grading will convert the NaN to zero, so
 // that the instructor can still have a chance to fix the issue.
-export const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
+const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
 
 export const SubmissionForScoreUpdateSchema = z.object({
   submission_id: IdSchema.nullable(),
