@@ -1,5 +1,5 @@
 pg_version = "16.0"
-assume_in_transaction = false
+assume_in_transaction = true
 excluded_rules = [
   "prefer-robust-stmts",               # Missing `IF NOT EXISTS`, the migration can't be rerun if it fails part way through
   "constraint-missing-not-valid",      # By default new constraints require a table scan and block writes to the table while that scan occurs

@@ -46,6 +46,9 @@ exclude_rules = aliasing.column,
 
 [sqlfluff:templater:placeholder]
 param_style = dollar
+
+# $foo is replaced by foo in the templater (no quotes), so we'll set them to something reasonable,
+# like the name of the parameter in quotes, so that it can parse correctly.
 start = 'start'
 end = 'end'
 offset = 'offset'
