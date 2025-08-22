@@ -1,8 +1,5 @@
-import * as crypto from 'crypto';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { v4 as uuidv4 } from 'uuid';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
