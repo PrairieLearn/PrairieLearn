@@ -48,11 +48,11 @@ ORDER BY
 SELECT
   u.uid
 FROM
-  groups AS g
-  JOIN group_users AS gu ON gu.group_id = g.id
-  AND g.group_config_id = $group_config_id
-  AND g.deleted_at IS NULL
-  RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id
+  enrollments AS e
+  LEFT JOIN group_users AS gu ON gu.user_id = e.user_id
+  LEFT JOIN groups AS g ON g.id = gu.group_id
+    AND g.group_config_id = $group_config_id
+    AND g.deleted_at IS NULL
   JOIN users AS u ON u.user_id = e.user_id
 WHERE
   g.id IS NULL

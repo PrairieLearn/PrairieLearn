@@ -154,10 +154,7 @@ WITH
   job_sequence_updates AS (
     SELECT
       j.*,
-      CASE
-        WHEN j.no_job_sequence_update THEN FALSE
-        ELSE TRUE
-      END AS update_job_sequence
+      NOT coalesce(j.no_job_sequence_update, FALSE) AS update_job_sequence
     FROM
       updated_jobs AS j
   )
@@ -238,7 +235,7 @@ WITH
       count(*) AS job_count,
       coalesce(array_agg(to_jsonb(j.*)), ARRAY[]::jsonb[]) AS jobs
     FROM
-      member_jobs AS j
+      member_jobs
   )
 SELECT
   js.*,
