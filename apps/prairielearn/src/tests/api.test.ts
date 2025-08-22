@@ -13,6 +13,7 @@ import { UserSchema } from '../lib/db-types.js';
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { getOrCreateUser } from './utils/auth.js';
 
 const locals: Record<string, any> = {};
 
@@ -641,13 +642,12 @@ describe('API', { timeout: 60_000 }, function () {
     });
 
     test.sequential('GET to /staff fails with incorrect permissions', async function () {
-      const sqlUser =
-        'INSERT INTO users (uid, name)' +
-        " VALUES ('editor@example.com', 'Editor User')" +
-        ' ON CONFLICT (uid) DO UPDATE' +
-        ' SET name = EXCLUDED.name' +
-        ' RETURNING user_id;';
-      const user_id = await sqldb.queryRow(sqlUser, UserSchema.shape.user_id);
+      const editor = await getOrCreateUser({
+        uid: 'editor@example.com',
+        name: 'Editor User',
+        uin: 'editor',
+        email: 'editor@example.com',
+      });
 
       const sql = sqldb.loadSql(
         path.join(import.meta.dirname, '..', 'pages/userSettings/userSettings.sql'),
@@ -657,7 +657,7 @@ describe('API', { timeout: 60_000 }, function () {
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
       await sqldb.queryAsync(sql.insert_access_token, {
-        user_id,
+        user_id: editor.user_id,
         name,
         token,
         token_hash,
