@@ -207,7 +207,7 @@ SELECT
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN last_grading_job ON (TRUE)
+  LEFT JOIN last_grading_job AS lgj ON (TRUE)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   JOIN questions AS q ON (q.id = v.question_id)
   LEFT JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)

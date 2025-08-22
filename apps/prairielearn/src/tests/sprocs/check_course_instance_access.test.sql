@@ -142,6 +142,6 @@ FROM
     user_institution_id,
     course_institution_id,
     $date
-  ) AS authorized -- noqa: AL05
+  ) AS authorized
 WHERE
   ciar.id = $ciar_id;

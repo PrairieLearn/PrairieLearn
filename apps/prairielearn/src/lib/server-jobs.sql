@@ -233,9 +233,9 @@ WITH
   aggregated_member_jobs AS (
     SELECT
       count(*) AS job_count,
-      coalesce(array_agg(to_jsonb(j.*)), ARRAY[]::jsonb[]) AS jobs
+      coalesce(array_agg(to_jsonb(mj.*)), ARRAY[]::jsonb[]) AS jobs
     FROM
-      member_jobs
+      member_jobs AS mj
   )
 SELECT
   js.*,
