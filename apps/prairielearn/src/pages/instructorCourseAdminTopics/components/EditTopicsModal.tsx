@@ -102,7 +102,7 @@ export function EditTopicsModal({
                   })
                 }
               >
-                {COLOR_OPTIONS.map((color) => (
+                {ColorJsonSchema.options.map((color) => (
                   <option key={color} value={color}>
                     {color}
                   </option>
