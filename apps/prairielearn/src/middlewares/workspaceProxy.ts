@@ -108,12 +108,11 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
             ' FROM questions AS q' +
             ' JOIN variants AS v ON (v.question_id = q.id)' +
             ' WHERE v.workspace_id = $workspace_id;';
-          const rawWorkspaceUrlRewrite = await queryRow(
+          workspace_url_rewrite = await queryRow(
             sql,
             { workspace_id },
             QuestionSchema.shape.workspace_url_rewrite,
-          );
-          workspace_url_rewrite = rawWorkspaceUrlRewrite ?? true;
+          ) ?? true;
           workspaceUrlRewriteCache.set(workspace_id, workspace_url_rewrite);
         }
 
