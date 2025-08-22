@@ -251,32 +251,27 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({
-  aiQuestionGenerationCache,
-  userId,
-}: {
-  aiQuestionGenerationCache: Cache;
-  userId: number;
-}) {
-  return (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
+export async function getIntervalUsage({ userId }: { userId: number }) {
+  const cache = await getAiQuestionGenerationCache();
+  return (await cache.get(getIntervalUsageKey(userId))) ?? 0;
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
-export function addCompletionCostToIntervalUsage({
-  aiQuestionGenerationCache,
+export async function addCompletionCostToIntervalUsage({
   userId,
   promptTokens,
   completionTokens,
   intervalCost,
 }: {
-  aiQuestionGenerationCache: Cache;
   userId: number;
   promptTokens: number;
   completionTokens: number;
   intervalCost: number;
 }) {
+  const cache = await getAiQuestionGenerationCache();
+
   const completionCost =
     (config.costPerMillionPromptTokens * promptTokens +
       config.costPerMillionCompletionTokens * completionTokens) /
@@ -285,11 +280,7 @@ export function addCompletionCostToIntervalUsage({
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
 
-  aiQuestionGenerationCache.set(
-    getIntervalUsageKey(userId),
-    intervalCost + completionCost,
-    timeRemainingInInterval,
-  );
+  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
 }
 
 /**
