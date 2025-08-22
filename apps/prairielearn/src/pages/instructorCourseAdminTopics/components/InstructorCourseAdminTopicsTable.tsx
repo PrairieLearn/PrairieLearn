@@ -129,7 +129,7 @@ export function InstructorCourseAdminTopicsTable({
               </tr>
             </thead>
             <tbody>
-              {topicsState.map(function (topic, index) {
+              {topicsState.map((topic, index) => {
                 return (
                   <tr key={topic.name}>
                     {editMode && allowEdit ? (
