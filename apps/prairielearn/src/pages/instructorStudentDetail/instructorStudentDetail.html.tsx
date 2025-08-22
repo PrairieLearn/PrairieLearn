@@ -62,7 +62,7 @@ export function InstructorStudentDetail({
   };
 
   return (
-    <div class="container-fluid">
+    <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1 class="mb-0">Details</h1>
@@ -111,9 +111,8 @@ export function InstructorStudentDetail({
             <div class="text-muted">No gradebook entries found.</div>
           </div>
         ) : (
-          // Added responsive wrapper (table can grow wide with many assessments; ensures horizontal scroll on small screens).
           <div class="table-responsive">
-            <table class="table table-sm table-hover" aria-label="Student Assessment Performance">
+            <table class="table table-sm table-hover" aria-label="Student assessment scores">
               <thead>
                 <tr>
                   <th style="width: 1%">
@@ -198,7 +197,7 @@ export function InstructorStudentDetail({
           </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 
