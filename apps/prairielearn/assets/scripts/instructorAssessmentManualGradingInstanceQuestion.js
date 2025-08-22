@@ -931,7 +931,6 @@ function addSkipGradeSubmissionsListener() {
   });
 
   skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
-    // Update the side nav expanded state
     await fetch('/pl/manual_grading/settings', {
       method: 'PUT',
       headers: {

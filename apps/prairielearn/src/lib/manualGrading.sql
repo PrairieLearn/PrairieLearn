@@ -66,9 +66,8 @@ WHERE
   (
     -- If skipping graded submissions, the next submission does not necessarily need a higher stable order,
     -- since the next graded submission might have a lower stable order.
-    -- Otherwise, the next submission must have a higher stable order to prevent an infinite loop.
-    -- This has the caveat that the user may not see all submissions if they continually click
-    -- through the submissions.
+    -- Otherwise, the next submission must have a higher stable order. This prevents users from being redirected
+    -- to the same submission twice.
     $skip_graded_submissions
     OR prior_iq_stable_order IS NULL
     OR iq_stable_order > prior_iq_stable_order
