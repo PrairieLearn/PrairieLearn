@@ -77,11 +77,7 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${course_instance != null
-        ? issues.map((issue) =>
-            IssuePanel({ issue, course_instance, authz_data, is_administrator }),
-          )
-        : ''}
+      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -237,10 +233,10 @@ export function IssuePanel({
   issue: Issue & {
     user_name: User['name'];
     user_email: User['email'];
-    user_uid: User['uid'];
+    user_uid: User['uid'] | null;
     formatted_date: string;
   };
-  course_instance: CourseInstance;
+  course_instance: CourseInstance | null;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -844,7 +840,6 @@ function QuestionPanel({
       </div>
       ${showFooter && hasInstanceQuestion
         ? QuestionFooter({
-            // TODO: propagate more precise types upwards.
             resLocals,
             questionContext,
           })
