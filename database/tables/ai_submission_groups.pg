@@ -1,15 +1,15 @@
-columns 
+columns
     assessment_question_id: bigint not null
     id: bigint not null default nextval('ai_submission_groups_id_seq'::regclass)
-    submission_group_name: text not null
     submission_group_description: text not null
+    submission_group_name: text not null
 
-indexes 
+indexes
     ai_submission_groups_pkey: PRIMARY KEY (id) USING btree (id)
+    ai_submission_groups_unique_constraint: UNIQUE (assessment_question_id, submission_group_name) USING btree (assessment_question_id, submission_group_name)
 
 foreign-key constraints
-    ai_submission_groups_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON DELETE CASCADE
-    ai_submission_groups_unique_constraint: UNIQUE (assessment_question_id, submission_group_name)
+    ai_submission_groups_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     instance_questions: FOREIGN KEY (ai_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL

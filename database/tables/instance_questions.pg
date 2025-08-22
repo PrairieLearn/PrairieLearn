@@ -40,7 +40,7 @@ columns
 
 indexes
     instance_questions_pkey: PRIMARY KEY (id) USING btree (id)
-    instance_questions_assessment_question_id_assessment_instance_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
+    instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
     instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
     instance_questions_modified_at_key: USING btree (modified_at)
 
