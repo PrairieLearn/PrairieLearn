@@ -232,7 +232,6 @@ onDocumentReady(() => {
               class: 'text-center',
               formatter: (value: string | null) => value ?? '&mdash;',
               sortable: true,
-              searchable: true,
             }
           : null,
         {

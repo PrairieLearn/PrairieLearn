@@ -38,25 +38,17 @@ $(() => {
   }
 
   const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
-  const nextInstanceQuestionButton = document.querySelector('#next-instance-question-button');
   const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
-  const gradeOptionsDropdown = document.querySelector('#grade-options-dropdown');
 
   const gradeButton = document.querySelector('#grade-button');
   const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
 
-  if (!skipGradedSubmissionsCheckbox) {
-    throw new Error('skipGradedSubmissionsCheckbox not found');
-  }
-  if (!nextInstanceQuestionButton) {
-    throw new Error('nextInstanceQuestionButton not found');
-  }
-  if (!clusterSelectionDropdown) {
-    throw new Error('clusterSelectionDropdown not found');
-  }
-  if (!gradeOptionsDropdown) {
-    throw new Error('gradeOptionsDropdown not found');
-  }
+  ensureElementsExist({
+    skipGradedSubmissionsCheckbox,
+    clusterSelectionDropdown,
+    gradeButton,
+    gradeButtonWithDropdown,
+  });
 
   skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
     // Update the side nav expanded state
