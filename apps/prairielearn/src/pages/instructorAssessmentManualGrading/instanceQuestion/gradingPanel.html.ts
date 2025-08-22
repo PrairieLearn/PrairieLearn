@@ -98,21 +98,24 @@ export function GradingPanel({
           : ''}
         ${aiSubmissionGroupsExist
           ? html`
-              <li class="list-group-item d-flex align-items-center gap-2">
-                <span> Submission Group: </span>
-                <div class="dropdown w-100">
+              <li class="list-group-item align-items-center">
+                <label for="submission-group-toggle" class="form-label">
+                  Submission Group:
+                </label>
+                <div
+                  class="dropdown w-100 mb-2"
+                  role="combobox"
+                >
                   <button
+                    id="submission-group-toggle"
                     type="button"
                     class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
                     aria-label="Change selected submission group"
-                    aria-haspopup="true"
+                    aria-haspopup="listbox"
                     aria-expanded="false"
                     data-bs-toggle="dropdown"
                     data-bs-boundary="window"
-                    hx-get="/pl/course_instance/${resLocals.course_instance
-                      .id}/instructor/assessment/${resLocals.assessment
-                      .id}/manual_grading/instance_question/${resLocals.instance_question
-                      .id}/ai_submission_groups/switcher"
+                    hx-get="/pl/course_instance/${resLocals.course_instance.id}/instructor/assessment/${resLocals.assessment.id}/manual_grading/instance_question/${resLocals.instance_question.id}/ai_submission_groups/switcher"
                     hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
                     hx-target="#submission-group-selection-dropdown"
                   >
@@ -120,11 +123,14 @@ export function GradingPanel({
                       ${submissionGroupName || 'No group'}
                     </span>
                   </button>
+
                   <div class="dropdown-menu py-0 overflow-hidden">
                     <div
                       id="submission-group-selection-dropdown"
                       style="max-height: 50vh"
                       class="overflow-auto py-2"
+                      role="listbox"
+                      aria-labelledby="submission-group-toggle"
                     >
                       <div class="d-flex justify-content-center">
                         <div class="spinner-border spinner-border-sm" role="status">

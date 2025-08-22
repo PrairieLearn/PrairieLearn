@@ -280,7 +280,7 @@ router.post(
       );
 
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_ai_submission_grouping_results') {
+    } else if (req.body.__action === 'delete_ai_submission_groupings') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }

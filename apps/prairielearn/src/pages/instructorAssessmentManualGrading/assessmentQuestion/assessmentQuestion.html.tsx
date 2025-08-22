@@ -370,14 +370,14 @@ export function AssessmentQuestion({
                           data-bs-toggle="modal"
                           data-bs-target="#group-confirmation-modal-selected"
                         >
-                          Group selected
+                          Group selected submissions
                         </button>
                         <button
                           class="dropdown-item"
                           data-bs-toggle="modal"
                           data-bs-target="#group-confirmation-modal-all"
                         >
-                          Group all
+                          Group all submissions
                         </button>
 
                         <hr class="dropdown-divider" />
@@ -388,7 +388,7 @@ export function AssessmentQuestion({
                           data-bs-toggle="modal"
                           data-bs-target="#delete-all-ai-submission-grouping-results-modal"
                         >
-                          Delete all AI submission grouping results
+                          Delete all AI groupings
                         </button>
                       </div>
                     </div>
@@ -450,14 +450,14 @@ function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
 function DeleteAllAISubmissionGroupingResultsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'delete-all-ai-submission-grouping-results-modal',
-    title: 'Delete all AI submission grouping results',
+    title: 'Delete all AI submission groupings',
     body: html`
-      Are you sure you want to delete <strong>all AI submission grouping results</strong> for this
+      Are you sure you want to delete <strong>all AI submission groupings</strong> for this
       assessment? This action cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="delete_ai_submission_grouping_results" />
+      <input type="hidden" name="__action" value="delete_ai_submission_groupings" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,

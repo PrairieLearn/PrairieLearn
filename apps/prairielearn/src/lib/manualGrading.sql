@@ -4,7 +4,7 @@ SELECT
 FROM
   ai_submission_groups AS asg
 WHERE
-  asg.assessment_instance_id = $assessment_instance_id
+  asg.assessment_question_id = $assessment_question_id
   AND asg.id > $prior_ai_submission_group_id;
 
 -- BLOCK ai_submission_group_id_for_instance_question
