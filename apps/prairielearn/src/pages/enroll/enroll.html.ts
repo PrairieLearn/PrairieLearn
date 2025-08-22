@@ -41,8 +41,6 @@ export function Enroll({
         <div class="card-header bg-primary text-white">
           <h1>Courses</h1>
         </div>
-        <!-- Wrapped in .table-responsive to ensure long course labels or badge layouts don't force
-             page-wide horizontal scroll on small screens. -->
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label="Courses">
             <tbody>
