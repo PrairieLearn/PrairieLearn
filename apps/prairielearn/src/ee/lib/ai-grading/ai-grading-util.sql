@@ -273,9 +273,7 @@ WITH
       -- requires manual grading. This both helps ensure that it eventually gets graded, and
       -- also ensures that this submission isn't erroneously picked up when we're looking for
       -- similar submissions for RAG.
-      requires_manual_grading = (
-        coalesce(mriqmgj.id IS NULL, FALSE)
-      )
+      requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
     FROM
       deleted_grading_jobs AS dgj
       JOIN assessment_questions AS aq ON (aq.id = dgj.assessment_question_id)

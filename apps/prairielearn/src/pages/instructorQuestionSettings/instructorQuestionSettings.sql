@@ -59,14 +59,15 @@ FROM
   ) AS result;
 
 -- BLOCK select_sharing_sets
-WITH sharing_set_questions AS (
-  SELECT
-    *
-  FROM
-    sharing_set_questions
-  WHERE
-    question_id = $question_id
-)
+WITH
+  sharing_set_questions AS (
+    SELECT
+      *
+    FROM
+      sharing_set_questions
+    WHERE
+      question_id = $question_id
+  )
 SELECT
   ss.id,
   ss.name,

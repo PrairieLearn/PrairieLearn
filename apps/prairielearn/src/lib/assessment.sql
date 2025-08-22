@@ -135,14 +135,15 @@ WHERE
   );
 
 -- BLOCK insert_instance_questions
-WITH existing_instance_questions AS (
-  SELECT
-    *
-  FROM
-    instance_questions
-  WHERE
-    assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
-),
+WITH
+  existing_instance_questions AS (
+    SELECT
+      *
+    FROM
+      instance_questions
+    WHERE
+      assessment_instance_id IS NOT DISTINCT FROM $assessment_instance_id
+  ),
   -- First assign two random orderings to the list of questions, one for
   -- alternative_group question selection and one for zone question
   -- selection, plus a fixed ordering based on the existing question
