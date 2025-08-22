@@ -156,7 +156,7 @@ async function render(
   return data;
 }
 
-export interface QuestionUrls {
+interface QuestionUrls {
   questionUrl: string;
   newVariantUrl: string;
   tryAgainUrl: string;
