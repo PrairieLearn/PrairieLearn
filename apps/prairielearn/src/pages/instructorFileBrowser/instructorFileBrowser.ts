@@ -1,15 +1,16 @@
 import * as path from 'node:path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
 import { createFileBrowser } from '../../components/FileBrowser.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import type { NavPage } from '../../components/Navbar.types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -21,7 +22,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_view'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course', { navPage: NavPage }>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_view) {
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
@@ -64,7 +65,8 @@ router.get(
 
 router.post(
   '/*',
-  asyncHandler(async (req, res) => {
+  // Accessible via a course or course instance page.
+  typedAsyncHandler<'course', { navPage: NavPage }>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
@@ -87,7 +89,7 @@ router.post(
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
-        locals: res.locals as any as any,
+        locals: res.locals,
         container,
         deletePath,
       });
@@ -136,7 +138,7 @@ router.post(
       }
 
       const editor = new FileRenameEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container,
         oldPath,
         newPath,
@@ -175,7 +177,7 @@ router.post(
         }
       }
       const editor = new FileUploadEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container,
         filePath,
         fileContents: req.file.buffer,

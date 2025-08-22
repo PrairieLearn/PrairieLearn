@@ -17,15 +17,14 @@ import type {
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsConfig } from './config.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.js';
 
-export interface ResLocals extends ResLocalsAuthnUser {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;
-  urlPrefix: string;
-  navbarType: 'student' | 'instructor' | 'public';
 }
 
 export interface ResLocalsForPage {
@@ -40,6 +39,7 @@ export interface ResLocalsForPage {
       questionRenderContext: 'manual_grading' | 'ai_grading';
       navbarType: 'instructor';
     };
+  'course-question': ResLocals & ResLocalsCourse & ResLocalsInstructorQuestion;
   'instructor-question': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
@@ -69,6 +69,33 @@ export function getResLocalsForPage<T extends PageType>(
   return locals as ResLocalsForPage[T];
 }
 
+/**
+ * A wrapper around {@link asyncHandler} that ensures that the locals
+ * are typed correctly for the given page type.
+ *
+ * @example
+ * ```ts
+ * router.get('/', typedAsyncHandler<'course'>(async (req, res) => {
+ *   res.send('Hello, world!');
+ * }));
+ * ```
+ *
+ * The page types include:
+ *
+ * - `course`: A course page.
+ * - `course-instance`: A course instance page.
+ * - `instructor-instance-question`: An instructor instance question page.
+ * - `public-question`: A public question page.
+ * - `instructor-question`: An instructor question page.
+ * - `instructor-assessment-question`: An instructor assessment question page.
+ * - `instance-question`: An instance question page.
+ * - `assessment-question`: An assessment question page.
+ * - `assessment-instance`: An assessment instance page.
+ * - `assessment`: An assessment page.
+ *
+ * @param handler - The handler function to wrap.
+ * @returns A wrapped handler function.
+ */
 export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals = object>(
   handler: (
     ...args: Parameters<

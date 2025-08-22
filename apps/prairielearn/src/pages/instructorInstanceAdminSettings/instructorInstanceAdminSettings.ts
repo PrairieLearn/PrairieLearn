@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -22,6 +21,7 @@ import {
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
@@ -33,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const shortNames = await sqldb.queryRows(
       sql.short_names,
       { course_id: res.locals.course.id },
@@ -98,11 +98,11 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.body.__action === 'copy_course_instance') {
       const courseInstancesPath = path.join(res.locals.course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         from_course: res.locals.course,
         from_path: path.join(courseInstancesPath, res.locals.course_instance.short_name),
         course_instance: res.locals.course_instance,
@@ -133,7 +133,7 @@ router.post(
       );
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -198,12 +198,12 @@ router.post(
       }
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           description: `Update course instance: ${res.locals.course_instance.short_name}`,
         },
         [
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -213,7 +213,7 @@ router.post(
             origHash: req.body.orig_hash,
           }),
           new CourseInstanceRenameEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             ciid_new,
           }),
         ],

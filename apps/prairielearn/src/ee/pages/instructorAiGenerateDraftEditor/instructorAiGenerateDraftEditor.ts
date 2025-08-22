@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
@@ -166,8 +168,10 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
-    res.locals.question = await selectQuestionById(req.params.question_id);
+  typedAsyncHandler<'course-question'>(async (req, res) => {
+    const question = await selectQuestionById(req.params.question_id);
+    assert(question.qid != null);
+    res.locals.question = question as Question & { qid: string };
 
     // Ensure the question belongs to this course and that it's a draft question.
     if (
@@ -224,7 +228,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-question'>(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -233,6 +237,7 @@ router.post(
     }
 
     const question = await selectQuestionById(req.params.question_id);
+    assert(question.qid != null);
 
     // Ensure the question belongs to this course and that it's a draft question.
     if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
@@ -392,7 +397,7 @@ router.post(
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      res.locals.question = question;
+      res.locals.question = question as Question & { qid: string };
       const variantId = await processSubmission(req, res);
       res.redirect(
         `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,

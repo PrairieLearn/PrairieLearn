@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -11,6 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
@@ -26,7 +26,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course', { needToSync: boolean }>(async (req, res) => {
     try {
       await fs.access(res.locals.course.path);
     } catch (err) {
@@ -62,7 +62,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (req.body.__action === 'add_course_instance') {
       if (!req.body.short_name) {
         throw new error.HttpStatusError(400, 'short_name is required');
@@ -97,7 +97,7 @@ router.post(
       }
 
       const editor = new CourseInstanceAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         short_name: req.body.short_name,
         long_name: req.body.long_name,
         start_access_date: startAccessDate,

@@ -111,7 +111,14 @@ export interface ResLocalsCourse {
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {
-  course_instance: NonNullable<SelectAuthzData['course_instance']>;
+  /**
+   * We can make certain guarantees about the course instance data.
+   * Specifically, `short_name` will never be null for non-deleted courses
+   * and course instances.
+   */
+  course_instance: NonNullable<SelectAuthzData['course_instance']> & {
+    short_name: string;
+  };
   authz_data: ResLocalsCourseInstanceAuthz;
   user: ResLocalsCourseInstanceAuthz['user'];
 }

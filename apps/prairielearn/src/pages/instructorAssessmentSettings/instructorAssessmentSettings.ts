@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -36,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const tids = await sqldb.queryRows(
       sql.tids,
       { course_instance_id: res.locals.course_instance.id },
@@ -133,7 +132,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/assessment/' + assessmentId + '/settings');
     } else if (req.body.__action === 'delete_assessment') {
       const editor = new AssessmentDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -226,14 +225,14 @@ router.post(
 
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           // This won't reflect if the operation is an update or a rename; we think that's OK.
           description: `${res.locals.course_instance.short_name}: Update assessment ${res.locals.assessment.tid}`,
         },
         [
           // Each of these editors will no-op if there wasn't any change.
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -242,7 +241,7 @@ router.post(
             editContents: b64EncodeUnicode(formattedJson),
             origHash: req.body.orig_hash,
           }),
-          new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
+          new AssessmentRenameEditor({ locals: res.locals, tid_new }),
         ],
       );
       const serverJob = await editor.prepareServerJob();

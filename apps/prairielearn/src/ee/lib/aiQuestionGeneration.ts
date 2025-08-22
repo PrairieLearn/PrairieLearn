@@ -253,7 +253,7 @@ export function approximatePromptCost(prompt: string) {
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
-function getIntervalUsageKey(userId: number) {
+function getIntervalUsageKey(userId: string) {
   const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
   return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
@@ -264,7 +264,7 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
+export async function getIntervalUsage({ userId }: { userId: string }) {
   const cache = await getAiQuestionGenerationCache();
   return (await cache.get(getIntervalUsageKey(userId))) ?? 0;
 }
@@ -278,7 +278,7 @@ export async function addCompletionCostToIntervalUsage({
   completionTokens,
   intervalCost,
 }: {
-  userId: number;
+  userId: string;
   promptTokens: number;
   completionTokens: number;
   intervalCost: number;
