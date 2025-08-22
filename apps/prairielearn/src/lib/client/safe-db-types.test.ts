@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
+import { FUTURE_DATE } from '../../sync/fromDisk/courseInstances.js';
+
 import {
   StaffAssessmentInstanceSchema,
   StaffAssessmentSchema,
@@ -62,6 +64,9 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   deleted_at: null,
   display_timezone: 'UTC',
   enrollment_limit: null,
+  enrollment_lti_enforced_after: null,
+  self_enrollment_enabled_before: FUTURE_DATE,
+  self_enrollment_requires_secret_link: false,
   hide_in_enroll_page: null,
   id: '3',
   json_comment: null,

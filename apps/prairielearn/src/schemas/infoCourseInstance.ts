@@ -46,6 +46,52 @@ export const CourseInstanceJsonSchema = z
       )
       .optional(),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
+    enrollment: z
+      .object({
+        selfEnrollmentEnabled: z
+          .union([
+            z
+              .boolean()
+              .describe(
+                'If true, allows users to enroll themselves. If false, users cannot enroll themselves, and must be either invited or added in the UI.',
+              ),
+            z.object({
+              beforeDate: z
+                .string()
+                .describe(
+                  'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled.',
+                ),
+            }),
+          ])
+          .optional()
+          .default(true),
+        selfEnrollmentRequiresSecretLink: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
+          )
+          .optional()
+          .default(false),
+        ltiEnforced: z
+          .union([
+            z
+              .boolean()
+              .describe(
+                'If true, students must be authenticated with a linked LTI identity to access the course instance.',
+              ),
+            z.object({
+              afterDate: z
+                .string()
+                .describe(
+                  'Before this date, LTI enrollment is not enforced. After this date, LTI enrollment is enforced.',
+                ),
+            }),
+          ])
+          .optional()
+          .default(false),
+      })
+      .optional()
+      .default({}),
     hideInEnrollPage: z
       .boolean()
       .describe(
