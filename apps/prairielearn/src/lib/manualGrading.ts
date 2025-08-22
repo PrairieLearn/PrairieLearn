@@ -7,9 +7,8 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { selectAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
-
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import { selectAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
 
 import {
   type AssessmentQuestion,
