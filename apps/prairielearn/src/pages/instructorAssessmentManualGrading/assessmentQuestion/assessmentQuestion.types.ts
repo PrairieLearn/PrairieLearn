@@ -39,5 +39,5 @@ export interface InstanceQuestionTableData {
   aiGradingMode: boolean;
   csrfToken: string;
   rubric_data: RubricData | null;
-  aiClustersExist: boolean;
+  aiSubmissionGroupsExist: boolean;
 }

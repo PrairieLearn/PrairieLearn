@@ -37,7 +37,7 @@ $(() => {
       .modal('show');
   }
 
-  addClusterSelectionDropdownListeners();
+  addSubmissionGroupSelectionDropdownListeners();
   addSkipGradeSubmissionsListener();
 });
 
@@ -943,49 +943,49 @@ function addSkipGradeSubmissionsListener() {
   });
 }
 
-function addClusterSelectionDropdownListeners() {
+function addSubmissionGroupSelectionDropdownListeners() {
   const { instance_question_id } = decodeData('instance-question-id');
-  const clusterSelectionDropdown = document.querySelector('#cluster-selection-dropdown');
+  const submissionGroupSelectionDropdown = document.querySelector('#submission-group-selection-dropdown');
 
   const gradeButton = document.querySelector('#grade-button');
   const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
 
   ensureElementsExist({
-    clusterSelectionDropdown,
+    submissionGroupSelectionDropdown,
 
     gradeButton,
     gradeButtonWithDropdown,
   });
 
-  clusterSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedClusterDropdownItem = e.target.closest(
-      '#cluster-selection-dropdown .dropdown-item',
+  submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedSubmissionGroupDropdownItem = e.target.closest(
+      '.dropdown-item',
     );
 
-    await fetch(`${instance_question_id}/ai_cluster`, {
+    await fetch(`${instance_question_id}/ai_submission_group`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        aiClusterId: selectedCluster.getAttribute('value'),
+        aiSubmissionGroupId: selectedSubmissionGroupDropdownItem.getAttribute('value'),
       }),
     });
 
     const activeDropdownItem = document.querySelector('.dropdown-item.active');
     activeDropdownItem.classList.remove('active');
 
-    selectedClusterDropdownItem.classList.add('active');
+    selectedSubmissionGroupDropdownItem.classList.add('active');
 
-    // If the user selected a cluster, show the grade button with a dropdown that lets them
-    // grade the whole cluster. Otherwise, show the grade button without a dropdown.
-    gradeButton.classList.toggle('d-none', selectedClusterDropdownItem.getAttribute('value'));
+    // If the user selected a submission group, show the grade button with a dropdown that lets them
+    // grade the whole submission group. Otherwise, show the grade button without a dropdown.
+    gradeButton.classList.toggle('d-none', selectedSubmissionGroupDropdownItem.getAttribute('value'));
     gradeButtonWithDropdown.classList.toggle(
       'd-none',
-      !selectedClusterDropdownItem.getAttribute('value'),
+      !selectedSubmissionGroupDropdownItem.getAttribute('value'),
     );
 
-    const clusterSelectionDropdownSpan = document.querySelector('#cluster-selection-dropdown-span');
-    clusterSelectionDropdownSpan.innerHTML = selectedClusterDropdownItem.textContent;
+    const submissionGroupSelectionDropdownSpan = document.querySelector('#submission-group-selection-dropdown-span');
+    submissionGroupSelectionDropdownSpan.innerHTML = selectedSubmissionGroupDropdownItem.textContent;
   });
 }

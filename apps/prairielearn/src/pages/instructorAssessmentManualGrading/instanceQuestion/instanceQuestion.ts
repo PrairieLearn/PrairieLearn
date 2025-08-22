@@ -9,11 +9,11 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  selectAiCluster,
-  selectAiClusters,
-  selectAssessmentQuestionHasAiClusters,
-  updateAiCluster,
-} from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
+  selectAiSubmissionGroup,
+  selectAiSubmissionGroups,
+  selectAssessmentQuestionHasAiSubmissionGroups,
+  updateAiSubmissionGroup,
+} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 import {
   selectLastSubmissionId,
   selectRubricGradingItems,
@@ -39,7 +39,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
-import { AIClusterSwitcher } from './aiClusterSwitcher.html.js';
+import { AISubmissionGroupSwitcher } from './aiSubmissionGroupSwitcher.html.js';
 import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
@@ -108,8 +108,8 @@ router.get(
       : null;
 
     const instance_question = res.locals.instance_question as InstanceQuestion;
-    const cluster = instance_question.ai_cluster_id
-      ? await selectAiCluster(instance_question.ai_cluster_id)
+    const submissionGroup = instance_question.ai_submission_group_id
+      ? await selectAiSubmissionGroup(instance_question.ai_submission_group_id)
       : null;
     if (instance_question == null) {
       throw new error.HttpStatusError(404, 'Instance question not found');
@@ -117,7 +117,7 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    const aiClustersExist = await selectAssessmentQuestionHasAiClusters({
+    const aiSubmissionGroupsExist = await selectAssessmentQuestionHasAiSubmissionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -193,8 +193,8 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        clusterName: cluster?.cluster_name,
-        aiClustersExist,
+        submissionGroupName: submissionGroup?.submission_group_name,
+        aiSubmissionGroupsExist,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
@@ -204,37 +204,37 @@ router.get(
 );
 
 router.get(
-  '/ai_clusters/switcher',
+  '/ai_submission_groups/switcher',
   asyncHandler(async (req, res) => {
-    const aiClusters = await selectAiClusters({
+    const aiSubmissionGroups = await selectAiSubmissionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
     res.send(
-      AIClusterSwitcher({
-        aiClusters: [
-          ...aiClusters,
+      AISubmissionGroupSwitcher({
+        aiSubmissionGroups: [
+          ...aiSubmissionGroups,
           {
             assessment_question_id: res.locals.assessment_question.id,
-            cluster_name: 'No cluster',
-            cluster_description: 'Cluster was not assigned.',
+            submission_group_name: 'No group',
+            submission_group_description: 'Group was not assigned.',
             id: '',
           },
         ],
-        currentClusterId: res.locals.instance_question.ai_cluster_id ?? null,
+        currentSubmissionGroupId: res.locals.instance_question.ai_submission_group_id ?? null,
       }),
     );
   }),
 );
 
 router.put(
-  '/ai_cluster',
+  '/ai_submission_group',
   asyncHandler(async (req, res) => {
-    const aiClusterId = req.body.aiClusterId;
+    const aiSubmissionGroupId = req.body.aiSubmissionGroupId;
 
-    await updateAiCluster({
+    await updateAiSubmissionGroup({
       instance_question_id: res.locals.instance_question.id,
-      ai_cluster_id: aiClusterId || null,
+      ai_submission_group_id: aiSubmissionGroupId || null,
     });
 
     res.sendStatus(204);
@@ -297,8 +297,8 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.union([
       z.literal('add_manual_grade'),
-      z.literal('add_manual_grade_for_cluster'),
-      z.literal('add_manual_grade_for_cluster_ungraded'),
+      z.literal('add_manual_grade_for_submission_group'),
+      z.literal('add_manual_grade_for_submission_group_ungraded'),
     ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
@@ -435,20 +435,20 @@ router.post(
       );
       // } else if (['add_manual_grade_for_cluster', 'add_manual_grade_for_cluster_ungraded'].includes(body.__action)) {
     } else if (
-      body.__action === 'add_manual_grade_for_cluster_ungraded' ||
-      body.__action === 'add_manual_grade_for_cluster'
+      body.__action === 'add_manual_grade_for_submission_group_ungraded' ||
+      body.__action === 'add_manual_grade_for_submission_group'
     ) {
-      const ai_cluster_id = res.locals.instance_question.ai_cluster_id;
-      if (!ai_cluster_id) {
-        throw new error.HttpStatusError(404, 'AI cluster not found');
+      const ai_submission_group_id = res.locals.instance_question.ai_submission_group_id;
+      if (!ai_submission_group_id) {
+        throw new error.HttpStatusError(404, 'AI submission group not found');
       }
 
-      const instanceQuestionsInCluster = await sqldb.queryRows(
-        sql.select_instance_question_ids_in_cluster,
+      const instanceQuestionsInGroup = await sqldb.queryRows(
+        sql.select_instance_question_ids_in_submission_group,
         {
-          cluster_id: ai_cluster_id,
+          submission_group_id: ai_submission_group_id,
           assessment_id: res.locals.assessment.id,
-          skip_graded_submissions: body.__action === 'add_manual_grade_for_cluster_ungraded',
+          skip_graded_submissions: body.__action === 'add_manual_grade_for_submission_group_ungraded',
         },
         z.object({
           instance_question_id: z.string(),
@@ -456,10 +456,10 @@ router.post(
         }),
       );
 
-      if (instanceQuestionsInCluster.length === 0) {
+      if (instanceQuestionsInGroup.length === 0) {
         flash(
           'warning',
-          `No ${body.__action === 'add_manual_grade_for_cluster_ungraded' ? 'ungraded ' : ''}instance questions in the cluster.`,
+          `No ${body.__action === 'add_manual_grade_for_submission_group_ungraded' ? 'ungraded ' : ''}instance questions in the submission group.`,
         );
         return res.redirect(req.baseUrl);
       }
@@ -474,7 +474,7 @@ router.post(
           }
         : undefined;
 
-      for (const instanceQuestion of instanceQuestionsInCluster) {
+      for (const instanceQuestion of instanceQuestionsInGroup) {
         const { modified_at_conflict } = await manualGrading.updateInstanceQuestionScore(
           res.locals.assessment.id,
           instanceQuestion.instance_question_id,
@@ -499,7 +499,7 @@ router.post(
 
       flash(
         'success',
-        `Successfully applied grade and feedback to ${instanceQuestionsInCluster.length} instance questions.`,
+        `Successfully applied grade and feedback to ${instanceQuestionsInGroup.length} instance questions.`,
       );
 
       res.redirect(

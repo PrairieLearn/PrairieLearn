@@ -154,14 +154,6 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
-export const AiClusterSchema = z.object({
-  assessment_question_id: IdSchema,
-  cluster_description: z.string(),
-  cluster_name: z.string(),
-  id: IdSchema,
-});
-export type AiCluster = z.infer<typeof AiClusterSchema>;
-
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
 
@@ -185,6 +177,14 @@ export const AiGradingJobSchema = z.object({
   prompt_tokens: z.number(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
+export const AiSubmissionGroupSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  submission_group_description: z.string(),
+  submission_group_name: z.string(),
+});
+export type AiSubmissionGroup = z.infer<typeof AiSubmissionGroupSchema>;
 
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
@@ -750,7 +750,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
-  ai_cluster_id: IdSchema.nullable(),
+  ai_submission_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),

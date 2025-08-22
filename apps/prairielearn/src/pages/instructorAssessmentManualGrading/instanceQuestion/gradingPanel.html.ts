@@ -27,9 +27,9 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
-  clusterName,
+  submissionGroupName,
   aiGradingInfo,
-  aiClustersExist,
+  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
@@ -40,9 +40,9 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
-  clusterName?: string;
+  submissionGroupName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiClustersExist?: boolean;
+  aiSubmissionGroupsExist?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -96,15 +96,15 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${aiClustersExist
+        ${aiSubmissionGroupsExist
           ? html`
               <li class="list-group-item d-flex align-items-center gap-2">
-                <span> Cluster: </span>
+                <span> Submission Group: </span>
                 <div class="dropdown w-100">
                   <button
                     type="button"
                     class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
-                    aria-label="Change selected cluster"
+                    aria-label="Change selected submission group"
                     aria-haspopup="true"
                     aria-expanded="false"
                     data-bs-toggle="dropdown"
@@ -112,17 +112,17 @@ export function GradingPanel({
                     hx-get="/pl/course_instance/${resLocals.course_instance
                       .id}/instructor/assessment/${resLocals.assessment
                       .id}/manual_grading/instance_question/${resLocals.instance_question
-                      .id}/ai_clusters/switcher"
+                      .id}/ai_submission_groups/switcher"
                     hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-                    hx-target="#cluster-selection-dropdown"
+                    hx-target="#submission-group-selection-dropdown"
                   >
-                    <span id="cluster-selection-dropdown-span">
-                      ${clusterName || 'No cluster'}
+                    <span id="submission-group-selection-dropdown-span">
+                      ${submissionGroupName || 'No group'}
                     </span>
                   </button>
                   <div class="dropdown-menu py-0 overflow-hidden">
                     <div
-                      id="cluster-selection-dropdown"
+                      id="submission-group-selection-dropdown"
                       style="max-height: 50vh"
                       class="overflow-auto py-2"
                     >
@@ -216,7 +216,7 @@ ${submission.feedback?.manual}</textarea
               ? html`
                   <div
                     id="grade-button-with-options"
-                    class="btn-group ${clusterName ? '' : 'd-none'}"
+                    class="btn-group ${submissionGroupName ? '' : 'd-none'}"
                   >
                     <button
                       type="submit"
@@ -250,28 +250,28 @@ ${submission.feedback?.manual}</textarea
                         type="submit"
                         class="dropdown-item"
                         name="__action"
-                        value="add_manual_grade_for_cluster_ungraded"
+                        value="add_manual_grade_for_submission_group_ungraded"
                       >
-                        All ungraded instance questions in cluster
+                        All ungraded instance questions in submission group
                       </button>
                       <button
                         type="submit"
                         class="dropdown-item"
                         name="__action"
-                        value="add_manual_grade_for_cluster"
+                        value="add_manual_grade_for_submission_group"
                       >
-                        All instance questions in cluster
+                        All instance questions in submission group
                       </button>
 
                       <div class="dropdown-item-text text-muted small">
-                        AI can make mistakes. Review cluster assignments before grading.
+                        AI can make mistakes. Review submission group assignments before grading.
                       </div>
                     </div>
                   </div>
                   <button
                     id="grade-button"
                     type="submit"
-                    class="btn btn-primary ${clusterName ? 'd-none' : ''}"
+                    class="btn btn-primary ${submissionGroupName ? 'd-none' : ''}"
                     name="__action"
                     value="add_manual_grade"
                   >

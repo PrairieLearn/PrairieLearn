@@ -1,15 +1,15 @@
--- BLOCK select_next_ai_cluster_id
+-- BLOCK select_next_ai_submission_group_id
 SELECT
-  MIN(ac.id) as ai_cluster_id
+  MIN(ac.id) as ai_submission_group_id
 FROM
-  ai_clusters as ac
+  ai_clusters AS ac
 WHERE
-  ac.assessment_question_id = $assessment_question_id
-  AND ac.id > $prior_ai_cluster_id;
+  ac.assessment_instance_id = $assessment_instance_id
+  AND ac.id > $prior_ai_submission_group_id; 
 
--- BLOCK ai_cluster_id_for_instance_question
+-- BLOCK ai_submission_group_id_for_instance_question
 SELECT
-  ai_cluster_id
+  ai_submission_group_id
 FROM
   instance_questions as iq
 WHERE
@@ -30,9 +30,9 @@ WITH
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
-        iq.ai_cluster_id = $prior_ai_cluster_id
-        OR iq.ai_cluster_id IS NULL
-        AND $prior_ai_cluster_id IS NULL
+        iq.ai_submission_group_id = $prior_ai_submission_group_id
+        OR iq.ai_submission_group_id IS NULL
+        AND $prior_ai_submission_group_id IS NULL
       )
       AND (
         $prior_instance_question_id::bigint IS NULL

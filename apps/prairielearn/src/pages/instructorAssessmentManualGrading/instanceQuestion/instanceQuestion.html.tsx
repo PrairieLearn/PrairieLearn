@@ -30,18 +30,18 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
-  clusterName,
+  submissionGroupName,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
-  aiClustersExist,
+  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
-  clusterName?: string;
+  submissionGroupName?: string;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -50,7 +50,7 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiClustersExist?: boolean;
+  aiSubmissionGroupsExist?: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -178,9 +178,9 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                clusterName,
+                submissionGroupName,
                 aiGradingInfo,
-                aiClustersExist,
+                aiSubmissionGroupsExist,
               })}
             </div>
           </div>

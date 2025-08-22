@@ -7,10 +7,10 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
-  resetInstanceQuestionsAiClusters,
-  selectAiClusters,
-} from '../../../ee/lib/ai-clustering/ai-clustering-util.js';
-import { aiCluster } from '../../../ee/lib/ai-clustering/ai-clustering.js';
+  resetInstanceQuestionsAiSubmissionGroups,
+  selectAiSubmissionGroups,
+} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
+import { aiSubmissionGrouping } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumns,
@@ -48,7 +48,7 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const aiClusters = await selectAiClusters({
+    const aiSubmissionGroups = await selectAiSubmissionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -62,7 +62,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        aiClusters,
+        aiSubmissionGroups,
         rubric_data,
       }),
     );
@@ -149,7 +149,7 @@ router.post(
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-      } else if (req.body.batch_action === 'ai_cluster_selected') {
+      } else if (req.body.batch_action === 'ai_submission_group_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
@@ -158,7 +158,7 @@ router.post(
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
 
-        const jobSequenceId = await aiCluster({
+        const jobSequenceId = await aiSubmissionGrouping({
           question: res.locals.question,
           course: res.locals.course,
           course_instance_id: res.locals.course_instance.id,
@@ -247,12 +247,12 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'ai_cluster_assessment_all') {
+    } else if (req.body.__action === 'ai_submission_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiCluster({
+      const jobSequenceId = await aiSubmissionGrouping({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,
@@ -285,11 +285,11 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const numDeleted = await resetInstanceQuestionsAiClusters({
+      const numDeleted = await resetInstanceQuestionsAiSubmissionGroups({
         assessment_question_id: res.locals.assessment_question.id,
       });
 
-      flash('success', `Deleted AI clustering results for ${numDeleted} questions.`);
+      flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
 
       res.redirect(req.originalUrl);
     } else {

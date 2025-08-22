@@ -12,7 +12,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import type { AiCluster, User } from '../../../lib/db-types.js';
+import type { AiSubmissionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
@@ -24,7 +24,7 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
-  aiClusters,
+  aiSubmissionGroups,
   rubric_data,
 }: {
   resLocals: Record<string, any>;
@@ -32,7 +32,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  aiClusters: AiCluster[];
+  aiSubmissionGroups: AiSubmissionGroup[];
   rubric_data: RubricData | null;
 }) {
   const {
@@ -85,7 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
-          aiClustersExist: aiClusters.length > 0,
+          aiSubmissionGroupsExist: aiSubmissionGroups.length > 0,
         },
         'instance-question-table-data',
       )}
@@ -213,23 +213,23 @@ export function AssessmentQuestion({
                 `}
           `
         : ''}
-      ${aiGradingEnabled && aiGradingMode && aiClusters.length > 0
+      ${aiGradingEnabled && aiGradingMode && aiSubmissionGroups.length > 0
         ? html`
             <div class="card overflow-hidden mb-3">
               <div class="table-responsive">
-                <table class="table table-sm" aria-label="AI clusters">
+                <table class="table table-sm" aria-label="AI submission groups">
                   <thead>
                     <tr class="table-light fw-bold">
-                      <td style="width: 30%;">Cluster</td>
+                      <td style="width: 30%;">Submission Group</td>
                       <td>Description</td>
                     </tr>
                   </thead>
                   <tbody>
-                    ${aiClusters.map(
-                      (aiCluster) => html`
+                    ${aiSubmissionGroups.map(
+                      (aiSubmissionGroup) => html`
                         <tr>
-                          <td>${aiCluster.cluster_name}</td>
-                          <td>${aiCluster.cluster_description}</td>
+                          <td>${aiSubmissionGroup.submission_group_name}</td>
+                          <td>${aiSubmissionGroup.submission_group_description}</td>
                         </tr>
                       `,
                     )}
@@ -360,9 +360,9 @@ export function AssessmentQuestion({
                         type="button"
                         class="btn btn-sm btn-light dropdown-toggle"
                         data-bs-toggle="dropdown"
-                        name="ai-clustering"
+                        name="ai-submission-grouping"
                       >
-                        <i class="bi bi-stars" aria-hidden="true"></i> AI clustering
+                        <i class="bi bi-stars" aria-hidden="true"></i> AI submission grouping
                       </button>
                       <div class="dropdown-menu dropdown-menu-end">
                         <button
@@ -386,9 +386,9 @@ export function AssessmentQuestion({
                           class="dropdown-item"
                           type="button"
                           data-bs-toggle="modal"
-                          data-bs-target="#delete-all-ai-clustering-results-modal"
+                          data-bs-target="#delete-all-ai-submission-grouping-results-modal"
                         >
-                          Delete all AI clustering results
+                          Delete all AI submission grouping results
                         </button>
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export function AssessmentQuestion({
     postContent: [
       GradingConflictModal(),
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
-      DeleteAllAIClusteringResultsModal({ csrfToken: __csrf_token }),
+      DeleteAllAISubmissionGroupingResultsModal({ csrfToken: __csrf_token }),
       ClusterInfoModal({
         modalFor: 'all',
         numOpenInstances: num_open_instances,
@@ -447,17 +447,17 @@ function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function DeleteAllAIClusteringResultsModal({ csrfToken }: { csrfToken: string }) {
+function DeleteAllAISubmissionGroupingResultsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'delete-all-ai-clustering-results-modal',
-    title: 'Delete all AI clustering results',
+    id: 'delete-all-ai-submission-grouping-results-modal',
+    title: 'Delete all AI submission grouping results',
     body: html`
-      Are you sure you want to delete <strong>all AI clustering results</strong> for this
+      Are you sure you want to delete <strong>all AI submission grouping results</strong> for this
       assessment? This action cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="delete_ai_clustering_results" />
+      <input type="hidden" name="__action" value="delete_ai_submission_grouping_results" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
@@ -475,12 +475,12 @@ function ClusterInfoModal({
 }) {
   return Modal({
     id: `cluster-confirmation-modal-${modalFor}`,
-    title: modalFor === 'all' ? 'Cluster all submissions' : 'Cluster selected submissions',
+    title: modalFor === 'all' ? 'Group all submissions' : 'Group selected submissions',
     form: modalFor === 'all',
     body: html`
       ${modalFor === 'all'
         ? html`
-            <input type="hidden" name="__action" value="ai_cluster_assessment_all" />
+            <input type="hidden" name="__action" value="ai_submission_group_assessment_all" />
             <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           `
         : ''}
@@ -551,7 +551,7 @@ function ClusterInfoModal({
                   class="btn btn-primary"
                   type="submit"
                   name="batch_action"
-                  value="ai_cluster_selected"
+                  value="ai_submission_group_selected"
                 >
                   Cluster submissions
                 </button>

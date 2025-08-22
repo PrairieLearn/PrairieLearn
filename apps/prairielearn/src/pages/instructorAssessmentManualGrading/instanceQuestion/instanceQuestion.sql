@@ -77,7 +77,7 @@ SELECT
 FROM
   updated_issues AS i;
 
--- BLOCK select_instance_question_ids_in_cluster
+-- BLOCK select_instance_question_ids_in_submission_group
 SELECT
   iq.id AS instance_question_id,
   s.id AS submission_id
@@ -87,7 +87,7 @@ FROM
   JOIN variants as v ON v.instance_question_id = iq.id
   JOIN submissions AS s ON s.variant_id = v.id
 WHERE
-  iq.ai_cluster_id = $cluster_id
+  iq.ai_submission_group_id = $submission_group_id
   AND ai.assessment_id = $assessment_id
   AND (
     NOT $skip_graded_submissions

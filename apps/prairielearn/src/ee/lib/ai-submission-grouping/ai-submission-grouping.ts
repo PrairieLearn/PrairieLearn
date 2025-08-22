@@ -24,14 +24,14 @@ import {
 import type { AIGradingLog, AIGradingLogger } from '../ai-grading/types.js';
 
 import {
-  insertDefaultAiClusters,
-  selectAiClusters,
-  updateAiCluster,
-} from './ai-clustering-util.js';
+  insertDefaultAiSubmissionGroups,
+  selectAiSubmissionGroups,
+  updateAiSubmissionGroup,
+} from './ai-submission-grouping-util.js';
 
-const PARALLEL_SUBMISSION_CLUSTERING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GROUPING_LIMIT = 20;
 
-const CLUSTERING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-4o';
+const SUBMISSION_GROUPING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
 
 async function renderInstanceQuestionAnswerHtml({
   question,
@@ -138,7 +138,7 @@ Return a boolean corresponding to whether or not the student's response is equiv
 
   const completion = await openai.chat.completions.parse({
     messages,
-    model: CLUSTERING_OPENAI_MODEL,
+    model: SUBMISSION_GROUPING_OPENAI_MODEL,
     user: `course_${course.id}`,
     response_format: zodResponseFormat(
       z.object({
@@ -158,11 +158,11 @@ Return a boolean corresponding to whether or not the student's response is equiv
 }
 
 /**
- * Clusters student submissions based on if their answers match the correct answer exactly. This answer must be in pl-answer-panel.
- * Answers that match go into one cluster, and those that don’t are grouped separately.
- * Clustering checks for exact equivalence to the final answer, considering only the boxed or final answer to form groups.
+ * Groups student submissions into AI submission groups based on exact match to the final answer.
+ * Answers that match go into one group; those that don’t are grouped separately.
+ * Grouping checks for exact equivalence to the final answer, considering only the boxed or final answer.
  */
-export async function aiCluster({
+export async function aiSubmissionGrouping({
   course,
   course_instance_id,
   question,
@@ -202,8 +202,8 @@ export async function aiCluster({
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
     userId: user_id,
-    type: 'ai_clustering',
-    description: 'Perform AI clustering',
+    type: 'ai_submission_grouping',
+    description: 'Perform AI submission grouping',
   });
 
   const instanceQuestionIdsSet: Set<string> = instance_question_ids
@@ -225,37 +225,37 @@ export async function aiCluster({
         ? allInstanceQuestions.filter((q) => instanceQuestionIdsSet.has(q.id))
         : allInstanceQuestions;
 
-    job.info(`Clustering ${selectedInstanceQuestions.length} instance questions...`);
+    job.info(`Grouping ${selectedInstanceQuestions.length} instance questions...`);
 
-    await insertDefaultAiClusters({
+    await insertDefaultAiSubmissionGroups({
       assessment_question_id: assessment_question.id,
     });
 
-    const clusters = await selectAiClusters({
+    const submissionGroups = await selectAiSubmissionGroups({
       assessmentQuestionId: assessment_question.id,
     });
 
-    // TODO: Match the official cluster list to these clusters. Throw an error.
+    const likelyCorrectGroup = submissionGroups.find(
+      (g) => g.submission_group_name === 'Likely Correct',
+    );
+    const reviewNeededGroup = submissionGroups.find(
+      (g) => g.submission_group_name === 'Review Needed',
+    );
 
-    const likelyMatchCluster = clusters.find((c) => c.cluster_name === 'Likely Match');
-    const reviewNeededCluster = clusters.find((c) => c.cluster_name === 'Review Needed');
-
-    if (!likelyMatchCluster) {
-      // Handle missing likely match cluster
+    if (!likelyCorrectGroup) {
       throw new Error(
-        `Missing likely match cluster for assessment question ${assessment_question.id}`,
+        `Missing 'Likely Correct' submission group for assessment question ${assessment_question.id}`,
       );
     }
 
-    if (!reviewNeededCluster) {
-      // Handle missing review needed cluster
+    if (!reviewNeededGroup) {
       throw new Error(
-        `Missing review needed cluster for assessment question ${assessment_question.id}`,
+        `Missing 'Review Needed' submission group for assessment question ${assessment_question.id}`,
       );
     }
 
     let index = 1;
-    const clusterInstanceQuestion = async (
+    const groupInstanceQuestion = async (
       total: number,
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
@@ -283,18 +283,20 @@ export async function aiCluster({
         openai,
       });
 
-      await updateAiCluster({
+      await updateAiSubmissionGroup({
         instance_question_id: instance_question.id,
-        ai_cluster_id: responseCorrect ? likelyMatchCluster.id : reviewNeededCluster.id,
+        ai_submission_group_id: responseCorrect
+          ? likelyCorrectGroup.id
+          : reviewNeededGroup.id,
       });
-      logger.info(`Clustered instance question ${instance_question.id} (${index}/${total})`);
+      logger.info(`Grouped instance question ${instance_question.id} (${index}/${total})`);
       index += 1;
       return true;
     };
 
-    const instance_question_clustering_successes = await async.mapLimit(
+    const instance_question_grouping_successes = await async.mapLimit(
       selectedInstanceQuestions,
-      PARALLEL_SUBMISSION_CLUSTERING_LIMIT,
+      PARALLEL_SUBMISSION_GROUPING_LIMIT,
       async (instanceQuestion) => {
         const logs: AIGradingLog[] = [];
         const logger: AIGradingLogger = {
@@ -313,13 +315,13 @@ export async function aiCluster({
         };
 
         try {
-          return await clusterInstanceQuestion(
+          return await groupInstanceQuestion(
             selectedInstanceQuestions.length,
             instanceQuestion,
             logger,
           );
         } catch (err) {
-          logger.error(err);
+          logger.error(err as any as string);
         } finally {
           for (const log of logs) {
             if (log.messageType === 'info') {
@@ -331,13 +333,13 @@ export async function aiCluster({
         }
       },
     );
-    const error_count = instance_question_clustering_successes.filter((success) => !success).length;
+    const error_count = instance_question_grouping_successes.filter((success) => !success).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
-      job.fail('Errors occurred during AI clustering, see output for details');
+      job.fail('Errors occurred during AI submission grouping, see output for details');
     } else {
-      job.info('AI clustering completed successfully');
+      job.info('AI submission grouping completed successfully');
     }
   });
   return serverJob.jobSequenceId;

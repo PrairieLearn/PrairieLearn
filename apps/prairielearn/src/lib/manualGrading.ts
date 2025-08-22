@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
-import { selectAiClusters } from '../ee/lib/ai-clustering/ai-clustering-util.js';
+import { selectAiSubmissionGroups } from '../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 
 import {
   type AssessmentQuestion,
@@ -53,12 +53,11 @@ export async function nextInstanceQuestionUrl(
   prior_instance_question_id: string | null,
   skip_graded_submissions: boolean,
 ): Promise<string> {
-<<<<<<< HEAD
-  const prior_ai_cluster_id = await run(async () => {
+  const prior_ai_submission_group_id = await run(async () => {
     if (prior_instance_question_id) {
       return (
         (await sqldb.queryOptionalRow(
-          sql.ai_cluster_id_for_instance_question,
+          sql.ai_submission_group_id_for_instance_question,
           {
             instance_question_id: prior_instance_question_id,
           },
@@ -66,36 +65,33 @@ export async function nextInstanceQuestionUrl(
         )) ?? null
       );
     } else {
-      const clusters = await selectAiClusters({
+      const submissionGroups = await selectAiSubmissionGroups({
         assessmentQuestionId: assessment_question_id,
       });
-      return clusters.length > 0 ? clusters[0].id : null;
+      return submissionGroups.length > 0 ? submissionGroups[0].id : null;
     }
   });
 
   let instance_question_id = await sqldb.queryOptionalRow(
-=======
-  const instance_question_id = await sqldb.queryOptionalRow(
->>>>>>> 5158e7808 (Ran linter)
     sql.select_next_instance_question,
     {
       assessment_id,
       assessment_question_id,
       user_id,
       prior_instance_question_id,
-      prior_ai_cluster_id,
+      prior_ai_submission_group_id,
       skip_graded_submissions,
     },
     IdSchema,
   );
 
-  if (!instance_question_id && prior_ai_cluster_id) {
-    // Get the next cluster ID for the assessment question based on its ID
-    const next_ai_cluster_id = await sqldb.queryOptionalRow(
-      sql.select_next_ai_cluster_id,
+  if (!instance_question_id && prior_ai_submission_group_id) {
+    // Get the next submission group ID for the assessment question based on its ID
+    const next_ai_submission_group_id = await sqldb.queryOptionalRow(
+      sql.select_next_ai_submission_group_id,
       {
         assessment_question_id: Number.parseInt(assessment_question_id),
-        prior_ai_cluster_id: Number.parseInt(prior_ai_cluster_id),
+        prior_ai_submission_group_id: Number.parseInt(prior_ai_submission_group_id),
       },
       IdSchema.nullable(),
     );
@@ -108,7 +104,7 @@ export async function nextInstanceQuestionUrl(
         assessment_question_id,
         user_id,
         prior_instance_question_id: null,
-        prior_ai_cluster_id: next_ai_cluster_id,
+        prior_ai_submission_group_id: next_ai_submission_group_id,
         skip_graded_submissions,
       },
       IdSchema,

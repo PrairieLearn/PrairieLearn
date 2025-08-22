@@ -13,7 +13,7 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
-import { selectAiClusters } from '../ai-clustering/ai-clustering-util.js';
+import { selectAiClusters } from '../ai-submission-grouping/ai-submission-grouping-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
