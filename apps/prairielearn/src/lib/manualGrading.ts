@@ -51,6 +51,8 @@ export async function nextInstanceQuestionUrl(
   prior_instance_question_id: string | null,
   skip_graded_submissions: boolean,
 ): Promise<string> {
+  console.log('prior_instance_question_id', prior_instance_question_id);
+
   const instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,
     {

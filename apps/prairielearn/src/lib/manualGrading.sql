@@ -18,7 +18,7 @@ WITH
       )
       AND (
         -- If skip graded submissions is selected, the next submission must require manual grading.
-        -- Otherwise, the next submission doesn't have to require manual grading.
+        -- Otherwise, the next submission doesn't have to.
         NOT ($skip_graded_submissions)
         OR iq.requires_manual_grading
       )

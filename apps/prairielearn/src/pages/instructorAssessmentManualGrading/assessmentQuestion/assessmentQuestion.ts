@@ -84,7 +84,7 @@ router.get(
 );
 
 router.get(
-  '/next_ungraded',
+  '/next',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
