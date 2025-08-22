@@ -374,7 +374,6 @@ function StaffTable({
   isAdministrator: boolean;
 }) {
   return html`
-    <!-- Added responsive wrapper per site-wide responsiveness cleanup (may not have been strictly necessary for narrow column set; also note: if any JS expected the table as direct card child, adjust selectors). -->
     <div class="table-responsive">
       <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
         <thead>
@@ -705,10 +704,9 @@ function StaffTable({
 
 function AccessLevelsTable() {
   return html`
-    <!-- Added responsive wrapper (table is width-constrained and likely wouldn't overflow; added for consistency). -->
     <div class="table-responsive">
       <table
-        class="table table-striped table-sm border"
+        class="table table-striped table-sm border mb-0"
         style="max-width: 45em"
         aria-label="Recommended access levels"
       >

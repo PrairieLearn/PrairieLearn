@@ -154,9 +154,6 @@ export function InstructorCourseAdminSharing({
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>
         </div>
-        <!-- Wrapped in .table-responsive for consistency with other two-column-description tables.
-             Horizontal overflow is unlikely here, but the wrapper ensures mobile friendliness
-             if long sharing names / tokens overflow. Remove only if auditing shows it is redundant. -->
         <div class="table-responsive">
           <table
             class="table table-sm table-hover two-column-description"
@@ -240,9 +237,6 @@ export function InstructorCourseAdminSharing({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h2>Sharing Sets</h2>
         </div>
-        <!-- Wrapped in .table-responsive to handle potentially long lists of shared-with badges
-             on small screens. Without this, the badge collection could force horizontal scroll
-             on the page rather than within a confined container. -->
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
             <thead>

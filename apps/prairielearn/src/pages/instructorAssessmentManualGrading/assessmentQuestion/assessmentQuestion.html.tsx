@@ -330,12 +330,7 @@ export function AssessmentQuestion({
                 : ''}
             </div>
           </div>
-          <!-- Added .table-responsive wrapper for horizontal scrolling on smaller screens.
-               JS (bootstrap-table) populates #grading-table dynamically; selectors using
-               '#grading-table' are unaffected. -->
-          <div class="table-responsive">
-            <table id="grading-table" aria-label="Instance questions for manual grading"></table>
-          </div>
+          <table id="grading-table" aria-label="Instance questions for manual grading"></table>
         </div>
       </form>
     `,
