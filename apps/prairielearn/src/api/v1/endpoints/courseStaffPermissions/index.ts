@@ -44,7 +44,7 @@ function validateCourseRole({ course_role }) {
   const validate_role = EnumCourseRoleSchema.safeParse(course_role);
 
   if (!validate_role.success) {
-    throw new error.HttpStatusError(404, 'Role not found');
+    throw new error.HttpStatusError(400, 'Role not found');
   }
 }
 
@@ -56,7 +56,7 @@ function validateCourseInstanceRole({ course_instance_role }) {
   const validate_role = EnumCourseInstancePermissionSchema.safeParse(course_instance_role);
 
   if (!validate_role.success) {
-    throw new error.HttpStatusError(404, 'Role not found');
+    throw new error.HttpStatusError(400, 'Role not found');
   }
 }
 
@@ -67,7 +67,7 @@ async function validateUid({ uid }) {
 
   const user = await selectOptionalUserByUid(uid);
   if (!user) {
-    throw new error.HttpStatusError(404, 'User not found');
+    throw new error.HttpStatusError(400, 'User not found');
   }
 
   return user;

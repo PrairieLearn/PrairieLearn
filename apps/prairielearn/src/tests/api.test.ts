@@ -509,7 +509,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_role: 'invalid',
           }),
         });
-        assert.equal(res.status, 404);
+        assert.equal(res.status, 400);
       },
     );
 
