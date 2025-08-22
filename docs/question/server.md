@@ -326,7 +326,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                             |
 | `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                            |
 | `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                      |
-| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to a error message.                                  |
+| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                 |
 | `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
 | `score`                 | `float` | The total score for the question variant.                                                                                            |
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
