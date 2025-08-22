@@ -29,6 +29,14 @@ const SelectAndAuthWithCourseInstanceSchema = z.object({
   open_issue_count: z.coerce.number(),
 });
 
+export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
+  typeof SelectAndAuthWithCourseInstanceSchema
+>;
+
+export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema> & {
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
+};
+
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {
     const row = await sqldb.queryOptionalRow(
