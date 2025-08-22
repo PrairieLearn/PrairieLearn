@@ -409,8 +409,10 @@ function buildLocals({
   return locals;
 }
 
-// All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
+/**
+ * All properties that are added to the locals by {@link getAndRenderVariant}.
+ */
+export interface ResLocalsQuestionRenderAdded {
   question_is_shared: boolean;
   variant: Variant;
   urls: QuestionUrls;

@@ -335,11 +335,6 @@ router.get(
       instance_question_id: res.locals.instance_question.id,
     });
 
-    assert(
-      res.locals.assessment_instance.group_id !== null,
-      'assessment_instance.group_id is null',
-    );
-
     if (
       res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
