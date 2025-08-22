@@ -39,6 +39,8 @@ WITH
         OR iq.id != $prior_instance_question_id
       )
       AND (
+        -- If skip graded submissions is selected, the next submission must require manual grading.
+        -- Otherwise, the next submission doesn't have to require manual grading.
         NOT ($skip_graded_submissions)
         OR iq.requires_manual_grading
       )
@@ -62,7 +64,13 @@ FROM
   instance_questions_to_grade
 WHERE
   (
-    prior_iq_stable_order IS NULL
+    -- If skipping graded submissions, the next submission does not necessarily need a higher stable order,
+    -- since the next graded submission might have a lower stable order.
+    -- Otherwise, the next submission must have a higher stable order to prevent an infinite loop.
+    -- This has the caveat that the user may not see all submissions if they continually click
+    -- through the submissions.
+    $skip_graded_submissions
+    OR prior_iq_stable_order IS NULL
     OR iq_stable_order > prior_iq_stable_order
   )
 ORDER BY

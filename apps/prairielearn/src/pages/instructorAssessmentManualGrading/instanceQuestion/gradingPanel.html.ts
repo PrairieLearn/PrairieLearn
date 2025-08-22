@@ -56,6 +56,7 @@ export function GradingPanel({
 
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
+  skip_text = skip_text || 'Next';
 
   return html`
     <form

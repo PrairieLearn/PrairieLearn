@@ -536,6 +536,7 @@ export async function initExpress(): Promise<Express> {
         .default,
     ],
   );
+
   app.use(
     '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
     [
@@ -550,11 +551,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
-  // TODO: Move this
-  // Handles updates to the graded submissions state.
+  // Handles updates to the manual grading skip graded submissions state.
   app.use(
-    '/pl/manual_grading/skip_graded_submissions',
-    (await import('./pages/skipGradedSubmissions/skipGradedSubmissions.js')).default,
+    '/pl/manual_grading/settings',
+    (await import('./pages/manualGradingSettings/manualGradingSettings.js')).default,
   );
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [

@@ -504,11 +504,13 @@ router.post(
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
+          res.locals.skip_graded_submissions,
           res.locals.skip_graded_submissions,
         ),
       );
@@ -551,12 +553,13 @@ router.post(
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
+        await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
           res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
-          false,
+          res.locals.skip_graded_submissions,
         ),
       );
     } else if (body.__action === 'report_issue') {
