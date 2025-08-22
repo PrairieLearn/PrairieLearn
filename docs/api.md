@@ -34,7 +34,7 @@ Here is an example of using `curl` for a `POST` request:
 curl -H "Private-Token: TOKEN" -X POST -d '{"key":"value"}' https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
-When listed, make sure to include the correct `JSON` key(s) for each endpoint and update the value(s) in each example body for your use case.
+When listed, make sure to include the correct JSON key(s) for each endpoint and update the value(s) in each example body for your use case.
 
 ## Example access script
 
