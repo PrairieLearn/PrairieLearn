@@ -21,7 +21,7 @@ import type { ResLocalsConfig } from './config.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
-} from './question-render.js';
+} from './question-render.types.js';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
   __csrf_token: string;

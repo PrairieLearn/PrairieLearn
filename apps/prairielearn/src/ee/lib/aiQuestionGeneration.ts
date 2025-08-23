@@ -15,10 +15,8 @@ import {
   QuestionGenerationContextEmbeddingSchema,
   type User,
 } from '../../lib/db-types.js';
-import {
-  type ResLocalsQuestionRenderAdded,
-  getAndRenderVariant,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant } from '../../lib/question-render.js';
+import { type ResLocalsQuestionRenderAdded } from '../../lib/question-render.types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
