@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import fetchCookie from 'fetch-cookie';
+import fetchCookie, { type CookieJar } from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -89,7 +89,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getPl(cookies: Parameters<typeof fetchCookie>[1], shouldContainQA101: boolean) {
+  async function getPl(cookies: CookieJar, shouldContainQA101: boolean) {
     const res = await fetchCookie(fetch, cookies)(siteUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -142,7 +142,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getAssessments(cookies, shouldContainE1) {
+  async function getAssessments(cookies: CookieJar, shouldContainE1: boolean) {
     const res = await fetchCookie(fetch, cookies)(assessmentsUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -153,16 +153,16 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('6. GET /pl/assessments', function () {
     it('as student should not contain E1', async () => {
-      await getAssessments(cookiesStudent(), false);
+      await getAssessments(await cookiesStudent(), false);
     });
     it('as student in Exam mode before time period should not contain E1', async () => {
-      await getAssessments(cookiesStudentExamBeforeAssessment(), false);
+      await getAssessments(await cookiesStudentExamBeforeAssessment(), false);
     });
     it('as student in Exam mode after time period should not contain E1', async () => {
-      await getAssessments(cookiesStudentExamAfterAssessment(), false);
+      await getAssessments(await cookiesStudentExamAfterAssessment(), false);
     });
     it('as student in Exam mode should contain E1', async () => {
-      await getAssessments(cookiesStudentExam(), true);
+      await getAssessments(await cookiesStudentExam(), true);
     });
     it('should have the correct link for E1', function () {
       assert.nestedProperty(elemList[0], 'attribs.href');
@@ -173,7 +173,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getAssessment(cookies, expectedStatusCode) {
+  async function getAssessment(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -181,16 +181,16 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('7. GET to assessment URL', function () {
     it('as student should return 403', async () => {
-      await getAssessment(cookiesStudent(), 403);
+      await getAssessment(await cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getAssessment(cookiesStudentExamBeforeAssessment(), 403);
+      await getAssessment(await cookiesStudentExamBeforeAssessment(), 403);
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getAssessment(cookiesStudentExamAfterAssessment(), 403);
+      await getAssessment(await cookiesStudentExamAfterAssessment(), 403);
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getAssessment(cookiesStudentExam(), 200);
+      await getAssessment(await cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -206,7 +206,11 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function postAssessment(cookies, includePassword, expectedStatusCode) {
+  async function postAssessment(
+    cookies: CookieJar,
+    includePassword: boolean,
+    expectedStatusCode: number,
+  ) {
     const body = new URLSearchParams({
       __action: 'new_instance',
       __csrf_token,
@@ -223,22 +227,22 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('8. POST to assessment URL', function () {
     it('as student should return 403', async () => {
-      await postAssessment(cookiesStudent(), true, 403);
+      await postAssessment(await cookiesStudent(), true, 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await postAssessment(cookiesStudentExamBeforeAssessment(), true, 403);
+      await postAssessment(await cookiesStudentExamBeforeAssessment(), true, 403);
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await postAssessment(cookiesStudentExamAfterAssessment(), true, 403);
+      await postAssessment(await cookiesStudentExamAfterAssessment(), true, 403);
     });
     it('as student in Exam mode should load successfully', async () => {
-      await postAssessment(cookiesStudentExam(), true, 200);
+      await postAssessment(await cookiesStudentExam(), true, 200);
     });
   });
 
   /**********************************************************************/
 
-  async function getAssessmentInstance(cookies, expectedStatusCode) {
+  async function getAssessmentInstance(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentInstanceUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -246,16 +250,16 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('9. GET to assessment_instance URL', function () {
     it('as student should return 403', async () => {
-      await getAssessmentInstance(cookiesStudent(), 403);
+      await getAssessmentInstance(await cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getAssessmentInstance(cookiesStudentExamBeforeAssessment(), 403);
+      await getAssessmentInstance(await cookiesStudentExamBeforeAssessment(), 403);
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getAssessmentInstance(cookiesStudentExamAfterAssessment(), 403);
+      await getAssessmentInstance(await cookiesStudentExamAfterAssessment(), 403);
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getAssessmentInstance(cookiesStudentExam(), 200);
+      await getAssessmentInstance(await cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -282,7 +286,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getInstanceQuestion(cookies, expectedStatusCode) {
+  async function getInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(q1Url);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -290,16 +294,16 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('11. GET to instance_question URL', function () {
     it('as student should return 403', async () => {
-      await getInstanceQuestion(cookiesStudent(), 403);
+      await getInstanceQuestion(await cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await getInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
+      await getInstanceQuestion(await cookiesStudentExamBeforeAssessment(), 403);
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await getInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
+      await getInstanceQuestion(await cookiesStudentExamAfterAssessment(), 403);
     });
     it('as student in Exam mode should load successfully', async () => {
-      await getInstanceQuestion(cookiesStudentExam(), 200);
+      await getInstanceQuestion(await cookiesStudentExam(), 200);
     });
     it('should parse', function () {
       $ = cheerio.load(page);
@@ -333,7 +337,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function postInstanceQuestion(cookies, expectedStatusCode) {
+  async function postInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const submittedAnswer = {
       wx: 0,
       wy: 0,
@@ -351,16 +355,16 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('12. POST to instance_question URL', function () {
     it('as student should return 403', async () => {
-      await postInstanceQuestion(cookiesStudent(), 403);
+      await postInstanceQuestion(await cookiesStudent(), 403);
     });
     it('as student in Exam mode before time period should return 403', async () => {
-      await postInstanceQuestion(cookiesStudentExamBeforeAssessment(), 403);
+      await postInstanceQuestion(await cookiesStudentExamBeforeAssessment(), 403);
     });
     it('as student in Exam mode after time period should return 403', async () => {
-      await postInstanceQuestion(cookiesStudentExamAfterAssessment(), 403);
+      await postInstanceQuestion(await cookiesStudentExamAfterAssessment(), 403);
     });
     it('as student in Exam mode should load successfully', async () => {
-      await postInstanceQuestion(cookiesStudentExam(), 200);
+      await postInstanceQuestion(await cookiesStudentExam(), 200);
     });
   });
 });
