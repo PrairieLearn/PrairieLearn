@@ -488,7 +488,7 @@ export const CourseInstanceSchema = z.object({
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
-  join_id: z.string(),
+  join_id: z.string().nullable(),
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
   share_source_publicly: z.boolean(),
