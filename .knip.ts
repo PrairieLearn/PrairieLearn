@@ -1,11 +1,11 @@
 import { readFile } from 'fs/promises';
 
-import { glob } from 'glob';
+import { globby } from 'globby';
 import type { KnipConfig } from 'knip';
 
 const usedExampleDependencies = [
-  ...(await glob('{exampleCourse,testCourse}/**/info.json')),
-  ...(await glob('apps/prairielearn/elements/**/info.json')),
+  ...(await globby('{exampleCourse,testCourse}/**/info.json')),
+  ...(await globby('apps/prairielearn/elements/**/info.json')),
 ];
 
 const questionAndElementConfigFiles = await Promise.all(
@@ -21,7 +21,7 @@ const questionAndElementDependencies = questionAndElementConfigFiles.flatMap((in
   ...Object.values(infoJson.dynamicDependencies?.nodeModulesScripts ?? {}),
 ]);
 
-const sourceFiles = await glob('apps/prairielearn/**/*.{ts,tsx}');
+const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
 const assetPathRegex = /nodeModulesAssetPath\([\n ]*'(.*)',?[\n ]*\)/g;
 
 const sourceFileDependencies = await Promise.all(
@@ -47,6 +47,8 @@ const config: KnipConfig = {
     '.': {
       entry: [],
       project: [],
+      // https://knip.dev/guides/configuring-project-files#ignore-issues-in-specific-files
+      ignore: ['vitest.config.ts', 'eslint.config.mjs'],
     },
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
@@ -58,30 +60,30 @@ const config: KnipConfig = {
         'src/executor.ts',
         'src/question-servers/calculation-worker.ts',
       ],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/workspace-host': {
       entry: ['src/interface.ts'],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'apps/grader-host': {
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/preact-cjs-compat': {
       entry: ['src/jsx-runtime.js'],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/preact-cjs': {
       entry: ['src/*.js'],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/migrations': {
       entry: ['src/{batched-migrations,migrations}/fixtures/*.ts'],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
     'packages/session': {
       entry: ['src/test-utils.ts'],
-      project: ['**/*.{ts,cts,mts,tsx}!'],
+      project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
   ignoreDependencies: [
