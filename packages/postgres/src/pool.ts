@@ -453,6 +453,11 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
+   *
+   * @deprecated Use {@link execute} instead.
+   *
+   * Using the return value of this function directly is not recommended. Instead, use
+   * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
    */
   async queryAsync(sql: string, params: QueryParams): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
@@ -471,6 +476,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
+   *
+   * @deprecated Use {@link executeRow} or {@link queryRow} instead.
    */
   async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
@@ -784,6 +791,27 @@ export class PostgresPool {
       return model.parse(results.rows[0][columnName]);
     } else {
       return model.parse(results.rows[0]);
+    }
+  }
+
+  /**
+   * Executes a query with the specified parameters. Returns the number of rows affected.
+   */
+  async execute(sql: string, params: QueryParams = {}): Promise<number> {
+    const result = await this.queryAsync(sql, params);
+    return result.rowCount ?? 0;
+  }
+
+  /**
+   * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
+   */
+  async executeRow(sql: string, params: QueryParams = {}) {
+    const rowCount = await this.execute(sql, params);
+    if (rowCount !== 1) {
+      throw new PostgresError('Incorrect rowCount: ' + rowCount, {
+        sql,
+        sqlParams: params,
+      });
     }
   }
 
