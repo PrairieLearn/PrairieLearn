@@ -566,6 +566,12 @@ export default tseslint.config([
     },
     rules: {
       '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-invalid-void-type': [
+        'error',
+        {
+          allowAsThisParameter: true,
+        },
+      ],
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
