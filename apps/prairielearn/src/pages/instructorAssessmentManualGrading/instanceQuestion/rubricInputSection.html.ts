@@ -2,7 +2,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
-import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.js';
+import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.types.js';
 
 export function RubricInputSection({
   resLocals,

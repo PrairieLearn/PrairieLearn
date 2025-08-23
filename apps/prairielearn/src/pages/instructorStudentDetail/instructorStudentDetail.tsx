@@ -57,6 +57,9 @@ router.get(
           page: 'instance_admin',
           subPage: 'students',
         },
+        options: {
+          fullWidth: true,
+        },
         content: (
           <Hydrate>
             <InstructorStudentDetail
