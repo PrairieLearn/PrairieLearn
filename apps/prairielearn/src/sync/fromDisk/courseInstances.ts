@@ -1,6 +1,5 @@
 import { randomBytes } from 'node:crypto';
 
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
