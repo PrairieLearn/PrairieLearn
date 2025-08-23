@@ -5,17 +5,13 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
-import { QuestionSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectQuestionByQid } from '../models/question.js';
 import * as freeform from '../question-servers/freeform.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Course element extensions', { timeout: 60_000 }, function () {
   describe('Extensions can be loaded', function () {
@@ -100,13 +96,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
       'extendable-element/extension-clientfiles/clientFilesExtension/cat-2536662_640.jpg';
 
     test.sequential('find the example question in the database', async () => {
-      locals.question = await sqldb.queryRow(
-        sql.select_question_by_qid,
-        {
-          qid: testQid,
-        },
-        QuestionSchema,
-      );
+      locals.question = await selectQuestionByQid({ qid: testQid, course_id: '1' });
     });
     test.sequential('check the question page for extension css and js files', async () => {
       const questionUrl =

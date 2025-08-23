@@ -17,6 +17,7 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
+import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -597,7 +598,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
-        locals.question = await sqldb.queryRow(sql.select_question_by_qid, { qid }, QuestionSchema);
+        locals.question = await selectQuestionByQid({ qid, course_id: '1' });
       });
       it('should be a Freeform question', function () {
         assert.equal(locals.question?.type, 'Freeform');

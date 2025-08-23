@@ -119,7 +119,6 @@ describe('Grading method(s)', { timeout: 80_000 }, function () {
         });
         it('should submit "grade" action', async () => {
           const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
-
           assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade');
