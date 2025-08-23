@@ -7,6 +7,7 @@ import type {
   StatusMessageSubmission,
 } from '../../src/lib/externalGradingSocket.types.js';
 import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
+import { assertDefined } from '../../src/lib/types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
@@ -230,7 +231,9 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
     $(submissionPanelSelector).replaceWith(msg.submissionPanel);
-    void mathjaxTypeset([document.querySelector(submissionPanelSelector) as HTMLElement]);
+    const submissionPanel = document.querySelector<HTMLElement>(submissionPanelSelector);
+    assertDefined(submissionPanel);
+    void mathjaxTypeset([submissionPanel]);
   }
 
   if (msg.questionScorePanel) {

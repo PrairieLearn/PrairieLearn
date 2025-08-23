@@ -16,11 +16,13 @@ import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
+import { assertDefined } from '../../src/lib/types.js';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
-  const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
+  const sampleQuestions = document.querySelector<HTMLElement>('#sample-questions');
+  assertDefined(sampleQuestions);
   render(<SampleQuestion />, sampleQuestions);
 });
 
@@ -120,7 +122,8 @@ function SampleQuestionSelector({
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
-    const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm');
+    assertDefined(promptTextarea);
     promptTextarea.value = prompt;
   };
 

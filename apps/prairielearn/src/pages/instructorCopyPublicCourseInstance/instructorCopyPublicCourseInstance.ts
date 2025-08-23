@@ -13,7 +13,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const courseInstance = await selectOptionalCourseInstanceById(req.body.course_instance_id);
-    if (courseInstance === null || !courseInstance.share_source_publicly) {
+    if (!courseInstance?.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
     const course = await selectCourseById(courseInstance.course_id);
