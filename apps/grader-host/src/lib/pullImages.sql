@@ -11,4 +11,4 @@ FROM
 WHERE
   q.grading_method = 'External'
   AND q.external_grading_image IS NOT NULL
-  AND s.date >= (NOW() - INTERVAL '1 hour');
+  AND s.date >= (NOW() - interval '1 hour');

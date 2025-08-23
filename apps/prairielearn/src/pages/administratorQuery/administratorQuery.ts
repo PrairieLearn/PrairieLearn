@@ -2,6 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
+import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
@@ -20,6 +21,9 @@ router.get(
   '/:query',
   asyncHandler(async (req, res, next) => {
     const module = await loadAdminQueryModule(req.params.query);
+    if (module.specs.enabled === false) {
+      throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
+    }
 
     let query_run_id: string | null = null;
     let query_run: QueryRun | null = null;
@@ -71,6 +75,9 @@ router.post(
   '/:query',
   asyncHandler(async (req, res, _next) => {
     const module = await loadAdminQueryModule(req.params.query);
+    if (module.specs.enabled === false) {
+      throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
+    }
 
     const queryParams: Record<string, string> = {};
     module.specs.params?.forEach((p) => {

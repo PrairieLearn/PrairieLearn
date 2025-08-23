@@ -1,6 +1,6 @@
 CREATE FUNCTION
     sync_question_tags(
-        IN new_question_tags JSONB[]
+        IN new_question_tags jsonb[]
     ) RETURNS void
 AS $$
 BEGIN

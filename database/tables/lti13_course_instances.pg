@@ -20,4 +20,5 @@ foreign-key constraints
     lti13_course_instances_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    enrollments: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti13_assessments: FOREIGN KEY (lti13_course_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
