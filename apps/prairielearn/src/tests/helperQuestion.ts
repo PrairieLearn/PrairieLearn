@@ -13,7 +13,6 @@ import {
   IssueSchema,
   JobSchema,
   JobSequenceSchema,
-  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';

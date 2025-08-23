@@ -419,7 +419,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
     if (!needs_statistics_update) return;
 
     // update the statistics
-    await sqldb.executeRow(sql.update_assessment_statisics, { assessment_id });
+    await sqldb.executeRow(sql.update_assessment_statistics, { assessment_id });
   });
 }
 
