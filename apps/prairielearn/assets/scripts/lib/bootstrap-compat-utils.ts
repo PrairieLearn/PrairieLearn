@@ -54,7 +54,7 @@ export function makeMigrator(options: MigratorOptions) {
   set.add(options.selector, options);
 }
 
-function addClass(el: Element, newClass: string | string[], message: string): void {
+function addClass(el: Element, newClass: string | string[], message: string) {
   const newClasses = Array.isArray(newClass) ? newClass : [newClass];
 
   let didAddClass = false;
