@@ -151,7 +151,7 @@ export async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
-      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+      await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
         delta,

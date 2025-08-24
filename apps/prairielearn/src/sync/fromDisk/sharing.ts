@@ -16,7 +16,7 @@ export async function sync(
     return;
   }
 
-  await sqldb.queryAsync(sql.sync_course_sharing_sets, {
+  await sqldb.execute(sql.sync_course_sharing_sets, {
     course_id: courseId,
     new_course_sharing_sets: JSON.stringify(courseData.course.data?.sharingSets ?? []),
   });
@@ -49,7 +49,7 @@ export async function sync(
     });
   });
 
-  await sqldb.queryAsync(sql.sync_question_sharing_sets, {
+  await sqldb.execute(sql.sync_question_sharing_sets, {
     new_question_sharing_sets: JSON.stringify(questionSharingSets),
   });
 }

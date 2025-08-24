@@ -9,8 +9,8 @@ import { z } from 'zod';
 
 import {
   callAsync,
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -393,7 +393,7 @@ export async function insertAiGradingJob({
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
-  await queryAsync(sql.insert_ai_grading_job, {
+  await execute(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),
@@ -527,5 +527,5 @@ export async function deleteAiGradingJobs({
 }
 
 export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
-  await queryAsync(sql.toggle_ai_grading_mode, { assessment_question_id });
+  await execute(sql.toggle_ai_grading_mode, { assessment_question_id });
 }

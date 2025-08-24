@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -131,7 +131,7 @@ async function saveRevisedQuestion({
 
   const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
+  await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
     prompting_user_id: authn_user.user_id,
     prompt_type: promptType,
