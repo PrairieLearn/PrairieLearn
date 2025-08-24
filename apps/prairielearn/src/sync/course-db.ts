@@ -10,6 +10,7 @@ import _ from 'lodash';
 import { type ZodSchema, type z } from 'zod';
 
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -18,14 +19,11 @@ import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
-  type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJson,
-  type CourseInstanceJsonInput,
   type CourseJson,
   type QuestionJson,
-  type QuestionJsonInput,
-  type QuestionPointsJsonInput,
+  type QuestionPointsJson,
   type TagJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
@@ -684,7 +682,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.input<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -702,12 +700,6 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  const validationResult = await validate(loadedJson.data);
-  if (validationResult.errors.length > 0) {
-    infofile.addErrors(loadedJson, validationResult.errors);
-    return loadedJson;
-  }
-
   // If we didn't get any errors with the ajv schema, we will re-parse with Zod, which will fill in default values and let us
   // use the output type.
   const result = zodSchema.safeParse(loadedJson.data);
@@ -719,9 +711,17 @@ async function loadAndValidateJson<T extends ZodSchema>({
           `code: ${e.code}, path: ${e.path.join('.')}, message: ${e.message}. Report this error to the PL team, this should not happen.`,
       ),
     );
+    Sentry.captureException(result.error);
     return loadedJson;
   }
+
   loadedJson.data = result.data;
+
+  const validationResult = await validate(loadedJson.data);
+  if (validationResult.errors.length > 0) {
+    infofile.addErrors(loadedJson, validationResult.errors);
+    return loadedJson;
+  }
 
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
@@ -746,7 +746,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   infoFilename: string;
   schema: any;
   zodSchema: T;
-  validate: (info: z.input<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -953,7 +953,7 @@ async function validateQuestion({
   question,
   sharingEnabled,
 }: {
-  question: QuestionJsonInput;
+  question: QuestionJson;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1013,7 +1013,7 @@ async function validateAssessment({
   sharingEnabled,
   courseInstanceExpired,
 }: {
-  assessment: AssessmentJsonInput;
+  assessment: AssessmentJson;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
@@ -1027,7 +1027,7 @@ async function validateAssessment({
     );
   }
 
-  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
+  const allowRealTimeGrading = assessment.allowRealTimeGrading;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
@@ -1050,7 +1050,7 @@ async function validateAssessment({
   }
 
   // Check assessment access rules.
-  assessment.allowAccess?.forEach((rule) => {
+  assessment.allowAccess.forEach((rule) => {
     const dateErrors = checkAllowAccessDates(rule);
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
@@ -1065,7 +1065,7 @@ async function validateAssessment({
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
   if (!courseInstanceExpired) {
-    assessment.allowAccess?.forEach((rule) => {
+    assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
 
       if (rule.examUuid && rule.mode === 'Public') {
@@ -1097,7 +1097,7 @@ async function validateAssessment({
       draftQids.add(qid);
     }
   };
-  assessment.zones?.forEach((zone) => {
+  assessment.zones.forEach((zone) => {
     zone.questions.map((zoneQuestion) => {
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
@@ -1107,7 +1107,7 @@ async function validateAssessment({
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPointsJsonInput[] = [];
+      let alternatives: QuestionPointsJson[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion.alternatives) {
@@ -1241,7 +1241,7 @@ async function validateAssessment({
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum != null && role.minimum >= 1,
+      (role) => role.canAssignRoles && role.minimum >= 1,
     );
 
     if (!foundCanAssignRoles) {
@@ -1250,20 +1250,12 @@ async function validateAssessment({
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (
-        role.minimum != null &&
-        assessment.groupMinSize &&
-        role.minimum > assessment.groupMinSize
-      ) {
+      if (assessment.groupMinSize && role.minimum > assessment.groupMinSize) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (
-        role.minimum != null &&
-        assessment.groupMaxSize &&
-        role.minimum > assessment.groupMaxSize
-      ) {
+      if (assessment.groupMaxSize && role.minimum > assessment.groupMaxSize) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
@@ -1277,7 +1269,7 @@ async function validateAssessment({
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
-      if (role.maximum != null && role.minimum != null && role.minimum > role.maximum) {
+      if (role.maximum != null && role.minimum > role.maximum) {
         errors.push(
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
@@ -1290,11 +1282,11 @@ async function validateAssessment({
     });
 
     const validateViewAndSubmitRolePermissions = (
-      canView: string[] | undefined,
-      canSubmit: string[] | undefined,
+      canView: string[],
+      canSubmit: string[],
       area: string,
     ): void => {
-      canView?.forEach((roleName) => {
+      canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
@@ -1302,7 +1294,7 @@ async function validateAssessment({
         }
       });
 
-      canSubmit?.forEach((roleName) => {
+      canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
             `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
@@ -1315,7 +1307,7 @@ async function validateAssessment({
     validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
 
     // Validate role names for each zone
-    assessment.zones?.forEach((zone) => {
+    assessment.zones.forEach((zone) => {
       validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
       // Validate role names for each question
       zone.questions.forEach((zoneQuestion) => {
@@ -1335,7 +1327,7 @@ async function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
-  courseInstance: CourseInstanceJsonInput;
+  courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
 }): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -1358,7 +1350,7 @@ async function validateCourseInstance({
   }
 
   let accessibleInFuture = false;
-  courseInstance.allowAccess?.forEach((rule) => {
+  courseInstance.allowAccess.forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1369,7 +1361,7 @@ async function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    courseInstance.allowAccess?.forEach((rule) => {
+    courseInstance.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 
@@ -1411,7 +1403,7 @@ export async function loadQuestions({
     infoFilename: 'info.json',
     zodSchema: schemas.QuestionJsonSchema,
     schema: schemas.infoQuestion,
-    validate: (question: QuestionJsonInput) => validateQuestion({ question, sharingEnabled }),
+    validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
     recursive: true,
   });
   // Don't allow question directories to start with '@', because it is
@@ -1444,7 +1436,7 @@ export async function loadCourseInstances({
     infoFilename: 'infoCourseInstance.json',
     schema: schemas.infoCourseInstance,
     zodSchema: schemas.CourseInstanceJsonSchema,
-    validate: (courseInstance: CourseInstanceJsonInput) =>
+    validate: (courseInstance: CourseInstanceJson) =>
       validateCourseInstance({ courseInstance, sharingEnabled }),
     recursive: true,
   });
@@ -1478,7 +1470,7 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     schema: schemas.infoAssessment,
     zodSchema: schemas.AssessmentJsonSchema,
-    validate: (assessment: AssessmentJsonInput) =>
+    validate: (assessment: AssessmentJson) =>
       validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
     recursive: true,
   });
