@@ -16,7 +16,7 @@
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "type": {
-      "description": "Type of the question. This should be set to \"v3\" for most questions.",
+      "description": "Type of the question. This should be set to \"v3\" for new questions.",
       "type": "string",
       "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
     },
