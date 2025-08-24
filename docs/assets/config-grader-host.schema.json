@@ -1,7 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
-  "additionalProperties": false,
   "properties": {
     "maxConcurrentJobs": {
       "type": "number",
@@ -24,8 +23,15 @@
       "default": true
     },
     "cacheImageRegistry": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "parallelInitPulls": {
       "type": "number",
@@ -88,16 +94,30 @@
       "default": "grading_jobs_dev"
     },
     "jobsQueueUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "resultsQueueName": {
       "type": "string",
       "default": "grading_results_dev"
     },
     "resultsQueueUrl": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "timeoutOverhead": {
       "type": "number",
@@ -116,8 +136,15 @@
       "default": "postgres"
     },
     "postgresqlPassword": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "postgresqlPoolSize": {
       "type": "number",
@@ -128,16 +155,30 @@
       "default": 30000
     },
     "autoScalingGroupName": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "instanceId": {
       "type": "string",
       "default": "server"
     },
     "sentryDsn": {
-      "type": ["string", "null"],
-      "default": null
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "sentryEnvironment": {
       "type": "string",

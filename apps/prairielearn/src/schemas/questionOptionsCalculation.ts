@@ -1,12 +1,15 @@
-import { z } from 'zod';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionCalculationOptionsJsonSchema = z
-  .object({
-    comment: CommentJsonSchema.optional(),
+  .looseObject({
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
   })
-  .passthrough()
-  .describe('Options for a Calculation question.');
+  .describe('Options for a Calculation question.')
+  .meta({
+    title: 'Calculation question options',
+  });
 
 export type QuestionCalculationOptionsJson = z.infer<typeof QuestionCalculationOptionsJsonSchema>;
