@@ -230,6 +230,11 @@ router.get(
 router.put(
   '/ai_submission_group',
   asyncHandler(async (req, res) => {
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    if (!aiGradingEnabled) {
+      throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+    }
+
     const aiSubmissionGroupId = req.body.aiSubmissionGroupId;
 
     await updateAiSubmissionGroup({
