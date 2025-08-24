@@ -131,6 +131,51 @@ export const SprocAuthzCourseSchema = z.object({
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
 
+// Result of server_loads_current sproc
+export const SprocServerLoadsCurrentSchema = z.object({
+  current_jobs: z.number(),
+  instance_count: z.number().int(),
+  job_type: z.string(),
+  load_perc: z.number(),
+  max_jobs: z.number(),
+  timestamp_formatted: z.string(),
+});
+
+// Result of assessment_instances_grade sproc
+export const SprocAssessmentInstancesGradeSchema = z.object({
+  new_points: z.number(),
+  new_score_perc: z.number(),
+  updated: z.boolean(),
+});
+
+// Result of users_select_or_insert sproc
+export const SprocUsersSelectOrInsertSchema = z.object({
+  result: z.enum(['success', 'invalid_authn_provider']),
+  user_id: IdSchema.nullable(),
+  user_institution_id: IdSchema.nullable(),
+});
+
+// Result of users_is_instructor_in_course_instance sproc
+export const SprocUsersIsInstructorInCourseInstanceSchema = z.boolean();
+
+// Result of sync_assessments sproc
+export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema);
+
+// Result of question_order sproc
+export const SprocQuestionOrderSchema = z.object({
+  instance_question_id: IdSchema,
+  question_number: z.string(),
+  row_order: z.number().int(),
+  sequence_locked: z.boolean(),
+});
+
+// Result of ip_to_mode sproc
+export const SprocIpToModeSchema = z.object({
+  mode: EnumModeSchema,
+  mode_reason: EnumModeReasonSchema,
+});
+export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
+
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
