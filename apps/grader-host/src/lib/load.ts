@@ -77,7 +77,7 @@ function _reportLoad() {
   };
   // Query will run in the background, without awaiting
   sqldb
-    .queryAsync(sql.insert_load, params)
+    .execute(sql.insert_load, params)
     .catch((err) => {
       logger.error('Error reporting load:', err);
     })
@@ -95,7 +95,7 @@ function _reportConfig() {
     max_jobs: 0,
     config,
   };
-  sqldb.queryAsync(sql.insert_config, params).catch((err) => {
+  sqldb.execute(sql.insert_config, params).catch((err) => {
     logger.error('Error reporting config:', err);
   });
 }
