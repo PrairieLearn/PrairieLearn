@@ -2,24 +2,158 @@ import * as path from 'node:path';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import * as assessment from '../../../../lib/assessment.js';
-import { IdSchema } from '../../../../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
+  SprocGroupInfoSchema,
+  SubmissionSchema,
+  UserSchema,
+  VariantSchema,
+  ZoneSchema,
+} from '../../../../lib/db-types.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
 
+const AssessmentInstanceDataSchema = z.array(
+  z.object({
+    assessment_instance_id: AssessmentInstanceSchema.shape.id,
+    assessment_id: AssessmentSchema.shape.id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_title: AssessmentSchema.shape.title,
+    assessment_label: z.string(),
+    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
+    assessment_number: AssessmentSchema.shape.number,
+    user_id: AssessmentInstanceSchema.shape.user_id,
+    user_uid: UserSchema.shape.uid,
+    user_uin: UserSchema.shape.uin,
+    user_name: UserSchema.shape.name,
+    user_role: z.string(),
+    max_points: AssessmentInstanceSchema.shape.max_points,
+    max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
+    points: AssessmentInstanceSchema.shape.points,
+    score_perc: AssessmentInstanceSchema.shape.score_perc,
+    assessment_instance_number: AssessmentInstanceSchema.shape.number,
+    open: AssessmentInstanceSchema.shape.open,
+    modified_at: z.string(),
+    group_id: SprocGroupInfoSchema.shape.id,
+    group_name: SprocGroupInfoSchema.shape.name,
+    group_uids: SprocGroupInfoSchema.shape.uid_list,
+    time_remaining: z.string(),
+    start_date: z.string(),
+    duration_seconds: z.number(),
+    highest_score: z.boolean(),
+  }),
+);
+
+const InstanceQuestionDataSchema = z.array(
+  z.object({
+    zone_number: ZoneSchema.shape.number,
+    zone_title: ZoneSchema.shape.title,
+    question_id: QuestionSchema.shape.id,
+    question_name: QuestionSchema.shape.qid,
+    instance_question_id: InstanceQuestionSchema.shape.id,
+    instance_question_number: InstanceQuestionSchema.shape.number,
+    assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
+    assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+    assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+    instance_question_points: InstanceQuestionSchema.shape.points,
+    instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
+    instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
+    instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
+    highest_submission_score: InstanceQuestionSchema.shape.highest_submission_score,
+    last_submission_score: InstanceQuestionSchema.shape.last_submission_score,
+    number_attempts: InstanceQuestionSchema.shape.number_attempts,
+    duration_seconds: z.number(),
+  }),
+);
+
+const SubmissionDataSchema = z.array(
+  z.object({
+    submission_id: SubmissionSchema.shape.id,
+    user_id: SubmissionSchema.shape.auth_user_id,
+    user_uid: UserSchema.shape.uid,
+    user_uin: UserSchema.shape.uin,
+    user_name: UserSchema.shape.name,
+    user_role: z.string(),
+    group_id: SprocGroupInfoSchema.shape.id,
+    group_name: SprocGroupInfoSchema.shape.name,
+    group_uids: SprocGroupInfoSchema.shape.uid_list,
+    assessment_id: AssessmentSchema.shape.id,
+    assessment_name: AssessmentSchema.shape.tid,
+    assessment_label: z.string(),
+    assessment_instance_id: AssessmentInstanceSchema.shape.id,
+    assessment_instance_number: AssessmentInstanceSchema.shape.number,
+    question_id: QuestionSchema.shape.id,
+    question_name: QuestionSchema.shape.qid,
+    question_topic: z.string(),
+    question_tags: z.array(z.string()),
+    instance_question_id: InstanceQuestionSchema.shape.id,
+    instance_question_number: InstanceQuestionSchema.shape.number,
+    assessment_question_max_points: AssessmentQuestionSchema.shape.max_points,
+    assessment_question_max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+    assessment_question_max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+    instance_question_points: InstanceQuestionSchema.shape.points,
+    instance_question_auto_points: InstanceQuestionSchema.shape.auto_points,
+    instance_question_manual_points: InstanceQuestionSchema.shape.manual_points,
+    instance_question_score_perc: InstanceQuestionSchema.shape.score_perc,
+    variant_id: VariantSchema.shape.id,
+    variant_number: VariantSchema.shape.number,
+    variant_seed: VariantSchema.shape.variant_seed,
+    params: VariantSchema.shape.params,
+    true_answer: VariantSchema.shape.true_answer,
+    options: VariantSchema.shape.options,
+    date: z.string(),
+    submitted_answer: SubmissionSchema.shape.submitted_answer,
+    partial_scores: SubmissionSchema.shape.partial_scores,
+    override_score: SubmissionSchema.shape.override_score,
+    credit: SubmissionSchema.shape.credit,
+    mode: SubmissionSchema.shape.mode,
+    grading_requested_at: z.string(),
+    graded_at: z.string(),
+    score: SubmissionSchema.shape.score,
+    correct: SubmissionSchema.shape.correct,
+    feedback: SubmissionSchema.shape.feedback,
+    rubric_grading_computed_points: RubricGradingSchema.shape.computed_points,
+    rubric_grading_adjust_points: RubricGradingSchema.shape.adjust_points,
+    rubric_grading_items: z
+      .array(
+        z.object({
+          rubric_item_id: RubricGradingItemSchema.shape.rubric_item_id,
+          text: RubricGradingItemSchema.shape.description,
+          points: RubricGradingItemSchema.shape.points,
+        }),
+      )
+      .nullable(),
+    final_submission_per_variant: z.boolean(),
+    best_submission_per_variant: z.boolean(),
+  }),
+);
+
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_assessment_instances, {
-      course_instance_id: res.locals.course_instance.id,
-      unsafe_assessment_id: null,
-      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
-    });
-    const data = result.rows[0].item;
+    const data = await sqldb.queryRow(
+      sql.select_assessment_instances,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_assessment_id: null,
+        unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+      },
+      AssessmentInstanceDataSchema,
+    );
     if (data.length === 0) {
       res.status(404).send({
         message: 'Not Found',
@@ -33,23 +167,31 @@ router.get(
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)/instance_questions',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_instance_questions, {
-      course_instance_id: res.locals.course_instance.id,
-      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
-    });
-    res.status(200).send(result.rows[0].item);
+    const data = await sqldb.queryRow(
+      sql.select_instance_questions,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+      },
+      InstanceQuestionDataSchema,
+    );
+    res.status(200).send(data);
   }),
 );
 
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)/submissions',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_submissions, {
-      course_instance_id: res.locals.course_instance.id,
-      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
-      unsafe_submission_id: null,
-    });
-    res.status(200).send(result.rows[0].item);
+    const data = await sqldb.queryRow(
+      sql.select_submissions,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+        unsafe_submission_id: null,
+      },
+      SubmissionDataSchema,
+    );
+    res.status(200).send(data);
   }),
 );
 

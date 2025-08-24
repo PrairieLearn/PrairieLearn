@@ -87,6 +87,16 @@ const SprocCheckAssessmentAccessSchema = z.object({
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
 
+// Result of group_info sproc
+export const SprocGroupInfoSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  uid_list: z.array(z.string()),
+  user_name_list: z.array(z.string()),
+  user_roles_list: z.array(z.string()),
+});
+export type SprocGroupInfo = z.infer<typeof SprocGroupInfoSchema>;
+
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
   access_rules: z.array(SprocCheckAssessmentAccessSchema),

@@ -1,6 +1,7 @@
 import { ECRClient } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import Docker from 'dockerode';
+import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as sqldb from '@prairielearn/postgres';
@@ -25,8 +26,7 @@ export default async function pullImages() {
   }
 
   logger.info('Querying for recent images');
-  const results = await sqldb.queryAsync(sql.select_recent_images, []);
-  const images = results.rows.map((row) => row.external_grading_image);
+  const images = await sqldb.queryRows(sql.select_recent_images, z.string());
 
   logger.info(`Need to pull ${images.length} images`);
   await async.eachLimit(images, config.parallelInitPulls, async (image) => {
