@@ -708,7 +708,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
       loadedJson,
       result.error.issues.map(
         (e) =>
-          `code: ${e.code}, path: ${e.path.join('.')}, message: ${e.message}. Report this error to the PL team, this should not happen.`,
+          `code: ${e.code}, path: ${e.path.join('.')}, message: ${e.message}. Report this error to the PrairieLearn team, this should not happen.`,
       ),
     );
     Sentry.captureException(result.error);
