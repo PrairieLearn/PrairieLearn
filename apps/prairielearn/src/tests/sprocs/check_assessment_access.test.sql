@@ -43,13 +43,14 @@ WITH
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone)
+      course_instances (id, uuid, course_id, display_timezone, join_id)
     VALUES
       (
         1,
         'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
         1,
-        'UTC'
+        'UTC',
+        '40d98cdbf3c9'
       )
   ),
   setup_assessment_sets AS (
