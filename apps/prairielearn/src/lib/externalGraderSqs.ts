@@ -65,7 +65,7 @@ export class ExternalGraderSqs implements Grader {
           await new Upload({ client: s3, params }).done();
 
           // Store S3 info for this job
-          await sqldb.queryAsync(sql.update_s3_info, {
+          await sqldb.execute(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,
