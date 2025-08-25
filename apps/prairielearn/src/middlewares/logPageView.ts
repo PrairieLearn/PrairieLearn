@@ -40,7 +40,7 @@ export async function logPageView(pageType: PageType, req: Request, res: Respons
     client_fingerprint_id: res.locals.client_fingerprint_id ?? null,
   };
 
-  await sqldb.queryOneRowAsync(sql.log_page_view, params).catch((err) => {
+  await sqldb.executeRow(sql.log_page_view, params).catch((err) => {
     // Swallow the error so that we don't affect the request, but still
     // report the error to Sentry.
     logger.error('error logging page view', err);

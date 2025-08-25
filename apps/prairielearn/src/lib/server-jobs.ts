@@ -6,7 +6,7 @@ import type { Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
@@ -257,7 +257,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await queryAsync(sql.update_job_on_finish, {
+    await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
@@ -343,7 +343,7 @@ export function init() {
     const jobIds = Object.keys(liveJobs);
     if (jobIds.length === 0) return;
 
-    queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+    execute(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
       Sentry.captureException(err);
       logger.error('Error updating heartbeats for live server jobs', err);
     });
@@ -443,7 +443,7 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
     try {
-      await queryAsync(sql.update_job_on_error, {
+      await execute(sql.update_job_on_error, {
         job_id: row.id,
         output: null,
         error_message: 'Job abandoned by server',

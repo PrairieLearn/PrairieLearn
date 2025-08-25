@@ -270,30 +270,21 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table
-        class="table table-sm table-hover two-column-description"
-        aria-label="Issue information"
-      >
-        <tbody>
-          ${showUserName
-            ? html`
-                <tr>
-                  <th>User:</th>
-                  <td>
-                    ${issue.user_name || '-'} (<a href="${mailtoLink}">${issue.user_uid || '-'}</a>)
-                  </td>
-                </tr>
-                <tr>
-                  <th>Student message:</th>
-                  <td style="white-space: pre-wrap;">${issue.student_message}</td>
-                </tr>
-                <tr>
-                  <th>Instructor message:</th>
-                  <td>${issue.instructor_message}</td>
-                </tr>
-              `
-            : authz_data.has_course_permission_preview
+      <div class="table-responsive">
+        <table
+          class="table table-sm table-hover two-column-description"
+          aria-label="Issue information"
+        >
+          <tbody>
+            ${showUserName
               ? html`
+                  <tr>
+                    <th>User:</th>
+                    <td>
+                      ${issue.user_name || '-'} (<a href="${mailtoLink}">${issue.user_uid || '-'}</a
+                      >)
+                    </td>
+                  </tr>
                   <tr>
                     <th>Student message:</th>
                     <td style="white-space: pre-wrap;">${issue.student_message}</td>
@@ -303,22 +294,34 @@ export function IssuePanel({
                     <td>${issue.instructor_message}</td>
                   </tr>
                 `
-              : html`
-                  <tr>
-                    <th>Message:</th>
-                    <td style="white-space: pre-wrap;">${issue.student_message}</td>
-                  </tr>
-                `}
-          <tr>
-            <th>ID:</th>
-            <td>${issue.id}</td>
-          </tr>
-          <tr>
-            <th>Date:</th>
-            <td>${issue.formatted_date}</td>
-          </tr>
-        </tbody>
-      </table>
+              : authz_data.has_course_permission_preview
+                ? html`
+                    <tr>
+                      <th>Student message:</th>
+                      <td style="white-space: pre-wrap;">${issue.student_message}</td>
+                    </tr>
+                    <tr>
+                      <th>Instructor message:</th>
+                      <td>${issue.instructor_message}</td>
+                    </tr>
+                  `
+                : html`
+                    <tr>
+                      <th>Message:</th>
+                      <td style="white-space: pre-wrap;">${issue.student_message}</td>
+                    </tr>
+                  `}
+            <tr>
+              <th>ID:</th>
+              <td>${issue.id}</td>
+            </tr>
+            <tr>
+              <th>Date:</th>
+              <td>${issue.formatted_date}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
       ${config.devMode || authz_data.has_course_permission_view
         ? html`

@@ -46,7 +46,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
     return;
   }
 
-  await sqldb.queryAsync(sql.soft_delete_file_transfer, {
+  await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
     user_id: res.locals.user.user_id,
   });

@@ -215,7 +215,7 @@ export async function updateAssessmentQuestionRubric(
       );
     } else {
       // Rubric already exists, update its settings
-      await sqldb.queryAsync(sql.update_rubric, {
+      await sqldb.execute(sql.update_rubric, {
         rubric_id: new_rubric_id,
         starting_points,
         min_points,
@@ -226,7 +226,7 @@ export async function updateAssessmentQuestionRubric(
 
     if (new_rubric_id !== current_rubric_id) {
       // Update rubric ID in assessment question
-      await sqldb.queryAsync(sql.update_assessment_question_rubric_id, {
+      await sqldb.execute(sql.update_assessment_question_rubric_id, {
         assessment_question_id,
         manual_rubric_id: new_rubric_id,
       });
@@ -234,7 +234,7 @@ export async function updateAssessmentQuestionRubric(
 
     if (use_rubric) {
       // Update rubric items. Start by soft-deleting rubric items that are no longer active.
-      await sqldb.queryAsync(sql.delete_rubric_items, {
+      await sqldb.execute(sql.delete_rubric_items, {
         rubric_id: new_rubric_id,
         active_rubric_items: rubric_items.map((item) => item.id).filter(Boolean),
       });
@@ -254,7 +254,7 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            await sqldb.execute(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
           } else {
             await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
           }
@@ -265,7 +265,7 @@ export async function updateAssessmentQuestionRubric(
     }
 
     if (tag_for_manual_grading) {
-      await sqldb.queryAsync(sql.tag_for_manual_grading, { assessment_question_id });
+      await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
     }
   });
 }
@@ -570,7 +570,7 @@ export async function updateInstanceQuestionScore(
       );
 
       if (!current_submission.modified_at_conflict && current_submission.submission_id) {
-        await sqldb.queryOneRowAsync(sql.update_submission_score, {
+        await sqldb.executeRow(sql.update_submission_score, {
           submission_id: current_submission.submission_id,
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
@@ -585,7 +585,7 @@ export async function updateInstanceQuestionScore(
     // do the score update of the instance_question, log it, and update the assessment_instance, if we
     // have a new_score
     if (new_score_perc != null && !current_submission.modified_at_conflict) {
-      await sqldb.queryAsync(sql.update_instance_question_score, {
+      await sqldb.execute(sql.update_instance_question_score, {
         instance_question_id: current_submission.instance_question_id,
         points: new_points,
         score_perc: new_score_perc,
