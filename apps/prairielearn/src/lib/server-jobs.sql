@@ -235,7 +235,10 @@ WITH
       count(*) AS job_count,
       coalesce(
         array_agg(
-          to_jsonb(mj.*) ORDER BY mj.number_in_sequence, mj.id
+          to_jsonb(mj.*)
+          ORDER BY
+            mj.number_in_sequence,
+            mj.id
         ),
         ARRAY[]::jsonb[]
       ) AS jobs
