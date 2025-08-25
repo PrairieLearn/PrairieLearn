@@ -23,7 +23,7 @@ DISPLAY_DEFAULT = DisplayType.INLINE
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = 0
+BLANK_VALUE_DEFAULT = "0"
 BASE_DEFAULT = 10
 SHOW_SCORE_DEFAULT = True
 
@@ -69,8 +69,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
-    if str(correct_answer).strip() == "":
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    if correct_answer == "":
         if allow_blank and blank_value == "":
             data["correct_answers"][name] = ""
         else:
@@ -233,7 +233,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)

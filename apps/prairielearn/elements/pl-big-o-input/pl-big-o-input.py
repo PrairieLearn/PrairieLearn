@@ -80,9 +80,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
-        if a_true.strip() == "":
-            a_true = ""
-        else:
+        if len(a_true) > 0:
             try:
                 psu.convert_string_to_sympy(
                     a_true, variables, allow_complex=False, allow_trig_functions=False
@@ -146,12 +144,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
-        a_sub = sympy.latex(
-            psu.convert_string_to_sympy(
-                a_sub,
-                variables,
-                allow_complex=False,
-                allow_trig_functions=False,
+        a_sub = (
+            sympy.latex(
+                psu.convert_string_to_sympy(
+                    a_sub,
+                    variables,
+                    allow_complex=False,
+                    allow_trig_functions=False,
+                )
             )
             if a_sub != ""
             else ""
@@ -319,7 +319,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "incorrect":
-        if a_tru is not None and a_tru.strip() == "":
+        if a_tru == "":
             data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
             data["partial_scores"][name] = {
                 "score": 0,

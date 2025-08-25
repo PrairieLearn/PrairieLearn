@@ -83,7 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
-        if correct_answer.strip() != "":
+        if correct_answer != "":
             correct_answer = pl.get_float_attrib(element, "correct-answer", None)
         elif allow_blank and blank_value == "":
             correct_answer = ""
@@ -105,7 +105,7 @@ def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
-    if correct_answer is not None and str(correct_answer).strip() != "":
+    if correct_answer != "":
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
         comparison = pl.get_enum_attrib(
