@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
@@ -408,12 +408,11 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callAsync('sync_assessments', [
-    assessmentParams,
-    courseId,
-    courseInstanceId,
-    config.checkSharingOnSync,
-  ]);
+  await sqldb.callOptionalRow(
+    'sync_assessments',
+    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+    SprocSyncAssessmentsSchema,
+  );
 }
 
 export async function validateAssessmentSharedQuestions(
