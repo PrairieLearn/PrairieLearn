@@ -29,8 +29,6 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
     "Incorrect, your answer has unnecessary lower order terms."
 )
 
-INCORRECT_BLANK_FEEDBACK = "Incorrect, your answer is blank."
-
 
 def grade_o_expression(
     a_true: str, a_sub: str, variables: list[str]
@@ -168,6 +166,5 @@ def grade_omega_expression(
 def grade_blank_expression(a_true: str, a_sub: str) -> tuple[int, str]:
     if a_true == "" and a_sub == "":
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
-    if a_true == "":
+    else:
         return (0, INCORRECT_FEEDBACK)
-    return (0, INCORRECT_BLANK_FEEDBACK)
