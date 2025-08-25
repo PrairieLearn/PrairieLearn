@@ -504,7 +504,7 @@ export async function loadCourseInfo({
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
     zodSchema: schemas.CourseJsonSchema,
-    validate: async () => ({ warnings: [], errors: [] }),
+    validate: () => ({ warnings: [], errors: [] }),
   });
 
   if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
@@ -536,9 +536,9 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
     const known = new Map();
-    const duplicateEntryIds = new Set();
+    const duplicateEntryIds = new Set<string>();
 
     (info[fieldName] || []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
@@ -682,7 +682,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -717,7 +717,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 
   loadedJson.data = result.data;
 
-  const validationResult = await validate(loadedJson.data);
+  const validationResult = validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -746,7 +746,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   infoFilename: string;
   schema: any;
   zodSchema: T;
-  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -949,13 +949,13 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
-async function validateQuestion({
+function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1007,7 +1007,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-async function validateAssessment({
+function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1017,7 +1017,7 @@ async function validateAssessment({
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1323,13 +1323,13 @@ async function validateAssessment({
   return { warnings, errors };
 }
 
-async function validateCourseInstance({
+function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 

@@ -6,6 +6,7 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { assertNever } from '../../lib/types.js';
 import {
   type AssessmentJson,
   type QuestionAlternativeJson,
@@ -211,7 +212,7 @@ function getParamsForAssessment(
             pointsList: undefined,
           };
         } else {
-          throw new Error(`Unknown assessment type: ${assessment.type}`);
+          assertNever(assessment.type);
         }
       });
 
