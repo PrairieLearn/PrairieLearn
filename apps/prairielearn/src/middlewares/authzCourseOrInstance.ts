@@ -107,6 +107,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   has_enhanced_navigation: boolean;
+  skip_graded_submissions: boolean;
   question_sharing_enabled: boolean;
 }
 
@@ -161,6 +162,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
 
   // The side nav is expanded by default.
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
+
+  // Graded submissions are skipped by default.
+  res.locals.skip_graded_submissions = req.session?.skip_graded_submissions ?? true;
 
   const permissions_course = authzData.permissions_course;
   res.locals.authz_data = {

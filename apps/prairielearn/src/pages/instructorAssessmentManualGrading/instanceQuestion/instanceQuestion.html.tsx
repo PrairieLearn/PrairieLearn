@@ -254,7 +254,6 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     disable: true,
-                    hide_back_to_question: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
                   })}
