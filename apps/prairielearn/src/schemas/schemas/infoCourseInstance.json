@@ -31,7 +31,6 @@
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
       "type": "boolean",
-      "default": true,
       "deprecated": true
     },
     "hideInEnrollPage": {

@@ -45,7 +45,7 @@ export const CourseInstanceJsonSchema = z
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.',
       )
       .optional(),
-    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
+    allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
     hideInEnrollPage: z
       .boolean()
       .describe(
