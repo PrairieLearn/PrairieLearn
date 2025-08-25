@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -423,10 +424,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         iqId = parseInstanceQuestionId(iqUrl);
         manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-        const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instance_questions, 1);
-        assert.equal(instance_questions[0].requires_manual_grading, false);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
       test.sequential('submit an answer to the question', async () => {
@@ -444,10 +447,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       });
 
       test.sequential('should tag question as requiring grading', async () => {
-        const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instanceQuestions, 1);
-        assert.equal(instanceQuestions[0].requires_manual_grading, true);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, true);
       });
     });
 
@@ -1068,10 +1073,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         iqId = parseInstanceQuestionId(iqUrl);
         manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-        const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instance_questions, 1);
-        assert.equal(instance_questions[0].requires_manual_grading, false);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
       test.sequential('submit an answer to the question', async () => {
@@ -1089,10 +1096,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       });
 
       test.sequential('should tag question as requiring grading', async () => {
-        const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instanceQuestions, 1);
-        assert.equal(instanceQuestions[0].requires_manual_grading, true);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, true);
       });
 
       test.sequential('student view should keep the old feedback/rubric', async () => {

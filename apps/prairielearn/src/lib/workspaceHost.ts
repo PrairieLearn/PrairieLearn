@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -74,7 +74,7 @@ export async function recaptureDrainingWorkspaceHosts(needed_hosts: number) {
 }
 
 export async function drainExtraWorkspaceHosts(surplus: number) {
-  await queryAsync(sql.drain_extra_hosts, { surplus });
+  await execute(sql.drain_extra_hosts, { surplus });
 }
 
 /**

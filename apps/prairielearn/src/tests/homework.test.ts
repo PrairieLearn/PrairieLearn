@@ -2,11 +2,17 @@ import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { SubmissionSchema } from '../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+  SubmissionSchema,
+} from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
@@ -264,23 +270,29 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         assert.equal(res.url, locals.siteUrl + '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', async () => {
-        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
-        if (result.rowCount !== 1) {
-          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
-        }
-        locals.assessment_instance = result.rows[0];
+        const result = await sqldb.queryRow(
+          sql.select_assessment_instances,
+          AssessmentInstanceSchema,
+        );
+        locals.assessment_instance = result;
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, async () => {
-        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
-        if (result.rowCount !== questionsArray.length) {
+        const result = await sqldb.queryRows(
+          sql.select_instance_questions,
+          z.object({
+            ...InstanceQuestionSchema.shape,
+            qid: QuestionSchema.shape.qid,
+          }),
+        );
+        if (result.length !== questionsArray.length) {
           throw new Error(
-            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+            `expected ${questionsArray.length} instance_questions, got: ` + result.length,
           );
         }
-        locals.instance_questions = result.rows;
+        locals.instance_questions = result;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
@@ -1176,7 +1188,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
   describe('regrading', function () {
     describe('change max_points', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_max_points, []);
+        await sqldb.execute(sql.update_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);

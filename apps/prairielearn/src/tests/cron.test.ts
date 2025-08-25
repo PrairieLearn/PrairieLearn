@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as cron from '../cron/index.js';
 import { config } from '../lib/config.js';
+import { CronJobSchema } from '../lib/db-types.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -35,16 +36,16 @@ describe('Cron', { timeout: 60_000 }, function () {
     });
 
     it('should all have started', async () => {
-      const result = await sqldb.queryAsync(sql.select_cron_jobs, []);
-      const runJobs = result.rows.map((row) => row.name);
+      const result = await sqldb.queryRows(sql.select_cron_jobs, CronJobSchema);
+      const runJobs = result.map((row) => row.name);
       const cronJobs = cron.jobs.map((row) => row.name);
       assert.lengthOf(_.difference(runJobs, cronJobs), 0);
       assert.lengthOf(_.difference(cronJobs, runJobs), 0);
     });
 
     it('should all have successfully completed', async () => {
-      const result = await sqldb.queryAsync(sql.select_unsuccessful_cron_jobs, []);
-      assert.lengthOf(result.rows, 0);
+      const rowCount = await sqldb.execute(sql.select_unsuccessful_cron_jobs);
+      assert.equal(rowCount, 0);
     });
   });
 });
