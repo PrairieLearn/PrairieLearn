@@ -17,7 +17,7 @@ export async function readJSON(jsonFilename: string): Promise<any> {
   const data = await fs.readFile(jsonFilename, { encoding: 'utf8' });
   try {
     return jju.parse(data, { mode: 'json' });
-  } catch (e) {
+  } catch (e: any) {
     throw new Error(
       `Error in JSON file format: ${jsonFilename} (line ${e.row}, column ${e.column})\n${e.name}: ${e.message}`,
     );

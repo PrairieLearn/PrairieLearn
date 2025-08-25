@@ -2,6 +2,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 
 import { execa } from 'execa';
 import * as shlex from 'shlex';
+import type { Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -362,8 +363,8 @@ export async function stop() {
   }
 }
 
-export function connection(socket) {
-  socket.on('joinJob', function (msg, callback) {
+export function connection(socket: Socket) {
+  socket.on('joinJob', function (msg: Record<string, string>, callback: (data: any) => void) {
     if (!('job_id' in msg)) {
       logger.error('socket.io joinJob called without job_id');
       return;
@@ -389,44 +390,47 @@ export function connection(socket) {
     );
   });
 
-  socket.on('joinJobSequence', function (msg, callback) {
-    if (!('job_sequence_id' in msg)) {
-      logger.error('socket.io joinJobSequence called without job_sequence_id');
-      return;
-    }
+  socket.on(
+    'joinJobSequence',
+    function (msg: Record<string, string>, callback: (data: any) => void) {
+      if (!('job_sequence_id' in msg)) {
+        logger.error('socket.io joinJobSequence called without job_sequence_id');
+        return;
+      }
 
-    // Check authorization of the requester.
-    if (
-      !checkSignedToken(
-        msg.token,
-        { jobSequenceId: msg.job_sequence_id.toString() },
-        config.secretKey,
-      )
-    ) {
-      logger.error(
-        `joinJobSequence called with invalid token for job_sequence_id ${msg.job_sequence_id}`,
-      );
-      return;
-    }
-
-    socket.join('jobSequence-' + msg.job_id);
-    queryRow(
-      sql.select_job_sequence,
-      { job_sequence_id: msg.job_sequence_id },
-      JobSequenceSchema.extend({ job_count: z.coerce.number() }),
-    ).then(
-      ({ job_count }) => {
-        callback({ job_count });
-      },
-      (err) => {
-        Sentry.captureException(err);
+      // Check authorization of the requester.
+      if (
+        !checkSignedToken(
+          msg.token,
+          { jobSequenceId: msg.job_sequence_id.toString() },
+          config.secretKey,
+        )
+      ) {
         logger.error(
-          'socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id,
-          err,
+          `joinJobSequence called with invalid token for job_sequence_id ${msg.job_sequence_id}`,
         );
-      },
-    );
-  });
+        return;
+      }
+
+      socket.join('jobSequence-' + msg.job_id);
+      queryRow(
+        sql.select_job_sequence,
+        { job_sequence_id: msg.job_sequence_id },
+        JobSequenceSchema.extend({ job_count: z.coerce.number() }),
+      ).then(
+        ({ job_count }) => {
+          callback({ job_count });
+        },
+        (err) => {
+          Sentry.captureException(err);
+          logger.error(
+            'socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id,
+            err,
+          );
+        },
+      );
+    },
+  );
 }
 
 export async function errorAbandonedJobs() {

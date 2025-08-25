@@ -14,12 +14,7 @@ import {
 } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.js';
-import {
-  SubmissionBasicSchema,
-  SubmissionDetailedSchema,
-  type SubmissionForRender,
-  SubmissionPanel,
-} from '../components/SubmissionPanel.js';
+import { SubmissionPanel } from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -63,6 +58,9 @@ import {
   type ResLocalsBuildLocals,
   type ResLocalsInstanceQuestionRenderAdded,
   type ResLocalsQuestionRenderAdded,
+  SubmissionBasicSchema,
+  SubmissionDetailedSchema,
+  type SubmissionForRender,
   type SubmissionPanels,
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
