@@ -162,7 +162,7 @@ export function AssessmentQuestion({
                       <table class="table table-sm" aria-label="AI grading rubric item stats">
                         <thead>
                           <tr class="table-light fw-bold">
-                            <td style="width: 30%;">Rubric item</td>
+                            <td class="col-5">Rubric item</td>
                             <td>AI agreement</td>
                           </tr>
                         </thead>
@@ -220,7 +220,7 @@ export function AssessmentQuestion({
                 <table class="table table-sm" aria-label="AI submission groups">
                   <thead>
                     <tr class="table-light fw-bold">
-                      <td style="width: 30%;">Submission Group</td>
+                      <td class="col-5">Submission Group</td>
                       <td>Description</td>
                     </tr>
                   </thead>
@@ -503,43 +503,43 @@ function GroupInfoModal({
       <p>Examples of what can and can't be grouped:</p>
 
       <div class="d-grid border rounded overflow-hidden" style="grid-template-columns: 1fr 1fr;">
-        <!-- Header row -->
         <div class="px-2 py-1 bg-light fw-bold border-end">Can group</div>
         <div class="px-2 py-1 bg-light fw-bold">Can't group</div>
 
-        <!-- Row 1 -->
         <div class="px-2 py-1 border-top border-end">Mathematical Equations</div>
         <div class="px-2 py-1 border-top">Essays</div>
 
-        <!-- Row 2 -->
         <div class="px-2 py-1 border-top border-end">Mechanical Formulas</div>
         <div class="px-2 py-1 border-top">Free Response Questions</div>
 
-        <!-- Row 3 -->
         <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
         <div class="px-2 py-1 border-top">Freeform Code</div>
       </div>
-      ${numOpenInstances > 0 &&
-      html` <div class="alert alert-warning mt-3" role="alert">
-        <div class="row g-2">
-          <div class="col-12 col-md-6">
-            <p class="my-0">
-              This assessment has
-              ${numOpenInstances === 1
-                ? '1 open instance that '
-                : `${numOpenInstances} open instances, which `}
-              may contain submissions selected for grouping.
-            </p>
-          </div>
-          <div class="col-12 col-md-6 d-flex flex-column gap-2">
-            <p class="my-0">Choose how to apply grouping:</p>
-            <select class="form-select w-auto flex-shrink-0" name="closed_instance_questions_only">
-              <option value="true" selected>Only group closed submissions</option>
-              <option value="false">Group open & closed submissions</option>
-            </select>
-          </div>
-        </div>
-      </div>`}
+      ${numOpenInstances > 0
+        ? html` <div class="alert alert-warning mt-3" role="alert">
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <p class="my-0">
+                  This assessment has
+                  ${numOpenInstances === 1
+                    ? '1 open instance that '
+                    : `${numOpenInstances} open instances, which `}
+                  may contain submissions selected for grouping.
+                </p>
+              </div>
+              <div class="col-12 col-md-6 d-flex flex-column gap-2">
+                <p class="my-0">Choose how to apply grouping:</p>
+                <select
+                  class="form-select w-auto flex-shrink-0"
+                  name="closed_instance_questions_only"
+                >
+                  <option value="true" selected>Only group closed submissions</option>
+                  <option value="false">Group open & closed submissions</option>
+                </select>
+              </div>
+            </div>
+          </div>`
+        : ''}
     `,
     footer: html`
       <div class="m-0">

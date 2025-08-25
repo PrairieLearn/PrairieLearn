@@ -86,9 +86,10 @@ export function InstanceQuestion({
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       ${EncodedData(
         {
-          instance_question_id: resLocals.instance_question.id,
+          instanceQuestionId: resLocals.instance_question.id,
+          aiSubmissionGroupsExist,
         },
-        'instance-question-id',
+        'instance-question-data',
       )}
     `,
     preContent: html`

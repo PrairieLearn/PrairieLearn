@@ -172,7 +172,7 @@ export async function generatePrompt({
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
-      include_ai_grading_prompts: false,
+      include_ai_grading_prompts: true,
     }),
   );
 
@@ -193,7 +193,7 @@ export function generateSubmissionMessage({
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  if (!include_ai_grading_prompts) {
+  if (include_ai_grading_prompts) {
     message_content.push({
       type: 'text',
       text: 'The student submitted the following response: \n<response>\n',
@@ -213,7 +213,7 @@ export function generateSubmissionMessage({
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
       if (imageCaptureUUID) {
-        if (submissionTextSegment && !include_ai_grading_prompts) {
+        if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           message_content.push({
             type: 'text',
@@ -224,7 +224,7 @@ export function generateSubmissionMessage({
 
         const options = $submission_html(node).data('options') as Record<string, string>;
         const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName && !include_ai_grading_prompts) {
+        if (!submittedImageName) {
           // If no submitted filename is available, no image was captured.
           message_content.push({
             type: 'text',
@@ -254,14 +254,14 @@ export function generateSubmissionMessage({
       }
     });
 
-  if (submissionTextSegment && !include_ai_grading_prompts) {
+  if (submissionTextSegment) {
     message_content.push({
       type: 'text',
       text: submissionTextSegment,
     });
   }
 
-  if (!include_ai_grading_prompts) {
+  if (include_ai_grading_prompts) {
     message_content.push({
       type: 'text',
       text: '\n</response>\nHow would you grade this? Please return the JSON object.',

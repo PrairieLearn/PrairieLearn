@@ -274,7 +274,7 @@ export async function aiSubmissionGrouping({
         return false;
       }
 
-      const responseCorrect = await aiEvaluateStudentResponse({
+      const submissionIsLikelyCorrect = await aiEvaluateStudentResponse({
         question,
         question_answer: answerHtml,
         instance_question,
@@ -285,7 +285,9 @@ export async function aiSubmissionGrouping({
 
       await updateAiSubmissionGroup({
         instance_question_id: instance_question.id,
-        ai_submission_group_id: responseCorrect ? likelyCorrectGroup.id : reviewNeededGroup.id,
+        ai_submission_group_id: submissionIsLikelyCorrect
+          ? likelyCorrectGroup.id
+          : reviewNeededGroup.id,
       });
       logger.info(`Grouped instance question ${instance_question.id} (${index}/${total})`);
       index += 1;
@@ -331,6 +333,7 @@ export async function aiSubmissionGrouping({
         }
       },
     );
+
     const error_count = instance_question_grouping_successes.filter((success) => !success).length;
 
     if (error_count > 0) {

@@ -922,7 +922,6 @@ function ensureElementsExist(elements) {
     }
   }
 }
-
 function addSkipGradeSubmissionsListener() {
   const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
 
@@ -944,12 +943,22 @@ function addSkipGradeSubmissionsListener() {
 }
 
 function addSubmissionGroupSelectionDropdownListeners() {
-  const { instance_question_id } = decodeData('instance-question-id');
+  const { instanceQuestionId, aiSubmissionGroupsExist } = decodeData('instance-question-data');
+
+  if (!aiSubmissionGroupsExist) {
+    // Submission grouping has not been run yet for the assessment question,
+    // so no submission group dropdown is available.
+    return;
+  }
+
   const submissionGroupSelectionDropdown = document.querySelector(
     '#submission-group-selection-dropdown',
   );
 
+  // Grade button without the dropdown containing the option to grade the entire submission group.
   const gradeButton = document.querySelector('#grade-button');
+
+  // Grade button with a dropdown containing the option to grade the entire submission group.
   const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
 
   ensureElementsExist({
@@ -962,7 +971,7 @@ function addSubmissionGroupSelectionDropdownListeners() {
   submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
     const selectedSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
 
-    await fetch(`${instance_question_id}/ai_submission_group`, {
+    await fetch(`${instanceQuestionId}/ai_submission_group`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -977,8 +986,8 @@ function addSubmissionGroupSelectionDropdownListeners() {
 
     selectedSubmissionGroupDropdownItem.classList.add('active');
 
-    // If the user selected a submission group, show the grade button with a dropdown that lets them
-    // grade the whole submission group. Otherwise, show the grade button without a dropdown.
+    // If a submission group is selected, show the grade button with a dropdown.
+    // Otherwise, show the grade button without a dropdown.
     gradeButton.classList.toggle(
       'd-none',
       selectedSubmissionGroupDropdownItem.getAttribute('value'),

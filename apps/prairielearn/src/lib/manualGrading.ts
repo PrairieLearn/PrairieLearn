@@ -55,14 +55,12 @@ export async function nextInstanceQuestionUrl(
 ): Promise<string> {
   const prior_ai_submission_group_id = await run(async () => {
     if (prior_instance_question_id) {
-      return (
-        (await sqldb.queryOptionalRow(
-          sql.ai_submission_group_id_for_instance_question,
-          {
-            instance_question_id: prior_instance_question_id,
-          },
-          IdSchema.nullable(),
-        )) ?? null
+      return await sqldb.queryOptionalRow(
+        sql.ai_submission_group_id_for_instance_question,
+        {
+          instance_question_id: prior_instance_question_id,
+        },
+        IdSchema.nullable(),
       );
     } else {
       const submissionGroups = await selectAiSubmissionGroups({
@@ -72,7 +70,7 @@ export async function nextInstanceQuestionUrl(
     }
   });
 
-  let instance_question_id = await sqldb.queryOptionalRow(
+  let next_instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,
     {
       assessment_id,
@@ -85,8 +83,7 @@ export async function nextInstanceQuestionUrl(
     IdSchema,
   );
 
-  if (!instance_question_id && prior_ai_submission_group_id) {
-    // Get the next submission group ID for the assessment question based on its ID
+  if (!next_instance_question_id && prior_ai_submission_group_id) {
     const next_ai_submission_group_id = await sqldb.queryOptionalRow(
       sql.select_next_ai_submission_group_id,
       {
@@ -96,8 +93,8 @@ export async function nextInstanceQuestionUrl(
       IdSchema.nullable(),
     );
 
-    // Find the next question there
-    instance_question_id = await sqldb.queryOptionalRow(
+    // Check if there exists another submission in the next AI submission group
+    next_instance_question_id = await sqldb.queryOptionalRow(
       sql.select_next_instance_question,
       {
         assessment_id,
@@ -111,8 +108,8 @@ export async function nextInstanceQuestionUrl(
     );
   }
 
-  if (instance_question_id !== null) {
-    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`;
+  if (next_instance_question_id !== null) {
+    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${next_instance_question_id}`;
   }
 
   // If we have no more submissions, then redirect back to main assessment question page
