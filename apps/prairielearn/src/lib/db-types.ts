@@ -188,6 +188,14 @@ export const AiGradingJobSchema = z.object({
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
+export const AiSubmissionGroupSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  submission_group_description: z.string(),
+  submission_group_name: z.string(),
+});
+export type AiSubmissionGroup = z.infer<typeof AiSubmissionGroupSchema>;
+
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
@@ -760,6 +768,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
+  ai_submission_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),

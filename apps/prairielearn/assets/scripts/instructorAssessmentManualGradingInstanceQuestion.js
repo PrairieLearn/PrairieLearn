@@ -36,6 +36,9 @@ $(() => {
       })
       .modal('show');
   }
+
+  addSubmissionGroupSelectionDropdownListeners();
+  addSkipGradeSubmissionsListener();
 });
 
 function resetRubricImportFormListeners() {
@@ -918,4 +921,86 @@ function ensureElementsExist(elements) {
       throw new Error(`Element ${elementName} is required but not found in the DOM.`);
     }
   }
+}
+function addSkipGradeSubmissionsListener() {
+  const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
+
+  ensureElementsExist({
+    skipGradedSubmissionsCheckbox,
+  });
+
+  skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
+    await fetch('/pl/manual_grading/settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        skip_graded_submissions: e.target.checked,
+      }),
+    });
+  });
+}
+
+function addSubmissionGroupSelectionDropdownListeners() {
+  const { instanceQuestionId, aiSubmissionGroupsExist } = decodeData('instance-question-data');
+
+  if (!aiSubmissionGroupsExist) {
+    // Submission grouping has not been run yet for the assessment question,
+    // so no submission group dropdown is available.
+    return;
+  }
+
+  const submissionGroupSelectionDropdown = document.querySelector(
+    '#submission-group-selection-dropdown',
+  );
+
+  // Grade button without the dropdown containing the option to grade the entire submission group.
+  const gradeButton = document.querySelector('#grade-button');
+
+  // Grade button with a dropdown containing the option to grade the entire submission group.
+  const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
+
+  ensureElementsExist({
+    submissionGroupSelectionDropdown,
+
+    gradeButton,
+    gradeButtonWithDropdown,
+  });
+
+  submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
+
+    await fetch(`${instanceQuestionId}/ai_submission_group`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        aiSubmissionGroupId: selectedSubmissionGroupDropdownItem.getAttribute('value'),
+      }),
+    });
+
+    const activeDropdownItem = document.querySelector('.dropdown-item.active');
+    activeDropdownItem.classList.remove('active');
+
+    selectedSubmissionGroupDropdownItem.classList.add('active');
+
+    // If a submission group is selected, show the grade button with a dropdown.
+    // Otherwise, show the grade button without a dropdown.
+    gradeButton.classList.toggle(
+      'd-none',
+      selectedSubmissionGroupDropdownItem.getAttribute('value'),
+    );
+    gradeButtonWithDropdown.classList.toggle(
+      'd-none',
+      !selectedSubmissionGroupDropdownItem.getAttribute('value'),
+    );
+
+    const submissionGroupSelectionDropdownSpan = document.querySelector(
+      '#submission-group-selection-dropdown-span',
+    );
+    submissionGroupSelectionDropdownSpan.innerHTML =
+      selectedSubmissionGroupDropdownItem.textContent;
+  });
 }

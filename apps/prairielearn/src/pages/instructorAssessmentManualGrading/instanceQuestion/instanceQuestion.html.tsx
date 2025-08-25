@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
@@ -29,15 +30,18 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  submissionGroupName,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  submissionGroupName?: string;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -46,6 +50,7 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiSubmissionGroupsExist?: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -79,6 +84,13 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+      ${EncodedData(
+        {
+          instanceQuestionId: resLocals.instance_question.id,
+          aiSubmissionGroupsExist,
+        },
+        'instance-question-data',
+      )}
     `,
     preContent: html`
       <div class="container-fluid">
@@ -167,7 +179,9 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
+                submissionGroupName,
                 aiGradingInfo,
+                aiSubmissionGroupsExist,
               })}
             </div>
           </div>
@@ -214,11 +228,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  aiSubmissionGroupsExist?: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -254,9 +270,9 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     disable: true,
-                    hide_back_to_question: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    aiSubmissionGroupsExist,
                   })}
                 </div>
               </div>
@@ -282,6 +298,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    aiSubmissionGroupsExist,
                   })}
                 </div>
               </div>
