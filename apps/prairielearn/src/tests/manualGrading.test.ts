@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -195,7 +196,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
       assert.equal(count, '0/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 0);
@@ -265,7 +266,10 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-bs-content'),
+              container
+                .find('[data-testid="rubric-item-explanation"]')
+                .attr('data-bs-content')
+                ?.trim(),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {
@@ -420,10 +424,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         iqId = parseInstanceQuestionId(iqUrl);
         manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-        const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instance_questions, 1);
-        assert.equal(instance_questions[0].requires_manual_grading, false);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
       test.sequential('submit an answer to the question', async () => {
@@ -441,10 +447,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       });
 
       test.sequential('should tag question as requiring grading', async () => {
-        const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instanceQuestions, 1);
-        assert.equal(instanceQuestions[0].requires_manual_grading, true);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, true);
       });
     });
 
@@ -461,7 +469,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -627,7 +638,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           $manualGradingPage = cheerio.load(manualGradingPage);
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 1);
@@ -642,7 +656,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           $manualGradingPage = cheerio.load(manualGradingPage);
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           const nextButton = row.find('.btn:contains("next submission")');
           assert.equal(nextButton.length, 0);
@@ -1043,7 +1060,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           body: new URLSearchParams({
             __action: 'set_time_limit_all',
             __csrf_token: token,
-            action: 'unlimited',
+            action: 'remove',
             time_add: '0',
             reopen_closed: 'on',
           }).toString(),
@@ -1056,10 +1073,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         iqId = parseInstanceQuestionId(iqUrl);
         manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-        const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instance_questions, 1);
-        assert.equal(instance_questions[0].requires_manual_grading, false);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
       test.sequential('submit an answer to the question', async () => {
@@ -1077,10 +1096,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       });
 
       test.sequential('should tag question as requiring grading', async () => {
-        const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
-          .rows;
-        assert.lengthOf(instanceQuestions, 1);
-        assert.equal(instanceQuestions[0].requires_manual_grading, true);
+        const instanceQuestion = await sqldb.queryRow(
+          sql.get_instance_question,
+          { iqId },
+          InstanceQuestionSchema,
+        );
+        assert.equal(instanceQuestion.requires_manual_grading, true);
       });
 
       test.sequential('student view should keep the old feedback/rubric', async () => {
@@ -1108,7 +1129,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         async () => {
           const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
           assert.equal(row.length, 1);
-          const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
           assert.equal(count, '1/1');
           manualGradingAssessmentQuestionUrl =
             siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');

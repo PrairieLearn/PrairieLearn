@@ -1,9 +1,6 @@
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
 
-export type QuestionType = Question['type'];
-export type EffectiveQuestionType = 'Calculation' | 'Freeform';
-
 export interface RenderSelection {
   question?: boolean;
   submissions?: boolean;
@@ -63,6 +60,16 @@ export interface TestResultData {
   gradable: boolean;
 }
 
+export type PrepareVariant = Pick<
+  Variant,
+  'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'
+>;
+
+export type ParseSubmission = Pick<
+  Partial<Submission>,
+  'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
+>;
+
 export interface QuestionServer {
   generate: (
     question: Question,
@@ -72,7 +79,7 @@ export interface QuestionServer {
   prepare: (
     question: Question,
     course: Course,
-    variant: Pick<Variant, 'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'>,
+    variant: PrepareVariant,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
     renderSelection: RenderSelection,
@@ -84,10 +91,7 @@ export interface QuestionServer {
     locals: Record<string, any>,
   ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
-    submission: Pick<
-      Partial<Submission>,
-      'submitted_answer' | 'feedback' | 'format_errors' | 'raw_submitted_answer' | 'gradable'
-    >,
+    submission: ParseSubmission,
     variant: Variant,
     question: Question,
     course: Course,

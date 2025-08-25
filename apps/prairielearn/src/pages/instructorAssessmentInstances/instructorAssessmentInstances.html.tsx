@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
@@ -39,7 +39,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -73,7 +73,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         : ''}
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`

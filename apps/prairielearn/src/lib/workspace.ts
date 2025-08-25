@@ -129,11 +129,7 @@ function connection(socket: Socket) {
   // that the client possesses a token that is valid for this workspace ID.
   const workspace_id = socket.handshake.auth.workspace_id;
 
-  socket.on('joinWorkspace', (...args) => {
-    // Forwards compatibility with clients who may no longer be sending a message.
-    // TODO: remove this in the future once all clients have been updated.
-    const callback = args.at(-1);
-
+  socket.on('joinWorkspace', (callback: (result: any) => void) => {
     socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
@@ -156,15 +152,12 @@ function connection(socket: Socket) {
     });
   });
 
-  socket.on('heartbeat', (...args) => {
-    // Forwards compatibility with clients who may no longer be sending a message.
-    // TODO: remove this in the future once all clients have been updated.
-    const callback = args.at(-1);
-
+  socket.on('heartbeat', (callback?: (result: any) => void) => {
+    // TODO: remove the callback parameter in the future once all clients have been updated.
     sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
-      (heartbeat_at) => callback({ workspace_id, heartbeat_at }),
+      (heartbeat_at) => callback?.({ workspace_id, heartbeat_at }),
       (err) => {
-        callback({ errorMessage: err.message });
+        callback?.({ errorMessage: err.message });
         Sentry.captureException(err);
       },
     );
@@ -285,7 +278,7 @@ async function startup(workspace_id: string): Promise<void> {
         // that we don't try to write on top of an existing directory, as this
         // could lead to unexpected behavior.
         try {
-          const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
+          const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
           await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,

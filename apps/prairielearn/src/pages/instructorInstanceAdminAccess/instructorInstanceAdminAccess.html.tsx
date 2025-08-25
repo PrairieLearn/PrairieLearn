@@ -1,9 +1,9 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { CommentPopover } from '../../components/CommentPopover.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { CommentPopover } from '../../components/CommentPopover.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
@@ -34,7 +34,7 @@ export function InstructorInstanceAdminAccess({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={course_instance}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}

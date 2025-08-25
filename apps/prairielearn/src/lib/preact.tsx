@@ -27,7 +27,7 @@ const MATCH_HTML = /[&><\u2028\u2029]/g;
  * @returns A JSON string with HTML-sensitive characters escaped.
  */
 function escapeJsonForHtml(value: any): string {
-  return superjson.stringify(value).replace(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
+  return superjson.stringify(value).replaceAll(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
 }
 
 /**
@@ -124,13 +124,13 @@ registerReactFragment(${componentName});</code></pre>
       >
         <script
           type="application/json"
-          data-component-props
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{
             __html: escapeJsonForHtml(props),
           }}
+          data-component-props
         />
-        <div data-component-root class={fullHeight ? 'h-100' : ''}>
+        <div class={fullHeight ? 'h-100' : ''} data-component-root>
           <Component {...props} />
         </div>
       </div>

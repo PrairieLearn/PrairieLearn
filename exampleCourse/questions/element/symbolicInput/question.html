@@ -26,6 +26,21 @@
     <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
 </pl-card>
 
+<pl-card header="An example in which we specify the use of ln rather than log for display (&lt;code&gt;display-log-as-ln=&quot;true&quot;&lt;/code&gt;)">
+    <pl-question-panel>
+        <p>Write an expression for the derivative of $ln(x)*x$.</p>
+    </pl-question-panel>
+    <pl-symbolic-input answers-name="lnx" variables="x" display-log-as-ln="true" label="$\dfrac{d}{dx} ln(x)*x =$"></pl-symbolic-input>
+</pl-card>
+
+<pl-card header="An example in which we disable the display of simplified student submissions (&lt;code&gt;display-simplified-expression=&quot;false&quot;&lt;/code&gt;)">
+    <pl-question-panel>
+        <p>Write the expression $sin(atan(x))$.</p>
+        <p>Note that this expression will be simplified to $\frac{x}{\sqrt{x^2+1}}$ if <code>display-simplified-expression</code> is not disabled.</p>
+    </pl-question-panel>
+    <pl-symbolic-input answers-name="nosimplify" variables="x" display-simplified-expression="false" label="$y =$"></pl-symbolic-input>
+</pl-card>
+
 <pl-card header="An example in which we change display attributes">
     <pl-question-panel>
         <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text=&quot;false&quot;</code> removes the button for the help popup.

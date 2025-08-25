@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 export interface Filenames {
@@ -54,7 +54,7 @@ export function InstructorAssessmentDownloads({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}

@@ -95,6 +95,7 @@ jobs:
     name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
@@ -154,9 +155,10 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'requirements.txt'
-      - name: Install Python dependencies
-        run: make python-deps
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: core
+      - name: Install core Python dependencies
+        run: make python-deps-core
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -189,6 +191,7 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
   merge-native-test-reports:
     name: Native (merge test reports)
     if: ${{ !cancelled() }}
@@ -206,7 +209,7 @@ jobs:
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
       - name: Download blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: .vitest-reports
           pattern: blob-report-*

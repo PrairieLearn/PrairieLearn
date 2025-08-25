@@ -5,7 +5,7 @@ import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
@@ -46,7 +46,7 @@ export interface ServerJobLogger {
 
 export interface ServerJob extends ServerJobLogger {
   fail(msg: string): never;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
+  exec(file: string, args: string[], options: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
@@ -117,7 +117,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   async exec(
     file: string,
-    args: string[] = [],
+    args: string[],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
@@ -256,7 +256,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await queryAsync(sql.update_job_on_finish, {
+    await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
@@ -342,7 +342,7 @@ export function init() {
     const jobIds = Object.keys(liveJobs);
     if (jobIds.length === 0) return;
 
-    queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+    execute(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
       Sentry.captureException(err);
       logger.error('Error updating heartbeats for live server jobs', err);
     });
@@ -439,7 +439,7 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
     try {
-      await queryAsync(sql.update_job_on_error, {
+      await execute(sql.update_job_on_error, {
         job_id: row.id,
         output: null,
         error_message: 'Job abandoned by server',

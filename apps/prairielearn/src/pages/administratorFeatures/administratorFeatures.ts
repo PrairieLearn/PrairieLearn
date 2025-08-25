@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -55,7 +55,7 @@ router.get(
       { name: feature },
       FeatureGrantRowSchema,
     );
-    const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
+    const institutions = await queryRows(sql.select_institutions, InstitutionSchema);
 
     res.send(
       AdministratorFeature({
@@ -87,7 +87,7 @@ const AddFeatureGrantModalParamsSchema = z.object({
 type AddFeatureGrantModalParams = z.infer<typeof AddFeatureGrantModalParamsSchema>;
 
 async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
-  const institutions = await queryRows(sql.select_institutions, {}, InstitutionSchema);
+  const institutions = await queryRows(sql.select_institutions, InstitutionSchema);
   const courses = params.institution_id
     ? await queryRows(
         sql.select_courses_for_institution,
@@ -187,13 +187,13 @@ router.post(
         .transform((val) => val === 'enabled')
         .parse(req.body.feature_grant_enabled);
 
-      await queryAsync(sql.update_feature_grant_enabled, {
+      await execute(sql.update_feature_grant_enabled, {
         id: IdSchema.parse(req.body.feature_grant_id),
         enabled,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'revoke_feature_grant') {
-      await queryAsync(sql.delete_feature_grant, { id: IdSchema.parse(req.body.feature_grant_id) });
+      await execute(sql.delete_feature_grant, { id: IdSchema.parse(req.body.feature_grant_id) });
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

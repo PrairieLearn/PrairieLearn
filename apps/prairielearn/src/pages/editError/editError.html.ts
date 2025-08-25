@@ -1,8 +1,9 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { Navbar } from '../../components/Navbar.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
@@ -22,6 +23,7 @@ export function EditError({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Edit Failure' })}
+        ${compiledScriptTag('editErrorClient.ts')}
       </head>
 
       <body>

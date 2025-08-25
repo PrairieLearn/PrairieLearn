@@ -1,17 +1,24 @@
 import { afterAll, assert, beforeAll, describe, expect, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getUserParams(user_id) {
-  const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
-  const result = await sqldb.queryOneRowAsync(query, [user_id]);
-
-  const { uid, name, uin, institution_id } = result.rows[0];
-  return { uid, name, uin, institution_id };
+async function getUserParams(user_id: string) {
+  return await sqldb.queryRow(
+    'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $user_id;',
+    { user_id },
+    z.object({
+      uid: UserSchema.shape.uid,
+      name: UserSchema.shape.name,
+      uin: UserSchema.shape.uin,
+      institution_id: UserSchema.shape.institution_id,
+    }),
+  );
 }
 
 async function usersSelectOrInsert(
@@ -74,7 +81,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   test.sequential('add an institution for host.com', async () => {
-    await sqldb.queryAsync(sql.insert_host_com_institution, []);
+    await sqldb.execute(sql.insert_host_com_institution);
   });
 
   test.sequential('user 1 updates institution_id', async () => {
@@ -158,7 +165,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   test.sequential('add an institution for example.com', async () => {
-    await sqldb.queryAsync(sql.insert_example_com_institution, []);
+    await sqldb.execute(sql.insert_example_com_institution);
   });
 
   test.sequential('user 2 logs in via Google', async () => {

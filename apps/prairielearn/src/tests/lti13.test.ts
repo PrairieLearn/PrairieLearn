@@ -5,7 +5,7 @@ import * as jose from 'jose';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, queryOptionalRow } from '@prairielearn/postgres';
 
 import { getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
@@ -48,7 +48,7 @@ async function makeLoginExecutor({
   user: {
     name: string;
     email: string;
-    uin: string;
+    uin: string | null;
     sub: string;
   };
   fetchWithCookies: typeof fetch;
@@ -114,9 +114,13 @@ async function makeLoginExecutor({
     },
     name: user.name,
     email: user.email,
-    'https://purl.imsglobal.org/spec/lti/claim/custom': {
-      uin: user.uin,
-    },
+    ...(user.uin
+      ? {
+          'https://purl.imsglobal.org/spec/lti/claim/custom': {
+            uin: user.uin,
+          },
+        }
+      : {}),
     'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
       scope: [
         'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
@@ -266,7 +270,7 @@ describe('LTI 1.3', () => {
     await helperServer.before()();
 
     // We need to give the default institution a `uid_regexp`.
-    await queryAsync("UPDATE institutions SET uid_regexp = '@example\\.com$'", {});
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
@@ -485,7 +489,7 @@ describe('LTI 1.3', () => {
           token_endpoint: `http://localhost:${oidcProviderPort}/token`,
         },
         attributes: {
-          // Intentionally leave this blank.
+          // Intentionally left blank - no UIDs provided.
           uid_attribute: '',
           uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
           email_attribute: 'email',
@@ -589,6 +593,157 @@ describe('LTI 1.3', () => {
       // Assert that they've been redirected to the course navigation page.
       // This means that the login succeeded.
       assert.equal(res.url, targetLinkUri);
+    });
+  });
+
+  describe('LTI 1.3 instance that does not provide UINs', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
+    const fetchWithCookies = fetchCookie(fetch);
+
+    test.sequential('create LTI 1.3 instance with UID but no UIN attribute', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          uid_attribute: 'email',
+          // Intentionally left blank - no UINs provided
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
+
+    test.sequential(
+      'should update UID when user is found by LTI sub but has different UID',
+      async () => {
+        // Create a user with an initial UID using LTI 1.3 login.
+        const initialUid = 'old-uid-no-uin@example.com';
+        const newUid = 'new-uid-no-uin@example.com';
+        const testSub = 'uid-update-test-sub-no-uin-67890';
+        const testUin = '1234512345';
+
+        // Perform initial LTI login to create the user.
+        const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
+        const initialExecutor = await makeLoginExecutor({
+          user: {
+            name: 'Test User No UIN',
+            email: initialUid, // Initial UID
+            uin: null,
+            sub: testSub,
+          },
+          fetchWithCookies,
+          oidcProviderPort,
+          keystore,
+          loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+          callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+          targetLinkUri,
+        });
+
+        const initialLoginResult = await initialExecutor.login();
+        assert.equal(initialLoginResult.status, 200);
+        assert.equal(initialLoginResult.url, targetLinkUri);
+
+        // Verify user was created with initial UID.
+        const initialUser = await selectOptionalUserByUid(initialUid);
+        assert.ok(initialUser);
+        assert.equal(initialUser.uid, initialUid);
+
+        // Add a UIN to the user. This doesn't matter for the login process, but
+        // we'll use this later to validate that it's persisted after UID update.
+        await execute('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
+          user_id: initialUser.user_id,
+          uin: testUin,
+        });
+
+        // Now perform LTI login with the same sub but a different UID (email).
+        const secondTargetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
+        const executor = await makeLoginExecutor({
+          user: {
+            name: 'UID Update Test User No UIN',
+            email: newUid,
+            uin: null,
+            sub: testSub,
+          },
+          // Use fresh cookies for new session.
+          fetchWithCookies: fetchCookie(fetch),
+          oidcProviderPort,
+          keystore,
+          loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
+          callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
+          targetLinkUri: secondTargetLinkUri,
+        });
+
+        const loginResult = await executor.login();
+        assert.equal(loginResult.status, 200);
+        assert.equal(loginResult.url, secondTargetLinkUri);
+
+        // Verify that the user was updated successfully.
+        const updatedUser = await selectOptionalUserByUid(newUid);
+        const oldUser = await selectOptionalUserByUid(initialUid);
+
+        assert.ok(updatedUser);
+        assert.equal(updatedUser.user_id, initialUser.user_id);
+        assert.equal(updatedUser.uid, newUid);
+        assert.equal(updatedUser.uin, testUin);
+        assert.isNull(oldUser);
+      },
+    );
+  });
+
+  describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
+    // We need to share this across all tests here, as we need to maintain the same session.
+    const fetchWithCookies = fetchCookie(fetch);
+
+    test.sequential('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
+      await createLti13Instance({
+        issuer_params: {
+          issuer: `http://localhost:${oidcProviderPort}`,
+          authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+          jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+          token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+        },
+        attributes: {
+          // Intentionally leave both UID and UIN attributes blank to test misconfiguration error
+          uid_attribute: '',
+          uin_attribute: '',
+          email_attribute: 'email',
+          name_attribute: 'name',
+        },
+      });
+    });
+
+    test.sequential('login should fail with misconfiguration error', async () => {
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
+
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Test User',
+          email: 'test-user@example.com',
+          uin: '123456789',
+          sub: USER_SUB,
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/4/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/4/auth/callback`,
+        targetLinkUri,
+      });
+
+      const res = await executor.login();
+      assert.equal(res.status, 500);
+
+      // The error response should contain our misconfiguration error message
+      const responseText = await res.text();
+      assert.include(
+        responseText,
+        'LTI 1.3 instance must have at least one of uid_attribute or uin_attribute configured',
+      );
     });
   });
 });

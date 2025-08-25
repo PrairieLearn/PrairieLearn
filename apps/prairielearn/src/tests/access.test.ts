@@ -6,6 +6,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { InstanceQuestionSchema, UserSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { ensureEnrollment } from '../models/enrollment.js';
 
@@ -105,8 +106,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('2. the student user', function () {
     it('should select from the DB', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_student_user, []);
-      user = result.rows[0];
+      user = await sqldb.queryRow(sql.select_student_user, UserSchema);
     });
   });
 
@@ -261,13 +261,16 @@ describe('Access control', { timeout: 20000 }, function () {
       $ = cheerio.load(page);
     });
     it('should produce an addVectors instance_question in the DB', async () => {
-      const result = await sqldb.queryAsync(sql.select_instance_question_addVectors, []);
-      if (result.rowCount == null || result.rowCount === 0) {
+      const rows = await sqldb.queryRows(
+        sql.select_instance_question_addVectors,
+        InstanceQuestionSchema,
+      );
+      if (rows.length === 0) {
         throw new Error('did not find addVectors instance question in DB');
-      } else if (result.rowCount > 1) {
-        throw new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    '));
+      } else if (rows.length > 1) {
+        throw new Error('multiple rows found: ' + JSON.stringify(rows, null, '    '));
       }
-      instance_question = result.rows[0];
+      instance_question = rows[0];
     });
     it('should link to addVectors question', function () {
       const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';

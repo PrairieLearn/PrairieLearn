@@ -2,8 +2,8 @@ import { type z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -307,7 +307,7 @@ function CourseUpdateColumn({
 }) {
   return html`
     <td class="align-middle">
-      ${typeof href !== 'undefined'
+      ${href !== undefined
         ? html`<a href="${href}">${course[column_name]}</a>`
         : course[column_name]}
       <button

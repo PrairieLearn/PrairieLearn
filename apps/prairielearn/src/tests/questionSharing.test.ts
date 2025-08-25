@@ -9,7 +9,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Course, IdSchema } from '../lib/db-types.js';
+import { type Course, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -107,8 +107,8 @@ async function syncSharingCourse(course_id) {
       __csrf_token: token,
     }),
   });
-  const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-  return result.rows[0].id;
+  const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+  return jobSequence.id;
 }
 
 describe('Question Sharing', function () {
@@ -250,12 +250,14 @@ describe('Question Sharing', function () {
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
-        const questionId = (
-          await sqldb.queryOneRowAsync(sql.get_question_id, {
+        const questionId = await sqldb.queryRow(
+          sql.get_question_id,
+          {
             course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
-          })
-        ).rows[0].id;
+          },
+          IdSchema,
+        );
         const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
         const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
         assert(sharedQuestionPage.ok);
@@ -434,12 +436,14 @@ describe('Question Sharing', function () {
     let publiclySharedQuestionId;
 
     beforeAll(async () => {
-      publiclySharedQuestionId = (
-        await sqldb.queryOneRowAsync(sql.get_question_id, {
+      publiclySharedQuestionId = await sqldb.queryRow(
+        sql.get_question_id,
+        {
           course_id: sharingCourse.id,
           qid: PUBLICLY_SHARED_QUESTION_QID,
-        })
-      ).rows[0].id;
+        },
+        IdSchema,
+      );
     });
 
     test.sequential('Fail to Access Questions Not-yet shared publicly', async () => {
@@ -526,7 +530,7 @@ describe('Question Sharing', function () {
     test.sequential(
       'Ensure sync through sync page succeeds before renaming shared question',
       async () => {
-        await sqldb.queryAsync(sql.update_course_repository, {
+        await sqldb.execute(sql.update_course_repository, {
           course_path: sharingCourseLiveDir,
           course_repository: sharingCourseOriginDir,
         });

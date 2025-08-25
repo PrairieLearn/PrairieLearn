@@ -335,7 +335,7 @@ FOR NO KEY UPDATE;
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
+  await sqldb.execute(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -375,7 +375,7 @@ FOR NO KEY UPDATE;
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
+  await sqldb.execute(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -455,7 +455,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
@@ -510,7 +510,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
+- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.tsx](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.tsx).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc.). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 

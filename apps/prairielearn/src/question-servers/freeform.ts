@@ -39,9 +39,12 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -170,12 +173,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }
@@ -455,7 +458,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
              || checkProp('test_type',             'string',  ['test'],                             [])
@@ -694,7 +697,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
@@ -786,7 +794,7 @@ export async function generate(
     const data = {
       params: {},
       correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
+      variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
     } satisfies ExecutionData;
 
@@ -812,10 +820,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
@@ -823,8 +831,8 @@ export async function prepare(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -901,7 +909,7 @@ async function renderPanel(
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -935,7 +943,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed ?? '0', 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -1030,7 +1038,7 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -1423,8 +1431,8 @@ export async function file(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
@@ -1459,7 +1467,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1477,8 +1485,8 @@ export async function parse(
       submitted_answers: submission.submitted_answer ?? {},
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1533,8 +1541,8 @@ export async function grade(
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1587,8 +1595,8 @@ export async function test(
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,
