@@ -171,6 +171,12 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
   };
 }
 
+const QuestionGroupPermissionsSchema = z.object({
+  can_submit: z.boolean(),
+  can_view: z.boolean(),
+});
+export type QuestionGroupPermissions = z.infer<typeof QuestionGroupPermissionsSchema>;
+
 /**
  * This function assumes that the group has roles, so any caller must ensure
  * that it is only called in that scenario
@@ -179,11 +185,11 @@ export async function getQuestionGroupPermissions(
   instance_question_id: string,
   group_id: string,
   user_id: string,
-): Promise<{ can_submit: boolean; can_view: boolean }> {
+): Promise<QuestionGroupPermissions> {
   const userPermissions = await sqldb.queryOptionalRow(
     sql.select_question_permissions,
     { instance_question_id, group_id, user_id },
-    z.object({ can_submit: z.boolean(), can_view: z.boolean() }),
+    QuestionGroupPermissionsSchema,
   );
   return userPermissions ?? { can_submit: false, can_view: false };
 }
@@ -287,7 +293,7 @@ export async function addUserToGroup({
         )
       : null;
 
-    await sqldb.queryAsync(sql.insert_group_user, {
+    await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
@@ -351,7 +357,7 @@ export async function createGroup(
         'The group name is too long. Use at most 30 alphanumerical characters.',
       );
     }
-    if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
+    if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
       throw new GroupOperationError(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
@@ -439,9 +445,11 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {}).flat();
 
-  const leavingUserRoleIds = groupRoleAssignments
-    .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-    .map(({ group_role_id }) => group_role_id);
+  const leavingUserRoleIds = new Set(
+    groupRoleAssignments
+      .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
+      .map(({ group_role_id }) => group_role_id),
+  );
 
   const roleIdsToReassign =
     groupInfo.rolesInfo?.groupRoles
@@ -449,7 +457,7 @@ export function getGroupRoleReassignmentsAfterLeave(
         (role) =>
           (role.minimum ?? 0) > 0 &&
           role.count <= (role.minimum ?? 0) &&
-          leavingUserRoleIds.includes(role.id),
+          leavingUserRoleIds.has(role.id),
       )
       .map((role) => role.id) ?? [];
 
@@ -532,7 +540,7 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-        await sqldb.queryAsync(sql.update_group_roles, {
+        await sqldb.execute(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
           authn_user_id: authnUserId,
@@ -543,7 +551,7 @@ export async function leaveGroup(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
-          await sqldb.queryAsync(sql.delete_non_required_roles, {
+          await sqldb.execute(sql.delete_non_required_roles, {
             group_id: groupId,
             assessment_id: assessmentId,
           });
@@ -552,7 +560,7 @@ export async function leaveGroup(
     }
 
     // Delete user from group and log
-    await sqldb.queryAsync(sql.delete_group_users, {
+    await sqldb.execute(sql.delete_group_users, {
       assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
@@ -636,7 +644,7 @@ export async function updateGroupRoles(
       });
     }
 
-    await sqldb.queryAsync(sql.update_group_roles, {
+    await sqldb.execute(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
       authn_user_id: authnUserId,
@@ -659,7 +667,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
  * Delete all groups for the given assessment.
  */
 export async function deleteAllGroups(assessmentId: string, authnUserId: string) {
-  await sqldb.queryAsync(sql.delete_all_groups, {
+  await sqldb.execute(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });

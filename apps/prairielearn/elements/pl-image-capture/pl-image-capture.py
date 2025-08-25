@@ -67,7 +67,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
-        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     image_capture_options = {
@@ -78,6 +77,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
+        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     html_params["image_capture_options_json"] = json.dumps(image_capture_options)

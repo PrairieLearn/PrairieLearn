@@ -6,91 +6,31 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
-  RubricGradingItemSchema,
-  RubricGradingSchema,
-  type RubricItem,
   RubricItemSchema,
   RubricSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import {
+  type AppliedRubricItem,
+  AppliedRubricItemSchema,
+  InstanceQuestionToUpdateSchema,
+  PartialScoresSchema,
+  type RubricData,
+  RubricDataSchema,
+  RubricGradingDataSchema,
+  type RubricItemInput,
+  SubmissionForScoreUpdateSchema,
+} from './manualGrading.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const AppliedRubricItemSchema = z.object({
-  /** ID of the rubric item to be applied. */
-  rubric_item_id: IdSchema,
-  /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
-  score: z.coerce.number().nullish(),
-});
-type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
-
-const RubricDataSchema = RubricSchema.extend({
-  rubric_items: z.array(
-    RubricItemSchema.extend({
-      num_submissions: z.number(),
-      description_rendered: z.string().optional(),
-      explanation_rendered: z.string().optional(),
-      grader_note_rendered: z.string().optional(),
-    }),
-  ),
-});
-export type RubricData = z.infer<typeof RubricDataSchema>;
-
-const RubricGradingDataSchema = RubricGradingSchema.extend({
-  rubric_items: z.record(IdSchema, RubricGradingItemSchema).nullable(),
-});
-export type RubricGradingData = z.infer<typeof RubricGradingDataSchema>;
-
-const PartialScoresSchema = z
-  .record(
-    z.string(),
-    z
-      .object({
-        score: z.coerce.number().nullish(),
-        weight: z.coerce.number().nullish(),
-      })
-      .passthrough(),
-  )
-  .nullable();
-
-// Some historical cases of points and score ended up with NaN values stored in
-// the database. In these cases, manual grading will convert the NaN to zero, so
-// that the instructor can still have a chance to fix the issue.
-const PointsSchema = z.union([z.nan().transform(() => 0), z.number().nullable()]);
-
-const SubmissionForScoreUpdateSchema = z.object({
-  submission_id: IdSchema.nullable(),
-  instance_question_id: IdSchema,
-  assessment_instance_id: IdSchema,
-  max_points: PointsSchema,
-  max_auto_points: PointsSchema,
-  max_manual_points: PointsSchema,
-  manual_rubric_id: IdSchema.nullable(),
-  partial_scores: PartialScoresSchema,
-  auto_points: PointsSchema,
-  manual_points: PointsSchema,
-  manual_rubric_grading_id: IdSchema.nullable(),
-  modified_at_conflict: z.boolean(),
-});
-
-const InstanceQuestionToUpdateSchema = RubricGradingSchema.extend({
-  assessment_id: IdSchema,
-  assessment_instance_id: IdSchema,
-  instance_question_id: IdSchema,
-  submission_id: IdSchema,
-  rubric_settings_changed: z.boolean(),
-  applied_rubric_items: RubricGradingItemSchema.array().nullable(),
-  rubric_items_changed: z.boolean(),
-  is_ai_graded: z.boolean(),
-});
-
-type RubricItemInput = Partial<RubricItem> & { order: number };
 
 /**
  * Builds the URL of an instance question tagged to be manually graded for a particular
@@ -124,14 +64,15 @@ export async function nextUngradedInstanceQuestionUrl(
 
 /**
  * Selects a variety of rubric data for a given assessment question.
- * Also renders the selected rubric items with the submission data.
+ * If a submission is provided, the rubric items are rendered
+ * as Mustache templates with the submission's data.
  */
 export async function selectRubricData({
   assessment_question,
   submission,
 }: {
   assessment_question?: AssessmentQuestion | null;
-  submission: Submission;
+  submission?: Submission | SubmissionForRender | null;
 }): Promise<RubricData | null> {
   // If there is no assessment question (e.g., in question preview), there is no rubric
   if (!assessment_question?.manual_rubric_id) return null;
@@ -145,41 +86,29 @@ export async function selectRubricData({
     RubricDataSchema,
   );
 
-  // Render rubric items: description, explanation and grader note
-  const mustache_data = {
-    correct_answers: submission?.true_answer ?? {},
-    params: submission?.params ?? {},
-    submitted_answers: submission?.submitted_answer,
-  };
+  if (submission) {
+    // Render rubric items: description, explanation and grader note
+    const mustache_data = {
+      correct_answers: submission?.true_answer ?? {},
+      params: submission?.params ?? {},
+      submitted_answers: submission?.submitted_answer,
+    };
 
-  await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = await markdownToHtml(
-      mustache.render(item.description || '', mustache_data),
-      { inline: true },
-    );
-    item.explanation_rendered = await markdownToHtml(
-      mustache.render(item.explanation || '', mustache_data),
-    );
-    item.grader_note_rendered = await markdownToHtml(
-      mustache.render(item.grader_note || '', mustache_data),
-    );
-  });
+    await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
+      item.description_rendered = await markdownToHtml(
+        mustache.render(item.description || '', mustache_data),
+        { inline: true },
+      );
+      item.explanation_rendered = await markdownToHtml(
+        mustache.render(item.explanation || '', mustache_data),
+      );
+      item.grader_note_rendered = await markdownToHtml(
+        mustache.render(item.grader_note || '', mustache_data),
+      );
+    });
+  }
 
   return rubric_data;
-}
-
-/**
- * Populates the locals objects for rubric data. Assigns values to `rubric_data`
- * in the locals.
- *
- * The `assessment_question` is expected to have been retrieved before this call,
- * as well as any value that impacts the mustache rendering, such as `submission`.
- */
-export async function populateRubricData(locals: Record<string, any>): Promise<void> {
-  locals.rubric_data = await selectRubricData({
-    assessment_question: locals.assessment_question,
-    submission: locals.submission,
-  });
 }
 
 /**
@@ -287,7 +216,7 @@ export async function updateAssessmentQuestionRubric(
       );
     } else {
       // Rubric already exists, update its settings
-      await sqldb.queryAsync(sql.update_rubric, {
+      await sqldb.execute(sql.update_rubric, {
         rubric_id: new_rubric_id,
         starting_points,
         min_points,
@@ -298,7 +227,7 @@ export async function updateAssessmentQuestionRubric(
 
     if (new_rubric_id !== current_rubric_id) {
       // Update rubric ID in assessment question
-      await sqldb.queryAsync(sql.update_assessment_question_rubric_id, {
+      await sqldb.execute(sql.update_assessment_question_rubric_id, {
         assessment_question_id,
         manual_rubric_id: new_rubric_id,
       });
@@ -306,7 +235,7 @@ export async function updateAssessmentQuestionRubric(
 
     if (use_rubric) {
       // Update rubric items. Start by soft-deleting rubric items that are no longer active.
-      await sqldb.queryAsync(sql.delete_rubric_items, {
+      await sqldb.execute(sql.delete_rubric_items, {
         rubric_id: new_rubric_id,
         active_rubric_items: rubric_items.map((item) => item.id).filter(Boolean),
       });
@@ -326,7 +255,7 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            await sqldb.execute(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
           } else {
             await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
           }
@@ -337,7 +266,7 @@ export async function updateAssessmentQuestionRubric(
     }
 
     if (tag_for_manual_grading) {
-      await sqldb.queryAsync(sql.tag_for_manual_grading, { assessment_question_id });
+      await sqldb.execute(sql.tag_for_manual_grading, { assessment_question_id });
     }
   });
 }
@@ -642,7 +571,7 @@ export async function updateInstanceQuestionScore(
       );
 
       if (!current_submission.modified_at_conflict && current_submission.submission_id) {
-        await sqldb.queryOneRowAsync(sql.update_submission_score, {
+        await sqldb.executeRow(sql.update_submission_score, {
           submission_id: current_submission.submission_id,
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
@@ -657,7 +586,7 @@ export async function updateInstanceQuestionScore(
     // do the score update of the instance_question, log it, and update the assessment_instance, if we
     // have a new_score
     if (new_score_perc != null && !current_submission.modified_at_conflict) {
-      await sqldb.queryAsync(sql.update_instance_question_score, {
+      await sqldb.execute(sql.update_instance_question_score, {
         instance_question_id: current_submission.instance_question_id,
         points: new_points,
         score_perc: new_score_perc,

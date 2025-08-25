@@ -7,7 +7,7 @@ import {
 } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
-import { type JSX, type ThHTMLAttributes, useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 
 import type { StudentRow } from '../instructorStudents.shared.js';
 
@@ -164,7 +164,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
     virtualRows.length > 0
       ? [
           notUndefined(virtualRows[0]).start - rowVirtualizer.options.scrollMargin,
-          rowVirtualizer.getTotalSize() - notUndefined(virtualRows[virtualRows.length - 1]).end,
+          rowVirtualizer.getTotalSize() - notUndefined(virtualRows.at(-1)).end,
         ]
       : [0, 0];
   const headerGroups = table.getHeaderGroups();
@@ -180,9 +180,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
   }, [isTableResizing]);
 
   // Helper function to get aria-sort value
-  const getAriaSort = (
-    sortDirection: false | SortDirection,
-  ): ThHTMLAttributes<HTMLTableCellElement>['aria-sort'] => {
+  const getAriaSort = (sortDirection: false | SortDirection) => {
     switch (sortDirection) {
       case 'asc':
         return 'ascending';

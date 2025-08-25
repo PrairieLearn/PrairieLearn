@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
@@ -51,7 +51,7 @@ export class FeatureManager<FeatureName extends string> {
 
   constructor(features: readonly FeatureName[]) {
     features.forEach((feature) => {
-      if (!feature.match(/^[a-z0-9:_-]+$/)) {
+      if (!/^[a-z0-9:_-]+$/.test(feature)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });
@@ -176,7 +176,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.update_feature_grant_enabled, {
+    await execute(sql.update_feature_grant_enabled, {
       name,
       enabled: true,
       ...DEFAULT_CONTEXT,
@@ -192,7 +192,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.update_feature_grant_enabled, {
+    await execute(sql.update_feature_grant_enabled, {
       name,
       enabled: false,
       ...DEFAULT_CONTEXT,
@@ -208,7 +208,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async delete(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await execute(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**

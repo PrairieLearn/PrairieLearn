@@ -94,7 +94,7 @@ export class SubmissionFormatError extends Error {
   }
 }
 
-export async function init(): Promise<void> {
+export function init(): void {
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
@@ -130,7 +130,7 @@ function connection(socket: Socket) {
   const workspace_id = socket.handshake.auth.workspace_id;
 
   socket.on('joinWorkspace', (callback: (result: any) => void) => {
-    socket.join(`workspace-${workspace_id}`);
+    void socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
@@ -278,7 +278,7 @@ async function startup(workspace_id: string): Promise<void> {
         // that we don't try to write on top of an existing directory, as this
         // could lead to unexpected behavior.
         try {
-          const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
+          const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
           await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,

@@ -79,12 +79,12 @@ onDocumentReady(() => {
       text += SyncProblemButtonHtml({
         type: 'error',
         output: question.sync_errors,
-      });
+      }).toString();
     } else if (question.sync_warnings) {
       text += SyncProblemButtonHtml({
         type: 'warning',
         output: question.sync_warnings,
-      });
+      }).toString();
     }
 
     // We only want to show the sharing name prefix for publicly-shared questions.
@@ -96,7 +96,7 @@ onDocumentReady(() => {
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
         ${prefix}${question.qid}
       </a>
-    `;
+    `.toString();
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge rounded-pill text-bg-danger ms-1"
@@ -104,7 +104,7 @@ onDocumentReady(() => {
           question.qid ?? '',
         )}"
         >${question.open_issue_count}</a
-      >`;
+      >`.toString();
     }
     return text.toString();
   };
@@ -176,7 +176,7 @@ onDocumentReady(() => {
       .map((assessment) =>
         AssessmentBadgeHtml({
           plainUrlPrefix,
-          course_instance_id,
+          courseInstanceId: course_instance_id,
           assessment,
         }).toString(),
       )
@@ -268,7 +268,9 @@ onDocumentReady(() => {
       (event.ctrlKey || event.metaKey) &&
       String.fromCharCode(event.which).toLowerCase() === 'f'
     ) {
-      if ($('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length) {
+      if (
+        $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').length > 0
+      ) {
         $('.sticky-header-container:visible input.bootstrap-table-filter-control-qid').focus();
       } else {
         $('input.bootstrap-table-filter-control-qid').focus();

@@ -16,7 +16,7 @@ SELECT
       sharing_sets AS ss
       JOIN sharing_set_courses AS ssc ON ss.id = ssc.sharing_set_id
       JOIN sharing_set_questions AS ssq ON ss.id = ssq.sharing_set_id
-      JOIN questions AS q on q.id = ssq.question_id
+      JOIN questions AS q ON q.id = ssq.question_id
     WHERE
       ss.course_id = $producing_course_id
       AND ssc.course_id = $consuming_course_id

@@ -26,7 +26,7 @@ const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
-    ...((err as any).data ?? {}),
+    ...(err as any).data,
     ...data,
   };
   return err;
@@ -47,8 +47,8 @@ export class PostgresError extends Error {
  */
 function debugString(s: string): string {
   if (typeof s !== 'string') return 'NOT A STRING';
-  s = s.replace(/\n/g, '\\n');
-  if (s.length > 78) s = s.substring(0, 75) + '...';
+  s = s.replaceAll('\n', '\\n');
+  if (s.length > 78) s = s.slice(0, 75) + '...';
   s = '"' + s + '"';
   return s;
 }
@@ -107,14 +107,14 @@ function paramsToArray(
         paramsArray.push(params[v]);
       }
     }
-    processedSql += remainingSql.substring(0, result.index) + map[v];
-    remainingSql = remainingSql.substring(result.index + result[0].length);
+    processedSql += remainingSql.slice(0, result.index) + map[v];
+    remainingSql = remainingSql.slice(result.index + result[0].length);
   }
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
     const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length) {
+    if (difference.length > 0) {
       throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
     }
   }
@@ -453,6 +453,11 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
+   *
+   * @deprecated Use {@link execute} instead.
+   *
+   * Using the return value of this function directly is not recommended. Instead, use
+   * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
    */
   async queryAsync(sql: string, params: QueryParams): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
@@ -471,6 +476,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
+   *
+   * @deprecated Use {@link executeRow} or {@link queryRow} instead.
    */
   async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
@@ -788,6 +795,27 @@ export class PostgresPool {
   }
 
   /**
+   * Executes a query with the specified parameters. Returns the number of rows affected.
+   */
+  async execute(sql: string, params: QueryParams = {}): Promise<number> {
+    const result = await this.queryAsync(sql, params);
+    return result.rowCount ?? 0;
+  }
+
+  /**
+   * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
+   */
+  async executeRow(sql: string, params: QueryParams = {}) {
+    const rowCount = await this.execute(sql, params);
+    if (rowCount !== 1) {
+      throw new PostgresError('Incorrect rowCount: ' + rowCount, {
+        sql,
+        sqlParams: params,
+      });
+    }
+  }
+
+  /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
    */
@@ -923,7 +951,7 @@ export class PostgresPool {
    */
   async setRandomSearchSchemaAsync(prefix: string): Promise<string> {
     // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(0, 28);
+    const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)

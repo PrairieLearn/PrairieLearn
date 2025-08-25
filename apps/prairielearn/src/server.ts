@@ -73,6 +73,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -624,11 +625,8 @@ export async function initExpress(): Promise<Express> {
       async () => (await import('./ee/middlewares/requireLinkedLtiUser.js')).default,
     ),
     function (req: Request, res: Response, next: NextFunction) {
-      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
+      res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
     },
   ]);
@@ -657,9 +655,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
     },
@@ -699,9 +694,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/selectGettingStartedTasksCounts.js')).default,
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
-      next();
-    },
-    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
     },
@@ -1268,6 +1260,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook',
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/student',
+    (await import('./pages/instructorStudentDetail/instructorStudentDetail.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students',
@@ -1900,10 +1896,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator',
     asyncHandler(async (req, res, next) => {
-      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
         user_id: res.locals.authn_user.user_id,
       });
-      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
       next();
     }),
   );
@@ -1994,7 +1990,7 @@ export async function initExpress(): Promise<Express> {
     const rawCode = err?.data?.sqlError?.code;
     if (!rawCode?.startsWith('ST')) return null;
 
-    const parsedCode = Number(rawCode.toString().substring(2));
+    const parsedCode = Number(rawCode.toString().slice(2));
     if (Number.isNaN(parsedCode)) return null;
 
     return parsedCode;
@@ -2047,7 +2043,7 @@ export async function startServer(app: express.Express) {
     server = http.createServer(app);
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
-    throw new Error('unknown serverType: ' + config.serverType);
+    assertNever(config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2069,6 +2065,7 @@ export async function startServer(app: express.Express) {
         valueType: opentelemetry.ValueType.INT,
         interval: 1000,
       },
+      // @ts-expect-error TODO: type correctly
       () => {
         return util.promisify(server.getConnections.bind(server))();
       },
@@ -2142,7 +2139,7 @@ export async function insertDevUser() {
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
     ' ON CONFLICT (user_id) DO NOTHING;';
-  await sqldb.queryAsync(adminSql, { user_id });
+  await sqldb.execute(adminSql, { user_id });
 }
 
 function idleErrorHandler(err: Error) {
@@ -2155,7 +2152,7 @@ function idleErrorHandler(err: Error) {
       last_query: (err as any)?.data?.lastQuery ?? undefined,
     },
   });
-  Sentry.close().finally(() => process.exit(1));
+  void Sentry.close().finally(() => process.exit(1));
 }
 
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
@@ -2466,7 +2463,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (config.initNewsItems) {
       // We initialize news items asynchronously so that servers can boot up
       // in production as quickly as possible.
-      news_items.initInBackground({
+      void news_items.initInBackground({
         // Always notify in production environments.
         notifyIfPreviouslyEmpty: !config.devMode,
       });
@@ -2498,13 +2495,13 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    await socketServer.init(httpServer);
+    socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
 
-    await workspace.init();
+    workspace.init();
     serverJobs.init();
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
@@ -2600,7 +2597,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
+  socketServer.init(httpServer);
 }
 
 /**

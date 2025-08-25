@@ -33,7 +33,7 @@ SELECT
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  JOIN questions AS q on (q.id = aq.question_id)
+  JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN groups AS g ON (
     g.id = ai.group_id

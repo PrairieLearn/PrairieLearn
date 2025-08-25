@@ -13,7 +13,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
-import { type User } from './db-types.js';
+import { type Course, type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -239,7 +239,7 @@ export async function createCourseRepoJob(
 
     // Give the owner required permissions
     job.info('Giving user owner permission');
-    await sqldb.queryOneRowAsync(sql.set_course_owner_permission, {
+    await sqldb.executeRow(sql.set_course_owner_permission, {
       course_id: inserted_course.id,
       course_request_id: options.course_request_id,
     });
@@ -293,12 +293,12 @@ export async function createCourseRepoJob(
   serverJob.executeInBackground(async (job) => {
     try {
       await createCourseRepo(job);
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'approved',
         course_request_id: options.course_request_id,
       });
     } catch (err) {
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'failed',
         course_request_id: options.course_request_id,
       });
@@ -347,4 +347,17 @@ export function httpPrefixForCourseRepo(repository: string | null): string | nul
     }
   }
   return null;
+}
+
+export function courseRepoContentUrl(
+  course: Pick<Course, 'repository' | 'branch' | 'example_course'>,
+  path = '',
+): string | null {
+  if (path && !path.startsWith('/')) path = `/${path}`;
+  if (course.example_course) {
+    // The example course is not found at the root of its repository, so its path is hardcoded
+    return `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse${path}`;
+  }
+  const repoPrefix = httpPrefixForCourseRepo(course.repository);
+  return repoPrefix ? `${repoPrefix}/tree/${course.branch}${path}` : null;
 }

@@ -121,7 +121,7 @@ function assertInChoices(
 ) {
   if (!(choices.includes(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
-      `${tag}: value for attribute ${key} must be in ${choices}, but value provided is ${val}`,
+      `${tag}: value for attribute ${key} must be in ${choices.join(', ')}, but value provided is ${val}`,
     );
   }
 }
@@ -170,7 +170,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
       case 'pl-answer':
         return { errors: [] }; // covered elsewhere
       default:
-        if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
+        if (ast.tagName && ast.tagName.slice(0, 3) === 'pl-' && !optimistic) {
           return {
             errors: [
               `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
@@ -318,7 +318,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
-          if (val.match(mustacheTemplateRegex)) {
+          if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -387,7 +387,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           assertInt('pl-symbolic-input', key, val, errors);
           break;
         case 'correct-answer':
-          if (val.match(mustacheTemplateRegex)) {
+          if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );
@@ -462,7 +462,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
-          if (val.match(mustacheTemplateRegex)) {
+          if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
             );

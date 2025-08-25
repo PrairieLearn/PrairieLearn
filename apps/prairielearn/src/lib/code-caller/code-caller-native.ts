@@ -12,6 +12,7 @@ import { run } from '@prairielearn/run';
 
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+import { assertNever } from '../types.js';
 
 import {
   type CallType,
@@ -227,7 +228,7 @@ export class CodeCallerNative implements CodeCaller {
     } else if (type === 'restart' || type === 'ping') {
       // Doesn't need a working directory
     } else {
-      throw new Error(`Unknown function call type: ${type}`);
+      assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
@@ -424,7 +425,7 @@ export class CodeCallerNative implements CodeCaller {
       this.outputData.push(data);
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
-      if (data.indexOf('\n') >= 0) {
+      if (data.includes('\n')) {
         this._callIsFinished();
       }
     }
@@ -603,7 +604,7 @@ export class CodeCallerNative implements CodeCaller {
    * code.
    */
   _restartWasSuccessful() {
-    if (this.outputRestart.indexOf('\n') === -1) {
+    if (!this.outputRestart.includes('\n')) {
       // We haven't yet gotten enough output to know if the restart
       // was successful.
       return false;

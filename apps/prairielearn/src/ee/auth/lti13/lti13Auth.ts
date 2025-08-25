@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
@@ -187,7 +187,7 @@ router.post(
 
     // Save parameters about the platform back to the lti13_instance
     // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
-    await queryAsync(sql.verify_upsert, {
+    await execute(sql.verify_upsert, {
       lti13_instance_id: req.params.lti13_instance_id,
       tool_platform_name:
         lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,

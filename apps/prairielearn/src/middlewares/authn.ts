@@ -40,7 +40,7 @@ export default asyncHandler(async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    if (!data || !data.uuid || typeof data.uuid !== 'string' || !data.uuid.match(UUID_REGEXP)) {
+    if (!data || !data.uuid || typeof data.uuid !== 'string' || !UUID_REGEXP.test(data.uuid)) {
       throw new Error('invalid load_test_token');
     }
 
@@ -58,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
     });
 
     // Enroll the load test user in the example course.
-    await sqldb.queryAsync(sql.enroll_user_in_example_course, {
+    await sqldb.execute(sql.enroll_user_in_example_course, {
       user_id: res.locals.authn_user.user_id,
     });
 

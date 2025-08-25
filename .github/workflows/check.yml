@@ -86,8 +86,8 @@ jobs:
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
 
-  check-other:
-    name: Other
+  check-python:
+    name: Python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -97,9 +97,7 @@ jobs:
 
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && sudo curl -fsSL https://d2lang.com/install.sh | sh -s -- && \
-          sudo apt-get install -y shellcheck
+          sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Set up Python
@@ -110,8 +108,8 @@ jobs:
         uses: astral-sh/setup-uv@v6
         with:
           enable-cache: true
-          cache-dependency-glob: 'requirements.txt'
-      - name: Install Python dependencies
+          cache-dependency-glob: 'pyproject.toml'
+      - name: Install all Python dependencies
         run: make python-deps
 
       - name: Set up Node
@@ -122,8 +120,6 @@ jobs:
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
-      - name: Run the d2 diagram linter
-        run: make lint-d2
       - name: Run the Python typechecker
         run: make typecheck-python
       - name: Run the Python linter
@@ -131,12 +127,10 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
-      - name: Run the Dockerfile linter
-        run: make lint-docker
-      - name: Run the Shellcheck linter
-        run: make lint-shell
       - name: Run the Markdown linter
         run: make lint-markdown
+      - name: Run the d2 diagram linter
+        run: make lint-d2
       - name: Check for warnings in documentation
         run: make build-docs
       # Ran after the docs build, so we can lint the generated HTML.
@@ -148,3 +142,39 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
           flags: python
+
+  check-other:
+    name: Other
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install additional dependencies
+        run: |-
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo chmod +x /bin/hadolint && \
+          sudo apt-get install -y shellcheck
+
+      - name: Install OS packages
+        run: sudo apt-get install -y graphviz libgraphviz-dev
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+          cache-suffix: 'dev'
+      - name: Install Python dependencies
+        run: make python-deps-dev
+
+      - name: Run the Dockerfile linter
+        run: make lint-docker
+      - name: Run the Shellcheck linter
+        run: make lint-shell
+      - name: Run the SQL query linter
+        run: make lint-sql
+      - name: Run the SQL migrations linter
+        run: make lint-sql-migrations

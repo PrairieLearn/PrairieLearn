@@ -8,6 +8,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
+  EnrollmentSchema as RawEnrollmentSchema,
   QuestionSchema as RawQuestionSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -179,6 +180,11 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
 export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
+
+/** Enrollments */
+export const RawStaffEnrollmentSchema = RawEnrollmentSchema;
+export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
+export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 
 /** Questions */
 export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();

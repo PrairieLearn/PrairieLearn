@@ -13,6 +13,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { assertNever } from '../../lib/types.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -110,7 +111,7 @@ async function checkPage(url: string) {
     result.messages = result.messages.filter((m) => {
       // This doesn't appear to be an actual issue and isn't flagged by
       // other tools like https://validator.w3.org/nu.
-      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+      if (/<tt> element is not permitted as content under <(small|strong)>/.test(m.message)) {
         return false;
       }
 
@@ -374,7 +375,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      throw new Error(`Invalid route: ${r}`);
+      assertNever(r);
     }
   });
 }
@@ -402,7 +403,6 @@ describe('accessibility', () => {
 
     const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
       IdSchema,
     );
 
@@ -418,6 +418,12 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const user_id = await sqldb.queryRow(
+      'SELECT user_id FROM users WHERE uid = $uid',
+      { uid: 'dev@example.com' },
+      IdSchema,
+    );
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -425,19 +431,19 @@ describe('accessibility', () => {
       news_item_id,
       assessment_id,
       question_id,
+      user_id,
     };
 
-    await sqldb.queryOneRowAsync(
-      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
-      { question_id: routeParams.question_id },
-    );
+    await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
+      question_id: routeParams.question_id,
+    });
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
       { assessment_id: routeParams.assessment_id },
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
@@ -448,7 +454,7 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );
