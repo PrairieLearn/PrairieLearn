@@ -36,8 +36,8 @@ describe('Enroll page (enterprise)', function () {
   afterAll(helperServer.after);
 
   const originalIsEnterprise = config.isEnterprise;
-  beforeAll(async () => (config.isEnterprise = true));
-  afterAll(async () => (config.isEnterprise = originalIsEnterprise));
+  beforeAll(() => (config.isEnterprise = true));
+  afterAll(() => (config.isEnterprise = originalIsEnterprise));
 
   test.sequential('enroll a single student', async () => {
     const res = await enrollUser('1', USER_1);

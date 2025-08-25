@@ -6,7 +6,13 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
@@ -187,7 +193,7 @@ router.post(
       flash('success', 'Platform updated.');
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_instance') {
-      const new_li = await queryRows(
+      const new_li = await queryRow(
         sql.insert_instance,
         {
           ...lti13_instance_defaults,
