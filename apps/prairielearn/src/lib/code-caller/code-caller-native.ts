@@ -572,7 +572,7 @@ export class CodeCallerNative implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputData.join(''));
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerNative JSON: ' + e.message);
     }
     if (err) {

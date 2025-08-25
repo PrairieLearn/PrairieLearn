@@ -95,7 +95,7 @@ async function ensureImage() {
     logger.info(`Checking for executor image ${imageName}`);
     await image.inspect();
     logger.info(`Executor image ${imageName} found`);
-  } catch (e) {
+  } catch (e: any) {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = performance.now();
@@ -558,7 +558,7 @@ export class CodeCallerContainer implements CodeCaller {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerContainer JSON: ' + e.message);
     }
     this.state = WAITING;

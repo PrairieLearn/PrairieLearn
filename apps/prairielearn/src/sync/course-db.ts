@@ -392,7 +392,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -464,7 +464,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e) {
+    } catch (e: any) {
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
@@ -541,7 +541,7 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
+  >(fieldName: K, entryIdentifier: 'name', defaults?: CourseJson[K] | undefined): CourseJson[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -773,7 +773,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
             );
           }
           Object.assign(infoFiles, subInfoFiles);
-        } catch (e) {
+        } catch (e: any) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
           } else if (e.code === 'ENOENT') {
@@ -793,7 +793,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
 
   try {
     return await walk('');
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
       return {};
@@ -969,7 +969,7 @@ async function validateQuestion({
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
       validateJSON(options, schema);
-    } catch (err) {
+    } catch (err: any) {
       errors.push(err.message);
     }
   }

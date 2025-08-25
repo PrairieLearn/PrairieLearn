@@ -3,7 +3,6 @@ import * as path from 'path';
 import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -17,6 +16,7 @@ import {
 } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
@@ -25,6 +25,7 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -43,7 +44,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_edit'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course', { navPage: NavPage }>(async (req, res) => {
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
       res.status(403).send(
@@ -183,7 +184,8 @@ router.get(
 
 router.post(
   '/*',
-  asyncHandler(async (req, res) => {
+  // Accessible via a course or course instance page.
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
@@ -211,7 +213,7 @@ router.post(
       });
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,

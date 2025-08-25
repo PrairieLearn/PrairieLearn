@@ -14,12 +14,7 @@ import {
 } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.js';
 import { QuestionScorePanelContent } from '../components/QuestionScore.js';
-import {
-  SubmissionBasicSchema,
-  SubmissionDetailedSchema,
-  type SubmissionForRender,
-  SubmissionPanel,
-} from '../components/SubmissionPanel.js';
+import { SubmissionPanel } from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -42,7 +37,6 @@ import {
   GroupConfigSchema,
   IdSchema,
   type InstanceQuestion,
-  IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
@@ -58,19 +52,20 @@ import {
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
-import type { RubricData } from './manualGrading.types.js';
-import type { SubmissionPanels } from './question-render.types.js';
+import {
+  IssueRenderDataSchema,
+  type QuestionUrls,
+  type ResLocalsBuildLocals,
+  type ResLocalsInstanceQuestionRenderAdded,
+  type ResLocalsQuestionRenderAdded,
+  SubmissionBasicSchema,
+  SubmissionDetailedSchema,
+  type SubmissionForRender,
+  type SubmissionPanels,
+} from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-  user_name: z.string().nullable(),
-  user_email: z.string().nullable(),
-});
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -156,21 +151,6 @@ async function render(
   return data;
 }
 
-interface QuestionUrls {
-  questionUrl: string;
-  newVariantUrl: string;
-  tryAgainUrl: string;
-  reloadUrl: string;
-  clientFilesQuestionUrl: string;
-  calculationQuestionFileUrl: string;
-  calculationQuestionGeneratedFileUrl: string;
-  clientFilesCourseUrl: string;
-  clientFilesQuestionGeneratedFileUrl: string;
-  baseUrl: string;
-  externalImageCaptureUrl: string | null;
-  workspaceUrl?: string;
-}
-
 /**
  * Internal helper function to generate URLs that are used to render
  * question panels.
@@ -249,23 +229,6 @@ export function buildQuestionUrls(
   }
 
   return urls;
-}
-
-export interface ResLocalsBuildLocals {
-  showGradeButton: boolean;
-  showSaveButton: boolean;
-  disableGradeButton: boolean;
-  disableSaveButton: boolean;
-  showNewVariantButton: boolean;
-  showTryAgainButton: boolean;
-  showTrueAnswer: boolean;
-  showGradingRequested: boolean;
-  allowAnswerEditing: boolean;
-  hasAttemptsOtherVariants: boolean;
-  variantAttemptsLeft: number;
-  variantAttemptsTotal: number;
-  submissions: SubmissionForRender[];
-  variantToken: string;
 }
 
 function buildLocals({
@@ -408,31 +371,6 @@ function buildLocals({
 
   return locals;
 }
-
-// All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
-  question_is_shared: boolean;
-  variant: Variant;
-  urls: QuestionUrls;
-  showTrueAnswer: boolean;
-  submission: SubmissionForRender | null;
-  submissions: SubmissionForRender[];
-  effectiveQuestionType: questionServers.EffectiveQuestionType;
-  extraHeadersHtml: string;
-  questionHtml: string;
-  submissionHtmls: string[];
-  answerHtml: string;
-  issues: IssueRenderData[];
-  questionJsonBase64: string | undefined;
-}
-
-interface ResLocalsInstanceQuestionRenderAdded {
-  rubric_data: RubricData | null;
-}
-
-export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
-export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
-  ResLocalsInstanceQuestionRenderAdded;
 
 /**
  * Render all information needed for a question.

@@ -17,11 +17,13 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { SubmissionForRender } from '../lib/question-render.types.js';
+import type { ResLocalsForPage } from '../lib/res-locals.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
-import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
+import { SubmissionPanel } from './SubmissionPanel.js';
 
 // Only shows this many recent submissions by default
 const MAX_TOP_RECENTS = 3;
@@ -37,7 +39,10 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -47,13 +52,13 @@ export function QuestionContainer({
   questionCopyTargets?: CopyTarget[] | null;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
+  const course_instance = 'course_instance' in resLocals ? resLocals.course_instance : null;
   const {
     question,
     issues,
     variant,
     variantToken,
     questionJsonBase64,
-    course_instance,
     authz_data,
     is_administrator,
     showTrueAnswer,
@@ -229,10 +234,10 @@ export function IssuePanel({
   issue: Issue & {
     user_name: User['name'];
     user_email: User['email'];
-    user_uid: User['uid'];
+    user_uid: User['uid'] | null;
     formatted_date: string;
   };
-  course_instance: CourseInstance;
+  course_instance: CourseInstance | null;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -383,11 +388,11 @@ export function QuestionTitle({
 }: {
   questionContext: QuestionContext;
   question: Question;
-  questionNumber: string;
+  questionNumber?: string;
 }) {
-  if (questionContext === 'student_homework') {
+  if (questionNumber != null && questionContext === 'student_homework') {
     return `${questionNumber}. ${question.title}`;
-  } else if (questionContext === 'student_exam') {
+  } else if (questionNumber != null && questionContext === 'student_exam') {
     return `Question ${questionNumber}: ${question.title}`;
   } else {
     return question.title;
@@ -412,9 +417,9 @@ interface QuestionFooterResLocals {
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any>;
-  group_config: GroupConfig | null;
-  group_info: GroupInfo | null;
-  group_role_permissions: {
+  group_config?: GroupConfig | null;
+  group_info?: GroupInfo | null;
+  group_role_permissions?: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
@@ -745,7 +750,10 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -753,7 +761,10 @@ function QuestionPanel({
   aiGradingPreviewUrl?: string;
   questionCopyTargets?: CopyTarget[] | null;
 }) {
-  const { question, questionHtml, course, instance_question_info } = resLocals;
+  const instance_question_info =
+    'instance_question_info' in resLocals ? resLocals.instance_question_info : null;
+  const hasInstanceQuestion = 'instance_question' in resLocals;
+  const { question, questionHtml, course } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
 
@@ -831,10 +842,9 @@ function QuestionPanel({
           ? AiGradingHtmlPreview(questionHtml)
           : unsafeHtml(questionHtml)}
       </div>
-      ${showFooter
+      ${showFooter && hasInstanceQuestion
         ? QuestionFooter({
-            // TODO: propagate more precise types upwards.
-            resLocals: resLocals as any,
+            resLocals,
             questionContext,
           })
         : ''}
