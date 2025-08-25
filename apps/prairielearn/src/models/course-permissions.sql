@@ -187,9 +187,9 @@ WITH
         course_permission_id
       )
     SELECT
-      ci.id,
+      ci.id AS course_instance_id,
       $course_instance_role,
-      cp.id
+      cp.id AS course_permission_id
     FROM
       existing_course_permission AS cp
       -- Course instance ID is provided by the user, so must be validated against the course ID.

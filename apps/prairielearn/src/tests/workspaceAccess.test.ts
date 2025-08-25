@@ -33,10 +33,10 @@ const studentNotEnrolled: AuthUser = {
 };
 
 describe('Test workspace authorization access', { timeout: 20_000 }, function () {
-  beforeAll(async function () {
+  beforeAll(function () {
     config.workspaceEnable = false;
   });
-  afterAll(async function () {
+  afterAll(function () {
     config.workspaceEnable = true;
   });
 
