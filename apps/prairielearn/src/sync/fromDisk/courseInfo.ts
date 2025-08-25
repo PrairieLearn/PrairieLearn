@@ -34,7 +34,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     course_id: courseId,
     short_name: courseInfo.name,
     title: courseInfo.title,
-    display_timezone: courseInfo.timezone,
+    display_timezone: courseInfo.timezone ?? null,
     example_course: isExampleCourse(courseInfo),
     options: courseInfo.options,
     comment: JSON.stringify(courseInfo.comment),

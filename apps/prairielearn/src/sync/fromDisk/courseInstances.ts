@@ -21,10 +21,10 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   const accessRules = courseInstance.allowAccess
     .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
-      uids: accessRule.uids,
-      start_date: accessRule.startDate,
-      end_date: accessRule.endDate,
-      institution: accessRule.institution,
+      uids: accessRule.uids ?? null,
+      start_date: accessRule.startDate ?? null,
+      end_date: accessRule.endDate ?? null,
+      institution: accessRule.institution ?? null,
       comment: accessRule.comment,
     }));
 
@@ -32,7 +32,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage,
-    display_timezone: courseInstance.timezone,
+    display_timezone: courseInstance.timezone ?? null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
