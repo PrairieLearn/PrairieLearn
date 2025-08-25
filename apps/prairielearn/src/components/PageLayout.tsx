@@ -12,7 +12,6 @@ import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
-import { PageFooter } from './PageFooter.js';
 import { SideNav } from './SideNav.js';
 
 function asHtmlSafe(
@@ -204,7 +203,6 @@ export function PageLayout({
               </div>
             </div>
           </div>
-          ${PageFooter()}
         </body>
       </html>
     `.toString();
