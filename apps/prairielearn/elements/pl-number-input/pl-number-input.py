@@ -35,7 +35,7 @@ SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
 ALLOW_FRACTIONS_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = 0
+BLANK_VALUE_DEFAULT = "0"
 CUSTOM_FORMAT_DEFAULT = ".12g"
 SHOW_SCORE_DEFAULT = True
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
@@ -79,7 +79,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     correct_answer = pl.get_string_attrib(element, "correct-answer", None)
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
@@ -374,12 +374,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
-        submitted_answer = blank_value
-        data["submitted_answers"][name] = ""
+        data["submitted_answers"][name] = blank_value
     else:
         res = pl.string_fraction_to_number(
             submitted_answer,
