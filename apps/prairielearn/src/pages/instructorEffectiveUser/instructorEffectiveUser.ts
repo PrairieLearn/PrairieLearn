@@ -106,7 +106,7 @@ router.post(
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
     } else {
-      throw new HttpStatusError(400, 'unknown action: ' + res.locals.__action);
+      throw new HttpStatusError(400, 'unknown action: ' + req.body.__action);
     }
   }),
 );
