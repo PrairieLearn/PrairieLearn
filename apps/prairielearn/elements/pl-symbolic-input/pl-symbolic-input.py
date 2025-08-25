@@ -498,9 +498,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         # Parse correct answer based on type
         if isinstance(a_tru, str):
-            if a_tru == "":
-                a_tru = ""
-            else:
+            if a_tru != "":
                 a_tru = psu.convert_string_to_sympy(
                     a_tru,
                     variables,
