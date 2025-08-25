@@ -75,13 +75,13 @@ function getParamsForAssessment(
           if (accessRule.examUuid) return 'Exam';
           return null;
         }),
-        uids: accessRule.uids,
-        start_date: accessRule.startDate,
-        end_date: accessRule.endDate,
-        credit: accessRule.credit,
-        time_limit_min: accessRule.timeLimitMin,
-        password: accessRule.password,
-        exam_uuid: accessRule.examUuid,
+        uids: accessRule.uids ?? null,
+        start_date: accessRule.startDate ?? null,
+        end_date: accessRule.endDate ?? null,
+        credit: accessRule.credit ?? null,
+        time_limit_min: accessRule.timeLimitMin ?? null,
+        password: accessRule.password ?? null,
+        exam_uuid: accessRule.examUuid ?? null,
         show_closed_assessment: accessRule.showClosedAssessment,
         show_closed_assessment_score: accessRule.showClosedAssessmentScore,
         active: accessRule.active,
@@ -114,12 +114,23 @@ function getParamsForAssessment(
     const zoneCanView = zone.canView.length > 0 ? zone.canView : assessmentCanView;
     const zoneCanSubmit = zone.canSubmit.length > 0 ? zone.canSubmit : assessmentCanSubmit;
     return zone.questions.map((question) => {
-      let alternatives: (QuestionPointsJson &
-        Omit<QuestionAlternativeJson, 'id'> & {
+      let alternatives: (Omit<
+        QuestionPointsJson,
+        'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
+      > &
+        Omit<
+          QuestionAlternativeJson,
+          'id' | 'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
+        > & {
           qid: QuestionAlternativeJson['id'];
           jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
           canView: ZoneQuestionJson['canView'];
           canSubmit: ZoneQuestionJson['canSubmit'];
+          maxPoints: number | null;
+          points: number | number[] | null;
+          maxAutoPoints: number | null;
+          autoPoints: number | number[] | null;
+          manualPoints: number | null;
         })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView.length > 0 ? question.canView : zoneCanView;
@@ -128,11 +139,11 @@ function getParamsForAssessment(
         alternatives = question.alternatives.map((alternative) => {
           return {
             qid: alternative.id,
-            maxPoints: alternative.maxPoints ?? question.maxPoints,
-            points: alternative.points ?? question.points,
-            maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints,
-            autoPoints: alternative.autoPoints ?? question.autoPoints,
-            manualPoints: alternative.manualPoints ?? question.manualPoints,
+            maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
+            points: alternative.points ?? question.points ?? null,
+            maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
+            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
+            manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
             advanceScorePerc: alternative.advanceScorePerc,
@@ -147,11 +158,11 @@ function getParamsForAssessment(
         alternatives = [
           {
             qid: question.id,
-            maxPoints: question.maxPoints,
-            points: question.points,
-            maxAutoPoints: question.maxAutoPoints,
-            autoPoints: question.autoPoints,
-            manualPoints: question.manualPoints,
+            maxPoints: question.maxPoints ?? null,
+            points: question.points ?? null,
+            maxAutoPoints: question.maxAutoPoints ?? null,
+            autoPoints: question.autoPoints ?? null,
+            manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints,
             triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
@@ -170,9 +181,9 @@ function getParamsForAssessment(
 
       const normalizedAlternatives = alternatives.map((alternative) => {
         const hasSplitPoints =
-          alternative.autoPoints !== null ||
-          alternative.maxAutoPoints !== null ||
-          alternative.manualPoints !== null;
+          alternative.autoPoints != null ||
+          alternative.maxAutoPoints != null ||
+          alternative.manualPoints != null;
         const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
@@ -282,8 +293,8 @@ function getParamsForAssessment(
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
     group_work: assessment.groupWork,
-    group_max_size: assessment.groupMaxSize,
-    group_min_size: assessment.groupMinSize,
+    group_max_size: assessment.groupMaxSize ?? null,
+    group_min_size: assessment.groupMinSize ?? null,
     student_group_create: assessment.studentGroupCreate,
     student_group_choose_name: assessment.studentGroupChooseName,
     student_group_join: assessment.studentGroupJoin,
