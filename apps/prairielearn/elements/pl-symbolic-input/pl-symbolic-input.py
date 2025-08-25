@@ -198,7 +198,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_sub_parsed = psu.json_to_sympy(
-                a_sub, allow_complex=allow_complex, allow_trig_functions=allow_trig, simplify_expression=simplify_expression,
+                a_sub,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             ).subs(sympy.I, sympy.Symbol(imaginary_unit))
 
         if display_log_as_ln and a_sub_parsed != "":
@@ -283,7 +286,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_tru = psu.json_to_sympy(
-                a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig, simplify_expression=simplify_expression,
+                a_tru,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
             ).subs(sympy.I, sympy.Symbol(imaginary_unit))
 
         if display_log_as_ln and a_tru != "":
