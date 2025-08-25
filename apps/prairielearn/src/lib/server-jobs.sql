@@ -154,7 +154,7 @@ WITH
   job_sequence_updates AS (
     SELECT
       j.*,
-      NOT coalesce(j.no_job_sequence_update, FALSE) AS update_job_sequence
+      coalesce(NOT j.no_job_sequence_update, TRUE) AS update_job_sequence
     FROM
       updated_jobs AS j
   )
