@@ -283,7 +283,10 @@ function getParamsForAssessment(
     allow_issue_reporting: allowIssueReporting,
     allow_real_time_grading: allowRealTimeGrading,
     allow_personal_notes: allowPersonalNotes,
-    require_honor_code: requireHonorCode,
+    // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
+    // NOTE: There are various homeworks with requireHonorCode set to true, but that value is ignored.
+    require_honor_code:
+      requireHonorCode == null ? (assessment.type === 'Exam' ? true : false) : requireHonorCode,
     honor_code: assessment.honorCode,
     auto_close: assessment.autoClose,
     max_points: assessment.maxPoints,

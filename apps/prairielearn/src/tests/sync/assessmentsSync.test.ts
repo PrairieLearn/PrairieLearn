@@ -5,6 +5,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -87,7 +88,7 @@ function getPermission(
 }
 
 async function getSyncedAssessmentData(tid: string) {
-  return await sqldb.queryRow(
+  const result = await sqldb.queryRow(
     sql.get_data_for_assessment,
     { tid },
     z.object({
@@ -98,6 +99,10 @@ async function getSyncedAssessmentData(tid: string) {
       group_roles: z.array(GroupRoleSchema),
     }),
   );
+  if (result.assessment.sync_errors) {
+    logger.error(result.assessment.sync_errors);
+  }
+  return result;
 }
 
 async function findSyncedAssessment(tid: string) {
@@ -2326,7 +2331,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.equal(
       syncedAssessment?.sync_errors,
-      '"multipleInstance" cannot be used for Homework-type assessments',
+      '"multipleInstance" cannot be true for Homework-type assessments',
     );
   });
 

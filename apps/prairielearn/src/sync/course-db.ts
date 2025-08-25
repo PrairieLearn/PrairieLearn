@@ -1037,14 +1037,14 @@ async function validateAssessment({
 
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
-      errors.push('"multipleInstance" cannot be used for Homework-type assessments');
+      errors.push('"multipleInstance" cannot be true for Homework-type assessments');
     }
 
     if (assessment.requireHonorCode) {
-      errors.push('"requireHonorCode" cannot be used for Homework-type assessments');
+      errors.push('"requireHonorCode" cannot be true for Homework-type assessments');
     }
 
-    if (assessment.honorCode) {
+    if (assessment.honorCode != null) {
       errors.push('"honorCode" cannot be used for Homework-type assessments');
     }
   }
@@ -1113,7 +1113,7 @@ async function validateAssessment({
       } else if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          const autoPoints = alternative.autoPoints ?? alternative.points;
+          const autoPoints = alternative.autoPoints ?? alternative.points ?? 0;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
@@ -1238,7 +1238,7 @@ async function validateAssessment({
     );
   }
 
-  if (assessment.groupRoles) {
+  if (assessment.groupRoles.length > 0) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
       (role) => role.canAssignRoles && role.minimum >= 1,
