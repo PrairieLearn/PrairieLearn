@@ -81,9 +81,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
         allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-        blank_value = pl.get_string_attrib(
-            element, "blank-value", str(BLANK_VALUE_DEFAULT)
-        )
+        blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         simplify_expression = pl.get_boolean_attrib(
             element,
             "display-simplified-expression",
@@ -328,7 +326,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name, None)
