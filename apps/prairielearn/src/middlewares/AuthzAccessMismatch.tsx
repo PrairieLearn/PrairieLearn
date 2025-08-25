@@ -99,7 +99,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
       <thead>
         <tr>
           <th>Permission</th>
-          <th>Effective User</th>
+          <th>Effective User/Role</th>
           <th>Your Account</th>
         </tr>
       </thead>
@@ -188,11 +188,24 @@ export function AuthzAccessMismatch({
         </div>
         <div class="card-body">
           <p>{errorExplanation}</p>
-          <p>
-            The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>} does
-            not have access to this page, but your account <strong>{formatUser(authnUser)}</strong>{' '}
-            does.
-          </p>
+          {authzUser?.user_id !== authnUser.user_id ? (
+            <p>
+              The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
+              does not have access to this page, but your account{' '}
+              <strong>{formatUser(authnUser)}</strong> does.
+            </p>
+          ) : !authzData.authn_has_student_access_with_enrollment &&
+            authzData.has_student_access_with_enrollment ? (
+            <p>
+              You are currently in <strong>Student view</strong>, which does not give you permission
+              to this page, but your account permissions do.
+            </p>
+          ) : (
+            <p>
+              The current effective role does not have access to this page, but your account
+              permissions do.
+            </p>
+          )}
 
           <details class="mb-3">
             <summary class="mb-1">View missing permissions</summary>
@@ -206,7 +219,7 @@ export function AuthzAccessMismatch({
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
-            Clear effective user
+            Clear effective {authzUser?.user_id !== authnUser.user_id ? 'user' : 'role'}
           </button>
         </div>
       </div>
