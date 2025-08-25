@@ -312,7 +312,7 @@ export async function identifyChangedFiles(
     'git rev-parse --show-toplevel',
     { cwd: coursePath },
   );
-  const topLevel = topLevelStdout.trim();
+  const topLevel = await fs.realpath(topLevelStdout.trim());
 
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
@@ -331,14 +331,18 @@ export async function identifyChangedFiles(
   // Construct absolute path to all changed files.
   const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
 
+  // Resolve the course path to its real path to handle symlinks. This is especially
+  // important for tests on macOS, where `/var` is symlinked to `/private/var`.
+  const realCoursePath = await fs.realpath(coursePath);
+
   // Exclude any changed files that aren't in the course directory.
   const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(coursePath, absoluteChangedFile),
+    contains(realCoursePath, absoluteChangedFile),
   );
 
   // Convert all absolute paths back into relative paths.
   return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(coursePath, absoluteChangedFile),
+    path.relative(realCoursePath, absoluteChangedFile),
   );
 }
 
@@ -407,7 +411,7 @@ export function identifyChunksFromChangedFiles(
       const clientFilesAssessmentIndex = pathComponents.indexOf('clientFilesAssessment');
 
       if (clientFilesCourseInstanceIndex !== -1) {
-        // Let's validate that the preceeding path components correspond
+        // Let's validate that the preceding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
