@@ -15,20 +15,6 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    // We're not using the authz middleware helper because this page uses
-    // permissions from the authenticated user, not the effective user.
-    if (
-      !(
-        res.locals.authz_data.authn_has_course_permission_preview ||
-        res.locals.authz_data.authn_has_course_instance_permission_view
-      )
-    ) {
-      throw new HttpStatusError(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      );
-    }
-
     const courseRoles = await queryRow(
       sql.select,
       {
@@ -52,18 +38,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (
-      !(
-        res.locals.authz_data.authn_has_course_permission_preview ||
-        res.locals.authz_data.authn_has_course_instance_permission_view
-      )
-    ) {
-      throw new HttpStatusError(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      );
-    }
-
     if (req.body.__action === 'reset') {
       clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
       clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
