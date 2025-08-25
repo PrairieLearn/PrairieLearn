@@ -134,7 +134,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
-  await sqldb.queryAsync(sql.delete_file, { file_id, authn_user_id });
+  await sqldb.execute(sql.delete_file, { file_id, authn_user_id });
   debug('delete(): soft-deleted row in DB');
 }
 

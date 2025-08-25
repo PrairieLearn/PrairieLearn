@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import * as authnLib from '../../../lib/authn.js';
@@ -358,7 +358,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
     tool_platform_name:
       lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
   };
-  await queryAsync(sql.verify_upsert, params);
+  await execute(sql.verify_upsert, params);
 
   return lti13_claims;
 }

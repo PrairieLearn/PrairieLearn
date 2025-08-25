@@ -389,7 +389,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
+      await sqldb.execute(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
@@ -410,7 +410,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
+      await sqldb.execute(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
@@ -553,10 +553,10 @@ function testEdit(params: EditData) {
 
   describe('validate', () => {
     it('should not have any sync warnings or errors', async () => {
-      const results = await sqldb.queryAsync(sql.select_sync_warnings_and_errors, {
+      const rowCount = await sqldb.execute(sql.select_sync_warnings_and_errors, {
         course_path: courseLiveDir,
       });
-      assert.isEmpty(results.rows);
+      assert.equal(rowCount, 0);
     });
 
     it('should pull into dev directory', async () => {

@@ -45,7 +45,7 @@ describe('LTI', { timeout: 20_000 }, function () {
       assert.equal(res.status, 403);
     });
     it('should throw 403 with an invalid secret', async () => {
-      await sqldb.queryAsync(sql.invalid_secret, {});
+      await sqldb.execute(sql.invalid_secret);
       const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
       assert.equal(res.status, 403);
     });
@@ -55,7 +55,7 @@ describe('LTI', { timeout: 20_000 }, function () {
       assert.equal(res.status, 403);
     });
     it('should 302 (redirect) as a Learner with an LTI link created', async () => {
-      await sqldb.queryAsync(sql.lti_link, {});
+      await sqldb.execute(sql.lti_link);
       const res = await fetch(locals.ltiUrl, {
         method: 'POST',
         body: new URLSearchParams(body),
