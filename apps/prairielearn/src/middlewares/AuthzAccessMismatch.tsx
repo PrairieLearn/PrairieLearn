@@ -180,6 +180,11 @@ export function AuthzAccessMismatch({
     (permission) => permission.authnValue !== permission.value,
   );
 
+  // Use special messaging if there is an effective role but the effective user remains the same
+  const hasEffectiveUser = authzUser?.user_id !== authnUser.user_id;
+  const isStudentViewActive =
+    !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
+
   return (
     <main id="content" class="container">
       <div class="card mb-4">
@@ -188,14 +193,13 @@ export function AuthzAccessMismatch({
         </div>
         <div class="card-body">
           <p>{errorExplanation}</p>
-          {authzUser?.user_id !== authnUser.user_id ? (
+          {hasEffectiveUser ? (
             <p>
               The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
               does not have access to this page, but your account{' '}
               <strong>{formatUser(authnUser)}</strong> does.
             </p>
-          ) : !authzData.authn_has_student_access_with_enrollment &&
-            authzData.has_student_access_with_enrollment ? (
+          ) : isStudentViewActive ? (
             <p>
               You are currently in <strong>Student view</strong>, which does not give you permission
               to this page, but your account permissions do.
@@ -219,7 +223,7 @@ export function AuthzAccessMismatch({
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
-            Clear effective {authzUser?.user_id !== authnUser.user_id ? 'user' : 'role'}
+            Clear effective {hasEffectiveUser ? 'user' : 'role'}
           </button>
         </div>
       </div>
