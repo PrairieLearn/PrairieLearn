@@ -12,6 +12,7 @@ import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
+import { PageFooter } from './PageFooter.js';
 import { SideNav } from './SideNav.js';
 
 function asHtmlSafe(
@@ -191,6 +192,7 @@ export function PageLayout({
               </div>
             </div>
           </div>
+          ${PageFooter()}
         </body>
       </html>
     `.toString();
@@ -204,7 +206,7 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${headContentString}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
         </head>
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
@@ -227,7 +229,7 @@ export function PageLayout({
           >
             ${contentString}
           </main>
-          ${postContentString}
+          ${postContentString} ${PageFooter()}
         </body>
       </html>
     `.toString();

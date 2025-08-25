@@ -360,3 +360,7 @@ body:has(div.app-main-container) {
     transition: none;
   }
 }
+
+.page-footer-text {
+  color: rgb(5.2, 44, 101.2);
+}
