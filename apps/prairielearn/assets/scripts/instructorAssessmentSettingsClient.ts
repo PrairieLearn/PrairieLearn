@@ -2,10 +2,13 @@ import './lib/clipboardPopover.js';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { assertDefined } from '../../src/lib/types.js';
+
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(function () {
-  const tidField = document.querySelector('input[name="aid"]') as HTMLInputElement;
+  const tidField = document.querySelector<HTMLInputElement>('input[name="aid"]');
+  assertDefined(tidField);
   const otherTids = tidField.dataset.otherValues?.split(',') ?? [];
   const assessmentSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-assessment-settings-form"]',
@@ -15,8 +18,8 @@ onDocumentReady(function () {
   const honorCodeInput = document.querySelector<HTMLTextAreaElement>('#honor_code_group');
 
   function validateId() {
+    assertDefined(tidField);
     const newValue = tidField.value;
-
     if (otherTids.includes(newValue) && newValue !== tidField.defaultValue) {
       tidField.setCustomValidity('This ID is already in use');
     } else {

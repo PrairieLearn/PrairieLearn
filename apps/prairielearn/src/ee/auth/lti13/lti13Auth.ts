@@ -343,7 +343,7 @@ async function verify(req: Request, tokenSet: TokenSet) {
   const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
 
   // Check nonce to protect against reuse
-  const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
+  const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims.nonce}`;
   const cacheResult = await cache.get(nonceKey);
   if (cacheResult) {
     throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');

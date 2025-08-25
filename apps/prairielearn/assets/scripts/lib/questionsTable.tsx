@@ -63,7 +63,7 @@ onDocumentReady(() => {
     const sharing_sets = Object.fromEntries(
       data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
     );
-    sharing_sets['Public'] = 'Public';
+    sharing_sets.Public = 'Public';
     sharing_sets['Public source'] = 'Public source';
     return sharing_sets;
   };

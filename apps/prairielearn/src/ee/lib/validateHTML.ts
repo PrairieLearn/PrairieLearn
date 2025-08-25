@@ -170,7 +170,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
       case 'pl-answer':
         return { errors: [] }; // covered elsewhere
       default:
-        if (ast.tagName && ast.tagName.slice(0, 3) === 'pl-' && !optimistic) {
+        if (ast.tagName && ast.tagName.startsWith('pl-') && !optimistic) {
           return {
             errors: [
               `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,

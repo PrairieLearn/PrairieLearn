@@ -246,7 +246,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
   }
   function queueRun() {
     debug('queueDailyJobs(): starting run');
-    jobTimeouts['daily'] = 0;
+    jobTimeouts.daily = 0;
     runJobs(jobsList)
       .catch((err) => {
         logger.error('Error running cron jobs', err);
@@ -254,17 +254,17 @@ function queueDailyJobs(jobsList: CronJob[]) {
       })
       .finally(() => {
         debug('queueDailyJobs(): completed run');
-        if (jobTimeouts['daily'] === -1) {
+        if (jobTimeouts.daily === -1) {
           // someone requested a stop
           debug('queueDailyJobs(): stop requested');
-          delete jobTimeouts['daily'];
+          delete jobTimeouts.daily;
           return;
         }
         debug('queueDailyJobs(): waiting for next run time');
-        jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
+        jobTimeouts.daily = setTimeout(queueRun, timeToNextMS());
       });
   }
-  jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
+  jobTimeouts.daily = setTimeout(queueRun, timeToNextMS());
 }
 
 async function runJobs(jobsList: CronJob[]) {

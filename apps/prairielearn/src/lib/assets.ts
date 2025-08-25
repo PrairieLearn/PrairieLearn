@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as crypto from 'node:crypto';
 import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
@@ -58,7 +59,7 @@ function getHashForPath(hashes: HashElementNode, assetPath: string): string {
  */
 function getPackageNameForAssetPath(assetPath: string): string {
   const [maybeScope, maybeModule] = assetPath.split('/');
-  if (maybeScope.indexOf('@') === 0) {
+  if (maybeScope.startsWith('@')) {
     // This is a scoped module
     return `${maybeScope}/${maybeModule}`;
   } else {
@@ -239,7 +240,8 @@ export function applyMiddleware(app: express.Application) {
  */
 export function assetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(publicHash as HashElementNode, assetPath);
+  assert(publicHash !== null);
+  const hash = getHashForPath(publicHash, assetPath);
   return `${assetsPrefix}/public/${hash}/${assetPath}`;
 }
 
@@ -262,7 +264,8 @@ export function nodeModulesAssetPath(assetPath: string): string {
  */
 export function coreElementAssetPath(assetPath: string): string {
   const assetsPrefix = assertAssetsPrefix();
-  const hash = getHashForPath(elementsHash as HashElementNode, assetPath);
+  assert(elementsHash !== null);
+  const hash = getHashForPath(elementsHash, assetPath);
   return `${assetsPrefix}/elements/${hash}/${assetPath}`;
 }
 

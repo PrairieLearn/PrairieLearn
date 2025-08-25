@@ -1,10 +1,13 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { assertDefined } from '../../src/lib/types.js';
+
 onDocumentReady(() => {
   const userPromptExampleSelect = document.querySelector<HTMLSelectElement>('#user-prompt-example');
   userPromptExampleSelect?.addEventListener('change', () => {
     function setInputValue(selector: string, value: string) {
-      const input = document.querySelector(selector) as HTMLInputElement;
+      const input = document.querySelector<HTMLInputElement>(selector);
+      assertDefined(input);
       input.value = value;
     }
 

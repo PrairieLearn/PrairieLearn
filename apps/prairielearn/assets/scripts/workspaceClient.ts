@@ -2,6 +2,8 @@ import { io } from 'socket.io-client';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { assertDefined } from '../../src/lib/types.js';
+
 function getNumericalAttribute(element: HTMLElement, name: string, defaultValue: number): number {
   const value = element.getAttribute(name);
   if (value === null) {
@@ -40,7 +42,8 @@ onDocumentReady(function () {
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
-  const failedMessage = document.getElementById('failed-message') as HTMLElement;
+  const failedMessage = document.getElementById('failed-message');
+  assertDefined(failedMessage);
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
@@ -65,6 +68,7 @@ onDocumentReady(function () {
   };
 
   function setMessage(message: string) {
+    assertDefined(failedMessage);
     messageBadge.textContent = message;
     failedMessage.textContent = message;
     if (message) {

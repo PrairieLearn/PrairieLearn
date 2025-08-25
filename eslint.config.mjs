@@ -554,7 +554,10 @@ export default tseslint.config([
   },
   {
     // We only include apps/prairielearn for performance reasons.
-    extends: [tseslint.configs.recommendedTypeCheckedOnly],
+    extends: [
+      tseslint.configs.recommendedTypeCheckedOnly,
+      tseslint.configs.stylisticTypeCheckedOnly,
+    ],
     files: ['apps/prairielearn/**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
@@ -613,7 +616,9 @@ export default tseslint.config([
           allowThrowingUnknown: true,
         },
       ],
+      '@typescript-eslint/prefer-nullish-coalescing': 'off', // TODO: enable
       '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
       '@typescript-eslint/restrict-template-expressions': [
         'error',
         {
