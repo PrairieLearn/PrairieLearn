@@ -42,7 +42,7 @@ ORDER BY
   -- default pseudo-random deterministic stable order used in the instance
   -- questions page.
   iq_stable_order > prior_iq_stable_order DESC,
-  iq_stable_order,
+  iq_stable_order ASC,
   id ASC
 LIMIT
   1;
