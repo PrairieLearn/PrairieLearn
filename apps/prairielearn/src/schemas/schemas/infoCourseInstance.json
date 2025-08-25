@@ -26,8 +26,7 @@
     },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
-      "type": ["string", "null"],
-      "default": null
+      "type": "string"
     },
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
@@ -67,33 +66,22 @@
           },
           "uids": {
             "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-            "anyOf": [
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },
           "startDate": {
             "description": "The earliest date on which access is permitted.",
-            "type": ["string", "null"],
-            "default": null
+            "type": "string"
           },
           "endDate": {
             "description": "The latest date on which access is permitted.",
-            "type": ["string", "null"],
-            "default": null
+            "type": "string"
           },
           "institution": {
             "description": "The institution from which access is permitted.",
-            "type": ["string", "null"],
-            "default": null
+            "type": "string"
           }
         }
       },

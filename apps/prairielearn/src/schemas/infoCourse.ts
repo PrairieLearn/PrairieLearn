@@ -119,11 +119,9 @@ export const CourseJsonSchema = z
     title: z.string().describe("The course title (e.g., 'Introductory Dynamics')."),
     timezone: z
       .string()
-      .nullable()
       .describe(
         'The timezone for all date input and display (e.g., "America/Chicago"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred.',
       )
-      .default(null)
       .optional(),
     options: CourseOptionsJsonSchema.optional().default({}),
     assessmentSets: z.array(AssessmentSetJsonSchema).describe('Assessment sets.').optional(),

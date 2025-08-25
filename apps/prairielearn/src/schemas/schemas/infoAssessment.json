@@ -110,13 +110,11 @@
     },
     "groupMaxSize": {
       "description": "Maximum number of students in a group.",
-      "type": ["number", "null"],
-      "default": null
+      "type": "number"
     },
     "groupMinSize": {
       "description": "Minimum number of students in a group.",
-      "type": ["number", "null"],
-      "default": null
+      "type": "number"
     },
     "groupRoles": {
       "description": "Array of custom user roles in a group.",
@@ -225,16 +223,8 @@
         },
         "examUuid": {
           "description": "The PrairieTest exam UUID for which a student must be registered. Implies mode: Exam.",
-          "anyOf": [
-            {
-              "type": "string",
-              "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "string",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         "role": {
           "description": "DEPRECATED -- do not use.",
@@ -244,59 +234,32 @@
         },
         "uids": {
           "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
-          "anyOf": [
-            {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         },
         "credit": {
           "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "integer",
+          "minimum": 0
         },
         "startDate": {
           "description": "The earliest date on which access is permitted.",
-          "type": ["string", "null"],
-          "default": null
+          "type": "string"
         },
         "endDate": {
           "description": "The latest date on which access is permitted.",
-          "type": ["string", "null"],
-          "default": null
+          "type": "string"
         },
         "timeLimitMin": {
           "description": "The time limit to complete the assessment, in minutes (only for Exams).",
-          "anyOf": [
-            {
-              "type": "integer",
-              "minimum": 0
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "type": "integer",
+          "minimum": 0
         },
         "password": {
           "description": "Password to begin the assessment (only for Exams).",
-          "type": ["string", "null"],
-          "default": null
+          "type": "string"
         },
         "showClosedAssessment": {
           "description": "Whether the student can view the assessment after it has been closed",
@@ -391,62 +354,22 @@
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "autoPoints": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "maxPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "maxAutoPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "manualPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "id": {
           "description": "Question ID (directory name of the question).",
@@ -514,62 +437,22 @@
           "$ref": "#/definitions/CommentJsonSchema"
         },
         "points": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "autoPoints": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsJsonSchema"
         },
         "maxPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "maxAutoPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "manualPoints": {
           "description": "A single point value.",
-          "anyOf": [
-            {
-              "$ref": "#/definitions/PointsSingleJsonSchema"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null
+          "$ref": "#/definitions/PointsSingleJsonSchema"
         },
         "id": {
           "$ref": "#/definitions/QuestionIdJsonSchema"
