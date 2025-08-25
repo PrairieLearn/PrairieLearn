@@ -6,10 +6,7 @@ export function PageFooter() {
       <div class="container">
         <div class="row align-items-center">
           <div class="col-6">
-            <a
-              href="https://prairielearn.com"
-              class="text-decoration-none me-3 page-footer-text d-none d-md-inline"
-            >
+            <a href="https://prairielearn.com" class="text-decoration-none me-3 page-footer-text">
               <!-- prettier-ignore -->
               <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -55,7 +52,7 @@ export function PageFooter() {
               href="https://github.com/PrairieLearn/PrairieLearn"
               class="text-decoration-none page-footer-text"
             >
-              <i class="fab fa-github"></i> <span class="d-none d-md-inline">GitHub</span>
+              <i class="fab fa-github"></i> <span>GitHub</span>
             </a>
           </div>
         </div>

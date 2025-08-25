@@ -11,6 +11,10 @@ body:has(div.app-main-container) {
   overflow-y: hidden !important;
 }
 
+:root {
+  --navbar-height: 3.5rem;
+}
+
 /* Styles when the side nav is hidden */
 .app-container {
   display: block;
@@ -247,7 +251,6 @@ body:has(div.app-main-container) {
     display: flex;
     flex-direction: column;
     transition: none;
-    --navbar-height: 3.5rem;
   }
 
   .app-container.side-nav-enabled #side-nav-toggler {
@@ -363,4 +366,8 @@ body:has(div.app-main-container) {
 
 .page-footer-text {
   color: rgb(5.2, 44, 101.2);
+}
+
+.container.min-h-100 {
+  min-height: calc(100% - var(--navbar-height));
 }
