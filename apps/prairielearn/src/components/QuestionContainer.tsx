@@ -17,8 +17,10 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
+import { MailToLink } from './MailToLink.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
 import { type SubmissionForRender, SubmissionPanel } from './SubmissionPanel.js';
@@ -254,11 +256,6 @@ export function IssuePanel({
       idsEqual(course_instance.id, issue.course_instance_id) &&
       authz_data.has_course_instance_permission_view);
 
-  const msgBody = `Hello ${issue.user_name}\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`;
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(msgBody)}`;
-
   return html`
     <div class="card mb-3">
       <div class="card-header bg-danger text-white">
@@ -276,8 +273,15 @@ export function IssuePanel({
                   <tr>
                     <th>User:</th>
                     <td>
-                      ${issue.user_name || '-'} (<a href="${mailtoLink}">${issue.user_uid || '-'}</a
-                      >)
+                      ${issue.user_name || '-'}
+                      (${renderHtml(
+                        <MailToLink
+                          email={issue.user_email}
+                          uid={issue.user_uid}
+                          subject="Reported PrairieLearn Issue"
+                          body={`Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`}
+                        />,
+                      )})
                     </td>
                   </tr>
                   <tr>

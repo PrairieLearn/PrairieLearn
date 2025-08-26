@@ -1,18 +1,20 @@
 export function MailToLink({
   email,
+  uid,
   subject,
   body,
 }: {
   email: string | null;
+  uid: string | null;
   subject: string;
   body: string;
 }) {
-  if (!email) return '-';
+  if (!email && !uid) return '-';
   return (
     <a
-      href={`mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
+      href={`mailto:${email ?? uid}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`}
     >
-      {email}
+      {email ?? uid}
     </a>
   );
 }

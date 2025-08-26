@@ -5,6 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { MailToLink } from '../../components/MailToLink.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { Pager } from '../../components/Pager.js';
@@ -239,11 +240,6 @@ function IssueRow({
   csrfToken: string;
 }) {
   const plainUrlPrefix = config.urlPrefix;
-  const mailtoLink = `mailto:${
-    issue.user_email || issue.user_uid || '-'
-  }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
-    `Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`,
-  )}`;
   const questionPreviewUrl = `${urlPrefix}/question/${issue.question_id}/`;
   const studentViewUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
   const manualGradingUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
@@ -295,10 +291,15 @@ function IssueRow({
             : ''}
           ${issue.showUser
             ? html`
-                ${issue.manually_reported ? 'by' : 'for'} ${issue.user_name || '-'} (<a
-                  href="${mailtoLink}"
-                  >${issue.user_uid || '-'}</a
-                >)
+                ${issue.manually_reported ? 'by' : 'for'} ${issue.user_name || '-'}
+                (${renderHtml(
+                  <MailToLink
+                    email={issue.user_email}
+                    uid={issue.user_uid}
+                    subject="Reported PrairieLearn Issue"
+                    body={`Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`}
+                  />,
+                )})
               `
             : ''}
         </small>
