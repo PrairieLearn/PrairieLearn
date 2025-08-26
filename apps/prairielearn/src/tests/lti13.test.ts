@@ -315,8 +315,6 @@ describe('LTI 1.3', () => {
     assert.equal(ssoResponse.status, 200);
 
     const saveButton = ssoResponse.$('button:contains(Save)');
-    const saveButtonValue = saveButton.attr('value');
-    assert.ok(saveButtonValue);
 
     const form = saveButton.closest('form');
     const lti13Label = form.find('label:contains(LTI 1.3)');
@@ -328,7 +326,6 @@ describe('LTI 1.3', () => {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        __action: saveButtonValue,
         enabled_authn_provider_ids: lti13InputValue,
       }),
     });
