@@ -19,9 +19,9 @@ export async function withConfig<T>(
  * Temporarily set the logger to silent.
  *
  * @param fn - The function to run with the logger set to silent.
+ * @param options
+ * @param options.silent - Whether to set the logger to silent (default: true).
  * @returns The result of the function.
- *
- * You may also consider directly setting `logger.silent = true` in your test.
  */
 export async function withoutLogging<T>(
   fn: () => T | Promise<T>,
