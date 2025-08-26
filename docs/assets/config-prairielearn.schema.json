@@ -107,10 +107,6 @@
       "type": ["string", "null"],
       "default": null
     },
-    "additionalErrorLogging": {
-      "type": "boolean",
-      "default": true
-    },
     "logFilename": {
       "type": "string",
       "default": "server.log"

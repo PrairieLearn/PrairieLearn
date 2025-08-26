@@ -14,7 +14,7 @@ import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { withConfig } from './utils/config.js';
+import { withoutLogging } from './utils/config.js';
 
 const CLIENT_ID = 'prairielearn_test_lms';
 const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
@@ -361,7 +361,7 @@ describe('LTI 1.3', () => {
     // Confirm the redirect passes through to the course
 
     // Logging in again should fail because of nonce reuse.
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const repeatLoginRes = await executor.login();
       assert.equal(repeatLoginRes.status, 500);
     });
@@ -391,7 +391,7 @@ describe('LTI 1.3', () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
     // Malformed login
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const startBadLoginResponse = await fetchWithCookies(
         `${siteUrl}/pl/lti13_instance/1/auth/login`,
         {
@@ -429,7 +429,7 @@ describe('LTI 1.3', () => {
 
     // Not a real token, not running a JWKS server, so not a full test
     // Just making sure if state is missing that PL errors
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
         method: 'POST',
         body: new URLSearchParams({
@@ -726,7 +726,7 @@ describe('LTI 1.3', () => {
     test.sequential('login should fail with misconfiguration error', async () => {
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
 
-      await withConfig({ additionalErrorLogging: false }, async () => {
+      await withoutLogging(async () => {
         const executor = await makeLoginExecutor({
           user: {
             name: 'Test User',
