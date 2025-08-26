@@ -60,7 +60,7 @@ router.get(
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
         courseInstanceId: res.locals.course_instance.id,
-        selfEnrollKey: res.locals.course_instance.enrollment_code,
+        enrollmentCode: res.locals.course_instance.enrollment_code,
       }),
       host,
     ).href;
