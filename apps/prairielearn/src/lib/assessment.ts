@@ -272,7 +272,7 @@ export async function gradeAssessmentInstance(
         // If we're supposed to close the assessment, do it *before* we
         // we start grading. This avoids a race condition where the student
         // makes an additional submission while grading is already in progress.
-        await sqldb.queryAsync(sql.close_assessment_instance, {
+        await sqldb.execute(sql.close_assessment_instance, {
           assessment_instance_id,
           authn_user_id,
           client_fingerprint_id,
@@ -316,7 +316,7 @@ export async function gradeAssessmentInstance(
   // `gradeVariant` is resilient to being run multiple times concurrently. The
   // only bad thing that will happen is that we'll have wasted some work, but
   // that's acceptable.
-  await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
+  await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
 }
 
 const InstancesToGradeSchema = z.object({
@@ -408,7 +408,7 @@ export async function updateAssessmentStatisticsForCourseInstance(
 export async function updateAssessmentStatistics(assessment_id: string): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     // lock the assessment
-    await sqldb.queryOneRowAsync(sql.select_assessment_lock, { assessment_id });
+    await sqldb.executeRow(sql.select_assessment_lock, { assessment_id });
 
     // check whether we need to update the statistics
     const needs_statistics_update = await sqldb.queryRow(
@@ -419,7 +419,7 @@ export async function updateAssessmentStatistics(assessment_id: string): Promise
     if (!needs_statistics_update) return;
 
     // update the statistics
-    await sqldb.queryOneRowAsync(sql.update_assessment_statistics, { assessment_id });
+    await sqldb.executeRow(sql.update_assessment_statistics, { assessment_id });
   });
 }
 
@@ -435,7 +435,7 @@ export async function updateAssessmentInstanceScore(
       AssessmentInstanceSchema,
     );
     const points = (score_perc * (max_points ?? 0)) / 100;
-    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+    await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
@@ -456,7 +456,7 @@ export async function updateAssessmentInstancePoints(
       AssessmentInstanceSchema,
     );
     const score_perc = (points / (max_points != null && max_points > 0 ? max_points : 1)) * 100;
-    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+    await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
@@ -508,7 +508,7 @@ export async function selectAssessmentInstanceLogCursor(
 }
 
 export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.queryAsync(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 
 export async function updateAssessmentQuestionStatsForAssessment(
@@ -521,7 +521,7 @@ export async function updateAssessmentQuestionStatsForAssessment(
       IdSchema,
     );
     await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
-    await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
+    await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
 
@@ -547,7 +547,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
   assessment_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+  await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
     assessment_id,
     authn_user_id,
   });

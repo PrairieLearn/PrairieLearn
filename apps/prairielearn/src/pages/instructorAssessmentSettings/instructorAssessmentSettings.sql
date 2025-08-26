@@ -10,7 +10,7 @@ WHERE
 
 -- BLOCK tids
 SELECT
-  a.tid AS tid
+  a.tid
 FROM
   assessments AS a
 WHERE

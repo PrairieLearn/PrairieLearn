@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
@@ -59,7 +59,7 @@ export async function updateCourseRequest(req, res) {
     throw new Error(`Unknown course request action "${action}"`);
   }
 
-  await queryAsync(sql.update_course_request, {
+  await execute(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,
     action,
@@ -68,7 +68,7 @@ export async function updateCourseRequest(req, res) {
 }
 
 export async function createCourseFromRequest(req, res) {
-  await queryAsync(sql.update_course_request, {
+  await execute(sql.update_course_request, {
     id: req.body.request_id,
     user_id: res.locals.authn_user.user_id,
     action: 'creating',

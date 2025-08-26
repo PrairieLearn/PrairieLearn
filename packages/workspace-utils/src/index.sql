@@ -140,9 +140,9 @@ INSERT INTO
   )
 SELECT
   'Workspace',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', w.state_updated_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are

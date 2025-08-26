@@ -72,9 +72,9 @@ FROM
 INSERT INTO
   pt_reservations (enrollment_id, exam_id, session_id)
 SELECT
-  e.id,
-  x.id,
-  s.id
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id
 FROM
   pt_enrollments AS e,
   pt_exams AS x,
@@ -87,9 +87,9 @@ WHERE
 INSERT INTO
   pt_reservations (enrollment_id, exam_id, session_id)
 SELECT
-  e.id,
-  x.id,
-  s.id
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id
 FROM
   pt_enrollments AS e,
   pt_exams AS x,
@@ -138,9 +138,9 @@ WITH
 INSERT INTO
   pt_reservations (enrollment_id, exam_id, session_id)
 SELECT
-  e.id,
-  x.id,
-  s.id
+  e.id AS enrollment_id,
+  x.id AS exam_id,
+  s.id AS session_id
 FROM
   pt_enrollments AS e,
   new_exams AS x,
