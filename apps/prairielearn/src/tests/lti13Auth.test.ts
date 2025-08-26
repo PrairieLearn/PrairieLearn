@@ -22,7 +22,7 @@ import {
   makeLoginExecutor,
   withServer,
 } from './lti13TestHelpers.js';
-import { withConfig } from './utils/config.js';
+import { withoutLogging } from './utils/config.js';
 
 const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
 const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
@@ -125,7 +125,7 @@ describe('LTI 1.3 authentication', () => {
     assert.equal(res.status, 200);
 
     // Logging in again should fail because of nonce reuse.
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const repeatLoginRes = await executor.login();
       assert.equal(repeatLoginRes.status, 500);
     });
@@ -153,7 +153,7 @@ describe('LTI 1.3 authentication', () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
 // Malformed login - missing login_hint
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const startBadLoginResponse = await fetchWithCookies(
         `${siteUrl}/pl/lti13_instance/1/auth/login`,
         {
@@ -193,7 +193,7 @@ assert.ok(redirectUri);
     assert.ok(nonce);
 
     // Missing state parameter should error
-    await withConfig({ additionalErrorLogging: false }, async () => {
+    await withoutLogging(async () => {
       const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
         method: 'POST',
         body: new URLSearchParams({
@@ -464,7 +464,7 @@ assert.ok(redirectUri);
     test.sequential('login should fail with misconfiguration error', async () => {
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/4/course_navigation`;
 
-      await withConfig({ additionalErrorLogging: false }, async () => {
+      await withoutLogging(async () => {
         const executor = await makeLoginExecutor({
           user: {
             name: 'Test User',

@@ -47,7 +47,7 @@ export default (function (err, req, res, _next) {
 
   const referrer = req.get('Referrer') || null;
 
-  const logError = DEV_EXECUTION_MODE !== 'test' || config.additionalErrorLogging;
+  const logError = DEV_EXECUTION_MODE !== 'test';
   if (logError) {
     logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
       msg: err.message,

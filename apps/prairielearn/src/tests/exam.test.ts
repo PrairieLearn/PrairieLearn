@@ -10,7 +10,7 @@ import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-import { withConfig } from './utils/config.js';
+import { withoutLogging } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -904,9 +904,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 0);
       });
     });
-    withConfig({ additionalErrorLogging: false }, () => {
-      helperQuestion.getInstanceQuestion(locals);
-    });
+    withoutLogging(() => helperQuestion.getInstanceQuestion(locals));
     describe('access the question', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
@@ -919,9 +917,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 1);
       });
     });
-    withConfig({ additionalErrorLogging: false }, () => {
-      helperQuestion.getInstanceQuestion(locals);
-    });
+    withoutLogging(() => helperQuestion.getInstanceQuestion(locals));
     describe('access the question again', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');

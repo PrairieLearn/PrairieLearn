@@ -99,10 +99,6 @@
       "type": ["string", "null"],
       "default": "redis://localhost:6379"
     },
-    "additionalErrorLogging": {
-      "type": "boolean",
-      "default": true
-    },
     "logFilename": {
       "type": "string",
       "default": "server.log"

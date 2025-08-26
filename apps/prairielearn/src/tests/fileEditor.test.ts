@@ -24,7 +24,7 @@ import {
   updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { withConfig } from './utils/config.js';
+import { withoutLogging } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -319,7 +319,7 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
       // `fetch()` pre-normalizes the URL, which means we can't use it to test
       // path traversal attacks. In this specific case, we'll use `http.request()`
       // directly to avoid this normalization.
-      await withConfig({ additionalErrorLogging: false }, async () => {
+      await withoutLogging(async () => {
         const res = await new Promise<{ status: number; text: () => Promise<string> }>(
           (resolve, reject) => {
             // We deliberately use the deprecated `node:url#parse()` instead of
