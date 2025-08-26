@@ -407,7 +407,7 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callOptionalRow(
+  await sqldb.callRow(
     'sync_assessments',
     [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
     SprocSyncAssessmentsSchema,

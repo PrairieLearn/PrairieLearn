@@ -174,7 +174,7 @@ export const SprocServerLoadsCurrentSchema = z.object({
 });
 
 // Result of sync_assessments sproc
-export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema);
+export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
