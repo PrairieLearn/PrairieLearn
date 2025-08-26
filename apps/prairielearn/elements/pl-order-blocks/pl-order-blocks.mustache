@@ -20,7 +20,7 @@ $(function() {
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
             </div>
-            <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable" aria-label="Options Area">
+            <ul id="order-blocks-options-{{uuid}}" role="listbox" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable" aria-label="Options Area">
                 {{#options}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         uuid="{{uuid}}"
@@ -36,7 +36,7 @@ $(function() {
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{solution-header}}</span>
             </div>
-            <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone" aria-label="Answer Area">
+            <ul id="order-blocks-dropzone-{{uuid}}" role="listbox" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone" aria-label="Answer Area">
                 {{#submission_dict}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         style="margin-left: {{indent}}px;"
