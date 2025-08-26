@@ -103,7 +103,6 @@ class CourseIssueError extends Error {
       fatal: boolean;
     },
   ) {
-    // @ts-expect-error what is going on
     super(message, { cause: options?.cause });
     this.name = 'CourseIssueError';
     this.data = options?.data;
