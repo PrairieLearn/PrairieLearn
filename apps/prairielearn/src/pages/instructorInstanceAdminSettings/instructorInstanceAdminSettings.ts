@@ -27,7 +27,7 @@ import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
-import { generateJoinId } from '../../sync/fromDisk/courseInstances.js';
+import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -60,7 +60,7 @@ router.get(
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
         courseInstanceId: res.locals.course_instance.id,
-        selfEnrollKey: res.locals.course_instance.join_id,
+        selfEnrollKey: res.locals.course_instance.enrollment_code,
       }),
       host,
     ).href;
@@ -241,10 +241,10 @@ router.post(
       }
       flash('success', 'Course instance configuration updated successfully');
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'generate_join_id') {
-      await sqldb.queryAsync(sql.update_join_id, {
+    } else if (req.body.__action === 'generate_enrollment_code') {
+      await sqldb.execute(sql.update_enrollment_code, {
         course_instance_id: res.locals.course_instance.id,
-        join_id: generateJoinId(),
+        enrollment_code: generateEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');
       res.redirect(req.originalUrl);

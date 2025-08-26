@@ -265,7 +265,7 @@ function GenerateSelfEnrollmentLinkModal({ csrfToken }: { csrfToken: string }): 
           </div>
         `,
         footer: html`
-          <input type="hidden" name="__action" value="generate_join_id" />
+          <input type="hidden" name="__action" value="generate_enrollment_code" />
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
           <button type="submit" class="btn btn-danger">Generate new link</button>
