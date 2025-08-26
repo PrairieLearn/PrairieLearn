@@ -11,6 +11,9 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
+export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
+
 export const EnumChunkTypeSchema = z.enum([
   'elements',
   'elementExtensions',
@@ -21,6 +24,16 @@ export const EnumChunkTypeSchema = z.enum([
   'question',
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
+
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+  'lti13_pending',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
 
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
@@ -389,6 +402,30 @@ export const AssessmentSetSchema = z.object({
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
+export const AuditEventSchema = z.object({
+  action: EnumAuditEventActionSchema,
+  action_detail: z.string().nullable(),
+  agent_authn_user_id: IdSchema.nullable(),
+  agent_user_id: IdSchema.nullable(),
+  assessment_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  context: z.record(z.string(), z.any()),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString,
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  new_row: z.record(z.string(), z.any()).nullable(),
+  old_row: z.record(z.string(), z.any()).nullable(),
+  row_id: IdSchema,
+  subject_user_id: IdSchema.nullable(),
+  table_name: z.string(),
+});
+export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
+// This table is getting deprecated in favor of the `audit_events` table.
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -475,6 +512,7 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  enrollment_code: z.string().nullable(),
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
@@ -566,7 +604,15 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  user_id: IdSchema,
+  joined_at: DateFromISOString.nullable(),
+  lti_managed: z.boolean(),
+  pending_lti13_email: z.string().nullable(),
+  pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_name: z.string().nullable(),
+  pending_lti13_sub: z.string().nullable(),
+  pending_uid: z.string().nullable(),
+  status: EnumEnrollmentStatusSchema,
+  user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
@@ -1019,7 +1065,7 @@ export const QuestionSchema = z.object({
   external_grading_enable_networking: z.boolean().nullable(),
   external_grading_enabled: z.boolean().nullable(),
   external_grading_entrypoint: z.string().nullable(),
-  external_grading_environment: z.any(),
+  external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
@@ -1056,9 +1102,13 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
-
 export const QuestionScoreLogSchema = null;
-export const QuestionTagSchema = null;
+export const QuestionTagSchema = z.object({
+  id: IdSchema,
+  question_id: IdSchema,
+  tag_id: IdSchema,
+});
+export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const ReservationSchema = null;
 
 export const RubricSchema = z.object({

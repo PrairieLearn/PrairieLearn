@@ -42,7 +42,7 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}`);
+    void socket.join(`variant-${msg.variant_id}`);
 
     getVariantSubmissionsStatus(msg.variant_id).then(
       (submissions) => {
