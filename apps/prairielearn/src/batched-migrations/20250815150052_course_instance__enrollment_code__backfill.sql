@@ -4,15 +4,15 @@ SELECT
 FROM
   course_instances;
 
--- BLOCK update_course_instances_join_id
+-- BLOCK update_course_instances_enrollment_code
 UPDATE course_instances
 SET
-  join_id = SUBSTRING(
+  enrollment_code = SUBSTRING(
     MD5(RANDOM()::TEXT)
     FROM
       1 FOR 12
   )
 WHERE
-  join_id IS NULL
+  enrollment_code IS NULL
   AND id >= $start
   AND id <= $end;

@@ -1,3 +1,3 @@
 ALTER TABLE course_instances
-ALTER COLUMN join_id
+ALTER COLUMN enrollment_code
 SET NOT NULL;

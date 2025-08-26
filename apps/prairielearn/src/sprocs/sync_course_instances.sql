@@ -23,7 +23,7 @@ BEGIN
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
-        join_id VARCHAR(255),
+        enrollment_code VARCHAR(255),
         errors TEXT,
         warnings TEXT,
         data JSONB
@@ -32,7 +32,7 @@ BEGIN
     INSERT INTO disk_course_instances (
         short_name,
         uuid,
-        join_id,
+        enrollment_code,
         errors,
         warnings,
         data
@@ -57,8 +57,8 @@ BEGIN
         SELECT DISTINCT ON (src_short_name)
             src.short_name AS src_short_name,
             src.uuid AS src_uuid,
-             -- This join ID is only used for inserts, and not used on updates
-            src.join_id AS src_join_id,
+            -- This enrollment code is only used for inserts, and not used on updates
+            src.enrollment_code AS src_enrollment_code,
             dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
@@ -88,8 +88,8 @@ BEGIN
     insert_unmatched_src_rows AS (
         -- UTC is used as a temporary timezone, which will be updated in following statements
         INSERT INTO course_instances AS dest
-            (course_id, short_name, uuid, display_timezone, deleted_at, join_id)
-        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL, src_join_id
+            (course_id, short_name, uuid, display_timezone, deleted_at, enrollment_code)
+        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL, src_enrollment_code
         FROM matched_rows
         WHERE dest_id IS NULL
         -- This is a total hack, but the test suite hardcoded course instance ID 1

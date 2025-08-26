@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import z from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -16,7 +16,7 @@ export default makeBatchedMigration({
   },
 
   async execute(start: bigint, end: bigint) {
-    await queryAsync(sql.update_course_instances_join_id, {
+    await execute(sql.update_course_instances_enrollment_code, {
       start,
       end,
     });
