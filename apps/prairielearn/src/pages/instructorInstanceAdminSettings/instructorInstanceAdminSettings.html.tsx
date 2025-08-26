@@ -255,23 +255,22 @@ export function InstructorInstanceAdminSettings({
 
 function GenerateSelfEnrollmentLinkModal({ csrfToken }: { csrfToken: string }): HtmlSafeString {
   return html`
-      ${Modal({
-        id: 'generateSelfEnrollmentLinkModal',
-        title: 'Generate new self-enrollment link',
-        body: html`
-          <div>
-            Are you sure you want to generate a new self-enrollment link?
-            <strong>The current link will be deactivated.</strong> This action cannot be undone.
-          </div>
-        `,
-        footer: html`
-          <input type="hidden" name="__action" value="generate_enrollment_code" />
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger">Generate new link</button>
-        `,
-      })}
-    </form>
+    ${Modal({
+      id: 'generateSelfEnrollmentLinkModal',
+      title: 'Generate new self-enrollment link',
+      body: html`
+        <div>
+          Are you sure you want to generate a new self-enrollment link?
+          <strong>The current link will be deactivated.</strong> This action cannot be undone.
+        </div>
+      `,
+      footer: html`
+        <input type="hidden" name="__action" value="generate_enrollment_code" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Generate new link</button>
+      `,
+    })}
   `;
 }
 
