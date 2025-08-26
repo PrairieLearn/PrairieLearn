@@ -89,7 +89,7 @@ function getParamsForAssessment(
     return {
       number: index + 1,
       title: zone.title,
-      number_choose: zone.numberChoose,
+      number_choose: zone.numberChoose ?? null,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
@@ -244,7 +244,7 @@ function getParamsForAssessment(
 
       return {
         number: alternativeGroupNumber,
-        number_choose: question.numberChoose,
+        number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
         json_can_view: question.canView,
