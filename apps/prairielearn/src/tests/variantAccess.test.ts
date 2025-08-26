@@ -147,9 +147,7 @@ async function assertVariantAccess({
 
   // Test access to a rendered submission.
   const submissionUrl = `${siteUrl}${questionBasePath}${isStudentRoute ? '' : '/preview'}/variant/${variantId}/submission/${submissionId}`;
-  console.log('C', submissionUrl);
   const submissionRes = await fetch(submissionUrl);
-  console.log('after C');
   assert.equal(submissionRes.status, expectedAccess ? 200 : 403);
   if (expectedAccess) {
     const data = await submissionRes.json();
