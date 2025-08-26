@@ -201,21 +201,25 @@ ${submission.feedback?.manual}</textarea
               </li>
             `
           : ''}
-        <li class="list-group-item d-flex align-items-center flex-wrap gap-2">
-          <div class="form-check me-auto">
-            <input
-              id="skip_graded_submissions"
-              type="checkbox"
-              class="form-check-input"
-              name="skip_graded_submissions"
-              value="true"
-              ${resLocals.skip_graded_submissions ? 'checked' : ''}
-            />
-            <label class="form-check-label" for="skip_graded_submissions">
-              Skip graded submissions
-            </label>
-          </div>
-          <span>
+        <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
+          ${context === 'main'
+            ? html`
+                <div class="form-check">
+                  <input
+                    id="skip_graded_submissions"
+                    type="checkbox"
+                    class="form-check-input"
+                    name="skip_graded_submissions"
+                    value="true"
+                    ${resLocals.skip_graded_submissions ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="skip_graded_submissions">
+                    Skip graded submissions
+                  </label>
+                </div>
+              `
+            : ''}
+          <span class="ms-auto">
             ${!disable
               ? html`
                   <div
