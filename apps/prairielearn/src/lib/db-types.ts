@@ -11,6 +11,9 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
+export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
+
 export const EnumChunkTypeSchema = z.enum([
   'elements',
   'elementExtensions',
@@ -407,6 +410,30 @@ export const AssessmentSetSchema = z.object({
 });
 export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
+export const AuditEventSchema = z.object({
+  action: EnumAuditEventActionSchema,
+  action_detail: z.string().nullable(),
+  agent_authn_user_id: IdSchema.nullable(),
+  agent_user_id: IdSchema.nullable(),
+  assessment_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
+  context: z.record(z.string(), z.any()),
+  course_id: IdSchema.nullable(),
+  course_instance_id: IdSchema.nullable(),
+  date: DateFromISOString,
+  group_id: IdSchema.nullable(),
+  id: IdSchema,
+  institution_id: IdSchema.nullable(),
+  new_row: z.record(z.string(), z.any()).nullable(),
+  old_row: z.record(z.string(), z.any()).nullable(),
+  row_id: IdSchema,
+  subject_user_id: IdSchema.nullable(),
+  table_name: z.string(),
+});
+export type AuditEvent = z.infer<typeof AuditEventSchema>;
+
+// This table is getting deprecated in favor of the `audit_events` table.
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -493,6 +520,7 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
+  enrollment_code: z.string().nullable(),
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
