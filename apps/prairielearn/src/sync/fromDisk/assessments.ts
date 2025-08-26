@@ -57,11 +57,6 @@ function getParamsForAssessment(
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
-  const allowIssueReporting = assessment.allowIssueReporting;
-  const allowRealTimeGrading = assessment.allowRealTimeGrading;
-  const requireHonorCode = assessment.requireHonorCode;
-  const allowPersonalNotes = assessment.allowPersonalNotes;
-
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
@@ -277,17 +272,18 @@ function getParamsForAssessment(
     multiple_instance: assessment.multipleInstance,
     // If shuffleQuestions is not set, it's implicitly false for Homework and true for Exams.
     shuffle_questions:
-      (assessment.type === 'Exam' && assessment.shuffleQuestions == null) ||
-      assessment.shuffleQuestions
-        ? true
-        : false,
-    allow_issue_reporting: allowIssueReporting,
-    allow_real_time_grading: allowRealTimeGrading,
-    allow_personal_notes: allowPersonalNotes,
+      assessment.shuffleQuestions == null
+        ? assessment.type === 'Exam'
+        : assessment.shuffleQuestions,
+    allow_issue_reporting: assessment.allowIssueReporting,
+    allow_real_time_grading: assessment.allowRealTimeGrading,
+    allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
     // NOTE: There are various homeworks with requireHonorCode set to true, but that value is ignored.
     require_honor_code:
-      requireHonorCode == null ? (assessment.type === 'Exam' ? true : false) : requireHonorCode,
+      assessment.requireHonorCode == null
+        ? assessment.type === 'Exam'
+        : assessment.requireHonorCode,
     honor_code: assessment.honorCode,
     auto_close: assessment.autoClose,
     max_points: assessment.maxPoints,
