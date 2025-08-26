@@ -3,10 +3,10 @@ columns
     course_id: bigint not null
     deleted_at: timestamp with time zone
     display_timezone: text not null
+    enrollment_code: character varying(255)
     enrollment_limit: integer
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
-    join_id: character varying(255)
     json_comment: jsonb
     long_name: text
     share_source_publicly: boolean not null default false
