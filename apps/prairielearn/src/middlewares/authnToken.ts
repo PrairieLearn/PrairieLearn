@@ -1,10 +1,13 @@
 import * as crypto from 'node:crypto';
 
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+
+import { IdSchema, UserSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -26,10 +29,18 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_user_from_token_hash, {
-    token_hash: crypto.createHash('sha256').update(token, 'utf8').digest('hex'),
-  });
-  if (result.rows.length === 0) {
+  const authnData = await sqldb.queryOptionalRow(
+    sql.select_user_from_token_hash,
+    {
+      token_hash: crypto.createHash('sha256').update(token, 'utf8').digest('hex'),
+    },
+    z.object({
+      user: UserSchema,
+      is_administrator: z.boolean(),
+      token_id: IdSchema,
+    }),
+  );
+  if (authnData == null) {
     // Invalid token received
     res.status(401).send({
       message: 'The provided authentication token was invalid',
@@ -37,16 +48,16 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  res.locals.authn_user = result.rows[0].user;
-  res.locals.is_administrator = result.rows[0].is_administrator;
+  res.locals.authn_user = authnData.user;
+  res.locals.is_administrator = authnData.is_administrator;
 
   // Let's note that this token was used, but don't wait for this
   // to continue handling the request
   next();
 
   sqldb
-    .queryAsync(sql.update_token_last_used, {
-      token_id: result.rows[0].token_id,
+    .execute(sql.update_token_last_used, {
+      token_id: authnData.token_id,
     })
     .catch((err) => {
       Sentry.captureException(err);

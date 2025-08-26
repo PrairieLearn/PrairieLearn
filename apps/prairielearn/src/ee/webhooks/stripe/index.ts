@@ -98,14 +98,14 @@ router.post(
       event.type === 'checkout.session.completed' ||
       event.type === 'checkout.session.async_payment_succeeded'
     ) {
-      const session = event.data.object as Stripe.Checkout.Session;
+      const session = event.data.object;
       await handleSessionUpdate(session);
     } else if (event.type === 'product.updated') {
-      const product = event.data.object as Stripe.Product;
+      const product = event.data.object;
       const productId = product.id;
       await clearStripeProductCache(productId);
     } else if (event.type === 'price.updated') {
-      const price = event.data.object as Stripe.Price;
+      const price = event.data.object;
       const productId = typeof price.product === 'string' ? price.product : price.product.id;
       await clearStripeProductCache(productId);
     }

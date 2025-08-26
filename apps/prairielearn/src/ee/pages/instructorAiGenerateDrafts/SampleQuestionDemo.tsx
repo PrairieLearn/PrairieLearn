@@ -73,7 +73,7 @@ export function SampleQuestionDemo({
   useLayoutEffect(() => {
     if (cardRef.current) {
       // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
-      onMathjaxTypeset([cardRef.current]);
+      void onMathjaxTypeset([cardRef.current]);
     }
   }, [variant?.question, onMathjaxTypeset]);
 
@@ -310,7 +310,7 @@ function CheckboxOrRadioInput({
         <FormCheck
           key={option.value}
           id={`check-${option.value}`}
-          type={answerType as 'checkbox' | 'radio'}
+          type={answerType}
           label={variantOptionToString(option)}
           value={option.value}
           checked={selectedOptions.has(option.value)}

@@ -66,25 +66,25 @@ export async function initWithLock(directories: string[], project: string) {
   await sqldb.defaultPool.setSearchSchema('public');
   try {
     // Create the migrations table if needed
-    await sqldb.queryAsync(sql.create_migrations_table, {});
+    await sqldb.execute(sql.create_migrations_table);
 
     // Apply necessary changes to the migrations table as needed.
     try {
-      await sqldb.queryAsync('SELECT project FROM migrations;', {});
+      await sqldb.execute('SELECT project FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table');
-        await sqldb.queryAsync(sql.add_projects_column, {});
+        await sqldb.execute(sql.add_projects_column);
       } else {
         throw err;
       }
     }
     try {
-      await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
+      await sqldb.execute('SELECT timestamp FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table again');
-        await sqldb.queryAsync(sql.add_timestamp_column, {});
+        await sqldb.execute(sql.add_timestamp_column);
       } else {
         throw err;
       }
@@ -136,10 +136,10 @@ export async function initWithLock(directories: string[], project: string) {
         const annotations = parseAnnotations(migrationSql);
         try {
           if (annotations.has('NO TRANSACTION')) {
-            await sqldb.queryAsync(migrationSql, {});
+            await sqldb.execute(migrationSql);
           } else {
             await sqldb.runInTransactionAsync(async () => {
-              await sqldb.queryAsync(migrationSql, {});
+              await sqldb.execute(migrationSql);
             });
           }
         } catch (err) {
@@ -156,7 +156,7 @@ export async function initWithLock(directories: string[], project: string) {
       }
 
       // Record the migration.
-      await sqldb.queryAsync(sql.insert_migration, {
+      await sqldb.execute(sql.insert_migration, {
         filename,
         timestamp,
         project,

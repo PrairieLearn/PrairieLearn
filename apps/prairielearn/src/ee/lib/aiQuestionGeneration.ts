@@ -2,7 +2,7 @@ import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { Cache } from '@prairielearn/cache';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
@@ -395,7 +395,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       return;
     }
 
-    await queryAsync(sql.insert_draft_question_metadata, {
+    await execute(sql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
       creator_id: authnUserId,
     });

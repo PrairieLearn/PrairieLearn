@@ -357,7 +357,7 @@ router.post(
       }
       // Only close issues if the submission was successfully graded
       if (body.unsafe_issue_ids_close.length > 0) {
-        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+        await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
           authn_user_id: res.locals.authn_user.user_id,
@@ -404,7 +404,7 @@ router.post(
           );
         }
       }
-      await sqldb.queryAsync(sql.update_assigned_grader, {
+      await sqldb.execute(sql.update_assigned_grader, {
         instance_question_id: res.locals.instance_question.id,
         assigned_grader,
         requires_manual_grading: actionPrompt !== 'graded',
