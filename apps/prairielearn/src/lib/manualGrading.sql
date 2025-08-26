@@ -1,11 +1,15 @@
 -- BLOCK select_next_ai_submission_group_id
 SELECT
-  MIN(asg.id) AS ai_submission_group_id
+  asg.id as ai_submission_group_id
 FROM
   ai_submission_groups AS asg
 WHERE
   asg.assessment_question_id = $assessment_question_id
-  AND asg.id > $prior_ai_submission_group_id;
+  AND asg.id > $prior_ai_submission_group_id
+ORDER BY
+  asg.id
+LIMIT
+  1;
 
 -- BLOCK ai_submission_group_id_for_instance_question
 SELECT

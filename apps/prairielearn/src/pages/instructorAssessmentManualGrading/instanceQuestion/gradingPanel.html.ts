@@ -29,7 +29,7 @@ export function GradingPanel({
   grading_job,
   submissionGroupName,
   aiGradingInfo,
-  aiSubmissionGroupsExist,
+  showAiSubmissionGroup = false,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
@@ -42,7 +42,7 @@ export function GradingPanel({
   grading_job?: SubmissionOrGradingJob;
   submissionGroupName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiSubmissionGroupsExist?: boolean;
+  showAiSubmissionGroup?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -96,7 +96,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${aiSubmissionGroupsExist
+        ${showAiSubmissionGroup
           ? html`
               <li class="list-group-item align-items-center">
                 <label for="submission-group-toggle" class="form-label"> Submission Group: </label>

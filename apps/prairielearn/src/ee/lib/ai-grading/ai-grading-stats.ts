@@ -134,7 +134,7 @@ export async function fillInstanceQuestionColumns<
 
     // Retrieve the current submission group of the instance question
     instance_question.ai_submission_group_name = instance_question.ai_submission_group_id
-      ? aiSubmissionGroupIdToName[instance_question.ai_submission_group_id]
+      ? (aiSubmissionGroupIdToName[instance_question.ai_submission_group_id] ?? null)
       : null;
   }
   return results;

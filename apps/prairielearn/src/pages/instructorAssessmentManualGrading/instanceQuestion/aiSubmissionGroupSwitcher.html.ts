@@ -18,8 +18,10 @@ export function AISubmissionGroupSwitcher({
       return html`
         <a
           class="dropdown-item ${isSelected ? 'active' : ''}"
+          role="option"
           aria-current="${isSelected ? 'page' : ''}"
-          value="${group.id}"
+          href="#"
+          data-submission-group-id="${group.id}"
         >
           ${group.submission_group_name}
         </a>

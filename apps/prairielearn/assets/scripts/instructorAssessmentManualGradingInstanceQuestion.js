@@ -969,7 +969,10 @@ function addSubmissionGroupSelectionDropdownListeners() {
   });
 
   submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
+    const selectedAiSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
+    const selectedAiSubmissionGroupId = selectedAiSubmissionGroupDropdownItem.getAttribute(
+      'data-submission-group-id',
+    );
 
     await fetch(`${instanceQuestionId}/ai_submission_group`, {
       method: 'PUT',
@@ -977,30 +980,24 @@ function addSubmissionGroupSelectionDropdownListeners() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        aiSubmissionGroupId: selectedSubmissionGroupDropdownItem.getAttribute('value'),
+        aiSubmissionGroupId: selectedAiSubmissionGroupId,
       }),
     });
 
     const activeDropdownItem = document.querySelector('.dropdown-item.active');
     activeDropdownItem.classList.remove('active');
 
-    selectedSubmissionGroupDropdownItem.classList.add('active');
+    selectedAiSubmissionGroupDropdownItem.classList.add('active');
 
     // If a submission group is selected, show the grade button with a dropdown.
     // Otherwise, show the grade button without a dropdown.
-    gradeButton.classList.toggle(
-      'd-none',
-      selectedSubmissionGroupDropdownItem.getAttribute('value'),
-    );
-    gradeButtonWithDropdown.classList.toggle(
-      'd-none',
-      !selectedSubmissionGroupDropdownItem.getAttribute('value'),
-    );
+    gradeButton.classList.toggle('d-none', selectedAiSubmissionGroupId);
+    gradeButtonWithDropdown.classList.toggle('d-none', !selectedAiSubmissionGroupId);
 
     const submissionGroupSelectionDropdownSpan = document.querySelector(
       '#submission-group-selection-dropdown-span',
     );
     submissionGroupSelectionDropdownSpan.innerHTML =
-      selectedSubmissionGroupDropdownItem.textContent;
+      selectedAiSubmissionGroupDropdownItem.textContent;
   });
 }

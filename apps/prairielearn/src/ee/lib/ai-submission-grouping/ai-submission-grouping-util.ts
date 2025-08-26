@@ -8,15 +8,9 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-const sql = loadSqlEquiv(import.meta.url);
+import { AiSubmissionGroupSchema } from '../../../lib/db-types.js';
 
-export const AiSubmissionGroupSchema = z.object({
-  assessment_question_id: z.string(),
-  id: z.string(),
-  submission_group_description: z.string(),
-  submission_group_name: z.string(),
-});
-export type AiSubmissionGroup = z.infer<typeof AiSubmissionGroupSchema>;
+const sql = loadSqlEquiv(import.meta.url);
 
 const STANDARD_SUBMISSION_GROUPS = [
   {

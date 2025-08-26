@@ -181,7 +181,7 @@ export function InstanceQuestion({
                 graders,
                 submissionGroupName,
                 aiGradingInfo,
-                aiSubmissionGroupsExist,
+                showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
               })}
             </div>
           </div>
@@ -272,7 +272,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    aiSubmissionGroupsExist,
+                    showAiSubmissionGroup: false,
                   })}
                 </div>
               </div>

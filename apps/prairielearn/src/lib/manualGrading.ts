@@ -87,8 +87,8 @@ export async function nextInstanceQuestionUrl(
     const next_ai_submission_group_id = await sqldb.queryOptionalRow(
       sql.select_next_ai_submission_group_id,
       {
-        assessment_question_id: Number.parseInt(assessment_question_id),
-        prior_ai_submission_group_id: Number.parseInt(prior_ai_submission_group_id),
+        assessment_question_id: assessment_question_id ?? null,
+        prior_ai_submission_group_id,
       },
       IdSchema.nullable(),
     );
