@@ -1,6 +1,6 @@
 -- BLOCK select_next_ai_submission_group_id
 SELECT
-  asg.id as ai_submission_group_id
+  asg.id AS ai_submission_group_id
 FROM
   ai_submission_groups AS asg
 WHERE
