@@ -26,19 +26,20 @@ def find_questions_with_order_blocks(root_dir, output_csv):
     rows = []
 
     for match in matches:
-        match = os.path.normpath(match)
-        rel_path = os.path.relpath(match, root_dir)
+        abs_match = os.path.abspath(match)
+        parts = abs_match.split(os.sep)
 
-        # course dir is first part of relative path
-        parts = rel_path.split(os.sep)
-        if len(parts) < 3:
-            continue  # not enough path depth
-        course = parts[0]
+        if "questions" not in parts:
+            continue
 
-        # qid is path to dir containing question.html relative to course root
-        qid = os.path.relpath(os.path.dirname(match), os.path.join(root_dir, course))
+        q_index = parts.index("questions")
+        course_path = os.sep.join(parts[:q_index])  # absolute course root
+        # QID = everything after "questions/"
+        qid = os.path.relpath(
+            os.path.dirname(abs_match), os.path.join(course_path, "questions")
+        )
 
-        rows.append((course, qid))
+        rows.append((course_path, qid))
 
     # Write CSV
     with open(output_csv, "w", newline="") as f:
