@@ -2437,7 +2437,7 @@ describe('Assessment syncing', () => {
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
 
       // Insert a `pt_exams` row for the valid exam UUID.
-      await sqldb.queryAsync(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
+      await sqldb.execute(sql.insert_pt_exam, { uuid: '11111111-1111-1111-1111-111111111111' });
 
       await util.writeAndSyncCourseData(courseData);
       const syncedAssessment = await findSyncedAssessment('fail');
