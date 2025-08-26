@@ -2,16 +2,19 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -50,7 +53,7 @@ router.get(
         questions,
         courseStaff,
         num_open_instances,
-        aiGradingEnabled,
+        adminFeaturesEnabled: aiGradingEnabled && res.locals.is_administrator,
       }),
     );
   }),
@@ -104,7 +107,7 @@ router.post(
         // number of instances as the others, and that is expected.
         const numInstancesPerGrader = Math.ceil(numInstancesToGrade / assignedGraderIds.length);
         for (const graderId of assignedGraderIds) {
-          await queryAsync(sql.update_instance_question_graders, {
+          await execute(sql.update_instance_question_graders, {
             assessment_id: res.locals.assessment.id,
             unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
             assigned_grader: graderId,
@@ -153,6 +156,54 @@ router.post(
         });
       }
       flash('success', 'AI grading successfully initiated.');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'export_ai_grading_statistics') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      if (!aiGradingEnabled) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const stats = await generateAssessmentAiGradingStats(res.locals.assessment as Assessment);
+      res.attachment('assessment_statistics.csv');
+      stringify([...stats.perQuestion, stats.total], {
+        header: true,
+        columns: [
+          'assessmentQuestionId',
+          'questionNumber',
+          'truePositives',
+          'trueNegatives',
+          'falsePositives',
+          'falseNegatives',
+          'accuracy',
+          'precision',
+          'recall',
+          'f1score',
+        ],
+      }).pipe(res);
+    } else if (req.body.__action === 'delete_ai_grading_data') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const assessment = res.locals.assessment as Assessment;
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      await deleteAiGradingJobs({
+        assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      flash('success', 'AI grading data deleted successfully.');
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

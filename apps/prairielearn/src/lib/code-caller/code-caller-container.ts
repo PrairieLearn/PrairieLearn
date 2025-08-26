@@ -135,16 +135,16 @@ export class CodeCallerContainer implements CodeCaller {
   callCount: number;
   hasBindMount: boolean;
   options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
-  stdinStream: MemoryStream | null;
-  stdoutStream: MemoryStream | null;
-  stderrStream: MemoryStream | null;
+  stdinStream: MemoryStream | undefined;
+  stdoutStream: MemoryStream | undefined;
+  stderrStream: MemoryStream | undefined;
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string;
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
-  hostDirectory: tmp.DirectoryResult | null;
+  hostDirectory: tmp.DirectoryResult | undefined;
 
   /**
    * Creating a new {@link CodeCallerContainer} instance requires some async work,
@@ -252,7 +252,7 @@ export class CodeCallerContainer implements CodeCaller {
     type: CallType,
     directory: string | null,
     file: string | null,
-    fcn: string,
+    fcn: string | null,
     args: any[],
   ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
@@ -349,8 +349,8 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.state === CREATED) {
       this.state = EXITED;
     } else if (this.state === WAITING) {
-      this._cleanup();
       this.state = EXITING;
+      void this._cleanup();
     }
     this._checkState();
     this.debug('exit done()');
@@ -480,8 +480,8 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
     this.timeoutID = null;
-    this._cleanup();
     this.state = EXITING;
+    void this._cleanup();
     this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
   }
@@ -499,7 +499,7 @@ export class CodeCallerContainer implements CodeCaller {
    * @param err An error that occurred while waiting for the container to exit.
    * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err: Error | null | undefined, code?: number) {
+  _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -644,7 +644,7 @@ export class CodeCallerContainer implements CodeCaller {
   /**
    * Checks if the caller is ready for a call to call().
    */
-  _checkReadyForCall(fcn: string): boolean {
+  _checkReadyForCall(fcn: string | null): boolean {
     if (!this.container) {
       return this._logError(
         `Not ready for call, container is not created (state: ${String(this.state)})`,

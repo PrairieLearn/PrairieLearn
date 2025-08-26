@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
@@ -72,7 +72,7 @@ router.post(
     });
 
     if (req.body.__action === 'update_enrollment_limit') {
-      await queryAsync(sql.update_enrollment_limit, {
+      await execute(sql.update_enrollment_limit, {
         course_instance_id: course_instance.id,
         enrollment_limit: req.body.enrollment_limit || null,
       });

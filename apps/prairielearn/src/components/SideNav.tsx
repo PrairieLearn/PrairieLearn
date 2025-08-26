@@ -65,7 +65,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activePages: ['course_admin'],
@@ -100,7 +99,6 @@ const sideNavPagesTabs = {
       iconClasses: 'fa fa-edit',
       tabLabel: 'Course files',
       tabTooltip: 'Course files',
-      renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
       activePages: ['course_admin'],
@@ -126,7 +124,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/gradebook',
       iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activePages: ['instance_admin'],
@@ -134,7 +131,6 @@ const sideNavPagesTabs = {
       urlSuffix: '/instance_admin/students',
       iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',
-      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activePages: ['instance_admin'],
