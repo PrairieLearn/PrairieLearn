@@ -1,6 +1,6 @@
 import z from 'zod';
 
-import type { EffectiveQuestionType } from '../question-servers/index.js';
+import type { EffectiveQuestionType } from '../question-servers/types.js';
 
 import { GradingJobSchema, IssueSchema, SubmissionSchema, type Variant } from './db-types.js';
 import type { RubricData, RubricGradingData } from './manualGrading.types.js';
