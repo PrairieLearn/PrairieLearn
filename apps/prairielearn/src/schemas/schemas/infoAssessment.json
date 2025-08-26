@@ -457,8 +457,7 @@
         },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
-          "default": false
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",

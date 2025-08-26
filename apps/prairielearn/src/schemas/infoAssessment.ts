@@ -137,7 +137,7 @@ export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   id: QuestionIdJsonSchema,
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
