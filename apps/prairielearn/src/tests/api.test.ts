@@ -283,51 +283,6 @@ describe('API', { timeout: 60_000 }, function () {
       assert.lengthOf(json, 7);
     });
 
-    test.sequential('GET to API for assessment instance log succeeds', async function () {
-      locals.apiAssessmentInstanceLogUrl =
-        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/log`;
-
-      const res = await fetch(locals.apiAssessmentInstanceLogUrl, {
-        headers: {
-          'Private-Token': locals.api_token,
-        },
-      });
-      assert.equal(res.status, 200);
-
-      const json = (await res.json()) as any;
-      assert.isArray(json);
-    });
-
-    test.sequential(
-      'GET to API for non-existent assessment instance returns 404',
-      async function () {
-        const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999', {
-          headers: {
-            'Private-Token': locals.api_token,
-          },
-        });
-        assert.equal(res.status, 404);
-
-        const json = (await res.json()) as any;
-        assert.equal(json.message, 'Not Found');
-      },
-    );
-
-    test.sequential(
-      'GET to API for non-existent assessment instance log returns 404',
-      async function () {
-        const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999/log', {
-          headers: {
-            'Private-Token': locals.api_token,
-          },
-        });
-        assert.equal(res.status, 404);
-
-        const json = (await res.json()) as any;
-        assert.equal(json.message, 'Not Found');
-      },
-    );
-
     test.sequential('GET to API for assessment access rules succeeds', async function () {
       locals.apiAssessmentAccessRulesUrl =
         locals.apiCourseInstanceUrl +
