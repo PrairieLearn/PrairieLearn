@@ -762,7 +762,6 @@ function QuestionPanel({
 }) {
   const instance_question_info =
     'instance_question_info' in resLocals ? resLocals.instance_question_info : null;
-  const hasInstanceQuestion = 'instance_question' in resLocals;
   const { question, questionHtml, course } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
@@ -841,7 +840,7 @@ function QuestionPanel({
           ? AiGradingHtmlPreview(questionHtml)
           : unsafeHtml(questionHtml)}
       </div>
-      ${showFooter && hasInstanceQuestion
+      ${showFooter
         ? QuestionFooter({
             resLocals,
             questionContext,
