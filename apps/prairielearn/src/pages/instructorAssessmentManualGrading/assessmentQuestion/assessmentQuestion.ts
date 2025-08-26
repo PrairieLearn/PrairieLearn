@@ -18,6 +18,7 @@ import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   resetInstanceQuestionsAiSubmissionGroups,
   selectAiSubmissionGroups,
+  selectAssessmentQuestionHasAiSubmissionGroups,
 } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 import { aiSubmissionGrouping } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping.js';
 import { features } from '../../../lib/features/index.js';
@@ -106,6 +107,16 @@ router.get(
     ) {
       throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
+
+    const aiGradingMode =
+      (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      res.locals.assessment_question.ai_grading_mode;
+    const useAiSubmissionGroups =
+      aiGradingMode &&
+      (await selectAssessmentQuestionHasAiSubmissionGroups({
+        assessmentQuestionId: res.locals.assessment_question.id,
+      }));
+
     res.redirect(
       await manualGrading.nextInstanceQuestionUrl(
         res.locals.urlPrefix,
@@ -114,6 +125,7 @@ router.get(
         res.locals.authz_data.user.user_id,
         req.query.prior_instance_question_id ?? null,
         res.locals.skip_graded_submissions,
+        useAiSubmissionGroups,
       ),
     );
   }),

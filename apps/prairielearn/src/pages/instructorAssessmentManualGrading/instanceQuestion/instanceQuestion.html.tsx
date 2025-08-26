@@ -228,13 +228,11 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
-  aiSubmissionGroupsExist,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
-  aiSubmissionGroupsExist?: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -298,7 +296,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    aiSubmissionGroupsExist,
+                    showAiSubmissionGroup: false,
                   })}
                 </div>
               </div>

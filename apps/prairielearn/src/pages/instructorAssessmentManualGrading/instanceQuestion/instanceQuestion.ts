@@ -428,6 +428,13 @@ router.post(
         });
       }
 
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      const useAiSubmissionGroups =
+        aiGradingEnabled &&
+        (await selectAssessmentQuestionHasAiSubmissionGroups({
+          assessmentQuestionId: res.locals.assessment_question.id,
+        }));
+
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
@@ -436,15 +443,34 @@ router.post(
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
           res.locals.skip_graded_submissions,
+          useAiSubmissionGroups,
         ),
       );
     } else if (
       body.__action === 'add_manual_grade_for_submission_group_ungraded' ||
       body.__action === 'add_manual_grade_for_submission_group'
     ) {
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+      if (!aiGradingEnabled) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const useAiSubmissionGroups =
+        aiGradingEnabled &&
+        (await selectAssessmentQuestionHasAiSubmissionGroups({
+          assessmentQuestionId: res.locals.assessment_question.id,
+        }));
+
+      if (!useAiSubmissionGroups) {
+        // This should not happen, since the UI only lets users grade by submission group if
+        // submission groups were previously generated.
+        throw new error.HttpStatusError(400, 'Submission groups not generated.');
+      }
+
       const ai_submission_group_id = res.locals.instance_question.ai_submission_group_id;
       if (!ai_submission_group_id) {
-        throw new error.HttpStatusError(404, 'AI submission group not found');
+        throw new error.HttpStatusError(404, 'Selected AI submission group not found');
       }
 
       const instanceQuestionsInGroup = await sqldb.queryRows(
@@ -515,6 +541,7 @@ router.post(
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
           res.locals.skip_graded_submissions,
+          true,
         ),
       );
     } else if (body.__action === 'modify_rubric_settings') {
@@ -554,6 +581,15 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
+      const aiGradingMode =
+        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        res.locals.assessment_question.ai_grading_mode;
+      const useAiSubmissionGroups =
+        aiGradingMode &&
+        (await selectAssessmentQuestionHasAiSubmissionGroups({
+          assessmentQuestionId: res.locals.assessment_question.id,
+        }));
+
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl(
           res.locals.urlPrefix,
@@ -562,6 +598,7 @@ router.post(
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id,
           res.locals.skip_graded_submissions,
+          useAiSubmissionGroups,
         ),
       );
     } else if (body.__action === 'report_issue') {

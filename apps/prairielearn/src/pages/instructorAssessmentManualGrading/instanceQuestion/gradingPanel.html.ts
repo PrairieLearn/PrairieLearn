@@ -96,7 +96,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${showAiSubmissionGroup
+        ${showAiSubmissionGroup && context === 'main'
           ? html`
               <li class="list-group-item align-items-center">
                 <label for="submission-group-toggle" class="form-label"> Submission Group: </label>
@@ -222,60 +222,65 @@ ${submission.feedback?.manual}</textarea
           <span class="ms-auto">
             ${!disable
               ? html`
-                  <div
-                    id="grade-button-with-options"
-                    class="btn-group ${submissionGroupName ? '' : 'd-none'}"
-                  >
-                    <button
-                      type="submit"
-                      class="btn btn-primary"
-                      name="__action"
-                      value="add_manual_grade"
-                    >
-                      Grade
-                    </button>
-                    <button
-                      id="grade-options-dropdown"
-                      type="button"
-                      class="btn btn-primary dropdown-toggle dropdown-toggle-split"
-                      data-bs-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    ></button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                      <button
-                        type="submit"
-                        class="dropdown-item"
-                        name="__action"
-                        value="add_manual_grade"
-                      >
-                        This instance question
-                      </button>
+                  ${context === 'main'
+                    ? html`
+                        <div
+                          id="grade-button-with-options"
+                          class="btn-group ${submissionGroupName ? '' : 'd-none'}"
+                        >
+                          <button
+                            type="submit"
+                            class="btn btn-primary"
+                            name="__action"
+                            value="add_manual_grade"
+                          >
+                            Grade
+                          </button>
+                          <button
+                            id="grade-options-dropdown"
+                            type="button"
+                            class="btn btn-primary dropdown-toggle dropdown-toggle-split"
+                            data-bs-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          ></button>
+                          <div class="dropdown-menu dropdown-menu-end">
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade"
+                            >
+                              This instance question
+                            </button>
 
-                      <div class="dropdown-divider"></div>
+                            <div class="dropdown-divider"></div>
 
-                      <button
-                        type="submit"
-                        class="dropdown-item"
-                        name="__action"
-                        value="add_manual_grade_for_submission_group_ungraded"
-                      >
-                        All ungraded instance questions in submission group
-                      </button>
-                      <button
-                        type="submit"
-                        class="dropdown-item"
-                        name="__action"
-                        value="add_manual_grade_for_submission_group"
-                      >
-                        All instance questions in submission group
-                      </button>
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade_for_submission_group_ungraded"
+                            >
+                              All ungraded instance questions in submission group
+                            </button>
+                            <button
+                              type="submit"
+                              class="dropdown-item"
+                              name="__action"
+                              value="add_manual_grade_for_submission_group"
+                            >
+                              All instance questions in submission group
+                            </button>
 
-                      <div class="dropdown-item-text text-muted small">
-                        AI can make mistakes. Review submission group assignments before grading.
-                      </div>
-                    </div>
-                  </div>
+                            <div class="dropdown-item-text text-muted small">
+                              AI can make mistakes. Review submission group assignments before
+                              grading.
+                            </div>
+                          </div>
+                        </div>
+                      `
+                    : ''}
                   <button
                     id="grade-button"
                     type="submit"
