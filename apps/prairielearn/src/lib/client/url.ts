@@ -39,10 +39,10 @@ export function getStudentDetailUrl(urlPrefix: string, user_id: string): string 
 
 export function getSelfEnrollmentLinkUrl({
   courseInstanceId,
-  selfEnrollKey,
+  enrollmentCode,
 }: {
   courseInstanceId: string;
-  selfEnrollKey: string;
+  enrollmentCode: string;
 }): string {
-  return `/pl/course_instance/${courseInstanceId}/join/${selfEnrollKey}`;
+  return `/pl/course_instance/${courseInstanceId}/join/${enrollmentCode}`;
 }
