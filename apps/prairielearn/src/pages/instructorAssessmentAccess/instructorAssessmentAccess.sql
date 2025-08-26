@@ -24,10 +24,7 @@ SELECT
     WHEN aar.time_limit_min IS NULL THEN '—'
     ELSE aar.time_limit_min::text || ' min'
   END AS time_limit,
-  CASE
-    WHEN aar.password IS NULL THEN '—'
-    ELSE aar.password
-  END AS password,
+  coalesce(aar.password, '—') AS password,
   aar.exam_uuid,
   pt_c.id AS pt_course_id,
   pt_c.name AS pt_course_name,
