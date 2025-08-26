@@ -59,7 +59,7 @@ const AssessmentAccessRuleDataSchema = z.array(
   }),
 );
 
-const AssessmentInstanceDataSchema = z.array(
+export const AssessmentInstanceDataSchema = z.array(
   z.object({
     assessment_instance_id: AssessmentInstanceSchema.shape.id,
     assessment_id: AssessmentInstanceSchema.shape.assessment_id,
@@ -68,11 +68,12 @@ const AssessmentInstanceDataSchema = z.array(
     assessment_label: z.string(),
     assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
     assessment_number: AssessmentSchema.shape.number,
-    user_id: AssessmentInstanceSchema.shape.user_id,
-    user_uid: UserSchema.shape.uid,
-    user_uin: UserSchema.shape.uin,
-    user_name: UserSchema.shape.name,
-    user_role: z.string(),
+    // Left join users table
+    user_id: UserSchema.shape.user_id.nullable(),
+    user_uid: UserSchema.shape.uid.nullable(),
+    user_uin: UserSchema.shape.uin.nullable(),
+    user_name: UserSchema.shape.name.nullable(),
+    user_role: z.string().nullable(),
     max_points: AssessmentInstanceSchema.shape.max_points,
     max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
     points: AssessmentInstanceSchema.shape.points,
@@ -80,9 +81,10 @@ const AssessmentInstanceDataSchema = z.array(
     assessment_instance_number: AssessmentInstanceSchema.shape.number,
     open: AssessmentInstanceSchema.shape.open,
     modified_at: z.string(),
-    group_id: AssessmentInstanceSchema.shape.group_id,
-    group_name: SprocGroupInfoSchema.shape.name,
-    group_uids: SprocGroupInfoSchema.shape.uid_list,
+    // Left join group_info sproc
+    group_id: AssessmentInstanceSchema.shape.group_id.nullable(),
+    group_name: SprocGroupInfoSchema.shape.name.nullable(),
+    group_uids: SprocGroupInfoSchema.shape.uid_list.nullable(),
     time_remaining: z.string(),
     start_date: z.string(),
     duration_seconds: z.number(),

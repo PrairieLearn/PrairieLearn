@@ -11,7 +11,6 @@ import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
-  AssessmentSetSchema,
   IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
@@ -23,40 +22,10 @@ import {
   VariantSchema,
   ZoneSchema,
 } from '../../../../lib/db-types.js';
+import { AssessmentInstanceDataSchema } from '../courseInstanceAssessments/index.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
-
-const AssessmentInstanceDataSchema = z.array(
-  z.object({
-    assessment_instance_id: AssessmentInstanceSchema.shape.id,
-    assessment_id: AssessmentSchema.shape.id,
-    assessment_name: AssessmentSchema.shape.tid,
-    assessment_title: AssessmentSchema.shape.title,
-    assessment_label: z.string(),
-    assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
-    assessment_number: AssessmentSchema.shape.number,
-    user_id: AssessmentInstanceSchema.shape.user_id,
-    user_uid: UserSchema.shape.uid,
-    user_uin: UserSchema.shape.uin,
-    user_name: UserSchema.shape.name,
-    user_role: z.string(),
-    max_points: AssessmentInstanceSchema.shape.max_points,
-    max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
-    points: AssessmentInstanceSchema.shape.points,
-    score_perc: AssessmentInstanceSchema.shape.score_perc,
-    assessment_instance_number: AssessmentInstanceSchema.shape.number,
-    open: AssessmentInstanceSchema.shape.open,
-    modified_at: z.string(),
-    group_id: SprocGroupInfoSchema.shape.id,
-    group_name: SprocGroupInfoSchema.shape.name,
-    group_uids: SprocGroupInfoSchema.shape.uid_list,
-    time_remaining: z.string(),
-    start_date: z.string(),
-    duration_seconds: z.number(),
-    highest_score: z.boolean(),
-  }),
-);
 
 const InstanceQuestionDataSchema = z.array(
   z.object({
@@ -80,17 +49,21 @@ const InstanceQuestionDataSchema = z.array(
   }),
 );
 
-const SubmissionDataSchema = z.array(
+export const SubmissionDataSchema = z.array(
   z.object({
     submission_id: SubmissionSchema.shape.id,
-    user_id: SubmissionSchema.shape.auth_user_id,
-    user_uid: UserSchema.shape.uid,
-    user_uin: UserSchema.shape.uin,
-    user_name: UserSchema.shape.name,
-    user_role: z.string(),
-    group_id: SprocGroupInfoSchema.shape.id,
-    group_name: SprocGroupInfoSchema.shape.name,
-    group_uids: SprocGroupInfoSchema.shape.uid_list,
+    // left join users table
+    user_id: UserSchema.shape.user_id.nullable(),
+    user_uid: UserSchema.shape.uid.nullable(),
+    user_uin: UserSchema.shape.uin.nullable(),
+    user_name: UserSchema.shape.name.nullable(),
+    user_role: z.string().nullable(),
+
+    // left join group_info sproc
+    group_id: SprocGroupInfoSchema.shape.id.nullable(),
+    group_name: SprocGroupInfoSchema.shape.name.nullable(),
+    group_uids: SprocGroupInfoSchema.shape.uid_list.nullable(),
+
     assessment_id: AssessmentSchema.shape.id,
     assessment_name: AssessmentSchema.shape.tid,
     assessment_label: z.string(),
@@ -126,8 +99,9 @@ const SubmissionDataSchema = z.array(
     score: SubmissionSchema.shape.score,
     correct: SubmissionSchema.shape.correct,
     feedback: SubmissionSchema.shape.feedback,
-    rubric_grading_computed_points: RubricGradingSchema.shape.computed_points,
-    rubric_grading_adjust_points: RubricGradingSchema.shape.adjust_points,
+    // left join rubric_gradings table
+    rubric_grading_computed_points: RubricGradingSchema.shape.computed_points.nullable(),
+    rubric_grading_adjust_points: RubricGradingSchema.shape.adjust_points.nullable(),
     rubric_grading_items: z
       .array(
         z.object({
@@ -137,6 +111,7 @@ const SubmissionDataSchema = z.array(
         }),
       )
       .nullable(),
+
     final_submission_per_variant: z.boolean(),
     best_submission_per_variant: z.boolean(),
   }),

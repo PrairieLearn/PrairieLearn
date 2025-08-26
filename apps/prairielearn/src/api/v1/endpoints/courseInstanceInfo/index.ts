@@ -17,7 +17,7 @@ const CourseInstanceInfoDataSchema = z.object({
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   course_instance_course_id: CourseInstanceSchema.shape.course_id,
   display_timezone: CourseInstanceSchema.shape.display_timezone,
-  deleted_at: z.string(),
+  deleted_at: z.string().nullable(),
   hide_in_enroll_page: CourseInstanceSchema.shape.hide_in_enroll_page,
   course_title: CourseSchema.shape.title,
   course_short_name: CourseSchema.shape.short_name,
