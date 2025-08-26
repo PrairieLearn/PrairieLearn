@@ -8,7 +8,11 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "$ref": "#/definitions/CommentJsonSchema"
+      "allOf": [
+        {
+          "$ref": "#/definitions/CommentJsonSchema"
+        }
+      ]
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -34,7 +38,11 @@
       "properties": {
         "comment": {
           "description": "Arbitrary comment for reference purposes.",
-          "$ref": "#/definitions/CommentJsonSchema"
+          "allOf": [
+            {
+              "$ref": "#/definitions/CommentJsonSchema"
+            }
+          ]
         },
         "useNewQuestionRenderer": {
           "description": "[DEPRECATED, DO NOT USE] Feature flag to enable the new question renderer.",
@@ -56,6 +64,9 @@
               "type": "object",
               "additionalProperties": {
                 "type": "boolean"
+              },
+              "propertyNames": {
+                "type": "string"
               }
             }
           ]
@@ -72,7 +83,11 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "abbreviation": {
             "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
@@ -87,7 +102,12 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/ColorJsonSchema"
+            "description": "A color name.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/ColorJsonSchema"
+              }
+            ]
           }
         }
       }
@@ -121,14 +141,23 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "name": {
             "description": "Long descriptive name (preferably less than 10 words).",
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/ColorJsonSchema"
+            "description": "A color name.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/ColorJsonSchema"
+              }
+            ]
           },
           "description": {
             "description": "Description of the topic.",
@@ -147,7 +176,11 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "$ref": "#/definitions/CommentJsonSchema"
+            "allOf": [
+              {
+                "$ref": "#/definitions/CommentJsonSchema"
+              }
+            ]
           },
           "shortName": {
             "description": "Short name (preferably 2 to 7 characters).",
@@ -158,7 +191,12 @@
             "type": "string"
           },
           "color": {
-            "$ref": "#/definitions/ColorJsonSchema"
+            "description": "A color name.",
+            "allOf": [
+              {
+                "$ref": "#/definitions/ColorJsonSchema"
+              }
+            ]
           },
           "description": {
             "description": "Description of the tag.",
@@ -188,9 +226,27 @@
     }
   },
   "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array",
+          "items": {}
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
+    },
     "ColorJsonSchema": {
       "description": "A color name.",
       "type": "string",
+      "id": "ColorJsonSchema",
       "enum": [
         "red1",
         "red2",
@@ -222,22 +278,6 @@
         "gray1",
         "gray2",
         "gray3"
-      ]
-    },
-    "CommentJsonSchema": {
-      "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "array"
-        },
-        {
-          "type": "object",
-          "additionalProperties": {},
-          "properties": {}
-        }
       ]
     }
   }

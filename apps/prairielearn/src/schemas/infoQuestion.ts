@@ -1,21 +1,28 @@
-import { z } from 'zod';
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
+import { z } from 'zod/v4';
 
 import { CommentJsonSchema } from './comment.js';
 
 export const QuestionDependencyJsonSchema = z
-  .object({
-    comment: CommentJsonSchema.optional(),
+  .strictObject({
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     coreScripts: z
       .array(z.string().describe('A .js file located in /public/javascripts.'))
       .describe(
         '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
     nodeModulesStyles: z
       .array(z.string().describe('A .css file located in /node_modules.'))
@@ -42,18 +49,18 @@ export const QuestionDependencyJsonSchema = z
       .describe('The scripts required by this question from clientFilesQuestion.')
       .optional(),
   })
-  .strict()
+
   .describe("The question's client-side dependencies.");
 
 export const WorkspaceOptionsJsonSchema = z
-  .object({
-    comment: CommentJsonSchema.optional(),
+  .strictObject({
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     image: z
       .string()
       .describe(
         'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
       ),
-    port: z.number().int().describe('The port number used in the Docker image.'),
+    port: z.int().describe('The port number used in the Docker image.'),
     home: z.string().describe('The home directory of the workspace container.'),
     args: z
       .union([z.string(), z.array(z.string())])
@@ -84,7 +91,7 @@ export const WorkspaceOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the workspace container.')
       .optional(),
     syncIgnore: z
@@ -92,14 +99,17 @@ export const WorkspaceOptionsJsonSchema = z
       .describe(
         '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
       )
+      .meta({
+        deprecated: true,
+      })
       .optional(),
   })
-  .strict()
+
   .describe('Options for workspace questions.');
 
 export const ExternalGradingOptionsJsonSchema = z
-  .object({
-    comment: CommentJsonSchema.optional(),
+  .strictObject({
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     enabled: z
       .boolean()
       .describe(
@@ -140,16 +150,16 @@ export const ExternalGradingOptionsJsonSchema = z
       .optional()
       .default(false),
     environment: z
-      .record(z.string())
+      .record(z.string(), z.string())
       .describe('Environment variables to set inside the grading container.')
       .optional(),
   })
-  .strict()
+
   .describe('Options for externally graded questions.');
 
 export const QuestionJsonSchema = z
-  .object({
-    comment: CommentJsonSchema.optional(),
+  .strictObject({
+    comment: CommentJsonSchema.optional().describe(CommentJsonSchema.description!),
     uuid: z
       .string()
       .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
@@ -206,9 +216,15 @@ export const QuestionJsonSchema = z
         'Options that define how the question will work, specific to the individual question type.',
       )
       .optional(),
-    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
-    dependencies: QuestionDependencyJsonSchema.optional(),
-    workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
+    externalGradingOptions: ExternalGradingOptionsJsonSchema.optional().describe(
+      ExternalGradingOptionsJsonSchema.description!,
+    ),
+    dependencies: QuestionDependencyJsonSchema.optional().describe(
+      QuestionDependencyJsonSchema.description!,
+    ),
+    workspaceOptions: WorkspaceOptionsJsonSchema.optional().describe(
+      WorkspaceOptionsJsonSchema.description!,
+    ),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
@@ -219,8 +235,11 @@ export const QuestionJsonSchema = z
       .describe("Whether this questions's source code is publicly shared.")
       .optional(),
   })
-  .strict()
-  .describe('Info files for questions.');
+
+  .describe('Info files for questions.')
+  .meta({
+    title: 'Question Info',
+  });
 
 export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 export type QuestionJsonInput = z.input<typeof QuestionJsonSchema>;
