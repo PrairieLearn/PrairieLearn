@@ -154,10 +154,7 @@ WITH
   job_sequence_updates AS (
     SELECT
       j.*,
-      CASE
-        WHEN j.no_job_sequence_update THEN FALSE
-        ELSE TRUE
-      END AS update_job_sequence
+      coalesce(NOT j.no_job_sequence_update, TRUE) AS update_job_sequence
     FROM
       updated_jobs AS j
   )
@@ -236,9 +233,17 @@ WITH
   aggregated_member_jobs AS (
     SELECT
       count(*) AS job_count,
-      coalesce(array_agg(to_jsonb(j.*)), ARRAY[]::jsonb[]) AS jobs
+      coalesce(
+        array_agg(
+          to_jsonb(mj.*)
+          ORDER BY
+            mj.number_in_sequence,
+            mj.id
+        ),
+        ARRAY[]::jsonb[]
+      ) AS jobs
     FROM
-      member_jobs AS j
+      member_jobs AS mj
   )
 SELECT
   js.*,

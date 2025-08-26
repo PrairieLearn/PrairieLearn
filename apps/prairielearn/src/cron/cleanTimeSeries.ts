@@ -6,8 +6,8 @@ import { config } from '../lib/config.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function run() {
-  const results = await sqldb.queryAsync(sql.clean_time_series, {
+  const rowCount = await sqldb.execute(sql.clean_time_series, {
     retention_period_sec: config.timeSeriesRetentionPeriodSec,
   });
-  logger.verbose(`Deleted ${results.rowCount} old rows from the time_series table`);
+  logger.verbose(`Deleted ${rowCount} old rows from the time_series table`);
 }

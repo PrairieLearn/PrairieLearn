@@ -23,7 +23,7 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_result?.active &&
     !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
   ) {
-    await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
+    await sqldb.execute(sql.update_assessment_instance_fingerprint, {
       client_fingerprint_id,
       assessment_instance_id: res.locals.assessment_instance?.id,
       authn_user_id: res.locals.authn_user.user_id,

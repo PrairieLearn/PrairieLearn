@@ -27,7 +27,7 @@ WHERE
 SELECT
   *
 FROM
-  lti13_instances AS li
+  lti13_instances
 WHERE
   institution_id = $institution_id
   AND deleted_at IS NULL;

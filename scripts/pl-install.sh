@@ -77,7 +77,6 @@ arch="$(uname -m)"
 # Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
 curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
-pip install -U pip
 
 # Clear various caches to minimize the final image size.
 dnf clean all
