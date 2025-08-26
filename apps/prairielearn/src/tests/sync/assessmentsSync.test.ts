@@ -3033,8 +3033,12 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
 
     const syncedData = await getSyncedAssessmentData('numberChooseTest');
+    const zoneId = syncedData.zones[0].id;
     assert.lengthOf(syncedData.zones, 1);
-    assert.isNull(syncedData.zones[0].number_choose);
-    // TODO: test number_choose for questions
+    const matchingAlternativeGroup = syncedData.alternative_groups.find(
+      (ag) => ag.zone_id === zoneId,
+    );
+    assert.isDefined(matchingAlternativeGroup);
+    assert.isNull(matchingAlternativeGroup.number_choose);
   });
 });
