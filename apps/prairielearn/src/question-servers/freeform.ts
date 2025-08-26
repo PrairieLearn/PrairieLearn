@@ -1,4 +1,3 @@
-// @ts-nocheck what is going on
 import assert from 'node:assert';
 import * as path from 'node:path';
 

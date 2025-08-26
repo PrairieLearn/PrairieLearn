@@ -376,7 +376,7 @@ export function connection(socket: Socket) {
       return;
     }
 
-    socket.join('job-' + msg.job_id);
+    void socket.join('job-' + msg.job_id);
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
@@ -412,7 +412,7 @@ export function connection(socket: Socket) {
         return;
       }
 
-      socket.join('jobSequence-' + msg.job_id);
+      void socket.join('jobSequence-' + msg.job_id);
       queryRow(
         sql.select_job_sequence,
         { job_sequence_id: msg.job_sequence_id },
