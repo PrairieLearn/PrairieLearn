@@ -931,7 +931,7 @@ export const Lti13InstanceSchema = z.object({
     .refine(
       (token) => {
         // expires_at is from the openid-client v5 token representation
-        // expires_in is from the openic-client v6
+        // expires_in is from the openid-client v6
         // Either both present or both missing is an error case
         return (token.expires_at === undefined) !== (token.expires_in === undefined);
       },
