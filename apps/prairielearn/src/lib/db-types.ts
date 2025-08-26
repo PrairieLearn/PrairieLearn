@@ -22,6 +22,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumEnrollmentStatusSchema = z.enum([
+  'invited',
+  'joined',
+  'removed',
+  'rejected',
+  'blocked',
+  'lti13_pending',
+]);
+export type EnumEnrollmentStatus = z.infer<typeof EnumEnrollmentStatusSchema>;
+
 export const EnumGradingMethodSchema = z.enum(['Internal', 'External', 'Manual']);
 export type EnumGradingMethod = z.infer<typeof EnumGradingMethodSchema>;
 
@@ -566,7 +576,15 @@ export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
   id: IdSchema,
-  user_id: IdSchema,
+  joined_at: DateFromISOString.nullable(),
+  lti_managed: z.boolean(),
+  pending_lti13_email: z.string().nullable(),
+  pending_lti13_instance_id: IdSchema.nullable(),
+  pending_lti13_name: z.string().nullable(),
+  pending_lti13_sub: z.string().nullable(),
+  pending_uid: z.string().nullable(),
+  status: EnumEnrollmentStatusSchema,
+  user_id: IdSchema.nullable(),
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
 
@@ -1019,7 +1037,7 @@ export const QuestionSchema = z.object({
   external_grading_enable_networking: z.boolean().nullable(),
   external_grading_enabled: z.boolean().nullable(),
   external_grading_entrypoint: z.string().nullable(),
-  external_grading_environment: z.any(),
+  external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),

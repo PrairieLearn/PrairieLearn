@@ -73,17 +73,17 @@ BEGIN
     END LOOP;
     auto_points := least(auto_points, aq.max_auto_points);
 
-    -- status
     IF auto_points >= aq.max_auto_points AND aq.max_manual_points = 0 THEN
+        -- If the student has achieved the maximum possible points, and there
+        -- are no manual points: status is complete.
         status := 'complete';
-    ELSIF correct AND iq.status != 'complete' THEN
+    ELSIF highest_submission_score >= 1.0 AND iq.status != 'complete' THEN
+        -- Current variant, or some previous variant, got 100%, and the
+        -- question is not yet complete: status is correct.
         status := 'correct';
     ELSE
-        -- use current status unless it's 'unanswered' or 'saved'
-        status := iq.status;
-        IF iq.status IN ('unanswered', 'saved') THEN
-            status := 'incorrect';
-        END IF;
+        -- Student has not yet achieved 100% in any variant: status is incorrect.
+        status := 'incorrect';
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;

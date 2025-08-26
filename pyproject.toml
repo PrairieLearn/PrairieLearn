@@ -49,6 +49,8 @@ dev = [
   "pytest-github-actions-annotate-failures==0.3.0",
   "pytest==8.4.1",
   "ruff==0.12.7",
+  "squawk-cli==2.22.0",
+  "sqlfluff==3.4.2",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.3.30",
   "types-Pygments==2.19.0.20250715",

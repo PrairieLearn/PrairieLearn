@@ -11,6 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 import { type File, FileSchema, IdSchema } from './db-types.js';
+import { assertNever } from './types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -133,7 +134,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
-  await sqldb.queryAsync(sql.delete_file, { file_id, authn_user_id });
+  await sqldb.execute(sql.delete_file, { file_id, authn_user_id });
   debug('delete(): soft-deleted row in DB');
 }
 
@@ -216,6 +217,6 @@ export async function getFile(
       file,
     };
   } else {
-    throw new Error(`Unknown storage type: ${file.storage_type}`);
+    assertNever(file.storage_type);
   }
 }

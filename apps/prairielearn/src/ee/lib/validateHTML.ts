@@ -121,7 +121,7 @@ function assertInChoices(
 ) {
   if (!(choices.includes(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
-      `${tag}: value for attribute ${key} must be in ${choices}, but value provided is ${val}`,
+      `${tag}: value for attribute ${key} must be in ${choices.join(', ')}, but value provided is ${val}`,
     );
   }
 }
