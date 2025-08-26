@@ -174,8 +174,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .int()
     .gte(0)
     .describe('Number of questions to choose from this group.')
-    .optional()
-    .default(1),
+    .optional(),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')

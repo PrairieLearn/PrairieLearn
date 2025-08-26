@@ -390,8 +390,7 @@
         "numberChoose": {
           "description": "Number of questions to choose from this group.",
           "type": "integer",
-          "minimum": 0,
-          "default": 1
+          "minimum": 0
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
