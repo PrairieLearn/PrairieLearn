@@ -541,9 +541,9 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: 'name', defaults?: CourseJson[K] | undefined): CourseJson[K] {
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
     const known = new Map();
-    const duplicateEntryIds = new Set();
+    const duplicateEntryIds = new Set<string>();
 
     (info[fieldName] || []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
@@ -687,7 +687,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
   schema: any;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: T) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<T> | null> {
   const loadedJson: InfoFile<T> | null = await loadInfoFile({
     coursePath,
@@ -705,7 +705,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  const validationResult = await validate(loadedJson.data);
+  const validationResult = validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -735,7 +735,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   infoFilename: string;
   defaultInfo: any;
   schema: any;
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: T) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<T>>> {
@@ -938,13 +938,13 @@ function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
   return warnings;
 }
 
-async function validateQuestion({
+function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -996,7 +996,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-async function validateAssessment({
+function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1006,7 +1006,7 @@ async function validateAssessment({
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1318,13 +1318,13 @@ async function validateAssessment({
   return { warnings, errors };
 }
 
-async function validateCourseInstance({
+function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 

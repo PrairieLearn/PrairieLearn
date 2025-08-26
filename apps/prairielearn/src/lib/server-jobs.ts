@@ -182,7 +182,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    */
   executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn, false);
+    void this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {

@@ -12,6 +12,7 @@ import { run } from '@prairielearn/run';
 
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+import { assertNever } from '../types.js';
 
 import {
   type CallType,
@@ -227,7 +228,7 @@ export class CodeCallerNative implements CodeCaller {
     } else if (type === 'restart' || type === 'ping') {
       // Doesn't need a working directory
     } else {
-      throw new Error(`Unknown function call type: ${type}`);
+      assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
