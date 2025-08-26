@@ -538,7 +538,7 @@ export function QuestionFooterContent({
                   </button>
                 `
               : ''}
-            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+            ${group_config?.has_roles && group_role_permissions?.can_submit === false && group_info
               ? html`
                   <button
                     type="button"

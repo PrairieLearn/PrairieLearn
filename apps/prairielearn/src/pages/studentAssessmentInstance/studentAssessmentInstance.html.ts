@@ -741,7 +741,7 @@ function RowLabel({
     lockedPopoverText = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
+  } else if (instance_question_row.group_role_permissions?.can_view === false) {
     lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 

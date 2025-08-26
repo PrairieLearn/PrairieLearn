@@ -366,7 +366,7 @@ function buildLocals({
     locals.showTrueAnswer = false;
   }
 
-  if (group_config?.has_roles && !group_role_permissions?.can_submit) {
+  if (group_config?.has_roles && group_role_permissions?.can_submit === false) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
