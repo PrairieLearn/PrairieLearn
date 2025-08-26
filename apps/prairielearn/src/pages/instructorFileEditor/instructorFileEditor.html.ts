@@ -7,11 +7,19 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
+import type { FileMetadata } from '../../lib/editorUtil.types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
-import type { FileEditorData } from './instructorFileEditor.js';
+export interface FileEditorData {
+  fileName: string;
+  normalizedFileName: string;
+  aceMode: string;
+  diskContents: string;
+  diskHash: string;
+  fileMetadata?: FileMetadata;
+}
 
 export interface DraftEdit {
   fileEdit: FileEdit;
