@@ -321,7 +321,7 @@ export async function aiSubmissionGrouping({
             logger,
           );
         } catch (err) {
-          logger.error(err as any as string);
+          logger.error(err);
         } finally {
           for (const log of logs) {
             if (log.messageType === 'info') {

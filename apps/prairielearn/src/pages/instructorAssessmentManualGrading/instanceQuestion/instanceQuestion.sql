@@ -84,7 +84,7 @@ SELECT
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
-  JOIN variants as v ON v.instance_question_id = iq.id
+  JOIN variants AS v ON v.instance_question_id = iq.id
   JOIN submissions AS s ON s.variant_id = v.id
 WHERE
   iq.ai_submission_group_id = $submission_group_id

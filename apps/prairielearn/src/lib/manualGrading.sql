@@ -1,6 +1,6 @@
 -- BLOCK select_next_ai_submission_group_id
 SELECT
-  MIN(asg.id) as ai_submission_group_id
+  MIN(asg.id) AS ai_submission_group_id
 FROM
   ai_submission_groups AS asg
 WHERE
@@ -11,7 +11,7 @@ WHERE
 SELECT
   ai_submission_group_id
 FROM
-  instance_questions as iq
+  instance_questions AS iq
 WHERE
   id = $instance_question_id;
 
