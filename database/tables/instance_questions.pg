@@ -40,12 +40,12 @@ columns
 
 indexes
     instance_questions_pkey: PRIMARY KEY (id) USING btree (id)
-    instance_questions_ai_submission_group_for_same_assessment_question: CHECK ( ai_submission_group_id IS NULL OR assessment_question_id = ( SELECT assessment_question_id FROM ai_submission_groups WHERE id = ai_submission_group_id ) )
     instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
     instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
     instance_questions_modified_at_key: USING btree (modified_at)
 
 foreign-key constraints
+    instance_questions_ai_submission_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, ai_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_ai_submission_group_id_fkey: FOREIGN KEY (ai_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

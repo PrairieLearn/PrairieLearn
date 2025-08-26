@@ -6,10 +6,12 @@ columns
 
 indexes
     ai_submission_groups_pkey: PRIMARY KEY (id) USING btree (id)
-    ai_submission_groups_unique_constraint: UNIQUE (assessment_question_id, submission_group_name) USING btree (assessment_question_id, submission_group_name)
+    ai_submission_groups_unique_id_constraint: UNIQUE (assessment_question_id, id) USING btree (assessment_question_id, id)
+    ai_submission_groups_unique_name_constraint: UNIQUE (assessment_question_id, submission_group_name) USING btree (assessment_question_id, submission_group_name)
 
 foreign-key constraints
     ai_submission_groups_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    instance_questions: FOREIGN KEY (assessment_question_id, ai_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions: FOREIGN KEY (ai_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
