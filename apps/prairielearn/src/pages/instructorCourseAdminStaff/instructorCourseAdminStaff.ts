@@ -188,9 +188,9 @@ router.post(
         const given_cp_and_cip = result.given_cp.filter(
           (uid) => !result.not_given_cip.includes(uid),
         );
-        debug(`given_cp: ${result.given_cp}`);
-        debug(`not_given_cip: ${result.not_given_cip}`);
-        debug(`given_cp_and_cip: ${given_cp_and_cip}`);
+        debug(`given_cp: ${result.given_cp.join(', ')}`);
+        debug(`not_given_cip: ${result.not_given_cip.join(', ')}`);
+        debug(`given_cp_and_cip: ${given_cp_and_cip.join(', ')}`);
         if (given_cp_and_cip.length > 0) {
           if (course_instance) {
             info.push(html`

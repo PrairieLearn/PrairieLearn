@@ -591,7 +591,7 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -666,7 +666,7 @@ export async function fetchRetry(
  */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
