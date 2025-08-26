@@ -571,7 +571,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 Depending on the context, we use different types of assertions.
 
-- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.defined`.
+- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
 - In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
 - If this is not an invariant, you can use `assertDefined`, or throw your own error.
 - In client code, we use `assertDefined`
