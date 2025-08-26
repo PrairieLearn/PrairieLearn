@@ -9,8 +9,8 @@ import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -394,7 +394,7 @@ export async function getAccessToken(lti13_instance_id: string) {
   // Store the token for reuse
   const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
 
-  await queryAsync(sql.update_token, {
+  await execute(sql.update_token, {
     lti13_instance_id,
     access_tokenset: tokenSet,
     access_token_expires_at: new Date(expires_at),
@@ -523,7 +523,7 @@ export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryAsync(sql.delete_lti13_assessment, {
+  await execute(sql.delete_lti13_assessment, {
     lti13_course_instance_id,
     assessment_id,
   });
@@ -547,7 +547,7 @@ export async function linkAssessment(
     throw new HttpStatusError(403, 'Invalid assessment id');
   }
 
-  await queryAsync(sql.upsert_lti13_assessment, {
+  await execute(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),
@@ -591,7 +591,7 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -666,7 +666,7 @@ export async function fetchRetry(
  */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;

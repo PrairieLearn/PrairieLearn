@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
@@ -153,7 +153,7 @@ router.post(
             );
           }
         }
-        await queryAsync(sql.update_instance_questions, {
+        await execute(sql.update_instance_questions, {
           assessment_question_id: res.locals.assessment_question.id,
           instance_question_ids,
           update_requires_manual_grading: 'requires_manual_grading' in action_data,

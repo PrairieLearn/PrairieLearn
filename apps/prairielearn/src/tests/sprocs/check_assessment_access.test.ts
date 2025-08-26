@@ -42,7 +42,7 @@ describe('sproc check_assessment_access* tests', function () {
   afterAll(helperDb.after);
 
   beforeAll(async () => {
-    await sqldb.queryAsync(sql.setup_caa_scheduler_tests, {});
+    await sqldb.execute(sql.setup_caa_scheduler_tests);
   });
 
   describe('without PrairieTest', () => {
@@ -181,11 +181,11 @@ describe('sproc check_assessment_access* tests', function () {
     describe('with checked-in reservation', () => {
       beforeAll(async () => {
         // Create checked-in reservation for student
-        await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
+        await sqldb.execute(sql.insert_pt_reservation, { exam_id: 1 });
       });
       afterAll(async () => {
         // Delete checked-in reservation for student
-        await sqldb.queryAsync(sql.delete_pt_reservation, { exam_id: 1 });
+        await sqldb.execute(sql.delete_pt_reservation, { exam_id: 1 });
       });
 
       it('should not allow access to an exam without exam_uuid', async () => {

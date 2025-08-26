@@ -1036,7 +1036,7 @@ export const QuestionSchema = z.object({
   external_grading_enable_networking: z.boolean().nullable(),
   external_grading_enabled: z.boolean().nullable(),
   external_grading_entrypoint: z.string().nullable(),
-  external_grading_environment: z.any(),
+  external_grading_environment: z.record(z.string(), z.string().nullable()),
   external_grading_files: z.any().nullable(),
   external_grading_image: z.string().nullable(),
   external_grading_timeout: z.number().nullable(),
@@ -1073,9 +1073,13 @@ export const QuestionSchema = z.object({
   workspace_url_rewrite: z.boolean().nullable(),
 });
 export type Question = z.infer<typeof QuestionSchema>;
-
 export const QuestionScoreLogSchema = null;
-export const QuestionTagSchema = null;
+export const QuestionTagSchema = z.object({
+  id: IdSchema,
+  question_id: IdSchema,
+  tag_id: IdSchema,
+});
+export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
