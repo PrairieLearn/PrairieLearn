@@ -1,6 +1,7 @@
 import * as url from 'node:url';
 
 import { differenceInMilliseconds } from 'date-fns';
+import { z } from 'zod';
 
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
@@ -8,17 +9,43 @@ import { config } from '../lib/config.js';
 import {
   type AssessmentQuestion,
   type GradingJob,
+  GradingJobSchema,
   type InstanceQuestion,
   type Question,
   type RubricGradingItem,
+  SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData } from '../lib/manualGrading.types.js';
-import type { SubmissionForRender } from '../lib/question-render.types.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
 import type { QuestionContext, QuestionRenderContext } from './QuestionContainer.types.js';
+
+const detailedSubmissionColumns = {
+  feedback: true,
+  format_errors: true,
+  params: true,
+  partial_scores: true,
+  raw_submitted_answer: true,
+  submitted_answer: true,
+  true_answer: true,
+} as const;
+
+export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
+  grading_job: GradingJobSchema.nullable(),
+  formatted_date: z.string().nullable(),
+  user_uid: z.string().nullable(),
+});
+
+export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
+
+export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
+  Partial<z.infer<typeof SubmissionDetailedSchema>> & {
+    feedback_manual_html?: string;
+    submission_number: number;
+    rubric_grading?: RubricGradingData | null;
+  };
 
 export function SubmissionPanel({
   questionContext,

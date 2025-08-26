@@ -86,7 +86,7 @@ export async function questionFilePath(
     );
   } else {
     // No template, try default files
-    const filenameToSuffix: Record<string, string> = {
+    const filenameToSuffix = {
       'client.js': 'Client.js',
       'server.js': 'Server.js',
     };

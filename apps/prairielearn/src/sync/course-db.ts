@@ -392,7 +392,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-  } catch (err: any) {
+  } catch (err) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -464,7 +464,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e: any) {
+    } catch (e) {
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
@@ -773,7 +773,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
             );
           }
           Object.assign(infoFiles, subInfoFiles);
-        } catch (e: any) {
+        } catch (e) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
           } else if (e.code === 'ENOENT') {
@@ -793,7 +793,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
 
   try {
     return await walk('');
-  } catch (e: any) {
+  } catch (e) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
       return {};
@@ -969,7 +969,7 @@ function validateQuestion({
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
       validateJSON(options, schema);
-    } catch (err: any) {
+    } catch (err) {
       errors.push(err.message);
     }
   }

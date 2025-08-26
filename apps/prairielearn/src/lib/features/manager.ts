@@ -63,7 +63,7 @@ export class FeatureManager<FeatureName extends string> {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
-    this.validateContext(context as Record<string, string | null>);
+    this.validateContext(context);
   }
 
   hasFeature(feature: string): feature is FeatureName {
@@ -238,7 +238,7 @@ export class FeatureManager<FeatureName extends string> {
     }
   }
 
-  validateContext(context: Record<string, string | null>): FeatureContext {
+  validateContext(context: object): FeatureContext {
     let hasAllParents = true;
     CONTEXT_HIERARCHY.forEach((key, index) => {
       const hasKey = !!context[key];

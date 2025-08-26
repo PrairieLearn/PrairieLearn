@@ -1,34 +1,10 @@
 import z from 'zod';
 
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import type { EffectiveQuestionType } from '../question-servers/types.js';
 
-import { GradingJobSchema, IssueSchema, SubmissionSchema, type Variant } from './db-types.js';
-import type { RubricData, RubricGradingData } from './manualGrading.types.js';
-
-const detailedSubmissionColumns = {
-  feedback: true,
-  format_errors: true,
-  params: true,
-  partial_scores: true,
-  raw_submitted_answer: true,
-  submitted_answer: true,
-  true_answer: true,
-} as const;
-
-export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
-  grading_job: GradingJobSchema.nullable(),
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-});
-
-export const SubmissionDetailedSchema = SubmissionSchema.pick(detailedSubmissionColumns);
-
-export type SubmissionForRender = z.infer<typeof SubmissionBasicSchema> &
-  Partial<z.infer<typeof SubmissionDetailedSchema>> & {
-    feedback_manual_html?: string;
-    submission_number: number;
-    rubric_grading?: RubricGradingData | null;
-  };
+import { IssueSchema, type Variant } from './db-types.js';
+import type { RubricData } from './manualGrading.types.js';
 
 export interface SubmissionPanels {
   submissionPanel: string | null;

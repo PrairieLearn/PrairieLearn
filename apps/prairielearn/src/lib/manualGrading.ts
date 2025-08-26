@@ -6,6 +6,8 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+
 import {
   type AssessmentQuestion,
   AssessmentQuestionSchema,
@@ -27,7 +29,6 @@ import {
   type RubricItemInput,
   SubmissionForScoreUpdateSchema,
 } from './manualGrading.types.js';
-import type { SubmissionForRender } from './question-render.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -74,7 +74,7 @@ function getPackageVersion(packageName: string): string {
 
   try {
     return require(`${packageName}/package.json`).version;
-  } catch (e: any) {
+  } catch (e) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
       throw e;
     }
@@ -98,7 +98,7 @@ function getPackageVersion(packageName: string): string {
           packageName,
           'package.json',
         );
-      } catch (err: any) {
+      } catch (err) {
         // Some packages (namely `cropperjs`) have invalid `package.json` files
         // that refer to non-existent files. In this case, we can still try to
         // recover from things by using the path that couldn't be resolved.
