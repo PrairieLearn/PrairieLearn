@@ -3033,8 +3033,8 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
 
     const syncedData = await getSyncedAssessmentData('numberChooseTest');
-    const zoneId = syncedData.zones[0].id;
     assert.lengthOf(syncedData.zones, 1);
+    const zoneId = syncedData.zones[0].id;
     const matchingAlternativeGroup = syncedData.alternative_groups.find(
       (ag) => ag.zone_id === zoneId,
     );
