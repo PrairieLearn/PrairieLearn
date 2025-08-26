@@ -16,7 +16,7 @@ WITH
       a.deleted_at IS NULL
       AND a.course_instance_id = $course_instance_id
   ),
-  assessment_instances_with_groups as (
+  assessment_instances_with_groups AS (
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
@@ -53,10 +53,10 @@ WITH
       assessment_instances_with_groups AS aig
       JOIN course_instances AS ci ON (ci.id = $course_instance_id)
     ORDER BY
-      aig.user_id,
-      aig.assessment_id,
+      aig.user_id ASC,
+      aig.assessment_id ASC,
       aig.score_perc DESC,
-      aig.id
+      aig.id ASC
   ),
   user_ids AS (
     (
@@ -168,7 +168,7 @@ SELECT
       to_jsonb(object_data)
       ORDER BY
         user_role DESC,
-        user_uid
+        user_uid ASC
     ),
     '[]'::jsonb
   ) AS item

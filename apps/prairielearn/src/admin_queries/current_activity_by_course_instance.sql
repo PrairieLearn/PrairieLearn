@@ -42,9 +42,9 @@ FROM
   JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
   ciwsc.submission_count DESC,
-  i.short_name,
-  c.short_name,
-  ci.short_name,
-  ci.id
+  i.short_name ASC,
+  c.short_name ASC,
+  ci.short_name ASC,
+  ci.id ASC
 LIMIT
   $limit;

@@ -30,6 +30,25 @@ export interface LoadUserAuth {
   institution_id?: number | string | null;
 }
 
+const SelectUserSchema = z.object({
+  user: UserSchema,
+  institution: InstitutionSchema,
+  is_administrator: z.boolean(),
+  news_item_notification_count: z.number(),
+});
+type SelectUser = z.infer<typeof SelectUserSchema>;
+
+export interface ResLocalsAuthnUser {
+  authn_user: SelectUser['user'];
+  authn_institution: SelectUser['institution'];
+  authn_provider_name: LoadUserAuth['provider'];
+  authn_is_administrator: SelectUser['is_administrator'];
+  access_as_administrator: boolean;
+  is_administrator: boolean;
+  is_institution_administrator: boolean;
+  news_item_notification_count: SelectUser['news_item_notification_count'];
+}
+
 async function handlePendingLti13User({
   user,
   uin,
@@ -110,16 +129,7 @@ export async function loadUser(
     }
   }
 
-  const selectedUser = await sqldb.queryOptionalRow(
-    sql.select_user,
-    { user_id },
-    z.object({
-      user: UserSchema,
-      institution: InstitutionSchema,
-      is_administrator: z.boolean(),
-      news_item_notification_count: z.number(),
-    }),
-  );
+  const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
 
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);

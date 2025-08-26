@@ -20,7 +20,7 @@ WHERE
 -- BLOCK close_all_assessment_instances
 UPDATE assessment_instances
 SET
-  open = false;
+  open = FALSE;
 
 -- BLOCK update_addVectors_force_max_points
 UPDATE assessment_questions AS aq

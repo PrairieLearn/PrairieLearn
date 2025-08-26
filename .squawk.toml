@@ -1,0 +1,23 @@
+pg_version = "16.0"
+assume_in_transaction = true
+excluded_rules = [
+  "prefer-robust-stmts",               # Missing `IF NOT EXISTS`, the migration can't be rerun if it fails part way through
+  "constraint-missing-not-valid",      # By default new constraints require a table scan and block writes to the table while that scan occurs
+  "require-concurrent-index-deletion", # A normal `DROP INDEX` acquires an `ACCESS EXCLUSIVE` lock on the table, blocking other accesses until the index drop can complete
+  "require-concurrent-index-creation", # During normal index creation, table updates are blocked, but reads are still allowed
+  "prefer-identity",                   # Serial types make schema, dependency, and permission management difficult
+  "prefer-text-field",                 # Changing the size of a `varchar` field requires an `ACCESS EXCLUSIVE` lock, that will prevent all reads and writes to the table
+  "prefer-bigint-over-int",            # Using 32-bit integer fields can result in hitting the max `int` limit
+  "disallowed-unique-constraint",      # Adding a `UNIQUE` constraint requires an `ACCESS EXCLUSIVE` lock which blocks reads and writes to the table while the index is built
+  "adding-not-nullable-field",         # Setting a column `NOT NULL` blocks reads while the table is scanned
+  "adding-required-field",             # Adding a new column that is `NOT NULL` and has no default value to an existing table effectively makes it required
+  "adding-foreign-key-constraint",     # Adding a foreign key constraint requires a table scan and a `SHARE ROW EXCLUSIVE` lock on both tables, which blocks writes to each table
+  "adding-field-with-default",         # Adding a generated column requires a table rewrite with an `ACCESS EXCLUSIVE` lock
+  "changing-column-type",              # Changing a column type requires an `ACCESS EXCLUSIVE` lock on the table which blocks reads and writes while the table is rewritten"
+  # Backward compatibility rules
+  "ban-drop-column",
+  "ban-drop-not-null",
+  "ban-drop-table",
+  "renaming-column",
+  "renaming-table",
+]

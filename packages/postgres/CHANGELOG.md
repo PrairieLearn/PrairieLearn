@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 4.1.0
+
+### Minor Changes
+
+- 56a813a: Add `execute` and `executeRow` helpers that don't return the actual values from a query.
+
 ## 4.0.1
 
 ### Patch Changes

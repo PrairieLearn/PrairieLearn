@@ -136,6 +136,7 @@ export function InstructorAssessmentQuestionsTable({
             <tbody>
               {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
                 const { question, assessment_question, other_assessments } = questionRow;
+
                 return (
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
@@ -160,9 +161,9 @@ export function InstructorAssessmentQuestionsTable({
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.course_id)
+                        {idsEqual(course.id, questionRow.course.id)
                           ? question.qid
-                          : `@${course.sharing_name}/${question.qid}`}
+                          : `@${questionRow.course.sharing_name}/${question.qid}`}
                       </td>
                       <td>
                         <TopicBadge topic={questionRow.topic} />

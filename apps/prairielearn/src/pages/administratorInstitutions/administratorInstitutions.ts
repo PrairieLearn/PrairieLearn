@@ -29,7 +29,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_institution') {
-      await sqldb.queryAsync(sql.insert_institution, {
+      await sqldb.execute(sql.insert_institution, {
         short_name: req.body.short_name,
         long_name: req.body.long_name,
         display_timezone: req.body.display_timezone,

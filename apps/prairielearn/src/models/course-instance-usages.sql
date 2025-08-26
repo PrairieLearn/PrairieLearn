@@ -11,12 +11,12 @@ INSERT INTO
   )
 SELECT
   'Submission',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', s.date, 'UTC'),
   $user_id,
-  coalesce(ai.include_in_statistics, false)
+  coalesce(ai.include_in_statistics, FALSE)
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -51,15 +51,15 @@ INSERT INTO
   )
 SELECT
   'External grading',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', gj.grading_finished_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
+  coalesce(ai.include_in_statistics, FALSE),
   gj.grading_finished_at - gj.grading_received_at
 FROM
   grading_jobs AS gj
@@ -103,13 +103,13 @@ INSERT INTO
   )
 SELECT
   'AI question generation',
-  i.id,
-  c.id,
+  i.id AS institution_id,
+  c.id AS course_id,
   NULL,
   $cost_ai_question_generation,
   date_trunc('day', now() AT TIME ZONE 'UTC'),
   $authn_user_id,
-  false
+  FALSE
 FROM
   ai_question_generation_prompts AS p
   JOIN questions AS q ON (q.id = p.question_id)

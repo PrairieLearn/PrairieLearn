@@ -88,20 +88,20 @@ router.post(
     }
 
     if (req.body.__action === 'lti_new_cred') {
-      await sqldb.queryAsync(sql.insert_cred, {
+      await sqldb.execute(sql.insert_cred, {
         key: 'K' + randomString(),
         secret: 'S' + randomString(),
         course_instance_id: res.locals.course_instance.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'lti_del_cred') {
-      await sqldb.queryAsync(sql.delete_cred, {
+      await sqldb.execute(sql.delete_cred, {
         id: req.body.lti_link_id,
         ci_id: res.locals.course_instance.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'lti_link_target') {
-      await sqldb.queryAsync(sql.update_link, {
+      await sqldb.execute(sql.update_link, {
         assessment_id: req.body.newAssessment || null,
         id: req.body.lti_link_id,
         ci_id: res.locals.course_instance.id,

@@ -31,8 +31,8 @@ SELECT
     WHERE
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
-  )::INT AS file_count,
-  qo.sequence_locked AS sequence_locked,
+  )::int AS file_count,
+  qo.sequence_locked,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
     WHEN a.type = 'Homework' THEN ''

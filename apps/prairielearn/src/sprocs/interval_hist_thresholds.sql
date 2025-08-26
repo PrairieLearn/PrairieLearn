@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    interval_hist_thresholds (duration INTERVAL) RETURNS INTERVAL[] AS $$
+    interval_hist_thresholds (duration interval) RETURNS interval[] AS $$
     WITH candidates AS (
         SELECT
             step,
@@ -47,13 +47,13 @@ CREATE FUNCTION
 $$ LANGUAGE SQL IMMUTABLE;
 
 CREATE FUNCTION
-    interval_array_to_seconds (durations INTERVAL[]) RETURNS DOUBLE PRECISION[] AS $$
+    interval_array_to_seconds (durations interval[]) RETURNS double precision[] AS $$
     SELECT array_agg(DATE_PART('epoch', d))
     FROM unnest(durations) AS vals (d)
 $$ LANGUAGE SQL IMMUTABLE;
 
 CREATE FUNCTION
-    interval_array_to_strings (durations INTERVAL[]) RETURNS TEXT[] AS $$
+    interval_array_to_strings (durations interval[]) RETURNS text[] AS $$
     SELECT array_agg(format_interval_short(d))
     FROM unnest(durations) AS vals (d)
 $$ LANGUAGE SQL IMMUTABLE;

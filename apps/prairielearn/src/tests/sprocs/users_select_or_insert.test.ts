@@ -81,7 +81,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   test.sequential('add an institution for host.com', async () => {
-    await sqldb.queryAsync(sql.insert_host_com_institution, []);
+    await sqldb.execute(sql.insert_host_com_institution);
   });
 
   test.sequential('user 1 updates institution_id', async () => {
@@ -165,7 +165,7 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   test.sequential('add an institution for example.com', async () => {
-    await sqldb.queryAsync(sql.insert_example_com_institution, []);
+    await sqldb.execute(sql.insert_example_com_institution);
   });
 
   test.sequential('user 2 logs in via Google', async () => {

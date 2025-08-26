@@ -40,7 +40,7 @@ export function getCSRFToken($: cheerio.CheerioAPI): string {
   assert.lengthOf(csrfTokenSpan, 1);
   const csrfToken = csrfTokenSpan.text();
   assert.isString(csrfToken);
-  return csrfToken as string;
+  return csrfToken;
 }
 
 /**

@@ -114,10 +114,10 @@ SELECT
       to_jsonb(object_data)
       ORDER BY
         user_role DESC,
-        user_uid,
-        user_id,
-        assessment_instance_number,
-        assessment_instance_id
+        user_uid ASC,
+        user_id ASC,
+        assessment_instance_number ASC,
+        assessment_instance_id ASC
     ),
     '[]'::jsonb
   ) AS item
@@ -229,8 +229,8 @@ FROM
 WITH
   object_data AS (
     SELECT
-      z.number as zone_number,
-      z.title as zone_title,
+      z.number AS zone_number,
+      z.title AS zone_title,
       q.id AS question_id,
       q.qid AS question_name,
       iq.id AS instance_question_id,

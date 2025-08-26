@@ -23,7 +23,7 @@
  * `duration` for compute usage.
  */
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { computeCompletionCost } from '../lib/ai.js';
 
@@ -42,7 +42,7 @@ export async function updateCourseInstanceUsagesForSubmission({
   submission_id: string;
   user_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_submission, {
+  await execute(sql.update_course_instance_usages_for_submission, {
     submission_id,
     user_id,
   });
@@ -59,7 +59,7 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }: {
   grading_job_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_external_grading, {
+  await execute(sql.update_course_instance_usages_for_external_grading, {
     grading_job_id,
   });
 }
@@ -84,7 +84,7 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptTokens?: number;
   completionTokens?: number;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
+  await execute(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: computeCompletionCost({

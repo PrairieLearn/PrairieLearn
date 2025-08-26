@@ -6,6 +6,7 @@ import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
 
 import * as assessment from '../../../../lib/assessment.js';
+import { IdSchema } from '../../../../lib/db-types.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
@@ -55,21 +56,22 @@ router.get(
 router.get(
   '/:unsafe_assessment_instance_id(\\d+)/log',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_assessment_instance, {
-      course_instance_id: res.locals.course_instance.id,
-      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
-    });
-    if (result.rowCount === 0) {
+    const assessmentInstanceId = await sqldb.queryOptionalRow(
+      sql.select_assessment_instance,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+      },
+      IdSchema,
+    );
+    if (assessmentInstanceId == null) {
       res.status(404).send({
         message: 'Not Found',
       });
       return;
     }
 
-    const logs = await assessment.selectAssessmentInstanceLog(
-      result.rows[0].assessment_instance_id,
-      true,
-    );
+    const logs = await assessment.selectAssessmentInstanceLog(assessmentInstanceId, true);
     res.status(200).send(logs);
   }),
 );

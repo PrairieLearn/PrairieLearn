@@ -11,7 +11,7 @@ describe('authLogin', () => {
   afterAll(() => assets.close());
 
   describe('service-specific login', () => {
-    it('renders login page with service query parameter', async () => {
+    it('renders login page with service query parameter', () => {
       const html = AuthLoginInstitution({
         showUnsupportedMessage: false,
         supportedProviders: [{ name: 'SAML', is_default: true }],
@@ -45,7 +45,7 @@ describe('authLogin', () => {
       assert.include(html, 'Sign in with Microsoft');
     });
 
-    it('handles supported non-LTI providers with only default', async () => {
+    it('handles supported non-LTI providers with only default', () => {
       const html = AuthLoginInstitution({
         showUnsupportedMessage: false,
         supportedProviders: [{ name: 'SAML', is_default: true }],
@@ -130,7 +130,7 @@ describe('authLogin', () => {
   });
 
   describe('unsupported provider message', () => {
-    it('handles no supported providers', async () => {
+    it('handles no supported providers', () => {
       const html = AuthLoginInstitution({
         showUnsupportedMessage: true,
         supportedProviders: [],
@@ -146,7 +146,7 @@ describe('authLogin', () => {
       assert.include(html, 'Contact your institution for more information.');
     });
 
-    it('handles LTI providers', async () => {
+    it('handles LTI providers', () => {
       const html = AuthLoginInstitution({
         showUnsupportedMessage: true,
         supportedProviders: [
@@ -169,7 +169,7 @@ describe('authLogin', () => {
       );
     });
 
-    it('does not render unsupported provider message if not shown', async () => {
+    it('does not render unsupported provider message if not shown', () => {
       const html = AuthLoginInstitution({
         showUnsupportedMessage: false,
         supportedProviders: [{ name: 'SAML', is_default: true }],

@@ -2323,7 +2323,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  async shouldEdit() {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2375,7 +2375,7 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));

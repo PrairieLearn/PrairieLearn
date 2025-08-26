@@ -1,5 +1,5 @@
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 export default async function migrate() {
-  await queryAsync("INSERT INTO users (name) VALUES ('Test User')", {});
+  await execute("INSERT INTO users (name) VALUES ('Test User')");
 }

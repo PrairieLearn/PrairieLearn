@@ -46,7 +46,7 @@ export let io: Server;
 let pub: Redis;
 let sub: Redis;
 
-export async function init(server: http.Server) {
+export function init(server: http.Server) {
   debug('init(): creating socket server');
   io = new Server(server);
   if (config.redisUrl) {

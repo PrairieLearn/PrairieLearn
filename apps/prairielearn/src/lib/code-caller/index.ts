@@ -12,6 +12,7 @@ import * as chunks from '../chunks.js';
 import { config } from '../config.js';
 import { type Course } from '../db-types.js';
 import * as load from '../load.js';
+import { assertNever } from '../types.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
@@ -77,7 +78,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
               dropPrivileges: false,
             });
           } else {
-            throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
+            assertNever(workersExecutionMode);
           }
         });
 

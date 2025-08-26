@@ -20,7 +20,7 @@ WITH
     SELECT
       *
     FROM
-      jsonb_to_recordset($imported_question_info::JSONB) AS (sharing_name text, qid text)
+      jsonb_to_recordset($imported_question_info::jsonb) AS (sharing_name text, qid text)
   )
 SELECT
   q.qid,

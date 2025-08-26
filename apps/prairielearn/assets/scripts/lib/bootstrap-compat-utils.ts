@@ -4,9 +4,9 @@ import SelectorSet from 'selector-set';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 interface MigratorUtils {
-  addClass(el: Element, newClass: string | string[], message: string): void;
-  migrateClass(el: Element, oldClass: string, newClass: string): void;
-  migrateAttribute(el: Element, oldAttribute: string, newAttribute: string): void;
+  addClass(this: void, el: Element, newClass: string | string[], message: string): void;
+  migrateClass(this: void, el: Element, oldClass: string, newClass: string): void;
+  migrateAttribute(this: void, el: Element, oldAttribute: string, newAttribute: string): void;
 }
 
 interface MigratorOptions {

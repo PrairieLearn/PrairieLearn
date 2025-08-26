@@ -103,6 +103,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -168,6 +173,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',

@@ -178,7 +178,7 @@ def test_check_attribute_failure(options: dict, error: str) -> None:
             "allow-blank": True,
             "file-name": "test.py",
             "indentation": True,
-            "inline": True,
+            "inline": False,
         },
     ],
 )

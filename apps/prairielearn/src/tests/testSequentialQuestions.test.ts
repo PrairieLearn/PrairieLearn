@@ -207,7 +207,7 @@ describe(
       assert.isFalse(context.instanceQuestions[4].locked);
     });
 
-    test.sequential('Unlocking question 4 does NOT cascade to question 6', async function () {
+    test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
   },

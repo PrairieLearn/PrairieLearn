@@ -50,6 +50,7 @@
     "eslint-plugin-jsdoc": "^52.0.4",
     "eslint-plugin-jsx-a11y-x": "^0.1.1",
     "eslint-plugin-no-floating-promise": "^2.0.0",
+    "eslint-plugin-perfectionist": "^4.15.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.4.1",
     "eslint-plugin-unicorn": "^60.0.0",

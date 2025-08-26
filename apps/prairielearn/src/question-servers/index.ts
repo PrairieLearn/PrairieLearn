@@ -5,7 +5,7 @@ import { type QuestionServer } from './types.js';
 export * from './types.js';
 
 type QuestionType = Question['type'];
-type EffectiveQuestionType = 'Calculation' | 'Freeform';
+export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 const questionModules = {
   Calculation: await import('./calculation-subprocess.js'),

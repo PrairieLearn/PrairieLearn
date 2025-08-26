@@ -42,7 +42,7 @@ INSERT INTO
   )
 SELECT
   user_id,
-  user_id,
+  user_id AS authn_user_id,
   'access_tokens',
   new_row.id,
   'insert',
@@ -70,7 +70,7 @@ INSERT INTO
     old_state
   )
 SELECT
-  $user_id,
+  $user_id AS authn_user_id,
   user_id,
   'access_tokens',
   old_row.id,

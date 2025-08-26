@@ -239,7 +239,7 @@ export async function createCourseRepoJob(
 
     // Give the owner required permissions
     job.info('Giving user owner permission');
-    await sqldb.queryOneRowAsync(sql.set_course_owner_permission, {
+    await sqldb.executeRow(sql.set_course_owner_permission, {
       course_id: inserted_course.id,
       course_request_id: options.course_request_id,
     });
@@ -293,12 +293,12 @@ export async function createCourseRepoJob(
   serverJob.executeInBackground(async (job) => {
     try {
       await createCourseRepo(job);
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'approved',
         course_request_id: options.course_request_id,
       });
     } catch (err) {
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'failed',
         course_request_id: options.course_request_id,
       });

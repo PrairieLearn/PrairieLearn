@@ -134,11 +134,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
 
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (activeElementId) {
-      const element = document.getElementById(activeElementId);
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
-      if (element) {
-        (element as HTMLElement).focus();
-      }
+      document.getElementById(activeElementId)?.focus();
     }
   }, [activeElementId]);
 

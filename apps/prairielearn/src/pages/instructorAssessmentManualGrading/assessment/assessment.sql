@@ -3,21 +3,21 @@ WITH
   instance_questions_with_submission AS (
     SELECT
       iq.assessment_question_id,
-      COUNT(1) FILTER (
+      COUNT(*) FILTER (
         WHERE
           iq.requires_manual_grading
       ) AS num_instance_questions_to_grade,
-      COUNT(1) FILTER (
+      COUNT(*) FILTER (
         WHERE
           iq.requires_manual_grading
           AND iq.assigned_grader = $user_id
       ) AS num_instance_questions_assigned,
-      COUNT(1) FILTER (
+      COUNT(*) FILTER (
         WHERE
           iq.requires_manual_grading
           AND iq.assigned_grader IS NULL
       ) AS num_instance_questions_unassigned,
-      COUNT(1) AS num_instance_questions,
+      COUNT(*) AS num_instance_questions,
       JSONB_AGG(
         DISTINCT jsonb_build_object(
           'user_id',
@@ -58,7 +58,7 @@ WITH
   ),
   open_instances AS (
     SELECT
-      COUNT(1) num_open_instances
+      COUNT(*) num_open_instances
     FROM
       assessment_instances ai
     WHERE
@@ -70,7 +70,7 @@ SELECT
   q.qid,
   q.title,
   q.id AS question_id,
-  admin_assessment_question_number (aq.id) as number,
+  admin_assessment_question_number (aq.id) AS number,
   ag.number AS alternative_group_number,
   (
     count(*) OVER (
@@ -100,7 +100,7 @@ ORDER BY
 
 -- BLOCK count_instance_questions_to_grade
 SELECT
-  COUNT(*)::INTEGER
+  COUNT(*)::integer
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

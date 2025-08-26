@@ -72,6 +72,8 @@ export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defa
 /**
  * Executes a query with the specified parameters.
  *
+ * @deprecated Use {@link execute} instead.
+ *
  * Using the return value of this function directly is not recommended. Instead, use
  * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
  */
@@ -80,7 +82,7 @@ export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
  * Executes a query with the specified parameters. Errors if the query does
  * not return exactly one row.
  *
- * @deprecated Use {@link queryRow} instead.
+ * @deprecated Use {@link executeRow} or {@link queryRow} instead.
  */
 export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
 /**
@@ -160,6 +162,17 @@ export const callRow = defaultPool.callRow.bind(defaultPool);
  * or a single row that conforms to the given Zod schema.
  */
 export const callOptionalRow = defaultPool.callOptionalRow.bind(defaultPool);
+
+/**
+ * Executes a query with the specified parameters. Returns the number of rows affected.
+ */
+export const execute = defaultPool.execute.bind(defaultPool);
+
+/**
+ * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
+ */
+export const executeRow = defaultPool.executeRow.bind(defaultPool);
+
 /**
  * Returns an {@link CursorIterator} that can be used to iterate over the
  * results of the query in batches, which is useful for large result sets.

@@ -190,7 +190,7 @@ function writeOutTables(elementSections: ElementSection[]) {
   return elementSections;
 }
 
-export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
+export function buildContextForElementDocs(rawMarkdown: string): DocumentChunk[] {
   const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 
   const elementSections = writeOutTables(cleanElementSections(extractElementSections(file)));

@@ -87,7 +87,7 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      result = (await module.default(queryParams)) as AdministratorQueryResult;
+      result = await module.default(queryParams);
     } catch (err) {
       logger.error(err);
       error = err.toString();

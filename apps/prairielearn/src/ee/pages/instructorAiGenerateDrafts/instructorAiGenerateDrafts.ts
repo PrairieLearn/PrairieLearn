@@ -13,7 +13,6 @@ import {
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   generateQuestion,
-  getAiQuestionGenerationCache,
   getIntervalUsage,
 } from '../../lib/aiQuestionGeneration.js';
 
@@ -26,8 +25,6 @@ import {
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const aiQuestionGenerationCache = getAiQuestionGenerationCache();
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
   // Do not allow users to edit without permission
@@ -105,7 +102,6 @@ router.post(
 
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
       });
 
@@ -133,8 +129,7 @@ router.post(
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
-      addCompletionCostToIntervalUsage({
-        aiQuestionGenerationCache,
+      await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,

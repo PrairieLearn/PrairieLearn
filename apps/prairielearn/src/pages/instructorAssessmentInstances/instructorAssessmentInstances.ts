@@ -137,7 +137,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit, params);
+      await sqldb.execute(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'set_time_limit_all') {
       const params = {
@@ -168,7 +168,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit_all, params);
+      await sqldb.execute(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

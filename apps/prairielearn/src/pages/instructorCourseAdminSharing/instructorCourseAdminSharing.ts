@@ -74,9 +74,12 @@ router.post(
     }
 
     if (req.body.__action === 'sharing_token_regenerate') {
-      await sqldb.queryZeroOrOneRowAsync(sql.update_sharing_token, {
+      const rowCount = await sqldb.execute(sql.update_sharing_token, {
         course_id: res.locals.course.id,
       });
+      if (rowCount > 1) {
+        throw new error.HttpStatusError(400, 'Failed to regenerate sharing token.');
+      }
     } else if (req.body.__action === 'course_sharing_set_add') {
       const consuming_course_id = await sqldb.queryOptionalRow(
         sql.course_sharing_set_add,

@@ -39,32 +39,32 @@ describe('News items', { timeout: 15_000 }, function () {
       });
     });
     it('should create a notification for news item 1 for admin user', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'dev@example.com',
         news_item_id: 1,
       });
-      assert.equal(results.rowCount, 1);
+      assert.equal(rowCount, 1);
     });
     it('should create a notification for news item 2 for admin user', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'dev@example.com',
         news_item_id: 2,
       });
-      assert.equal(results.rowCount, 1);
+      assert.equal(rowCount, 1);
     });
     it('should not create a notification for news item 1 for student user', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'student@example.com',
         news_item_id: 1,
       });
-      assert.equal(results.rowCount, 0);
+      assert.equal(rowCount, 0);
     });
     it('should not create a notification for news item 2 for student user', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'student@example.com',
         news_item_id: 2,
       });
-      assert.equal(results.rowCount, 0);
+      assert.equal(rowCount, 0);
     });
   });
 
@@ -117,18 +117,18 @@ describe('News items', { timeout: 15_000 }, function () {
       assert.lengthOf(elemList, 1);
     });
     it('should remove notification 1', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'dev@example.com',
         news_item_id: 1,
       });
-      assert.equal(results.rowCount, 0);
+      assert.equal(rowCount, 0);
     });
     it('should still have notification 2', async () => {
-      const results = await sqldb.queryAsync(sql.select_notification, {
+      const rowCount = await sqldb.execute(sql.select_notification, {
         uid: 'dev@example.com',
         news_item_id: 2,
       });
-      assert.equal(results.rowCount, 1);
+      assert.equal(rowCount, 1);
     });
   });
 

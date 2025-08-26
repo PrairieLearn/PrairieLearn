@@ -44,8 +44,8 @@ WITH
     FROM
       course_assessment_instances AS cai
     ORDER BY
-      cai.user_id,
-      cai.assessment_id,
+      cai.user_id ASC,
+      cai.assessment_id ASC,
       cai.score_perc DESC,
       cai.id DESC
   ),
@@ -145,7 +145,7 @@ FROM
   LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
 ORDER BY
   role DESC,
-  uid;
+  uid ASC;
 
 -- BLOCK assessment_instance_score
 SELECT

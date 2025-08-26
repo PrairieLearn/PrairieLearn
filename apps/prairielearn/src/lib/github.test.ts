@@ -4,7 +4,7 @@ import { courseRepoContentUrl, httpPrefixForCourseRepo } from './github.js';
 
 describe('Github library', () => {
   describe('httpPrefixforCourseRepo', () => {
-    it('Converts to HTTPS prefix when repo has proper format', async () => {
+    it('Converts to HTTPS prefix when repo has proper format', () => {
       assert.equal(
         httpPrefixForCourseRepo('git@github.com:username/repo.git'),
         'https://github.com/username/repo',
@@ -23,20 +23,20 @@ describe('Github library', () => {
       );
     });
 
-    it('Returns null if repo uses a different format', async () => {
+    it('Returns null if repo uses a different format', () => {
       assert.isNull(httpPrefixForCourseRepo('https://github.com/username/repo.git'));
       assert.isNull(httpPrefixForCourseRepo('https://www.github.com/username/repo.git'));
       assert.isNull(httpPrefixForCourseRepo('git@gitlab.com:username/repo.git'));
     });
 
-    it('Returns null if repo is not provided', async () => {
+    it('Returns null if repo is not provided', () => {
       assert.isNull(httpPrefixForCourseRepo(''));
       assert.isNull(httpPrefixForCourseRepo(null));
     });
   });
 
   describe('courseRepoContentUrl', () => {
-    it('Computes a URL for the example course', async () => {
+    it('Computes a URL for the example course', () => {
       const course = { repository: 'IRRELEVANT', branch: 'IRRELEVANT', example_course: true };
       assert.equal(
         courseRepoContentUrl(course),
@@ -52,7 +52,7 @@ describe('Github library', () => {
       );
     });
 
-    it('Computes a URL for a non-example course when repo has proper format', async () => {
+    it('Computes a URL for a non-example course when repo has proper format', () => {
       const course = {
         repository: 'git@github.com:username/repo.git',
         branch: 'master',
@@ -69,7 +69,7 @@ describe('Github library', () => {
       );
     });
 
-    it('Returns null if repo is not provided', async () => {
+    it('Returns null if repo is not provided', () => {
       const course = { repository: null, branch: 'master', example_course: false };
       assert.isNull(courseRepoContentUrl(course));
       assert.isNull(courseRepoContentUrl(course, 'questions/addNumbers'));

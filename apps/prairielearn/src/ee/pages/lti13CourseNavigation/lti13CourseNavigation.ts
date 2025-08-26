@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
@@ -143,7 +143,7 @@ router.get(
       // Update lti13_course_instance on instructor login
       // helpful as LMS updates or we add features
       if (role_instructor) {
-        await queryAsync(sql.update_lti13_course_instance, {
+        await execute(sql.update_lti13_course_instance, {
           lti13_instance_id: req.params.lti13_instance_id,
           course_instance_id: lti13_course_instance.course_instance_id,
           deployment_id: ltiClaim.deployment_id,
@@ -234,7 +234,7 @@ router.post(
     const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
 
     if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
-      await queryAsync(sql.insert_lci, {
+      await execute(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
         context_id: ltiClaim.context?.id,

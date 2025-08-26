@@ -35,7 +35,7 @@ export async function init() {
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
-  (async () => {
+  void (async () => {
     while (true) {
       // Spin until we can get at least one message from the queue.
       let messages: ReceiveMessageResult['Messages'];
@@ -147,7 +147,7 @@ async function processMessage(data: {
     ...data,
   });
   if (data.event === 'job_received') {
-    await sqldb.queryAsync(sql.update_grading_received_time, {
+    await sqldb.execute(sql.update_grading_received_time, {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });

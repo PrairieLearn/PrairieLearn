@@ -87,5 +87,5 @@ export async function selectAssessmentQuestions({
     prevZoneId = row.zone.id;
     prevAltGroupId = row.alternative_group.id;
   }
-  return result as StaffAssessmentQuestionRow[];
+  return result;
 }

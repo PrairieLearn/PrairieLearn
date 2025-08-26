@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { clearCookie } from '../../../lib/cookie.js';
 
@@ -22,7 +22,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'accept_terms') {
-      await queryAsync(sql.user_accept_terms, { user_id: res.locals.authn_user.user_id });
+      await execute(sql.user_accept_terms, { user_id: res.locals.authn_user.user_id });
 
       // This cookie would have been set by `redirectToTermsPage`.
       clearCookie(res, ['pl_pre_terms_url', 'pl2_pre_terms_url']);

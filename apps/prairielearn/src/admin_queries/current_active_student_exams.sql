@@ -18,7 +18,7 @@ WITH
       possible_exams AS ai
       JOIN page_view_logs AS pvl ON (pvl.assessment_instance_id = ai.id)
     ORDER BY
-      ai.id,
+      ai.id ASC,
       pvl.date DESC
   ),
   last_submissions AS (
@@ -33,7 +33,7 @@ WITH
     WHERE
       s.credit > 0
     ORDER BY
-      ai.id,
+      ai.id ASC,
       s.date DESC
   )
 SELECT

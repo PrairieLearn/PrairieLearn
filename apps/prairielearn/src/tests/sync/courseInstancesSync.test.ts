@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -21,6 +22,28 @@ function makeCourseInstance(): util.CourseInstanceData {
     },
     assessments: {},
   };
+}
+
+async function findSyncedCourseInstance(shortName: string) {
+  const syncedCourseInstances = await util.dumpTableWithSchema(
+    'course_instances',
+    CourseInstanceSchema,
+  );
+  const syncedCourseInstance = syncedCourseInstances.find((ci) => ci.short_name === shortName);
+  assert.isOk(syncedCourseInstance);
+  return syncedCourseInstance;
+}
+
+async function findSyncedUndeletedCourseInstance(shortName: string) {
+  const syncedCourseInstances = await util.dumpTableWithSchema(
+    'course_instances',
+    CourseInstanceSchema,
+  );
+  const syncedCourseInstance = syncedCourseInstances.find(
+    (ci) => ci.short_name === shortName && ci.deleted_at == null,
+  );
+  assert.isOk(syncedCourseInstance);
+  return syncedCourseInstance;
 }
 
 describe('Course instance syncing', () => {
@@ -43,11 +66,7 @@ describe('Course instance syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === courseInstanceId,
-    );
-    assert.isOk(syncedCourseInstance);
+    await findSyncedCourseInstance(courseInstanceId);
   });
 
   it('syncs access rules', async () => {
@@ -66,7 +85,10 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    );
     assert.equal(
       syncedAccessRules.length,
       courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess?.length,
@@ -75,31 +97,34 @@ describe('Course instance syncing', () => {
     // Ensure that the access rules are correctly synced.
     const firstRule = syncedAccessRules.find((ar) => ar.number === 1);
     assert.isOk(firstRule);
-    assert.equal(firstRule.start_date.getTime(), new Date('2024-01-01T06:00:00.000Z').getTime());
-    assert.equal(firstRule.end_date.getTime(), new Date('2024-01-31T06:00:00.000Z').getTime());
+    assert.equal(firstRule.start_date?.getTime(), new Date('2024-01-01T06:00:00.000Z').getTime());
+    assert.equal(firstRule.end_date?.getTime(), new Date('2024-01-31T06:00:00.000Z').getTime());
     assert.deepEqual(firstRule.uids, ['student@example.com']);
     assert.isNull(firstRule.institution);
 
     const secondRule = syncedAccessRules.find((ar) => ar.number === 2);
     assert.isOk(secondRule);
-    assert.equal(secondRule.start_date.getTime(), new Date('2024-02-01T06:00:00.000Z').getTime());
-    assert.equal(secondRule.end_date.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
+    assert.equal(secondRule.start_date?.getTime(), new Date('2024-02-01T06:00:00.000Z').getTime());
+    assert.equal(secondRule.end_date?.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
     assert.isNull(secondRule.uids);
     assert.equal(secondRule.institution, 'Any');
 
     // Ensure that excess access rules are deleted. Delete the first one and sync again.
     courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.shift();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedAccessRule = await util.dumpTable('course_instance_access_rules');
+    const newSyncedAccessRule = await util.dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    );
     assert.equal(newSyncedAccessRule.length, 1);
 
     // Ensure the remaining access rule is the correct one.
     const remainingRule = newSyncedAccessRule[0];
     assert.equal(
-      remainingRule.start_date.getTime(),
+      remainingRule.start_date?.getTime(),
       new Date('2024-02-01T06:00:00.000Z').getTime(),
     );
-    assert.equal(remainingRule.end_date.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
+    assert.equal(remainingRule.end_date?.getTime(), new Date('2024-02-28T06:00:00.000Z').getTime());
     assert.isNull(remainingRule.uids);
     assert.equal(remainingRule.institution, 'Any');
   });
@@ -107,29 +132,17 @@ describe('Course instance syncing', () => {
   it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
-    let syncedCourseInstances = await util.dumpTable('course_instances');
-    const originalSyncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    assert.isOk(originalSyncedCourseInstance);
+    const originalSyncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
 
     delete courseData.courseInstances[util.COURSE_INSTANCE_ID];
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedCourseInstances = await util.dumpTable('course_instances');
-    const deletedSyncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    assert.isOk(deletedSyncedCourseInstance);
-    assert.isNotNull(deletedSyncedCourseInstance?.deleted_at);
+    const deletedSyncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(deletedSyncedCourseInstance.deleted_at);
 
     courseData.courseInstances[util.COURSE_INSTANCE_ID] = originalCourseInstance;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    syncedCourseInstances = await util.dumpTable('course_instances');
-    const newSyncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    assert.isOk(newSyncedCourseInstance);
-    assert.isNull(newSyncedCourseInstance?.deleted_at);
+    const newSyncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNull(newSyncedCourseInstance.deleted_at);
     assert.deepEqual(newSyncedCourseInstance, originalSyncedCourseInstance);
   });
 
@@ -152,13 +165,10 @@ describe('Course instance syncing', () => {
     }
     courseInstanceAllowAccessRule.uids = [];
     await util.writeAndSyncCourseData(courseData);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    const syncedAccessRules = (await util.dumpTable('course_instance_access_rules')).filter((ar) =>
-      idsEqual(ar.course_instance_id, syncedCourseInstance?.id),
-    );
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    const syncedAccessRules = (
+      await util.dumpTableWithSchema('course_instance_access_rules', CourseInstanceAccessRuleSchema)
+    ).filter((ar) => idsEqual(ar.course_instance_id, syncedCourseInstance.id));
     assert.lengthOf(syncedAccessRules, 1);
     const [syncedAccessRule] = syncedAccessRules;
     const { uids } = syncedAccessRule;
@@ -171,19 +181,16 @@ describe('Course instance syncing', () => {
     courseData.courseInstances['newinstance'] = courseData.courseInstances[util.COURSE_INSTANCE_ID];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const firstCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
+    const firstCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(firstCourseInstance.sync_warnings);
     assert.match(
-      firstCourseInstance?.sync_warnings,
+      firstCourseInstance.sync_warnings,
       /UUID "a17b1abd-eaf6-45dc-99bc-9890a7fb345e" is used in other course instances: newinstance/,
     );
-    const secondCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === 'newinstance',
-    );
+    const secondCourseInstance = await findSyncedCourseInstance('newinstance');
+    assert.isNotNull(secondCourseInstance.sync_warnings);
     assert.match(
-      secondCourseInstance?.sync_warnings,
+      secondCourseInstance.sync_warnings,
       new RegExp(
         `UUID "a17b1abd-eaf6-45dc-99bc-9890a7fb345e" is used in other course instances: ${util.COURSE_INSTANCE_ID}`,
       ),
@@ -197,12 +204,10 @@ describe('Course instance syncing', () => {
       endDate: '2019-01-01T00:00:00',
     });
     await util.writeAndSyncCourseData(courseData);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(
-      syncedCourseInstance?.sync_errors,
+      syncedCourseInstance.sync_errors,
       /Invalid allowAccess rule: startDate \(2020-01-01T11:11:11\) must not be after endDate \(2019-01-01T00:00:00\)/,
     );
   });
@@ -214,12 +219,10 @@ describe('Course instance syncing', () => {
       endDate: '2019-01-01T00:00:00',
     });
     await util.writeAndSyncCourseData(courseData);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(
-      syncedCourseInstance?.sync_errors,
+      syncedCourseInstance.sync_errors,
       /Invalid allowAccess rule: startDate \(not a valid date\) is not valid/,
     );
   });
@@ -231,12 +234,10 @@ describe('Course instance syncing', () => {
       endDate: 'not a valid date',
     });
     await util.writeAndSyncCourseData(courseData);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(
-      syncedCourseInstance?.sync_errors,
+      syncedCourseInstance.sync_errors,
       /Invalid allowAccess rule: endDate \(not a valid date\) is not valid/,
     );
   });
@@ -246,13 +247,10 @@ describe('Course instance syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await fs.ensureDir(path.join(courseDir, 'courseInstances', 'badCourseInstance'));
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === 'badCourseInstance',
-    );
-    assert.isOk(syncedCourseInstance);
+    const syncedCourseInstance = await findSyncedCourseInstance('badCourseInstance');
+    assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(
-      syncedCourseInstance?.sync_errors,
+      syncedCourseInstance.sync_errors,
       /Missing JSON file: courseInstances\/badCourseInstance\/infoCourseInstance.json/,
     );
   });
@@ -270,14 +268,16 @@ describe('Course instance syncing', () => {
     await fs.ensureDir(path.join(courseDir, 'courseInstances', ...nestedCourseInstanceStructure));
     await util.syncCourseData(courseDir);
 
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === courseInstanceId,
-    );
-    assert.isOk(syncedCourseInstance);
+    const syncedCourseInstance = await findSyncedCourseInstance(courseInstanceId);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(
-      syncedCourseInstance?.sync_errors,
+      syncedCourseInstance.sync_errors,
       /Missing JSON file: courseInstances\/subfolder1\/subfolder2\/subfolder3\/nestedCourseInstance\/infoCourseInstance.json/,
+    );
+
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
     );
 
     // We should only record an error for the most deeply nested directories,
@@ -302,12 +302,9 @@ describe('Course instance syncing', () => {
     courseInstance.courseInstance.uuid = '276eeddb-74e1-44e5-bfc5-3c39d79afa85';
     courseInstance.courseInstance.longName = 'test new long name';
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null,
-    );
-    assert.equal(syncedCourseInstance?.uuid, courseInstance.courseInstance.uuid);
-    assert.equal(syncedCourseInstance?.long_name, courseInstance.courseInstance.longName);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance('repeatedCourseInstance');
+    assert.equal(syncedCourseInstance.uuid, courseInstance.courseInstance.uuid);
+    assert.equal(syncedCourseInstance.long_name, courseInstance.courseInstance.longName);
   });
 
   it('does not modify deleted course instance long names', async () => {
@@ -322,7 +319,10 @@ describe('Course instance syncing', () => {
     newCourseInstance.courseInstance.longName = 'changed long name';
     courseData.courseInstances['repeatedCourseInstance'] = newCourseInstance;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     const deletedCourseInstance = syncedCourseInstances.find(
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null,
     );
@@ -345,17 +345,21 @@ describe('Course instance syncing', () => {
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // check that the newly-synced course instance has an error
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null,
-    );
-    assert.equal(syncedCourseInstance?.uuid, newCourseInstance.courseInstance.uuid);
-    assert.match(syncedCourseInstance?.sync_errors, /must have required property 'longName'/);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance('repeatedCourseInstance');
+    assert.isDefined(syncedCourseInstance);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
+    assert.equal(syncedCourseInstance.uuid, newCourseInstance.courseInstance.uuid);
+    assert.match(syncedCourseInstance.sync_errors, /must have required property 'longName'/);
 
     // check that the old deleted course instance does not have any errors
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     const deletedCourseInstance = syncedCourseInstances.find(
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null,
     );
+    assert.isOk(deletedCourseInstance);
     assert.equal(deletedCourseInstance?.uuid, originalCourseInstance.courseInstance.uuid);
     assert.equal(deletedCourseInstance?.sync_errors, null);
   });
@@ -390,23 +394,21 @@ describe('Course instance syncing', () => {
     };
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
-    const courseInstances = await util.dumpTable('course_instances');
-
     // Original course instance should not exist.
+    const courseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     const originalCourseInstanceRow = courseInstances.find((ci) => ci.short_name === 'a');
     assert.isUndefined(originalCourseInstanceRow);
 
     // New course instances should exist and have the correct UUIDs.
-    const newCourseInstanceRow1 = courseInstances.find(
-      (ci) => ci.short_name === 'b' && ci.deleted_at === null,
-    );
-    assert.isNull(newCourseInstanceRow1?.deleted_at);
-    assert.equal(newCourseInstanceRow1?.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
-    const newCourseInstanceRow2 = courseInstances.find(
-      (q) => q.short_name === 'c' && q.deleted_at === null,
-    );
-    assert.isNull(newCourseInstanceRow2?.deleted_at);
-    assert.equal(newCourseInstanceRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+    const newCourseInstanceRow1 = await findSyncedUndeletedCourseInstance('b');
+    assert.isNull(newCourseInstanceRow1.deleted_at);
+    assert.equal(newCourseInstanceRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    const newCourseInstanceRow2 = await findSyncedUndeletedCourseInstance('c');
+    assert.isNull(newCourseInstanceRow2.deleted_at);
+    assert.equal(newCourseInstanceRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
   it('syncs string comments correctly', async () => {
@@ -420,9 +422,15 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     assert.equal(syncedCourseInstances[0].json_comment, 'course instance comment');
-    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    );
     assert.equal(syncedAccessRules[0].json_comment, 'course instance access rule comment');
   });
 
@@ -439,12 +447,18 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     assert.deepEqual(syncedCourseInstances[0].json_comment, [
       'course instance comment',
       'course instance comment 2',
     ]);
-    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    );
     assert.deepEqual(syncedAccessRules[0].json_comment, [
       'course instance access rule comment',
       'course instance access rule comment 2',
@@ -467,12 +481,18 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
+    const syncedCourseInstances = await util.dumpTableWithSchema(
+      'course_instances',
+      CourseInstanceSchema,
+    );
     assert.deepEqual(syncedCourseInstances[0].json_comment, {
       comment: 'course instance comment',
       comment2: 'course instance comment 2',
     });
-    const syncedAccessRules = await util.dumpTable('course_instance_access_rules');
+    const syncedAccessRules = await util.dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    );
     assert.deepEqual(syncedAccessRules[0].json_comment, {
       comment: 'course instance access rule comment',
       comment2: 'course instance access rule comment 2',
@@ -490,17 +510,14 @@ describe('Course instance syncing', () => {
     ];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    assert.isOk(syncedCourseInstance);
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_warnings);
     assert.match(
-      syncedCourseInstance?.sync_warnings,
+      syncedCourseInstance.sync_warnings,
       /The following access rule UIDs contain unexpected whitespace: "biz@example.com baz@example.com"/,
     );
     assert.match(
-      syncedCourseInstance?.sync_warnings,
+      syncedCourseInstance.sync_warnings,
       /The following access rule UIDs contain unexpected commas: "foo@example.com,bar@example.com"/,
     );
   });
@@ -514,11 +531,8 @@ describe('Course instance syncing', () => {
       await util.syncCourseData(courseDir);
     });
 
-    const syncedCourseInstances = await util.dumpTable('course_instances');
-    const syncedCourseInstance = syncedCourseInstances.find(
-      (ci) => ci.short_name === util.COURSE_INSTANCE_ID,
-    );
-    assert.isOk(syncedCourseInstance);
-    assert.match(syncedCourseInstance?.sync_errors, /"shareSourcePublicly" cannot be used/);
+    const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.isNotNull(syncedCourseInstance.sync_errors);
+    assert.match(syncedCourseInstance.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 });

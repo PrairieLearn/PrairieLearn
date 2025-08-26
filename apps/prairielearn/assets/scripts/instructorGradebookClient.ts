@@ -249,9 +249,9 @@ function setupEditScorePopovers(csrfToken: string) {
           $(popoverButton).popover('hide');
         });
 
-        form.addEventListener('submit', function (event) {
+        form.addEventListener('submit', async function (event) {
           event.preventDefault();
-          fetch(form.action, {
+          await fetch(form.action, {
             method: 'POST',
             body: new URLSearchParams(new FormData(form, event.submitter) as any),
           }).then(async (response) => {

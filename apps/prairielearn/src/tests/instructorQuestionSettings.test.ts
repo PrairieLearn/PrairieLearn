@@ -6,7 +6,7 @@ import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
@@ -52,7 +52,7 @@ describe('Editing question settings', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await execute(sql.update_course_repo, { repo: courseOriginDir });
   });
 
   afterAll(helperServer.after);

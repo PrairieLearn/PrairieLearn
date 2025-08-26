@@ -196,7 +196,7 @@ function StudentsCard({
                 value={globalFilter}
                 onInput={(e) => {
                   if (!(e.target instanceof HTMLInputElement)) return;
-                  setGlobalFilter(e.target.value);
+                  void setGlobalFilter(e.target.value);
                 }}
               />
               <button

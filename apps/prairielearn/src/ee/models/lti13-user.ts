@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type CourseInstance,
@@ -24,7 +24,7 @@ export async function updateLti13UserSub({
   lti13_instance_id: string;
   sub: string;
 }) {
-  await queryAsync(sql.update_lti13_users, {
+  await execute(sql.update_lti13_users, {
     user_id,
     lti13_instance_id,
     sub,

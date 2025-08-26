@@ -641,7 +641,7 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
-export async function resetConfig() {
+export function resetConfig() {
   loader.reset();
 }
 

@@ -46,7 +46,7 @@ WITH
     SELECT
       *
     FROM
-      jsonb_populate_recordset(null::lti13_assessments, $lineitems_import::jsonb)
+      jsonb_populate_recordset(NULL::lti13_assessments, $lineitems_import::jsonb)
   ),
   updating AS (
     UPDATE lti13_assessments
@@ -80,7 +80,7 @@ SELECT
       count(*)
     FROM
       updating
-  ) as updated,
+  ) AS updated,
   (
     SELECT
       count(*)
@@ -128,8 +128,8 @@ FROM
   JOIN users AS u ON (u.user_id = cai.user_id)
   LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
 ORDER BY
-  cai.user_id,
-  cai.assessment_id,
+  cai.user_id ASC,
+  cai.assessment_id ASC,
   cai.score_perc DESC,
   cai.id DESC;
 

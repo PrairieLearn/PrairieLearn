@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import { type OpenAI } from 'openai';
 
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
@@ -83,7 +83,7 @@ async function insertDocumentChunk(
 
   job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
   const embedding = await createEmbedding(client, doc.text, openAiUser);
-  await queryAsync(sql.insert_embedding, {
+  await execute(sql.insert_embedding, {
     doc_path: filepath,
     doc_text: doc.text,
     embedding: vectorToString(embedding),
@@ -132,7 +132,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
     allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
-    const files = await buildContextForElementDocs(fileText);
+    const files = buildContextForElementDocs(fileText);
     for (const doc of files) {
       await insertDocumentChunk(
         client,
@@ -143,7 +143,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       );
     }
 
-    await queryAsync(sql.delete_unused_doc_chunks, {
+    await execute(sql.delete_unused_doc_chunks, {
       doc_paths: allowedFilepaths,
       chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
     });
