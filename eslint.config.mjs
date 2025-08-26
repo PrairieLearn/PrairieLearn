@@ -599,6 +599,10 @@ export default tseslint.config([
           },
         },
       ],
+      // '@typescript-eslint/no-unnecessary-condition': [
+      //   'error',
+      //   { allowConstantLoopConditions: 'only-allowed-literals' },
+      // ],
       '@typescript-eslint/only-throw-error': [
         'error',
         {

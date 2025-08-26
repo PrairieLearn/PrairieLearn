@@ -16,8 +16,8 @@ const redirectEffectiveAccessDenied: ErrorRequestHandler = (err, req, res, next)
   if (!res.locals.pl_requested_data_changed) return next(err);
 
   // skip if we don't have user data
-  if (res.locals?.authn_user?.user_id == null) return next(err);
-  if (res.locals?.user?.user_id == null) return next(err);
+  if (res.locals.authn_user?.user_id == null) return next(err);
+  if (res.locals.user?.user_id == null) return next(err);
 
   // we are only interested in cases where we are emulating a different user
   if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return next(err);
@@ -27,9 +27,9 @@ const redirectEffectiveAccessDenied: ErrorRequestHandler = (err, req, res, next)
 
   // try to redirect to the instructor course instance
   if (
-    res.locals?.course_instance?.id &&
-    (res.locals?.authz_data?.has_course_instance_permission_view ||
-      res.locals?.authz_data?.has_course_permission_preview)
+    res.locals.course_instance?.id &&
+    (res.locals.authz_data?.has_course_instance_permission_view ||
+      res.locals.authz_data?.has_course_permission_preview)
   ) {
     res.redirect(
       `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/instructor`,
@@ -38,13 +38,13 @@ const redirectEffectiveAccessDenied: ErrorRequestHandler = (err, req, res, next)
   }
 
   // try to redirect to the instructor course
-  if (res.locals?.course?.id && res.locals?.authz_data?.has_course_permission_preview) {
+  if (res.locals.course?.id && res.locals.authz_data?.has_course_permission_preview) {
     res.redirect(`${res.locals.plainUrlPrefix}/course/${res.locals.course.id}`);
     return;
   }
 
   // try to redirect to the student course instance
-  if (res.locals?.course_instance?.id && res.locals?.authz_data?.has_student_access) {
+  if (res.locals.course_instance?.id && res.locals.authz_data?.has_student_access) {
     res.redirect(`${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`);
     return;
   }

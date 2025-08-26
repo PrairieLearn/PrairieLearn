@@ -43,8 +43,8 @@ function attachEventListeners(client: Redis, type: string) {
 
 export let io: Server;
 
-let pub: Redis;
-let sub: Redis;
+let pub: Redis | undefined;
+let sub: Redis | undefined;
 
 export function init(server: http.Server) {
   debug('init(): creating socket server');

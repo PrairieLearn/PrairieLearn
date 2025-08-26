@@ -124,13 +124,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
-    let didOutput = false;
+    let didOutput = false as boolean;
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
-    proc2.all?.setEncoding('utf-8');
-    proc2.all?.on('data', (data) => {
+    proc2.all.setEncoding('utf-8');
+    proc2.all.on('data', (data) => {
       didOutput = true;
       this.addToOutput(data);
     });
@@ -223,7 +223,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     if (Date.now() - this.lastSent > 1000 || force) {
       const ansifiedOutput = ansiToHtml(this.output);
       socketServer.io
-        ?.to('job-' + this.jobId)
+        .to('job-' + this.jobId)
         .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
       this.lastSent = Date.now();
     }
@@ -265,8 +265,8 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     });
 
     // Notify sockets.
-    socketServer.io?.to('job-' + this.jobId).emit('update');
-    socketServer.io?.to('jobSequence-' + this.jobSequenceId).emit('update');
+    socketServer.io.to('job-' + this.jobId).emit('update');
+    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
   }
 }
 

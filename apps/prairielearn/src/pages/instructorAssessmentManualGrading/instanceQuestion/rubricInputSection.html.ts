@@ -118,7 +118,7 @@ function RubricItems({
       : null;
 
   return html`
-    ${aiGradingInfo && aiGradingInfo?.submissionManuallyGraded
+    ${aiGradingInfo && aiGradingInfo.submissionManuallyGraded
       ? html`
           <div
             class="d-flex align-items-center gap-2 text-secondary mb-1"
