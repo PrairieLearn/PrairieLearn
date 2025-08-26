@@ -401,7 +401,7 @@ describe('@prairielearn/postgres', function () {
       });
 
       it('closes the cursor when the stream is closed', async () => {
-        const cursor = await queryCursor('SELECT * FROM workspaces;', z.string());
+        const cursor = await queryCursor('SELECT * FROM workspaces;', WorkspaceSchema);
         const stream = cursor.stream(1);
 
         const rows: any[] = [];
