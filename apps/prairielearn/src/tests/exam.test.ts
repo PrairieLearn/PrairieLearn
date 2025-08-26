@@ -8,7 +8,6 @@ import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
-import { withoutLogging } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -852,7 +851,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(result.rows, 0);
       });
     });
-    withoutLogging(() => helperQuestion.getInstanceQuestion(locals));
+    helperQuestion.getInstanceQuestion(locals, { silentLogging: true });
     describe('access the question', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
@@ -865,7 +864,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(result.rows, 1);
       });
     });
-    withoutLogging(() => helperQuestion.getInstanceQuestion(locals));
+    helperQuestion.getInstanceQuestion(locals, { silentLogging: true });
     describe('access the question again', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');

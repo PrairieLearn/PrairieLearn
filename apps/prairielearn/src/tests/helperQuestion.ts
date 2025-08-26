@@ -14,6 +14,8 @@ import {
   VariantSchema,
 } from '../lib/db-types.js';
 
+import { withoutLogging } from './utils/config.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function waitForJobSequence(locals: Record<string, any>) {
@@ -46,13 +48,16 @@ export function waitForJobSequence(locals: Record<string, any>) {
   });
 }
 
-export function getInstanceQuestion(locals: Record<string, any>) {
+export function getInstanceQuestion(
+  locals: Record<string, any>,
+  { silentLogging = false }: { silentLogging?: boolean } = {},
+) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-      const response = await fetch(questionUrl);
+      const response = await withoutLogging(() => fetch(questionUrl), { silent: silentLogging });
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
