@@ -1,6 +1,7 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
@@ -10,15 +11,7 @@ import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
-export interface FileEditorData {
-  fileName: string;
-  normalizedFileName: string;
-  aceMode: string;
-  diskContents: string;
-  diskHash: string;
-  sync_errors: string | null;
-  sync_warnings: string | null;
-}
+import type { FileEditorData } from './instructorFileEditor.js';
 
 export interface DraftEdit {
   fileEdit: FileEdit;
@@ -62,7 +55,7 @@ export function InstructorFileEditor({
       ${compiledScriptTag('instructorFileEditorClient.ts')}
     `,
     content: html`
-      ${editorData.sync_errors
+      ${editorData.fileMetadata?.syncErrors
         ? html`
             <div class="alert alert-danger" role="alert">
               <h2 class="h5 alert-heading">Sync error</h2>
@@ -74,11 +67,11 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiToHtml(editorData.sync_errors))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncErrors))}</code></pre>
             </div>
           `
         : ''}
-      ${editorData.sync_warnings
+      ${editorData.fileMetadata?.syncWarnings
         ? html`
             <div class="alert alert-warning" role="alert">
               <h2 class="h5 alert-heading">Sync warning</h2>
@@ -90,7 +83,7 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiToHtml(editorData.sync_warnings))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.fileMetadata.syncWarnings))}</code></pre>
             </div>
           `
         : ''}
@@ -259,6 +252,7 @@ export function InstructorFileEditor({
               data-contents="${draftEdit?.contents ?? editorData.diskContents}"
               data-ace-mode="${editorData.aceMode}"
               data-read-only="${!!draftEdit?.alertChoice}"
+              data-file-metadata="${JSON.stringify(editorData.fileMetadata)}"
             >
               <div class="card p-0">
                 ${draftEdit?.alertChoice
@@ -311,6 +305,7 @@ export function InstructorFileEditor({
                     class="col js-version-choice-content"
                     data-contents="${editorData.diskContents}"
                     data-ace-mode="${editorData.aceMode}"
+                    data-file-metadata="${JSON.stringify(editorData.fileMetadata)}"
                   >
                     <div class="card p-0">
                       <div class="card-header text-center">
@@ -333,6 +328,29 @@ export function InstructorFileEditor({
           </div>
         </div>
       </form>
+
+      ${SaveConfirmationModal()}
     `,
+  });
+}
+
+function SaveConfirmationModal() {
+  return Modal({
+    title: 'Confirm Save',
+    id: 'save-confirmation-modal',
+    body: html`
+      <p><strong>Warning:</strong> The following issues were detected:</p>
+      <ul id="save-confirmation-issues" class="text-danger"></ul>
+      <p>
+        If you click <strong>Confirm Save</strong>, you may need to undo this change manually using
+        Git.
+      </p>
+      <p>Are you sure you want to save these changes?</p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+      <button type="button" class="btn btn-danger" id="confirm-save-button">Confirm Save</button>
+    `,
+    form: false,
   });
 }

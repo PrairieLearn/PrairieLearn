@@ -20,7 +20,8 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { getFileMetadataForPath } from '../../lib/editorUtil.js';
+import type { FileMetadata } from '../../lib/editorUtil.types.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -28,11 +29,16 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import {
-  type DraftEdit,
-  type FileEditorData,
-  InstructorFileEditor,
-} from './instructorFileEditor.html.js';
+import { type DraftEdit, InstructorFileEditor } from './instructorFileEditor.html.js';
+
+export interface FileEditorData {
+  fileName: string;
+  normalizedFileName: string;
+  aceMode: string;
+  diskContents: string;
+  diskHash: string;
+  fileMetadata?: FileMetadata;
+}
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -105,10 +111,7 @@ router.get(
     }
 
     const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
-    const { errors: sync_errors, warnings: sync_warnings } = await getErrorsAndWarningsForFilePath(
-      res.locals.course.id,
-      relPath,
-    );
+    const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
 
     const editorData: FileEditorData = {
       fileName: path.basename(relPath),
@@ -116,8 +119,7 @@ router.get(
       aceMode: getModeForPath(relPath).mode,
       diskContents: encodedContents,
       diskHash: getHash(encodedContents),
-      sync_errors,
-      sync_warnings,
+      fileMetadata,
     };
 
     const draftEdit = await readDraftEdit({
