@@ -43,7 +43,13 @@ WITH
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone, enrollment_code)
+      course_instances (
+        id,
+        uuid,
+        course_id,
+        display_timezone,
+        enrollment_code
+      )
     VALUES
       (
         1,
