@@ -279,7 +279,7 @@ function getParamsForAssessment(
     allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
-    // NOTE: There are various homeworks with requireHonorCode set to true, but that value is ignored.
+    // NOTE: There are various homeworks with requireHonorCode set to true in the database (see #12675 for more details)
     require_honor_code:
       assessment.requireHonorCode == null
         ? assessment.type === 'Exam'
