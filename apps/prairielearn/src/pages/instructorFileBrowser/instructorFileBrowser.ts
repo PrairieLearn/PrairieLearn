@@ -87,7 +87,7 @@ router.post(
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
-        locals: res.locals as any as any,
+        locals: res.locals as any,
         container,
         deletePath,
       });

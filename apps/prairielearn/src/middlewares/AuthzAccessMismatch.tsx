@@ -99,7 +99,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
       <thead>
         <tr>
           <th>Permission</th>
-          <th>Effective User</th>
+          <th>Effective User/Role</th>
           <th>Your Account</th>
         </tr>
       </thead>
@@ -180,6 +180,11 @@ export function AuthzAccessMismatch({
     (permission) => permission.authnValue !== permission.value,
   );
 
+  // Use special messaging if there is an effective role but the effective user remains the same
+  const hasEffectiveUser = authzUser?.user_id !== authnUser.user_id;
+  const isStudentViewActive =
+    !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
+
   return (
     <main id="content" class="container">
       <div class="card mb-4">
@@ -188,11 +193,23 @@ export function AuthzAccessMismatch({
         </div>
         <div class="card-body">
           <p>{errorExplanation}</p>
-          <p>
-            The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>} does
-            not have access to this page, but your account <strong>{formatUser(authnUser)}</strong>{' '}
-            does.
-          </p>
+          {hasEffectiveUser ? (
+            <p>
+              The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
+              does not have access to this page, but your account{' '}
+              <strong>{formatUser(authnUser)}</strong> does.
+            </p>
+          ) : isStudentViewActive ? (
+            <p>
+              You are currently in <strong>Student view</strong>, which does not give you permission
+              to this page, but your account permissions do.
+            </p>
+          ) : (
+            <p>
+              The current effective role does not have access to this page, but your account
+              permissions do.
+            </p>
+          )}
 
           <details class="mb-3">
             <summary class="mb-1">View missing permissions</summary>
@@ -206,7 +223,7 @@ export function AuthzAccessMismatch({
           </details>
 
           <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
-            Clear effective user
+            Clear effective {hasEffectiveUser ? 'user' : 'role'}
           </button>
         </div>
       </div>

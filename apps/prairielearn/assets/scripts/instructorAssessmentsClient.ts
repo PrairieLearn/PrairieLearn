@@ -18,7 +18,7 @@ onDocumentReady(() => {
   const { assessmentIdsNeedingStatsUpdate, urlPrefix } =
     decodeData<StatsUpdateData>('stats-update-data');
   // Fetch new statistics in parallel, but with a limit to avoid saturating the server.
-  async.eachLimit(assessmentIdsNeedingStatsUpdate, 3, async (assessment_id) => {
+  void async.eachLimit(assessmentIdsNeedingStatsUpdate, 3, async (assessment_id) => {
     try {
       const response = await fetch(
         `${urlPrefix}/instance_admin/assessments/stats/${assessment_id}`,

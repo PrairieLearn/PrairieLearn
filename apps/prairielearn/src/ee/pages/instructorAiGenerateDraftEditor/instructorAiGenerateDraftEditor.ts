@@ -292,7 +292,7 @@ router.post(
         res.locals.authz_data.has_course_permission_edit,
       );
 
-      addCompletionCostToIntervalUsage({
+      await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
