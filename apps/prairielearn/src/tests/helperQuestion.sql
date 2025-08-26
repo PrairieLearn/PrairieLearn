@@ -64,14 +64,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_question_by_qid
-SELECT
-  *
-FROM
-  questions
-WHERE
-  qid = $qid;
-
 -- BLOCK select_last_job_sequence
 SELECT
   *

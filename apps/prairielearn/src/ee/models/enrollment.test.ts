@@ -4,7 +4,7 @@ import { queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { generateJoinId } from '../../sync/fromDisk/courseInstances.js';
+import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
@@ -40,11 +40,11 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      'INSERT INTO course_instances (course_id, display_timezone, join_id) VALUES ($course_id, $display_timezone, $join_id) RETURNING *',
+      'INSERT INTO course_instances (course_id, display_timezone, enrollment_code) VALUES ($course_id, $display_timezone, $enrollment_code) RETURNING *',
       {
         course_id: 1,
         display_timezone: 'UTC',
-        join_id: generateJoinId(),
+        enrollment_code: generateEnrollmentCode(),
       },
       CourseInstanceSchema,
     );

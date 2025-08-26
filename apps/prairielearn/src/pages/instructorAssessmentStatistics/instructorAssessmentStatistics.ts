@@ -206,17 +206,19 @@ router.get(
         ],
       }).pipe(res);
     } else if (req.params.filename === filenames.statsByDateCsvFilename) {
-      const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
-        assessment_id: res.locals.assessment.id,
-      });
-      const scoresByDay = histByDateResult.rows;
+      const histByDateResult = await sqldb.queryRows(
+        sql.assessment_score_histogram_by_date,
+        { assessment_id: res.locals.assessment.id },
+        AssessmentScoreHistogramByDateSchema,
+      );
+      const scoresByDay = histByDateResult;
 
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
       const csvData: (string | number)[][] = [];
 
-      let groupData = ['Number'];
+      let groupData: (string | number)[] = ['Number'];
       for (let day = 0; day < numDays; day++) {
         groupData.push(scoresByDay[day].number);
       }

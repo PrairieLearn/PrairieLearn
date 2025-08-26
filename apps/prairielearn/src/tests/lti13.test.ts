@@ -5,7 +5,7 @@ import * as jose from 'jose';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, queryOptionalRow } from '@prairielearn/postgres';
 
 import { getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
@@ -270,7 +270,7 @@ describe('LTI 1.3', () => {
     await helperServer.before()();
 
     // We need to give the default institution a `uid_regexp`.
-    await queryAsync("UPDATE institutions SET uid_regexp = '@example\\.com$'", {});
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
@@ -284,7 +284,7 @@ describe('LTI 1.3', () => {
   });
 
   afterAll(async () => {
-    helperServer.after();
+    await helperServer.after();
     config.isEnterprise = false;
     config.features = {};
   });
@@ -445,7 +445,7 @@ describe('LTI 1.3', () => {
     const app = express();
     app.use(express.urlencoded({ extended: true }));
 
-    app.post('/token', async (req, res) => {
+    app.post('/token', (req, res) => {
       assert.equal(req.body.grant_type, 'client_credentials');
       assert.equal(req.body.client_id, CLIENT_ID);
       assert.equal(
@@ -655,7 +655,7 @@ describe('LTI 1.3', () => {
 
         // Add a UIN to the user. This doesn't matter for the login process, but
         // we'll use this later to validate that it's persisted after UID update.
-        await queryAsync('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
+        await execute('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
           user_id: initialUser.user_id,
           uin: testUin,
         });
