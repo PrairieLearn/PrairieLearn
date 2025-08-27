@@ -5,10 +5,7 @@ FROM
   audit_events
 WHERE
   subject_user_id = $subject_user_id
-  AND table_name IN (
-    SELECT
-      unnest($table_names::text[])
-  )
+  AND table_name = ANY ($table_names::text[])
   AND course_instance_id = $course_instance_id
 ORDER BY
   date DESC;
@@ -20,10 +17,7 @@ FROM
   audit_events
 WHERE
   agent_authn_user_id = $agent_authn_user_id
-  AND table_name IN (
-    SELECT
-      unnest($table_names::text[])
-  )
+  AND table_name = ANY ($table_names::text[])
   AND course_instance_id = $course_instance_id
 ORDER BY
   date DESC;
