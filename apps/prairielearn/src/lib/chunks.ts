@@ -440,10 +440,7 @@ export function identifyChunksFromChangedFiles(
           ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex),
         );
 
-        if (
-          courseData.courseInstances[courseInstanceId] &&
-          courseData.courseInstances[courseInstanceId].assessments[assessmentId]
-        ) {
+        if (courseData.courseInstances[courseInstanceId]?.assessments[assessmentId]) {
           // This corresponds to something that we need to
           // create/update a chunk for!
           if (!courseChunks.courseInstances[courseInstanceId]) {
@@ -720,7 +717,7 @@ export async function createAndUploadChunks(
   });
 
   // Now that the new chunks have been uploaded, update their status in the database
-  await sqldb.queryAsync(sql.insert_chunks, {
+  await sqldb.execute(sql.insert_chunks, {
     course_id: courseId,
     // Force this to a string; otherwise, our code in `sql-db.js` will try to
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.
@@ -738,7 +735,7 @@ export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetada
     return;
   }
 
-  await sqldb.queryAsync(sql.delete_chunks, {
+  await sqldb.execute(sql.delete_chunks, {
     course_id: courseId,
     // Force this to a string; otherwise, our code in `sql-db.js` will try to
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.

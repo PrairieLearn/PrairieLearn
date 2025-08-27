@@ -23,6 +23,25 @@ function getIconClass(status: EnumEnrollmentStatus): string {
   }
 }
 
+function getFriendlyStatus(status: EnumEnrollmentStatus): string {
+  switch (status) {
+    case 'invited':
+      return 'Invited';
+    case 'joined':
+      return 'Joined';
+    case 'removed':
+      return 'Removed';
+    case 'rejected':
+      return 'Rejected';
+    case 'blocked':
+      return 'Blocked';
+    case 'lti13_pending':
+      return 'Invited via LTI';
+    default:
+      return 'Unknown';
+  }
+}
+
 function capitalize(word: string): string {
   if (word.length === 0) return word;
   return word.charAt(0).toUpperCase() + word.slice(1);
@@ -33,7 +52,7 @@ export function EnrollmentStatusIcon({ status }: EnrollmentStatusIconProps) {
   return (
     <span class="d-inline-flex align-items-center gap-1">
       <i class={clsx('bi', iconClass)} aria-hidden="true" />
-      <span>{capitalize(status)}</span>
+      <span class="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
     </span>
   );
 }

@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -125,7 +126,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
     if (elementType === 'core') return ElementCoreJsonSchema;
     if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    assertNever(elementType);
   });
 
   let files: string[];
@@ -189,8 +190,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -284,8 +284,7 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -489,7 +488,7 @@ async function processQuestionPhase<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -883,7 +882,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -1126,27 +1125,27 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {
