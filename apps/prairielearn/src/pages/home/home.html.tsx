@@ -1,17 +1,21 @@
 import { z } from 'zod';
 
+import {
+  RawStudentCourseInstanceSchema,
+  RawStudentCourseSchema,
+  type StaffInstitution,
+} from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
-  id: CourseSchema.shape.id,
-  short_name: CourseSchema.shape.short_name,
-  title: CourseSchema.shape.title,
+  id: RawStudentCourseSchema.shape.id,
+  short_name: RawStudentCourseSchema.shape.short_name,
+  title: RawStudentCourseSchema.shape.title,
   can_open_course: z.boolean(),
   course_instances: z.array(
     z.object({
-      id: CourseInstanceSchema.shape.id,
-      long_name: CourseInstanceSchema.shape.long_name,
+      id: RawStudentCourseInstanceSchema.shape.id,
+      long_name: RawStudentCourseInstanceSchema.shape.long_name,
       expired: z.boolean(),
     }),
   ),
@@ -19,10 +23,10 @@ export const InstructorCourseSchema = z.object({
 export type InstructorCourse = z.infer<typeof InstructorCourseSchema>;
 
 export const StudentCourseSchema = z.object({
-  id: CourseInstanceSchema.shape.id,
-  course_short_name: CourseSchema.shape.short_name,
-  course_title: CourseSchema.shape.title,
-  long_name: CourseInstanceSchema.shape.long_name,
+  id: RawStudentCourseInstanceSchema.shape.id,
+  course_short_name: RawStudentCourseSchema.shape.short_name,
+  course_title: RawStudentCourseSchema.shape.title,
+  long_name: RawStudentCourseInstanceSchema.shape.long_name,
 });
 export type StudentCourse = z.infer<typeof StudentCourseSchema>;
 
@@ -30,7 +34,7 @@ interface HomeProps {
   resLocals: Record<string, any>;
   instructorCourses: InstructorCourse[];
   studentCourses: StudentCourse[];
-  adminInstitutions: Institution[];
+  adminInstitutions: StaffInstitution[];
 }
 
 export function Home({
@@ -133,7 +137,7 @@ function DevModeCard() {
 }
 
 interface AdminInstitutionsCardProps {
-  adminInstitutions: Institution[];
+  adminInstitutions: StaffInstitution[];
 }
 
 function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps) {
