@@ -43,6 +43,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   init_points: z.number().nullable(),
+  allow_real_time_grading: z.boolean().nullable(),
   row_order: z.number(),
   question_number: z.string(),
   zone_max_points: z.number().nullable(),
@@ -94,15 +95,25 @@ export function StudentAssessmentInstance({
 )) {
   let savedAnswers = 0;
   let suspendedSavedAnswers = 0;
+
+  // Check for mixed real-time grading scenarios
+  const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
+    (q) => q.allow_real_time_grading,
+  );
+
   instance_question_rows.forEach((question) => {
     if (question.status === 'saved') {
       if (question.allow_grade_left_ms > 0) {
         suspendedSavedAnswers++;
-      } else if (question.max_auto_points || !question.max_manual_points) {
+      } else if (
+        (question.max_auto_points || !question.max_manual_points) &&
+        question.allow_real_time_grading
+      ) {
         // Note that we exclude questions that are not auto-graded from the count.
         // This count is used to determine whether the "Grade X saved answers"
         // button should be enabled, and clicking that button won't do any good for
-        // manually-graded questions.
+        // manually-graded questions. We also exclude questions that don't allow
+        // real-time grading.
         savedAnswers++;
       }
     }
@@ -112,7 +123,7 @@ export function StudentAssessmentInstance({
   const zoneTitleColspan = run(() => {
     const trailingColumnsCount =
       resLocals.assessment.type === 'Exam'
-        ? resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
+        ? resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
           ? 2
           : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
             ? 3
@@ -122,7 +133,7 @@ export function StudentAssessmentInstance({
     return resLocals.assessment.type === 'Exam'
       ? resLocals.has_auto_grading_question &&
         resLocals.has_manual_grading_question &&
-        resLocals.assessment.allow_real_time_grading
+        someQuestionsAllowRealTimeGrading
         ? 6
         : 2 + trailingColumnsCount
       : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
@@ -182,18 +193,41 @@ export function StudentAssessmentInstance({
         </div>
 
         <div class="card-body">
-          ${!resLocals.assessment.allow_real_time_grading && resLocals.assessment_instance.open
-            ? html`
+          ${run(() => {
+            const allQuestionsDisabled = instance_question_rows.every(
+              (q) => !q.allow_real_time_grading,
+            );
+            const someQuestionsDisabled = instance_question_rows.some(
+              (q) => !q.allow_real_time_grading,
+            );
+
+            if (allQuestionsDisabled && resLocals.assessment_instance.open) {
+              return html`
                 <div class="alert alert-warning">
                   This assessment will only be graded after it is finished. You should save answers
                   for all questions and your exam will be graded later. You can use the
                   <span class="badge badge-outline text-bg-light">Finish assessment</span>
                   button below to finish and calculate your final grade.
                 </div>
-              `
-            : ''}
+              `;
+            } else if (someQuestionsDisabled && resLocals.assessment_instance.open) {
+              return html`
+                <div class="alert alert-info">
+                  Some questions in this assessment allow real-time grading while others will only
+                  be graded after the assessment is finished. Check the individual question pages to
+                  see which grading mode applies to each question.
+                </div>
+              `;
+            }
+            return '';
+          })}
           <div class="row align-items-center">
-            ${!resLocals.assessment.allow_real_time_grading && resLocals.assessment_instance.open
+            ${run(() => {
+              const allQuestionsDisabled = instance_question_rows.every(
+                (q) => !q.allow_real_time_grading,
+              );
+              return allQuestionsDisabled && resLocals.assessment_instance.open;
+            })
               ? html`
                   <div class="col-md-3 col-sm-12">
                     Total points: ${formatPoints(resLocals.assessment_instance.max_points)}
@@ -282,7 +316,10 @@ export function StudentAssessmentInstance({
             data-testid="assessment-questions"
           >
             <thead>
-              ${InstanceQuestionTableHeader({ resLocals })}
+              ${InstanceQuestionTableHeader({
+                resLocals,
+                someQuestionsAllowRealTimeGrading,
+              })}
             </thead>
             <tbody>
               ${instance_question_rows.map(
@@ -335,7 +372,7 @@ export function StudentAssessmentInstance({
                             })}
                           </td>
                           ${resLocals.has_auto_grading_question &&
-                          resLocals.assessment.allow_real_time_grading
+                          instance_question_row.allow_real_time_grading
                             ? html`
                                 <td class="text-center">
                                   ${instance_question_row.max_auto_points
@@ -357,7 +394,7 @@ export function StudentAssessmentInstance({
                                 </td>
                               `
                             : ''}
-                          ${resLocals.assessment.allow_real_time_grading ||
+                          ${instance_question_row.allow_real_time_grading ||
                           !resLocals.assessment_instance.open
                             ? html`
                                 ${resLocals.has_auto_grading_question &&
@@ -472,7 +509,7 @@ export function StudentAssessmentInstance({
           resLocals.assessment_instance.open &&
           resLocals.authz_result.active
             ? html`
-                ${resLocals.assessment.allow_real_time_grading
+                ${someQuestionsAllowRealTimeGrading
                   ? html`
                       <form name="grade-form" method="POST">
                         <input type="hidden" name="__action" value="grade" />
@@ -634,11 +671,17 @@ function AssessmentStatus({
   return html`Assessment is <strong>closed</strong> and you cannot answer questions.`;
 }
 
-function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, any> }) {
+function InstanceQuestionTableHeader({
+  resLocals,
+  someQuestionsAllowRealTimeGrading,
+}: {
+  resLocals: Record<string, any>;
+  someQuestionsAllowRealTimeGrading: boolean;
+}) {
   const trailingColumns =
     resLocals.assessment.type === 'Exam'
       ? html`
-          ${resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
+          ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
             ? html`
                 <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
                 <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
@@ -666,7 +709,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
       ? html`
           ${resLocals.has_auto_grading_question &&
           resLocals.has_manual_grading_question &&
-          resLocals.assessment.allow_real_time_grading
+          someQuestionsAllowRealTimeGrading
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>

@@ -1,0 +1,28 @@
+{
+  "uuid": "f1e2d3c4-b5a6-9708-fedc-ba9876543210",
+  "type": "Homework",
+  "title": "Test invalid real-time grading settings for Homework",
+  "set": "Homework",
+  "number": "14",
+  "allowAccess": [{}],
+  "zones": [
+    {
+      "title": "Zone with disabled real-time grading (should error)",
+      "allowRealTimeGrading": false,
+      "questions": [{ "id": "addNumbers", "points": 5 }]
+    },
+    {
+      "title": "Zone with question-level disabled (should error)",
+      "questions": [{ "id": "addVectors", "points": 10, "allowRealTimeGrading": false }]
+    },
+    {
+      "title": "Zone with alternative-level disabled (should error)",
+      "questions": [
+        {
+          "points": 8,
+          "alternatives": [{ "id": "fossilFuelsRadio", "allowRealTimeGrading": false }]
+        }
+      ]
+    }
+  ]
+}

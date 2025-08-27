@@ -1,3 +1,22 @@
+-- BLOCK select_assessment_questions_with_real_time_grading
+SELECT
+  aq.number,
+  q.qid,
+  aq.allow_real_time_grading
+FROM
+  assessment_questions AS aq
+  JOIN questions AS q ON (q.id = aq.question_id)
+  JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+  JOIN zones AS z ON (z.id = ag.zone_id)
+WHERE
+  aq.assessment_id = $assessment_id
+  AND aq.deleted_at IS NULL
+  AND q.deleted_at IS NULL
+ORDER BY
+  z.number,
+  z.id,
+  aq.number;
+
 -- BLOCK select_assessment_questions
 WITH
   issue_count AS (

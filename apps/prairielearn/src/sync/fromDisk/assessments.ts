@@ -94,6 +94,7 @@ function getParamsForAssessment(
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
+      allow_real_time_grading: zone.allowRealTimeGrading,
       grade_rate_minutes: zone.gradeRateMinutes,
       json_can_view: zone.canView,
       json_can_submit: zone.canSubmit,
@@ -108,6 +109,8 @@ function getParamsForAssessment(
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
+    const zoneAllowRealTimeGrading =
+      zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading ?? true;
     const zoneCanView = zone?.canView ?? assessmentCanView;
     const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -122,12 +125,16 @@ function getParamsForAssessment(
         triesPerVariant: number;
         gradeRateMinutes: number;
         jsonGradeRateMinutes: number | undefined;
+        allowRealTimeGrading: boolean;
+        jsonAllowRealTimeGrading: boolean | undefined;
         canView: string[] | null;
         canSubmit: string[] | null;
         advanceScorePerc: number | undefined;
         comment?: CommentJson;
       }[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
+      const questionAllowRealTimeGrading =
+        question.allowRealTimeGrading ?? zoneAllowRealTimeGrading;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
@@ -144,6 +151,8 @@ function getParamsForAssessment(
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
+            allowRealTimeGrading: alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading,
+            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
@@ -163,6 +172,8 @@ function getParamsForAssessment(
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
+            allowRealTimeGrading: questionAllowRealTimeGrading,
+            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             // If a question has alternatives, the comment is stored on the alternative
@@ -226,6 +237,8 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          allow_real_time_grading: alternative.allowRealTimeGrading,
+          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -245,6 +258,7 @@ function getParamsForAssessment(
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
         advance_score_perc: question.advanceScorePerc,
+        json_allow_real_time_grading: question.allowRealTimeGrading,
         json_grade_rate_minutes: question.gradeRateMinutes,
         json_can_view: question.canView,
         json_can_submit: question.canSubmit,

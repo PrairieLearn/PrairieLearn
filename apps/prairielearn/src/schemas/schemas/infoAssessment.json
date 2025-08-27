@@ -323,6 +323,10 @@
           "type": "number",
           "minimum": 0
         },
+        "allowRealTimeGrading": {
+          "description": "Whether to allow real-time grading for questions in this zone. If not specified, inherits from the assessment level.",
+          "type": "boolean"
+        },
         "canSubmit": {
           "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
           "type": "array",
@@ -404,6 +408,10 @@
           "type": "number",
           "minimum": 0
         },
+        "allowRealTimeGrading": {
+          "description": "Whether to allow real-time grading for this question. If not specified, inherits from the zone level.",
+          "type": "boolean"
+        },
         "canSubmit": {
           "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
           "type": "array",
@@ -470,6 +478,10 @@
           "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
           "type": "number",
           "minimum": 0
+        },
+        "allowRealTimeGrading": {
+          "description": "Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.",
+          "type": "boolean"
         }
       }
     },

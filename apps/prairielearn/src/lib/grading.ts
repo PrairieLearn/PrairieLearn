@@ -38,6 +38,7 @@ const VariantDataSchema = z.object({
   grading_method: QuestionSchema.shape.grading_method,
   max_auto_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
+  allow_real_time_grading: z.boolean().nullable(),
 });
 
 const VariantForSubmissionSchema = VariantSchema.extend({
@@ -285,6 +286,11 @@ async function selectSubmissionForGrading(
       if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;
       }
+    }
+
+    // Check if real-time grading is disabled for this question
+    if (variantData.instance_question_id != null && !variantData.allow_real_time_grading) {
+      return null;
     }
 
     // Select the most recent submission
