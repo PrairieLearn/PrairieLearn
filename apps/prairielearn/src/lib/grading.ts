@@ -265,6 +265,7 @@ export async function saveSubmission(
 async function selectSubmissionForGrading(
   variant_id: string,
   check_submission_id: string | null,
+  overrideRealTimeGradingDisabled: boolean,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -280,20 +281,20 @@ async function selectSubmissionForGrading(
     // if this is manual grading only. Typically we would not reach this point
     // for these cases, since the grade button is not shown to students, so this
     // is an extra precaution.
-    //
-    // Note that we do _not_ check if there's an associated assessment question
-    // and whether or not it has real-time grading disabled. We rely on the UI
-    // and POST handlers to prevent grading in that case.
-    //
-    // TODO: we may actually need handling for the "Grade N saved answers" button.
-    // That can be used without closing the assessment and thus without triggering
-    // grading of any saved submissions.
     if (variantData.instance_question_id == null) {
       if (variantData.grading_method === 'Manual') return null;
     } else {
       if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;
       }
+    }
+
+    // Unlike the above, we can't rely solely on the UI and POST handlers to prevent
+    // students from grading questions with real-time grading disabled. This is
+    // because the "Grade N saved answers" button can be used without closing the
+    // assessment, so we must explicitly skip questions where real-time grading is disabled.
+    if (variantData.allow_real_time_grading === false && !overrideRealTimeGradingDisabled) {
+      return null;
     }
 
     // Select the most recent submission
@@ -338,6 +339,7 @@ async function selectSubmissionForGrading(
  * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
  */
 export async function gradeVariant(
   variant: Variant,
@@ -347,10 +349,15 @@ export async function gradeVariant(
   user_id: string | null,
   authn_user_id: string | null,
   overrideGradeRateCheck: boolean,
+  overrideRealTimeGradingDisabled: boolean,
 ): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
+  const submission = await selectSubmissionForGrading(
+    variant.id,
+    check_submission_id,
+    overrideRealTimeGradingDisabled,
+  );
   if (submission == null) return;
 
   if (!overrideGradeRateCheck) {
@@ -446,6 +453,7 @@ export async function gradeVariant(
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
  * @returns submission_id
  */
 export async function saveAndGradeSubmission(
@@ -454,6 +462,7 @@ export async function saveAndGradeSubmission(
   question: Question,
   course: Course,
   overrideGradeRateCheck: boolean,
+  overrideRealTimeGradingDisabled: boolean,
 ) {
   const { submission_id, variant: updated_variant } = await saveSubmission(
     submissionData,
@@ -475,6 +484,7 @@ export async function saveAndGradeSubmission(
     submissionData.user_id,
     submissionData.auth_user_id,
     overrideGradeRateCheck,
+    overrideRealTimeGradingDisabled,
   );
   return submission_id;
 }

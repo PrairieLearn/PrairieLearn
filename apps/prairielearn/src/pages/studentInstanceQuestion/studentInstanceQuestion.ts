@@ -213,6 +213,7 @@ router.post(
       const requireOpen = true;
       const closeExam = true;
       const overrideGradeRate = false;
+      const overrideRealTimeGradingDisabled = false;
       await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
         res.locals.user.user_id,
@@ -220,6 +221,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
         res.locals.client_fingerprint_id,
       );
       res.redirect(

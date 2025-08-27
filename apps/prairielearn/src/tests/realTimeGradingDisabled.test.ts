@@ -85,9 +85,11 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
   });
 
   // Note that this test doesn't test full hierarchical inheritance of the real-time
-  // grading settings; that's already covered by the sync tests. Rather, we just have
-  // two questions, one with real-time grading enabled, and one with it disabled. We
-  // have disabled question shuffling to ensure a consistent order for the tests.
+  // grading settings; that's already covered by the sync tests. Rather, we just
+  // have three questions where it's either directly disabled (the first question) or
+  // directly enabled (the second and third questions).
+  //
+  // We have disabled question shuffling to ensure a consistent order for the tests.
   describe('Mixed real-time grading control', function () {
     const context: Record<string, any> = {};
     context.siteUrl = `http://localhost:${config.serverPort}`;
@@ -128,14 +130,9 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
 
       // Check that the assessment shows a global grade button since some questions allow real-time grading
-      const gradeButton = response.$('form[name="grade-form"]');
-
-      // Should have a global grade button since some questions allow real-time grading (mixed settings)
-      assert.lengthOf(
-        gradeButton,
-        1,
-        'Should show global grade button for mixed real-time grading assessment when some questions allow grading',
-      );
+      const gradeButton = response.$('form[name="grade-form"] button[type="submit"]');
+      assert.lengthOf(gradeButton, 1);
+      assert.equal(gradeButton.attr('disabled'), 'disabled');
     });
 
     test.sequential('verify question-specific grading controls', async () => {
@@ -143,54 +140,10 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       const questionLinks = assessmentResponse.$('a[href*="/instance_question/"]');
 
       // Ensure we have the expected number of questions.
-      assert.lengthOf(questionLinks, 2);
+      assert.lengthOf(questionLinks, 3);
 
-      // The first question has real-time grading enabled.
-      const enabledQuestionHref = questionLinks.eq(0).attr('href');
-      assert.ok(enabledQuestionHref);
-
-      const enabledQuestionUrl = new URL(enabledQuestionHref, context.siteUrl);
-      const enabledQuestionResponse = await helperClient.fetchCheerio(enabledQuestionUrl);
-      assert.isTrue(enabledQuestionResponse.ok);
-
-      // Grab the variant ID so we can make submissions.
-      const enabledVariantId = enabledQuestionResponse
-        .$('input[name=__variant_id]')
-        .val()
-        ?.toString() as string;
-
-      // It should have both "Save" and "Save & Grade" buttons.
-      assert.lengthOf(enabledQuestionResponse.$('button[name="__action"][value="save"]'), 1);
-      assert.lengthOf(enabledQuestionResponse.$('button[name="__action"][value="grade"]'), 1);
-
-      // We should be able to save an answer.
-      const enabledSaveResponse = await helperClient.fetchCheerio(enabledQuestionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'save',
-          __csrf_token: helperClient.getCSRFToken(enabledQuestionResponse.$),
-          __variant_id: enabledVariantId,
-          s: '100',
-        }),
-      });
-      assert.isTrue(enabledSaveResponse.ok);
-
-      // We should be able to grade an answer.
-      const enabledGradeResponse = await helperClient.fetchCheerio(enabledQuestionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'grade',
-          __csrf_token: helperClient.getCSRFToken(enabledQuestionResponse.$),
-          __variant_id: enabledVariantId,
-          s: '100',
-        }),
-      });
-      assert.isTrue(enabledGradeResponse.ok);
-
-      // TODO: test both save and save+grade buttons.
-
-      // The second question has real-time grading disabled.
-      const disabledQuestionHref = questionLinks.eq(1).attr('href');
+      // The first question has real-time grading disabled.
+      const disabledQuestionHref = questionLinks.eq(0).attr('href');
       assert.ok(disabledQuestionHref, 'Second question should have a valid href');
 
       const disabledQuestionUrl = new URL(disabledQuestionHref, context.siteUrl);
@@ -234,6 +187,100 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
         await disabledGradeResponse.text(),
         'Error: Real-time grading is not allowed for this question',
       );
+
+      // The second question has real-time grading enabled. We'll use this question
+      // to test that the "Save & Grade" button on the instance question page works as expected.
+      const enabledQuestionHref = questionLinks.eq(1).attr('href');
+      assert.ok(enabledQuestionHref);
+
+      const enabledQuestionUrl = new URL(enabledQuestionHref, context.siteUrl);
+      const enabledQuestionResponse = await helperClient.fetchCheerio(enabledQuestionUrl);
+      assert.isTrue(enabledQuestionResponse.ok);
+
+      // Grab the variant ID so we can make submissions.
+      const enabledVariantId = enabledQuestionResponse
+        .$('input[name=__variant_id]')
+        .val()
+        ?.toString() as string;
+
+      // It should have both "Save" and "Save & Grade" buttons.
+      assert.lengthOf(enabledQuestionResponse.$('button[name="__action"][value="save"]'), 1);
+      assert.lengthOf(enabledQuestionResponse.$('button[name="__action"][value="grade"]'), 1);
+
+      // We should be able to save an answer.
+      const enabledSaveResponse = await helperClient.fetchCheerio(enabledQuestionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'save',
+          __csrf_token: helperClient.getCSRFToken(enabledQuestionResponse.$),
+          __variant_id: enabledVariantId,
+          s: '100',
+        }),
+      });
+      assert.isTrue(enabledSaveResponse.ok);
+
+      // We should be able to grade an answer.
+      const enabledGradeResponse = await helperClient.fetchCheerio(enabledQuestionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: helperClient.getCSRFToken(enabledQuestionResponse.$),
+          __variant_id: enabledVariantId,
+          s: '100',
+        }),
+      });
+      assert.isTrue(enabledGradeResponse.ok);
+
+      // The third question also has real-time grading enabled. We'll use this question to
+      // test that the "Save N saved answers" button on the assessment instance page works
+      // as expected. Specifically: it should only grade the third question, NOT the saved
+      // answer to the second question where real-time grading was disabled.
+      const otherEnabledQuestionHref = questionLinks.eq(2).attr('href');
+      assert.ok(otherEnabledQuestionHref);
+
+      const otherEnabledQuestionUrl = new URL(otherEnabledQuestionHref, context.siteUrl);
+      const otherEnabledQuestionResponse = await helperClient.fetchCheerio(otherEnabledQuestionUrl);
+      assert.isTrue(otherEnabledQuestionResponse.ok);
+
+      // Grab the variant ID so we can make submissions.
+      const otherEnabledVariantId = otherEnabledQuestionResponse
+        .$('input[name=__variant_id]')
+        .val()
+        ?.toString() as string;
+
+      // We should be able to save an answer.
+      const otherEnabledSaveResponse = await helperClient.fetchCheerio(otherEnabledQuestionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'save',
+          __csrf_token: helperClient.getCSRFToken(otherEnabledQuestionResponse.$),
+          __variant_id: otherEnabledVariantId,
+          s: '100',
+        }),
+      });
+      assert.isTrue(otherEnabledSaveResponse.ok);
+
+      // We should be able to grade the saved answer from the assessment instance page.
+      const otherEnabledGradeResponse = await helperClient.fetchCheerio(
+        context.assessmentInstanceUrl,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'grade',
+            __csrf_token: helperClient.getCSRFToken(assessmentResponse.$),
+            __variant_id: otherEnabledVariantId,
+          }),
+        },
+      );
+      assert.isTrue(otherEnabledGradeResponse.ok);
+
+      // The first question (real-time grading disabled) should still be in the "Saved" state.
+      const tableRow = otherEnabledGradeResponse.$(
+        'table[data-testid="assessment-questions"] tbody tr:nth-child(1)',
+      );
+      const badge = tableRow.find('span.badge');
+      assert.lengthOf(badge, 1);
+      assert.equal(badge.text().trim(), 'saved');
     });
   });
 });

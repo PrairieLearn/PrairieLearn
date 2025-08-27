@@ -9,8 +9,9 @@
   "zones": [
     {
       "questions": [
-        { "id": "partialCredit1", "points": 5, "allowRealTimeGrading": true },
-        { "id": "partialCredit2", "points": 5, "allowRealTimeGrading": false }
+        { "id": "partialCredit1", "points": 5, "allowRealTimeGrading": false },
+        { "id": "partialCredit2", "points": 5, "allowRealTimeGrading": true },
+        { "id": "partialCredit3", "points": 5, "allowRealTimeGrading": true }
       ]
     }
   ]

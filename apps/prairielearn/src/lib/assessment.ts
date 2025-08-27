@@ -249,10 +249,12 @@ export async function gradeAssessmentInstance(
   requireOpen: boolean,
   close: boolean,
   overrideGradeRate: boolean,
+  overrideRealTimeGradingDisabled: boolean,
   client_fingerprint_id: string | null,
 ): Promise<void> {
   debug('gradeAssessmentInstance()');
   overrideGradeRate = close || overrideGradeRate;
+  overrideRealTimeGradingDisabled = close || overrideRealTimeGradingDisabled;
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
@@ -298,6 +300,7 @@ export async function gradeAssessmentInstance(
       user_id,
       authn_user_id,
       overrideGradeRate,
+      overrideRealTimeGradingDisabled,
     );
   });
   // The `grading_needed` flag was set by the closing query above. Once we've
@@ -341,6 +344,7 @@ export async function gradeAllAssessmentInstances(
   authn_user_id: string,
   close: boolean,
   overrideGradeRate: boolean,
+  overrideRealTimeGradingDisabled: boolean,
 ): Promise<string> {
   debug('gradeAllAssessmentInstances()');
   const { assessment_label, course_instance_id, course_id } =
@@ -375,6 +379,7 @@ export async function gradeAllAssessmentInstances(
         requireOpen,
         close,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
         null,
       );
     });
