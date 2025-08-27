@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnPinningState,
   type ColumnSizingState,
@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -21,13 +21,14 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentDetailUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
+import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { StudentsTable } from './components/StudentsTable.js';
 import { STATUS_VALUES, type StudentRow } from './instructorStudents.shared.js';
 
@@ -42,20 +43,28 @@ const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
+  authzData: PageContext['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  csrfToken: string;
+  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
   urlPrefix: string;
 }
 
 function StudentsCard({
+  authzData,
   course,
   courseInstance,
+  enrollmentManagementEnabled,
   students: initialStudents,
   timezone,
+  csrfToken,
   urlPrefix,
 }: StudentsCardProps) {
+  const queryClient = useQueryClient();
+
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -124,6 +133,38 @@ function StudentsCard({
     },
     enabled: false,
     initialData: initialStudents,
+  });
+
+  const [showInvite, setShowInvite] = useState(false);
+
+  const inviteMutation = useMutation({
+    mutationKey: ['invite-uid'],
+    mutationFn: async (uid: string): Promise<void> => {
+      const body = new URLSearchParams({
+        __action: 'invite_by_uid',
+        __csrf_token: csrfToken,
+        uid,
+      });
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body,
+      });
+      if (!res.ok) {
+        let message = 'Failed to invite';
+        try {
+          const data = await res.json();
+          if (typeof data?.error === 'string') message = data.error;
+        } catch {
+          // ignore parse errors, and just use the default message
+        }
+        throw new Error(message);
+      }
+    },
+    onSuccess: async () => {
+      // Force a refetch of the enrollments query to ensure the new student is included
+      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      setShowInvite(false);
+    },
   });
 
   const columns = useMemo(
@@ -245,6 +286,16 @@ function StudentsCard({
               students={students}
               table={table}
             />
+            {enrollmentManagementEnabled && (
+              <Button
+                variant="light"
+                disabled={!authzData.has_course_instance_permission_edit}
+                onClick={() => setShowInvite(true)}
+              >
+                <i class="bi bi-person-plus me-2" />
+                Invite student
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -294,6 +345,13 @@ function StudentsCard({
           />
         </div>
       </div>
+      <InviteStudentModal
+        show={showInvite}
+        onHide={() => setShowInvite(false)}
+        onSubmit={async (uid) => {
+          await inviteMutation.mutateAsync(uid);
+        }}
+      />
     </div>
   );
 }
@@ -303,14 +361,18 @@ function StudentsCard({
  */
 
 export const InstructorStudents = ({
+  authzData,
   search,
   students,
   timezone,
   courseInstance,
   course,
+  enrollmentManagementEnabled,
+  csrfToken,
   isDevMode,
   urlPrefix,
 }: {
+  authzData: PageContext['authz_data'];
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
@@ -320,10 +382,13 @@ export const InstructorStudents = ({
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <StudentsCard
+          authzData={authzData}
           course={course}
           courseInstance={courseInstance}
+          enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
           timezone={timezone}
+          csrfToken={csrfToken}
           urlPrefix={urlPrefix}
         />
       </QueryClientProviderDebug>
