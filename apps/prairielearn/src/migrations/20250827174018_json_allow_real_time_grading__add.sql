@@ -1,3 +1,6 @@
+ALTER TABLE assessments
+ADD COLUMN json_allow_real_time_grading BOOLEAN;
+
 ALTER TABLE zones
 ADD COLUMN json_allow_real_time_grading BOOLEAN;
 

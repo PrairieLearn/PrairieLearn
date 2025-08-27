@@ -233,6 +233,7 @@ export const AssessmentSchema = z.object({
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
   id: IdSchema,
+  json_allow_real_time_grading: z.boolean().nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),

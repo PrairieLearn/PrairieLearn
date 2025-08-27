@@ -3073,6 +3073,7 @@ describe('Assessment syncing', () => {
 
       // Assessment-level default should be true
       assert.isTrue(syncedData.assessment.allow_real_time_grading);
+      assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
 
       // Zone-level should cascade to null (inherits from assessment)
       assert.isNotEmpty(syncedData.zones);
@@ -3120,6 +3121,7 @@ describe('Assessment syncing', () => {
 
       // Assessment-level should be false
       assert.isFalse(syncedData.assessment.allow_real_time_grading);
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // All lower levels should be null (inheriting from assessment)
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
@@ -3162,6 +3164,7 @@ describe('Assessment syncing', () => {
 
       // Assessment-level should be false
       assert.isFalse(syncedData.assessment.allow_real_time_grading);
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // Zone-level should override to true
       assert.isTrue(syncedData.zones[0].json_allow_real_time_grading);
@@ -3201,6 +3204,7 @@ describe('Assessment syncing', () => {
 
       // Assessment and zone should have expected values
       assert.isTrue(syncedData.assessment.allow_real_time_grading);
+      assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
       // First question should override to false
@@ -3305,6 +3309,7 @@ describe('Assessment syncing', () => {
 
       // Assessment should be false
       assert.isFalse(syncedData.assessment.allow_real_time_grading);
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // Zone 1 should override to true
       const zone1 = syncedData.zones.find((z) => z.title === 'zone 1');

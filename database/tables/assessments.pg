@@ -21,6 +21,7 @@ columns
     group_work: boolean default false
     honor_code: text
     id: bigint not null default nextval('assessments_id_seq'::regclass)
+    json_allow_real_time_grading: boolean
     json_can_submit: text[]
     json_can_view: text[]
     json_comment: jsonb
