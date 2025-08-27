@@ -440,10 +440,7 @@ export function identifyChunksFromChangedFiles(
           ...pathComponents.slice(assessmentsIndex + 1, clientFilesAssessmentIndex),
         );
 
-        if (
-          courseData.courseInstances[courseInstanceId] &&
-          courseData.courseInstances[courseInstanceId].assessments[assessmentId]
-        ) {
+        if (courseData.courseInstances[courseInstanceId]?.assessments[assessmentId]) {
           // This corresponds to something that we need to
           // create/update a chunk for!
           if (!courseChunks.courseInstances[courseInstanceId]) {

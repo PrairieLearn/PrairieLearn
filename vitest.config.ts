@@ -53,7 +53,6 @@ class CustomSequencer extends BaseSequencer {
   async shard(files: TestSpecification[]) {
     const { config } = this.ctx;
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const { index, count } = config.shard!;
     if (count !== 4) {
       throw new Error('Expected 4 shards');
