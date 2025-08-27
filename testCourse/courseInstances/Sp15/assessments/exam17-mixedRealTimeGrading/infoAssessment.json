@@ -1,0 +1,17 @@
+{
+  "uuid": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "type": "Exam",
+  "title": "Test mixed real-time grading control",
+  "set": "Exam",
+  "number": "17",
+  "shuffleQuestions": false,
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
+  "zones": [
+    {
+      "questions": [
+        { "id": "partialCredit1", "points": 5, "allowRealTimeGrading": true },
+        { "id": "partialCredit2", "points": 5, "allowRealTimeGrading": false }
+      ]
+    }
+  ]
+}

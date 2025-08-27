@@ -54,23 +54,6 @@ export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 
-export async function selectAssessmentQuestionsWithRealTimeGrading({
-  assessment_id,
-}: {
-  assessment_id: string;
-}): Promise<{ number: number; qid: string; allow_real_time_grading: boolean }[]> {
-  const rows = await sqldb.queryRows(
-    sql.select_assessment_questions_with_real_time_grading,
-    { assessment_id },
-    z.object({
-      number: z.number(),
-      qid: z.string(),
-      allow_real_time_grading: z.boolean(),
-    }),
-  );
-  return rows;
-}
-
 export async function selectAssessmentQuestions({
   assessment_id,
 }: {
