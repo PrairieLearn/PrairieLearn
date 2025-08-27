@@ -55,6 +55,7 @@ export async function init() {
       'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',
+      'users_select_or_insert_and_enroll_lti.sql',
       'users_are_instructors_in_any_course.sql',
       'users_is_instructor_in_course.sql',
       'users_is_instructor_in_course_instance.sql',

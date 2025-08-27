@@ -27,16 +27,13 @@ export async function selectOrInsertAndEnrollLtiUser({
   lti_context_id: string;
   req_date: Date;
 }): Promise<LtiUserResult> {
-  // Find the LTI institution
-  const ltiInstitution = await selectInstitutionByShortName({ short_name: 'LTI' });
-  const institution_id = ltiInstitution.id;
-  // Try to get an existing user with uid and LTI institution
+  const { id: institution_id } = await selectInstitutionByShortName({ short_name: 'LTI' });
+
   let user = await selectUserByUidAndInstitution({
     uid,
     institution_id,
   });
 
-  // If we don't have the user already, create it
   if (!user) {
     user = await insertUserLti({
       uid,
@@ -83,7 +80,6 @@ export async function selectOrInsertAndEnrollLtiUser({
 
   const userId = user.user_id;
 
-  // Verify user_id exists and is valid
   if (!userId) {
     throw new Error('computed NULL user_id');
   }
@@ -92,14 +88,12 @@ export async function selectOrInsertAndEnrollLtiUser({
     throw new Error('user_id out of bounds');
   }
 
-  // Check course instance access using the stored procedure
   const hasAccess = await callRow(
     'check_course_instance_access',
     [lti_course_instance_id, user.uid, user.institution_id, req_date],
     z.boolean(),
   );
 
-  // If user has access, then ensure enrollment
   if (hasAccess) {
     await ensureEnrollment({
       course_instance_id: lti_course_instance_id,
