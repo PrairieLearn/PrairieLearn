@@ -137,6 +137,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
 
     test.sequential('verify question-specific grading controls', async () => {
       const assessmentResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl);
+      assert.isTrue(assessmentResponse.ok);
       const questionLinks = assessmentResponse.$('a[href*="/instance_question/"]');
 
       // Ensure we have the expected number of questions.
@@ -259,6 +260,11 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
         }),
       });
       assert.isTrue(otherEnabledSaveResponse.ok);
+    });
+
+    test.sequential('verify assessment instance grading controls', async () => {
+      const assessmentResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl);
+      assert.isTrue(assessmentResponse.ok);
 
       // We should be able to grade the saved answer from the assessment instance page.
       const otherEnabledGradeResponse = await helperClient.fetchCheerio(
@@ -268,7 +274,6 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
           body: new URLSearchParams({
             __action: 'grade',
             __csrf_token: helperClient.getCSRFToken(assessmentResponse.$),
-            __variant_id: otherEnabledVariantId,
           }),
         },
       );
@@ -281,6 +286,32 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       const badge = tableRow.find('span.badge');
       assert.lengthOf(badge, 1);
       assert.equal(badge.text().trim(), 'saved');
+
+      // We should now be able to finish the entire assessment.
+      //
+      // First, make sure that the form and button actually exist.
+      const modal = otherEnabledGradeResponse.$('#confirmFinishModal');
+      const form = modal.closest('form');
+      assert.lengthOf(form, 1);
+      const finishButton = form.find('button[name="__action"][value="finish"]');
+      assert.lengthOf(finishButton, 1);
+
+      // Make a request to actually finish.
+      const finishResponse = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'finish',
+          __csrf_token: helperClient.getCSRFToken(form),
+        }),
+      });
+      assert.isTrue(finishResponse.ok);
+
+      const gradedTableRow = finishResponse.$(
+        'table[data-testid="assessment-questions"] tbody tr:nth-child(1)',
+      );
+      const gradedBadge = gradedTableRow.find('span.badge');
+      assert.lengthOf(gradedBadge, 1);
+      assert.equal(gradedBadge.text().trim(), 'complete');
     });
   });
 });

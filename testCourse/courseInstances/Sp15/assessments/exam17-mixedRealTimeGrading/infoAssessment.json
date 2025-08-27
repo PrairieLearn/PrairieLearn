@@ -5,7 +5,7 @@
   "set": "Exam",
   "number": "17",
   "shuffleQuestions": false,
-  "allowAccess": [{ "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }],
+  "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
   "zones": [
     {
       "questions": [

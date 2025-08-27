@@ -895,10 +895,11 @@ function ConfirmFinishModal({
       <p>Are you sure you want to finish, complete, and close out the assessment?</p>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="finish" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" data-bs-dismiss="modal" class="btn btn-secondary">Cancel</button>
-      <button type="submit" class="btn btn-danger">Finish assessment</button>
+      <button type="submit" class="btn btn-danger" name="__action" value="finish">
+        Finish assessment
+      </button>
     `,
   });
 }
