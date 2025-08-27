@@ -54,7 +54,8 @@ function getParamsForAssessment(
 
   const allowIssueReporting = assessment.allowIssueReporting ?? true;
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
-  const requireHonorCode = assessment.requireHonorCode ?? true;
+  const requireHonorCode =
+    assessment.requireHonorCode == null ? assessment.type === 'Exam' : assessment.requireHonorCode;
   const allowPersonalNotes = assessment.allowPersonalNotes ?? true;
 
   // It used to be the case that assessment access rules could be associated with a
@@ -436,7 +437,7 @@ export async function validateAssessmentSharedQuestions(
           qids.push(question.id);
         }
         qids.forEach((qid) => {
-          if (qid[0] !== '@') return;
+          if (!qid.startsWith('@')) return;
 
           importedQids.add(qid);
           let qids = assessmentImportedQids.get(tid);

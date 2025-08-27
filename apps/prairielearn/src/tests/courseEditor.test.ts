@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -441,7 +442,7 @@ async function getFiles(options): Promise<Set<string>> {
 
   const ignoreHidden = (item) => {
     const basename = path.basename(item);
-    return basename === '.' || basename[0] !== '.';
+    return basename === '.' || !basename.startsWith('.');
   };
 
   const walker = klaw(options.baseDir, { filter: ignoreHidden });

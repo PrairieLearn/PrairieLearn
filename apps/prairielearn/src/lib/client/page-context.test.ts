@@ -156,6 +156,7 @@ describe('getCourseInstanceContext', () => {
     course_instance: {
       ...mockStudentData.course_instance,
       enrollment_limit: 10,
+      enrollment_code: '1234567890ab',
       json_comment: 'foo',
       share_source_publicly: true,
       sync_errors: null,

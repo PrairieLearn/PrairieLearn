@@ -37,8 +37,8 @@ export async function switchUserAndLoadAssessment(
   // Extract the CSRF token from the form
   const csrfTokenElement = $(form).find('input[name="__csrf_token"]');
   assert.nestedProperty(csrfTokenElement[0], 'attribs.value');
-  assert.isString(csrfTokenElement.attr('value'));
-  const csrfToken = csrfTokenElement.attr('value') as string; // guaranteed to be string by assertion
+  const csrfToken = csrfTokenElement.attr('value');
+  assert.ok(csrfToken);
 
   return { $, csrfToken };
 }
