@@ -605,10 +605,6 @@ export default tseslint.config([
           },
         },
       ],
-      // '@typescript-eslint/no-unnecessary-condition': [
-      //   'error',
-      //   { allowConstantLoopConditions: 'only-allowed-literals' },
-      // ],
       '@typescript-eslint/only-throw-error': [
         'error',
         {
@@ -636,6 +632,16 @@ export default tseslint.config([
           allowNumber: true,
           allowRegExp: true,
         },
+      ],
+    },
+  },
+  {
+    // TODO: enable this rule for all files.
+    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
       ],
     },
   },

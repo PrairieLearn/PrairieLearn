@@ -65,10 +65,10 @@ describe('Database Schema Sync Test', () => {
         continue;
       }
 
-      const schema = DbSchemas[schemaName as keyof typeof DbSchemas];
-      if (schema === undefined) {
+      if (!(schemaName in DbSchemas)) {
         throw new Error(`No schema mapping for table: ${tableName}`);
       }
+      const schema = DbSchemas[schemaName as keyof typeof DbSchemas];
       usedSchemas.add(schemaName);
 
       // Skip tables that are marked as 'null'. These mean that the table currently doesn't have a schema,

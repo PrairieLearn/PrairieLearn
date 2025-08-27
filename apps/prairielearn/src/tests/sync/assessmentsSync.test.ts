@@ -2398,7 +2398,7 @@ describe('Assessment syncing', () => {
     const syncedData = await getSyncedAssessmentData('fail');
     assert.isOk(syncedData.assessment.sync_errors);
     assert.match(
-      syncedData.assessment?.sync_errors,
+      syncedData.assessment.sync_errors,
       /The following questions are marked as draft and therefore cannot be used in assessments: "__drafts__\/draft_1"/,
     );
   });
@@ -2419,7 +2419,6 @@ describe('Assessment syncing', () => {
       // Ensure the course instance is accessible.
       const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
       const courseInstance = courseInstanceData.courseInstance;
-      if (!courseInstance) throw new Error('missing courseInstance');
       courseInstance.allowAccess = [
         {
           startDate: '2000-01-01T00:00:00',
@@ -2460,7 +2459,6 @@ describe('Assessment syncing', () => {
       // Ensure the course instance is not accessible.
       const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
       const courseInstance = courseInstanceData.courseInstance;
-      if (!courseInstance) throw new Error('missing courseInstance');
       courseInstance.allowAccess = [
         {
           startDate: '1000-01-01T00:00:00',
