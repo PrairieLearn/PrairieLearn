@@ -512,7 +512,7 @@ export async function loadCourseInfo({
     return maybeNullLoadedData;
   }
 
-  if (!maybeNullLoadedData || !maybeNullLoadedData.data) {
+  if (!maybeNullLoadedData?.data) {
     throw new Error('Could not load infoCourse.json');
   }
 
@@ -939,7 +939,7 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
     );
   }
 
-  const uidsWithCommas = (rule.uids ?? []).filter((uid) => /,/.test(uid));
+  const uidsWithCommas = (rule.uids ?? []).filter((uid) => uid.includes(','));
   if (uidsWithCommas.length > 0) {
     warnings.push(
       `The following access rule UIDs contain unexpected commas: ${formatValues(uidsWithCommas)}`,
@@ -1079,7 +1079,7 @@ function validateAssessment({
   const missingQids = new Set<string>();
   const draftQids = new Set<string>();
   const checkAndRecordQid = (qid: string): void => {
-    if (qid[0] === '@') {
+    if (qid.startsWith('@')) {
       // Question is being imported from another course. We hold off on validating this until
       // sync time because we need to query the database to verify that the question exists
       return;
@@ -1409,7 +1409,7 @@ export async function loadQuestions({
   // Don't allow question directories to start with '@', because it is
   // used to import questions from other courses.
   for (const qid in questions) {
-    if (qid[0] === '@') {
+    if (qid.startsWith('@')) {
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
