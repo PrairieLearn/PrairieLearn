@@ -187,6 +187,7 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
   id: true,
+  joined_at: true,
   lti_managed: true,
   pending_lti13_email: true,
   pending_lti13_instance_id: true,

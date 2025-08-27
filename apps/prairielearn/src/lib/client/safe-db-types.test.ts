@@ -60,6 +60,7 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
 
 const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   assessments_group_by: 'Set',
+  enrollment_code: 'aaaaaaaaaaa',
   course_id: '1',
   deleted_at: null,
   display_timezone: 'UTC',
@@ -266,6 +267,7 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
   id: '1',
+  joined_at: new Date(),
   lti_managed: false,
   pending_lti13_email: null,
   pending_uid: null,
