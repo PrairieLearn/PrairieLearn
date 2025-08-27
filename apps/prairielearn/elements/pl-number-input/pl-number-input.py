@@ -378,7 +378,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
-        data["submitted_answers"][name] = blank_value
+        submitted_answer = blank_value
+    if submitted_answer == "":
+        data["submitted_answers"][name] = ""
     else:
         res = pl.string_fraction_to_number(
             submitted_answer,
