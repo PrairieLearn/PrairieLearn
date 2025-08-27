@@ -181,7 +181,7 @@ export async function randomGroups(
             const usersToMove = userGroups
               .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
-              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
               .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(

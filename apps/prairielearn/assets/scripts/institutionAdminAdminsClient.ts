@@ -1,10 +1,7 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 
-import { assertDefined } from '../../src/lib/types.js';
-
 onDocumentReady(() => {
-  const removeAdminModal = document.getElementById('removeAdminModal');
-  assertDefined(removeAdminModal);
+  const removeAdminModal = document.getElementById('removeAdminModal')!;
   document.querySelectorAll<HTMLButtonElement>('.js-remove-admin').forEach((el) => {
     el.addEventListener('click', () => {
       templateFromAttributes(el, removeAdminModal, {

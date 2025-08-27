@@ -3,8 +3,6 @@ import SelectorSet from 'selector-set';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-import { assertDefined } from '../../../src/lib/types.js';
-
 interface MigratorUtils {
   addClass(this: void, el: Element, newClass: string | string[], message: string): void;
   migrateClass(this: void, el: Element, oldClass: string, newClass: string): void;
@@ -86,9 +84,7 @@ function migrateClass(el: Element, oldClass: string, newClass: string) {
 
 function migrateAttribute(el: Element, oldAttribute: string, newAttribute: string) {
   if (el.hasAttribute(oldAttribute) && !el.hasAttribute(newAttribute)) {
-    const oldValue = el.getAttribute(oldAttribute);
-    assertDefined(oldValue);
-    el.setAttribute(newAttribute, oldValue);
+    el.setAttribute(newAttribute, el.getAttribute(oldAttribute)!);
 
     // TODO: customizable message?
     console.warn(

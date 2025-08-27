@@ -4,7 +4,6 @@ import { observe } from 'selector-observer';
 
 import { focusFirstFocusableChild, onDocumentReady, trapFocus } from '@prairielearn/browser-utils';
 
-import { assertDefined } from '../../../src/lib/types.js';
 import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '../lib/popover.js';
 
 const openPopovers = new Set<Popover>();
@@ -136,8 +135,7 @@ onDocumentReady(() => {
       target.addEventListener('hide.bs.popover', removeFocusTrap);
 
       // Attempt to place focus on the correct item inside the popover.
-      const popoverBody = container.querySelector<HTMLElement>('.popover-body');
-      assertDefined(popoverBody);
+      const popoverBody = container.querySelector<HTMLElement>('.popover-body')!;
       focusFirstFocusableChild(popoverBody);
     }
   });

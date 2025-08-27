@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
@@ -9,7 +11,6 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
-import { assertDefined } from '../../lib/types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -54,7 +55,7 @@ router.post(
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
 
-    assertDefined(ltiResult.secret);
+    assert(ltiResult.secret !== null);
 
     const genSignature = oauthSignature.generate(
       'POST',
