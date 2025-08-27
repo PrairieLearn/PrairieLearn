@@ -54,7 +54,8 @@ function getParamsForAssessment(
 
   const allowIssueReporting = assessment.allowIssueReporting ?? true;
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
-  const requireHonorCode = assessment.requireHonorCode ?? true;
+  const requireHonorCode =
+    assessment.requireHonorCode == null ? assessment.type === 'Exam' : assessment.requireHonorCode;
   const allowPersonalNotes = assessment.allowPersonalNotes ?? true;
 
   // It used to be the case that assessment access rules could be associated with a

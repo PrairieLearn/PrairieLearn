@@ -35,8 +35,8 @@ WHERE
 INSERT INTO
   sharing_set_courses (course_id, sharing_set_id)
 SELECT
-  consuming_course.id,
-  ss.id
+  consuming_course.id AS course_id,
+  ss.id AS sharing_set_id
 FROM
   pl_courses AS sharing_course
   JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id
