@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { config } from '../../lib/config.js';
 import { InstitutionSchema } from '../../lib/db-types.js';
@@ -58,7 +59,37 @@ router.get(
       InstitutionSchema,
     );
 
-    res.send(Home({ resLocals: res.locals, instructorCourses, studentCourses, adminInstitutions }));
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Home',
+        navContext: {
+          type: 'plain',
+          page: 'home',
+        },
+        options: {
+          fullHeight: true,
+        },
+        content: (
+          <Home
+            resLocals={res.locals}
+            instructorCourses={instructorCourses}
+            studentCourses={studentCourses}
+            adminInstitutions={adminInstitutions}
+          />
+        ),
+        postContent:
+          config.homepageFooterText && config.homepageFooterTextHref ? (
+            <footer class="footer fw-light text-light text-center small">
+              <div class="bg-secondary p-1">
+                <a class="text-light" href={config.homepageFooterTextHref}>
+                  {config.homepageFooterText}
+                </a>
+              </div>
+            </footer>
+          ) : undefined,
+      }),
+    );
   }),
 );
 
