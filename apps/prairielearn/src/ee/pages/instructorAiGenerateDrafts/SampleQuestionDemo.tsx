@@ -183,27 +183,26 @@ export function SampleQuestionDemo({
         </div>
       </CardHeader>
       <CardBody>
-        {variant &&
-          variant.question
-            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-            .filter(Boolean)
-            .map((part) => {
-              // Bold text
-              if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
-              }
+        {variant?.question
+          .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+          .filter(Boolean)
+          .map((part) => {
+            // Bold text
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
+            }
 
-              // MathJax
-              if (
-                (part.startsWith('$$') && part.endsWith('$$')) ||
-                (part.startsWith('$') && part.endsWith('$'))
-              ) {
-                return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
-              }
+            // MathJax
+            if (
+              (part.startsWith('$$') && part.endsWith('$$')) ||
+              (part.startsWith('$') && part.endsWith('$'))
+            ) {
+              return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
+            }
 
-              // Regular text
-              return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
-            })}
+            // Regular text
+            return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
+          })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}

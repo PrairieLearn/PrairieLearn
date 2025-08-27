@@ -190,8 +190,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -285,8 +284,7 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -884,7 +882,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
