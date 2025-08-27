@@ -100,6 +100,9 @@ export function StudentAssessmentInstance({
   const someQuestionsAllowRealTimeGrading = instance_question_rows.some(
     (q) => q.allow_real_time_grading,
   );
+  const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
+    (q) => !q.allow_real_time_grading,
+  );
 
   instance_question_rows.forEach((question) => {
     if (question.status === 'saved') {
@@ -215,7 +218,9 @@ export function StudentAssessmentInstance({
                 <div class="alert alert-info">
                   Some questions in this assessment allow real-time grading while others will only
                   be graded after the assessment is finished. Check the individual question pages to
-                  see which grading mode applies to each question.
+                  see which grading mode applies to each question. You can use the
+                  <span class="badge badge-outline text-bg-light">Finish assessment</span>
+                  button below to finish and calculate your final grade.
                 </div>
               `;
             }
@@ -568,7 +573,14 @@ export function StudentAssessmentInstance({
                           points you already have.
                         </li>
                         ${resLocals.authz_result.password != null ||
-                        !resLocals.authz_result.show_closed_assessment
+                        !resLocals.authz_result.show_closed_assessment ||
+                        // If this is true, this assessment has a mix of real-time-graded and
+                        // non-real-time-graded questions. We need to show the "Finish assessment"
+                        // button.
+                        //
+                        // TODO: The "Look at Status..." text above won't be accurate for this
+                        // mixed case. We'll need to adjust it.
+                        someQuestionsForbidRealTimeGrading
                           ? html`
                               <li>
                                 After you have answered all the questions completely, click here:

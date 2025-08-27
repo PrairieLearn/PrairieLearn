@@ -280,17 +280,20 @@ async function selectSubmissionForGrading(
     // if this is manual grading only. Typically we would not reach this point
     // for these cases, since the grade button is not shown to students, so this
     // is an extra precaution.
+    //
+    // Note that we do _not_ check if there's an associated assessment question
+    // and whether or not it has real-time grading disabled. We rely on the UI
+    // and POST handlers to prevent grading in that case.
+    //
+    // TODO: we may actually need handling for the "Grade N saved answers" button.
+    // That can be used without closing the assessment and thus without triggering
+    // grading of any saved submissions.
     if (variantData.instance_question_id == null) {
       if (variantData.grading_method === 'Manual') return null;
     } else {
       if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;
       }
-    }
-
-    // Check if real-time grading is disabled for this question
-    if (variantData.instance_question_id != null && !variantData.allow_real_time_grading) {
-      return null;
     }
 
     // Select the most recent submission
