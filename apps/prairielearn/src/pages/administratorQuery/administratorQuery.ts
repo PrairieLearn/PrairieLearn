@@ -89,7 +89,7 @@ router.post(
     try {
       result = await module.default({
         ...queryParams,
-        locals: module.specs.pass_locals ? res.locals : undefined,
+        ...(module.specs.pass_locals === true ? { locals: res.locals } : {}),
       });
     } catch (err) {
       logger.error(err);

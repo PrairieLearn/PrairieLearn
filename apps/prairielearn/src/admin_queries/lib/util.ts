@@ -21,7 +21,7 @@ export const AdministratorQuerySpecsSchema = z.object({
     )
     .optional(),
   /** If true, res.locals is passed as the 'locals' parameter to the query function. */
-  pass_locals: z.boolean().optional().default(false),
+  pass_locals: z.boolean().optional(),
 });
 export type AdministratorQuerySpecs = z.input<typeof AdministratorQuerySpecsSchema>;
 
