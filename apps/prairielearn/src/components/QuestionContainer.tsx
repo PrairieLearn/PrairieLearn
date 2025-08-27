@@ -18,6 +18,7 @@ import type {
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
+import { assertDefined } from '../lib/types.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -389,9 +390,11 @@ export function QuestionTitle({
   question: Question;
   questionNumber?: string;
 }) {
-  if (questionNumber != null && questionContext === 'student_homework') {
+  if (questionContext === 'student_homework') {
+    assertDefined(questionNumber);
     return `${questionNumber}. ${question.title}`;
-  } else if (questionNumber != null && questionContext === 'student_exam') {
+  } else if (questionContext === 'student_exam') {
+    assertDefined(questionNumber);
     return `Question ${questionNumber}: ${question.title}`;
   } else {
     return question.title;
@@ -412,10 +415,10 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
-  assessment_question: AssessmentQuestion | null;
-  instance_question_info: Record<string, any>;
-  authz_result: Record<string, any>;
+  instance_question?: InstanceQuestion & { allow_grade_left_ms?: number };
+  assessment_question?: AssessmentQuestion;
+  instance_question_info?: Record<string, any>;
+  authz_result?: Record<string, any>;
   group_config?: GroupConfig | null;
   group_info?: GroupInfo | null;
   group_role_permissions?: {
@@ -570,7 +573,7 @@ export function QuestionFooterContent({
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info?.previous_variants?.some((variant) => variant.open)
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -623,7 +626,7 @@ function SubmitRateFooter({
   questionContext: QuestionContext;
   showGradeButton: boolean;
   disableGradeButton: boolean;
-  assessment_question: AssessmentQuestion | null;
+  assessment_question?: AssessmentQuestion;
   allowGradeLeftMs: number;
 }) {
   if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
@@ -712,8 +715,8 @@ function AvailablePointsNotes({
   assessment_question,
 }: {
   questionContext: QuestionContext;
-  instance_question: InstanceQuestion | null;
-  assessment_question: AssessmentQuestion | null;
+  instance_question?: InstanceQuestion;
+  assessment_question?: AssessmentQuestion;
 }) {
   if (questionContext !== 'student_exam' || !instance_question?.points_list) return '';
 
