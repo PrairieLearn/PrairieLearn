@@ -259,9 +259,8 @@ function StudentCoursesCard({
           <div class="card-body">
             No courses found with student access. Courses with instructor access are found in the
             list above.
-            {canAddCourses
-              ? 'Use the "Add or remove courses" button to add a course as a student.'
-              : ''}
+            {canAddCourses &&
+              ' Use the "Add or remove courses" button to add a course as a student.'}
           </div>
         ) : config.devMode ? (
           <div class="card-body">
@@ -271,7 +270,7 @@ function StudentCoursesCard({
         ) : (
           <div class="card-body">
             No courses found.
-            {canAddCourses ? 'Use the "Add or remove courses" button to add one.' : ''}
+            {canAddCourses && ' Use the "Add or remove courses" button to add one.'}
           </div>
         )
       ) : (
