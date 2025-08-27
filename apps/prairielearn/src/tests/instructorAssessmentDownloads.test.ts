@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import fetch from 'node-fetch';
@@ -75,7 +76,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
   });
@@ -92,7 +93,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].Username, 'dev');
+      assert.equal(data[0]['Username'], 'dev');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.score_perc, 1e-6);
     });
   });
@@ -109,7 +110,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
+      assert.equal(data[0]['UID'], 'dev@example.com');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
   });
@@ -126,7 +127,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].Username, 'dev');
+      assert.equal(data[0]['Username'], 'dev');
       assert.approximately(data[0]['Exam 1'], locals.assessment_instance.points, 1e-6);
     });
   });
@@ -143,11 +144,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
-      assert.equal(data[0].Username, 'dev');
-      assert.equal(data[0].Assessment, 'Exam 1');
+      assert.equal(data[0]['UID'], 'dev@example.com');
+      assert.equal(data[0]['Username'], 'dev');
+      assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
-      assert.approximately(data[0].Points, locals.assessment_instance.points, 1e-6);
+      assert.approximately(data[0]['Points'], locals.assessment_instance.points, 1e-6);
       assert.approximately(data[0]['Max points'], helperExam.assessmentMaxPoints, 1e-6);
     });
   });
@@ -164,9 +165,9 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert(data.every((entry) => entry.UID === 'dev@example.com'));
-      assert(data.every((entry) => entry.Assessment === 'Exam 1'));
-      const questions = data.map((entry) => entry.Question).sort();
+      assert(data.every((entry) => entry['UID'] === 'dev@example.com'));
+      assert(data.every((entry) => entry['Assessment'] === 'Exam 1'));
+      const questions = data.map((entry) => entry['Question']).sort();
       const expectedQuestions = helperExam.questionsArray.map((q) => q.qid);
       assert.deepEqual(questions, expectedQuestions);
     });
@@ -184,8 +185,8 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].uid, 'dev@example.com');
-      assert.equal(data[0].qid, 'addNumbers');
+      assert.equal(data[0]['uid'], 'dev@example.com');
+      assert.equal(data[0]['qid'], 'addNumbers');
     });
   });
 
@@ -201,10 +202,10 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
-      assert.equal(data[0].Assessment, 'Exam 1');
-      assert.equal(data[0].Question, 'addNumbers');
-      assert.equal(data[0].Correct, 'TRUE');
+      assert.equal(data[0]['UID'], 'dev@example.com');
+      assert.equal(data[0]['Assessment'], 'Exam 1');
+      assert.equal(data[0]['Question'], 'addNumbers');
+      assert.equal(data[0]['Correct'], 'TRUE');
     });
   });
 
@@ -220,10 +221,10 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
-      assert.equal(data[0].Assessment, 'Exam 1');
-      assert.equal(data[0].Question, 'addNumbers');
-      assert.equal(data[0].Correct, 'TRUE');
+      assert.equal(data[0]['UID'], 'dev@example.com');
+      assert.equal(data[0]['Assessment'], 'Exam 1');
+      assert.equal(data[0]['Question'], 'addNumbers');
+      assert.equal(data[0]['Correct'], 'TRUE');
       assert.equal(data[0]['Max points'], 5);
       assert.equal(data[0]['Question % score'], 100);
     });
@@ -241,10 +242,10 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
     it('should contain correct data', function () {
       const data = csvParse<any>(page, { columns: true, cast: true });
-      assert.equal(data[0].UID, 'dev@example.com');
-      assert.equal(data[0].Assessment, 'Exam 1');
-      assert.equal(data[0].Question, 'addNumbers');
-      assert.equal(data[0].Correct, 'TRUE');
+      assert.equal(data[0]['UID'], 'dev@example.com');
+      assert.equal(data[0]['Assessment'], 'Exam 1');
+      assert.equal(data[0]['Question'], 'addNumbers');
+      assert.equal(data[0]['Correct'], 'TRUE');
       assert.equal(data[0]['Max points'], 5);
       assert.equal(data[0]['Question % score'], 100);
     });

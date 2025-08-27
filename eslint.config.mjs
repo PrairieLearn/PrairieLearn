@@ -411,6 +411,9 @@ export default tseslint.config([
       // TODO: fix the violations so we can enable this rule.
       '@typescript-eslint/no-dynamic-delete': 'off',
 
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+
       // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
@@ -575,7 +578,6 @@ export default tseslint.config([
           allowAsThisParameter: true,
         },
       ],
-      '@typescript-eslint/no-non-null-assertion': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',
