@@ -41,4 +41,5 @@ VALUES
     $subject_user_id::bigint,
     $table_name
   )
-RETURNING *;
+RETURNING
+  *;
