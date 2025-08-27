@@ -250,7 +250,7 @@ export class Lti13Claim {
   private assertValid() {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
-      delete this.req.session['lti13_claims'];
+      delete this.req.session.lti13_claims;
       throw new HttpStatusError(
         403,
         'LTI session invalid or timed out, please try logging in again.',
@@ -325,8 +325,8 @@ export class Lti13Claim {
    */
   remove() {
     this.valid = false;
-    delete this.req.session['lti13_claims'];
-    delete this.req.session['authn_lti13_instance_id'];
+    delete this.req.session.lti13_claims;
+    delete this.req.session.authn_lti13_instance_id;
   }
 }
 
@@ -591,7 +591,7 @@ export function findValueByKey(obj: unknown, targetKey: string): unknown {
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;
@@ -666,7 +666,7 @@ export async function fetchRetry(
  */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
-  opts?: RequestInit | undefined,
+  opts?: RequestInit,
   incomingfetchRetryOpts?: {
     retryLeft?: number;
     sleepMs?: number;

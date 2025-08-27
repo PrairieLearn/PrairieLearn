@@ -34,7 +34,7 @@ onDocumentReady(() => {
       const dataElement = el.querySelector('script[data-component-props]');
       if (!dataElement) throw new Error('No data element found');
       if (!dataElement.textContent) throw new Error('Data element has no content');
-      const data = superjson.parse(dataElement.textContent) as object;
+      const data: object = superjson.parse(dataElement.textContent);
 
       const rootElement = el.querySelector('div[data-component-root]');
       if (!rootElement) throw new Error('No root element found');

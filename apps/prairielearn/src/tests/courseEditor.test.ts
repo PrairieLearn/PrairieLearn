@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -428,7 +429,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
       await updateCourseSharingName({ course_id: 2, sharing_name: 'test-course' });
     });
 
-    describe('verify edits', async function () {
+    describe('verify edits', function () {
       publicCopyTestData.forEach((element) => {
         testEdit(element);
       });
@@ -441,7 +442,7 @@ async function getFiles(options): Promise<Set<string>> {
 
   const ignoreHidden = (item) => {
     const basename = path.basename(item);
-    return basename === '.' || basename[0] !== '.';
+    return basename === '.' || !basename.startsWith('.');
   };
 
   const walker = klaw(options.baseDir, { filter: ignoreHidden });

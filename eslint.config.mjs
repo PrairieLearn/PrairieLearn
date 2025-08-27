@@ -1,5 +1,7 @@
 /* eslint perfectionist/sort-objects: error */
 // @ts-check
+import path from 'path';
+
 import { FlatCompat } from '@eslint/eslintrc';
 import js from '@eslint/js';
 import eslintReact from '@eslint-react/eslint-plugin';
@@ -183,6 +185,7 @@ export default tseslint.config([
       'no-useless-concat': 'off', // TODO: Consider enabling this
       'no-useless-constructor': 'off',
       'no-useless-return': 'off', // TODO: Consider enabling this
+      'no-void': 'off', // https://typescript-eslint.io/rules/no-floating-promises/#ignorevoid
       'no-warning-comments': 'off',
       'object-shorthand': 'error',
       'one-var': ['off', 'never'], // TODO: Consider enabling this
@@ -408,6 +411,9 @@ export default tseslint.config([
       // TODO: fix the violations so we can enable this rule.
       '@typescript-eslint/no-dynamic-delete': 'off',
 
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+
       // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
@@ -547,6 +553,86 @@ export default tseslint.config([
       'jsdoc/require-param-description': 'off',
       'jsdoc/require-returns': 'off',
       'jsdoc/tag-lines': 'off',
+    },
+  },
+  {
+    // We only include apps/prairielearn for performance reasons.
+    extends: [
+      tseslint.configs.recommendedTypeCheckedOnly,
+      tseslint.configs.stylisticTypeCheckedOnly,
+    ],
+    files: ['apps/prairielearn/**/*.{ts,tsx}'],
+    languageOptions: {
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ['vite.config.ts', 'vitest.config.ts'],
+        },
+        tsconfigRootDir: path.join(import.meta.dirname, 'apps', 'prairielearn'),
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/no-invalid-void-type': [
+        'error',
+        {
+          allowAsThisParameter: true,
+        },
+      ],
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      // Some functions are required to be async, but don't actually use any async code.
+      '@typescript-eslint/require-await': 'off',
+      // We don't always check that we got a error when a promise is rejected.
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+
+        {
+          checksConditionals: true,
+          checksSpreads: true,
+          checksVoidReturn: {
+            // Common usage with `async` functions
+            arguments: false,
+            // Common usage with `async` onClick handlers
+            attributes: false,
+            inheritedMethods: true,
+            // Common usage with e.g. setState
+            properties: false,
+            returns: true,
+            variables: true,
+          },
+        },
+      ],
+      '@typescript-eslint/only-throw-error': [
+        'error',
+        {
+          allow: [
+            {
+              from: 'file',
+              name: 'HttpRedirect',
+            },
+          ],
+          allowRethrowing: true,
+          allowThrowingAny: true,
+          allowThrowingUnknown: true,
+        },
+      ],
+      '@typescript-eslint/prefer-nullish-coalescing': 'off', // TODO: enable
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        {
+          allow: [{ from: 'lib', name: ['Error', 'URL', 'URLSearchParams'] }],
+          allowAny: true,
+          allowBoolean: true,
+          allowNullish: true,
+          allowNumber: true,
+          allowRegExp: true,
+        },
+      ],
     },
   },
   {

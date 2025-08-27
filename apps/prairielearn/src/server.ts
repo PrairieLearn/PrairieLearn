@@ -73,6 +73,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -2042,7 +2043,7 @@ export async function startServer(app: express.Express) {
     server = http.createServer(app);
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
-    throw new Error('unknown serverType: ' + config.serverType);
+    assertNever(config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2151,7 +2152,7 @@ function idleErrorHandler(err: Error) {
       last_query: (err as any)?.data?.lastQuery ?? undefined,
     },
   });
-  Sentry.close().finally(() => process.exit(1));
+  void Sentry.close().finally(() => process.exit(1));
 }
 
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
@@ -2178,7 +2179,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // If a config file was specified on the command line, we'll use that
     // instead of the default locations.
     if ('config' in argv) {
-      configPaths = [argv['config']];
+      configPaths = [argv.config];
     }
 
     // Load config immediately so we can use it configure everything else.
@@ -2462,7 +2463,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (config.initNewsItems) {
       // We initialize news items asynchronously so that servers can boot up
       // in production as quickly as possible.
-      news_items.initInBackground({
+      void news_items.initInBackground({
         // Always notify in production environments.
         notifyIfPreviouslyEmpty: !config.devMode,
       });
@@ -2494,13 +2495,13 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    await socketServer.init(httpServer);
+    socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
 
-    await workspace.init();
+    workspace.init();
     serverJobs.init();
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
@@ -2596,7 +2597,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
+  socketServer.init(httpServer);
 }
 
 /**

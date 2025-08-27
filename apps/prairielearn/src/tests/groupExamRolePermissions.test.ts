@@ -383,7 +383,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneFirstUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.equal(
@@ -403,7 +403,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneSecondtUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);

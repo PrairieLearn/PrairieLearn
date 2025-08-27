@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -2934,5 +2935,111 @@ describe('Assessment syncing', () => {
     assert.isDefined(syncedAssessment);
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(syncedAssessment.sync_errors, /"shareSourcePublicly" cannot be used/);
+  });
+
+  it('cascades forceMaxPoints correctly from question to alternatives', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 10,
+          forceMaxPoints: true,
+        },
+        {
+          points: 15,
+          forceMaxPoints: true,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+              forceMaxPoints: false,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['forceMaxPointsTest'] =
+      assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('forceMaxPointsTest');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    // forceMaxPoints set at question level
+    const firstQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID && aq.number === 1,
+    );
+    assert.ok(firstQuestion);
+    assert.isTrue(firstQuestion.force_max_points);
+
+    // forceMaxPoints cascades from question to first alternative
+    const secondQuestionFirstAlt = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID && aq.number === 2,
+    );
+    assert.ok(secondQuestionFirstAlt);
+    assert.isTrue(secondQuestionFirstAlt.force_max_points);
+
+    // forceMaxPoints overridden at alternative level
+    const secondQuestionSecondAlt = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID && aq.number === 3,
+    );
+    assert.ok(secondQuestionSecondAlt);
+    assert.isFalse(secondQuestionSecondAlt.force_max_points);
+  });
+
+  it('defaults requireHonorCode based on assessment type', async () => {
+    const courseData = util.getCourseData();
+
+    const examAssessment = makeAssessment(courseData, 'Exam');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['examTest'] = examAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const examSyncedData = await getSyncedAssessmentData('examTest');
+    assert.isTrue(examSyncedData.assessment.require_honor_code);
+
+    const homeworkAssessment = makeAssessment(courseData, 'Homework');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] =
+      homeworkAssessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const homeworkSyncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.isFalse(homeworkSyncedData.assessment.require_honor_code);
+  });
+
+  it('defaults number_choose to null for zones', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 10,
+        },
+        {
+          id: util.ALTERNATIVE_QUESTION_ID,
+          points: 15,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['numberChooseTest'] =
+      assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('numberChooseTest');
+    assert.lengthOf(syncedData.zones, 1);
+    const zoneId = syncedData.zones[0].id;
+    const matchingAlternativeGroup = syncedData.alternative_groups.find(
+      (ag) => ag.zone_id === zoneId,
+    );
+    assert.isDefined(matchingAlternativeGroup);
+    assert.isNull(matchingAlternativeGroup.number_choose);
   });
 });
