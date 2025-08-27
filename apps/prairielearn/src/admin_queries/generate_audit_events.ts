@@ -1,39 +1,52 @@
 import { mapSeries } from 'async';
-import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
+import { AuditEventSchema, EnumEnrollmentStatusSchema } from '../lib/db-types.js';
+import { assertNever } from '../lib/types.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseById } from '../models/course.js';
 
 import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './lib/util.js';
 
+const actions = ['insert', 'update', 'delete'] as const;
+const tableNames = ['users', 'assessments', 'questions', 'enrollments', 'submissions'] as const;
+
+type TableName = (typeof tableNames)[number];
+type Action = (typeof actions)[number];
+
 export const specs: AdministratorQuerySpecs = {
-  description:
-    'Generate 100 audit events with sensible default values for testing and development.',
+  description: 'Generate audit events for testing and development.',
+  enabled: config.devMode, // This query is dangerous in production environments, so it is only enabled in dev mode
   params: [
     {
       name: 'subject_user_id',
-      description:
-        'The user ID of the subject of the audit events (will be used for all 100 rows).',
+      description: 'The user ID of the subject of the audit events.',
     },
     {
       name: 'course_instance_id',
-      description: 'The course instance ID for the audit events (will be used for all 100 rows).',
+      description: 'The course instance ID for the audit events.',
     },
     {
       name: 'table_name',
       description: 'The table name being audited (e.g., "users", "assessments").',
-      default: 'users',
+      options: [...tableNames, 'random'],
+      default: 'random',
     },
     {
       name: 'action',
       description: 'The action being audited (insert, update, or delete).',
-      default: 'insert',
+      options: [...actions, 'random'],
+      default: 'random',
     },
     {
-      name: 'base_row_id',
-      description: 'Base row ID to start from (will increment for each row).',
+      name: 'num_rows',
+      description: 'Number of rows to generate.',
       default: '1000',
     },
   ],
+  pass_locals: true,
 };
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -46,70 +59,120 @@ const columns = [
   'action',
   'action_detail',
   'row_id',
-  'agent_user_id',
-  'agent_authn_user_id',
   'date',
 ] as const;
 type ResultRow = Record<(typeof columns)[number], string | number | null>;
 
-const AuditEventSchema = z.object({
-  id: z.string(),
-  subject_user_id: z.string(),
-  course_instance_id: z.string(),
-  table_name: z.string(),
-  action: z.string(),
-  action_detail: z.string().nullable(),
-  row_id: z.string(),
-  agent_user_id: z.string().nullable(),
-  agent_authn_user_id: z.string().nullable(),
-  date: z.string(),
-});
+const randomChoice = <T>(array: T[] | readonly T[]): T => {
+  return array[Math.floor(Math.random() * array.length)];
+};
+
+const makeRowContent = (tableName: TableName): Record<string, any> => {
+  const baseContent = {
+    id: Math.floor(Math.random() * 1000000),
+  };
+  // These aren't real data, so they don't need to be valid rows
+  switch (tableName) {
+    case 'users':
+      return {
+        ...baseContent,
+        name: 'John Doe',
+        email: 'john.doe@example.com',
+      };
+    case 'assessments':
+      return {
+        ...baseContent,
+        title: 'Assessment 1',
+      };
+    case 'questions':
+      return {
+        ...baseContent,
+        title: 'Question 1',
+      };
+    case 'enrollments':
+      return {
+        ...baseContent,
+        status: randomChoice(Object.values(EnumEnrollmentStatusSchema.Values)),
+      };
+    case 'submissions':
+      return {
+        ...baseContent,
+        score: Math.random() * 100,
+      };
+    default:
+      assertNever(tableName);
+  }
+};
 
 export default async function ({
   subject_user_id,
   course_instance_id,
   table_name,
   action,
-  base_row_id,
+  locals,
+  num_rows,
 }: {
   subject_user_id: string;
   course_instance_id: string;
-  table_name: string;
-  action: string;
-  base_row_id: string;
+  table_name: TableName | 'random';
+  action: Action | 'random';
+  locals: Record<string, any>;
+  num_rows: string;
 }): Promise<AdministratorQueryResult> {
-  const baseRowId = Number.parseInt(base_row_id);
-  const actions = ['insert', 'update', 'delete'] as const;
-  const tableNames = ['users', 'assessments', 'questions', 'enrollments', 'submissions'] as const;
+  const courseInstance =
+    course_instance_id.length > 0
+      ? await selectOptionalCourseInstanceById(course_instance_id)
+      : null;
+  const course = courseInstance?.course_id
+    ? await selectOptionalCourseById(courseInstance.course_id)
+    : null;
 
   // Generate 100 audit events
   const rows = await mapSeries(
-    Array.from({ length: 100 }, (_, i) => i),
+    Array.from({ length: Number(num_rows) }, (_, i) => i),
     async (index: number): Promise<ResultRow> => {
-      const currentAction =
-        action === 'random' ? actions[Math.floor(Math.random() * actions.length)] : action;
+      const currentAction = action === 'random' ? randomChoice(actions) : action;
 
-      const currentTableName =
-        table_name === 'random'
-          ? tableNames[Math.floor(Math.random() * tableNames.length)]
-          : table_name;
+      const currentTableName = table_name === 'random' ? randomChoice(tableNames) : table_name;
 
-      const result = await queryRows(
+      let newRow = currentAction === 'delete' ? null : makeRowContent(currentTableName);
+      const oldRow = currentAction === 'insert' ? null : makeRowContent(currentTableName);
+
+      if (currentAction === 'update') {
+        newRow = {
+          ...newRow,
+          id: oldRow?.id,
+        };
+      }
+
+      const result = await queryRow(
         sql.insert_audit_event,
         {
-          subject_user_id,
-          course_instance_id,
-          table_name: currentTableName,
           action: currentAction,
           action_detail: `Generated audit event ${index + 1} for testing`,
-          row_id: (baseRowId + index).toString(),
-          agent_user_id: subject_user_id, // Use same user as agent for simplicity
-          agent_authn_user_id: subject_user_id,
+          agent_authn_user_id: locals.authn_user.user_id,
+          agent_user_id: locals.authn_user.user_id,
+          assessment_id: null,
+          assessment_instance_id: null,
+          assessment_question_id: null,
+          context: '{}',
+          course_id: course?.id ?? null,
+          course_instance_id: course_instance_id.length > 0 ? course_instance_id : null,
+          group_id: null,
+          institution_id: course?.institution_id ?? null,
+          new_row: newRow,
+          old_row: oldRow,
+          row_id: newRow?.id ?? oldRow?.id,
+          subject_user_id: subject_user_id.length > 0 ? subject_user_id : null,
+          table_name: currentTableName,
         },
         AuditEventSchema,
       );
 
-      return result[0];
+      return {
+        ...result,
+        date: result.date.toISOString(),
+      };
     },
   );
 
