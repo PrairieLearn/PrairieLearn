@@ -79,7 +79,7 @@ router.post(
       throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
     }
 
-    const queryParams: Record<string, string | Record<string, any>> = {};
+    const queryParams: Record<string, string> = {};
     module.specs.params?.forEach((p) => {
       queryParams[p.name] = req.body[p.name];
     });
@@ -87,10 +87,7 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      result = await module.default({
-        ...queryParams,
-        locals: module.specs.pass_locals ? res.locals : undefined,
-      });
+      result = await module.default(queryParams);
     } catch (err) {
       logger.error(err);
       error = err.toString();

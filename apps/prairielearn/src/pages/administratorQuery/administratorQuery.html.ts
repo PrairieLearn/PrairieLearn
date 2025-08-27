@@ -82,38 +82,18 @@ export function AdministratorQuery({
                   (param) => html`
                     <div class="mb-3">
                       <label class="form-label" for="param-${param.name}">${param.name}</label>
-                      ${param.options
-                        ? html`
-                            <select
-                              class="form-select"
-                              id="param-${param.name}"
-                              name="${param.name}"
-                            >
-                              ${param.options.map(
-                                (option) => html`
-                                  <option
-                                    value="${option}"
-                                    ${param.default && option === param.default ? 'selected' : ''}
-                                  >
-                                    ${option}
-                                  </option>
-                                `,
-                              )}
-                            </select>
-                          `
-                        : html`
-                            <input
-                              class="form-control"
-                              type="text"
-                              id="param-${param.name}"
-                              aria-describedby="param-${param.name}-help"
-                              name="${param.name}"
-                              autocomplete="off"
-                              ${query_run?.params?.[param.name]
-                                ? html`value="${query_run?.params[param.name]}"`
-                                : html`value="${param.default ?? ''}"`}
-                            />
-                          `}
+                      <input
+                        class="form-control"
+                        type="text"
+                        id="param-${param.name}"
+                        aria-describedby="param-${param.name}-help"
+                        name="${param.name}"
+                        autocomplete="off"
+                        ${query_run?.params?.[param.name]
+                          ? html`value="${query_run?.params[param.name]}"`
+                          : html`value="${param.default ?? ''}"`}
+                      />
+
                       <small id="param-${param.name}-help" class="form-text text-muted">
                         ${param.description}
                       </small>

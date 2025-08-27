@@ -16,14 +16,11 @@ export const AdministratorQuerySpecsSchema = z.object({
         name: z.string(),
         description: z.string(),
         default: z.string().optional(),
-        options: z.array(z.string()).optional(),
       }),
     )
     .optional(),
-  /** If true, res.locals is passed as the 'locals' parameter to the query function. */
-  pass_locals: z.boolean().optional().default(false),
 });
-export type AdministratorQuerySpecs = z.input<typeof AdministratorQuerySpecsSchema>;
+export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.record(z.any()).array(),
