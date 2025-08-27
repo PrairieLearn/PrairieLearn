@@ -17,6 +17,14 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
+-- BLOCK select_institution_by_short_name
+SELECT
+  i.*
+FROM
+  institutions AS i
+WHERE
+  i.short_name = $short_name;
+
 -- BLOCK select_all_institutions
 SELECT
   i.*

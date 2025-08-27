@@ -3,14 +3,14 @@ import assert from 'node:assert';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
-import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
+import { LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
+import { selectOrInsertAndEnrollLtiUser } from '../../models/lti-user.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -109,27 +109,24 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userResult = await sqldb.callOptionalRow(
-      'users_select_or_insert_and_enroll_lti',
-      [
-        authUid,
-        authName,
-        ltiResult.course_instance_id,
-        parameters.user_id,
-        parameters.context_id,
-        res.locals.req_date,
-      ],
-      z.object({
-        user_id: IdSchema,
-        has_access: z.boolean(),
-      }),
-    );
-    if (!userResult?.has_access) {
+    if (!ltiResult.course_instance_id) {
+      throw new HttpStatusError(400, 'LTI credential missing course_instance_id');
+    }
+
+    const userResult = await selectOrInsertAndEnrollLtiUser({
+      uid: authUid,
+      name: authName,
+      lti_course_instance_id: ltiResult.course_instance_id,
+      lti_user_id: parameters.user_id,
+      lti_context_id: parameters.context_id,
+      req_date: res.locals.req_date,
+    });
+    if (!userResult.hasAccess) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
     // Persist the user's authentication data in the session.
-    req.session.user_id = userResult.user_id;
+    req.session.user_id = userResult.userId;
     req.session.authn_provider_name = 'LTI';
 
     const linkResult = await sqldb.queryRow(
@@ -149,7 +146,7 @@ router.post(
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
         await sqldb.execute(sql.upsert_outcome, {
-          user_id: userResult.user_id,
+          user_id: userResult.userId,
           assessment_id: linkResult.assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,
           lis_outcome_service_url: parameters.lis_outcome_service_url,
@@ -164,7 +161,7 @@ router.post(
       // No linked assessment
 
       const instructorResult = await sqldb.callAsync('users_is_instructor_in_course_instance', [
-        userResult.user_id,
+        userResult.userId,
         ltiResult.course_instance_id,
       ]);
 
