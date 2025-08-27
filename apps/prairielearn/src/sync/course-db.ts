@@ -1171,9 +1171,7 @@ function validateAssessment({
             alternative.autoPoints != null ||
             alternative.maxAutoPoints != null ||
             alternative.manualPoints != null;
-          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) as
-            | number
-            | number[];
+          const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points)!;
           const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const isNonIncreasing = pointsList.every(
             (points, index) => index === 0 || points <= pointsList[index - 1],
