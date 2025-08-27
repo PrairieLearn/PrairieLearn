@@ -105,7 +105,7 @@ function ActionsHeader() {
 
 function DevModeCard() {
   if (!config.devMode) return null;
-  
+
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -241,7 +241,7 @@ function StudentCoursesCard({
   canAddCourses,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
-  
+
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -257,8 +257,8 @@ function StudentCoursesCard({
       {studentCourses.length === 0 ? (
         hasInstructorCourses ? (
           <div class="card-body">
-            No courses found with student access. Courses with instructor access are found in
-            the list above.
+            No courses found with student access. Courses with instructor access are found in the
+            list above.
             {canAddCourses
               ? 'Use the "Add or remove courses" button to add a course as a student.'
               : ''}
