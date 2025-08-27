@@ -53,6 +53,7 @@ router.get(
     const auditEvents = await selectAuditEvents({
       subject_user_id: req.params.user_id,
       course_instance_id: course_instance.id,
+      table_names: ['enrollments'],
     });
 
     res.send(
