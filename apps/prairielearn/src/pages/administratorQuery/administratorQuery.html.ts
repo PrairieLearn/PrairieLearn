@@ -288,22 +288,20 @@ function renderCell(row: any, col: string, columns: string[], info: Administrato
   if (col === 'course' && 'course_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course/${row.course_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course_instance/${row['course_instance_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course_instance/${row.course_instance_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a
-          href="${config.urlPrefix}/course_instance/${row[
-            'course_instance_id'
-          ]}/instructor/assessment/${row['assessment_id']}"
+          href="${config.urlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
         >
           ${row[col]}
         </a>
