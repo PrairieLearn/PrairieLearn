@@ -157,7 +157,13 @@ export function PageLayout({
                   </nav>
                 `
               : ''}
-            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
+            <div
+              class="${clsx(
+                sideNavEnabled && 'app-main',
+                options.fullHeight && 'h-100',
+                'border-top',
+              )}"
+            >
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                   ? AssessmentNavigation({
@@ -215,15 +221,16 @@ export function PageLayout({
             navPage: navContext.page,
             navSubPage: navContext.subPage,
             navbarType: navContext.type,
+            bottomBorder: true,
           })}
           ${preContentString}
           <main
             id="content"
-            class="
-            ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${paddingBottom ? 'pb-4' : ''}
-            ${options.fullHeight ? 'flex-grow-1' : ''}
-          "
+            class="${clsx(
+              options.fullWidth ? 'container-fluid' : 'container',
+              paddingBottom && 'pb-4',
+              options.fullHeight && 'flex-grow-1',
+            )}"
           >
             ${contentString}
           </main>

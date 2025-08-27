@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { type FlashMessageType, flash } from '@prairielearn/flash';
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -18,6 +20,7 @@ export function Navbar({
   marginBottom = true,
   isInPageLayout = false,
   sideNavEnabled = false,
+  bottomBorder = false,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
@@ -33,6 +36,10 @@ export function Navbar({
    * Indicates if the side nav is enabled for the current page.
    */
   sideNavEnabled?: boolean;
+  /**
+   * Indicates if the bottom border should be displayed for the navbar.
+   */
+  bottomBorder?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix } = resLocals;
   navPage ??= resLocals.navPage;
@@ -75,7 +82,13 @@ export function Navbar({
         `
       : ''}
 
-    <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
+    <nav
+      class="${clsx(
+        'navbar navbar-light bg-light navbar-expand-md',
+        bottomBorder && 'border-bottom',
+      )}"
+      aria-label="Global navigation"
+    >
       <div class="container-fluid position-relative">
         ${sideNavEnabled
           ? html`
