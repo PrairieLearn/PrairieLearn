@@ -95,9 +95,9 @@ export async function makeVariant(
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
     variant = {
       variant_seed,
-      params: data.params,
-      true_answer: data.true_answer,
-      options: data.options ?? {},
+      params: data.params || {},
+      true_answer: data.true_answer || {},
+      options: data.options || {},
       broken: hasFatalIssue,
     };
   }
@@ -273,6 +273,9 @@ async function makeAndInsertVariant(
         throw new Error(
           'Attempt to create a variant without a question ID or instance question ID',
         );
+      }
+      if (user_id == null) {
+        throw new Error('Attempt to create a variant without a user ID');
       }
 
       if (course_instance_id != null) {

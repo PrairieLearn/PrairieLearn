@@ -99,7 +99,7 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    const instance_question = res.locals.instance_question as InstanceQuestion | null;
+    const instance_question = res.locals.instance_question as InstanceQuestion;
     if (instance_question == null) {
       throw new error.HttpStatusError(404, 'Instance question not found');
     }
