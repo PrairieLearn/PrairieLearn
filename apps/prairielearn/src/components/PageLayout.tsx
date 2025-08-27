@@ -42,8 +42,6 @@ export function PageLayout({
   options?: {
     /** Whether the main container should span the entire width of the page. */
     fullWidth?: boolean;
-    /** Whether the main container should have a top margin. */
-    marginTop?: boolean;
     /** Whether the main container should have a bottom padding of pb-4 in Bootstrap. */
     paddingBottom?: boolean;
     /** A note to display after the pageTitle, shown in parenthesis. */
@@ -64,7 +62,6 @@ export function PageLayout({
 }) {
   const resolvedOptions = {
     hxExt: '',
-    marginTop: true,
     paddingBottom: true,
     fullHeight: false,
     fullWidth: false,
@@ -151,7 +148,6 @@ export function PageLayout({
                 navPage: navContext.page,
                 navSubPage: navContext.subPage,
                 navbarType: navContext.type,
-                marginBottom: resolvedOptions.marginTop,
                 isInPageLayout: true,
                 sideNavEnabled,
               })}
@@ -227,7 +223,6 @@ export function PageLayout({
             navPage: navContext.page,
             navSubPage: navContext.subPage,
             navbarType: navContext.type,
-            marginBottom: resolvedOptions.marginTop,
           })}
           ${preContentString}
           <main
@@ -236,7 +231,7 @@ export function PageLayout({
             ${clsx(
               resolvedOptions.fullWidth ? 'container-fluid' : 'container',
               resolvedOptions.paddingBottom && 'pb-4',
-              resolvedOptions.fullHeight && 'min-h-100 flex-grow-1',
+              resolvedOptions.fullHeight && 'flex-grow-1',
             )}
           "
           >

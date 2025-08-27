@@ -52,8 +52,6 @@ export function Home({
     },
     options: {
       fullHeight: true,
-      paddingBottom: false,
-      marginTop: false,
     },
     content: html`
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>

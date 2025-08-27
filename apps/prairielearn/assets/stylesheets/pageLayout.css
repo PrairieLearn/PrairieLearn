@@ -368,7 +368,3 @@ body:has(div.app-main-container) {
   /* https://github.com/PrairieLearn/marketing/blob/6dc08c6028c8a45e71fce846b308326469958a16/src/components/Header.module.scss#L4-L6 */
   color: #052c65; /* var(--bs-blue-800) */
 }
-
-.container.min-h-100 {
-  min-height: calc(100% - var(--navbar-height));
-}
