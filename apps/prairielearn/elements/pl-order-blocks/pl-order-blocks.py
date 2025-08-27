@@ -9,7 +9,7 @@ from typing import TypedDict
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag, solve_mgraph
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
     FeedbackType,
@@ -73,8 +73,24 @@ def extract_dag(
     return depends_graph, group_belonging
 
 
+def extract_mgraph(
+    answers_list: list[OrderBlocksAnswerData],
+) -> tuple[dict[str, list[str] | list[list[str]]], str]:
+    depends_graph = {}
+    final = ""
+    for ans in answers_list:
+        depends_graph.update({ans["tag"]: ans["depends"]})
+        if ans["final"]:
+            final = ans["tag"]
+
+    return depends_graph, final
+
+
 def solve_problem(
-    answers_list: list[OrderBlocksAnswerData], grading_method: GradingMethodType
+    answers_list: list[OrderBlocksAnswerData],
+    grading_method: GradingMethodType,
+    is_multi: bool = False,
+    path_names: dict[str, str] = {},
 ) -> list[OrderBlocksAnswerData]:
     if (
         grading_method is GradingMethodType.EXTERNAL
@@ -85,9 +101,20 @@ def solve_problem(
     elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
     elif grading_method is GradingMethodType.DAG:
-        depends_graph, group_belonging = extract_dag(answers_list)
-        solution = solve_dag(depends_graph, group_belonging)
-        return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
+        if is_multi:
+            depends_graph, group_belonging = extract_mgraph(answers_list)
+            solution = solve_mgraph(depends_graph, group_belonging, path_names)
+            collapsed_answer_list = []
+            for sol in solution:
+                ans = [ans for ans in answers_list if ans["tag"] in sol]
+                collapsed_answer_list.append(
+                    sorted(ans, key=lambda x: sol.index(x["tag"]))
+                )
+            return collapsed_answer_list
+        else:
+            depends_graph, group_belonging = extract_dag(answers_list)
+            solution = solve_dag(depends_graph, group_belonging)
+            return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
         assert_never(grading_method)
 
