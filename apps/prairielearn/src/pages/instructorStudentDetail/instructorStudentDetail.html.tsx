@@ -51,7 +51,7 @@ export function InstructorStudentDetail({
 
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-            <h2 class="mb-0">Audit events</h2>
+            <h2 class="mb-0">Enrollment events</h2>
           </div>
           <StudentAuditEventsTable events={auditEvents} />
         </div>
