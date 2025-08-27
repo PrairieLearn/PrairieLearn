@@ -6,6 +6,7 @@ import {
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
+  AuditEventSchema as RawAuditEventSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
@@ -114,6 +115,10 @@ export type StudentAssessmentSet = z.infer<typeof StudentAssessmentSetSchema>;
 export const StaffAssessmentQuestionSchema =
   RawAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
 export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
+
+/** Audit Events */
+export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
+export type StaffAuditEvent = z.infer<typeof StaffAuditEventSchema>;
 
 /** Courses */
 
