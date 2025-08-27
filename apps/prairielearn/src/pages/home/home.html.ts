@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
+import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema, type Institution } from '../../lib/db-types.js';
@@ -54,9 +55,10 @@ export function Home({
     },
     content: html`
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
+      <div class="mb-3"></div>
       ${ActionsHeader()}
 
-      <div class="container py-5">
+      <div class="container pt-5">
         ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
         ${InstructorCoursesCard({ instructorCourses })}
         ${StudentCoursesCard({
@@ -77,7 +79,7 @@ export function Home({
               </div>
             </footer>
           `
-        : ''}
+        : PageFooter()}
     `,
   });
 }
