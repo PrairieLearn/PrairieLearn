@@ -1113,7 +1113,7 @@ function validateAssessment({
       } else if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          const autoPoints = alternative.autoPoints ?? alternative.points ?? 0;
+          const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
