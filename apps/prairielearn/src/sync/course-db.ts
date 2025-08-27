@@ -1024,26 +1024,20 @@ function validateAssessment({
       errors.push('Real-time grading cannot be disabled for Homework-type assessments');
     }
 
-    // Check that allowRealTimeGrading is not disabled at any level in the hierarchy
-    (assessment.zones || []).forEach((zone, zoneIndex) => {
+    // Check that real-time grading is not disabled at any level in the hierarchy
+    (assessment.zones || []).forEach((zone) => {
       if (zone.allowRealTimeGrading === false) {
-        errors.push(
-          `Real-time grading cannot be disabled for Homework-type assessments (zone ${zoneIndex + 1}: "${zone.title || 'Untitled'}")`,
-        );
+        errors.push('Real-time grading cannot be disabled for Homework-type assessments');
       }
 
-      (zone.questions || []).forEach((question, questionIndex) => {
+      (zone.questions || []).forEach((question) => {
         if (question.allowRealTimeGrading === false) {
-          errors.push(
-            `Real-time grading cannot be disabled for Homework-type assessments (zone ${zoneIndex + 1}, question ${questionIndex + 1})`,
-          );
+          errors.push('Real-time grading cannot be disabled for Homework-type assessments');
         }
 
-        (question.alternatives || []).forEach((alternative, altIndex) => {
+        (question.alternatives || []).forEach((alternative) => {
           if (alternative.allowRealTimeGrading === false) {
-            errors.push(
-              `Real-time grading cannot be disabled for Homework-type assessments (zone ${zoneIndex + 1}, question ${questionIndex + 1}, alternative ${altIndex + 1}: "${alternative.id || 'Unnamed'}")`,
-            );
+            errors.push('Real-time grading cannot be disabled for Homework-type assessments');
           }
         });
       });
