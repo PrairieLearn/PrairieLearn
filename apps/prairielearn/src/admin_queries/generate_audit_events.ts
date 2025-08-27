@@ -1,10 +1,9 @@
 import { mapSeries } from 'async';
 
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
-import { AuditEventSchema, EnumEnrollmentStatusSchema } from '../lib/db-types.js';
+import { EnumEnrollmentStatusSchema } from '../lib/db-types.js';
 import { assertNever } from '../lib/types.js';
+import { insertAuditEvent } from '../models/audit-event.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalCourseById } from '../models/course.js';
 
@@ -48,8 +47,6 @@ export const specs: AdministratorQuerySpecs = {
   ],
   pass_locals: true,
 };
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const columns = [
   'id',
@@ -145,29 +142,20 @@ export default async function ({
         };
       }
 
-      const result = await queryRow(
-        sql.insert_audit_event,
-        {
-          action: currentAction,
-          action_detail: `Generated audit event ${index + 1} for testing`,
-          agent_authn_user_id: locals.authn_user.user_id,
-          agent_user_id: locals.authn_user.user_id,
-          assessment_id: null,
-          assessment_instance_id: null,
-          assessment_question_id: null,
-          context: '{}',
-          course_id: course?.id ?? null,
-          course_instance_id: course_instance_id.length > 0 ? course_instance_id : null,
-          group_id: null,
-          institution_id: course?.institution_id ?? null,
-          new_row: newRow,
-          old_row: oldRow,
-          row_id: newRow?.id ?? oldRow?.id,
-          subject_user_id: subject_user_id.length > 0 ? subject_user_id : null,
-          table_name: currentTableName,
-        },
-        AuditEventSchema,
-      );
+      const result = await insertAuditEvent({
+        action: currentAction,
+        action_detail: `Generated audit event ${index + 1} for testing`,
+        agent_authn_user_id: locals.authn_user.user_id,
+        agent_user_id: locals.authn_user.user_id,
+        course_id: course?.id,
+        course_instance_id,
+        institution_id: course?.institution_id,
+        new_row: newRow,
+        old_row: oldRow,
+        row_id: newRow?.id ?? oldRow?.id,
+        subject_user_id,
+        table_name: currentTableName,
+      });
 
       return {
         ...result,

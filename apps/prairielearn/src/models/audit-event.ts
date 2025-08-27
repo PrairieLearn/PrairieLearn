@@ -95,22 +95,22 @@ export async function insertAuditEvent({
   table_name,
 }: {
   action: EnumAuditEventAction;
-  action_detail?: string;
+  action_detail?: string | null;
   table_name: string;
   row_id: string;
-  course_instance_id?: string;
+  course_instance_id?: string | null;
   subject_user_id: string | null;
   context?: Record<string, any>;
-  old_row?: Record<string, any>;
-  new_row?: Record<string, any>;
+  old_row?: Record<string, any> | null;
+  new_row?: Record<string, any> | null;
   agent_authn_user_id: string | null;
-  agent_user_id?: string;
-  institution_id?: string;
-  course_id?: string;
+  agent_user_id?: string | null;
+  institution_id?: string | null;
+  course_id?: string | null;
   assessment_id?: string;
-  assessment_instance_id?: string;
-  assessment_question_id?: string;
-  group_id?: string;
+  assessment_instance_id?: string | null;
+  assessment_question_id?: string | null;
+  group_id?: string | null;
 }): Promise<StaffAuditEvent> {
   return await queryRow(
     sql.insert_audit_event,
