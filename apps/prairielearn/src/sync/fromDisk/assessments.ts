@@ -451,7 +451,7 @@ export async function validateAssessmentSharedQuestions(
           qids.push(question.id);
         }
         qids.forEach((qid) => {
-          if (qid[0] !== '@') return;
+          if (!qid.startsWith('@')) return;
 
           importedQids.add(qid);
           let qids = assessmentImportedQids.get(tid);

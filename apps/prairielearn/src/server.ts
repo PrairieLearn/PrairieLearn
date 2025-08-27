@@ -2179,7 +2179,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // If a config file was specified on the command line, we'll use that
     // instead of the default locations.
     if ('config' in argv) {
-      configPaths = [argv['config']];
+      configPaths = [argv.config];
     }
 
     // Load config immediately so we can use it configure everything else.
