@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  RawStaffEnrollmentSchema,
   StaffAssessmentInstanceSchema,
   StaffAssessmentSchema,
   StaffAssessmentSetSchema,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
+  StaffInstitutionSchema,
   StaffUserSchema,
   StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentSchema,
@@ -64,7 +66,6 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
-  enrollment_code: '1234567890ab',
   json_comment: null,
   long_name: null,
   share_source_publicly: false,
@@ -261,6 +262,25 @@ const minimalStudentAssessmentSet: z.input<typeof StudentAssessmentSetSchema> = 
   number: 1,
 };
 
+const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
+  course_instance_id: '10',
+  created_at: new Date(),
+  id: '1',
+  lti_managed: false,
+  pending_lti13_email: null,
+  pending_uid: null,
+  pending_lti13_instance_id: null,
+  pending_lti13_name: null,
+  status: 'joined',
+  user_id: null,
+};
+
+const minimalStaffInstitution: z.input<typeof StaffInstitutionSchema> = {
+  id: '1',
+  long_name: 'Test Institution',
+  short_name: 'TI',
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -299,6 +319,18 @@ describe('safe-db-types schemas', () => {
     const parsed = StudentUserSchema.parse({ ...minimalStudentUser, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentUser);
+  });
+
+  it('parses valid RawStaffEnrollment and drops extra fields', () => {
+    const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalRawStaffEnrollment);
+  });
+
+  it('rejects invalid RawStaffEnrollment status', () => {
+    expect(() =>
+      RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, status: 'invalid' as any }),
+    ).toThrow();
   });
 
   it('parses valid StaffAssessment and drops extra fields', () => {
@@ -341,5 +373,11 @@ describe('safe-db-types schemas', () => {
     const parsed = StudentAssessmentSetSchema.parse({ ...minimalStudentAssessmentSet, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentAssessmentSet);
+  });
+
+  it('parses valid StaffInstitution and drops extra fields', () => {
+    const parsed = StaffInstitutionSchema.parse({ ...minimalStaffInstitution, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffInstitution);
   });
 });

@@ -1,5 +1,5 @@
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
@@ -9,9 +9,11 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
+import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import {
   NuqsAdapter,
@@ -20,18 +22,22 @@ import {
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentDetailUrl } from '../../lib/client/url.js';
+import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { StudentsTable } from './components/StudentsTable.js';
-import { type StudentRow } from './instructorStudents.shared.js';
+import { STATUS_VALUES, type StudentRow } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
+
+const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
 
@@ -46,7 +52,7 @@ interface StudentsCardProps {
 function StudentsCard({
   course,
   courseInstance,
-  students,
+  students: initialStudents,
   timezone,
   urlPrefix,
 }: StudentsCardProps) {
@@ -59,12 +65,23 @@ function StudentsCard({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+    'status',
+    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
+      DEFAULT_ENROLLMENT_STATUS_FILTER,
+    ),
+  );
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Track screen size for aria-hidden
   const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(mediaQuery?.matches ?? true);
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+
+  useEffect(() => {
+    // TODO: This is a workaround to avoid a hydration mismatch.
+    setIsMediumOrLarger(mediaQuery?.matches ?? true);
+  }, [mediaQuery]);
 
   useEffect(() => {
     const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
@@ -86,33 +103,82 @@ function StudentsCard({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  // The individual column filters are the source of truth, and this is derived from them.
+  const columnFilters = useMemo(() => {
+    return [
+      {
+        id: 'enrollment_status',
+        value: enrollmentStatusFilter,
+      },
+    ];
+  }, [enrollmentStatusFilter]);
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+
+  const { data: students } = useQuery<StudentRow[]>({
+    queryKey: ['enrollments', 'students'],
+    queryFn: async () => {
+      const res = await fetch('data.json');
+      if (!res.ok) throw new Error('Failed to fetch students');
+      return res.json();
+    },
+    enabled: false,
+    initialData: initialStudents,
+  });
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor((row) => row.user.uid, {
+      columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor((row) => row.user.name, {
+      columnHelper.accessor((row) => row.user?.name, {
         id: 'user_name',
         header: 'Name',
-        cell: (info) => (
-          <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
-            {info.getValue() || '—'}
-          </a>
-        ),
+        cell: (info) => {
+          if (info.row.original.user) {
+            return (
+              <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+                {info.getValue() || '—'}
+              </a>
+            );
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
-      columnHelper.accessor((row) => row.user.email, {
+      columnHelper.accessor((row) => row.enrollment.status, {
+        id: 'enrollment_status',
+        header: 'Status',
+        cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const current = row.getValue(columnId);
+          if (typeof current !== 'string') return false;
+          return filterValues.includes(current);
+        },
+      }),
+      columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
         header: 'Email',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
       columnHelper.accessor((row) => row.enrollment.created_at, {
         id: 'enrollment_created_at',
-        header: 'Enrolled on',
+        header: 'Enrolled',
         cell: (info) => {
           const date = info.getValue();
           if (date == null) return '—';
@@ -136,7 +202,7 @@ function StudentsCard({
     data: students,
     columns,
     columnResizeMode: 'onChange',
-    getRowId: (row) => row.user.user_id,
+    getRowId: (row) => row.enrollment.id,
     state: {
       sorting,
       columnFilters,
@@ -150,7 +216,6 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -173,7 +238,7 @@ function StudentsCard({
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div>Students</div>
-          <div>
+          <div class="d-flex gap-2">
             <DownloadButton
               course={course}
               courseInstance={courseInstance}
@@ -222,7 +287,11 @@ function StudentsCard({
           </div>
         </div>
         <div class="flex-grow-1">
-          <StudentsTable table={table} />
+          <StudentsTable
+            table={table}
+            enrollmentStatusFilter={enrollmentStatusFilter}
+            setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+          />
         </div>
       </div>
     </div>
@@ -232,27 +301,33 @@ function StudentsCard({
 /**
  * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
  */
+
 export const InstructorStudents = ({
   search,
   students,
   timezone,
   courseInstance,
   course,
+  isDevMode,
   urlPrefix,
 }: {
   search: string;
+  isDevMode: boolean;
 } & StudentsCardProps) => {
+  const queryClient = new QueryClient();
+
   return (
     <NuqsAdapter search={search}>
-      <StudentsCard
-        course={course}
-        courseInstance={courseInstance}
-        students={students}
-        timezone={timezone}
-        urlPrefix={urlPrefix}
-      />
+      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+        <StudentsCard
+          course={course}
+          courseInstance={courseInstance}
+          students={students}
+          timezone={timezone}
+          urlPrefix={urlPrefix}
+        />
+      </QueryClientProviderDebug>
     </NuqsAdapter>
   );
 };
-
 InstructorStudents.displayName = 'InstructorStudents';
