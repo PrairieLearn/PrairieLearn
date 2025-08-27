@@ -293,7 +293,11 @@ async function selectSubmissionForGrading(
     // students from grading questions with real-time grading disabled. This is
     // because the "Grade N saved answers" button can be used without closing the
     // assessment, so we must explicitly skip questions where real-time grading is disabled.
-    if (variantData.allow_real_time_grading === false && !overrideRealTimeGradingDisabled) {
+    if (
+      variantData.instance_question_id != null &&
+      variantData.allow_real_time_grading === false &&
+      !overrideRealTimeGradingDisabled
+    ) {
       return null;
     }
 
