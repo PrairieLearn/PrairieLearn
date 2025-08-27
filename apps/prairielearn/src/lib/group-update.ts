@@ -181,7 +181,6 @@ export async function randomGroups(
             const usersToMove = userGroups
               .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
-
               .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(

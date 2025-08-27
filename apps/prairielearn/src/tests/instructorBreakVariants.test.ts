@@ -165,8 +165,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() ?? '';
-      assert.notEqual(variantId, partialCredit1VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit1VariantId);
     });
   });
 
@@ -179,8 +180,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() ?? '';
-      assert.notEqual(variantId, partialCredit2VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit2VariantId);
     });
   });
 });

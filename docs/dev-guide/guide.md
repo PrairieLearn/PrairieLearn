@@ -573,7 +573,7 @@ Depending on the context, we use different types of assertions.
 
 - In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
 - In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
-- In client code, we use the `!` operator to assert that a value is not `null` or `undefined`.
+- For asserting results on the client, or in utility functions, e.g. a `.querySelector`, `.pop`, etc., consider using the `!` operator to assert that a value is not `null` or `undefined`.
 
 ## JavaScript equality operator
 
