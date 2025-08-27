@@ -146,6 +146,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   advance_score_perc: null,
   allow_issue_reporting: null,
   allow_real_time_grading: null,
+  json_allow_real_time_grading: null,
   assessment_module_id: null,
   assessment_set_id: null,
   auto_close: null,
