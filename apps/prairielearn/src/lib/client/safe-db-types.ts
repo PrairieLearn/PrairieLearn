@@ -10,6 +10,7 @@ import {
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
+  InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -190,6 +191,17 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema;
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
+
+/** Institutions */
+export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
+  default_authn_provider_id: true,
+  display_timezone: true,
+  id: true,
+  long_name: true,
+  short_name: true,
+});
+export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
+export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
 
 /** Questions */
 export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();
