@@ -13,19 +13,20 @@ export default asyncHandler(async (req, res, next) => {
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
-  // If we are on the enrollment page for the secret link, that page should handle
-  // the enrollment.
-  const selfEnrollmentWithoutSecretLinkEnabled =
-    courseInstance.self_enrollment_enabled_before != null &&
-    new Date() < courseInstance.self_enrollment_enabled_before &&
-    !courseInstance.self_enrollment_requires_secret_link;
+  // If we have self-enrollment enabled, and it is before the enabled before date,
+  // then we can enroll the user.
+  const selfEnrollmentEnabled =
+    courseInstance.self_enrollment_enabled &&
+    (courseInstance.self_enrollment_enabled_before_date == null ||
+      new Date() < courseInstance.self_enrollment_enabled_before_date);
+
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    selfEnrollmentWithoutSecretLinkEnabled
+    selfEnrollmentEnabled
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,

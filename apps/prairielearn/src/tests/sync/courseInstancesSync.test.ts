@@ -539,7 +539,7 @@ describe('Course instance syncing', () => {
     assert.match(syncedCourseInstance.sync_errors, /"shareSourcePublicly" cannot be used/);
   });
 
-  it('syncs enrollment settings correctly', async () => {
+  it('syncs self-enrollment settings correctly', async () => {
     const schemaMappings: {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
