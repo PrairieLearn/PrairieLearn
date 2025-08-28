@@ -3088,6 +3088,7 @@ describe('Assessment syncing', () => {
       assert.isNotEmpty(syncedData.assessment_questions);
       syncedData.assessment_questions.forEach((aq) => {
         assert.isNull(aq.json_allow_real_time_grading);
+        assert.isTrue(aq.allow_real_time_grading);
       });
     });
 
@@ -3130,6 +3131,7 @@ describe('Assessment syncing', () => {
 
       syncedData.assessment_questions.forEach((aq) => {
         assert.isNull(aq.json_allow_real_time_grading);
+        assert.isFalse(aq.allow_real_time_grading);
       });
     });
 
@@ -3175,6 +3177,7 @@ describe('Assessment syncing', () => {
 
       syncedData.assessment_questions.forEach((aq) => {
         assert.isNull(aq.json_allow_real_time_grading);
+        assert.isTrue(aq.allow_real_time_grading);
       });
     });
 
@@ -3214,6 +3217,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(firstQuestion);
       assert.isFalse(firstQuestion.json_allow_real_time_grading);
+      assert.isFalse(firstQuestion.allow_real_time_grading);
 
       // Second question should be null (inheriting)
       const secondQuestion = syncedData.assessment_questions.find(
@@ -3221,6 +3225,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(secondQuestion);
       assert.isNull(secondQuestion.json_allow_real_time_grading);
+      assert.isTrue(secondQuestion.allow_real_time_grading);
     });
 
     it('correctly handles alternative-level allowRealTimeGrading override', async () => {
@@ -3259,6 +3264,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(firstQuestion);
       assert.isTrue(firstQuestion.json_allow_real_time_grading);
+      assert.isTrue(firstQuestion.allow_real_time_grading);
 
       // Second alternative should be null (inheriting from question-level false)
       const secondQuestion = syncedData.assessment_questions.find(
@@ -3266,6 +3272,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(secondQuestion);
       assert.isNull(secondQuestion.json_allow_real_time_grading);
+      assert.isFalse(secondQuestion.allow_real_time_grading);
     });
 
     it('correctly handles complex mixed hierarchy scenario', async () => {
@@ -3328,6 +3335,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(questionInZone1);
       assert.isNull(questionInZone1.json_allow_real_time_grading);
+      assert.isTrue(questionInZone1.allow_real_time_grading);
 
       // First question in zone 2 should override to true
       const firstQuestionInZone2 = syncedData.assessment_questions.find(
@@ -3335,6 +3343,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(firstQuestionInZone2);
       assert.isTrue(firstQuestionInZone2.json_allow_real_time_grading);
+      assert.isTrue(firstQuestionInZone2.allow_real_time_grading);
 
       // Second question in zone 2 should be null (inheriting from zone)
       const secondQuestionInZone2 = syncedData.assessment_questions.find(
@@ -3342,6 +3351,7 @@ describe('Assessment syncing', () => {
       );
       assert.ok(secondQuestionInZone2);
       assert.isNull(secondQuestionInZone2.json_allow_real_time_grading);
+      assert.isFalse(secondQuestionInZone2.allow_real_time_grading);
     });
 
     it('records an error if allowRealTimeGrading is disabled on a Homework assessment at any level', async () => {
