@@ -3864,6 +3864,7 @@ __metadata:
     "@types/d3": "npm:^7.4.3"
     "@types/dockerode": "npm:^3.3.42"
     "@types/express": "npm:^4.17.23"
+    "@types/express-serve-static-core": "npm:^4.19.5"
     "@types/folder-hash": "npm:^4.0.4"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/jju": "npm:^1.4.5"
@@ -3933,6 +3934,7 @@ __metadata:
     debug: "npm:^4.4.1"
     delegated-events: "npm:^1.1.2"
     dockerode: "npm:^4.0.7"
+    domelementtype: "npm:^2.3.0"
     dompurify: "npm:^3.2.6"
     dropzone: "npm:^5.9.3"
     ejs: "npm:^3.1.10"
@@ -3994,7 +3996,7 @@ __metadata:
     object-hash: "npm:^3.0.0"
     on-finished: "npm:^2.4.1"
     on-headers: "npm:^1.1.0"
-    openai: "npm:^5.12.0"
+    openai: "npm:^5.15.0"
     openid-client: "npm:^5.7.1"
     p-memoize: "npm:^7.1.1"
     parse5: "npm:^7.3.0"
@@ -5861,7 +5863,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/express-serve-static-core@npm:^4.17.33":
+"@types/express-serve-static-core@npm:^4.17.33, @types/express-serve-static-core@npm:^4.19.5":
   version: 4.19.6
   resolution: "@types/express-serve-static-core@npm:4.19.6"
   dependencies:
@@ -6595,7 +6597,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/utils@npm:8.39.1, @typescript-eslint/utils@npm:^8.24.1, @typescript-eslint/utils@npm:^8.39.1":
+"@typescript-eslint/utils@npm:8.39.1, @typescript-eslint/utils@npm:^8.24.1, @typescript-eslint/utils@npm:^8.34.1, @typescript-eslint/utils@npm:^8.39.1":
   version: 8.39.1
   resolution: "@typescript-eslint/utils@npm:8.39.1"
   dependencies:
@@ -9711,6 +9713,19 @@ __metadata:
   dependencies:
     requireindex: "npm:1.2.0"
   checksum: 10c0/e59fa000d0b8f814ced82712e60fa84826731cadd0f9449010e6e832148e7c72ec78a03d5d7187cc13f8f8031869c144c5943c91a05e09d027835fcde761f94c
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-perfectionist@npm:^4.15.0":
+  version: 4.15.0
+  resolution: "eslint-plugin-perfectionist@npm:4.15.0"
+  dependencies:
+    "@typescript-eslint/types": "npm:^8.34.1"
+    "@typescript-eslint/utils": "npm:^8.34.1"
+    natural-orderby: "npm:^5.0.0"
+  peerDependencies:
+    eslint: ">=8.45.0"
+  checksum: 10c0/e6fd86a083be063580bde3947e885b6f3a18b8c47a77874a64d0e22a54e6bafcb356bcc5f0c00634ea7ee1c8744757b3e6f2dc478f01e4874090ffc1aea9efa6
   languageName: node
   linkType: hard
 
@@ -13616,6 +13631,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"natural-orderby@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "natural-orderby@npm:5.0.0"
+  checksum: 10c0/d4e8b3bf16636eedc0c99a4cd551cd371732dd8c9766f19c8e153946553d82c12527eab182b8e79d640681aa6cb718273b53662ccf88127d4726307b6e645b2b
+  languageName: node
+  linkType: hard
+
 "ncp@npm:~2.0.0":
   version: 2.0.0
   resolution: "ncp@npm:2.0.0"
@@ -14002,9 +14024,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"openai@npm:^5.12.0":
-  version: 5.12.0
-  resolution: "openai@npm:5.12.0"
+"openai@npm:^5.15.0":
+  version: 5.15.0
+  resolution: "openai@npm:5.15.0"
   peerDependencies:
     ws: ^8.18.0
     zod: ^3.23.8
@@ -14015,7 +14037,7 @@ __metadata:
       optional: true
   bin:
     openai: bin/cli
-  checksum: 10c0/adab04e90cae8f393f76c007f98c0636af97a280fb05766b0cee5ab202c802db01c113d0ce0dfea42e1a1fe3b08c9a3881b6eea9a0b0703375f487688aaca1fc
+  checksum: 10c0/c78bdea36983f1327fb52107ab8c0a7ef5058f0bc7f83324ce94d2fdb1e43fa4e6bd30c3d68f985ff3b287a6f2d3734959d45005014d388b90d5801016dccd7b
   languageName: node
   linkType: hard
 
@@ -14657,6 +14679,7 @@ __metadata:
     eslint-plugin-jsdoc: "npm:^52.0.4"
     eslint-plugin-jsx-a11y-x: "npm:^0.1.1"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
+    eslint-plugin-perfectionist: "npm:^4.15.0"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.4.1"
     eslint-plugin-unicorn: "npm:^60.0.0"

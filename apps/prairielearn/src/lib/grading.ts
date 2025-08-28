@@ -151,7 +151,7 @@ export async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
-      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+      await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
         delta,
@@ -211,13 +211,13 @@ export async function saveSubmission(
           submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
 
           if (!('_files' in submission.submitted_answer)) {
-            submission.submitted_answer['_files'] = [];
+            submission.submitted_answer._files = [];
           }
 
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer['_files'].push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents });
           }
           await fs.promises.unlink(zipPath);
         }

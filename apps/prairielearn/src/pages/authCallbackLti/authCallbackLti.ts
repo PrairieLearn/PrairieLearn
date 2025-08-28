@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
@@ -53,12 +55,14 @@ router.post(
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
 
+    assert(ltiResult.secret !== null);
+
     const genSignature = oauthSignature.generate(
       'POST',
       ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      ltiResult.secret as string,
+      ltiResult.secret,
       undefined,
       { encodeSignature: false },
     );
@@ -144,7 +148,7 @@ router.post(
     if (linkResult.assessment_id !== null) {
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
-        await sqldb.queryAsync(sql.upsert_outcome, {
+        await sqldb.execute(sql.upsert_outcome, {
           user_id: userResult.user_id,
           assessment_id: linkResult.assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,

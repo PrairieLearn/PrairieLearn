@@ -263,7 +263,7 @@ async function pipeCursorToArchive<T>(
       }
     }
   }
-  archive.finalize();
+  await archive.finalize();
 }
 
 router.get(

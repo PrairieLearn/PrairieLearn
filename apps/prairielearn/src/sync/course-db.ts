@@ -19,6 +19,7 @@ import {
   type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJsonInput,
+  type CourseJson,
   type CourseJsonInput,
   type QuestionJsonInput,
   type QuestionPointsJsonInput,
@@ -297,13 +298,13 @@ function writeErrorsAndWarningsForInfoFileIfNeeded<T>(
   if (infofile.hasErrors(infoFile)) {
     infoFile.errors.forEach((error) => {
       const indentedError = error.replaceAll('\n', '\n    ');
-      writeLine(chalk.red(`  ✖ ${indentedError}`));
+      writeLine(chalk.redBright(`  ✖ ${indentedError}`));
     });
   }
   if (infofile.hasWarnings(infoFile)) {
     infoFile.warnings.forEach((warning) => {
       const indentedWarning = warning.replaceAll('\n', '\n    ');
-      writeLine(chalk.yellow(`  ⚠ ${indentedWarning}`));
+      writeLine(chalk.yellowBright(`  ⚠ ${indentedWarning}`));
     });
   }
 }
@@ -517,7 +518,7 @@ export async function loadCourseInfo({
     return maybeNullLoadedData;
   }
 
-  if (!maybeNullLoadedData || !maybeNullLoadedData.data) {
+  if (!maybeNullLoadedData?.data) {
     throw new Error('Could not load infoCourse.json');
   }
 
@@ -541,13 +542,9 @@ export async function loadCourseInfo({
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(
-    fieldName: K,
-    entryIdentifier: string,
-    defaults?: CourseJsonInput[K] | undefined,
-  ): CourseJsonInput[K] {
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
     const known = new Map();
-    const duplicateEntryIds = new Set();
+    const duplicateEntryIds = new Set<string>();
 
     (info[fieldName] || []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
@@ -691,7 +688,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
   schema: any;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: T) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<T> | null> {
   const loadedJson: InfoFile<T> | null = await loadInfoFile({
     coursePath,
@@ -709,7 +706,7 @@ async function loadAndValidateJson<T extends { uuid: string }>({
     return loadedJson;
   }
 
-  const validationResult = await validate(loadedJson.data);
+  const validationResult = validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -740,7 +737,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   defaultInfo: any;
   schema: any;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: T) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: T) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<T>>> {
@@ -933,7 +930,7 @@ function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
     );
   }
 
-  const uidsWithCommas = (rule.uids ?? []).filter((uid) => /,/.test(uid));
+  const uidsWithCommas = (rule.uids ?? []).filter((uid) => uid.includes(','));
   if (uidsWithCommas.length > 0) {
     warnings.push(
       `The following access rule UIDs contain unexpected commas: ${formatValues(uidsWithCommas)}`,
@@ -943,13 +940,13 @@ function checkAllowAccessUids(rule: { uids?: string[] }): string[] {
   return warnings;
 }
 
-async function validateQuestion({
+function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJsonInput;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1001,7 +998,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-async function validateAssessment({
+function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1011,7 +1008,7 @@ async function validateAssessment({
   questions: Record<string, InfoFile<QuestionJsonInput>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1073,7 +1070,7 @@ async function validateAssessment({
   const missingQids = new Set<string>();
   const draftQids = new Set<string>();
   const checkAndRecordQid = (qid: string): void => {
-    if (qid[0] === '@') {
+    if (qid.startsWith('@')) {
       // Question is being imported from another course. We hold off on validating this until
       // sync time because we need to query the database to verify that the question exists
       return;
@@ -1324,13 +1321,13 @@ async function validateAssessment({
   return { warnings, errors };
 }
 
-async function validateCourseInstance({
+function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJsonInput;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1423,7 +1420,7 @@ export async function loadQuestions({
   // Don't allow question directories to start with '@', because it is
   // used to import questions from other courses.
   for (const qid in questions) {
-    if (qid[0] === '@') {
+    if (qid.startsWith('@')) {
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }

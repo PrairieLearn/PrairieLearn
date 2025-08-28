@@ -6,6 +6,7 @@ import { run } from '@prairielearn/run';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { assertNever } from '../../lib/types.js';
 import { type AssessmentJsonInput, type CommentJson } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
@@ -53,7 +54,8 @@ function getParamsForAssessment(
 
   const allowIssueReporting = assessment.allowIssueReporting ?? true;
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
-  const requireHonorCode = assessment.requireHonorCode ?? true;
+  const requireHonorCode =
+    assessment.requireHonorCode == null ? assessment.type === 'Exam' : assessment.requireHonorCode;
   const allowPersonalNotes = assessment.allowPersonalNotes ?? true;
 
   // It used to be the case that assessment access rules could be associated with a
@@ -133,12 +135,9 @@ function getParamsForAssessment(
           return {
             qid: alternative.id,
             maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
-            points: (alternative.points ?? question.points ?? null) as number | number[] | null,
+            points: alternative.points ?? question.points ?? null,
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
-            autoPoints: (alternative.autoPoints ?? question.autoPoints ?? null) as
-              | number
-              | number[]
-              | null,
+            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
@@ -155,11 +154,9 @@ function getParamsForAssessment(
           {
             qid: question.id,
             maxPoints: question.maxPoints ?? null,
-            // We cast to number | number[] | null here because the type of `points`
-            // is inferred incorrectly from the schema.
-            points: (question.points ?? null) as number | number[] | null,
+            points: question.points ?? null,
             maxAutoPoints: question.maxAutoPoints ?? null,
-            autoPoints: (question.autoPoints ?? null) as number | number[] | null,
+            autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints ?? false,
             triesPerVariant: question.triesPerVariant ?? 1,
@@ -209,7 +206,7 @@ function getParamsForAssessment(
             pointsList: undefined,
           };
         } else {
-          throw new Error(`Unknown assessment type: ${assessment.type}`);
+          assertNever(assessment.type);
         }
       });
 
@@ -312,7 +309,7 @@ function getParamsForAssessment(
   };
 }
 
-function parseSharedQuestionReference(qid) {
+function parseSharedQuestionReference(qid: string) {
   const firstSlash = qid.indexOf('/');
   if (firstSlash === -1) {
     // No QID, invalid question reference. An error will be recorded when trying to locate this question
@@ -402,6 +399,29 @@ export async function sync(
     });
   }
 
+  const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
+    return JSON.stringify([
+      tid,
+      assessment.uuid,
+      infofile.stringifyErrors(assessment),
+      infofile.stringifyWarnings(assessment),
+      getParamsForAssessment(assessment, questionIds),
+    ]);
+  });
+
+  await sqldb.callAsync('sync_assessments', [
+    assessmentParams,
+    courseId,
+    courseInstanceId,
+    config.checkSharingOnSync,
+  ]);
+}
+
+export async function validateAssessmentSharedQuestions(
+  courseId: string,
+  assessments: CourseInstanceData['assessments'],
+  questionIds: Record<string, string>,
+) {
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
@@ -417,7 +437,7 @@ export async function sync(
           qids.push(question.id);
         }
         qids.forEach((qid) => {
-          if (qid[0] !== '@') return;
+          if (!qid.startsWith('@')) return;
 
           importedQids.add(qid);
           let qids = assessmentImportedQids.get(tid);
@@ -438,14 +458,12 @@ export async function sync(
       z.string(),
     );
     const questionSharingEnabled = await features.enabled('question-sharing', {
-      course_id: courseId,
-      course_instance_id: courseInstanceId,
       institution_id: institutionId,
+      course_id: courseId,
     });
     const consumePublicQuestionsEnabled = await features.enabled('consume-public-questions', {
-      course_id: courseId,
-      course_instance_id: courseInstanceId,
       institution_id: institutionId,
+      course_id: courseId,
     });
     if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
       for (const [tid, qids] of assessmentImportedQids.entries()) {
@@ -457,50 +475,33 @@ export async function sync(
         }
       }
     }
-  }
 
-  const importedQuestions = await sqldb.queryRows(
-    sql.get_imported_questions,
-    {
-      course_id: courseId,
-      imported_question_info: JSON.stringify(
-        Array.from(importedQids, parseSharedQuestionReference),
-      ),
-    },
-    z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
-  );
-  for (const row of importedQuestions) {
-    questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
-  }
-  const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
-  if (config.checkSharingOnSync) {
-    for (const [tid, qids] of assessmentImportedQids.entries()) {
-      const assessmentMissingQids = qids.filter((qid) => missingQids.has(qid));
-      if (assessmentMissingQids.length > 0) {
-        infofile.addError(
-          assessments[tid],
-          `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
-            ...assessmentMissingQids,
-          ].join(', ')}`,
-        );
+    const importedQuestions = await sqldb.queryRows(
+      sql.get_imported_questions,
+      {
+        course_id: courseId,
+        imported_question_info: JSON.stringify(
+          Array.from(importedQids, parseSharedQuestionReference),
+        ),
+      },
+      z.object({ sharing_name: z.string(), qid: z.string(), id: IdSchema }),
+    );
+    for (const row of importedQuestions) {
+      questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+    }
+    const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
+    if (config.checkSharingOnSync) {
+      for (const [tid, qids] of assessmentImportedQids.entries()) {
+        const assessmentMissingQids = qids.filter((qid) => missingQids.has(qid));
+        if (assessmentMissingQids.length > 0) {
+          infofile.addError(
+            assessments[tid],
+            `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
+              ...assessmentMissingQids,
+            ].join(', ')}`,
+          );
+        }
       }
     }
   }
-
-  const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
-    return JSON.stringify([
-      tid,
-      assessment.uuid,
-      infofile.stringifyErrors(assessment),
-      infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
-    ]);
-  });
-
-  await sqldb.callAsync('sync_assessments', [
-    assessmentParams,
-    courseId,
-    courseInstanceId,
-    config.checkSharingOnSync,
-  ]);
 }

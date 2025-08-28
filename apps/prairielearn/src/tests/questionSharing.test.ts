@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
 import { execa } from 'execa';
@@ -250,12 +251,14 @@ describe('Question Sharing', function () {
         assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
-        const questionId = (
-          await sqldb.queryOneRowAsync(sql.get_question_id, {
+        const questionId = await sqldb.queryRow(
+          sql.get_question_id,
+          {
             course_id: sharingCourse.id,
             qid: SHARING_QUESTION_QID,
-          })
-        ).rows[0].id;
+          },
+          IdSchema,
+        );
         const sharedQuestionUrl = `${baseUrl}/course/${sharingCourse.id}/question/${questionId}`;
         const sharedQuestionPage = await fetchCheerio(sharedQuestionUrl);
         assert(sharedQuestionPage.ok);
@@ -434,12 +437,14 @@ describe('Question Sharing', function () {
     let publiclySharedQuestionId;
 
     beforeAll(async () => {
-      publiclySharedQuestionId = (
-        await sqldb.queryOneRowAsync(sql.get_question_id, {
+      publiclySharedQuestionId = await sqldb.queryRow(
+        sql.get_question_id,
+        {
           course_id: sharingCourse.id,
           qid: PUBLICLY_SHARED_QUESTION_QID,
-        })
-      ).rows[0].id;
+        },
+        IdSchema,
+      );
     });
 
     test.sequential('Fail to Access Questions Not-yet shared publicly', async () => {
@@ -526,7 +531,7 @@ describe('Question Sharing', function () {
     test.sequential(
       'Ensure sync through sync page succeeds before renaming shared question',
       async () => {
-        await sqldb.queryAsync(sql.update_course_repository, {
+        await sqldb.execute(sql.update_course_repository, {
           course_path: sharingCourseLiveDir,
           course_repository: sharingCourseOriginDir,
         });

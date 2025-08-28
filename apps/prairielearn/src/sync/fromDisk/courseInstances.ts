@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,8 +14,11 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-/** This date is used to represent a boolean value for a date field. */
-export const FUTURE_DATE = new Date(Date.UTC(2099, 11, 31));
+export function generateEnrollmentCode() {
+  /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
+  // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
+  return randomBytes(6).toString('hex');
+}
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | null | undefined) {
   if (!courseInstance) return null;
@@ -125,6 +130,8 @@ export async function sync(
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
+        // This enrollment code is only used for inserts, and not used on updates
+        generateEnrollmentCode(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
