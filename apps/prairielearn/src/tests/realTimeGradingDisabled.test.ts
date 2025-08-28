@@ -276,13 +276,15 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       );
       assert.isTrue(otherEnabledGradeResponse.ok);
 
-      // The first question (real-time grading disabled) should still be in the "Saved" state.
+      // The first question (real-time grading disabled) should still be in the "Saved" state,
+      // and its score should be pending.
       const tableRow = otherEnabledGradeResponse.$(
         'table[data-testid="assessment-questions"] tbody tr:nth-child(1)',
       );
       const badge = tableRow.find('span.badge');
-      assert.lengthOf(badge, 1);
-      assert.equal(badge.text().trim(), 'saved');
+      assert.lengthOf(badge, 2);
+      assert.equal(badge.eq(0).text().trim(), 'saved');
+      assert.equal(badge.eq(1).text().trim(), 'pending');
 
       // We should now be able to finish the entire assessment.
       //
