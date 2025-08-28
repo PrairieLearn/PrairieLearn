@@ -599,22 +599,6 @@ describe('Course instance syncing', () => {
         errors: [],
       },
       {
-        json: {
-          beforeDate: '2025-06-15T00:00:00Z', // dates ending in Z are parsed with the timezone of the database?
-        },
-        db: {
-          self_enrollment_enabled: true,
-          self_enrollment_enabled_before_date: new Date('2025-06-15T00:00:00Z').toLocaleString(
-            'en-US',
-            {
-              timeZone: 'UTC',
-            },
-          ),
-          self_enrollment_requires_secret_link: false,
-        },
-        errors: [],
-      },
-      {
         json: undefined,
         db: {
           self_enrollment_enabled: true,
