@@ -162,7 +162,7 @@
     "on-finished": "^2.4.1",
     "on-headers": "^1.1.0",
     "openai": "^5.15.0",
-    "openid-client": "^5.7.1",
+    "openid-client": "^6.6.3",
     "p-memoize": "^7.1.1",
     "parse5": "^7.3.0",
     "passport": "^0.7.0",
