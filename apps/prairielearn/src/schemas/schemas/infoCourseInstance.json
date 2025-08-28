@@ -37,48 +37,25 @@
     "enrollment": {
       "type": "object",
       "properties": {
-        "selfEnrollmentEnabled": {
-          "anyOf": [
-            {
+        "selfEnrollment": {
+          "type": "object",
+          "properties": {
+            "beforeDate": {
+              "description": "Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled.",
+              "type": "string"
+            },
+            "enabled": {
               "description": "If true, allows users to enroll themselves. If false, users cannot enroll themselves, and must be either invited or added in the UI.",
-              "type": "boolean"
+              "type": "boolean",
+              "default": true
             },
-            {
-              "type": "object",
-              "required": ["beforeDate"],
-              "properties": {
-                "beforeDate": {
-                  "description": "Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled.",
-                  "type": "string"
-                }
-              }
+            "requiresSecretLink": {
+              "description": "If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.",
+              "type": "boolean",
+              "default": false
             }
-          ],
-          "default": true
-        },
-        "selfEnrollmentRequiresSecretLink": {
-          "description": "If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.",
-          "type": "boolean",
-          "default": false
-        },
-        "ltiEnforced": {
-          "anyOf": [
-            {
-              "description": "If true, students must be authenticated with a linked LTI identity to access the course instance.",
-              "type": "boolean"
-            },
-            {
-              "type": "object",
-              "required": ["afterDate"],
-              "properties": {
-                "afterDate": {
-                  "description": "Before this date, LTI enrollment is not enforced. After this date, LTI enrollment is enforced.",
-                  "type": "string"
-                }
-              }
-            }
-          ],
-          "default": false
+          },
+          "default": {}
         }
       },
       "default": {}

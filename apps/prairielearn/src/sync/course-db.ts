@@ -206,6 +206,7 @@ export interface CourseData {
 }
 
 /**
+ * Loads and validates an entire course from a directory on disk.
  * Downstream callers of this function can use
  * ...Json types instead of ...JsonInput types.
  */
@@ -1345,16 +1346,14 @@ function validateCourseInstance({
   }
 
   // TODO: Remove these warnings once we've migrated all courses to the new schema.
-  // These are warnings so that we can test syncing with the new schema.
+  // These are warnings (and not errors) so that we can test syncing with the new schema.
 
-  if ((courseInstance?.enrollment?.selfEnrollmentEnabled ?? true) !== true) {
-    warnings.push('"selfEnrollmentEnabled" is not configurable yet.');
+  if (courseInstance.selfEnrollment.enabled !== true) {
+    warnings.push('"selfEnrollment.enabled" is not configurable yet.');
   }
-  if ((courseInstance?.enrollment?.ltiEnforced ?? false) !== false) {
-    warnings.push('"ltiEnforced" is not configurable yet.');
-  }
-  if ((courseInstance?.enrollment?.selfEnrollmentRequiresSecretLink ?? false) !== false) {
-    warnings.push('"selfEnrollmentRequiresSecretLink" is not configurable yet.');
+
+  if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
+    warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

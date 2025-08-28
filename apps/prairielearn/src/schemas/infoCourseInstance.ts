@@ -46,47 +46,26 @@ export const CourseInstanceJsonSchema = z
       )
       .optional(),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional().default(true),
-    enrollment: z
+    selfEnrollment: z
       .object({
-        selfEnrollmentEnabled: z
-          .union([
-            z
-              .boolean()
-              .describe(
-                'If true, allows users to enroll themselves. If false, users cannot enroll themselves, and must be either invited or added in the UI.',
-              ),
-            z.object({
-              beforeDate: z
-                .string()
-                .describe(
-                  'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled.',
-                ),
-            }),
-          ])
+        beforeDate: z
+          .string()
+          .describe(
+            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+          )
+          .optional(),
+        enabled: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment access is controlled by the beforeDate and requiresSecretLink properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+          )
           .optional()
           .default(true),
-        selfEnrollmentRequiresSecretLink: z
+        requiresSecretLink: z
           .boolean()
           .describe(
             'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
           )
-          .optional()
-          .default(false),
-        ltiEnforced: z
-          .union([
-            z
-              .boolean()
-              .describe(
-                'If true, students must be authenticated with a linked LTI identity to access the course instance.',
-              ),
-            z.object({
-              afterDate: z
-                .string()
-                .describe(
-                  'Before this date, LTI enrollment is not enforced. After this date, LTI enrollment is enforced.',
-                ),
-            }),
-          ])
           .optional()
           .default(false),
       })
