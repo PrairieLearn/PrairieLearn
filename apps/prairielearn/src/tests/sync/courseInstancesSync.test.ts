@@ -546,7 +546,8 @@ describe('Course instance syncing', () => {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: number | null;
         self_enrollment_requires_secret_link: boolean;
-      };
+      } | null;
+      errors: string[];
     }[] = [
       {
         json: {
@@ -558,18 +559,20 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before_date: null,
           self_enrollment_requires_secret_link: true,
         },
+        errors: [],
       },
       {
         json: {
           enabled: false,
-          beforeDate: new Date('2025-06-15T00:00:00Z').toISOString(),
+          beforeDate: new Date('2020-01-01T11:11:11').toISOString(),
           requiresSecretLink: true,
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date('2025-06-15T00:00:00Z').getTime(),
+          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').getTime(),
           self_enrollment_requires_secret_link: true,
         },
+        errors: [],
       },
       {
         json: {
@@ -580,6 +583,7 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before_date: new Date('2025-06-15T00:00:00Z').getTime(),
           self_enrollment_requires_secret_link: false,
         },
+        errors: [],
       },
       {
         json: undefined,
@@ -588,6 +592,7 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before_date: null,
           self_enrollment_requires_secret_link: false,
         },
+        errors: [],
       },
       {
         json: {
@@ -598,6 +603,7 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before_date: null,
           self_enrollment_requires_secret_link: false,
         },
+        errors: [],
       },
       {
         json: {
@@ -608,11 +614,20 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled_before_date: null,
           self_enrollment_requires_secret_link: false,
         },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: true,
+          beforeDate: 'not a date',
+        },
+        db: null,
+        errors: ['"selfEnrollment.beforeDate" is not a valid date.'],
       },
     ];
 
     let i = 0;
-    for (const { json, db } of schemaMappings) {
+    for (const { json, db, errors } of schemaMappings) {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
@@ -623,8 +638,12 @@ describe('Course instance syncing', () => {
         const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
         const courseInstanceErrors = courseInstance.courseInstance.errors;
         const courseInstanceUUID = courseInstance.courseInstance.uuid;
-        assert.isEmpty(courseInstanceErrors);
+        assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
         assert.isDefined(courseInstanceUUID);
+
+        if (db == null) {
+          return;
+        }
 
         const syncedCourseInstance = await selectCourseInstanceByUuid({
           course_id: results.courseId,

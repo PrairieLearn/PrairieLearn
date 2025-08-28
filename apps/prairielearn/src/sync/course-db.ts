@@ -240,7 +240,7 @@ export async function loadFullCourse(
     // an `endDate` that is in the past.
     const allowAccessRules = courseInstance.data?.allowAccess ?? [];
     const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
       return endDate && isPast(endDate);
     });
 
@@ -869,7 +869,7 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
  * parse into a JavaScript `Date` object. If the supplied date is considered
  * invalid, `null` is returned.
  */
-function parseAllowAccessDate(date: string): Date | null {
+function parseJsonDate(date: string): Date | null {
   // This ensures we don't accept strings like "2024-04", which `parseISO`
   // would happily accept. We want folks to always be explicit about days/times.
   //
@@ -902,13 +902,13 @@ function checkAllowAccessDates(rule: { startDate?: string | null; endDate?: stri
   // See the `input_date` sproc for where these strings are ultimately parsed for
   // storage in the database. That sproc actually has stricter validation
   if (rule.startDate) {
-    startDate = parseAllowAccessDate(rule.startDate);
+    startDate = parseJsonDate(rule.startDate);
     if (!startDate) {
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if (rule.endDate) {
-    endDate = parseAllowAccessDate(rule.endDate);
+    endDate = parseJsonDate(rule.endDate);
     if (!endDate) {
       errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
@@ -1353,6 +1353,15 @@ function validateCourseInstance({
 
   if (courseInstance.selfEnrollment.enabled !== true) {
     warnings.push('"selfEnrollment.enabled" is not configurable yet.');
+  }
+
+  if (courseInstance.selfEnrollment.beforeDate != null) {
+    warnings.push('"selfEnrollment.beforeDate" is not configurable yet.');
+
+    const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
+    if (date == null) {
+      errors.push('"selfEnrollment.beforeDate" is not a valid date.');
+    }
   }
 
   if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
