@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
-import { FUTURE_DATE } from '../../sync/fromDisk/courseInstances.js';
-
 import {
   StaffAssessmentInstanceSchema,
   StaffAssessmentSchema,
@@ -10,12 +8,14 @@ import {
   StaffAuditEventSchema,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
+  StaffLti13CourseInstanceSchema,
   StaffUserSchema,
   StudentAssessmentInstanceSchema__UNSAFE,
   StudentAssessmentSchema,
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
+  StudentLti13CourseInstanceSchema,
   StudentUserSchema,
 } from './safe-db-types.js';
 
@@ -65,8 +65,8 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   deleted_at: null,
   display_timezone: 'UTC',
   enrollment_limit: null,
-  enrollment_lti_enforced_after: null,
-  self_enrollment_enabled_before: FUTURE_DATE,
+  self_enrollment_enabled: true,
+  self_enrollment_enabled_before_date: null,
   self_enrollment_requires_secret_link: false,
   hide_in_enroll_page: null,
   id: '3',
@@ -289,6 +289,31 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   table_name: 'assessment_instances',
 };
 
+const minimalStaffLti13CourseInstance: z.input<typeof StaffLti13CourseInstanceSchema> = {
+  context_id: 'context-123',
+  context_label: 'CS101',
+  context_memberships_url: 'https://example.com/memberships',
+  context_title: 'Introduction to Computer Science',
+  course_instance_id: '1',
+  created_at: new Date(),
+  deployment_id: 'deployment-456',
+  enrollment_lti_enforced: false,
+  enrollment_lti_enforced_after_date: null,
+  id: '2',
+  lineitems_url: 'https://example.com/lineitems',
+  lti13_instance_id: '3',
+};
+
+const minimalStudentLti13CourseInstance: z.input<typeof StudentLti13CourseInstanceSchema> = {
+  context_id: 'context-123',
+  context_label: 'CS101',
+  context_title: 'Introduction to Computer Science',
+  course_instance_id: '1',
+  created_at: new Date(),
+  id: '2',
+  lti13_instance_id: '3',
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -375,5 +400,23 @@ describe('safe-db-types schemas', () => {
     const parsed = StaffAuditEventSchema.parse({ ...minimalStaffAuditEvent, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStaffAuditEvent);
+  });
+
+  it('parses valid StaffLti13CourseInstance and drops extra fields', () => {
+    const parsed = StaffLti13CourseInstanceSchema.parse({
+      ...minimalStaffLti13CourseInstance,
+      extra: 123,
+    });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffLti13CourseInstance);
+  });
+
+  it('parses valid StudentLti13CourseInstance and drops extra fields', () => {
+    const parsed = StudentLti13CourseInstanceSchema.parse({
+      ...minimalStudentLti13CourseInstance,
+      extra: 123,
+    });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentLti13CourseInstance);
   });
 });
