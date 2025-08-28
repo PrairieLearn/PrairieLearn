@@ -376,8 +376,7 @@ export function StudentAssessmentInstance({
                               assessment_question: instance_question_row, // Required fields are in instance_question
                             })}
                           </td>
-                          ${resLocals.has_auto_grading_question &&
-                          instance_question_row.allow_real_time_grading
+                          ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
                             ? html`
                                 <td class="text-center">
                                   ${instance_question_row.max_auto_points
@@ -399,8 +398,7 @@ export function StudentAssessmentInstance({
                                 </td>
                               `
                             : ''}
-                          ${instance_question_row.allow_real_time_grading ||
-                          !resLocals.assessment_instance.open
+                          ${someQuestionsAllowRealTimeGrading || !resLocals.assessment_instance.open
                             ? html`
                                 ${resLocals.has_auto_grading_question &&
                                 resLocals.has_manual_grading_question
