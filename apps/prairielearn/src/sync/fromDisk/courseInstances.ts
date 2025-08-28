@@ -1,3 +1,5 @@
+import { randomBytes } from 'node:crypto';
+
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -11,6 +13,12 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
+export function generateEnrollmentCode() {
+  /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
+  // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
+  return randomBytes(6).toString('hex');
+}
+
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
   if (!courseInstance) return null;
 
@@ -18,8 +26,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const accessRules = (courseInstance.allowAccess || [])
-    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
+  const accessRules = courseInstance.allowAccess
+    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids ?? null,
       start_date: accessRule.startDate ?? null,
@@ -31,12 +39,12 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone: courseInstance.timezone || null,
+    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    display_timezone: courseInstance.timezone ?? null,
     access_rules: accessRules,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
-    share_source_publicly: courseInstance.shareSourcePublicly || false,
+    share_source_publicly: courseInstance.shareSourcePublicly,
   };
 }
 
@@ -89,6 +97,8 @@ export async function sync(
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
+        // This enrollment code is only used for inserts, and not used on updates
+        generateEnrollmentCode(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),

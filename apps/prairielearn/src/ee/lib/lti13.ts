@@ -293,7 +293,7 @@ export class Lti13Claim {
   private assertValid() {
     if (!this.valid || Math.floor(Date.now() / 1000) > this.claims.exp) {
       this.valid = false;
-      delete this.req.session['lti13_claims'];
+      delete this.req.session.lti13_claims;
       throw new HttpStatusError(
         403,
         'LTI session invalid or timed out, please try logging in again.',
@@ -368,8 +368,8 @@ export class Lti13Claim {
    */
   remove() {
     this.valid = false;
-    delete this.req.session['lti13_claims'];
-    delete this.req.session['authn_lti13_instance_id'];
+    delete this.req.session.lti13_claims;
+    delete this.req.session.authn_lti13_instance_id;
   }
 }
 

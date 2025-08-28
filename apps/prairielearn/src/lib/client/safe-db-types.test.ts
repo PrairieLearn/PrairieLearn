@@ -5,6 +5,7 @@ import {
   StaffAssessmentInstanceSchema,
   StaffAssessmentSchema,
   StaffAssessmentSetSchema,
+  StaffAuditEventSchema,
   StaffCourseInstanceSchema,
   StaffCourseSchema,
   StaffUserSchema,
@@ -64,6 +65,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
+  enrollment_code: '1234567890ab',
   json_comment: null,
   long_name: null,
   share_source_publicly: false,
@@ -260,6 +262,28 @@ const minimalStudentAssessmentSet: z.input<typeof StudentAssessmentSetSchema> = 
   number: 1,
 };
 
+const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
+  action: 'insert',
+  action_detail: null,
+  agent_authn_user_id: null,
+  agent_user_id: null,
+  assessment_id: null,
+  assessment_instance_id: null,
+  assessment_question_id: null,
+  context: {},
+  course_id: null,
+  course_instance_id: null,
+  date: new Date(),
+  group_id: null,
+  id: '5',
+  institution_id: null,
+  new_row: null,
+  old_row: null,
+  row_id: '6',
+  subject_user_id: null,
+  table_name: 'assessment_instances',
+};
+
 describe('safe-db-types schemas', () => {
   it('parses valid StaffCourse and drops extra fields', () => {
     const parsed = StaffCourseSchema.parse({ ...minimalStaffCourse, extra: 123 });
@@ -340,5 +364,11 @@ describe('safe-db-types schemas', () => {
     const parsed = StudentAssessmentSetSchema.parse({ ...minimalStudentAssessmentSet, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalStudentAssessmentSet);
+  });
+
+  it('parses valid StaffAuditEvent and drops extra fields', () => {
+    const parsed = StaffAuditEventSchema.parse({ ...minimalStaffAuditEvent, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStaffAuditEvent);
   });
 });
