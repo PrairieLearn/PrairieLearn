@@ -3,7 +3,6 @@ import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -37,44 +36,15 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
       comment: accessRule.comment,
     }));
 
-  const selfEnrollmentEnabledBefore = run(() => {
-    if (courseInstance.enrollment?.selfEnrollmentEnabled == null) {
-      courseInstance.enrollment ??= {};
-      // Default value for selfEnrollmentEnabled is true.
-      courseInstance.enrollment.selfEnrollmentEnabled = true;
-    }
-
-    if (typeof courseInstance.enrollment.selfEnrollmentEnabled === 'boolean') {
-      // A null date is used to indicate that self-enrollment is not enabled.
-      return courseInstance.enrollment.selfEnrollmentEnabled ? FUTURE_DATE.toISOString() : null;
-    }
-    return courseInstance.enrollment.selfEnrollmentEnabled.beforeDate;
-  });
-
-  const enrollmentLtiEnforcedAfter = run(() => {
-    if (courseInstance.enrollment?.ltiEnforced == null) {
-      courseInstance.enrollment ??= {};
-      // Default value for ltiEnforced is false.
-      courseInstance.enrollment.ltiEnforced = false;
-    }
-
-    if (typeof courseInstance.enrollment.ltiEnforced === 'boolean') {
-      // A null date is used to indicate that the course instance always needs a linked LTI identity to access it.
-      return courseInstance.enrollment.ltiEnforced ? null : FUTURE_DATE.toISOString();
-    }
-    return courseInstance.enrollment.ltiEnforced.afterDate;
-  });
-
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
-    enrollment_lti_enforced_after: enrollmentLtiEnforcedAfter,
-    self_enrollment_enabled_before: selfEnrollmentEnabledBefore,
-    self_enrollment_requires_secret_link:
-      courseInstance.enrollment?.selfEnrollmentRequiresSecretLink ?? false,
+    self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
+    self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
+    self_enrollment_requires_secret_link: courseInstance.selfEnrollment.requiresSecretLink,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
     share_source_publicly: courseInstance.shareSourcePublicly || false,

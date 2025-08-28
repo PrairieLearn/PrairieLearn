@@ -943,7 +943,7 @@ export const Lti13CourseInstanceSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   deployment_id: z.string(),
-  enrollment_lti_enforced: z.boolean(),
+  enrollment_lti_enforced: z.boolean(), // https://github.com/PrairieLearn/PrairieLearn/pull/12648/files#r2291604931
   enrollment_lti_enforced_after_date: DateFromISOString.nullable(),
   id: IdSchema,
   lineitems_url: z.string().nullable(),
