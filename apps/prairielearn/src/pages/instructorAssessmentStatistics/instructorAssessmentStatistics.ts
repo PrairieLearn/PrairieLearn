@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
