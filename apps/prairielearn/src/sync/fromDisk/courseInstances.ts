@@ -7,7 +7,7 @@ import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { type CourseInstanceJsonInput } from '../../schemas/index.js';
+import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
@@ -20,7 +20,7 @@ export function generateEnrollmentCode() {
   return randomBytes(6).toString('hex');
 }
 
-function getParamsForCourseInstance(courseInstance: CourseInstanceJsonInput | null | undefined) {
+function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
   if (!courseInstance) return null;
 
   // It used to be the case that instance access rules could be associated with a
