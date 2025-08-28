@@ -1942,35 +1942,6 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if multiple-element points array is specified for a question when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [
-      {
-        title: 'zone 1',
-        questions: [
-          {
-            id: util.QUESTION_ID,
-            points: [5, 4, 3],
-          },
-          {
-            id: util.ALTERNATIVE_QUESTION_ID,
-            points: [10, 9, 8],
-          },
-        ],
-      },
-    ];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('fail');
-    assert.isNotNull(syncedAssessment.sync_errors);
-    assert.match(
-      syncedAssessment.sync_errors,
-      /Cannot specify an array of multiple point values for a question/,
-    );
-  });
-
   it('accepts a single-element points array being specified for a question when real-time grading is disallowed', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
@@ -2009,39 +1980,6 @@ describe('Assessment syncing', () => {
 
     const syncedAssessment = await findSyncedAssessment('points_array_size_one');
     assert.equal(syncedAssessment?.sync_errors, null);
-  });
-
-  it('records an error if multiple-element points array is specified for an alternative when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [
-      {
-        title: 'zone 1',
-        questions: [
-          {
-            points: [10, 9, 8],
-            alternatives: [
-              {
-                id: util.QUESTION_ID,
-              },
-              {
-                id: util.ALTERNATIVE_QUESTION_ID,
-                points: [5, 4, 3],
-              },
-            ],
-          },
-        ],
-      },
-    ];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('fail');
-    assert.isNotNull(syncedAssessment.sync_errors);
-    assert.match(
-      syncedAssessment.sync_errors,
-      /Cannot specify an array of multiple point values for an alternative/,
-    );
   });
 
   it('records an error if an increasing points array is specified for an alternative', async () => {
@@ -3430,5 +3368,145 @@ describe('Assessment syncing', () => {
         /Real-time grading cannot be disabled for Homework-type assessments/,
       );
     });
+
+    it.only.each([
+      {
+        name: 'assessment level without alternatives',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+        },
+      },
+      {
+        name: 'zone level without alternatives',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+        },
+      },
+      {
+        name: 'question level without alternatives',
+        zone: {
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5], allowRealTimeGrading: false }],
+        },
+      },
+      {
+        name: 'assessment level with alternative with own points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [{ alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }] }],
+        },
+      },
+      {
+        name: 'zone level with alternative with own points',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [{ alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }] }],
+        },
+      },
+      {
+        name: 'alternative group level with own points',
+        zone: {
+          questions: [
+            {
+              allowRealTimeGrading: false,
+              alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative level with own points',
+        zone: {
+          questions: [
+            {
+              alternatives: [
+                { id: util.QUESTION_ID, points: [10, 8, 5], allowRealTimeGrading: false },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        name: 'assessment level with alternative with inherited points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'zone level with alternative with inherited points',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative group level with inherited points',
+        zone: {
+          questions: [
+            {
+              allowRealTimeGrading: false,
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative level with inherited points',
+        zone: {
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID, allowRealTimeGrading: false }],
+            },
+          ],
+        },
+      },
+      // All of the same tests apply to `autoPoints` as well. We'll assume that
+      // a single test for `autoPoints` is sufficient.
+      {
+        name: 'assessment level with auto points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [
+            {
+              autoPoints: [10, 8, 5],
+              id: util.QUESTION_ID,
+            },
+          ],
+        },
+      },
+    ])(
+      'records an error if an array of multiple points is used when real-time grading is disabled at $name',
+      async ({ allowRealTimeGrading, zone }) => {
+        const courseData = util.getCourseData();
+
+        const assessment = makeAssessment(courseData, 'Exam');
+        assessment.allowRealTimeGrading = allowRealTimeGrading ?? undefined;
+        assessment.zones?.push(zone);
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test'] = assessment;
+
+        await util.writeAndSyncCourseData(courseData);
+
+        const syncedAssessment = await findSyncedAssessment('test');
+        assert.isNotNull(syncedAssessment.sync_errors);
+        assert.match(
+          syncedAssessment.sync_errors,
+          /Cannot specify an array of multiple point values if real-time grading is disabled/,
+        );
+      },
+    );
   });
 });

@@ -1118,32 +1118,25 @@ function validateAssessment({
   };
   assessment.zones.forEach((zone) => {
     zone.questions.map((zoneQuestion) => {
-      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
-      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
-        errors.push(
-          'Cannot specify an array of multiple point values for a question if real-time grading is disabled',
-        );
-      }
+      const effectiveAlternativeGroupAllowRealTimeGrading =
+        zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
+
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPointsJson[] = [];
+      let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          const autoPoints = alternative.autoPoints ?? alternative.points;
-          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
-            errors.push(
-              'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
-            );
-          }
           return {
             points: alternative.points ?? zoneQuestion.points,
             maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
             maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+            allowRealTimeGrading:
+              alternative.allowRealTimeGrading ?? effectiveAlternativeGroupAllowRealTimeGrading,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1155,6 +1148,7 @@ function validateAssessment({
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
+            allowRealTimeGrading: effectiveAlternativeGroupAllowRealTimeGrading,
           },
         ];
       } else {
@@ -1162,6 +1156,16 @@ function validateAssessment({
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          !alternative.allowRealTimeGrading &&
+          ((Array.isArray(alternative.autoPoints) && alternative.autoPoints.length > 1) ||
+            (Array.isArray(alternative.points) && alternative.points.length > 1))
+        ) {
+          errors.push(
+            'Cannot specify an array of multiple point values if real-time grading is disabled',
+          );
+        }
+
         if (
           alternative.points == null &&
           alternative.autoPoints == null &&
