@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -280,7 +282,7 @@ function buildLocals({
   authz_result,
 }: {
   variant: Variant;
-  question: Question;
+  question?: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
   group_role_permissions?: {
     can_view: boolean;
@@ -320,6 +322,7 @@ function buildLocals({
     locals.showNewVariantButton = true;
   } else {
     // student question pages
+    assert(question, 'question is required on student question pages');
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;
@@ -566,7 +569,7 @@ export async function getAndRenderVariant(
   if (
     (locals.questionRenderContext === 'manual_grading' ||
       locals.questionRenderContext === 'ai_grading') &&
-    question?.show_correct_answer
+    question.show_correct_answer
   ) {
     newLocals.showTrueAnswer = true;
   }
@@ -614,7 +617,7 @@ export async function getAndRenderVariant(
     })) satisfies SubmissionForRender[];
   });
 
-  const submission = submissions[0] ?? null;
+  const submission = submissions.at(0) ?? null;
   locals.submissions = submissions;
   locals.submission = submission;
 
@@ -870,7 +873,7 @@ export async function renderPanelsForSubmission({
       const group_info = await run(async () => {
         if (!assessment_instance?.group_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance?.group_id, group_config);
+        return await getGroupInfo(assessment_instance.group_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({

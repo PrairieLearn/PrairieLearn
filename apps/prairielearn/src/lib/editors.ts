@@ -1439,8 +1439,7 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
-      const oldNamesLong = questionMetadata.filter((title) => title !== null);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1788,8 +1787,8 @@ export class QuestionRenameEditor extends Editor {
       const infoJson: AssessmentJson = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones?.forEach((zone) => {
+      let found = false as boolean;
+      infoJson.zones.forEach((zone) => {
         zone.questions.forEach((question) => {
           if (question.alternatives) {
             question.alternatives.forEach((alternative: any) => {
