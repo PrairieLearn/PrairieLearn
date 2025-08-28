@@ -26,8 +26,8 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const accessRules = (courseInstance.allowAccess || [])
-    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
+  const accessRules = courseInstance.allowAccess
+    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule) => ({
       uids: accessRule.uids ?? null,
       start_date: accessRule.startDate ?? null,
@@ -39,15 +39,15 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
-    display_timezone: courseInstance.timezone || null,
+    hide_in_enroll_page: courseInstance.hideInEnrollPage,
+    display_timezone: courseInstance.timezone ?? null,
     access_rules: accessRules,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
     self_enrollment_requires_secret_link: courseInstance.selfEnrollment.requiresSecretLink,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
-    share_source_publicly: courseInstance.shareSourcePublicly || false,
+    share_source_publicly: courseInstance.shareSourcePublicly,
   };
 }
 

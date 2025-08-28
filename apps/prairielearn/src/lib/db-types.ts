@@ -953,7 +953,26 @@ export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
 export const Lti13InstanceSchema = z.object({
   access_token_expires_at: DateFromISOString.nullable(),
-  access_tokenset: z.any().nullable(),
+  access_tokenset: z
+    .object({
+      access_token: z.string(),
+      expires_at: z.number().optional(),
+      expires_in: z.number().optional(),
+      scope: z.string(),
+      token_type: z.string(),
+    })
+    .refine(
+      (token) => {
+        // expires_at is from the openid-client v5 token representation
+        // expires_in is from the openid-client v6
+        // Either both present or both missing is an error case
+        return (token.expires_at === undefined) !== (token.expires_in === undefined);
+      },
+      {
+        message: 'Provide exactly one of expires_at or expires_in',
+      },
+    )
+    .nullable(),
   client_params: z.any().nullable(),
   created_at: DateFromISOString,
   custom_fields: z.any().nullable(),
@@ -962,7 +981,11 @@ export const Lti13InstanceSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   issuer_params: z.any().nullable(),
-  keystore: z.any().nullable(),
+  keystore: z
+    .object({
+      keys: z.record(z.string(), z.any()).array(),
+    })
+    .nullable(),
   name: z.string(),
   name_attribute: z.string().nullable(),
   platform: z.string(),
