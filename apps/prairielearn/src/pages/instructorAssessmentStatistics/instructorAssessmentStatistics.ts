@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import { stringify } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
@@ -153,19 +152,7 @@ router.get(
       const duration_stat = await sqldb.queryRow(
         sql.select_duration_stats,
         { assessment_id: res.locals.assessment.id },
-        z.object({
-          median_formatted: z.string(),
-          min_formatted: z.string(),
-          max_formatted: z.string(),
-          mean_formatted: z.string(),
-          median_minutes: z.number(),
-          min_minutes: z.number(),
-          max_minutes: z.number(),
-          mean_minutes: z.number(),
-          threshold_seconds: AssessmentSchema.shape.duration_stat_threshold_seconds,
-          threshold_labels: AssessmentSchema.shape.duration_stat_threshold_labels,
-          hist: z.array(z.number()),
-        }),
+        DurationStatSchema,
       );
 
       const csvData = [
@@ -181,7 +168,7 @@ router.get(
           duration_stat.median_minutes,
           duration_stat.min_minutes,
           duration_stat.max_minutes,
-          ...duration_stat.threshold_seconds,
+          ...duration_stat.thresholds.map((durationMs) => Math.floor(durationMs / 1000)),
           ...duration_stat.hist,
         ],
       ];
@@ -201,7 +188,7 @@ router.get(
           'Median duration (min)',
           'Min duration (min)',
           'Max duration (min)',
-          ...duration_stat.threshold_seconds.map((_, i) => `Hist boundary ${i + 1} (s)`),
+          ...duration_stat.thresholds.map((_, i) => `Hist boundary ${i + 1} (s)`),
           ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
         ],
       }).pipe(res);

@@ -120,8 +120,6 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   duration_stat_mean: 24 * 60 * 60 * 1000,
   duration_stat_median: 24 * 60 * 60 * 1000,
   duration_stat_min: 24 * 60 * 60 * 1000,
-  duration_stat_threshold_labels: [],
-  duration_stat_threshold_seconds: [],
   duration_stat_thresholds: [],
   id: '2',
   number: 'A1',
