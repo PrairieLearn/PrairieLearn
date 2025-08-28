@@ -113,7 +113,7 @@ export function StudentAssessmentInstance({
         question.allow_real_time_grading
       ) {
         // Note that we exclude questions that are not auto-graded from the count.
-        // This count is used to determine whether the "Grade X saved answers"
+        // This count is used to determine whether the "Grade N saved answers"
         // button should be enabled, and clicking that button won't do any good for
         // manually-graded questions. We also exclude questions that don't allow
         // real-time grading.
@@ -374,6 +374,10 @@ export function StudentAssessmentInstance({
                             ${ExamQuestionStatus({
                               instance_question: instance_question_row,
                               assessment_question: instance_question_row, // Required fields are in instance_question
+                              displaySavedAsGradable:
+                                (instance_question_row.allow_real_time_grading ?? true) &&
+                                someQuestionsAllowRealTimeGrading &&
+                                someQuestionsForbidRealTimeGrading,
                             })}
                           </td>
                           ${resLocals.has_auto_grading_question && someQuestionsAllowRealTimeGrading
@@ -566,18 +570,18 @@ export function StudentAssessmentInstance({
                         </li>
                         <li>
                           Look at <strong>Status</strong> to confirm that each question has been
-                          graded. Questions with <strong>Available points</strong> can be attempted
-                          again for more points. Attempting questions again will never reduce the
-                          points you already have.
+                          ${someQuestionsForbidRealTimeGrading
+                            ? 'either saved or graded'
+                            : 'graded'}.
+                          Questions with <strong>Available points</strong> can be attempted again
+                          for more points. Attempting questions again will never reduce the points
+                          you already have.
                         </li>
                         ${resLocals.authz_result.password != null ||
                         !resLocals.authz_result.show_closed_assessment ||
                         // If this is true, this assessment has a mix of real-time-graded and
                         // non-real-time-graded questions. We need to show the "Finish assessment"
                         // button.
-                        //
-                        // TODO: The "Look at Status..." text above won't be accurate for this
-                        // mixed case. We'll need to adjust it.
                         someQuestionsForbidRealTimeGrading
                           ? html`
                               <li>
