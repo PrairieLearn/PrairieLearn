@@ -31,15 +31,15 @@ export async function sync(courseData: CourseData, courseId: string) {
     throw new Error('Course info file is missing data');
   }
 
-  const course = await sqldb.queryOptionalRow(
+  const course = await sqldb.queryRow(
     sql.update_course,
     {
       course_id: courseId,
       short_name: courseInfo.name,
       title: courseInfo.title,
-      display_timezone: courseInfo.timezone || null,
+      display_timezone: courseInfo.timezone ?? null,
       example_course: isExampleCourse(courseInfo),
-      options: courseInfo.options || {},
+      options: courseInfo.options,
       comment: JSON.stringify(courseInfo.comment),
       sync_warnings: infofile.stringifyWarnings(courseData.course),
     },
