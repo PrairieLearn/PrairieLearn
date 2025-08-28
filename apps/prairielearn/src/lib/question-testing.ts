@@ -482,9 +482,7 @@ export async function startTestQuestion(
         authn_user_id,
       );
       success = success && result.success;
-      if (result.stats) {
-        stats.push(result.stats);
-      }
+      stats.push(result.stats);
     }
 
     function printStats(label: string, key: keyof TestResultStats) {

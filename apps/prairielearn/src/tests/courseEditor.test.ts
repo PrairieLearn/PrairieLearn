@@ -510,7 +510,7 @@ function testEdit(params: EditData) {
       const urlParams: Record<string, string> = {
         __csrf_token,
         ...(params.action ? { __action: params.action } : {}),
-        ...params?.data,
+        ...params.data,
       };
       const res = await fetch(url, {
         method: 'POST',
