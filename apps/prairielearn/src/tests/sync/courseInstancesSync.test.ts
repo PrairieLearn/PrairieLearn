@@ -540,11 +540,12 @@ describe('Course instance syncing', () => {
   });
 
   describe('syncs self-enrollment settings correctly', async () => {
+    const timezone = 'America/Chicago';
     const schemaMappings: {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
         self_enrollment_enabled: boolean;
-        self_enrollment_enabled_before_date: number | null;
+        self_enrollment_enabled_before_date: string | null;
         self_enrollment_requires_secret_link: boolean;
       } | null;
       errors: string[];
@@ -564,23 +565,51 @@ describe('Course instance syncing', () => {
       {
         json: {
           enabled: false,
-          beforeDate: new Date('2020-01-01T11:11:11').toISOString(),
+          beforeDate: '2020-01-01T11:11:11',
           requiresSecretLink: true,
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').getTime(),
+          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').toLocaleString(
+            'en-US',
+            {
+              timeZone: timezone,
+            },
+          ),
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
       },
       {
         json: {
-          beforeDate: new Date('2025-06-15T00:00:00Z').toISOString(),
+          enabled: false,
+          beforeDate: '2020-01-01 11:11:12',
+          requiresSecretLink: true,
+        },
+        db: {
+          self_enrollment_enabled: false,
+          self_enrollment_enabled_before_date: new Date('2020-01-01 11:11:12').toLocaleString(
+            'en-US',
+            {
+              timeZone: timezone,
+            },
+          ),
+          self_enrollment_requires_secret_link: true,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          beforeDate: '2025-06-15T00:00:00Z', // dates ending in Z are UTC
         },
         db: {
           self_enrollment_enabled: true,
-          self_enrollment_enabled_before_date: new Date('2025-06-15T00:00:00Z').getTime(),
+          self_enrollment_enabled_before_date: new Date('2025-06-15T00:00:00Z').toLocaleString(
+            'en-US',
+            {
+              timeZone: 'UTC',
+            },
+          ),
           self_enrollment_requires_secret_link: false,
         },
         errors: [],
@@ -631,6 +660,7 @@ describe('Course instance syncing', () => {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
         const results = await util.syncCourseData(courseDir);
@@ -654,7 +684,9 @@ describe('Course instance syncing', () => {
         const result = {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
           self_enrollment_enabled_before_date:
-            syncedCourseInstance.self_enrollment_enabled_before_date?.getTime() ?? null,
+            syncedCourseInstance.self_enrollment_enabled_before_date?.toLocaleString('en-US', {
+              timeZone: timezone,
+            }) ?? null,
           self_enrollment_requires_secret_link:
             syncedCourseInstance.self_enrollment_requires_secret_link,
         };
