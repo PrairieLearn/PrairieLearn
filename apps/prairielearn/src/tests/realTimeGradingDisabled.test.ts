@@ -154,8 +154,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       // Grab the variant ID so we can make submissions.
       const disabledVariantId = disabledQuestionResponse
         .$('input[name=__variant_id]')
-        .val()
-        ?.toString()!;
+        .val() as string;
 
       // It should only have a "Save" button.
       assert.lengthOf(disabledQuestionResponse.$('button[name="__action"][value="save"]'), 1);
@@ -201,8 +200,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       // Grab the variant ID so we can make submissions.
       const enabledVariantId = enabledQuestionResponse
         .$('input[name=__variant_id]')
-        .val()
-        ?.toString()!;
+        .val() as string;
 
       // It should have both "Save" and "Save & Grade" buttons.
       assert.lengthOf(enabledQuestionResponse.$('button[name="__action"][value="save"]'), 1);
@@ -246,8 +244,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       // Grab the variant ID so we can make submissions.
       const otherEnabledVariantId = otherEnabledQuestionResponse
         .$('input[name=__variant_id]')
-        .val()
-        ?.toString()!;
+        .val() as string;
 
       // We should be able to save an answer.
       const otherEnabledSaveResponse = await helperClient.fetchCheerio(otherEnabledQuestionUrl, {
