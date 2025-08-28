@@ -540,7 +540,7 @@ describe('Course instance syncing', () => {
   });
 
   describe('syncs self-enrollment settings correctly', async () => {
-    const timezone = 'America/Chicago';
+    const timezone = 'America/New_York';
     const schemaMappings: {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
@@ -600,7 +600,7 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          beforeDate: '2025-06-15T00:00:00Z', // dates ending in Z are UTC
+          beforeDate: '2025-06-15T00:00:00Z', // dates ending in Z are parsed with the timezone of the database?
         },
         db: {
           self_enrollment_enabled: true,
