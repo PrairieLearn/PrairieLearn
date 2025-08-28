@@ -168,7 +168,7 @@ router.get(
           duration_stat.median_minutes,
           duration_stat.min_minutes,
           duration_stat.max_minutes,
-          ...duration_stat.thresholds.map((interval_ms) => interval_ms / 1000),
+          ...duration_stat.thresholds.map((durationMs) => durationMs / 1000),
           ...duration_stat.hist,
         ],
       ];
