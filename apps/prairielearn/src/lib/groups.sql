@@ -20,7 +20,7 @@ WITH
           100,
           (
             SELECT
-              COUNT(1) * 10
+              COUNT(*) * 10
             FROM
               groups AS g
             WHERE
