@@ -30,7 +30,7 @@ WITH
         )
       ) AS gs (n) ON TRUE
     WHERE
-      gc.assessment_id = 14
+      gc.assessment_id = $assessment_id
       AND NOT EXISTS (
         SELECT
           1
