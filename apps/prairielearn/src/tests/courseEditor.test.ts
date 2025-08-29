@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -436,43 +437,24 @@ describe('test course editor', { timeout: 20_000 }, function () {
   });
 });
 
-async function getFiles(options): Promise<Set<string>> {
+async function getFiles(options: { baseDir: string }): Promise<Set<string>> {
   const files = new Set<string>();
 
-  const ignoreHidden = (item) => {
+  const ignoreHidden = (item: string) => {
     const basename = path.basename(item);
-    return basename === '.' || basename[0] !== '.';
+    return basename === '.' || !basename.startsWith('.');
   };
 
   const walker = klaw(options.baseDir, { filter: ignoreHidden });
 
-  options.ignoreDirs = options.ignoreDirs || [];
-
-  walker.on('readable', () => {
-    for (;;) {
-      const item = walker.read();
-      if (!item) {
-        break;
-      }
-      if (!item.stats.isDirectory()) {
-        const relPath = path.relative(options.baseDir, item.path);
-        const prefix = relPath.split(path.sep)[0];
-        if (!options.ignoreDirs.includes(prefix)) {
-          files.add(relPath);
-        }
-      }
+  for await (const item of walker) {
+    if (!item.stats.isDirectory()) {
+      const relPath = path.relative(options.baseDir, item.path);
+      files.add(relPath);
     }
-  });
+  }
 
-  return new Promise((resolve, reject) => {
-    walker.on('error', (err) => {
-      reject(err);
-    });
-
-    walker.on('end', () => {
-      resolve(files);
-    });
-  });
+  return files;
 }
 
 // Some tests follow a redirect, and so we have a couple of globals to keep
@@ -528,7 +510,7 @@ function testEdit(params: EditData) {
       const urlParams: Record<string, string> = {
         __csrf_token,
         ...(params.action ? { __action: params.action } : {}),
-        ...params?.data,
+        ...params.data,
       };
       const res = await fetch(url, {
         method: 'POST',

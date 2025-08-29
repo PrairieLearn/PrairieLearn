@@ -137,7 +137,7 @@ router.get(
       }
 
       if (draftEdit.jobSequence) {
-        if (draftEdit.jobSequence?.status === 'Running') {
+        if (draftEdit.jobSequence.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).

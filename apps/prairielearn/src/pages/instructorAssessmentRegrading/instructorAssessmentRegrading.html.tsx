@@ -97,7 +97,7 @@ export function InstructorAssessmentRegrading({
               </tr>
             </thead>
             <tbody>
-              ${regradingJobSequences && regradingJobSequences.length > 0
+              ${regradingJobSequences.length > 0
                 ? regradingJobSequences.map((jobSequence) => {
                     return html`
                       <tr>

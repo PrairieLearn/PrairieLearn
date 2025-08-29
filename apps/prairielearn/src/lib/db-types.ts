@@ -234,8 +234,10 @@ export const AssessmentSchema = z.object({
   duration_stat_mean: IntervalSchema,
   duration_stat_median: IntervalSchema,
   duration_stat_min: IntervalSchema,
-  duration_stat_threshold_labels: z.string().array(),
-  duration_stat_threshold_seconds: z.number().array(),
+  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
+  duration_stat_threshold_labels: z.unknown().optional(),
+  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
+  duration_stat_threshold_seconds: z.unknown().optional(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
@@ -433,7 +435,7 @@ export const AuditEventSchema = z.object({
 });
 export type AuditEvent = z.infer<typeof AuditEventSchema>;
 
-// This table is getting deprecated in favor of the `audit_events` table.
+/** This table is getting deprecated in favor of the audit_event table (see {@link AuditEventSchema}). */
 export const AuditLogSchema = z.object({
   action: z.string().nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -957,7 +959,26 @@ export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
 export const Lti13InstanceSchema = z.object({
   access_token_expires_at: DateFromISOString.nullable(),
-  access_tokenset: z.any().nullable(),
+  access_tokenset: z
+    .object({
+      access_token: z.string(),
+      expires_at: z.number().optional(),
+      expires_in: z.number().optional(),
+      scope: z.string(),
+      token_type: z.string(),
+    })
+    .refine(
+      (token) => {
+        // expires_at is from the openid-client v5 token representation
+        // expires_in is from the openid-client v6
+        // Either both present or both missing is an error case
+        return (token.expires_at === undefined) !== (token.expires_in === undefined);
+      },
+      {
+        message: 'Provide exactly one of expires_at or expires_in',
+      },
+    )
+    .nullable(),
   client_params: z.any().nullable(),
   created_at: DateFromISOString,
   custom_fields: z.any().nullable(),
@@ -966,7 +987,11 @@ export const Lti13InstanceSchema = z.object({
   id: IdSchema,
   institution_id: IdSchema,
   issuer_params: z.any().nullable(),
-  keystore: z.any().nullable(),
+  keystore: z
+    .object({
+      keys: z.record(z.string(), z.any()).array(),
+    })
+    .nullable(),
   name: z.string(),
   name_attribute: z.string().nullable(),
   platform: z.string(),
