@@ -85,7 +85,7 @@ You may also publicly share whole assessments, provided that every question refe
 
 ### Steps to share an assessment
 
-1. Ensure that all questions on the assessment have `"sharePublicly": true` or `"shareSourcePublicly": true`. This is to enable others to copy your assessment into their course and maintain access to all of its questions. When a publicly shared assessment is copied to another course, questions which only have `"shareSourcePublicly": true` will also be copied, while questions that have `"sharePublicly": true` will note be copied, instead the `infoAssessment.json` will reference the question in the sharing course.
+1. Ensure that all questions on the assessment have `"sharePublicly": true` or `"shareSourcePublicly": true`. This is to enable others to copy your assessment into their course and maintain access to all of its questions. When a publicly shared assessment is copied to another course, questions which only have `"shareSourcePublicly": true` will also be copied, while questions that have `"sharePublicly": true` will not be copied, instead the `infoAssessment.json` will reference the question in the sharing course.
 2. Add `"shareSourcePublicly": true` to the `infoAssessment.json` file of the assessment that you would like to be publicly shared.
 
 ## Sharing course instances
