@@ -177,7 +177,7 @@ function AssessmentUploadCard({
             </tr>
           </thead>
           <tbody>
-            ${uploadJobSequences && uploadJobSequences.length > 0
+            ${uploadJobSequences.length > 0
               ? uploadJobSequences.map((job_sequence) => {
                   return html`
                     <tr>

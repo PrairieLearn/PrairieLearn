@@ -285,7 +285,7 @@ router.get(
 function stringifyWithColumns(columns: Columns, transform?: (record: any) => any) {
   return stringifyStream({
     header: true,
-    columns: columns.map(([header, key]) => ({ header, key: key ?? header })),
+    columns: columns.map(([header, key]) => ({ header, key })),
     transform,
   });
 }
