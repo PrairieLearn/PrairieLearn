@@ -11,20 +11,38 @@ WHERE
 WITH
   next_group_number AS (
     SELECT
-      SUBSTRING(
-        g.name
-        FROM
-          6
-      )::integer + 1 AS group_number
+      gs.n AS group_number
     FROM
-      groups AS g
-      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+      group_configs AS gc
+      JOIN generate_series(
+        1,
+        GREATEST(
+          100,
+          (
+            SELECT
+              COUNT(1) * 10
+            FROM
+              groups AS g
+            WHERE
+              g.group_config_id = gc.id
+              AND g.deleted_at IS NULL
+          )
+        )
+      ) AS gs (n) ON TRUE
     WHERE
-      gc.assessment_id = $assessment_id
-      AND g.name ~ '^group[0-9]+$'
-      AND g.deleted_at IS NULL
+      gc.assessment_id = 14
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          groups AS g
+        WHERE
+          g.name = 'group' || gs.n
+          AND g.group_config_id = gc.id
+          AND g.deleted_at IS NULL
+      )
     ORDER BY
-      group_number DESC
+      RANDOM()
     LIMIT
       1
   ),
@@ -34,15 +52,13 @@ WITH
         SELECT
           COALESCE(
             NULLIF($group_name::text, ''),
-            -- If no name is provided, use the next group number.
+            -- If no name is provided, use a random group number.
             (
               SELECT
                 'group' || group_number
               FROM
                 next_group_number
-            ),
-            -- If no name is provided and no groups exist, use 'group1'.
-            'group1'
+            )
           ),
           gc.id,
           gc.course_instance_id
