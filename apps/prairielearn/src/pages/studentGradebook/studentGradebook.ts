@@ -45,10 +45,9 @@ function mapRow(
   };
 }
 
-router.use(logPageView('studentGradebook'));
-
 router.get(
   '/',
+  logPageView('studentGradebook'),
   asyncHandler(async (req, res) => {
     const rawRows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,

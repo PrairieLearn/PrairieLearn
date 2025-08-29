@@ -32,8 +32,6 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
-router.use(logPageView('studentAssessmentInstance'));
 
 async function ensureUpToDate(locals: Record<string, any>) {
   const updated = await assessment.updateAssessmentInstance(
@@ -218,6 +216,11 @@ router.post(
 
 router.get(
   '/',
+  // We only handle fingerprints on the GET handler. The POST handler won't log
+  // page views, and we only want to track fingerprint changes when we'll also
+  // have a corresponding page view event to show in the logs.
+  clientFingerprint,
+  logPageView('studentAssessmentInstance'),
   asyncHandler(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
