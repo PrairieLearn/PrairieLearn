@@ -14,8 +14,7 @@
   },
   "dependencies": {
     "logform": "^2.7.0",
-    "winston": "^3.17.0",
-    "zod": "^3.25.76"
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
