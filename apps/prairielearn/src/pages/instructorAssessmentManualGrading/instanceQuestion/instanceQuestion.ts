@@ -241,7 +241,7 @@ router.get(
 
 const PostBodySchema = z.union([
   z.object({
-    __action: z.union([z.literal('add_manual_grade'), z.literal('next_submission')]),
+    __action: z.union([z.literal('add_manual_grade'), z.literal('next_instance_question')]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
@@ -377,7 +377,7 @@ router.post(
           skip_graded_submissions: req.session.skip_graded_submissions,
         }),
       );
-    } else if (body.__action === 'next_submission') {
+    } else if (body.__action === 'next_instance_question') {
       req.session.skip_graded_submissions =
         body.skip_graded_submissions ?? req.session.skip_graded_submissions;
 

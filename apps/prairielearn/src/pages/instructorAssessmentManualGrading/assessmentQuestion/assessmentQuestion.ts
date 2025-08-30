@@ -108,6 +108,12 @@ router.get(
   }),
 );
 
+// Route handler for the legacy 'next_ungraded' route.
+// TODO: Remove this once the new 'next' route has been fully deployed.
+router.get('/next_ungraded', (req, res) => {
+  res.redirect('/next');
+});
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
