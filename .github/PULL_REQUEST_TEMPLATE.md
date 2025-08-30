@@ -15,9 +15,10 @@ if this is a refactor/feature, why this change was made -->
 
 <!-- if applicable, include instructions for how the reviewer can test the changes -->
 
-<!-- in a self-review of the code, consider pointing out:
+<!-- in a self-review of the code, point out:
 
-  - explanations for unintuitive code
+  - explanations for code/design decisions that may confuse reviewers
+  - important/core bits of the PR
   - rationale for design decisions
 
 Thank you for contributing to PrairieLearn! -->
