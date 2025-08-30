@@ -8,11 +8,15 @@ import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
+  type Course,
   IdSchema,
   type Issue,
+  type Question,
   QuestionGenerationContextEmbeddingSchema,
+  type User,
 } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
+import { type ResLocalsQuestionRenderAdded } from '../../lib/question-render.types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
@@ -83,7 +87,14 @@ async function checkRender(
   const course = await selectCourseById(courseId);
   const user = await selectUserById(userId);
 
-  const locals = {
+  const locals: Partial<ResLocalsQuestionRenderAdded> & {
+    urlPrefix: string;
+    is_administrator: boolean;
+    question: Question;
+    course: Course;
+    user: User;
+    authn_user: User;
+  } = {
     // The URL prefix doesn't matter here since we won't ever show the result to the user.
     urlPrefix: '',
     question,
@@ -99,7 +110,7 @@ async function checkRender(
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
-  return ((locals as any).issues as Issue[])
+  return (locals.issues as Issue[])
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
     .filter((output) => output !== undefined)
     .map((output) => {
@@ -240,7 +251,7 @@ export function approximatePromptCost(prompt: string) {
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
-function getIntervalUsageKey(userId: number) {
+function getIntervalUsageKey(userId: string) {
   const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
   return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
@@ -251,7 +262,7 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
+export async function getIntervalUsage({ userId }: { userId: string }) {
   const cache = await getAiQuestionGenerationCache();
   return (await cache.get(getIntervalUsageKey(userId))) ?? 0;
 }
@@ -265,7 +276,7 @@ export async function addCompletionCostToIntervalUsage({
   completionTokens,
   intervalCost,
 }: {
-  userId: number;
+  userId: string;
   promptTokens: number;
   completionTokens: number;
   intervalCost: number;

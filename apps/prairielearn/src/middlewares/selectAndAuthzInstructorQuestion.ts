@@ -31,10 +31,21 @@ const SelectAndAuthWithCourseInstanceSchema = z.object({
 
 export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
   typeof SelectAndAuthWithCourseInstanceSchema
->;
+> & {
+  /**
+   * We can make certain guarantees about the question data.
+   * Specifically, `qid` will never be null for non-deleted questions.
+   */
+  question: z.infer<typeof QuestionSchema> & { qid: string };
+};
 
 export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema> & {
   questionRenderContext?: 'manual_grading' | 'ai_grading';
+  /**
+   * We can make certain guarantees about the question data.
+   * Specifically, `qid` will never be null for non-deleted questions.
+   */
+  question: z.infer<typeof QuestionSchema> & { qid: string };
 };
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {

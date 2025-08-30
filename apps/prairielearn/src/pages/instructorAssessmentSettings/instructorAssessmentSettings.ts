@@ -1,8 +1,8 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -24,6 +24,7 @@ import {
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
@@ -34,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const tids = await sqldb.queryRows(
       sql.tids,
       { course_instance_id: res.locals.course_instance.id },
@@ -106,10 +107,10 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -131,7 +132,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/assessment/' + assessmentId + '/settings');
     } else if (req.body.__action === 'delete_assessment') {
       const editor = new AssessmentDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -141,6 +142,8 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_assessment') {
+      assert(res.locals.course_instance.short_name, 'course_instance.short_name is required');
+      assert(res.locals.assessment.tid, 'assessment.tid is required');
       const infoAssessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',
@@ -222,14 +225,14 @@ router.post(
 
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           // This won't reflect if the operation is an update or a rename; we think that's OK.
           description: `${res.locals.course_instance.short_name}: Update assessment ${res.locals.assessment.tid}`,
         },
         [
           // Each of these editors will no-op if there wasn't any change.
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -238,7 +241,7 @@ router.post(
             editContents: b64EncodeUnicode(formattedJson),
             origHash: req.body.orig_hash,
           }),
-          new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
+          new AssessmentRenameEditor({ locals: res.locals, tid_new }),
         ],
       );
       const serverJob = await editor.prepareServerJob();

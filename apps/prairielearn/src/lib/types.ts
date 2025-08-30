@@ -52,3 +52,9 @@ export function assertNever(value: never): never {
   // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
   throw new Error(`Unexpected value: ${value}`);
 }
+
+export function assertDefined<T>(value: T): asserts value is NonNullable<T> {
+  if (value === undefined || value === null) {
+    throw new Error('Expected value to be defined');
+  }
+}
