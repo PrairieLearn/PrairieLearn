@@ -1,7 +1,8 @@
 # Description
 
 <!-- summary of changes (add screenshots/videos to the bottom of the PR if applicable)
-- relevant context from Slack is summarized and included -->
+- relevant context from Slack is summarized and included
+- disclose any AI usage -->
 
 <!-- if this is a bug fix, include a link to the issue (e.g. `closes #123`), and how to reproduce the bug on master
 if this is a refactor/feature, why this change was made -->
