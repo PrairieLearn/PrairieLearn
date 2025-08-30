@@ -3,6 +3,70 @@
   max-width: 100%;
 }
 
+math-field.gray-bg {
+  background-color: #f0f0f0;
+  border-color: #cccccc;
+  padding: 0.05rem;
+  border-radius: 4px;
+}
+
+math-field.gray-bg::part(menu-toggle) {
+  display: none !important;
+}
+
 .pl-symbolic-input-input {
   height: auto;
+}
+
+@media (pointer: coarse) {
+  math-field::part(menu-toggle) {
+    display: none;
+  }
+  math-field::part(virtual-keyboard-toggle) {
+    display: none;
+  }
+}
+
+math-field {
+  padding-right: 0.1rem !important;
+}
+
+math-field::part(content) {
+  min-width: 80px;
+  font-size: 1.3rem;
+  display: block;
+}
+
+math-field:not([hide-menu])::part(menu-toggle) {
+  display: inherit;
+}
+
+math-field[hide-menu]::part(menu-toggle) {
+  display: none;
+}
+
+math-field.is-invalid {
+  background-image: none !important;
+}
+
+math-field::part(menu-toggle) {
+  margin: 0px;
+}
+
+math-field::part(virtual-keyboard-toggle) {
+  margin: 0px;
+}
+
+body {
+  --keyboard-background: #e8ebef;
+  --keyboard-toolbar-background-hover: #e8ebef;
+  --keyboard-toolbar-text-active: #0d6efd;
+  --keycap-secondary-background: #909aa1;
+  --keycap-secondary-background-hover: #909aa1;
+  --keyboard-accent-color: #0d6efd;
+  --variant-panel-background: #e8ebef;
+  --keycap-background: #ffffff;
+  --keycap-background-hover: #ffffff;
+  --keyboard-toolbar-text: #3d4144;
+  --keycap-text: #3d4144;
 }
