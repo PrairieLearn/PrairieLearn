@@ -24,6 +24,14 @@ export async function selectInstitutionForCourseInstance({
   );
 }
 
+export async function selectInstitutionByShortName({
+  short_name,
+}: {
+  short_name: string;
+}): Promise<Institution> {
+  return await queryRow(sql.select_institution_by_short_name, { short_name }, InstitutionSchema);
+}
+
 export async function selectAllInstitutions() {
   return await queryRows(sql.select_all_institutions, InstitutionSchema);
 }

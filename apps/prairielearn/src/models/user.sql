@@ -14,6 +14,15 @@ FROM
 WHERE
   uid = $uid;
 
+-- BLOCK select_user_by_uid_and_institution
+SELECT
+  *
+FROM
+  users
+WHERE
+  uid = $uid
+  AND institution_id = $institution_id;
+
 -- BLOCK select_user_by_uin
 SELECT
   *
@@ -66,6 +75,37 @@ SELECT
   *
 FROM
   inserted_user;
+
+-- BLOCK insert_user_lti
+INSERT INTO
+  users (
+    uid,
+    name,
+    lti_course_instance_id,
+    lti_user_id,
+    lti_context_id,
+    institution_id
+  )
+VALUES
+  (
+    $uid,
+    $name,
+    $lti_course_instance_id,
+    $lti_user_id,
+    $lti_context_id,
+    $institution_id
+  )
+RETURNING
+  *;
+
+-- BLOCK update_user_name
+UPDATE users
+SET
+  name = $name
+WHERE
+  user_id = $user_id
+RETURNING
+  *;
 
 -- BLOCK update_user_uid
 UPDATE users
