@@ -8,7 +8,7 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/grader-python",
+    "image": "eliotwrobson/grader-python-v2",
     "timeout": 60
   }
 }
