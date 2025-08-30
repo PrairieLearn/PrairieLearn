@@ -76,7 +76,6 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   instance_question_info: InstanceQuestionInfo & {
     previous_variants?: SimpleVariantWithScore[];
   };
-  skip_graded_submissions?: boolean;
 
   /** These are only set if the assessment has group work. */
   prev_instance_question_role_permissions?: QuestionGroupPermissions;

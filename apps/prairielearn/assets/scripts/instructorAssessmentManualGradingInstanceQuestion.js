@@ -36,8 +36,6 @@ $(() => {
       })
       .modal('show');
   }
-
-  addSkipGradeSubmissionsListener();
 });
 
 function resetRubricImportFormListeners() {
@@ -920,24 +918,4 @@ function ensureElementsExist(elements) {
       throw new Error(`Element ${elementName} is required but not found in the DOM.`);
     }
   }
-}
-
-function addSkipGradeSubmissionsListener() {
-  const skipGradedSubmissionsCheckbox = document.querySelector('#skip_graded_submissions');
-
-  ensureElementsExist({
-    skipGradedSubmissionsCheckbox,
-  });
-
-  skipGradedSubmissionsCheckbox.addEventListener('change', async (e) => {
-    await fetch('/pl/manual_grading/settings', {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        skip_graded_submissions: e.target.checked,
-      }),
-    });
-  });
 }

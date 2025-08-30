@@ -32,6 +32,7 @@ export function InstanceQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
@@ -46,6 +47,7 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  skipGradedSubmissions: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -168,6 +170,7 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
+                skip_graded_submissions: skipGradedSubmissions,
               })}
             </div>
           </div>
@@ -256,6 +259,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    skip_graded_submissions: false,
                   })}
                 </div>
               </div>
@@ -281,6 +285,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    skip_graded_submissions: false,
                   })}
                 </div>
               </div>

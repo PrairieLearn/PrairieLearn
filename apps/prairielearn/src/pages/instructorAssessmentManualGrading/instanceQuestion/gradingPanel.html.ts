@@ -28,6 +28,7 @@ export function GradingPanel({
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  skip_graded_submissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
@@ -39,6 +40,7 @@ export function GradingPanel({
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  skip_graded_submissions?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -47,7 +49,6 @@ export function GradingPanel({
   assert(submission, 'submission is missing');
   assert(resLocals.submission, 'resLocals.submission is missing');
 
-  const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
@@ -160,7 +161,7 @@ ${submission.feedback?.manual}</textarea
                     class="form-check-input"
                     name="skip_graded_submissions"
                     value="true"
-                    ${resLocals.skip_graded_submissions ? 'checked' : ''}
+                    ${skip_graded_submissions ? 'checked' : ''}
                   />
                   <label class="form-check-label" for="skip_graded_submissions">
                     Skip graded submissions
@@ -182,13 +183,14 @@ ${submission.feedback?.manual}</textarea
                 `
               : ''}
             <div class="btn-group">
-              <a
+              <button
+                type="submit"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next?prior_instance_question_id=${resLocals
-                  .instance_question.id}"
+                name="__action"
+                value="next_submission"
               >
                 ${skip_text}
-              </a>
+              </button>
               ${!disable
                 ? html`
                     <button

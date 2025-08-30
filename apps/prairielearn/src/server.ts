@@ -552,12 +552,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/sideNavSettings/sideNavSettings.js')).default,
   );
 
-  // Handles updates to the manual grading skip graded submissions state.
-  app.use(
-    '/pl/manual_grading/settings',
-    (await import('./pages/manualGradingSettings/manualGradingSettings.js')).default,
-  );
-
   app.use('/pl/workspace/:workspace_id(\\d+)', [
     (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
