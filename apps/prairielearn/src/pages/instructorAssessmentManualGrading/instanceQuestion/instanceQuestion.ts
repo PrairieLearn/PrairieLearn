@@ -173,6 +173,8 @@ router.get(
       }
     }
 
+    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -181,7 +183,7 @@ router.get(
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
-        skipGradedSubmissions: req.session.skip_graded_submissions ?? false,
+        skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
   }),
@@ -369,7 +371,7 @@ router.post(
       }
 
       req.session.skip_graded_submissions =
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions;
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -378,12 +380,12 @@ router.post(
           assessment_question_id: res.locals.assessment_question.id,
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
-          skip_graded_submissions: req.session.skip_graded_submissions ?? false,
+          skip_graded_submissions: req.session.skip_graded_submissions,
         }),
       );
     } else if (body.__action === 'next_instance_question') {
       req.session.skip_graded_submissions =
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions;
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -392,7 +394,7 @@ router.post(
           assessment_question_id: res.locals.assessment_question.id,
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
-          skip_graded_submissions: req.session.skip_graded_submissions ?? false,
+          skip_graded_submissions: req.session.skip_graded_submissions,
         }),
       );
     } else if (body.__action === 'modify_rubric_settings') {
@@ -432,6 +434,8 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
+      req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
           urlPrefix: res.locals.urlPrefix,
@@ -439,7 +443,7 @@ router.post(
           assessment_question_id: res.locals.assessment_question.id,
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
-          skip_graded_submissions: req.session.skip_graded_submissions ?? false,
+          skip_graded_submissions: req.session.skip_graded_submissions,
         }),
       );
     } else if (body.__action === 'report_issue') {

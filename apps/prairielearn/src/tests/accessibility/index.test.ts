@@ -312,6 +312,7 @@ const SKIP_ROUTES = [
 
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
   '/pl/course_instance/:course_instance_id/instructor/course_admin/questions/qid/*',
   '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
   '/pl/course_instance/:course_instance_id/loadFromDisk',
