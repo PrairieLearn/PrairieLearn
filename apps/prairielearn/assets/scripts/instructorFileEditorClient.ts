@@ -5,6 +5,12 @@ import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import {
+  type FileMetadata,
+  FileType,
+  friendlyNameForFileType,
+} from '../../src/lib/editorUtil.types.js';
+
 import { configureAceBasePaths } from './lib/ace.js';
 import './lib/verboseToggle.js';
 
@@ -42,6 +48,9 @@ class InstructorFileEditor {
   saveElement?: HTMLButtonElement | null;
   inputContentsElement?: HTMLInputElement | null;
   editor: ace.Ace.Editor;
+  fileMetadata?: FileMetadata;
+  aceMode?: string;
+  private confirmedSave = false;
 
   constructor({
     element,
@@ -50,6 +59,7 @@ class InstructorFileEditor {
     readOnly = false,
     contents,
     diskContents,
+    fileMetadata,
   }: {
     element: HTMLElement;
     saveElement?: HTMLButtonElement | null;
@@ -57,6 +67,7 @@ class InstructorFileEditor {
     readOnly?: boolean;
     contents?: string;
     diskContents?: string;
+    fileMetadata?: FileMetadata;
   }) {
     this.element = element;
     const editorElement = element.querySelector<HTMLElement>('.editor');
@@ -66,6 +77,8 @@ class InstructorFileEditor {
 
     this.saveElement = saveElement;
     this.inputContentsElement = element.querySelector('input[name=file_edit_contents]');
+    this.fileMetadata = fileMetadata;
+    this.aceMode = aceMode;
     this.editor = ace.edit(editorElement, {
       minLines: 10,
       maxLines: Infinity,
@@ -98,6 +111,108 @@ class InstructorFileEditor {
         .querySelector<HTMLButtonElement>('.js-reformat-file')
         ?.addEventListener('click', () => this.reformatJSONFile());
     }
+
+    // Override the save button click to show confirmation modal if needed
+    if (!this.saveElement) {
+      throw new Error('Save element not found');
+    }
+
+    this.saveElement.addEventListener('click', (e) => this.handleSaveClick(e));
+  }
+
+  /**
+   * Handles the save button click, showing a confirmation modal if there are issues,
+   * or proceeding with the save if the user has already confirmed.
+   */
+  handleSaveClick(event: MouseEvent) {
+    if (this.confirmedSave) {
+      this.confirmedSave = false;
+      return;
+    }
+
+    const issues = this.checkForSaveIssues();
+
+    if (issues.length > 0) {
+      event.preventDefault();
+      this.showConfirmationModal(issues);
+    }
+
+    // Otherwise, continue with the save
+  }
+
+  /**
+   * Checks for issues that would require confirmation before saving.
+   *
+   * @returns An array of issues that would require confirmation before saving.
+   */
+  checkForSaveIssues(): string[] {
+    const issues: string[] = [];
+    const currentContents = this.editor.getValue();
+
+    if (this.fileMetadata && this.fileMetadata.type !== FileType.File) {
+      try {
+        const parsedContent = JSON.parse(currentContents);
+
+        if (this.fileMetadata.uuid) {
+          if ('uuid' in parsedContent) {
+            if (parsedContent.uuid !== this.fileMetadata.uuid) {
+              issues.push(
+                `The UUID in this ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} file should match "${this.fileMetadata.uuid}".`,
+              );
+            }
+          } else {
+            issues.push(
+              `This ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} file should contain a UUID.`,
+            );
+          }
+        }
+      } catch {
+        issues.push(
+          `The ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} metadata cannot be parsed as JSON.`,
+        );
+      }
+    }
+
+    return issues;
+  }
+
+  /**
+   * Shows a confirmation modal with the given issues.
+   *
+   * @param issues - The issues to display in the modal.
+   */
+  showConfirmationModal(issues: string[]) {
+    // Update the issues list in the modal
+    const issuesList = document.getElementById('save-confirmation-issues');
+    if (issuesList) {
+      issuesList.innerHTML = issues.map((issue) => `<li>${issue}</li>`).join('');
+    }
+
+    // Get the modal and show it
+    const modalElement = document.getElementById('save-confirmation-modal');
+    if (!modalElement) {
+      throw new Error('Save confirmation modal not found');
+    }
+
+    const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
+    // Show the modal
+    modal.show();
+
+    // Handle confirm button click
+    const confirmButton = modalElement.querySelector('#confirm-save-button');
+    if (!confirmButton) {
+      throw new Error('Confirm save button not found');
+    }
+
+    confirmButton.addEventListener('click', () => {
+      modal.hide();
+      this.confirmedSave = true;
+
+      if (!this.saveElement) {
+        throw new Error('Save element not found');
+      }
+      this.saveElement.click();
+    });
   }
 
   setEditorContents(contents: string) {
@@ -199,6 +314,9 @@ onDocumentReady(() => {
         // last "unsuccessful" edit.
         diskContents: diskEditorElement?.dataset.contents ?? draftEditorElement.dataset.contents,
         saveElement: document.querySelector<HTMLButtonElement>('#file-editor-save-button'),
+        fileMetadata: draftEditorElement.dataset.fileMetadata
+          ? JSON.parse(draftEditorElement.dataset.fileMetadata)
+          : undefined,
       })
     : null;
 
@@ -208,6 +326,9 @@ onDocumentReady(() => {
       aceMode: diskEditorElement.dataset.aceMode,
       readOnly: true,
       contents: diskEditorElement.dataset.contents,
+      fileMetadata: diskEditorElement.dataset.fileMetadata
+        ? JSON.parse(diskEditorElement.dataset.fileMetadata)
+        : undefined,
     });
   }
 
