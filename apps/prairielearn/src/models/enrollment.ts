@@ -1,10 +1,5 @@
 import * as error from '@prairielearn/error';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -21,10 +16,15 @@ import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
+import { insertAuditEvent } from './audit-event.js';
 import { generateUsers } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Ensures that the user is enrolled in the given course instance. If the
+ * enrollment already exists, this is a no-op.
+ */
 export async function ensureEnrollment({
   course_instance_id,
   user_id,
@@ -32,7 +32,23 @@ export async function ensureEnrollment({
   course_instance_id: string;
   user_id: string;
 }): Promise<void> {
-  await execute(sql.ensure_enrollment, { course_instance_id, user_id });
+  return await runInTransactionAsync(async () => {
+    const inserted = await queryOptionalRow(
+      sql.ensure_enrollment,
+      { course_instance_id, user_id },
+      EnrollmentSchema,
+    );
+    if (inserted) {
+      await insertAuditEvent({
+        action: 'insert',
+        subject_user_id: user_id,
+        course_instance_id,
+        agent_authn_user_id: null,
+        table_name: 'enrollments',
+        row_id: inserted.id,
+      });
+    }
+  });
 }
 
 /**
