@@ -73,12 +73,14 @@ export async function processSubmission(
 
   if (req.body.__action === 'grade') {
     const overrideRateLimits = !options.studentSubmission;
+    const overrideRealTimeGradingDisabled = !options.studentSubmission;
     await saveAndGradeSubmission(
       submission,
       variant,
       res.locals.question,
       res.locals.course,
       overrideRateLimits,
+      overrideRealTimeGradingDisabled,
     );
     return submission.variant_id;
   } else if (req.body.__action === 'save') {

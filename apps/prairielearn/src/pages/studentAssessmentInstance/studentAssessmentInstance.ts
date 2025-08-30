@@ -152,24 +152,23 @@ router.post(
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
+      // TODO: should `finish` or `timeLimitFinish` be setting `overrideGradeRate` to true?
       const overrideGradeRate = false;
-      let closeExam: boolean;
+      const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
+      const overrideRealTimeGradingDisabled = isFinishing;
+      const closeExam = isFinishing;
+
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
           throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
         }
-        closeExam = false;
-      } else if (req.body.__action === 'finish') {
-        closeExam = true;
       } else if (req.body.__action === 'timeLimitFinish') {
         // Only close if the timer expired due to time limit, not for access end
         if (!res.locals.assessment_instance_time_limit_expired) {
           return res.redirect(req.originalUrl);
         }
-        closeExam = true;
-      } else {
-        throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
+
       const requireOpen = true;
       await assessment.gradeAssessmentInstance(
         res.locals.assessment_instance.id,
@@ -178,6 +177,7 @@ router.post(
         requireOpen,
         closeExam,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
         res.locals.client_fingerprint_id,
       );
       if (req.body.__action === 'timeLimitFinish') {
