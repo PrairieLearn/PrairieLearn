@@ -20,5 +20,6 @@ if this is a refactor/feature, why this change was made -->
   - explanations for code/design decisions that may confuse reviewers
   - important/core bits of the PR
   - rationale for design decisions
+  - items that may need further discussion
 
 Thank you for contributing to PrairieLearn! -->
