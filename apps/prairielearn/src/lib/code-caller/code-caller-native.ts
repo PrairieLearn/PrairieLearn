@@ -1,4 +1,5 @@
 import { type ChildProcess } from 'child_process';
+import assert from 'node:assert';
 import * as child_process from 'node:child_process';
 import { type SpawnOptions } from 'node:child_process';
 import * as path from 'node:path';
@@ -208,27 +209,34 @@ export class CodeCallerNative implements CodeCaller {
 
     let cwd: string | undefined;
     const paths = [path.join(APP_ROOT_PATH, 'python')];
-    if (type === 'question') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'questions', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'v2-question') {
-      // v2 questions always use the root of the PrairieLearn repository as their
-      // working directory.
-      cwd = REPOSITORY_ROOT_PATH;
-    } else if (type === 'course-element') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'elements', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'core-element') {
-      if (!directory) throw new Error('Missing directory');
-      cwd = path.join(APP_ROOT_PATH, 'elements', directory);
-    } else if (type === 'restart' || type === 'ping') {
-      // Doesn't need a working directory
-    } else {
-      assertNever(type);
+    switch (type) {
+      case 'question':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'questions', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'v2-question':
+        // v2 questions always use the root of the PrairieLearn repository as their
+        // working directory.
+        cwd = REPOSITORY_ROOT_PATH;
+        break;
+      case 'course-element':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'elements', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'core-element':
+        if (!directory) throw new Error('Missing directory');
+        cwd = path.join(APP_ROOT_PATH, 'elements', directory);
+        break;
+      case 'restart':
+      case 'ping':
+        // Doesn't need a working directory
+        break;
+      default:
+        assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
@@ -665,7 +673,9 @@ export class CodeCallerNative implements CodeCaller {
       );
     }
 
-    let childNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
+    let childNull: boolean | null = null;
+    let callbackNull: boolean | null = null;
+    let timeoutIDNull: boolean | null = null;
     if (this.state === CREATED) {
       childNull = true;
       callbackNull = true;
@@ -694,41 +704,44 @@ export class CodeCallerNative implements CodeCaller {
       return this._logError('Invalid CodeCallerNative state: ' + String(this.state));
     }
 
-    if (childNull != null) {
-      if (childNull && this.child != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should be null',
-        );
-      }
-      if (!childNull && this.child == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should not be null',
-        );
-      }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(childNull != null, 'childNull should not be null');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(callbackNull != null, 'callbackNull should not be null');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(timeoutIDNull != null, 'timeoutIDNull should not be null');
+
+    if (childNull && this.child != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should be null',
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should be null',
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
-        );
-      }
+    if (!childNull && this.child == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should not be null',
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
-        );
-      }
+
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should be null',
+      );
+    }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
+      );
+    }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
+      );
     }
 
     return true;

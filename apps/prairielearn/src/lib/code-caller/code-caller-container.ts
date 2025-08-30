@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -674,7 +675,10 @@ export class CodeCallerContainer implements CodeCaller {
       );
     }
 
-    let containerNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
+    let containerNull: boolean | null = null;
+    let callbackNull: boolean | null = null;
+    let timeoutIDNull: boolean | null = null;
+
     if (this.state === CREATED) {
       containerNull = true;
       callbackNull = true;
@@ -699,41 +703,44 @@ export class CodeCallerContainer implements CodeCaller {
       return this._logError(`Invalid CodeCallerContainer state: ${String(this.state)}`);
     }
 
-    if (containerNull != null) {
-      if (containerNull && this.container != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should be null`,
-        );
-      }
-      if (!containerNull && this.container == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should not be null`,
-        );
-      }
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(containerNull != null, 'containerNull should not be null');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(callbackNull != null, 'callbackNull should not be null');
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    assert(timeoutIDNull != null, 'timeoutIDNull should not be null');
+
+    if (containerNull && this.container != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should be null`,
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should be null`,
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
-        );
-      }
+    if (!containerNull && this.container == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should not be null`,
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
-        );
-      }
+
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should be null`,
+      );
+    }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
+      );
+    }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
+      );
     }
 
     return true;

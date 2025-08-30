@@ -55,8 +55,6 @@ function xmlReplaceResult(sourcedId: string, score: number, identifier: string) 
  * @param assessment_instance_id - The assessment instance ID
  */
 export async function updateScore(assessment_instance_id: string) {
-  if (assessment_instance_id == null) return;
-
   const info = await sqldb.queryOptionalRow(
     sql.get_score,
     { ai_id: assessment_instance_id },
