@@ -36,3 +36,13 @@ export function getAssessmentInstanceUrl({
 export function getStudentDetailUrl(urlPrefix: string, user_id: string): string {
   return `${urlPrefix}/instance_admin/student/${user_id}`;
 }
+
+export function getSelfEnrollmentLinkUrl({
+  courseInstanceId,
+  enrollmentCode,
+}: {
+  courseInstanceId: string;
+  enrollmentCode: string;
+}): string {
+  return `/pl/course_instance/${courseInstanceId}/join/${enrollmentCode}`;
+}
