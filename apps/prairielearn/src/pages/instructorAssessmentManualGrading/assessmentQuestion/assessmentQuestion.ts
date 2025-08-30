@@ -111,7 +111,8 @@ router.get(
 // Route handler for the legacy 'next_ungraded' route.
 // TODO: Remove this once the new 'next' route has been fully deployed.
 router.get('/next_ungraded', (req, res) => {
-  res.redirect('/next');
+  const searchParams = new URLSearchParams(req.query as Record<string, string>);
+  res.redirect('next?' + searchParams.toString());
 });
 
 router.post(
