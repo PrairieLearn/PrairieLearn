@@ -7,6 +7,8 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
@@ -535,5 +537,146 @@ describe('Course instance syncing', () => {
     const syncedCourseInstance = await findSyncedCourseInstance(util.COURSE_INSTANCE_ID);
     assert.isNotNull(syncedCourseInstance.sync_errors);
     assert.match(syncedCourseInstance.sync_errors, /"shareSourcePublicly" cannot be used/);
+  });
+
+  describe('syncs self-enrollment settings correctly', async () => {
+    const timezone = 'America/New_York';
+    const schemaMappings: {
+      json: CourseInstanceJsonInput['selfEnrollment'];
+      db: {
+        self_enrollment_enabled: boolean;
+        self_enrollment_enabled_before_date: string | null;
+        self_enrollment_requires_secret_link: boolean;
+      } | null;
+      errors: string[];
+    }[] = [
+      {
+        json: {
+          enabled: true,
+          requiresSecretLink: true,
+        },
+        db: {
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_requires_secret_link: true,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: false,
+          beforeDate: '2020-01-01T11:11:11',
+          requiresSecretLink: true,
+        },
+        db: {
+          self_enrollment_enabled: false,
+          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').toLocaleString(
+            'en-US',
+            {
+              timeZone: timezone,
+            },
+          ),
+          self_enrollment_requires_secret_link: true,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: false,
+          beforeDate: '2020-01-01 11:11:12',
+          requiresSecretLink: true,
+        },
+        db: {
+          self_enrollment_enabled: false,
+          self_enrollment_enabled_before_date: new Date('2020-01-01 11:11:12').toLocaleString(
+            'en-US',
+            {
+              timeZone: timezone,
+            },
+          ),
+          self_enrollment_requires_secret_link: true,
+        },
+        errors: [],
+      },
+      {
+        json: undefined,
+        db: {
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_requires_secret_link: false,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: false,
+        },
+        db: {
+          self_enrollment_enabled: false,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_requires_secret_link: false,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: true,
+        },
+        db: {
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_requires_secret_link: false,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: true,
+          beforeDate: 'not a date',
+        },
+        db: null,
+        errors: ['"selfEnrollment.beforeDate" is not a valid date.'],
+      },
+    ];
+
+    let i = 0;
+    for (const { json, db, errors } of schemaMappings) {
+      it(`self-enrollment configuration #${i++}`, async () => {
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
+
+        const courseDir = await util.writeCourseToTempDirectory(courseData);
+        const results = await util.syncCourseData(courseDir);
+        assert.isOk(results.status === 'complete');
+        const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+        const courseInstanceErrors = courseInstance.courseInstance.errors;
+        const courseInstanceUUID = courseInstance.courseInstance.uuid;
+        assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
+        assert.isDefined(courseInstanceUUID);
+
+        if (db == null) {
+          return;
+        }
+
+        const syncedCourseInstance = await selectCourseInstanceByUuid({
+          course_id: results.courseId,
+          uuid: courseInstanceUUID,
+        });
+        assert.isOk(syncedCourseInstance);
+
+        const result = {
+          self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
+          self_enrollment_enabled_before_date:
+            syncedCourseInstance.self_enrollment_enabled_before_date?.toLocaleString('en-US', {
+              timeZone: timezone,
+            }) ?? null,
+          self_enrollment_requires_secret_link:
+            syncedCourseInstance.self_enrollment_requires_secret_link,
+        };
+
+        assert.deepEqual(result, db);
+      });
+    }
   });
 });
