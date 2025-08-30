@@ -90,7 +90,7 @@ export function AdministratorQuery({
                         name="${param.name}"
                         autocomplete="off"
                         ${query_run?.params?.[param.name]
-                          ? html`value="${query_run?.params[param.name]}"`
+                          ? html`value="${query_run.params[param.name]}"`
                           : html`value="${param.default ?? ''}"`}
                       />
 
@@ -112,8 +112,8 @@ export function AdministratorQuery({
         ${query_run
           ? html`
               <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
-                Query ran at: ${query_run.date ? formatDate(query_run.date, 'UTC') : 'unknown'}
-                ${query_run?.result != null
+                Query ran at: ${formatDate(query_run.date, 'UTC')}
+                ${query_run.result != null
                   ? html`
                       <div class="ms-auto">
                         <span class="me-2" data-testid="row-count">
@@ -196,7 +196,7 @@ export function AdministratorQuery({
                         <tr>
                           <td>
                             <a href="${`?query_run_id=${run.id}`}">
-                              ${run.date ? formatDate(run.date, 'UTC') : html`&mdash;`}
+                              ${formatDate(run.date, 'UTC')}
                             </a>
                           </td>
                           <td>
@@ -268,22 +268,20 @@ function renderCell(row: any, col: string, columns: string[], info: Administrato
   if (col === 'course' && 'course_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course/${row.course_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course_instance/${row['course_instance_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course_instance/${row.course_instance_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a
-          href="${config.urlPrefix}/course_instance/${row[
-            'course_instance_id'
-          ]}/instructor/assessment/${row['assessment_id']}"
+          href="${config.urlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
         >
           ${row[col]}
         </a>
