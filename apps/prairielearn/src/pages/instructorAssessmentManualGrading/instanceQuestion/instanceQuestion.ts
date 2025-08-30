@@ -173,6 +173,8 @@ router.get(
       }
     }
 
+    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -181,6 +183,7 @@ router.get(
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
+        skipGradedSubmissions: req.session.skip_graded_submissions,
       }),
     );
   }),
@@ -240,7 +243,7 @@ router.get(
 
 const PostBodySchema = z.union([
   z.object({
-    __action: z.literal('add_manual_grade'),
+    __action: z.union([z.literal('add_manual_grade'), z.literal('next_instance_question')]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
@@ -260,6 +263,7 @@ const PostBodySchema = z.union([
       .transform((val) =>
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
+    skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -314,6 +318,7 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
+
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
@@ -324,6 +329,7 @@ router.post(
       // The order of the items in arrays is never important, so using Object.values is fine.
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
+
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -363,14 +369,33 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
         });
       }
+
+      req.session.skip_graded_submissions =
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
-          res.locals.urlPrefix,
-          res.locals.assessment.id,
-          res.locals.assessment_question.id,
-          res.locals.authz_data.user.user_id,
-          res.locals.instance_question.id,
-        ),
+        await manualGrading.nextInstanceQuestionUrl({
+          urlPrefix: res.locals.urlPrefix,
+          assessment_id: res.locals.assessment.id,
+          assessment_question_id: res.locals.assessment_question.id,
+          user_id: res.locals.authz_data.user.user_id,
+          prior_instance_question_id: res.locals.instance_question.id,
+          skip_graded_submissions: req.session.skip_graded_submissions,
+        }),
+      );
+    } else if (body.__action === 'next_instance_question') {
+      req.session.skip_graded_submissions =
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+
+      res.redirect(
+        await manualGrading.nextInstanceQuestionUrl({
+          urlPrefix: res.locals.urlPrefix,
+          assessment_id: res.locals.assessment.id,
+          assessment_question_id: res.locals.assessment_question.id,
+          user_id: res.locals.authz_data.user.user_id,
+          prior_instance_question_id: res.locals.instance_question.id,
+          skip_graded_submissions: req.session.skip_graded_submissions,
+        }),
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
@@ -409,14 +434,17 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
+      req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
       res.redirect(
-        await manualGrading.nextUngradedInstanceQuestionUrl(
-          res.locals.urlPrefix,
-          res.locals.assessment.id,
-          res.locals.assessment_question.id,
-          res.locals.authz_data.user.user_id,
-          res.locals.instance_question.id,
-        ),
+        await manualGrading.nextInstanceQuestionUrl({
+          urlPrefix: res.locals.urlPrefix,
+          assessment_id: res.locals.assessment.id,
+          assessment_question_id: res.locals.assessment_question.id,
+          user_id: res.locals.authz_data.user.user_id,
+          prior_instance_question_id: res.locals.instance_question.id,
+          skip_graded_submissions: req.session.skip_graded_submissions,
+        }),
       );
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);

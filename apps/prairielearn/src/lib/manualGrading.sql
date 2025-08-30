@@ -1,4 +1,4 @@
--- BLOCK select_next_ungraded_instance_question
+-- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
     SELECT
@@ -16,7 +16,12 @@ WITH
         $prior_instance_question_id::bigint IS NULL
         OR iq.id != $prior_instance_question_id
       )
-      AND iq.requires_manual_grading
+      AND (
+        -- If skip graded submissions is selected, the next submission must require manual grading.
+        -- Otherwise, the next submission doesn't have to.
+        NOT ($skip_graded_submissions)
+        OR iq.requires_manual_grading
+      )
       AND (
         iq.assigned_grader = $user_id
         OR iq.assigned_grader IS NULL
@@ -35,6 +40,16 @@ SELECT
   id
 FROM
   instance_questions_to_grade
+WHERE
+  (
+    -- If skipping graded submissions, the next submission does not necessarily need a higher stable order,
+    -- since the next ungraded submission might have a lower stable order.
+    -- Otherwise, the next submission must have a higher stable order. This prevents users from being redirected
+    -- to the same submission twice.
+    $skip_graded_submissions
+    OR prior_iq_stable_order IS NULL
+    OR iq_stable_order > prior_iq_stable_order
+  )
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
   assigned_grader ASC NULLS LAST,

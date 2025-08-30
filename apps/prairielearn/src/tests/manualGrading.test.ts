@@ -104,7 +104,7 @@ let instancesAssessmentUrl: string;
 let manualGradingAssessmentUrl: string;
 let manualGradingAssessmentQuestionUrl: string;
 let manualGradingIQUrl: string;
-let manualGradingNextUngradedUrl: string;
+let manualGradingNextUrl: string;
 let $manualGradingPage: cheerio.CheerioAPI;
 let score_percent: number, score_points: number, adjust_points: number | null;
 let feedback_note: string;
@@ -204,19 +204,19 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     },
   );
 
-  test.sequential('next ungraded button should point to general page after grading', async () => {
+  test.sequential('next button should point to general page after grading', async () => {
     setUser(mockStaff[0]);
-    let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-    assert.equal(nextUngraded.status, 302);
+    let nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+    assert.equal(nextUrl.status, 302);
     assert.equal(
-      nextUngraded.headers.get('location'),
+      nextUrl.headers.get('location'),
       new URL(manualGradingAssessmentQuestionUrl).pathname,
     );
     setUser(mockStaff[1]);
-    nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-    assert.equal(nextUngraded.status, 302);
+    nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+    assert.equal(nextUrl.status, 302);
     assert.equal(
-      nextUngraded.headers.get('location'),
+      nextUrl.headers.get('location'),
       new URL(manualGradingAssessmentQuestionUrl).pathname,
     );
   });
@@ -468,17 +468,23 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assertAlert($manualGradingPage, 'has one open instance');
       });
 
-      test.sequential('manual grading page should list one question requiring grading', () => {
-        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-        assert.equal(row.length, 1);
-        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
-        assert.equal(count, '1/1');
-        const nextButton = row.find('.btn:contains("next submission")');
-        assert.equal(nextButton.length, 1);
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
-      });
+      test.sequential(
+        'manual grading page should list one question requiring grading',
+        async () => {
+          const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+          assert.equal(row.length, 1);
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
+          assert.equal(count, '1/1');
+          const nextButton = row.find('.btn:contains("next submission")');
+          assert.equal(nextButton.length, 1);
+          manualGradingAssessmentQuestionUrl =
+            siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
+          manualGradingNextUrl = manualGradingAssessmentQuestionUrl + '/next';
+        },
+      );
 
       test.sequential(
         'manual grading page for assessment question should warn about an open instance',
@@ -568,23 +574,20 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         },
       );
 
-      test.sequential(
-        'next ungraded button should point to existing instance for all graders',
-        async () => {
-          setUser(defaultUser);
-          let nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-          assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-          setUser(mockStaff[0]);
-          nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-          assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-          setUser(mockStaff[1]);
-          nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-          assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
-        },
-      );
+      test.sequential('next button should point to existing instance for all graders', async () => {
+        setUser(defaultUser);
+        let nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        setUser(mockStaff[0]);
+        nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+        setUser(mockStaff[1]);
+        nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+        assert.equal(nextUrl.status, 302);
+        assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+      });
     });
 
     describe('Assigning grading to staff members', () => {
@@ -629,7 +632,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       );
 
       test.sequential(
-        'manual grading page should show next ungraded button for assigned grader',
+        'manual grading page should show next button for assigned grader',
         async () => {
           setUser(mockStaff[0]);
           const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
@@ -647,7 +650,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       );
 
       test.sequential(
-        'manual grading page should NOT show next ungraded button for non-assigned grader',
+        'manual grading page should NOT show next button for non-assigned grader',
         async () => {
           setUser(mockStaff[1]);
           const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
@@ -665,23 +668,23 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       );
 
       test.sequential(
-        'next ungraded button should point to existing instance for assigned grader',
+        'next button should point to existing instance for assigned grader',
         async () => {
           setUser(mockStaff[0]);
-          const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-          assert.equal(nextUngraded.status, 302);
-          assert.equal(nextUngraded.headers.get('location'), new URL(manualGradingIQUrl).pathname);
+          const nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+          assert.equal(nextUrl.status, 302);
+          assert.equal(nextUrl.headers.get('location'), new URL(manualGradingIQUrl).pathname);
         },
       );
 
       test.sequential(
-        'next ungraded button should point to general page for non-assigned graders',
+        'next button should point to general page for non-assigned graders',
         async () => {
           setUser(mockStaff[1]);
-          const nextUngraded = await fetch(manualGradingNextUngradedUrl, { redirect: 'manual' });
-          assert.equal(nextUngraded.status, 302);
+          const nextUrl = await fetch(manualGradingNextUrl, { redirect: 'manual' });
+          assert.equal(nextUrl.status, 302);
           assert.equal(
-            nextUngraded.headers.get('location'),
+            nextUrl.headers.get('location'),
             new URL(manualGradingAssessmentQuestionUrl).pathname,
           );
         },
@@ -1125,15 +1128,21 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assertAlert($manualGradingPage, 'has one open instance');
       });
 
-      test.sequential('manual grading page should list one question requiring grading', () => {
-        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
-        assert.equal(row.length, 1);
-        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replaceAll(/\s/g, '');
-        assert.equal(count, '1/1');
-        manualGradingAssessmentQuestionUrl =
-          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
-        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
-      });
+      test.sequential(
+        'manual grading page should list one question requiring grading',
+        async () => {
+          const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+          assert.equal(row.length, 1);
+          const count = row
+            .find('td[data-testid="iq-to-grade-count"]')
+            .text()
+            .replaceAll(/\s/g, '');
+          assert.equal(count, '1/1');
+          manualGradingAssessmentQuestionUrl =
+            siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
+          manualGradingNextUrl = manualGradingAssessmentQuestionUrl + '/next';
+        },
+      );
 
       test.sequential(
         'manual grading page for assessment question should warn about an open instance',
