@@ -1,23 +1,23 @@
 # Description
 
-<!-- summary of changes (and screenshots / videos if applicable) -->
+<!-- summary of changes (add screenshots/videos to the bottom of the PR if applicable)
+- relevant context from Slack is summarized and included -->
 
-<!-- if this is a bug fix, include a link to the issue (e.g. `closes #123`), and how to reproduce the bug on master -->
-<!-- if this is a refactor/feature, why this change was made -->
+<!-- if this is a bug fix, include a link to the issue (e.g. `closes #123`), and how to reproduce the bug on master
+if this is a refactor/feature, why this change was made -->
 
 # Testing
 
-<!-- how you tested your changes -->
+<!-- how you tested your changes
 
-<!-- instructions for how the reviewer can test the changes if applicable -->
+- if this is a UI change, mention what accessibility testing has been done
+- if applicable, include unit tests for complex functionality / behavior modifications -->
 
-<!--
-final checklist:
+<!-- if applicable, include instructions for how the reviewer can test the changes -->
 
-- self-review of the code, pointing out:
+<!-- in a self-review of the code, consider pointing out:
+
   - explanations for unintuitive code
   - rationale for design decisions
-- relevant context from Slack is summarized and included
 
-Thank you for contributing to PrairieLearn!
--->
+Thank you for contributing to PrairieLearn! -->
