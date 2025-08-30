@@ -102,7 +102,7 @@ router.get(
         assessment_question_id: res.locals.assessment_question.id,
         user_id: res.locals.authz_data.user.user_id,
         prior_instance_question_id: req.query.prior_instance_question_id ?? null,
-        skip_graded_submissions: req.session.skip_graded_submissions,
+        skip_graded_submissions: req.session.skip_graded_submissions ?? false,
       }),
     );
   }),
