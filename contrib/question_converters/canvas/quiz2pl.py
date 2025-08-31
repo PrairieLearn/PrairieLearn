@@ -118,6 +118,17 @@ def image_file_extension(content_type: str) -> str:
             return content_type.split("/")[1]
 
 
+def handle_formulas(text: str) -> str:
+    for match in re.finditer(
+        r'<img[^>]*data-equation-content="([^"]+)"([^=">]*="([^"]*)")*[^>="]*>',
+        text,
+        re.MULTILINE,
+    ):
+        formula = match.group(1)
+        text = text.replace(match.group(0), f"${formula}$", 1)
+    return text
+
+
 def handle_images(question_dir: str, text: str) -> str:
     """Download Canvas image links and replace them with `pl-figure` elements."""
     # We use regex instead of a proper HTML parser because we want to limit this
@@ -179,7 +190,9 @@ for question in questions.values():
     print(question_text)
     print()
     for answer in question.get("answers", []):
-        print(f" - {answer['text']}")
+        if not answer.get("html"):
+            answer["html"] = answer["text"]
+        print(f" - {answer['html']}")
     question_title = input("\nQuestion title (or blank to skip): ")
     if not question_title:
         continue
@@ -224,8 +237,8 @@ for question in questions.values():
             obj["gradingMethod"] = "Manual"
         json.dump(obj, info, indent=2)
 
-    # Handle images.
-    question_text = handle_images(question_dir, question_text)
+    # Handle images and formulas.
+    question_text = handle_images(question_dir, handle_formulas(question_text))
 
     with open(os.path.join(question_dir, "question.html"), "w") as template:
         if question["question_type"] == "calculated_question":
@@ -262,7 +275,7 @@ for question in questions.values():
                     template.write('  <pl-answer correct="true">')
                 else:
                     template.write("  <pl-answer>")
-                template.write(answer["text"] + "</pl-answer>\n")
+                template.write(handle_formulas(answer["html"]) + "</pl-answer>\n")
             template.write("</pl-checkbox>\n")
 
         elif (
@@ -275,7 +288,7 @@ for question in questions.values():
                     template.write('  <pl-answer correct="true">')
                 else:
                     template.write("  <pl-answer>")
-                template.write(answer["text"] + "</pl-answer>\n")
+                template.write(handle_formulas(answer["html"]) + "</pl-answer>\n")
             template.write("</pl-multiple-choice>\n")
 
         elif question["question_type"] == "numerical_question":
@@ -339,7 +352,7 @@ for question in questions.values():
             template.write('<pl-matching answers-name="match">\n')
             for answer in question["answers"]:
                 template.write(
-                    f'  <pl-statement match="m{answer["match_id"]}">{answer["text"]}</pl-statement>\n'
+                    f'  <pl-statement match="m{answer["match_id"]}">{handle_formulas(answer["html"])}</pl-statement>\n'
                 )
             template.writelines(
                 f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n'
