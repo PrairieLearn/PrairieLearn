@@ -122,7 +122,7 @@ function LtiCredentialCard({
   lti_credentials,
   csrfToken,
 }: {
-  lti_credentials: (Omit<LtiCredential, 'deleted_at'> & {
+  lti_credentials?: (Omit<LtiCredential, 'deleted_at'> & {
     created: string | null;
     deleted: string | null;
   })[];
@@ -242,14 +242,14 @@ function LtiLinkTargetsCard({
   assessments,
   csrfToken,
 }: {
-  lti_links: {
+  lti_links?: {
     id: string;
     resource_link_title: string | null;
     resource_link_description: string | null;
     assessment_id: string | null;
     created: string | null;
   }[];
-  assessments: {
+  assessments?: {
     assessment_id: string;
     label: string;
     title: string | null;

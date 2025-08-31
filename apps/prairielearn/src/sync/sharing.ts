@@ -198,16 +198,16 @@ export function checkInvalidSharedAssessments(
     const courseInstance = courseData.courseInstances[courseInstanceKey];
     for (const tid in courseInstance.assessments) {
       const assessment = courseInstance.assessments[tid];
-      if (!assessment?.data?.shareSourcePublicly) {
+      if (!assessment.data?.shareSourcePublicly) {
         continue;
       }
-      for (const zone of assessment?.data?.zones ?? []) {
-        for (const question of zone.questions ?? []) {
+      for (const zone of assessment.data?.zones ?? []) {
+        for (const question of zone.questions) {
           if (!question.id) {
             continue;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharePublicly && !infoJson?.data?.shareSourcePublicly) {
+          if (!infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly) {
             invalidSharedAssessments.add(tid);
           }
         }
@@ -236,8 +236,8 @@ export function checkInvalidSharedCourseInstances(
 
     for (const tid in courseInstance.assessments) {
       const assessment = courseInstance.assessments[tid];
-      if (!assessment?.data?.shareSourcePublicly) {
-        invalidSharedCourseInstances.add(courseInstance.courseInstance.data?.longName);
+      if (!assessment.data?.shareSourcePublicly) {
+        invalidSharedCourseInstances.add(courseInstance.courseInstance.data.longName);
       }
     }
   }

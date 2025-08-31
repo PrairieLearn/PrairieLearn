@@ -1,15 +1,16 @@
 import { type z } from 'zod';
 
 import {
-  InstitutionSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentQuestionSchema as RawAssessmentQuestionSchema,
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
+  AuditEventSchema as RawAuditEventSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
+  InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -116,6 +117,10 @@ export const StaffAssessmentQuestionSchema =
   RawAssessmentQuestionSchema.brand<'StaffAssessmentQuestion'>();
 export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSchema>;
 
+/** Audit Events */
+export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
+export type StaffAuditEvent = z.infer<typeof StaffAuditEventSchema>;
+
 /** Courses */
 
 export const RawStaffCourseSchema = RawCourseSchema.pick({
@@ -200,7 +205,9 @@ export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnroll
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 
 /** Institutions */
-export const RawStaffInstitutionSchema = InstitutionSchema.pick({
+export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
+  default_authn_provider_id: true,
+  display_timezone: true,
   id: true,
   long_name: true,
   short_name: true,
