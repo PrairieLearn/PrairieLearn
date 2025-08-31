@@ -352,7 +352,7 @@ for question in questions.values():
             template.write('<pl-matching answers-name="match">\n')
             for answer in question["answers"]:
                 template.write(
-                    f'  <pl-statement match="m{answer["match_id"]}">{handle_formulas(answer["html"])}</pl-statement>\n'
+                    f'  <pl-statement match="m{answer["match_id"]}">{answer["text"]}</pl-statement>\n'
                 )
             template.writelines(
                 f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n'
