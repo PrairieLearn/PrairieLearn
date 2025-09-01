@@ -1,3 +1,5 @@
+/* eslint perfectionist/sort-objects: error */
+
 import { type z } from 'zod';
 
 import {
@@ -31,8 +33,8 @@ export type StaffAssessment = z.infer<typeof StaffAssessmentSchema>;
 export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   advance_score_perc: true,
   allow_issue_reporting: true,
-  allow_real_time_grading: true,
   allow_personal_notes: true,
+  allow_real_time_grading: true,
   assessment_module_id: true,
   assessment_set_id: true,
   auto_close: true,
