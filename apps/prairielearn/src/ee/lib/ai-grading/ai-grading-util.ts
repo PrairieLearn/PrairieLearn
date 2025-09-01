@@ -184,7 +184,7 @@ export async function generatePrompt({
  *
  * @param options
  * @param options.submission_text - The rendered HTML content of the student's submission.
- * @param options.submitted_answer - The stored student-submitted final answer
+ * @param options.submitted_answer - The student-submitted answer, potentially containing text and images.
  * @param options.include_ai_grading_prompts - Whether to include AI grading prompts in the message.
  */
 export function generateSubmissionMessage({
