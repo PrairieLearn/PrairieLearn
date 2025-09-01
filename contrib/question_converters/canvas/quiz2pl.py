@@ -195,6 +195,7 @@ for question in questions.values():
     for answer in question.get("answers", []):
         if not answer.get("html"):
             answer["html"] = answer["text"]
+        answer["html"] = clean_question_text(answer["html"])
         print(f" - {answer['html']}")
     question_title = input("\nQuestion title (or blank to skip): ")
     if not question_title:
