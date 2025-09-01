@@ -5,11 +5,11 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
-import { Home, InstructorCourseSchema, StudentCourseSchema } from './home.html.js';
+import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -34,7 +34,7 @@ router.get(
         // unconditionally in dev mode.
         include_example_course: res.locals.is_administrator || config.devMode,
       },
-      InstructorCourseSchema,
+      InstructorHomePageCourseSchema,
     );
 
     const studentCourses = await queryRows(
@@ -50,13 +50,13 @@ router.get(
         // `/pl?include_example_course_enrollments=true`
         include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
       },
-      StudentCourseSchema,
+      StudentHomePageCourseSchema,
     );
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
       { user_id: res.locals.authn_user.user_id },
-      InstitutionSchema,
+      StaffInstitutionSchema,
     );
 
     res.send(
