@@ -118,15 +118,18 @@ def image_file_extension(content_type: str) -> str:
             return content_type.split("/")[1]
 
 
+FORMULA_IMG_RE = re.compile(
+    r'<img[^>]*data-equation-content="([^"]+)"([^=">]*="([^"]*)")*[^>="]*>',
+    re.DOTALL | re.IGNORECASE,
+)
+
+
 def handle_formulas(text: str) -> str:
-    for match in re.finditer(
-        r'<img[^>]*data-equation-content="([^"]+)"([^=">]*="([^"]*)")*[^>="]*>',
-        text,
-        re.MULTILINE,
-    ):
-        formula = match.group(1)
-        text = text.replace(match.group(0), f"${formula}$", 1)
-    return text
+    def replace_formula(match: re.Match[str]) -> str:
+        formula = match.group(1).replace("$", r"\$")
+        return f"${formula}$"
+
+    return FORMULA_IMG_RE.sub(replace_formula, text)
 
 
 def handle_images(question_dir: str, text: str) -> str:
