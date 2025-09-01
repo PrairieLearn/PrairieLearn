@@ -362,6 +362,18 @@ export async function createGroup(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
     }
+    if (/^group[0-9]{7,}$/.test(group_name)) {
+      // This test is used to simplify the logic behind system-generated group
+      // names. These are created automatically by adding one to the latest
+      // group name with a number. Allowing a user to specify a group name with
+      // this format could cause an issue if the number is too long, as it would
+      // cause integer overflows in the group calculation. While changing the
+      // process to generate group names that don't take these numbers into
+      // account is possible, this validation is simpler.
+      throw new GroupOperationError(
+        'User-specified group names cannot start with "group" followed by a large number.',
+      );
+    }
   }
 
   if (uids.length === 0) {
