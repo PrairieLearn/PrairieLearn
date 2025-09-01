@@ -2229,6 +2229,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@isaacs/balanced-match@npm:^4.0.1":
+  version: 4.0.1
+  resolution: "@isaacs/balanced-match@npm:4.0.1"
+  checksum: 10c0/7da011805b259ec5c955f01cee903da72ad97c5e6f01ca96197267d3f33103d5b2f8a1af192140f3aa64526c593c8d098ae366c2b11f7f17645d12387c2fd420
+  languageName: node
+  linkType: hard
+
+"@isaacs/brace-expansion@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "@isaacs/brace-expansion@npm:5.0.0"
+  dependencies:
+    "@isaacs/balanced-match": "npm:^4.0.1"
+  checksum: 10c0/b4d4812f4be53afc2c5b6c545001ff7a4659af68d4484804e9d514e183d20269bb81def8682c01a22b17c4d6aed14292c8494f7d2ac664e547101c1a905aa977
+  languageName: node
+  linkType: hard
+
 "@isaacs/cliui@npm:^8.0.2":
   version: 8.0.2
   resolution: "@isaacs/cliui@npm:8.0.2"
@@ -3957,7 +3973,7 @@ __metadata:
     he: "npm:^1.2.0"
     highlight.js: "npm:^11.11.1"
     html-rewriter-wasm: "npm:^0.4.1"
-    html-validate: "npm:^9.7.1"
+    html-validate: "npm:^10.0.0"
     htmx-ext-loading-states: "npm:^2.0.1"
     htmx-ext-morphdom-swap: "npm:^2.0.1"
     htmx.org: "npm:^2.0.6"
@@ -8374,7 +8390,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cross-spawn@npm:^7.0.0, cross-spawn@npm:^7.0.5, cross-spawn@npm:^7.0.6":
+"cross-spawn@npm:^7.0.5, cross-spawn@npm:^7.0.6":
   version: 7.0.6
   resolution: "cross-spawn@npm:7.0.6"
   dependencies:
@@ -10585,13 +10601,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"foreground-child@npm:^3.1.0":
-  version: 3.1.1
-  resolution: "foreground-child@npm:3.1.1"
+"foreground-child@npm:^3.1.0, foreground-child@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "foreground-child@npm:3.3.1"
   dependencies:
-    cross-spawn: "npm:^7.0.0"
+    cross-spawn: "npm:^7.0.6"
     signal-exit: "npm:^4.0.1"
-  checksum: 10c0/9700a0285628abaeb37007c9a4d92bd49f67210f09067638774338e146c8e9c825c5c877f072b2f75f41dc6a2d0be8664f79ffc03f6576649f54a84fb9b47de0
+  checksum: 10c0/8986e4af2430896e65bc2788d6679067294d6aee9545daefc84923a0a4b399ad9c7a3ea7bd8c0b2b80fdf4a92de4c69df3f628233ff3224260e9c1541a9e9ed3
   languageName: node
   linkType: hard
 
@@ -10843,6 +10859,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"glob@npm:^11.0.0, glob@npm:~11.0.2":
+  version: 11.0.3
+  resolution: "glob@npm:11.0.3"
+  dependencies:
+    foreground-child: "npm:^3.3.1"
+    jackspeak: "npm:^4.1.1"
+    minimatch: "npm:^10.0.3"
+    minipass: "npm:^7.1.2"
+    package-json-from-dist: "npm:^1.0.0"
+    path-scurry: "npm:^2.0.0"
+  bin:
+    glob: dist/esm/bin.mjs
+  checksum: 10c0/7d24457549ec2903920dfa3d8e76850e7c02aa709122f0164b240c712f5455c0b457e6f2a1eee39344c6148e39895be8094ae8cfef7ccc3296ed30bce250c661
+  languageName: node
+  linkType: hard
+
 "glob@npm:^6.0.1":
   version: 6.0.4
   resolution: "glob@npm:6.0.4"
@@ -10866,22 +10898,6 @@ __metadata:
     minimatch: "npm:^5.0.1"
     once: "npm:^1.3.0"
   checksum: 10c0/cb0b5cab17a59c57299376abe5646c7070f8acb89df5595b492dba3bfb43d301a46c01e5695f01154e6553168207cb60d4eaf07d3be4bc3eb9b0457c5c561d0f
-  languageName: node
-  linkType: hard
-
-"glob@npm:~11.0.2":
-  version: 11.0.2
-  resolution: "glob@npm:11.0.2"
-  dependencies:
-    foreground-child: "npm:^3.1.0"
-    jackspeak: "npm:^4.0.1"
-    minimatch: "npm:^10.0.0"
-    minipass: "npm:^7.1.2"
-    package-json-from-dist: "npm:^1.0.0"
-    path-scurry: "npm:^2.0.0"
-  bin:
-    glob: dist/esm/bin.mjs
-  checksum: 10c0/49f91c64ca882d5e3a72397bd45a146ca91fd3ca53dafb5254daf6c0e83fc510d39ea66f136f9ac7ca075cdd11fbe9aaa235b28f743bd477622e472f4fdc0240
   languageName: node
   linkType: hard
 
@@ -11076,23 +11092,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"html-validate@npm:^9.7.1":
-  version: 9.7.1
-  resolution: "html-validate@npm:9.7.1"
+"html-validate@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "html-validate@npm:10.0.0"
   dependencies:
     "@html-validate/stylish": "npm:^4.1.0"
     "@sidvind/better-ajv-errors": "npm:4.0.0"
     ajv: "npm:^8.0.0"
-    glob: "npm:^10.0.0"
+    glob: "npm:^11.0.0"
     kleur: "npm:^4.1.0"
     minimist: "npm:^1.2.0"
     prompts: "npm:^2.0.0"
     semver: "npm:^7.0.0"
   peerDependencies:
-    jest: ^27.1 || ^28.1.3 || ^29.0.3 || ^30.0.0
-    jest-diff: ^27.1 || ^28.1.3 || ^29.0.3 || ^30.0.0
-    jest-snapshot: ^27.1 || ^28.1.3 || ^29.0.3 || ^30.0.0
-    vitest: ^0.34.0 || ^1.0.0 || ^2.0.0 || ^3.0.0
+    jest: ^28.1.3 || ^29.0.3 || ^30.0.0
+    jest-diff: ^28.1.3 || ^29.0.3 || ^30.0.0
+    jest-snapshot: ^28.1.3 || ^29.0.3 || ^30.0.0
+    vitest: ^1.0.0 || ^2.0.0 || ^3.0.0
   peerDependenciesMeta:
     jest:
       optional: true
@@ -11104,7 +11120,7 @@ __metadata:
       optional: true
   bin:
     html-validate: bin/html-validate.mjs
-  checksum: 10c0/c6b6960c516161b71400182d5e5104923caa1ab61c8461395cd69ae7a6866dd8ca1aadcb80f74010e98d3203cd487103a7ff4974dbae2423fae0529eb48fc228
+  checksum: 10c0/39af9649a1990b0a70993951ed29ac5c7c769a0434c2e4248f0b66b2d6e04a27ee15f850f3f8e4e2eb62494bf2606f45af9f5193c11196056594fdbf29b8bc0e
   languageName: node
   linkType: hard
 
@@ -11804,7 +11820,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jackspeak@npm:^4.0.1":
+"jackspeak@npm:^4.1.1":
   version: 4.1.1
   resolution: "jackspeak@npm:4.1.1"
   dependencies:
@@ -13322,12 +13338,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:^10.0.0, minimatch@npm:^9.0.3 || ^10.0.1, minimatch@npm:~10.0.1":
-  version: 10.0.1
-  resolution: "minimatch@npm:10.0.1"
+"minimatch@npm:^10.0.3, minimatch@npm:^9.0.3 || ^10.0.1, minimatch@npm:~10.0.1":
+  version: 10.0.3
+  resolution: "minimatch@npm:10.0.3"
   dependencies:
-    brace-expansion: "npm:^2.0.1"
-  checksum: 10c0/e6c29a81fe83e1877ad51348306be2e8aeca18c88fdee7a99df44322314279e15799e41d7cb274e4e8bb0b451a3bc622d6182e157dfa1717d6cda75e9cd8cd5d
+    "@isaacs/brace-expansion": "npm:^5.0.0"
+  checksum: 10c0/e43e4a905c5d70ac4cec8530ceaeccb9c544b1ba8ac45238e2a78121a01c17ff0c373346472d221872563204eabe929ad02669bb575cb1f0cc30facab369f70f
   languageName: node
   linkType: hard
 
