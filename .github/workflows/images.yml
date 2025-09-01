@@ -65,6 +65,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Which node version is being used
+        run: node -v
 
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
