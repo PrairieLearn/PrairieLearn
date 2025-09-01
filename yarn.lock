@@ -3467,7 +3467,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.17.0"
-    "@typescript-eslint/rule-tester": "npm:^8.39.1"
+    "@typescript-eslint/rule-tester": "npm:^8.41.0"
     "@typescript-eslint/utils": "npm:^8.39.1"
     "@vitest/coverage-v8": "npm:^3.2.4"
     tsx: "npm:^4.20.3"
@@ -6525,6 +6525,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@typescript-eslint/parser@npm:8.41.0":
+  version: 8.41.0
+  resolution: "@typescript-eslint/parser@npm:8.41.0"
+  dependencies:
+    "@typescript-eslint/scope-manager": "npm:8.41.0"
+    "@typescript-eslint/types": "npm:8.41.0"
+    "@typescript-eslint/typescript-estree": "npm:8.41.0"
+    "@typescript-eslint/visitor-keys": "npm:8.41.0"
+    debug: "npm:^4.3.4"
+  peerDependencies:
+    eslint: ^8.57.0 || ^9.0.0
+    typescript: ">=4.8.4 <6.0.0"
+  checksum: 10c0/ca13ff505e9253aee761741f96714cd65a296bbfcac961efbbf7a909ff3d180b2142a23db0a2a5e50b928fa56586528b7e47ba6301089dd850945018dbf2ef50
+  languageName: node
+  linkType: hard
+
 "@typescript-eslint/project-service@npm:8.39.1":
   version: 8.39.1
   resolution: "@typescript-eslint/project-service@npm:8.39.1"
@@ -6551,20 +6567,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/rule-tester@npm:^8.39.1":
-  version: 8.39.1
-  resolution: "@typescript-eslint/rule-tester@npm:8.39.1"
+"@typescript-eslint/rule-tester@npm:^8.41.0":
+  version: 8.41.0
+  resolution: "@typescript-eslint/rule-tester@npm:8.41.0"
   dependencies:
-    "@typescript-eslint/parser": "npm:8.39.1"
-    "@typescript-eslint/typescript-estree": "npm:8.39.1"
-    "@typescript-eslint/utils": "npm:8.39.1"
+    "@typescript-eslint/parser": "npm:8.41.0"
+    "@typescript-eslint/typescript-estree": "npm:8.41.0"
+    "@typescript-eslint/utils": "npm:8.41.0"
     ajv: "npm:^6.12.6"
     json-stable-stringify-without-jsonify: "npm:^1.0.1"
     lodash.merge: "npm:4.6.2"
     semver: "npm:^7.6.0"
   peerDependencies:
     eslint: ^8.57.0 || ^9.0.0
-  checksum: 10c0/f008e6d859db406d59b363cec5fc0c645867df5eb269be800e15daf5b80f8d7d17c80cdb3f305e8a0edc539b266b137e6de2aa6c5b20507cb7a65fe969b5f7bb
+  checksum: 10c0/dd3e05803a03c1bd141904858652e355d3cc23cfa4d353e9145000e18f1fe9fadc1bee5e2b695eab51698ec4a8d81625799a2cb7d002c351e0926df84b502d2a
   languageName: node
   linkType: hard
 
