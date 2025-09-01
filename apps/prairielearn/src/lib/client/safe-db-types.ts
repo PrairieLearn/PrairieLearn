@@ -197,6 +197,7 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   pending_lti13_email: true,
   pending_lti13_instance_id: true,
   pending_lti13_name: true,
+  pending_lti13_sub: true,
   pending_uid: true,
   status: true,
   user_id: true,

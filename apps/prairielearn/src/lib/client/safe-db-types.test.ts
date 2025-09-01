@@ -281,6 +281,7 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   pending_uid: null,
   pending_lti13_instance_id: null,
   pending_lti13_name: null,
+  pending_lti13_sub: null,
 };
 
 const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
@@ -381,6 +382,7 @@ const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   pending_lti13_email: null,
   pending_lti13_instance_id: null,
   pending_lti13_name: null,
+  pending_lti13_sub: null,
   pending_uid: null,
   status: 'joined',
   user_id: null,

@@ -184,6 +184,8 @@ describe('getCourseInstanceContext', () => {
     },
     institution: {
       id: '1',
+      display_timezone: 'America/Chicago',
+      default_authn_provider_id: null,
       long_name: 'Example Institution',
       short_name: 'EI',
     },
