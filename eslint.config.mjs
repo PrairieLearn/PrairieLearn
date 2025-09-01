@@ -642,6 +642,16 @@ export default tseslint.config([
     },
   },
   {
+    // TODO: enable this rule for all files.
+    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
+    },
+  },
+  {
     files: ['apps/prairielearn/assets/scripts/**/*', 'apps/prairielearn/elements/**/*.js'],
     languageOptions: {
       globals: {

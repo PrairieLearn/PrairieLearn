@@ -157,6 +157,7 @@ describe('getCourseInstanceContext', () => {
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
       ...mockStudentData.course_instance,
+      enrollment_code: '1234567890ab',
       enrollment_limit: 10,
       json_comment: 'foo',
       share_source_publicly: true,
@@ -183,6 +184,8 @@ describe('getCourseInstanceContext', () => {
     },
     institution: {
       id: '1',
+      display_timezone: 'America/Chicago',
+      default_authn_provider_id: null,
       long_name: 'Example Institution',
       short_name: 'EI',
     },

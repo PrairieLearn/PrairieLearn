@@ -217,9 +217,9 @@ function StudentsCard({
           );
         },
       }),
-      columnHelper.accessor((row) => row.enrollment.created_at, {
-        id: 'enrollment_created_at',
-        header: 'Enrolled',
+      columnHelper.accessor((row) => row.enrollment.joined_at, {
+        id: 'enrollment_joined_at',
+        header: 'Joined',
         cell: (info) => {
           const date = info.getValue();
           if (date == null) return '—';
