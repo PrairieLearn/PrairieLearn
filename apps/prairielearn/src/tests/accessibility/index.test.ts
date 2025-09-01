@@ -197,10 +197,7 @@ const SKIP_ROUTES = [
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
-  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
+  /\.json$/,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -435,16 +432,17 @@ describe('accessibility', () => {
       user_id,
     };
 
-    await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
-      question_id: routeParams.question_id,
-    });
+    await sqldb.queryOneRowAsync(
+      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
+      { question_id: routeParams.question_id },
+    );
 
-    await sqldb.executeRow(
+    await sqldb.queryOneRowAsync(
       'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
       { assessment_id: routeParams.assessment_id },
     );
 
-    await sqldb.executeRow(
+    await sqldb.queryOneRowAsync(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
@@ -455,7 +453,7 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    await sqldb.executeRow(
+    await sqldb.queryOneRowAsync(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );

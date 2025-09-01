@@ -1,6 +1,6 @@
 import QR from 'qrcode-svg';
 
-import { unsafeHtml } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 
 import { Modal } from './Modal.js';
 
@@ -19,6 +19,6 @@ export function QRCodeModal({
     id,
     title,
     form: false,
-    body: unsafeHtml(qrCodeSvg),
+    body: html`<div class="d-flex" style="max-height: 80vh;">${unsafeHtml(qrCodeSvg)}</div>`,
   });
 }

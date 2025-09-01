@@ -28,7 +28,7 @@ jobs:
     name: JavaScript
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install additional dependencies
         run: |-
@@ -90,7 +90,7 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install OS packages
         run: sudo apt-get install -y graphviz libgraphviz-dev
@@ -137,7 +137,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
+        uses: codecov/codecov-action@v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -147,7 +147,7 @@ jobs:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
