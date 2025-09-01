@@ -53,7 +53,7 @@ dev = [
   "sqlfluff==3.4.2",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.3.30",
-  "types-Pygments==2.19.0.20250715",
+  "types-Pygments==2.19.0.20250809",
   "pandas-stubs==2.3.0.250703",
 ]
 
