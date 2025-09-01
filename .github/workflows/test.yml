@@ -139,8 +139,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'yarn'
-      - name: Which node version is being used
-        run: node -v
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
