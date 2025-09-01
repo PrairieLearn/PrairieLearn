@@ -27,8 +27,7 @@ RETURNING
 
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  iq.*,
-  ai.open AS ai_open
+  iq.*
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id

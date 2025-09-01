@@ -16,7 +16,7 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
-  resetInstanceQuestionsAiSubmissionGroups,
+  deleteInstanceQuestionsAiSubmissionGroups,
   selectAiSubmissionGroups,
   selectAssessmentQuestionHasAiSubmissionGroups,
 } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
@@ -297,7 +297,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const numDeleted = await resetInstanceQuestionsAiSubmissionGroups({
+      const numDeleted = await deleteInstanceQuestionsAiSubmissionGroups({
         assessment_question_id: res.locals.assessment_question.id,
       });
 

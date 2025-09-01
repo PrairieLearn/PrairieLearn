@@ -98,13 +98,13 @@ export async function selectAiSubmissionGroups({
   );
 }
 
-export async function resetInstanceQuestionsAiSubmissionGroups({
+export async function deleteInstanceQuestionsAiSubmissionGroups({
   assessment_question_id,
 }: {
   assessment_question_id: string;
 }) {
   return await queryRow(
-    sql.reset_instance_questions_ai_submission_groups,
+    sql.delete_instance_questions_ai_submission_groups,
     {
       assessment_question_id,
     },

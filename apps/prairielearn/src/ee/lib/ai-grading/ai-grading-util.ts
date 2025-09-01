@@ -181,6 +181,11 @@ export async function generatePrompt({
 
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ *
+ * @param options
+ * @param options.submission_text - The rendered HTML content of the student's submission.
+ * @param options.submitted_answer - The stored student-submitted final answer
+ * @param options.include_ai_grading_prompts - Whether to include AI grading prompts in the message.
  */
 export function generateSubmissionMessage({
   submission_text,
@@ -362,9 +367,7 @@ export async function selectInstanceQuestionsForAssessmentQuestion(
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
     { assessment_question_id, closed_instance_questions_only },
-    InstanceQuestionSchema.extend({
-      ai_open: z.boolean().optional(),
-    }),
+    InstanceQuestionSchema,
   );
 }
 

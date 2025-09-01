@@ -46,7 +46,7 @@ SET
 WHERE
   id = $instance_question_id;
 
--- BLOCK reset_instance_questions_ai_submission_groups
+-- BLOCK delete_instance_questions_ai_submission_groups
 WITH
   updated AS (
     UPDATE instance_questions
