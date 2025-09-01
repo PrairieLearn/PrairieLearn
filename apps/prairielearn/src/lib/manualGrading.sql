@@ -34,6 +34,10 @@ WITH
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
+        -- When AI submission grouping is enabled:
+        -- If the previous submission belongs to a submission group, the next submission must be in the same group.
+        -- If the previous submission has no submission group, the next must not be in a group as well.
+        -- Otherwise, this filter has no effect.
         NOT $use_ai_submission_groups
         OR (
           iq.ai_submission_group_id = $prior_ai_submission_group_id
