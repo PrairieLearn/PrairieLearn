@@ -1,3 +1,5 @@
+/* eslint perfectionist/sort-objects: error */
+
 import { type z } from 'zod';
 
 import {
@@ -31,8 +33,8 @@ export type StaffAssessment = z.infer<typeof StaffAssessmentSchema>;
 export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   advance_score_perc: true,
   allow_issue_reporting: true,
-  allow_real_time_grading: true,
   allow_personal_notes: true,
+  allow_real_time_grading: true,
   assessment_module_id: true,
   assessment_set_id: true,
   auto_close: true,
@@ -188,7 +190,20 @@ export const StudentCourseInstanceSchema =
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
 /** Enrollments */
-export const RawStaffEnrollmentSchema = RawEnrollmentSchema;
+export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
+  course_instance_id: true,
+  created_at: true,
+  id: true,
+  joined_at: true,
+  lti_managed: true,
+  pending_lti13_email: true,
+  pending_lti13_instance_id: true,
+  pending_lti13_name: true,
+  pending_lti13_sub: true,
+  pending_uid: true,
+  status: true,
+  user_id: true,
+});
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 
