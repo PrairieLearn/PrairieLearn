@@ -10,6 +10,7 @@ import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
+import browserCompat from 'eslint-plugin-compat';
 import importX from 'eslint-plugin-import-x';
 import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
@@ -653,6 +654,8 @@ export default tseslint.config([
         ...globals.jquery,
       },
     },
+    plugins: { compat: browserCompat },
+    rules: { ...browserCompat.configs.recommended.rules },
   },
   {
     files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],

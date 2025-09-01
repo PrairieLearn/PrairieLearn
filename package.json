@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "@types/tar-stream": "^3.1.4",
+    "eslint-plugin-compat": "^6.0.2",
     "get-stream": "^9.0.1",
     "node-gyp": "^11.4.2",
     "preact-compat": "^3.19.0",
@@ -74,5 +75,10 @@
     "preact": "link:./packages/preact-cjs",
     "react": "link:./packages/preact-cjs-compat",
     "react-dom": "link:./packages/preact-cjs-compat"
-  }
+  },
+  "browserslist": [
+    ">0.5%",
+    "Firefox ESR",
+    "not dead"
+  ]
 }
