@@ -162,7 +162,7 @@ function StudentsCard({
     },
     onSuccess: async () => {
       // Force a refetch of the enrollments query to ensure the new student is included
-      queryClient.invalidateQueries({ queryKey: ['enrollments'] });
+      await queryClient.invalidateQueries({ queryKey: ['enrollments'] });
       setShowInvite(false);
     },
   });

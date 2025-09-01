@@ -48,7 +48,7 @@ export function InviteStudentModal({
       const params = new URLSearchParams({ uid: uidValue });
       const res = await fetch(`${window.location.pathname}/enrollment.json?${params.toString()}`);
       if (!res.ok) return null;
-      return (await res.json()) as any;
+      return await res.json();
     },
   });
 
