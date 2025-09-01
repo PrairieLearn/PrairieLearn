@@ -106,13 +106,16 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function setupDatabases(): Promise<void> {
+async function createTestDatabase() {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
     await createTemplate();
   }
   await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true);
+}
+async function setupDatabases(): Promise<void> {
+  await createTestDatabase();
 
   // Ideally this would happen only over in `helperServer`, but we need to use
   // the same database details, so this is a convenient place to do it.
@@ -164,7 +167,7 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export function getDatabaseNameForCurrentWorker(): string {
-  return postgresTestUtils.getDatabaseNameForCurrentMochaWorker();
+  return postgresTestUtils.getDatabaseNameForCurrentTestWorker();
 }
 
 class RollbackTransactionError extends Error {

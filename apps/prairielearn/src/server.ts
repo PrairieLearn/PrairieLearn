@@ -2283,6 +2283,8 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
 
     logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
 
+    // NOTE: for e2e playwright tests, the default pool is later changed to a test database
+    // and does not use this configuration.
     await sqldb.initAsync(pgConfig, idleErrorHandler);
 
     // Our named locks code maintains a separate pool of database connections.

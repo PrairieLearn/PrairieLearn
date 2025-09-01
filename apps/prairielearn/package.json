@@ -13,7 +13,8 @@
     "start-executor": "node dist/executor.js",
     "test": "vitest run --coverage",
     "test:dist": "vitest run --coverage dist/**/*.test.js",
-    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests"
+    "test:docker-smoke-tests": "vitest run --coverage --mode=docker-smoke-tests",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.862.0",
@@ -216,6 +217,7 @@
     "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@sa11y/format": "^7.3.1",

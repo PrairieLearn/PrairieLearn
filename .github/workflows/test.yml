@@ -180,15 +180,24 @@ jobs:
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
 
-      - name: Upload blob report to GitHub Actions Artifacts
+      - name: Upload vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+      - name: Upload playwright blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-blob-report-${{ matrix.shardIndex }}
+          path: apps/prairielearn/test-results/blob-report/*
           include-hidden-files: true
           retention-days: 1
 
@@ -208,17 +217,31 @@ jobs:
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
         run: yarn workspaces focus prairielearn
-      - name: Download blob reports from GitHub Actions Artifacts
+      - name: Download vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v5
         with:
           path: .vitest-reports
           pattern: blob-report-*
           merge-multiple: true
 
-      - name: Merge reports
+      - name: Merge vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
+      - name: Download playwright blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: apps/prairielearn/test-results/blob-report
+          pattern: playwright-blob-report-*
+          merge-multiple: true
+      - name: Merge playwright reports
+        run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.4.3
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 7
