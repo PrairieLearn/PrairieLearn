@@ -37,12 +37,12 @@ WHERE
   AND (
     NOT $closed_instance_questions_only
     OR ai.open = FALSE
-  );
+  )
+  AND (
+    NOT $ungrouped_instance_questions_only
+    OR iq.ai_submission_group_id IS NULL
+  )
 
-AND (
-  NOT $ungrouped_instance_questions_only
-  OR iq.ai_submission_group_id IS NOT NULL
-)
 -- BLOCK insert_ai_grading_job
 INSERT INTO
   ai_grading_jobs (
