@@ -171,7 +171,7 @@
     "pem": "^1.14.8",
     "pg": "^8.16.3",
     "popper.js": "^1.16.1",
-    "preact": "^10.27.1",
+    "preact": "^10.27.0",
     "preact-render-to-string": "^6.6.1",
     "prettier": "3.6.2",
     "qrcode-svg": "^1.1.0",
