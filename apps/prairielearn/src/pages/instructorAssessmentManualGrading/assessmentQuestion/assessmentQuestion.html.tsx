@@ -13,7 +13,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
-import type { RubricData } from '../../../lib/manualGrading.js';
+import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
@@ -232,7 +232,7 @@ export function AssessmentQuestion({
                 </button>
                 <div class="dropdown-menu dropdown-menu-end">
                   <div class="dropdown-header">Assign for grading</div>
-                  ${courseStaff?.map(
+                  ${courseStaff.map(
                     (grader) => html`
                       <button
                         class="dropdown-item"

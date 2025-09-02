@@ -13,6 +13,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { assertNever } from '../../lib/types.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -196,10 +197,7 @@ const SKIP_ROUTES = [
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
-  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
+  /\.json$/,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -374,7 +372,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      throw new Error(`Invalid route: ${r}`);
+      assertNever(r);
     }
   });
 }
@@ -402,7 +400,6 @@ describe('accessibility', () => {
 
     const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
       IdSchema,
     );
 

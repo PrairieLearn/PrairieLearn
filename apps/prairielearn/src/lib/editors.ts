@@ -682,7 +682,7 @@ export class AssessmentCopyEditor extends Editor {
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -1007,7 +1007,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
       // Clear access rules to avoid leaking student PII or unexpectedly
       // making the copied course instance available to users.
-      infoJson['allowAccess'] = [];
+      infoJson.allowAccess = [];
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
@@ -1093,7 +1093,7 @@ export class CourseInstanceCopyEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     // We do not want to preserve sharing settings when copying a course instance
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1127,11 +1127,11 @@ async function updateInfoAssessmentFilesForTargetCourse(
     const infoJson = await fs.readJson(infoPath);
 
     // We do not want to preserve certain settings when copying an assessment to another course
-    delete infoJson['shareSourcePublicly'];
-    infoJson['allowAccess'] = [];
+    delete infoJson.shareSourcePublicly;
+    infoJson.allowAccess = [];
 
     function shouldAddSharingPrefix(qid: string) {
-      return qid && qid[0] !== '@' && questionsToImport.has(qid);
+      return qid && !qid.startsWith('@') && questionsToImport.has(qid);
     }
 
     // Rewrite the question IDs to include the course sharing name,
@@ -1942,9 +1942,9 @@ async function copyQuestion({
   }
 
   // We do not want to preserve sharing settings when copying a question to another course
-  delete infoJson['sharingSets'];
-  delete infoJson['sharePublicly'];
-  delete infoJson['shareSourcePublicly'];
+  delete infoJson.sharingSets;
+  delete infoJson.sharePublicly;
+  delete infoJson.shareSourcePublicly;
 
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
   await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
@@ -2323,7 +2323,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  async shouldEdit() {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2375,7 +2375,7 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));

@@ -89,7 +89,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.queryAsync(sql.update_load_count, {
+      await sqldb.execute(sql.update_load_count, {
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
@@ -224,7 +224,7 @@ async
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.queryAsync(sql.update_load_count, {
+          await sqldb.execute(sql.update_load_count, {
             instance_id: workspace_server_settings.instance_id,
           });
         } catch (err) {
@@ -240,7 +240,7 @@ async
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
-      await sqldb.queryAsync(sql.insert_workspace_hosts, {
+      await sqldb.execute(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
       });
@@ -256,7 +256,7 @@ async
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
           await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
-          await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+          await sqldb.execute(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
           });
@@ -319,13 +319,13 @@ async function pruneStoppedContainers() {
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
     } catch {
       // No container
-      await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+      await sqldb.execute(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
         instance_id: workspace_server_settings.instance_id,
       });
       return;
     }
-    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+    await sqldb.execute(sql.clear_workspace_on_shutdown, {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
@@ -444,7 +444,7 @@ async function markSelfUnhealthy(reason: Error | string) {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
-    await sqldb.queryAsync(sql.mark_host_unhealthy, params);
+    await sqldb.execute(sql.mark_host_unhealthy, params);
     logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
@@ -528,7 +528,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     if (!done || !port) {
       throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
     }
-    await sqldb.queryAsync(sql.set_workspace_launch_port, {
+    await sqldb.execute(sql.set_workspace_launch_port, {
       workspace_id,
       launch_port: port,
       instance_id: workspace_server_settings.instance_id,
@@ -857,7 +857,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
   });
 
-  await sqldb.queryAsync(sql.update_load_count, {
+  await sqldb.execute(sql.update_load_count, {
     instance_id: workspace_server_settings.instance_id,
   });
 
@@ -896,7 +896,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     launch_uuid: uuid,
     instance_id: workspace_server_settings.instance_id,
   };
-  await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
+  await sqldb.execute(sql.set_workspace_launch_uuid, params);
 
   const { version, course_id, institution_id } = (
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
@@ -987,7 +987,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
         }
 
         const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-        await sqldb.queryAsync(sql.update_workspace_hostname, {
+        await sqldb.execute(sql.update_workspace_hostname, {
           workspace_id: workspace.id,
           hostname,
         });

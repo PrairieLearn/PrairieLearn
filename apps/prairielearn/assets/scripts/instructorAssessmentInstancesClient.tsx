@@ -643,12 +643,12 @@ onDocumentReady(() => {
   }
 
   function listFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     return html`<small>${list.join(', ')}</small>`;
   }
 
   function uniqueListFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
     return html`<small>${uniq.join(', ')}</small>`;
   }

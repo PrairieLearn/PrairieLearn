@@ -3,23 +3,27 @@ import { setTimeout as sleep } from 'timers/promises';
 import * as cheerio from 'cheerio';
 import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import {
   AssessmentInstanceSchema,
   InstanceQuestionSchema,
+  IssueSchema,
+  JobSchema,
   JobSequenceSchema,
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
+import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export function waitForJobSequence(locals: Record<string, any>) {
   describe('The job sequence', function () {
     it('should have an id', async function () {
-      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, [], JobSequenceSchema);
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
       locals.job_sequence_id = jobSequence.id;
     });
     it('should be successful', async function () {
@@ -37,9 +41,12 @@ export function waitForJobSequence(locals: Record<string, any>) {
       assert(locals.job_sequence);
       if (locals.job_sequence.status !== 'Success') {
         console.log(locals.job_sequence);
-        const params = { job_sequence_id: locals.job_sequence_id };
-        const result = await sqldb.queryAsync(sql.select_jobs, params);
-        console.log(result.rows);
+        const result = await sqldb.queryRows(
+          sql.select_jobs,
+          { job_sequence_id: locals.job_sequence_id },
+          JobSchema,
+        );
+        console.log(result);
       }
       assert.equal(locals.job_sequence.status, 'Success');
     });
@@ -232,9 +239,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should create a submission', async function () {
-      const result = await sqldb.queryAsync(sql.select_last_submission, {});
-      assert.equal(result.rowCount, 1);
-      locals.submission = result.rows[0];
+      locals.submission = await sqldb.queryRow(sql.select_last_submission, SubmissionSchema);
     });
     it('should have the correct submission.variant_id', function () {
       assert.equal(locals.submission?.variant_id, locals.variant?.id);
@@ -246,9 +251,10 @@ export function postInstanceQuestion(locals: Record<string, any>) {
     });
     it('should select the assessment_instance duration from the DB if student page', async function () {
       if (locals.isStudentPage) {
-        const result = await sqldb.queryAsync(sql.select_assessment_instance_durations, []);
-        assert.equal(result.rowCount, 1);
-        locals.assessment_instance_duration = result.rows[0].duration;
+        locals.assessment_instance_duration = await sqldb.queryRow(
+          sql.select_assessment_instance_durations,
+          z.number(),
+        );
       }
     });
     it('should have the correct assessment_instance duration if student page', function () {
@@ -591,9 +597,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
   describe('auto-testing question ' + qid, function () {
     describe('the setup', function () {
       it('should find the question in the database', async function () {
-        const result = await sqldb.queryZeroOrOneRowAsync(sql.select_question_by_qid, { qid });
-        assert.equal(result.rowCount, 1);
-        locals.question = result.rows[0];
+        locals.question = await selectQuestionByQid({ qid, course_id: '1' });
       });
       it('should be a Freeform question', function () {
         assert.equal(locals.question?.type, 'Freeform');
@@ -606,12 +610,18 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
     getInstanceQuestion(locals);
     describe('the question variant', function () {
       it('should produce no issues', async function () {
-        const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+        const result = await sqldb.queryRows(
+          sql.select_issues_for_last_variant,
+          z.object({
+            ...IssueSchema.shape,
+            ...VariantSchema.shape,
+          }),
+        );
         assert.equal(
-          result.rowCount,
+          result.length,
           0,
-          `found ${result.rowCount} issues (expected zero issues):\n` +
-            JSON.stringify(result.rows, null, '    '),
+          `found ${result.length} issues (expected zero issues):\n` +
+            JSON.stringify(result, null, '    '),
         );
       });
     });
@@ -648,11 +658,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(response.status, 200);
       });
       it('should have an id', async function () {
-        const jobSequence = await sqldb.queryRow(
-          sql.select_last_job_sequence,
-          [],
-          JobSequenceSchema,
-        );
+        const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
         locals.job_sequence_id = jobSequence.id;
       });
       it('should complete', async function () {
@@ -667,34 +673,49 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
       });
       it('should be successful and produce no issues', async function () {
         assert(locals.job_sequence);
-        const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+        const issues = await sqldb.queryRows(
+          sql.select_issues_for_last_variant,
+          z.object({
+            ...IssueSchema.shape,
+            ...VariantSchema.shape,
+          }),
+        );
 
         // To aid in debugging, if the job failed, we'll fetch the logs from
         // all child jobs and print them out. We'll also log any issues. We
         // do this before making assertions to ensure that they're printed.
         if (locals.job_sequence.status !== 'Success') {
           console.log(locals.job_sequence);
-          const params = { job_sequence_id: locals.job_sequence_id };
-          const result = await sqldb.queryAsync(sql.select_jobs, params);
-          console.log(result.rows);
+          const result = await sqldb.queryRows(
+            sql.select_jobs,
+            { job_sequence_id: locals.job_sequence_id },
+            JobSchema,
+          );
+          console.log(result);
         }
-        if (issues.rows.length > 0) {
-          console.log(issues.rows);
+        if (issues.length > 0) {
+          console.log(issues);
         }
 
         assert.equal(locals.job_sequence.status, 'Success');
-        assert.lengthOf(issues.rows, 0);
+        assert.lengthOf(issues, 0);
       });
     });
   });
 }
 
 export async function checkNoIssuesForLastVariantAsync() {
-  const result = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+  const result = await sqldb.queryRows(
+    sql.select_issues_for_last_variant,
+    z.object({
+      ...IssueSchema.shape,
+      ...VariantSchema.shape,
+    }),
+  );
   assert.equal(
-    result.rowCount,
+    result.length,
     0,
-    `found ${result.rowCount} issues (expected zero issues):\n` +
-      JSON.stringify(result.rows, null, '    '),
+    `found ${result.length} issues (expected zero issues):\n` +
+      JSON.stringify(result, null, '    '),
   );
 }
