@@ -80,6 +80,9 @@ jobs:
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
+      - name: Check if a changeset is required
+        # TODO Ensure this doesn't run in dependabot or version packages PRs
+        run: yarn changeset status --since=master
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
@@ -178,5 +181,3 @@ jobs:
         run: make lint-sql
       - name: Run the SQL migrations linter
         run: make lint-sql-migrations
-      - name: Check if a changeset is required
-        run: yarn changeset status --since=master
