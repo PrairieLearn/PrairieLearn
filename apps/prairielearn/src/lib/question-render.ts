@@ -282,7 +282,7 @@ function buildLocals({
   authz_result,
 }: {
   variant: Variant;
-  question?: Question;
+  question: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
   group_role_permissions?: {
     can_view: boolean;
@@ -384,7 +384,7 @@ function buildLocals({
   if (
     assessment_question
       ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question?.grading_method === 'Manual'
+      : question.grading_method === 'Manual'
   ) {
     locals.showGradeButton = false;
   }
@@ -400,7 +400,7 @@ function buildLocals({
   }
 
   // Manually disable correct answer panel
-  if (!question?.show_correct_answer) {
+  if (!question.show_correct_answer) {
     locals.showTrueAnswer = false;
   }
 
