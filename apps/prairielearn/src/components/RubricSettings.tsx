@@ -193,10 +193,8 @@ export function RubricSettings({
           aria-expanded="false"
           aria-controls="rubric-setting"
           onClick={(e: any) => {
-            const icon = (e.currentTarget as HTMLElement).querySelector(
-              '.fa-angle-down',
-            ) as HTMLElement;
-            if (icon) {
+            const icon = (e.currentTarget as HTMLElement).querySelector('.fa-angle-down');
+            if (icon instanceof HTMLElement) {
               const current = icon.style.transform;
               // Toggle between rotated and not rotated
               icon.style.transform =
@@ -414,7 +412,14 @@ export function RubricSettings({
           </button>
         ) : (
           <>
-            <button type="button" class="btn btn-secondary me-2" onClick={() => setEditMode(false)}>
+            <button
+              type="button"
+              class="btn btn-secondary me-2"
+              onClick={() => {
+                setRubricItems(rubricItemDataMerged);
+                setEditMode(false);
+              }}
+            >
               Cancel
             </button>
             <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
