@@ -1,6 +1,6 @@
 import { logger } from '@prairielearn/logger';
 
-const atob = (s: string) => String.fromCharCode(...Buffer.from(s, 'base64'));
+export const atob = (s: string) => String.fromCharCode(...Buffer.from(s, 'base64'));
 const btoa = (s: string) => Buffer.from(s.split('').map((c) => c.charCodeAt(0))).toString('base64');
 
 export function b64EncodeUnicode(str: string) {
