@@ -30,19 +30,17 @@ export const StudentHomePageCourseSchema = z.object({
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
-interface HomeProps {
-  resLocals: Record<string, any>;
-  instructorCourses: InstructorHomePageCourse[];
-  studentCourses: StudentHomePageCourse[];
-  adminInstitutions: StaffInstitution[];
-}
-
 export function Home({
   resLocals,
   instructorCourses,
   studentCourses,
   adminInstitutions,
-}: HomeProps) {
+}: {
+  resLocals: Record<string, any>;
+  instructorCourses: InstructorHomePageCourse[];
+  studentCourses: StudentHomePageCourse[];
+  adminInstitutions: StaffInstitution[];
+}) {
   const { authn_provider_name } = resLocals;
 
   return (
