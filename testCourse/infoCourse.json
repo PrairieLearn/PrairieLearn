@@ -45,6 +45,28 @@
     { "name": "Statistics", "color": "blue2", "description": "Probability distributions." }
   ],
   "tags": [
+    { "name": "mwest", "color": "gray1", "description": "Question originally written by mwest" },
+    { "name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl" },
+    {
+      "name": "mfsilva",
+      "color": "blue1",
+      "description": "Question originally written by mfsilva"
+    },
+    {
+      "name": "balamut2",
+      "color": "orange1",
+      "description": "Question originally written by balamut2"
+    },
+    {
+      "name": "ressick2",
+      "color": "gray1",
+      "description": "Question originally written by ressick2"
+    },
+    {
+      "name": "eliving2",
+      "color": "gray1",
+      "description": "Question originally written by eliving2"
+    },
     {
       "name": "tpl101",
       "color": "gray1",
@@ -55,7 +77,8 @@
     { "name": "su18", "color": "gray1", "description": "Question written in Summer 2018" },
     { "name": "fa18", "color": "gray1", "description": "Question written in Fall 2018" },
     { "name": "v2", "color": "red1", "description": "v2 generation question" },
-    { "name": "v3", "color": "green1", "description": "v3 generation question (freeform)" }
+    { "name": "v3", "color": "green1", "description": "v3 generation question (freeform)" },
+    { "name": "pearl", "color": "yellow3", "description": "Question originally written by pearl" }
   ],
   "sharingSets": [
     { "name": "python-exercises", "description": "Python exercises for sharing" },

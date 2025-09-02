@@ -108,5 +108,39 @@
     { "name": "Math", "color": "orange1", "description": "Mathematics topics" },
     { "name": "Engineering", "color": "orange1", "description": "Engineering topics" }
   ],
-  "tags": []
+  "tags": [
+    { "name": "mwest", "color": "gray1", "description": "Question originally written by mwest" },
+    { "name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl" },
+    {
+      "name": "mfsilva",
+      "color": "blue1",
+      "description": "Question originally written by mfsilva"
+    },
+    {
+      "name": "balamut2",
+      "color": "orange1",
+      "description": "Question originally written by balamut2"
+    },
+    {
+      "name": "ressick2",
+      "color": "gray1",
+      "description": "Question originally written by ressick2"
+    },
+    {
+      "name": "eliving2",
+      "color": "gray1",
+      "description": "Question originally written by eliving2"
+    },
+    {
+      "name": "nnytko2",
+      "color": "turquoise1",
+      "description": "Question originally written by nnytko2"
+    },
+    {
+      "name": "astec",
+      "color": "orange2",
+      "description": "Question originally written by andrewstec"
+    },
+    { "name": "pearl", "color": "yellow3", "description": "Question originally written by pearl" }
+  ]
 }
