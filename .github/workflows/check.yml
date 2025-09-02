@@ -178,3 +178,5 @@ jobs:
         run: make lint-sql
       - name: Run the SQL migrations linter
         run: make lint-sql-migrations
+      - name: Check if a changeset is required
+        run: yarn changeset status --since=master
