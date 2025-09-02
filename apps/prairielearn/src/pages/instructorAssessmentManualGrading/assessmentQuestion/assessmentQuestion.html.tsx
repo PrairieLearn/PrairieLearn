@@ -514,7 +514,13 @@ function GroupInfoModal({
 
         <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
         <div class="px-2 py-1 border-top">Freeform Code</div>
+
+        <div class="px-2 py-1 border-top border-end">
+          Handwritten submissions with 1 correct answer
+        </div>
+        <div class="px-2 py-1 border-top">Handwritten submissions with 2+ correct answers</div>
       </div>
+
       ${numOpenInstances > 0
         ? html` <div class="alert alert-warning mt-3" role="alert">
             <div class="row g-2">
