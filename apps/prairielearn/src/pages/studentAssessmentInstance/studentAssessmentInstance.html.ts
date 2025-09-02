@@ -101,6 +101,9 @@ export function StudentAssessmentInstance({
     (q) => q.allow_real_time_grading,
   );
   const someQuestionsForbidRealTimeGrading = instance_question_rows.some(
+    // Note that this currently picks up `null`. In the future,
+    // `assessment_questions.allow_real_time_grading` will have a `NOT NULL`
+    // constraint. Once that happens, this will be totally safe.
     (q) => !q.allow_real_time_grading,
   );
 
