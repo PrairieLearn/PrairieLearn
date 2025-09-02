@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 3.0.21
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 3.0.20
 
 ### Patch Changes
