@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 4.0.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 4.0.2
 
 ### Patch Changes
