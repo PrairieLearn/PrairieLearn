@@ -3372,7 +3372,7 @@ describe('Assessment syncing', () => {
       );
     });
 
-    it.only.each([
+    it.each([
       {
         name: 'assessment level without alternatives',
         allowRealTimeGrading: false,
