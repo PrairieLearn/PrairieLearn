@@ -112,12 +112,26 @@ In most cases, you'll want to do your best to ensure that the given batched migr
 
 ### Server setup
 
-To execute any pending regular migrations, call `init()` early on in your application startup code. The first argument is an array of directory paths containing migration files as described above. The second argument is a project identifier, which is used to isolate multiple migration sequences from each other when two or more applications share a single database.
+To execute any pending regular migrations, call `init()` early on in your application startup code. The function takes an options object with the following properties:
+
+- `directories`: An array of directory paths containing migration files
+- `project`: A project identifier used to isolate multiple migration sequences from each other when two or more applications share a single database
+- `beforeEachMigration` (optional): A callback function that runs before each migration is executed, receiving the migration metadata as a parameter
+- `afterEachMigration` (optional): A callback function that runs after each migration is executed, receiving the migration metadata as a parameter
 
 ```ts
 import { init } from '@prairielearn/migrations';
 
-await init([path.join(__dirname, 'migrations')], 'prairielearn');
+await init({
+  directories: [path.join(__dirname, 'migrations')],
+  project: 'prairielearn',
+  beforeEachMigration: ({ filename }) => {
+    console.log(`Starting migration: ${filename}`);
+  },
+  afterEachMigration: ({ filename }) => {
+    console.log(`Completed migration: ${filename}`);
+  },
+});
 ```
 
 If you want to make use of batched migrations, you'll need to do some additional setup. Since batched migrations are typically used with regular migrations, you'll need to take care to call `init()` after `initBatchedMigrations()` but before `startBatchedMigrations()`.

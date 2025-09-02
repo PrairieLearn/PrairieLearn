@@ -2321,10 +2321,10 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
 
       if (argv['migrate-and-exit']) {
         logger.info('option --migrate-and-exit passed, running DB setup and exiting');

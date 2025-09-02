@@ -1,1 +1,1 @@
-export { init } from './migrations.js';
+export { init, type InitMigrationsOptions } from './migrations.js';

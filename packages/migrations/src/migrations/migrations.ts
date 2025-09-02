@@ -14,9 +14,19 @@ import {
   sortMigrationFiles,
 } from '../load-migrations.js';
 
+export interface InitMigrationsOptions {
+  directories: string | string[];
+  project: string;
+  /** A callback that is run before each migration. */
+  beforeEachMigration?: (meta: MigrationFile) => void | Promise<void>;
+  /** A callback that is run after each migration. */
+  afterEachMigration?: (meta: MigrationFile) => void | Promise<void>;
+}
+
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-export async function init(directories: string | string[], project: string) {
+export async function init(options: InitMigrationsOptions): Promise<void> {
+  const { directories, project, beforeEachMigration, afterEachMigration } = options;
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
@@ -34,7 +44,7 @@ export async function init(directories: string | string[], project: string) {
     },
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
-      await initWithLock(migrationDirectories, project);
+      await initWithLock(migrationDirectories, project, beforeEachMigration, afterEachMigration);
     },
   );
   logger.verbose(`Released lock ${lockName}`);
@@ -53,7 +63,12 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-export async function initWithLock(directories: string[], project: string) {
+export async function initWithLock(
+  directories: string[],
+  project: string,
+  beforeEachMigration?: (meta: MigrationFile) => void | Promise<void>,
+  afterEachMigration?: (meta: MigrationFile) => void | Promise<void>,
+) {
   logger.verbose('Starting DB schema migration');
 
   const oldSchema = sqldb.defaultPool.getSearchSchema();
@@ -122,7 +137,13 @@ export async function initWithLock(directories: string[], project: string) {
 
     // Figure out which migrations have to be applied.
     const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
-    for (const { directory, filename, timestamp } of migrationsToExecute) {
+    for (const meta of migrationsToExecute) {
+      const { directory, filename, timestamp } = meta;
+
+      if (beforeEachMigration) {
+        await beforeEachMigration(meta);
+      }
+
       if (allMigrations.rows.length === 0) {
         // if we are running all the migrations then log at a lower level
         logger.verbose(`Running migration ${filename}`);
@@ -161,6 +182,10 @@ export async function initWithLock(directories: string[], project: string) {
         timestamp,
         project,
       });
+
+      if (afterEachMigration) {
+        await afterEachMigration(meta);
+      }
     }
   } finally {
     // Restore the search schema

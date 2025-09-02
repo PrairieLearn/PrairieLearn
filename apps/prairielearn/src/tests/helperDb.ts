@@ -62,10 +62,10 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   });
 
   if (runMigrations) {
-    await initMigrations(
-      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
-      'prairielearn',
-    );
+    await initMigrations({
+      directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      project: 'prairielearn',
+    });
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');
