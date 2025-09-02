@@ -135,7 +135,7 @@ onDocumentReady(() => {
       target.addEventListener('hide.bs.popover', removeFocusTrap);
 
       // Attempt to place focus on the correct item inside the popover.
-      const popoverBody = container.querySelector('.popover-body') as HTMLElement;
+      const popoverBody = container.querySelector<HTMLElement>('.popover-body')!;
       focusFirstFocusableChild(popoverBody);
     }
   });

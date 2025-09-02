@@ -1799,7 +1799,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     assert.lengthOf(locals.studentUsers, 5);
   });
 
-  test.sequential('should setup group info', async function () {
+  test.sequential('should setup group info', function () {
     locals.groupId = '1';
     locals.groupName = '1';
     locals.groupMembers = locals.studentUsers.map((user) => ({
@@ -1972,7 +1972,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment?.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );
