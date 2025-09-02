@@ -125,10 +125,10 @@ import { init } from '@prairielearn/migrations';
 await init({
   directories: [path.join(__dirname, 'migrations')],
   project: 'prairielearn',
-  beforeEachMigration: ({ filename }) => {
+  beforeEachMigration({ filename }) {
     console.log(`Starting migration: ${filename}`);
   },
-  afterEachMigration: ({ filename }) => {
+  afterEachMigration({ filename }) {
     console.log(`Completed migration: ${filename}`);
   },
 });
