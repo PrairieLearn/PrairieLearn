@@ -118,6 +118,11 @@ def image_file_extension(content_type: str) -> str:
             return content_type.split("/")[1]
 
 
+# Canvas stores formulas as img tags that include a `data-equation-content`
+# attribute with the Latex version of the formula. It also includes attributes
+# that are not properly HTML-escaped (such as the mathml version of the
+# formula), so any `>` character found within an attribute must be ignored as
+# well.
 FORMULA_IMG_RE = re.compile(
     r'<img[^>]*data-equation-content="([^"]+)"([^=">]*="([^"]*)")*[^>="]*>',
     re.DOTALL | re.IGNORECASE,
@@ -126,6 +131,9 @@ FORMULA_IMG_RE = re.compile(
 
 def handle_formulas(text: str) -> str:
     def replace_formula(match: re.Match[str]) -> str:
+        # PrairieLearn only needs the Latex version of the formula from
+        # `data-equation-content` attribute. All other attributes can be
+        # ignored.
         formula = match.group(1).replace("$", r"\$")
         return f"${formula}$"
 
