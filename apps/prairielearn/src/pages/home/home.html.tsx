@@ -134,11 +134,7 @@ function DevModeCard() {
   );
 }
 
-interface AdminInstitutionsCardProps {
-  adminInstitutions: StaffInstitution[];
-}
-
-function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps) {
+function AdminInstitutionsCard({ adminInstitutions }: { adminInstitutions: StaffInstitution[] }) {
   if (adminInstitutions.length === 0) return null;
 
   return (
@@ -159,11 +155,11 @@ function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps
   );
 }
 
-interface InstructorCoursesCardProps {
+function InstructorCoursesCard({
+  instructorCourses,
+}: {
   instructorCourses: InstructorHomePageCourse[];
-}
-
-function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps) {
+}) {
   if (instructorCourses.length === 0) return null;
 
   return (
@@ -211,11 +207,11 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
   );
 }
 
-interface CourseInstanceListProps {
+function CourseInstanceList({
+  courseInstances,
+}: {
   courseInstances: InstructorHomePageCourse['course_instances'];
-}
-
-function CourseInstanceList({ courseInstances }: CourseInstanceListProps) {
+}) {
   return (
     <>
       {courseInstances.map((courseInstance) => (
@@ -231,17 +227,15 @@ function CourseInstanceList({ courseInstances }: CourseInstanceListProps) {
   );
 }
 
-interface StudentCoursesCardProps {
-  studentCourses: StudentHomePageCourse[];
-  hasInstructorCourses: boolean;
-  canAddCourses: boolean;
-}
-
 function StudentCoursesCard({
   studentCourses,
   hasInstructorCourses,
   canAddCourses,
-}: StudentCoursesCardProps) {
+}: {
+  studentCourses: StudentHomePageCourse[];
+  hasInstructorCourses: boolean;
+  canAddCourses: boolean;
+}) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
 
   return (
