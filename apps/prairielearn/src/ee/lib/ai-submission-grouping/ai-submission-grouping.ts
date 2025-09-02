@@ -172,6 +172,7 @@ export async function aiSubmissionGrouping({
   user_id,
   closed_instance_questions_only,
   instance_question_ids,
+  ungrouped_instance_questions_only,
 }: {
   question: Question;
   course: Course;
@@ -181,6 +182,7 @@ export async function aiSubmissionGrouping({
   authn_user_id: string;
   user_id: string;
   closed_instance_questions_only: boolean;
+  ungrouped_instance_questions_only: boolean;
   /**
    * Limit grading to the specified instance questions.
    * Only use when mode is 'selected'.
@@ -218,6 +220,7 @@ export async function aiSubmissionGrouping({
     const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
       assessment_question.id,
       closed_instance_questions_only,
+      ungrouped_instance_questions_only,
     );
 
     const selectedInstanceQuestions =

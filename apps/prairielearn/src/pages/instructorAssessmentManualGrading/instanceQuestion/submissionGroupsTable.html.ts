@@ -24,5 +24,5 @@ export function SubmissionGroups(aiSubmissionGroups: AiSubmissionGroup[]) {
         </tbody>
       </table>
     </div>
-  `
+  `;
 }

@@ -31,7 +31,7 @@ export function GradingPanel({
   submissionGroupName,
   aiGradingInfo,
   showAiSubmissionGroup = false,
-  aiSubmissionGroups
+  aiSubmissionGroups,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
@@ -105,20 +105,20 @@ export function GradingPanel({
                 <div class="d-flex align-items-center">
                   <label for="submission-group-toggle" class="form-label">
                     Submission Group:
-                    ${aiSubmissionGroups && aiSubmissionGroups.length > 0 ? (
-                      html`<button
-                        type="button"
-                        class="btn btn-sm btn-ghost"
-                        data-bs-toggle="popover"
-                        data-bs-container="body"
-                        data-bs-html="true"
-                        data-bs-placement="auto"
-                        data-bs-title="Submission Groups"
-                        data-bs-content="${escapeHtml(SubmissionGroups(aiSubmissionGroups))}"
-                      >
-                        <i class="fas fa-circle-info"></i>
-                      </button>`
-                    ) : ''}
+                    ${aiSubmissionGroups && aiSubmissionGroups.length > 0
+                      ? html`<button
+                          type="button"
+                          class="btn btn-sm btn-ghost"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Submission Groups"
+                          data-bs-content="${escapeHtml(SubmissionGroups(aiSubmissionGroups))}"
+                        >
+                          <i class="fas fa-circle-info"></i>
+                        </button>`
+                      : ''}
                   </label>
                 </div>
                 <div class="dropdown w-100 mb-2" role="combobox">

@@ -180,6 +180,7 @@ router.post(
           user_id: res.locals.user.user_id,
           instance_question_ids,
           closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+          ungrouped_instance_questions_only: false,
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -273,6 +274,25 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         user_id: res.locals.user.user_id,
         closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        ungrouped_instance_questions_only: false,
+      });
+
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+    } else if (req.body.__action === 'ai_submission_group_assessment_ungrouped') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const jobSequenceId = await aiSubmissionGrouping({
+        question: res.locals.question,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
+        assessment_question: res.locals.assessment_question,
+        urlPrefix: res.locals.urlPrefix,
+        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.user_id,
+        closed_instance_questions_only: req.body.closed_instance_questions_only === 'true',
+        ungrouped_instance_questions_only: true,
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

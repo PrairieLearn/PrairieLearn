@@ -230,7 +230,7 @@ onDocumentReady(() => {
               visible: aiGradingMode,
               filterControl: 'select',
               class: 'text-center',
-              formatter: (value: string | null) => value ?? '&mdash;',
+              formatter: (value: string | null) => value ?? '(Ungrouped)',
               sortable: true,
             }
           : null,

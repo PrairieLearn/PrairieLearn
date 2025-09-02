@@ -379,6 +379,13 @@ export function AssessmentQuestion({
                         >
                           Group all submissions
                         </button>
+                        <button
+                          class="dropdown-item"
+                          data-bs-toggle="modal"
+                          data-bs-target="#group-confirmation-modal-ungrouped"
+                        >
+                          Group ungrouped submissions
+                        </button>
 
                         <hr class="dropdown-divider" />
 
@@ -411,6 +418,11 @@ export function AssessmentQuestion({
       DeleteAllAISubmissionGroupingResultsModal({ csrfToken: __csrf_token }),
       GroupInfoModal({
         modalFor: 'all',
+        numOpenInstances: num_open_instances,
+        csrfToken: __csrf_token,
+      }),
+      GroupInfoModal({
+        modalFor: 'ungrouped',
         numOpenInstances: num_open_instances,
         csrfToken: __csrf_token,
       }),
@@ -469,18 +481,32 @@ function GroupInfoModal({
   numOpenInstances,
   csrfToken,
 }: {
-  modalFor: 'all' | 'selected';
+  modalFor: 'all' | 'selected' | 'ungrouped';
   numOpenInstances: number;
   csrfToken: string;
 }) {
   return Modal({
     id: `group-confirmation-modal-${modalFor}`,
-    title: modalFor === 'all' ? 'Group all submissions' : 'Group selected submissions',
-    form: modalFor === 'all',
+    title: run(() => {
+      if (modalFor === 'all') {
+        return 'Group all submissions';
+      } else if (modalFor === 'ungrouped') {
+        return 'Group ungrouped submissions';
+      } else {
+        return 'Group selected submissions';
+      }
+    }),
+    form: modalFor === 'all' || modalFor === 'ungrouped',
     body: html`
-      ${modalFor === 'all'
+      ${modalFor === 'all' || modalFor === 'ungrouped'
         ? html`
-            <input type="hidden" name="__action" value="ai_submission_group_assessment_all" />
+            <input
+              type="hidden"
+              name="__action"
+              value="${modalFor === 'all'
+                ? 'ai_submission_group_assessment_all'
+                : 'ai_submission_group_assessment_ungrouped'}"
+            />
             <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           `
         : ''}

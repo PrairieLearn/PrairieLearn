@@ -184,7 +184,7 @@ export function InstanceQuestion({
                 submissionGroupName,
                 aiGradingInfo,
                 showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
-                aiSubmissionGroups
+                aiSubmissionGroups,
               })}
             </div>
           </div>

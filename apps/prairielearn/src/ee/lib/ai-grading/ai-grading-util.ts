@@ -363,10 +363,11 @@ export function parseAiRubricItems({
 export async function selectInstanceQuestionsForAssessmentQuestion(
   assessment_question_id: string,
   closed_instance_questions_only = false,
+  ungrouped_instance_questions_only = false,
 ): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    { assessment_question_id, closed_instance_questions_only },
+    { assessment_question_id, closed_instance_questions_only, ungrouped_instance_questions_only },
     InstanceQuestionSchema,
   );
 }
