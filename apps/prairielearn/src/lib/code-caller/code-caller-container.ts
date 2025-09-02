@@ -1,4 +1,3 @@
-import assert from 'node:assert';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -675,40 +674,13 @@ export class CodeCallerContainer implements CodeCaller {
       );
     }
 
-    let containerNull: boolean | null = null;
-    let callbackNull: boolean | null = null;
-    let timeoutIDNull: boolean | null = null;
-
-    if (this.state === CREATED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      containerNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
+    if (![CREATED, WAITING, IN_CALL, EXITING, EXITED].includes(this.state)) {
       return this._logError(`Invalid CodeCallerContainer state: ${String(this.state)}`);
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(containerNull != null, 'containerNull should not be null');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(callbackNull != null, 'callbackNull should not be null');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(timeoutIDNull != null, 'timeoutIDNull should not be null');
+    const containerNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = this.state !== IN_CALL;
+    const timeoutIDNull = this.state !== IN_CALL;
 
     if (containerNull && this.container != null) {
       return this._logError(

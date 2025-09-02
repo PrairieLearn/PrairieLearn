@@ -1,5 +1,4 @@
 import { type ChildProcess } from 'child_process';
-import assert from 'node:assert';
 import * as child_process from 'node:child_process';
 import { type SpawnOptions } from 'node:child_process';
 import * as path from 'node:path';
@@ -673,43 +672,13 @@ export class CodeCallerNative implements CodeCaller {
       );
     }
 
-    let childNull: boolean | null = null;
-    let callbackNull: boolean | null = null;
-    let timeoutIDNull: boolean | null = null;
-    if (this.state === CREATED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === RESTARTING) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
+    if (![CREATED, WAITING, IN_CALL, RESTARTING, EXITING, EXITED].includes(this.state)) {
       return this._logError('Invalid CodeCallerNative state: ' + String(this.state));
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(childNull != null, 'childNull should not be null');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(callbackNull != null, 'callbackNull should not be null');
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    assert(timeoutIDNull != null, 'timeoutIDNull should not be null');
+    const childNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = ![IN_CALL, RESTARTING].includes(this.state);
+    const timeoutIDNull = ![IN_CALL, RESTARTING].includes(this.state);
 
     if (childNull && this.child != null) {
       return this._logError(
