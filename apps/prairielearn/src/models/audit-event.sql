@@ -203,7 +203,10 @@ SELECT
   course_meta.id AS course_id,
   assessment_meta.id AS assessment_id,
   -- We coalesce here since there is no foreign key constraint on assessment_instance_id
-  coalesce(assessment_instance_meta.id, $assessment_instance_id) AS assessment_instance_id,
+  coalesce(
+    assessment_instance_meta.id,
+    $assessment_instance_id
+  ) AS assessment_instance_id,
   assessment_question_meta.id AS assessment_question_id,
   group_meta.id AS group_id
 FROM
