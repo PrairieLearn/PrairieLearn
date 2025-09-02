@@ -46,6 +46,7 @@ describe('getPageContext', () => {
           foo: 'bar',
         },
       },
+      __csrf_token: '123',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
@@ -97,6 +98,7 @@ describe('getPageContext', () => {
           user_id: '1',
         },
       },
+      __csrf_token: '123',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
@@ -155,8 +157,8 @@ describe('getCourseInstanceContext', () => {
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
       ...mockStudentData.course_instance,
-      enrollment_limit: 10,
       enrollment_code: '1234567890ab',
+      enrollment_limit: 10,
       json_comment: 'foo',
       share_source_publicly: true,
       sync_errors: null,
@@ -179,6 +181,13 @@ describe('getCourseInstanceContext', () => {
       repository: 'https://github.com/example/example.git',
       sharing_name: 'example',
       show_getting_started: false,
+    },
+    institution: {
+      id: '1',
+      display_timezone: 'America/Chicago',
+      default_authn_provider_id: null,
+      long_name: 'Example Institution',
+      short_name: 'EI',
     },
   };
 
@@ -216,6 +225,7 @@ describe('getCourseInstanceContext', () => {
     const instructorDataWithExtra = {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
+      institution: { ...mockInstructorData.institution, extra: 'field' },
     };
     const result = getCourseInstanceContext(instructorDataWithExtra, 'instructor');
     expect(result.course_instance).not.toHaveProperty('extra');
