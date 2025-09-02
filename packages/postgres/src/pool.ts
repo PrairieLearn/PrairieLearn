@@ -4,9 +4,8 @@ import { Readable, Transform } from 'node:stream';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];

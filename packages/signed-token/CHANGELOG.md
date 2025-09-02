@@ -1,5 +1,11 @@
 # @prairielearn/signed-token
 
+## 2.0.18
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 2.0.17
 
 ### Patch Changes

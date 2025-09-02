@@ -11,6 +11,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -25,6 +26,8 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import type { CourseInstanceJsonInput } from '../../schemas/index.js';
+import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -51,6 +54,14 @@ router.get(
     ).href;
     const publicLink = new URL(
       `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessments`,
+      host,
+    ).href;
+
+    const selfEnrollLink = new URL(
+      getSelfEnrollmentLinkUrl({
+        courseInstanceId: res.locals.course_instance.id,
+        enrollmentCode: res.locals.course_instance.enrollment_code,
+      }),
       host,
     ).href;
     const availableTimezones = await getCanonicalTimezones([
@@ -87,6 +98,7 @@ router.get(
       InstructorInstanceAdminSettings({
         resLocals: res.locals,
         shortNames,
+        selfEnrollLink,
         studentLink,
         publicLink,
         infoCourseInstancePath,
@@ -174,7 +186,9 @@ router.post(
 
       const paths = getPaths(undefined, res.locals);
 
-      const courseInstanceInfo = JSON.parse(await fs.readFile(infoCourseInstancePath, 'utf8'));
+      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
+        await fs.readFile(infoCourseInstancePath, 'utf8'),
+      );
       courseInstanceInfo.longName = req.body.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
@@ -232,6 +246,13 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Course instance configuration updated successfully');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'generate_enrollment_code') {
+      await sqldb.execute(sql.update_enrollment_code, {
+        course_instance_id: res.locals.course_instance.id,
+        enrollment_code: generateEnrollmentCode(),
+      });
+      flash('success', 'Self-enrollment key generated successfully');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
