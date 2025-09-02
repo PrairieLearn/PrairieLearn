@@ -50,10 +50,10 @@ export function PublicLinkSharing({
 
 export function StudentLinkSharing({
   studentLink,
-  sharingMessageStudent,
+  studentLinkMessage,
 }: {
   studentLink: string;
-  sharingMessageStudent: string;
+  studentLinkMessage: string;
 }) {
   return html`
     <div class="mb-3">
@@ -85,7 +85,7 @@ export function StudentLinkSharing({
           <i class="fas fa-qrcode"></i>
         </button>
       </span>
-      <small class="form-text text-muted"> ${sharingMessageStudent} </small>
+      <small class="form-text text-muted"> ${studentLinkMessage} </small>
     </div>
   `;
 }

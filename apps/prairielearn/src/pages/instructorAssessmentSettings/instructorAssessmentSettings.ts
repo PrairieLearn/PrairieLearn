@@ -88,8 +88,7 @@ router.get(
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     const linkType = 'assessment';
-
-    const sharingMessageStudent = 'The link that students will use to access this assessment.';
+    const studentLinkMessage = 'The link that students will use to access this assessment.';
 
     res.send(
       InstructorAssessmentSettings({
@@ -104,7 +103,7 @@ router.get(
         assessmentModules,
         canEdit,
         linkType,
-        sharingMessageStudent,
+        studentLinkMessage,
       }),
     );
   }),

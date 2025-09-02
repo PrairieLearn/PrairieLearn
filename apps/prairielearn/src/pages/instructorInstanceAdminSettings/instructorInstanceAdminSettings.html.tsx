@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
@@ -24,7 +25,7 @@ export function InstructorInstanceAdminSettings({
   canEdit,
   enrollmentCount,
   linkType,
-  sharingMessageStudent,
+  studentLinkMessage,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
@@ -37,7 +38,7 @@ export function InstructorInstanceAdminSettings({
   canEdit: boolean;
   enrollmentCount: number;
   linkType: string;
-  sharingMessageStudent: string;
+  studentLinkMessage: string;
 }) {
   return PageLayout({
     resLocals,
@@ -188,9 +189,9 @@ export function InstructorInstanceAdminSettings({
                 links to the course can be used for enrollment.
               </div>
             </div>
-            ${StudentLinkSharing({ studentLink, sharingMessageStudent })}
+            ${StudentLinkSharing({ studentLink, studentLinkMessage })}
             <h2 class="h4">Sharing</h2>
-            ${resLocals.course_instance
+            ${resLocals.course_instance.share_source_publicly
               ? PublicLinkSharing({ publicLink, linkType })
               : html`<p>This course instance is not being shared.</p>`}
             ${EditConfiguration({

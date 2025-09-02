@@ -7,7 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorAssessmentSettings({
@@ -22,7 +22,7 @@ export function InstructorAssessmentSettings({
   assessmentModules,
   canEdit,
   linkType,
-  sharingMessageStudent,
+  studentLinkMessage,
 }: {
   resLocals: Record<string, any>;
   origHash: string;
@@ -35,7 +35,7 @@ export function InstructorAssessmentSettings({
   assessmentModules: AssessmentModule[];
   canEdit: boolean;
   linkType: string;
-  sharingMessageStudent: string;
+  studentLinkMessage: string;
 }) {
   return PageLayout({
     resLocals,
@@ -305,9 +305,9 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            ${StudentLinkSharing({ studentLink, sharingMessageStudent })}
+            ${StudentLinkSharing({ studentLink, studentLinkMessage })}
             <h2 class="h4">Sharing</h2>
-            ${resLocals.course_instance
+            ${resLocals.assessment.share_source_publicly
               ? PublicLinkSharing({ publicLink, linkType })
               : html`<p>This assessment is not being shared.</p>`}
             ${resLocals.authz_data.has_course_permission_view
