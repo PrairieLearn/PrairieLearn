@@ -24,23 +24,6 @@ ORDER BY
 
 -- BLOCK insert_audit_event
 WITH
-  agent_meta AS (
-    SELECT
-      user_id
-    FROM
-      users
-    WHERE
-      user_id = $agent_user_id
-  ),
-  subject_meta AS (
-    SELECT
-      user_id,
-      institution_id
-    FROM
-      users
-    WHERE
-      user_id = $subject_user_id
-  ),
   group_meta AS (
     SELECT
       id,
@@ -82,16 +65,12 @@ WITH
             assessment_id
           FROM
             assessment_instance_meta
-          WHERE
-            id = $assessment_instance_id
         ),
         (
           SELECT
             assessment_id
           FROM
             assessment_question_meta
-          WHERE
-            id = $assessment_question_id
         )
       )
   ),
@@ -109,16 +88,12 @@ WITH
             course_instance_id
           FROM
             group_meta
-          WHERE
-            id = $group_id
         ),
         (
           SELECT
             course_instance_id
           FROM
             assessment_meta
-          WHERE
-            id = $assessment_id
         )
       )
   ),
@@ -136,8 +111,6 @@ WITH
             course_id
           FROM
             course_instance_meta
-          WHERE
-            id = $course_instance_id
         )
       )
   ),
@@ -153,17 +126,7 @@ WITH
           SELECT
             institution_id
           FROM
-            subject_meta
-          WHERE
-            user_id = $subject_user_id
-        ),
-        (
-          SELECT
-            institution_id
-          FROM
             course_meta
-          WHERE
-            id = $course_id
         )
       )
   )
@@ -191,14 +154,14 @@ SELECT
   $action,
   $action_detail,
   $table_name,
-  subject_meta.user_id AS subject_user_id,
+  $subject_user_id,
   course_instance_meta.id AS course_instance_id,
   $row_id,
   $context,
   $old_row,
   $new_row,
   $agent_authn_user_id,
-  agent_meta.user_id AS agent_user_id,
+  $agent_user_id,
   institution_meta.id AS institution_id,
   course_meta.id AS course_id,
   assessment_meta.id AS assessment_id,
@@ -214,9 +177,7 @@ FROM
     SELECT
       1
   ) AS tmp -- dummy row to make the LEFT JOINs work
-  LEFT JOIN subject_meta ON (TRUE)
   LEFT JOIN course_instance_meta ON (TRUE)
-  LEFT JOIN agent_meta ON (TRUE)
   LEFT JOIN institution_meta ON (TRUE)
   LEFT JOIN course_meta ON (TRUE)
   LEFT JOIN assessment_meta ON (TRUE)
