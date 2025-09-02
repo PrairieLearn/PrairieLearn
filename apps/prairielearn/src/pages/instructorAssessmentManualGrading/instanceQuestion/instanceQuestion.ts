@@ -188,6 +188,18 @@ router.get(
       }
     }
 
+    const aiGradingMode =
+      (await features.enabledFromLocals('ai-grading', res.locals)) &&
+      res.locals.assessment_question.ai_grading_mode;
+    const useAiSubmissionGroups =
+      aiGradingMode &&
+      (await selectAssessmentQuestionHasAiSubmissionGroups({
+        assessmentQuestionId: res.locals.assessment_question.id,
+      }));
+
+
+
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),

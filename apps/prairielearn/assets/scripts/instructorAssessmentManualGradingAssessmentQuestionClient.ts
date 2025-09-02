@@ -30,8 +30,12 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
-    aiSubmissionGroupsExist,
+    aiSubmissionGroups,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
+
+  const aiSubmissionGroupsByName = Object.fromEntries(
+    aiSubmissionGroups.map((group) => [group.submission_group_name, group.submission_group_description]),
+  );
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
@@ -223,14 +227,26 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
-        aiGradingMode && aiSubmissionGroupsExist
+        aiGradingMode && aiSubmissionGroups.length > 0
           ? {
               field: 'ai_submission_group_name',
               title: 'Submission Group',
               visible: aiGradingMode,
               filterControl: 'select',
               class: 'text-center',
-              formatter: (value: string | null) => value ?? '(Ungrouped)',
+              formatter: (value: string | null) => {
+                if (!value) {
+                  return html`<span class="text-muted">No group</span>`;
+                }
+                return html`
+                  <span class="d-flex align-items-center justify-content-center gap-2">
+                    ${value ?? 'No group'}
+                    <div data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="${aiSubmissionGroupsByName[value]}">
+                      <i class="fas fa-circle-info text-muted"></i>
+                    </div>
+                  </span>
+                `;
+              },
               sortable: true,
             }
           : null,

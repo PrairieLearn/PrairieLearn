@@ -106,18 +106,8 @@ export function GradingPanel({
                   <label for="submission-group-toggle" class="form-label">
                     Submission Group:
                     ${aiSubmissionGroups && aiSubmissionGroups.length > 0
-                      ? html`<button
-                          type="button"
-                          class="btn btn-sm btn-ghost"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-html="true"
-                          data-bs-placement="auto"
-                          data-bs-title="Submission Groups"
-                          data-bs-content="${escapeHtml(SubmissionGroups(aiSubmissionGroups))}"
-                        >
-                          <i class="fas fa-circle-info"></i>
-                        </button>`
+                      ? html`
+                          <i class="fas fa-circle-info"></i>`
                       : ''}
                   </label>
                 </div>

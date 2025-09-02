@@ -85,7 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
-          aiSubmissionGroupsExist: aiSubmissionGroups.length > 0,
+          aiSubmissionGroups
         },
         'instance-question-table-data',
       )}
@@ -211,32 +211,6 @@ export function AssessmentQuestion({
                     </div>
                   </div>
                 `}
-          `
-        : ''}
-      ${aiGradingEnabled && aiGradingMode && aiSubmissionGroups.length > 0
-        ? html`
-            <div class="card overflow-hidden mb-3">
-              <div class="table-responsive">
-                <table class="table table-sm" aria-label="AI submission groups">
-                  <thead>
-                    <tr class="table-light fw-bold">
-                      <td class="col-5">Submission Group</td>
-                      <td>Description</td>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${aiSubmissionGroups.map(
-                      (aiSubmissionGroup) => html`
-                        <tr>
-                          <td>${aiSubmissionGroup.submission_group_name}</td>
-                          <td>${aiSubmissionGroup.submission_group_description}</td>
-                        </tr>
-                      `,
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           `
         : ''}
 
