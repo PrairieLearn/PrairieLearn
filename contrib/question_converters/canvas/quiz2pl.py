@@ -354,7 +354,7 @@ for question in questions.values():
                     options[answer["blank_id"]] = []
                 options[answer["blank_id"]].append(answer)
             for answer_id, answers in options.items():
-                question_text.replace(
+                question_text = question_text.replace(
                     f"[{answer_id}]",
                     f'<pl-string-input answers-name="{answer_id}" correct-answer="{answers[0]["text"]}" remove-spaces="true" ignore-case="true" display="inline"></pl-string-input>',
                 )
