@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharingCourse, StudentLinkSharing } from '../../components/Links.js';
+import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -23,6 +23,8 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink,
   canEdit,
   enrollmentCount,
+  linkType,
+  sharingMessageStudent,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
@@ -34,6 +36,8 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink: string | null;
   canEdit: boolean;
   enrollmentCount: number;
+  linkType: string;
+  sharingMessageStudent: string;
 }) {
   return PageLayout({
     resLocals,
@@ -184,9 +188,11 @@ export function InstructorInstanceAdminSettings({
                 links to the course can be used for enrollment.
               </div>
             </div>
-            ${StudentLinkSharing({ studentLink })}
+            ${StudentLinkSharing({ studentLink, sharingMessageStudent })}
             <h2 class="h4">Sharing</h2>
-            ${PublicLinkSharingCourse({ courseInstance: resLocals.course_instance, publicLink })}
+            ${resLocals.course_instance
+              ? PublicLinkSharing({ publicLink, linkType })
+              : html`<p>This course instance is not being shared.</p>`}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,

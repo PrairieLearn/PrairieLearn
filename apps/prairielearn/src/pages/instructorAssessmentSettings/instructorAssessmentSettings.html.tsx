@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharingAssessment, StudentLinkSharing } from '../../components/Links.js';
+import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
@@ -21,6 +21,8 @@ export function InstructorAssessmentSettings({
   assessmentSets,
   assessmentModules,
   canEdit,
+  linkType,
+  sharingMessageStudent,
 }: {
   resLocals: Record<string, any>;
   origHash: string;
@@ -32,6 +34,8 @@ export function InstructorAssessmentSettings({
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
   canEdit: boolean;
+  linkType: string;
+  sharingMessageStudent: string;
 }) {
   return PageLayout({
     resLocals,
@@ -301,9 +305,11 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            ${StudentLinkSharing({ studentLink })}
+            ${StudentLinkSharing({ studentLink, sharingMessageStudent })}
             <h2 class="h4">Sharing</h2>
-            ${PublicLinkSharingAssessment({ assessment: resLocals.assessment, publicLink })}
+            ${resLocals.course_instance
+              ? PublicLinkSharing({ publicLink, linkType })
+              : html`<p>This assessment is not being shared.</p>`}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
