@@ -32,6 +32,7 @@ WITH
       groups
     WHERE
       id = $group_id
+      AND id IS NOT NULL
   ),
   assessment_instance_meta AS (
     SELECT
@@ -41,6 +42,7 @@ WITH
       assessment_instances
     WHERE
       id = $assessment_instance_id
+      AND id IS NOT NULL
   ),
   assessment_question_meta AS (
     SELECT
@@ -50,6 +52,7 @@ WITH
       assessment_questions
     WHERE
       id = $assessment_question_id
+      AND id IS NOT NULL
   ),
   assessment_meta AS (
     SELECT
@@ -73,6 +76,7 @@ WITH
             assessment_question_meta
         )
       )
+      AND id IS NOT NULL
   ),
   course_instance_meta AS (
     SELECT
@@ -96,6 +100,7 @@ WITH
             assessment_meta
         )
       )
+      AND id IS NOT NULL
   ),
   course_meta AS (
     SELECT
@@ -113,6 +118,7 @@ WITH
             course_instance_meta
         )
       )
+      AND id IS NOT NULL
   ),
   institution_meta AS (
     SELECT
@@ -129,6 +135,7 @@ WITH
             course_meta
         )
       )
+      AND id IS NOT NULL
   )
 INSERT INTO
   audit_events (
