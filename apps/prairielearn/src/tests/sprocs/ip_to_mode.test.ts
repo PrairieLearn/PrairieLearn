@@ -1,28 +1,29 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let user_id = null;
+let user_id: string | null = null;
 
 async function createCenterExamReservation() {
-  await sqldb.queryAsync(sql.create_center_exam_reservation, { user_id });
+  await sqldb.execute(sql.create_center_exam_reservation, { user_id });
 }
 
 async function createCourseExamReservation() {
-  await sqldb.queryAsync(sql.create_course_exam_reservation, { user_id });
+  await sqldb.execute(sql.create_course_exam_reservation, { user_id });
 }
 
 describe('sproc ip_to_mode tests', function () {
-  before('set up testing server', async function () {
-    await helperDb.before.call(this);
-    const result = await sqldb.queryAsync(sql.setup, {});
-    user_id = result.rows[0].user_id;
+  beforeAll(async function () {
+    await helperDb.before();
+    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.uid);
   });
-  after('tear down testing database', helperDb.after);
+
+  afterAll(helperDb.after);
 
   describe('No reservations', () => {
     it('should return "Public"', async () => {
@@ -34,19 +35,29 @@ describe('sproc ip_to_mode tests', function () {
 
   describe('Center exam with IP restrictions', () => {
     describe('before check-in', () => {
+      // This test is oddly flaky in CI (it times out), but not locally. In an
+      // effort to figure out what's happening, we're temporarily adding some
+      // extra logging here.
       it('should return "Exam" with a correct IP address when session is starting soon', async () => {
+        console.log('before transaction');
         await helperDb.runInTransactionAndRollback(async () => {
+          console.log('before reservation creation');
           await createCenterExamReservation();
 
+          console.log('before ip_to_mode query');
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
             // 10 minutes ago.
             new Date(Date.now() - 1000 * 60 * 10),
             user_id,
           ]);
+
+          console.log('before assertions');
           assert.equal(result.rows[0].mode, 'Exam');
           assert.equal(result.rows[0].mode_reason, 'PrairieTest');
+          console.log('after assertions');
         });
+        console.log('after transaction');
       });
 
       it('should return "Exam" with a correct IP address when session started recently', async () => {
@@ -99,7 +110,7 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           // Add another exam/session/location/reservation.
-          await sqldb.queryAsync(sql.insert_second_reservation, { user_id });
+          await sqldb.execute(sql.insert_second_reservation, { user_id });
 
           const firstSessionInLocation = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
@@ -135,7 +146,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Exam" with the correct IP address', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.execute(sql.check_in_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
@@ -146,7 +157,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Public" with a correct IP address a long time after check-in', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.execute(sql.check_in_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
@@ -161,7 +172,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Public" with an incorrect IP address', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.execute(sql.check_in_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Public');
@@ -174,7 +185,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Exam" with the right IP address, within the access date range', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
@@ -185,7 +196,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Exam" with the right IP address, shortly after the access date range', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
@@ -201,7 +212,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Public" with the right IP address, a long time after the access date range', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
@@ -217,7 +228,7 @@ describe('sproc ip_to_mode tests', function () {
       it('should return "Public" with the wrong IP address', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Public');
@@ -228,13 +239,13 @@ describe('sproc ip_to_mode tests', function () {
   });
 
   describe('Center exam without IP restrictions', () => {
-    describe('before check-in', async () => {
+    describe('before check-in', () => {
       it('should return "Public" for any IP address when session is starting soon', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '192.168.0.1',
@@ -252,7 +263,7 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '192.168.0.1',
@@ -266,15 +277,15 @@ describe('sproc ip_to_mode tests', function () {
       });
     });
 
-    describe('after check-in, before access start', async () => {
+    describe('after check-in, before access start', () => {
       it('should return "Exam" for any IP address', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.execute(sql.check_in_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
@@ -283,15 +294,15 @@ describe('sproc ip_to_mode tests', function () {
       });
     });
 
-    describe('after access start', async () => {
+    describe('after access start', () => {
       it('should return "Exam" for any IP address, within the access date range', async () => {
         await helperDb.runInTransactionAndRollback(async () => {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.01', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
@@ -304,9 +315,9 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '192.168.0.01',
@@ -324,10 +335,10 @@ describe('sproc ip_to_mode tests', function () {
           await createCenterExamReservation();
 
           // Remove IP restriction.
-          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+          await sqldb.execute('UPDATE pt_locations SET filter_networks = FALSE;');
 
-          await sqldb.queryAsync(sql.check_in_reservations, {});
-          await sqldb.queryAsync(sql.start_reservations, {});
+          await sqldb.execute(sql.check_in_reservations);
+          await sqldb.execute(sql.start_reservations);
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '192.168.0.01',
@@ -346,7 +357,7 @@ describe('sproc ip_to_mode tests', function () {
       await helperDb.runInTransactionAndRollback(async () => {
         await createCourseExamReservation();
 
-        await sqldb.queryAsync(sql.check_in_reservations, {});
+        await sqldb.execute(sql.check_in_reservations);
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
@@ -358,8 +369,8 @@ describe('sproc ip_to_mode tests', function () {
       await helperDb.runInTransactionAndRollback(async () => {
         await createCourseExamReservation();
 
-        await sqldb.queryAsync(sql.check_in_reservations, {});
-        await sqldb.queryAsync(sql.start_reservations, {});
+        await sqldb.execute(sql.check_in_reservations);
+        await sqldb.execute(sql.start_reservations);
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
@@ -371,7 +382,7 @@ describe('sproc ip_to_mode tests', function () {
       await helperDb.runInTransactionAndRollback(async () => {
         await createCourseExamReservation();
 
-        await sqldb.queryAsync(sql.start_reservations, {});
+        await sqldb.execute(sql.start_reservations);
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');

@@ -2,7 +2,8 @@
 # as well as general support of STAT 477 Data Science Programming Methods
 # (which was formerly STAT 430 Topics - Data Science Programming Methods
 
-# Alton Barbehenn and Dirk Eddelbuettel, 2019-2025
+# Alton Barbehenn and Dirk Eddelbuettel, 2019-2023
+# Dirk Eddelbuettel, 2024-current
 
 # We initially based this container on the 'r-ubuntu:20.04' container of the
 # Rocker Project which offers us a well-understood and stable basis
@@ -19,8 +20,10 @@
 # the required security escalation so we just apt as previously but pointing
 # at a richer and larger repository with complete CRAN coverage.)
 # r2u is now part of rocker so the image is now also rocker/r2u.
+# r2u now supports arm64 binaries to this container can be built for multiple tags.
 
 FROM rocker/r2u:24.04
+ARG CACHEBUST=2025-08-15-14-16-03
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
@@ -31,67 +34,67 @@ ENV PYTHONIOENCODING=UTF-8
 # tidyverse'. Switching to using the CRAN package names may make it easier to other R
 # users to adapt and adjust the package list.  We also install sqlite3 to support the
 # SQL lectures. (Adding a duckdb binary may be an option too.)
-RUN apt update \
-    && apt install -y curl \
-                      git \
-                      pandoc \
-                      sqlite3 \
-                      sudo \
-    && install.r bench \        
-                 data.table \
-                 devtools \
-                 diffobj \
-                 doparallel \
-                 duckdb \
-                 dygraphs \
-                 flexdashboard \
-                 foreach \
-                 fs \
-                 future.apply \
-                 gapminder \
-                 gh \
-                 git2r \
-                 igraph \
-                 lahman \
-                 lintr \
-                 magick \
-                 memoise \
-                 microbenchmark \
-                 nycflights13 \
-                 palmerpenguins \
-                 png \
-                 profmem \
-                 RcppArmadillo \
-                 rex \
-                 rsqlite \
-                 runit \
-                 shiny \
-                 stringdist \
-                 testthat \
-                 tidyverse \
-                 tinysnapshot \
-                 tinytest \
-                 ttdo \
-                 unix \
-                 xts \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl git pandoc sqlite3 sudo \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && install.r \
+        bench \
+        data.table \
+        devtools \
+        diffobj \
+        doparallel \
+        duckdb \
+        dygraphs \
+        flexdashboard \
+        foreach \
+        fs \
+        future.apply \
+        gapminder \
+        gh \
+        git2r \
+        igraph \
+        lahman \
+        lobstr \
+        lintr \
+        magick \
+        memoise \
+        microbenchmark \
+        nycflights13 \
+        palmerpenguins \
+        png \
+        profmem \
+        RcppArmadillo \
+        rex \
+        rsqlite \
+        runit \
+        shiny \
+        stringdist \
+        testthat \
+        tidyverse \
+        tinysnapshot \
+        tinytest \
+        ttdo \
+        unix \
+        xts \
     && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
-# Install visualTest from Mango
+# Install visualTest from Mango (for old questions, newer use tinysnapshot)
 RUN installGithub.r MangoTheCat/visualTest
 
 # Install plr (helper package for grading R code in PrairieLearn)
 COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
-        && rm -r /r_autograder/plr
+    && rm -r /r_autograder/plr
 
 # Set up user ag
-RUN useradd ag \ 
-        && mkdir /home/ag \
-        && chown ag:ag /home/ag \
-        && echo "[user]" > /home/ag/.gitconfig \
-        && echo "name = Autograding User" >> /home/ag/.gitconfig \
-        && echo "email = ag@nowhere" >> /home/ag/.gitconfig \
-        && chown ag:ag /home/ag/.gitconfig
+RUN useradd ag \
+    && mkdir /home/ag \
+    && chown ag:ag /home/ag \
+    && echo "[user]" > /home/ag/.gitconfig \
+    && echo "name = Autograding User" >> /home/ag/.gitconfig \
+    && echo "email = ag@nowhere" >> /home/ag/.gitconfig \
+    && chown ag:ag /home/ag/.gitconfig
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder

@@ -1,5 +1,6 @@
 import contextlib
 import json
+import linecache
 import os
 import random
 import sys
@@ -32,6 +33,15 @@ def try_read(fname: str) -> str:
     except Exception:
         contents = ""
     return contents
+
+
+def populate_linecache(fname: str, contents: str) -> None:
+    linecache.cache[fname] = (
+        len(contents),
+        None,
+        [line + "\n" for line in contents.splitlines()],
+        fname,
+    )
 
 
 def execute_code(
@@ -79,9 +89,11 @@ def execute_code(
         _, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = extract_ipynb_contents(f, ipynb_key)
+            traceback_fname_student = f"{fname_student} #grade"
         else:
             str_student = f.read()
-    str_student = str_leading + "\n" + str_student + "\n" + str_trailing
+            traceback_fname_student = fname_student
+    str_student = "\n".join(filter(bool, (str_leading, str_student, str_trailing)))
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
         str_test = f.read()
@@ -96,23 +108,30 @@ def execute_code(
         os.remove(path.join(filenames_dir, "trailing_code.py"))
     os.remove(path.join(filenames_dir, "test.py"))
 
-    repeated_setup_name = "repeated_setup()"
-    if repeated_setup_name not in str_setup:
-        repeated_setup_name = "pass"
+    # Since we've deleted some files, we need to manually populate
+    # the linecache so that `traceback` can find the correct contents when
+    # printing any exceptions.
+    populate_linecache(path.join(filenames_dir, "setup_code.py"), str_setup)
+    populate_linecache(fname_ref, str_ref)
 
     # Seed student code and answer code with same seed
     seed = random.randint(0, (2**32) - 1)
 
-    setup_code = {"test_iter_num": test_iter_num, "data": data}
+    setup_globals = {"test_iter_num": test_iter_num, "data": data}
     # make all the variables in setup_code.py available to ans.py
-    exec(str_setup, setup_code)
-    exec(repeated_setup_name, setup_code)
+    code_setup = compile(str_setup, path.join(filenames_dir, "setup_code.py"), "exec")
+    exec(code_setup, setup_globals)
 
-    names_for_user = [variable["name"] for variable in data["params"]["names_for_user"]]
+    # If the setup code has a repeated_setup function, run it.
+    repeated_setup = setup_globals.get("repeated_setup")
+    if repeated_setup is not None and callable(repeated_setup):
+        repeated_setup()
+
+    names_for_user = [v["name"] for v in data["params"].get("names_for_user", [])]
 
     # Make copies of variables that go to the user so we do not clobber them
     ref_code = {}
-    for i, j in setup_code.items():
+    for i, j in setup_globals.items():
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
@@ -120,13 +139,14 @@ def execute_code(
     ref_code = deepcopy(ref_code)
 
     # Add any other variables to reference namespace and do not copy
-    for i, j in setup_code.items():
+    for i, j in setup_globals.items():
         if not (
             i == "__builtins__" or isinstance(j, ModuleType) or i in names_for_user
         ):
             ref_code[i] = j
     set_random_seed(seed)
-    exec(str_ref, ref_code)
+    code_ref = compile(str_ref, fname_ref, "exec")
+    exec(code_ref, ref_code)
     # ref_code contains the correct answers
 
     if include_plt:
@@ -142,15 +162,23 @@ def execute_code(
         variable["name"] for variable in data["params"]["names_from_user"]
     ]
 
-    exec(repeated_setup_name, setup_code)
+    # If the setup code has a repeated_setup function, run it.
+    repeated_setup = setup_globals.get("repeated_setup")
+    if repeated_setup is not None and callable(repeated_setup):
+        repeated_setup()
 
-    student_code = {}
-    for i, j in setup_code.items():
+    # Remove the setup and answer code from the linecache to make it slightly
+    # harder for students to read it.
+    linecache.cache.pop(path.join(filenames_dir, "setup_code.py"), None)
+    linecache.cache.pop(fname_ref, None)
+
+    student_globals = {}
+    for i, j in setup_globals.items():
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            student_code[i] = j  # noqa: PERF403 (too complex)
-    student_code = deepcopy(student_code)
+            student_globals[i] = j  # noqa: PERF403 (too complex)
+    student_globals = deepcopy(student_globals)
 
     # Execute student code
     previous_stdout = sys.stdout
@@ -159,8 +187,17 @@ def execute_code(
 
     set_random_seed(seed)
 
+    # The file at path `fname_student` doesn't actually correspond to the
+    # code that we're going to execute, since it doesn't include the leading
+    # and trailing code. We'll manually construct a `linecache` entry for it
+    # so that the traceback will show the correct code for each line. For
+    # notebooks, this name does not match a real file, so that students see
+    # a pointer to the original source of the code in the traceback.
+    populate_linecache(traceback_fname_student, str_student)
+
     try:
-        exec(str_student, student_code)
+        code_student = compile(str_student, traceback_fname_student, "exec")
+        exec(code_student, student_globals)
         err = None
     except Exception:
         err = sys.exc_info()
@@ -198,16 +235,16 @@ def execute_code(
 
     student_result = {}
     for name in names_from_user:
-        student_result[name] = student_code.get(name, None)
+        student_result[name] = student_globals.get(name, None)
 
     plot_value = None
     if include_plt:
-        for key in list(student_code):
+        for val in student_globals.values():
             if (
-                isinstance(student_code[key], ModuleType)
-                and student_code[key].__dict__["__name__"] == "matplotlib.pyplot"
+                isinstance(val, ModuleType)
+                and val.__dict__["__name__"] == "matplotlib.pyplot"
             ):
-                plot_value = student_code[key]
+                plot_value = val
 
         if not plot_value:
             import matplotlib as mpl

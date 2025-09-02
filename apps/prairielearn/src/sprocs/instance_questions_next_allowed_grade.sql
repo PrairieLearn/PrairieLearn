@@ -1,9 +1,9 @@
 CREATE FUNCTION
     instance_questions_next_allowed_grade (
-        IN instance_question_id BIGINT,
-        OUT allow_grade_date TIMESTAMPTZ,
-        OUT allow_grade_left_ms BIGINT,
-        OUT allow_grade_interval TEXT
+        IN instance_question_id bigint,
+        OUT allow_grade_date timestamptz,
+        OUT allow_grade_left_ms bigint,
+        OUT allow_grade_interval text
     )
 AS $$
 BEGIN
@@ -20,7 +20,8 @@ BEGIN
     WHERE
         iq.id = instance_questions_next_allowed_grade.instance_question_id
         AND aq.grade_rate_minutes IS NOT NULL
-        AND gj.gradable;
+        AND gj.gradable
+        AND gj.grading_method NOT IN ('Manual', 'AI');
 
     IF NOT FOUND THEN
         allow_grade_date := NULL;

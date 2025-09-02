@@ -1,13 +1,13 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render, Fragment } from 'preact';
+import { render } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { Scorebar } from '../../src/components/Scorebar.html.js';
+import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
@@ -149,18 +149,21 @@ onDocumentReady(() => {
   $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
 
     // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
     const { relatedTarget } = event;
@@ -182,18 +185,21 @@ onDocumentReady(() => {
   $('#deleteAllAssessmentInstancesModal').on('show.bs.modal', function () {
     const modal = $(this);
 
-    modal.find('form').on('submit', (e) => {
-      e.preventDefault();
-      $.post(
-        $(e.target).attr('action') ?? '',
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      modal.modal('hide');
-    });
+    modal
+      .parents('form')
+      .off('submit')
+      .on('submit', (e) => {
+        e.preventDefault();
+        $.post(
+          $(e.target).attr('action') ?? '',
+          $(e.target).serialize(),
+          function () {
+            refreshTable();
+          },
+          'json',
+        );
+        modal.modal('hide');
+      });
   });
 
   $('[data-bs-toggle="modal"]').on('click', function (e) {
@@ -568,7 +574,9 @@ onDocumentReady(() => {
               name="time_add"
               aria-label="Time value"
               value={form.time_add}
-              onChange={(e) => updateFormState('time_add', parseFloat(e.currentTarget.value))}
+              onChange={(e) =>
+                updateFormState('time_add', Number.parseFloat(e.currentTarget.value))
+              }
             />
             <span class="input-group-text time-limit-field">minutes</span>
           </div>
@@ -631,16 +639,16 @@ onDocumentReady(() => {
   }
 
   function scorebarFormatter(score: number | null) {
-    return Scorebar(score).toString();
+    return ScorebarHtml(score).toString();
   }
 
   function listFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     return html`<small>${list.join(', ')}</small>`;
   }
 
   function uniqueListFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
     return html`<small>${uniq.join(', ')}</small>`;
   }
@@ -657,7 +665,7 @@ onDocumentReady(() => {
           data-bs-placement="bottom"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
-        </a>
+        </button>
       </span>
     `.toString();
   }
@@ -693,7 +701,7 @@ onDocumentReady(() => {
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
-    if (!compare) compare = (parseInt(idA) ?? 0) - (parseInt(idB) ?? 0);
+    if (!compare) compare = (Number.parseInt(idA) ?? 0) - (Number.parseInt(idB) ?? 0);
     if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
     if (!compare) compare = valueA - valueB;
     return compare;
@@ -711,7 +719,7 @@ onDocumentReady(() => {
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
-    const ai_id = parseInt(row.assessment_instance_id);
+    const ai_id = Number.parseInt(row.assessment_instance_id);
     if (!csrfToken) {
       throw new Error('CSRF token not found');
     }
@@ -787,7 +795,7 @@ onDocumentReady(() => {
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {
-    let time_limit_list: Record<string, any> = new Object();
+    let time_limit_list: Record<string, any> = {};
     let remaining_time_min = 0;
     let remaining_time_max = 0;
     let has_open_instance = false;

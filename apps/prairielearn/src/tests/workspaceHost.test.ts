@@ -1,5 +1,5 @@
-import { assert } from 'chai';
 import { v4 as uuidv4 } from 'uuid';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -93,18 +93,18 @@ async function getWorkspaceLogs(id: string | number) {
 }
 
 describe('workspaceHost utilities', function () {
-  before(async () => {
-    await helperDb.before.call(this);
+  beforeAll(async () => {
+    await helperDb.before();
   });
 
-  after(async () => {
-    await helperDb.after.call(this);
+  afterAll(async () => {
+    await helperDb.after();
   });
 
   beforeEach(async () => {
-    await sqldb.queryAsync('DELETE FROM workspaces;', {});
-    await sqldb.queryAsync('DELETE FROM workspace_hosts;', {});
-    await sqldb.queryAsync('DELETE FROM workspace_host_logs;', {});
+    await sqldb.execute('DELETE FROM workspaces;');
+    await sqldb.execute('DELETE FROM workspace_hosts;');
+    await sqldb.execute('DELETE FROM workspace_host_logs;');
   });
 
   describe('markWorkspaceHostUnhealthy()', () => {
@@ -310,13 +310,13 @@ describe('workspaceHost utilities', function () {
 
     it('marks unhealthy host that exceeded timeout as terminating', async () => {
       const host1 = await insertWorkspaceHost(1, 'unhealthy');
-      await sqldb.queryAsync(
+      await sqldb.execute(
         "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
         { id: host1.id },
       );
 
       const host2 = await insertWorkspaceHost(2, 'unhealthy');
-      await sqldb.queryAsync(
+      await sqldb.execute(
         "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
         { id: host2.id },
       );
@@ -338,13 +338,13 @@ describe('workspaceHost utilities', function () {
 
     it('marks launching host that exceeded timeout as terminating', async () => {
       const host1 = await insertWorkspaceHost(1, 'launching');
-      await sqldb.queryAsync(
+      await sqldb.execute(
         "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
         { id: host1.id },
       );
 
       const host2 = await insertWorkspaceHost(2, 'launching');
-      await sqldb.queryAsync(
+      await sqldb.execute(
         "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
         { id: host2.id },
       );

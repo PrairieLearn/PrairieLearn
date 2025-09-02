@@ -1,17 +1,17 @@
 <pl-question-panel>
     <p>
         Examples below are taken from the documentation page for
-        <a href="http://prairielearn.readthedocs.io/en/latest/elements">
+        <a href="https://prairielearn.readthedocs.io/en/latest/elements">
             PrairieLearn Elements in <code>question.html</code>
         </a>.
     </p>
 </pl-question-panel>
 
-<hr />
+<hr>
 
 <h2>Submission Elements</h2>
 
-<hr />
+<hr>
 
 <pl-card header="&lt;code&gt;pl-multiple-choice&lt;/code&gt;">
 
@@ -69,7 +69,7 @@
      <p> Correct Input: <code>42</code> </p>
     </pl-question-panel>
 
-    <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
+    <pl-integer-input aria-label="Integer" answers-name="int_value" label="$y =$"></pl-integer-input>
 </pl-card>
 
 <pl-card header="&lt;code&gt;pl-symbolic-input&lt;/code&gt;">
@@ -79,7 +79,7 @@
      <p> Correct Input: <code>x + y + 1</code> </p>
     </pl-question-panel>
 
-    <pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
+    <pl-symbolic-input aria-label="Symbolic expression" answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
 </pl-card>
 
 <pl-card header="&lt;code&gt;pl-string-input&lt;/code&gt;">
@@ -89,7 +89,7 @@
      <p> Correct Input: <code>Learn</code> </p>
     </pl-question-panel>
 
-    <pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
+    <pl-string-input aria-label="String" answers-name="string_value" label="Prairie"></pl-string-input>
 </pl-card>
 
 <pl-card header="&lt;code&gt;pl-matrix-component-input&lt;/code&gt;">
@@ -153,14 +153,13 @@ def fib(n):
      </p>
     </pl-question-panel>
 
-    <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+    <pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt" optional-file-names="foo.pdf, *.py, file_?.txt, file_[abc].txt, file with \\? as non-wildcard.pdf"></pl-file-upload>
 </pl-card>
-
-<hr />
+<hr>
 
 <h2>Decorative Elements</h2>
 
-<hr />
+<hr>
 
 <pl-card header="&lt;code&gt;pl-code&lt;/code&gt;">
 
@@ -270,7 +269,7 @@ def square(x):
             $$3$$
         </pl-location>
         <pl-location left="170" top="170">
-            <pl-number-input answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
+            <pl-number-input aria-label="Hypotenuse length" answers-name="c" show-help-text="false" show-placeholder="false" size="1"></pl-number-input>
         </pl-location>
     </pl-overlay>
 </pl-card>

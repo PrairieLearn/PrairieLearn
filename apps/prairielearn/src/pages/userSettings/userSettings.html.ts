@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -17,6 +18,9 @@ export const AccessTokenSchema = z.object({
   token: z.string().nullable(),
 });
 type AccessToken = z.infer<typeof AccessTokenSchema>;
+
+const ENHANCED_NAV_DISCUSSION_URL =
+  'https://github.com/PrairieLearn/PrairieLearn/discussions/12230';
 
 export function UserSettings({
   authn_user,
@@ -48,40 +52,46 @@ export function UserSettings({
       page: 'user_settings',
       type: 'plain',
     },
+    headContent: html` ${compiledScriptTag('userSettingsClient.ts')} `,
     content: html`
       <h1 class="mb-4">Settings</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h2>User profile</h2>
         </div>
-        <table class="table table-sm two-column-description" aria-label="User profile information">
-          <tbody>
-            <tr>
-              <th>UID</th>
-              <td>${authn_user.uid}</td>
-            </tr>
-            <tr>
-              <th>Name</th>
-              <td>${authn_user.name}</td>
-            </tr>
-            <tr>
-              <th>Unique Identifier (UIN)</th>
-              <td>${authn_user.uin}</td>
-            </tr>
-            <tr>
-              <th>Email</th>
-              <td>${authn_user.email}</td>
-            </tr>
-            <tr>
-              <th>Institution</th>
-              <td>${authn_institution.long_name} (${authn_institution.short_name})</td>
-            </tr>
-            <tr>
-              <th>Authentication method</th>
-              <td>${authn_provider_name}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table
+            class="table table-sm two-column-description"
+            aria-label="User profile information"
+          >
+            <tbody>
+              <tr>
+                <th>UID</th>
+                <td>${authn_user.uid}</td>
+              </tr>
+              <tr>
+                <th>Name</th>
+                <td>${authn_user.name}</td>
+              </tr>
+              <tr>
+                <th>Unique Identifier (UIN)</th>
+                <td>${authn_user.uin}</td>
+              </tr>
+              <tr>
+                <th>Email</th>
+                <td>${authn_user.email}</td>
+              </tr>
+              <tr>
+                <th>Institution</th>
+                <td>${authn_institution.long_name} (${authn_institution.short_name})</td>
+              </tr>
+              <tr>
+                <th>Authentication method</th>
+                <td>${authn_provider_name}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       ${showEnhancedNavigationToggle
@@ -92,7 +102,7 @@ export function UserSettings({
                   <h2>Feature preview</h2>
                 </div>
                 <ul class="list-group list-group-flush">
-                  <li class="list-group-item d-flex align-items-center">
+                  <li class="list-group-item">
                     <div class="form-check">
                       <input
                         type="checkbox"
@@ -107,17 +117,37 @@ export function UserSettings({
                         for="enhanced_navigation_toggle"
                       >
                         Enhanced navigation
-                        <span class="badge rounded-pill text-bg-success ms-2" aria-hidden="true">
-                          Beta
-                        </span>
                       </label>
                       <div class="small text-muted">
                         Try a new navigation experience for instructors that makes accessing your
                         course simpler, faster, and more intuitive.
+                        <a href="${ENHANCED_NAV_DISCUSSION_URL}" target="_blank"
+                          >Share your feedback</a
+                        >
+                        to help us improve the new design.
                       </div>
+                    </div>
+
+                    <div
+                      id="enhanced_navigation_feedback"
+                      class="alert alert-info mt-2 mb-2 d-none"
+                    >
+                      <div class="mb-2 text-dark">
+                        <strong>Turning off enhanced navigation?</strong> We'd love to know what's
+                        not working for you.
+                      </div>
+                      <a
+                        href="${ENHANCED_NAV_DISCUSSION_URL}"
+                        target="_blank"
+                        class="btn btn-sm btn-outline-dark"
+                      >
+                        Share feedback on GitHub Discussions
+                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                      </a>
                     </div>
                   </li>
                 </ul>
+
                 <div class="card-footer">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                   <button
@@ -287,7 +317,7 @@ function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
           autocomplete="off"
         />
       </div>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
@@ -305,7 +335,7 @@ function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken:
         Once you delete this token, any applications using it will no longer be able to access the
         API. You cannot undo this action.
       </p>
-      <div class="text-right">
+      <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>

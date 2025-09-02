@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  type ConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
 } from '@prairielearn/config';
@@ -13,7 +14,7 @@ import logger from './logger.js';
 // Determine what environment we're running in
 const isProduction = process.env.NODE_ENV === 'production';
 
-const ConfigSchema = z.object({
+export const ConfigSchema = z.object({
   maxConcurrentJobs: z.number().default(5),
   useEc2MetadataService: z.boolean().default(true),
   useConsoleLoggingForJobs: z.boolean().default(true),
@@ -69,7 +70,7 @@ function makeProductionConfigSource() {
   };
 }
 
-function makeAutoScalingGroupConfigSource() {
+function makeAutoScalingGroupConfigSource(): ConfigSource {
   return {
     async load(existingConfig) {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
@@ -86,9 +87,9 @@ function makeAutoScalingGroupConfigSource() {
       // startup.
       //
       // eslint-disable-next-line @prairielearn/aws-client-shared-config
-      const autoscaling = new AutoScaling({ region: existingConfig.awsRegion });
+      const autoscaling = new AutoScaling({ region: existingConfig.awsRegion as string });
       const data = await autoscaling.describeAutoScalingInstances({
-        InstanceIds: [existingConfig.instanceId],
+        InstanceIds: [existingConfig.instanceId as string],
       });
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
         logger.info('Not running inside an AutoScalingGroup');
@@ -102,7 +103,7 @@ function makeAutoScalingGroupConfigSource() {
   };
 }
 
-function makeQueueUrlConfigSource() {
+function makeQueueUrlConfigSource(): ConfigSource {
   return {
     async load(existingConfig) {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
@@ -116,7 +117,7 @@ function makeQueueUrlConfigSource() {
       // once at application startup.
       //
       // eslint-disable-next-line @prairielearn/aws-client-shared-config
-      const sqs = new SQSClient({ region: existingConfig.awsRegion });
+      const sqs = new SQSClient({ region: existingConfig.awsRegion as string });
 
       for (const prefix of queuePrefixes) {
         const queueUrlKey = `${prefix}QueueUrl`;
@@ -126,7 +127,7 @@ function makeQueueUrlConfigSource() {
           continue;
         }
 
-        const queueName = existingConfig[queueNameKey];
+        const queueName = existingConfig[queueNameKey] as string;
         logger.info(`Loading url for queue "${queueName}"`);
         const { QueueUrl } = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
 

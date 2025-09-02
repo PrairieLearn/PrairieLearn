@@ -12,6 +12,7 @@ import * as chunks from '../chunks.js';
 import { config } from '../config.js';
 import { type Course } from '../db-types.js';
 import * as load from '../load.js';
+import { assertNever } from '../types.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
@@ -31,7 +32,15 @@ const debug = debugfn('prairielearn:code-caller');
 
 let pool: Pool<CodeCaller> | null = null;
 
-export async function init() {
+interface CodeCallerInitOptions {
+  /**
+   * If set to true, the code caller pool worker count will default to '0',
+   * and workers will be created lazily.
+   */
+  lazyWorkers?: boolean;
+}
+
+export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) {
   debug('init()');
 
   const { workersExecutionMode } = config;
@@ -69,7 +78,7 @@ export async function init() {
               dropPrivileges: false,
             });
           } else {
-            throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
+            assertNever(workersExecutionMode);
           }
         });
 
@@ -77,7 +86,7 @@ export async function init() {
         return codeCaller;
       },
       destroy: async (codeCaller) => {
-        logger.info(
+        logger.verbose(
           `Destroying Python worker ${codeCaller.uuid} (last course path: ${codeCaller.getCoursePath()})`,
         );
         load.endJob('python_worker_idle', codeCaller.uuid);
@@ -85,7 +94,7 @@ export async function init() {
       },
     },
     {
-      min: numWorkers,
+      min: lazyWorkers ? 0 : numWorkers,
       max: numWorkers,
     },
   );

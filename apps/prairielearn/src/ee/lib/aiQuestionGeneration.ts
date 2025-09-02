@@ -1,13 +1,20 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { Cache } from '@prairielearn/cache';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
@@ -45,7 +52,7 @@ A question may also have a \`server.py\` file that can randomly generate unique 
 
 Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
 
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters.
+If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
 
 If the question does not use random parameters, \`server.py\` can be omitted.
 
@@ -85,7 +92,10 @@ async function checkRender(
     authn_user: user, // We don't have a separate authn user in this case.
     is_administrator: false,
   };
-  await getAndRenderVariant(null, null, locals);
+  await getAndRenderVariant(null, null, locals, {
+    // Needed so that we can read the error output below.
+    issuesLoadExtraData: true,
+  });
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
@@ -102,7 +112,6 @@ async function checkRender(
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
- * @param promptUserInput The user's indication of how to create student input boxes.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
@@ -110,7 +119,6 @@ async function checkRender(
 export async function makeContext(
   client: OpenAI,
   prompt: string,
-  promptUserInput: string | undefined,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
@@ -129,36 +137,28 @@ export async function makeContext(
         )
       : [];
 
-  const numElements = Math.max(5 - mandatoryElements.length, 0);
+  // The number of additional elements and documentation document chunks to include after accounting for all mandatory elements.
+  const numAdditionalDocs = Math.max(5 - mandatoryElements.length, 0);
 
   const docs = await queryRows(
     sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: numElements },
+    { embedding: vectorToString(embedding), limit: numAdditionalDocs },
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  // If a prompt specifies how user input is handled, try to find documentation for those types of input
-  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
-  if (promptUserInput !== undefined) {
-    const embeddingUserInput = await createEmbedding(
-      client,
-      promptUserInput,
-      openAiUserFromAuthn(authnUserId),
-    );
-
-    const elementDoc = await queryRow(
-      sql.select_nearby_documents_from_file,
-      {
-        embedding: vectorToString(embeddingUserInput),
-        doc_path: 'docs/elements.md',
-        limit: 1,
-      },
-      QuestionGenerationContextEmbeddingSchema,
-    );
-    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
-      // Override the last (least relevant) doc.
-      docs[numElements - 1] = elementDoc;
-    }
+  // Ensure that documentation for at least one element is always included.
+  const elementDoc = await queryRow(
+    sql.select_nearby_documents_from_file,
+    {
+      embedding: vectorToString(embedding),
+      doc_path: 'docs/elements.md',
+      limit: 1,
+    },
+    QuestionGenerationContextEmbeddingSchema,
+  );
+  if (numAdditionalDocs > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+    // Override the last (least relevant) doc.
+    docs[numAdditionalDocs - 1] = elementDoc;
   }
 
   return docs
@@ -189,50 +189,123 @@ function extractFromCompletion(
   const html = completionText?.match(htmlSelector)?.groups?.code;
   const python = completionText?.match(pythonSelector)?.groups?.code;
 
-  const out = {};
+  const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
     job.info(`extracted html file: ${html}`);
-    out['html'] = html;
+    out.html = html;
   }
 
   if (python !== undefined) {
     job.info(`extracted python file: ${python}`);
-    out['python'] = python;
+    out.python = python;
   }
 
   return out;
 }
 
 /**
+ * Returns the AI question generation cache used for rate limiting.
+ */
+let aiQuestionGenerationCache: Cache | undefined;
+export async function getAiQuestionGenerationCache() {
+  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
+  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
+  aiQuestionGenerationCache = new Cache();
+  await aiQuestionGenerationCache.init({
+    type: config.nonVolatileCacheType,
+    keyPrefix: config.cacheKeyPrefix,
+    redisUrl: config.nonVolatileRedisUrl,
+  });
+  return aiQuestionGenerationCache;
+}
+
+/**
+ * Approximate the cost of the prompt, in US dollars.
+ * Accounts for the cost of prompt, system, and completion tokens.
+ */
+export function approximatePromptCost(prompt: string) {
+  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
+  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
+  // Also, on average, we generate 3750 system tokens per prompt.
+  const approxPromptAndSystemTokenCost =
+    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
+
+  // On average, we generate 250 completion tokens per prompt.
+  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+
+  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
+}
+
+/**
+ * Retrieve the Redis key for a user's current AI question generation interval usage
+ */
+function getIntervalUsageKey(userId: number) {
+  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
+  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+}
+
+// 1 hour in milliseconds
+const intervalLengthMs = 3600 * 1000;
+
+/**
+ * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
+ */
+export async function getIntervalUsage({ userId }: { userId: number }) {
+  const cache = await getAiQuestionGenerationCache();
+  return (await cache.get(getIntervalUsageKey(userId))) ?? 0;
+}
+
+/**
+ * Add the cost of a completion to the usage of the user for the current interval.
+ */
+export async function addCompletionCostToIntervalUsage({
+  userId,
+  promptTokens,
+  completionTokens,
+  intervalCost,
+}: {
+  userId: number;
+  promptTokens: number;
+  completionTokens: number;
+  intervalCost: number;
+}) {
+  const cache = await getAiQuestionGenerationCache();
+
+  const completionCost =
+    (config.costPerMillionPromptTokens * promptTokens +
+      config.costPerMillionCompletionTokens * completionTokens) /
+    1e6;
+
+  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
+  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
+
+  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
+}
+
+/**
  * Generates the HTML and Python code for a new question using an LLM.
- *
- * @param client The OpenAI client to use.
- * @param courseId The ID of the current course.
- * @param authnUserId The authenticated user's ID.
- * @param promptGeneral The prompt for how to generate a question.
- * @param promptUserInput The prompt for how to take user input.
- * @param promptGrading The prompt for how to grade user input.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.client The OpenAI client to use.
+ * @param params.courseId The ID of the current course.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.prompt The prompt for how to generate a question.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
   client,
   courseId,
   authnUserId,
-  promptGeneral,
-  promptUserInput,
-  promptGrading,
+  prompt,
   userId,
   hasCoursePermissionEdit,
 }: {
   client: OpenAI;
   courseId: string;
   authnUserId: string;
-  promptGeneral: string;
-  promptUserInput: string;
-  promptGrading: string;
+  prompt: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
 }): Promise<{
@@ -245,6 +318,14 @@ export async function generateQuestion({
    * to the LLM.
    */
   context: string | undefined;
+  /**
+   * The number of tokens in the prompt provided to the LLM.
+   */
+  promptTokens: number | undefined;
+  /**
+   * The number of completion tokens generated as output by the LLM.
+   */
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -254,15 +335,9 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    const userPrompt = `${promptGeneral}
-    
-    You should provide the following input methods for students to answer: ${promptUserInput}
-    
-    To calculate the right answer, you should: ${promptGrading}`;
+    job.info(`Prompt: "${prompt}"`);
 
-    job.info(`prompt is ${userPrompt}`);
-
-    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
+    const context = await makeContext(client, prompt, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -279,7 +354,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: MODEL_NAME,
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: userPrompt },
+        { role: 'user', content: prompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -320,26 +395,41 @@ Keep in mind you are not just generating an example; you are generating an actua
       return;
     }
 
-    await queryAsync(sql.insert_draft_question_metadata, {
+    await execute(sql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
       creator_id: authnUserId,
     });
 
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
-      question_id: saveResults.question_id,
-      prompting_user_id: authnUserId,
-      prompt_type: 'initial',
-      user_prompt: userPrompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: serverJob.jobSequenceId,
+    const ai_question_generation_prompt_id = await queryRow(
+      sql.insert_ai_question_generation_prompt,
+      {
+        question_id: saveResults.question_id,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: prompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+        job_sequence_id: serverJob.jobSequenceId,
+      },
+      IdSchema,
+    );
+
+    job.data.questionId = saveResults.question_id;
+    job.data.questionQid = saveResults.question_qid;
+
+    job.data.promptTokens = completion.usage?.prompt_tokens;
+    job.data.completionTokens = completion.usage?.completion_tokens;
+
+    await updateCourseInstanceUsagesForAiQuestionGeneration({
+      promptId: ai_question_generation_prompt_id,
+      authnUserId,
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
     });
-    job.data['questionId'] = saveResults.question_id;
-    job.data['questionQid'] = saveResults.question_qid;
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -358,7 +448,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        originalPrompt: userPrompt,
+        originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
@@ -380,6 +470,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }
 
@@ -400,19 +492,22 @@ function traverseForTagNames(ast: any): Set<string> {
 
 /**
  * Revises a question using the LLM based on user input.
- *
- * @param client The OpenAI client to use.
- * @param authnUserId The authenticated user's ID.
- * @param originalPrompt The prompt creating the original generation.
- * @param revisionPrompt A prompt with user instructions on how to revise the question.
- * @param originalHTML The question.html file to revise.
- * @param originalPython The server.py file to revise.
- * @param remainingAttempts Number of times that regen could be called.
- * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
- * @param questionQid The qid of the question to edit.
- * @param courseId The ID of the current course.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.job The server job to use.
+ * @param params.client The OpenAI client to use.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.originalPrompt The prompt creating the original generation.
+ * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param params.originalHTML The question.html file to revise.
+ * @param params.originalPython The server.py file to revise.
+ * @param params.remainingAttempts Number of times that regen could be called.
+ * @param params.isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
+ * @param params.questionId The ID of the question to edit.
+ * @param params.questionQid The qid of the question to edit.
+ * @param params.courseId The ID of the current course.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params.jobSequenceId The ID of the server job.
  */
 async function regenInternal({
   job,
@@ -455,7 +550,7 @@ async function regenInternal({
     tags = Array.from(traverseForTagNames(ast));
   }
 
-  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
+  const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
   const sysPrompt = `
 ${promptPreamble(context)}
@@ -514,19 +609,23 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!python);
   }
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
-    question_id: questionId,
-    prompting_user_id: authnUserId,
-    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-    user_prompt: revisionPrompt,
-    system_prompt: sysPrompt,
-    response: completion.choices[0].message.content,
-    html,
-    python,
-    errors,
-    completion,
-    job_sequence_id: jobSequenceId,
-  });
+  const ai_question_generation_prompt_id = await queryRow(
+    sql.insert_ai_question_generation_prompt,
+    {
+      question_id: questionId,
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html,
+      python,
+      errors,
+      completion,
+      job_sequence_id: jobSequenceId,
+    },
+    IdSchema,
+  );
 
   const files: Record<string, string> = {};
   if (results?.html) {
@@ -552,6 +651,16 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
     return;
   }
+
+  job.data.promptTokens = completion.usage?.prompt_tokens;
+  job.data.completionTokens = completion.usage?.completion_tokens;
+
+  await updateCourseInstanceUsagesForAiQuestionGeneration({
+    promptId: ai_question_generation_prompt_id,
+    authnUserId,
+    promptTokens: completion.usage?.prompt_tokens,
+    completionTokens: completion.usage?.completion_tokens,
+  });
 
   job.data.html = html;
   job.data.python = python;
@@ -590,6 +699,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
+ * @param questionQid The qid of the question to edit.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
@@ -609,6 +719,8 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
+  promptTokens: number | undefined;
+  completionTokens: number | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -620,7 +732,7 @@ export async function regenerateQuestion(
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.data['questionQid'] = questionQid;
+    job.data.questionQid = questionQid;
     await regenInternal({
       job,
       client,
@@ -644,5 +756,7 @@ export async function regenerateQuestion(
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
+    promptTokens: jobData.data.promptTokens,
+    completionTokens: jobData.data.completionTokens,
   };
 }

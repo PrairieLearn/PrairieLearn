@@ -73,7 +73,7 @@ async function createDatabase(
         max: 10,
         idleTimeoutMillis: 30000,
         errorOnUnusedParameters: true,
-        ...(options.poolConfig ?? {}),
+        ...options.poolConfig,
       },
       (err) => {
         throw err;
@@ -112,6 +112,7 @@ async function dropDatabase(
 
   const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
   if ('PL_KEEP_TEST_DB' in process.env && !force) {
+    // eslint-disable-next-line no-console
     console.log(`PL_KEEP_TEST_DB environment variable set, not dropping database ${databaseName}`);
     return;
   }
@@ -126,7 +127,7 @@ async function dropDatabase(
 }
 
 function getDatabaseNameForCurrentMochaWorker(namespace: string): string {
-  const workerId = process.env.MOCHA_WORKER_ID ?? '1';
+  const workerId = process.env.MOCHA_WORKER_ID ?? process.env.VITEST_POOL_ID ?? '1';
   return `${namespace}_${workerId}`;
 }
 

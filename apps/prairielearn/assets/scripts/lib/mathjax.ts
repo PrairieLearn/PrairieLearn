@@ -9,6 +9,13 @@ declare global {
 }
 
 const mathjaxPromise = new Promise<void>((resolve, reject) => {
+  if (window.MathJax) {
+    // Something else already loaded MathJax on this page. Just resolve the promise
+    // once MathJax reports that it is ready.
+    window.MathJax.startup.promise.then(resolve, reject);
+    return;
+  }
+
   window.MathJax = {
     options: {
       // We previously documented the `tex2jax_ignore` class, so we'll keep
@@ -38,7 +45,7 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
     },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {
-      mathjaxPromise.then(cb);
+      void mathjaxPromise.then(cb);
     },
     // Adds a custom function so that, regardless if Mathjax.typesetPromise() is accessed before or
     // after the page is loaded, it will be resolved when the page is ready.
@@ -84,9 +91,9 @@ const mathjaxPromise = new Promise<void>((resolve, reject) => {
   });
 });
 
-export async function mathjaxTypeset() {
+export async function mathjaxTypeset(elements?: Element[]) {
   await mathjaxPromise;
-  return window.MathJax.typesetPromise();
+  return window.MathJax.typesetPromise(elements);
 }
 
 export async function mathjaxConvert(value: string) {

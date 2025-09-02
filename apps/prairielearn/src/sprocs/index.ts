@@ -5,7 +5,7 @@ import { eachSeries } from 'async';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 export async function init() {
   logger.verbose('Starting DB stored procedure initialization');
@@ -32,8 +32,6 @@ export async function init() {
       'check_course_instance_access.sql',
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
-      'assessment_instances_lock.sql',
-      'assessment_instances_insert.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
@@ -41,9 +39,7 @@ export async function init() {
       'question_order.sql',
       'authz_assessment.sql',
       'authz_assessment_instance.sql',
-      'select_assessment_questions.sql',
       'assessment_instance_label.sql',
-      'assessment_label.sql',
       'admin_assessment_question_number.sql',
       'authz_course.sql',
       'authz_course_instance.sql',
@@ -56,10 +52,6 @@ export async function init() {
       'instance_questions_points.sql',
       'instance_questions_grade.sql',
       'instance_questions_next_allowed_grade.sql',
-      'submissions_lock.sql',
-      'assessment_instances_update.sql',
-      'grading_jobs_lock.sql',
-      'grading_jobs_insert.sql',
       'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',
@@ -70,7 +62,6 @@ export async function init() {
       'users_get_displayed_role.sql',
       'grading_jobs_stats_day.sql',
       'issues_insert_for_variant.sql',
-      'variants_lock.sql',
       'variants_update_after_grading.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
@@ -91,7 +82,7 @@ export async function init() {
       logger.verbose('Loading ' + filename);
       try {
         const sql = await readFile(join(import.meta.dirname, filename), 'utf8');
-        await queryAsync(sql, []);
+        await execute(sql);
       } catch (err) {
         throw error.addData(err, { sqlFile: filename });
       }

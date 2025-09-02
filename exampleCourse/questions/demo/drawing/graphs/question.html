@@ -12,10 +12,9 @@ y(x) = \left\{
 $
 
 </pl-question-panel>
-<p>
-<pl-drawing answers-name="graph" gradable="true" hide-answer-panel="false" width="500" height="400" >
+<pl-drawing answers-name="graph" gradable="true" hide-answer-panel="false" width="500" height="400">
 
-    <pl-drawing-answer draw-error-box="true" >
+    <pl-drawing-answer draw-error-box="true">
         <pl-graph-line origin='{"x": 80, "y": 200}'
                        end-points='[{"x": 0, "y": 0}, {"x": 80, "y": 80}, {"x": 40, "y": 80}]'
                        offset-control-tol-x="20">
@@ -24,11 +23,11 @@ $
         <pl-graph-line origin='{"x": 80, "y": 200}'
                        end-points='[{"x": 80, "y": -80}, {"x": 160, "y": -80}]'
                        offset-control-tol-y="30"
-                       end-gradients='[-2,2]' >
+                       end-gradients="[-2,2]">
         </pl-graph-line>
 
         <pl-graph-line origin='{"x": 80, "y": 200}'
-                       end-points='[{"x": 160, "y": -80}, {"x": 320, "y": 0}]' >
+                       end-points='[{"x": 160, "y": -80}, {"x": 320, "y": 0}]'>
         </pl-graph-line>
 
     </pl-drawing-answer>
@@ -49,13 +48,11 @@ $
             </pl-axes>
 
 
-
     </pl-drawing-initial>
 
 
-
     <pl-controls>
-      <pl-controls-group label="Graded objects:" >
+      <pl-controls-group label="Graded objects:">
           <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
           <pl-drawing-button type="pl-controlled-curved-line"></pl-drawing-button>
       </pl-controls-group>
@@ -66,4 +63,3 @@ $
   </pl-controls>
 
 </pl-drawing>
-</p>

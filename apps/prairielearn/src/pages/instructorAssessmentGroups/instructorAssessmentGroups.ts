@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -18,13 +18,14 @@ import {
 } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { parseUidsString } from '../../lib/user.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   GroupUsersRowSchema,
   InstructorAssessmentGroups,
 } from './instructorAssessmentGroups.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
@@ -34,10 +35,11 @@ const MAX_UIDS = 50;
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const prefix = assessmentFilenamePrefix(
       res.locals.assessment,
       res.locals.assessment_set,

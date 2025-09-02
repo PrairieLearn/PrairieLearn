@@ -21,14 +21,19 @@ def build_and_write_schemas() -> None:
     """
 
     class CustomParser(jsonschema2md.Parser):
-        """Custom parser that hides [Test](...) links in the schema documentation."""
+        """Custom parser that hides [Test](...) links and 'additionalFields: true' in the schema documentation."""
 
         def _construct_description_line(
             self, *args: Any, **kwargs: Any
         ) -> Sequence[str]:
-            """Override to hide the [Test](...) links in the description line."""
+            """Override to hide the [Test](...) links  and 'additionalFields: true' in the description line."""
             result = super()._construct_description_line(*args, **kwargs)
-            return [re.sub(r" \(\[Test\]\((.*?)\)\)", "", line) for line in result]
+            result = [re.sub(r" \(\[Test\]\((.*?)\)\)", "", line) for line in result]
+            result = [
+                line.replace("Can contain additional properties.", "")
+                for line in result
+            ]
+            return result
 
     parser = CustomParser(
         header_level=0, collapse_children=True, ignore_patterns=[".*comment.*"]

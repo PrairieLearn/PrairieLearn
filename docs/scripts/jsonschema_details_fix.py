@@ -4,7 +4,7 @@ from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.structure.pages import Page
 
 
-def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str:  # noqa: ARG001
+def on_post_page(output: str, page: Page, config: MkDocsConfig) -> str | None:  # noqa: ARG001
     """
     HACK:
     With mdx_truly_sane_lists, a mismatched <p> tag is generated (see https://github.com/radude/mdx_truly_sane_lists/issues/23).

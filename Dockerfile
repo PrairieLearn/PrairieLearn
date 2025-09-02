@@ -1,8 +1,20 @@
 # syntax=docker/dockerfile-upstream:master-labs
+FROM amazonlinux:2023
+ARG CACHEBUST=2025-08-15-14-16-03
 
-FROM prairielearn/plbase:latest
+WORKDIR /PrairieLearn
 
-ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
+COPY --parents scripts/pl-install.sh /PrairieLearn/
+
+RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
+
+# Ensures that running Python in the container will use the correct Python version.
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:$PATH"
+
+# We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
+COPY --parents pyproject.toml Makefile /PrairieLearn/
+
+RUN PIP_NO_CACHE_DIR=1 make python-deps-core
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.
@@ -30,18 +42,18 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 #
 # If the following issue is ever addressed, we can use that instead:
 # https://github.com/yarnpkg/berry/issues/6339
-RUN cd /PrairieLearn && yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
+RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
-COPY . /PrairieLearn/
+COPY . .
 
 # set up PrairieLearn and run migrations to initialize the DB
+# hadolint ignore=SC3009
 RUN chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
     && mkdir -p /jobs \
     && /PrairieLearn/scripts/start_postgres.sh \
-    && cd /PrairieLearn \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
     && su postgres -c "createuser -s root" \
@@ -52,4 +64,4 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && git config --global safe.directory '*'
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
-CMD /PrairieLearn/scripts/init.sh
+CMD [ "/PrairieLearn/scripts/init.sh" ]

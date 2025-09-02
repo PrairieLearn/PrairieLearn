@@ -1,13 +1,14 @@
 import {
   callAsync,
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { type Tag, TagSchema } from '../../lib/db-types.js';
+import type { CommentJson } from '../../schemas/comment.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -19,6 +20,7 @@ interface DesiredTag {
   name: string;
   color: string;
   description?: string | null;
+  comment?: CommentJson;
 }
 
 export async function sync(
@@ -64,7 +66,9 @@ export async function sync(
   });
 
   const newTags = await run(async () => {
-    if (!tagsToCreate.length && !tagsToUpdate.length && !tagsToDelete.length) return [];
+    if (tagsToCreate.length === 0 && tagsToUpdate.length === 0 && tagsToDelete.length === 0) {
+      return [];
+    }
 
     return await runInTransactionAsync(async () => {
       const insertedTags = await run(async () => {
@@ -75,7 +79,7 @@ export async function sync(
           {
             course_id: courseId,
             tags: tagsToCreate.map((t) =>
-              JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+              JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
             ),
           },
           TagSchema,
@@ -83,16 +87,16 @@ export async function sync(
       });
 
       if (tagsToUpdate.length > 0) {
-        await queryAsync(sql.update_tags, {
+        await execute(sql.update_tags, {
           course_id: courseId,
           tags: tagsToUpdate.map((t) =>
-            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit]),
+            JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
           ),
         });
       }
 
       if (tagsToDelete.length > 0) {
-        await queryAsync(sql.delete_tags, {
+        await execute(sql.delete_tags, {
           course_id: courseId,
           tags: tagsToDelete,
         });

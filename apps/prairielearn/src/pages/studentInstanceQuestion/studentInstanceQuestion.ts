@@ -1,23 +1,21 @@
+import assert from 'assert';
+
 import { type Request, type Response, Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
-import { setQuestionCopyTargets } from '../../lib/copy-question.js';
+import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../lib/question-render.js';
+import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -175,7 +173,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question', { client_fingerprint_id: string }>(async (req, res) => {
     if (!res.locals.authz_result.authorized_edit) {
       throw new HttpStatusError(403, 'Not authorized');
     }
@@ -255,7 +253,7 @@ router.post(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
@@ -275,10 +273,10 @@ router.get(
       variant,
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
+      questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.group_role_permissions,
+      groupRolePermissions: res.locals.group_role_permissions ?? null,
     });
     res.json(panels);
   }),
@@ -286,7 +284,7 @@ router.get(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
@@ -320,10 +318,16 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals as any);
+    await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
-    await setQuestionCopyTargets(res);
+    const questionCopyTargets = await getQuestionCopyTargets({
+      course: res.locals.course,
+      is_administrator: res.locals.is_administrator,
+      user: res.locals.user,
+      authn_user: res.locals.authn_user,
+      question: res.locals.question,
+    });
 
     res.locals.instance_question_info.previous_variants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
@@ -334,6 +338,10 @@ router.get(
       res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
+      assert(
+        res.locals.assessment_instance.group_id !== null,
+        'assessment_instance.group_id is null',
+      );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
         res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
@@ -349,7 +357,6 @@ router.get(
         );
       }
     }
-    setRendererHeader(res);
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
@@ -362,6 +369,7 @@ router.get(
         userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
         assignedGrader,
         lastGrader,
+        questionCopyTargets,
       }),
     );
   }),

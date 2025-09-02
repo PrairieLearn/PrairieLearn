@@ -1,10 +1,8 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import { v4 as uuid } from 'uuid';
-
-import * as sqldb from '@prairielearn/postgres';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -15,13 +13,8 @@ import {
   writeCourseToTempDirectory,
 } from './sync/util.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-describe('Course with assessments grouped by Set vs Module', function () {
-  this.timeout(60000);
-
+describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }, function () {
   let courseDir;
-  let courseInstanceId = null;
   let assessmentBadges;
 
   const course = getCourseData();
@@ -85,7 +78,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
   };
 
   async function fetchAssessmentsPage() {
-    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${courseInstanceId}/assessments`;
+    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/1/assessments`;
     const response = await helperClient.fetchCheerio(assessmentsUrl);
     assert.isTrue(response.ok);
     return response;
@@ -108,20 +101,22 @@ describe('Course with assessments grouped by Set vs Module', function () {
     return badgeText;
   }
 
-  before('set up testing server', async function () {
+  beforeAll(async function () {
     courseDir = await writeCourseToTempDirectory(course);
-    await helperServer.before(courseDir).call(this);
-    const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
-    courseInstanceId = courseInstanceResult.rows[0].id;
-  });
-  after('shut down testing server', helperServer.after);
-
-  step('should default to grouping by Set', async function () {
-    const result = await sqldb.queryOneRowAsync(sql.get_test_course, []);
-    assert.equal(result.rows[0].assessments_group_by, 'Set');
+    await helperServer.before(courseDir)();
   });
 
-  step('should use correct order when grouping by Set', async function () {
+  afterAll(helperServer.after);
+
+  test.sequential('should default to grouping by Set', async function () {
+    const courseInstance = await selectCourseInstanceByShortName({
+      course_id: '1',
+      short_name: 'Fa19',
+    });
+    assert.equal(courseInstance.assessments_group_by, 'Set');
+  });
+
+  test.sequential('should use correct order when grouping by Set', async function () {
     const response = await fetchAssessmentsPage();
     testHeadingOrder(response, ['Homeworks', 'Exams']);
 
@@ -129,7 +124,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
     assessmentBadges = extractAssessmentSetBadgeText(response);
   });
 
-  step('should use correct order when grouping by Module', async function () {
+  test.sequential('should use correct order when grouping by Module', async function () {
     // Update course to group by Module
     course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupAssessmentsBy = 'Module';
     await overwriteAndSyncCourseData(course, courseDir);

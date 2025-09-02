@@ -4,13 +4,13 @@ SELECT
   u.uid AS user_uid
 FROM
   job_sequences AS js
-  LEFT JOIN users AS u on (u.user_id = js.user_id)
+  LEFT JOIN users AS u ON (u.user_id = js.user_id)
 WHERE
   js.course_id = $course_id
   AND js.type IN ('sync', 'git_status', 'images_sync')
 ORDER BY
   js.start_date DESC,
-  js.id;
+  js.id ASC;
 
 -- BLOCK question_images
 WITH

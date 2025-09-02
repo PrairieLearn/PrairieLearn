@@ -1,7 +1,8 @@
-import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+import { CloudWatch, type MetricDatum } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
+import { z } from 'zod';
 
-import { callOneRowAsync, loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
@@ -9,7 +10,32 @@ import * as workspaceHostUtils from '../../lib/workspaceHost.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-type WorkspaceLoadStats = Record<string, any>;
+const WorkspaceLoadStatsSchema = z.object({
+  workspace_jobs_capacity_desired: z.number().int(),
+  workspace_hosts_desired: z.number().int(),
+  workspace_hosts_launching_count: z.number().int(),
+  workspace_hosts_ready_count: z.number().int(),
+  workspace_hosts_draining_count: z.number().int(),
+  workspace_hosts_unhealthy_count: z.number().int(),
+  workspace_hosts_terminating_count: z.number().int(),
+  workspace_hosts_active_count: z.number().int(),
+  workspace_hosts_longest_launching_sec: z.number(),
+  workspace_hosts_longest_ready_sec: z.number(),
+  workspace_hosts_longest_draining_sec: z.number(),
+  workspace_hosts_longest_unhealthy_sec: z.number(),
+  workspace_hosts_longest_terminating_sec: z.number(),
+  workspace_uninitialized_count: z.number().int(),
+  workspace_launching_count: z.number().int(),
+  workspace_relaunching_count: z.number().int(),
+  workspace_running_count: z.number().int(),
+  workspace_running_on_healthy_hosts_count: z.number().int(),
+  workspace_active_count: z.number().int(),
+  workspace_active_on_healthy_hosts_count: z.number().int(),
+  workspace_longest_launching_sec: z.number(),
+  workspace_longest_running_sec: z.number(),
+  timestamp_formatted: z.string(),
+});
+type WorkspaceLoadStats = z.infer<typeof WorkspaceLoadStatsSchema>;
 
 export async function run() {
   if (!config.runningInEc2) return;
@@ -18,9 +44,12 @@ export async function run() {
   await handleWorkspaceAutoscaling(stats);
 }
 
-async function getLoadStats(): Promise<WorkspaceLoadStats> {
-  const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];
-  return (await callOneRowAsync('workspace_loads_current', params)).rows[0];
+async function getLoadStats() {
+  return await callRow(
+    'workspace_loads_current',
+    [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity],
+    WorkspaceLoadStatsSchema,
+  );
 }
 
 const cloudwatch_definitions = {
@@ -114,29 +143,29 @@ const cloudwatch_definitions = {
   },
 };
 
-async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
+async function sendStatsToCloudwatch({ timestamp_formatted, ...numericStats }: WorkspaceLoadStats) {
   const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
-  const entries = Object.entries(stats).filter(([key, _value]) => {
-    return key !== 'timestamp_formatted';
-  });
+  const entries = Object.entries(numericStats);
 
   for (let i = 0; i < entries.length; i += cloudwatch_metricdata_limit) {
-    const data = entries.slice(i, i + cloudwatch_metricdata_limit).map(([key, value]) => {
-      if (!(key in cloudwatch_definitions)) {
-        throw new Error(`Unknown datapoint ${key}!`);
-      }
-      const def = cloudwatch_definitions[key];
-      return {
-        MetricName: def.name,
-        Dimensions: dimensions,
-        Timestamp: new Date(stats.timestamp_formatted),
-        Unit: def.unit,
-        Value: value,
-        StorageResolution: 1,
-      };
-    });
+    const data: MetricDatum[] = entries
+      .slice(i, i + cloudwatch_metricdata_limit)
+      .map(([key, value]) => {
+        if (!(key in cloudwatch_definitions)) {
+          throw new Error(`Unknown datapoint ${key}!`);
+        }
+        const def = cloudwatch_definitions[key];
+        return {
+          MetricName: def.name,
+          Dimensions: dimensions,
+          Timestamp: new Date(timestamp_formatted),
+          Unit: def.unit,
+          Value: value,
+          StorageResolution: 1,
+        };
+      });
     await cloudwatch.putMetricData({ MetricData: data, Namespace: 'Workspaces' });
   }
 }
@@ -164,7 +193,7 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
         },
       });
       const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
-      await queryAsync(sql.insert_new_instances, { instance_ids });
+      await execute(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;

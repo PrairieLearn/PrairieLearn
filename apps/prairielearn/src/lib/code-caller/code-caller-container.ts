@@ -135,16 +135,16 @@ export class CodeCallerContainer implements CodeCaller {
   callCount: number;
   hasBindMount: boolean;
   options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
-  stdinStream: MemoryStream | null;
-  stdoutStream: MemoryStream | null;
-  stderrStream: MemoryStream | null;
+  stdinStream: MemoryStream | undefined;
+  stdoutStream: MemoryStream | undefined;
+  stderrStream: MemoryStream | undefined;
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string;
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
-  hostDirectory: tmp.DirectoryResult | null;
+  hostDirectory: tmp.DirectoryResult | undefined;
 
   /**
    * Creating a new {@link CodeCallerContainer} instance requires some async work,
@@ -252,7 +252,7 @@ export class CodeCallerContainer implements CodeCaller {
     type: CallType,
     directory: string | null,
     file: string | null,
-    fcn: string,
+    fcn: string | null,
     args: any[],
   ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
@@ -349,8 +349,8 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.state === CREATED) {
       this.state = EXITED;
     } else if (this.state === WAITING) {
-      this._cleanup();
       this.state = EXITING;
+      void this._cleanup();
     }
     this._checkState();
     this.debug('exit done()');
@@ -413,6 +413,12 @@ export class CodeCallerContainer implements CodeCaller {
         AutoRemove: true,
         // Prevent forkbombs
         PidsLimit: 64,
+        // We use stdout to communicate from the container to the host, so the logs
+        // would rapidly fill up the host's disk space if we didn't disable logging.
+        LogConfig: {
+          Type: 'none',
+          Config: {},
+        },
       },
       Env: [
         // Proxy the `DEBUG` environment variable to the container so we can
@@ -431,6 +437,7 @@ export class CodeCallerContainer implements CodeCaller {
       stdin: true,
       stdout: true,
       stderr: true,
+      hijack: true,
     });
     this.stdinStream = new MemoryStream();
     this.stdoutStream = new MemoryStream();
@@ -457,7 +464,7 @@ export class CodeCallerContainer implements CodeCaller {
   _handleStdout(data: string) {
     this.debug('enter _handleStdout()');
     this.outputStdout.push(data);
-    if (data.indexOf('\n') >= 0) {
+    if (data.includes('\n')) {
       this._callIsFinished();
     }
     this.debug('exit _handleStdout()');
@@ -473,8 +480,8 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
     this.timeoutID = null;
-    this._cleanup();
     this.state = EXITING;
+    void this._cleanup();
     this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
   }
@@ -492,7 +499,7 @@ export class CodeCallerContainer implements CodeCaller {
    * @param err An error that occurred while waiting for the container to exit.
    * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err: Error | null | undefined, code?: number) {
+  _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -545,9 +552,9 @@ export class CodeCallerContainer implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputStdout.join(''));
-      if (data && data.error) {
+      if (data?.error) {
         err = new Error(data.error);
-        if (data.errorData && data.errorData.outputBoth) {
+        if (data.errorData?.outputBoth) {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
@@ -637,7 +644,7 @@ export class CodeCallerContainer implements CodeCaller {
   /**
    * Checks if the caller is ready for a call to call().
    */
-  _checkReadyForCall(fcn: string): boolean {
+  _checkReadyForCall(fcn: string | null): boolean {
     if (!this.container) {
       return this._logError(
         `Not ready for call, container is not created (state: ${String(this.state)})`,
@@ -749,7 +756,7 @@ async function cleanupMountDirectories() {
     // Enumerate all directories in the OS tmp directory and remove
     // any old ones
     const dirs = await fs.readdir(tmpDir);
-    const outDirs = dirs.filter((d) => d.indexOf(MOUNT_DIRECTORY_PREFIX) === 0);
+    const outDirs = dirs.filter((d) => d.startsWith(MOUNT_DIRECTORY_PREFIX));
     await Promise.all(
       outDirs.map(async (dir) => {
         const absolutePath = path.join(tmpDir, dir);

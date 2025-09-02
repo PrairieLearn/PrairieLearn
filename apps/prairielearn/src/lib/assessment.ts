@@ -6,16 +6,21 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
 import {
+  type Assessment,
   type AssessmentInstance,
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
+  DateFromISOString,
   IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -69,6 +74,8 @@ export async function checkBelongs(
  * Render the "text" property of an assessment.
  *
  * @param assessment - The assessment to render the text for.
+ * @param assessment.id - The assessment ID.
+ * @param assessment.text - The assessment text.
  * @param urlPrefix - The current server urlPrefix.
  * @returns The rendered text.
  */
@@ -90,41 +97,64 @@ export function renderText(
 
 /**
  * Create a new assessment instance and all the questions in it.
- *
- * @param assessment_id - The assessment to create the assessment instance for.
- * @param user_id - The user who will own the new assessment instance.
- * @param group_work - If the assessment will support group work.
- * @param authn_user_id - The current authenticated user.
- * @param mode - The mode for the new assessment instance.
- * @param time_limit_min - The time limit for the new assessment instance.
- * @param date - The date of creation for the new assessment instance.
+ * @param params
+ * @param params.assessment - The assessment to create the assessment instance for.
+ * @param params.user_id - The user who will own the new assessment instance.
+ * @param params.authn_user_id - The current authenticated user.
+ * @param params.mode - The mode for the new assessment instance.
+ * @param params.time_limit_min - The time limit for the new assessment instance.
+ * @param params.date - The date of creation for the new assessment instance.
+ * @param params.client_fingerprint_id - The client fingerprint ID.
  * @returns The ID of the new assessment instance.
  */
-export async function makeAssessmentInstance(
-  assessment_id: string,
-  user_id: string,
-  group_work: boolean,
-  authn_user_id: string,
-  mode: AssessmentInstance['mode'],
-  time_limit_min: number | null,
-  date: Date,
-  client_fingerprint_id: string | null,
-): Promise<string> {
-  const assessment_instance_id = await sqldb.callRow(
-    'assessment_instances_insert',
-    [
-      assessment_id,
-      user_id,
-      group_work,
-      authn_user_id,
-      mode,
-      time_limit_min,
-      date,
-      client_fingerprint_id,
-    ],
-    IdSchema,
-  );
-  return assessment_instance_id;
+export async function makeAssessmentInstance({
+  assessment,
+  user_id,
+  authn_user_id,
+  mode,
+  time_limit_min,
+  date,
+  client_fingerprint_id,
+}: {
+  assessment: Assessment;
+  user_id: string;
+  authn_user_id: string;
+  mode: AssessmentInstance['mode'];
+  time_limit_min: number | null;
+  date: Date;
+  client_fingerprint_id: string | null;
+}): Promise<string> {
+  return await sqldb.runInTransactionAsync(async () => {
+    let group_id: string | null = null;
+    if (assessment.group_work) {
+      group_id = await getGroupId(assessment.id, user_id);
+      if (group_id == null) {
+        throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
+      }
+    }
+
+    const { assessment_instance_id, created } = await sqldb.queryRow(
+      sql.insert_assessment_instance,
+      {
+        assessment_id: assessment.id,
+        group_id,
+        user_id,
+        mode,
+        time_limit_min,
+        date,
+        client_fingerprint_id,
+        authn_user_id,
+      },
+      z.object({ assessment_instance_id: IdSchema, created: z.boolean() }),
+    );
+
+    // Only update the assessment instance if a new instance was created.
+    if (created) {
+      await updateAssessmentInstance(assessment_instance_id, authn_user_id, false);
+    }
+
+    return assessment_instance_id;
+  });
 }
 
 /**
@@ -140,22 +170,51 @@ export async function updateAssessmentInstance(
   authn_user_id: string,
   recomputeGrades = true,
 ): Promise<boolean> {
-  debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
-    const updateResult = await sqldb.callOneRowAsync('assessment_instances_update', [
-      assessment_instance_id,
-      authn_user_id,
-    ]);
-    if (!updateResult.rows[0].updated) return false; // skip if not updated
+    const assessmentInstance = await sqldb.queryOptionalRow(
+      sql.select_and_lock_assessment_instance,
+      { assessment_instance_id },
+      AssessmentInstanceSchema,
+    );
+    if (assessmentInstance == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    if (!assessmentInstance.open) {
+      // Silently return without updating
+      return false;
+    }
+
+    // Insert any new questions not previously in the assessment instance
+    const newInstanceQuestionIds = await sqldb.queryRows(
+      sql.insert_instance_questions,
+      { assessment_instance_id, assessment_id: assessmentInstance.assessment_id, authn_user_id },
+      IdSchema,
+    );
+
+    const newMaxPoints = await sqldb.queryOptionalRow(
+      sql.update_assessment_instance_max_points,
+      { assessment_instance_id, authn_user_id },
+      AssessmentInstanceSchema.pick({ max_points: true, max_bonus_points: true }),
+    );
+    // If assessment was not updated, grades do not need to be recomputed.
+    if (newInstanceQuestionIds.length === 0 && newMaxPoints == null) return false;
 
     // if updated, regrade to pick up max_points changes, etc.
     if (recomputeGrades) {
-      await sqldb.callOneRowAsync('assessment_instances_grade', [
-        assessment_instance_id,
-        authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ]);
+      await sqldb.callRow(
+        'assessment_instances_grade',
+        [
+          assessment_instance_id,
+          authn_user_id,
+          null, // credit
+          true, // only_log_if_score_updated
+        ],
+        z.object({
+          updated: z.boolean(),
+          new_points: z.number(),
+          new_score_perc: z.number(),
+        }),
+      );
     }
     return true;
   });
@@ -213,7 +272,7 @@ export async function gradeAssessmentInstance(
         // If we're supposed to close the assessment, do it *before* we
         // we start grading. This avoids a race condition where the student
         // makes an additional submission while grading is already in progress.
-        await sqldb.queryAsync(sql.close_assessment_instance, {
+        await sqldb.execute(sql.close_assessment_instance, {
           assessment_instance_id,
           authn_user_id,
           client_fingerprint_id,
@@ -257,14 +316,8 @@ export async function gradeAssessmentInstance(
   // `gradeVariant` is resilient to being run multiple times concurrently. The
   // only bad thing that will happen is that we'll have wasted some work, but
   // that's acceptable.
-  await sqldb.queryAsync(sql.unset_grading_needed, { assessment_instance_id });
+  await sqldb.execute(sql.unset_grading_needed, { assessment_instance_id });
 }
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 const InstancesToGradeSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -290,11 +343,8 @@ export async function gradeAllAssessmentInstances(
   overrideGradeRate: boolean,
 ): Promise<string> {
   debug('gradeAllAssessmentInstances()');
-  const { assessment_label, course_instance_id, course_id } = await sqldb.queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_instance_id, course_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -358,18 +408,18 @@ export async function updateAssessmentStatisticsForCourseInstance(
 export async function updateAssessmentStatistics(assessment_id: string): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
     // lock the assessment
-    await sqldb.queryOneRowAsync(sql.select_assessment_lock, { assessment_id });
+    await sqldb.executeRow(sql.select_assessment_lock, { assessment_id });
 
     // check whether we need to update the statistics
     const needs_statistics_update = await sqldb.queryRow(
-      sql.select_assessment_needs_statisics_update,
+      sql.select_assessment_needs_statistics_update,
       { assessment_id },
       z.boolean(),
     );
     if (!needs_statistics_update) return;
 
     // update the statistics
-    await sqldb.queryOneRowAsync(sql.update_assessment_statisics, { assessment_id });
+    await sqldb.executeRow(sql.update_assessment_statistics, { assessment_id });
   });
 }
 
@@ -385,7 +435,7 @@ export async function updateAssessmentInstanceScore(
       AssessmentInstanceSchema,
     );
     const points = (score_perc * (max_points ?? 0)) / 100;
-    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+    await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
@@ -406,7 +456,7 @@ export async function updateAssessmentInstancePoints(
       AssessmentInstanceSchema,
     );
     const score_perc = (points / (max_points != null && max_points > 0 ? max_points : 1)) * 100;
-    await sqldb.queryAsync(sql.update_assessment_instance_score, {
+    await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
@@ -450,7 +500,7 @@ export async function selectAssessmentInstanceLogCursor(
   assessment_instance_id,
   include_files,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
-  return sqldb.queryValidatedCursor(
+  return sqldb.queryCursor(
     sql.assessment_instance_log,
     { assessment_instance_id, include_files },
     InstanceLogSchema,
@@ -458,7 +508,7 @@ export async function selectAssessmentInstanceLogCursor(
 }
 
 export async function updateAssessmentQuestionStats(assessment_question_id: string): Promise<void> {
-  await sqldb.queryAsync(sql.calculate_stats_for_assessment_question, { assessment_question_id });
+  await sqldb.execute(sql.calculate_stats_for_assessment_question, { assessment_question_id });
 }
 
 export async function updateAssessmentQuestionStatsForAssessment(
@@ -471,7 +521,7 @@ export async function updateAssessmentQuestionStatsForAssessment(
       IdSchema,
     );
     await async.eachLimit(assessment_questions, 3, updateAssessmentQuestionStats);
-    await sqldb.queryAsync(sql.update_assessment_stats_last_updated, { assessment_id });
+    await sqldb.execute(sql.update_assessment_stats_last_updated, { assessment_id });
   });
 }
 
@@ -497,7 +547,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
   assessment_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  await sqldb.queryAsync(sql.delete_all_assessment_instances_for_assessment, {
+  await sqldb.execute(sql.delete_all_assessment_instances_for_assessment, {
     assessment_id,
     authn_user_id,
   });
@@ -536,7 +586,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
  * the menu appears for both "student view" and "student view without access
  * restrictions".
  *
- * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
+ * @returns Whether or not the user should be allowed to delete the assessment instance.
  */
 export function canDeleteAssessmentInstance(resLocals): boolean {
   return (
@@ -549,5 +599,13 @@ export function canDeleteAssessmentInstance(resLocals): boolean {
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.
     (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
+}
+
+export async function selectAssessmentInstanceLastSubmissionDate(assessment_instance_id: string) {
+  return await sqldb.queryRow(
+    sql.select_assessment_instance_last_submission_date,
+    { assessment_instance_id },
+    DateFromISOString.nullable(),
   );
 }

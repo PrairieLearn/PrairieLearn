@@ -10,6 +10,7 @@ import * as tar from 'tar';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { type Config, config as globalConfig } from './config.js';
@@ -20,8 +21,7 @@ import {
   type Submission,
   type Variant,
 } from './db-types.js';
-import { type Grader } from './externalGraderCommon.js';
-import { buildDirectory, getJobDirectory } from './externalGraderCommon.js';
+import { type Grader, buildDirectory, getJobDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -66,7 +66,7 @@ export class ExternalGraderSqs implements Grader {
           await new Upload({ client: s3, params }).done();
 
           // Store S3 info for this job
-          await sqldb.queryAsync(sql.update_s3_info, {
+          await sqldb.execute(sql.update_s3_info, {
             grading_job_id: grading_job.id,
             s3_bucket: config.externalGradingS3Bucket,
             s3_root_key: s3RootKey,
@@ -75,7 +75,11 @@ export class ExternalGraderSqs implements Grader {
         async () => sendJobToQueue(grading_job.id, question, config),
       ],
       (err) => {
-        fs.remove(dir);
+        fs.remove(dir).catch((err) => {
+          logger.error('Error removing directory', err);
+          Sentry.captureException(err);
+        });
+
         if (err) {
           emitter.emit('error', err);
         } else {

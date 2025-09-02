@@ -9,7 +9,7 @@ Learn more about configuring the four main aspects of your course:
 - [Courses](../course/index.md)
 - [Course instances](../courseInstance.md)
 - [Assessments](../assessment/index.md)
-- [Questions](../question.md)
+- [Questions](../question/index.md)
 
 !!! tip
 

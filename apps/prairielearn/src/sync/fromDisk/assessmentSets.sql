@@ -17,7 +17,8 @@ INSERT INTO
     heading,
     color,
     number,
-    implicit
+    implicit,
+    json_comment
   )
 SELECT
   $course_id,
@@ -26,7 +27,8 @@ SELECT
   (aset ->> 2)::text,
   (aset ->> 3)::text,
   (aset ->> 4)::integer,
-  (aset ->> 5)::boolean
+  (aset ->> 5)::boolean,
+  (aset -> 6)
 FROM
   UNNEST($sets::jsonb[]) AS aset;
 
@@ -39,7 +41,8 @@ WITH
       (aset ->> 2)::text AS heading,
       (aset ->> 3)::text AS color,
       (aset ->> 4)::integer AS number,
-      (aset ->> 5)::boolean AS implicit
+      (aset ->> 5)::boolean AS implicit,
+      (aset -> 6) AS json_comment
     FROM
       UNNEST($sets::jsonb[]) AS aset
   )
@@ -49,7 +52,8 @@ SET
   heading = updates.heading,
   color = updates.color,
   number = updates.number,
-  implicit = updates.implicit
+  implicit = updates.implicit,
+  json_comment = updates.json_comment
 FROM
   updates
 WHERE

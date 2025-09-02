@@ -2,7 +2,6 @@ import base64
 
 
 def generate(data):
-    data["params"]["names_for_user"] = []
     data["params"]["names_from_user"] = [{"name": "gradient_descent"}]
 
 

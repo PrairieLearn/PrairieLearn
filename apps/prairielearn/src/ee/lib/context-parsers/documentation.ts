@@ -4,14 +4,15 @@ import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
-const ALLOWED_ELEMENTS = [
+const ALLOWED_ELEMENTS = new Set([
   'pl-question-panel',
   'pl-multiple-choice',
   'pl-checkbox',
   'pl-integer-input',
   'pl-number-input',
   'pl-string-input',
-];
+  'pl-symbolic-input',
+]);
 
 interface ElementSection {
   elementName: string;
@@ -189,7 +190,7 @@ function writeOutTables(elementSections: ElementSection[]) {
   return elementSections;
 }
 
-export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
+export function buildContextForElementDocs(rawMarkdown: string): DocumentChunk[] {
   const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 
   const elementSections = writeOutTables(cleanElementSections(extractElementSections(file)));
@@ -209,5 +210,5 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
     };
   });
 
-  return contexts.filter((x) => ALLOWED_ELEMENTS.includes(x.chunkId));
+  return contexts.filter((x) => ALLOWED_ELEMENTS.has(x.chunkId));
 }

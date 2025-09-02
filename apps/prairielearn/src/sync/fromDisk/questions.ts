@@ -4,11 +4,16 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../../lib/db-types.js';
-import { type CourseData, type Question } from '../course-db.js';
+import {
+  type QuestionJson,
+  defaultExternalGradingOptions,
+  defaultWorkspaceOptions,
+} from '../../schemas/index.js';
+import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 import { isDraftQid } from '../question.js';
 
-function getParamsForQuestion(qid: string, q: Question | null | undefined) {
+function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
@@ -21,11 +26,14 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
       partialCredit = false;
     }
   }
-  let external_grading_entrypoint = q.externalGradingOptions?.entrypoint;
+
+  const workspaceOptions = q.workspaceOptions ?? defaultWorkspaceOptions;
+  const externalGradingOptions = q.externalGradingOptions ?? defaultExternalGradingOptions;
+  let external_grading_entrypoint = externalGradingOptions.entrypoint;
   if (Array.isArray(external_grading_entrypoint)) {
     external_grading_entrypoint = shlex.join(external_grading_entrypoint);
   }
-  let workspace_args = q.workspaceOptions?.args;
+  let workspace_args = workspaceOptions.args;
   if (Array.isArray(workspace_args)) {
     workspace_args = shlex.join(workspace_args);
   }
@@ -35,31 +43,33 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     partial_credit: partialCredit,
     template_directory: q.template,
     options: q.options,
-    client_files: q.clientFiles || [],
+    client_files: q.clientFiles,
     draft: isDraftQid(qid),
     topic: q.topic,
-    grading_method: q.gradingMethod || 'Internal',
-    single_variant: !!q.singleVariant,
-    show_correct_answer: q.showCorrectAnswer === undefined ? true : q.showCorrectAnswer,
-    external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,
-    external_grading_image: q.externalGradingOptions && q.externalGradingOptions.image,
-    external_grading_files: q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse,
+    grading_method: q.gradingMethod,
+    single_variant: q.singleVariant,
+    show_correct_answer: q.showCorrectAnswer,
+    comment: q.comment,
+    external_grading_enabled: externalGradingOptions.enabled,
+    external_grading_image: externalGradingOptions.image,
+    external_grading_files: externalGradingOptions.serverFilesCourse,
     external_grading_entrypoint,
-    external_grading_timeout: q.externalGradingOptions && q.externalGradingOptions.timeout,
-    external_grading_enable_networking:
-      q.externalGradingOptions && q.externalGradingOptions.enableNetworking,
-    external_grading_environment: q.externalGradingOptions?.environment ?? {},
-    dependencies: q.dependencies || {},
-    workspace_image: q.workspaceOptions && q.workspaceOptions.image,
-    workspace_port: q.workspaceOptions && q.workspaceOptions.port,
+    external_grading_timeout: externalGradingOptions.timeout,
+    external_grading_enable_networking: externalGradingOptions.enableNetworking,
+    external_grading_environment: externalGradingOptions.environment,
+    external_grading_comment: externalGradingOptions.comment,
+    dependencies: q.dependencies,
+    workspace_image: workspaceOptions.image,
+    workspace_port: workspaceOptions.port,
     workspace_args,
-    workspace_home: q.workspaceOptions && q.workspaceOptions.home,
-    workspace_graded_files: q.workspaceOptions && q.workspaceOptions.gradedFiles,
-    workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
-    workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
-    workspace_environment: q.workspaceOptions?.environment ?? {},
-    share_publicly: q.sharePublicly ?? false,
-    share_source_publicly: q.shareSourcePublicly ?? false,
+    workspace_home: workspaceOptions.home,
+    workspace_graded_files: workspaceOptions.gradedFiles,
+    workspace_url_rewrite: workspaceOptions.rewriteUrl,
+    workspace_enable_networking: workspaceOptions.enableNetworking,
+    workspace_environment: workspaceOptions.environment,
+    workspace_comment: workspaceOptions.comment,
+    share_publicly: q.sharePublicly,
+    share_source_publicly: q.shareSourcePublicly,
   };
 }
 

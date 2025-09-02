@@ -1,7 +1,7 @@
 CREATE FUNCTION
     assessments_format(
         assessment_id bigint
-    ) RETURNS JSONB
+    ) RETURNS jsonb
 AS $$
 SELECT
     JSONB_BUILD_OBJECT(

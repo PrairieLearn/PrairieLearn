@@ -1,6 +1,6 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 import { FeatureManager } from '../lib/features/manager.js';
 
@@ -8,21 +8,21 @@ import * as helperCourse from './helperCourse.js';
 import * as helperDb from './helperDb.js';
 
 describe('features', () => {
-  before(async function () {
-    await helperDb.before.call(this);
+  beforeAll(async function () {
+    await helperDb.before();
     await helperCourse.syncCourse();
-    await queryAsync('INSERT INTO users (name, uid) VALUES ($name, $uid);', {
+    await execute('INSERT INTO users (name, uid) VALUES ($name, $uid);', {
       name: 'Test User',
       uid: 'test@example.com',
     });
   });
 
   beforeEach(async () => {
-    await queryAsync('DELETE FROM feature_grants', {});
+    await execute('DELETE FROM feature_grants');
   });
 
-  after(async function () {
-    await helperDb.after.call(this);
+  afterAll(async function () {
+    await helperDb.after();
   });
 
   it('enables and disables a global feature flag', async () => {
@@ -137,14 +137,14 @@ describe('features', () => {
     const features = new FeatureManager(['test:example-feature-flag']);
     const context = { institution_id: '1', course_id: '1' };
 
-    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
+    await execute('UPDATE pl_courses SET options = $options WHERE id = 1', {
       options: {
         devModeFeatures: { 'test:example-feature-flag': true },
       },
     });
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
 
-    await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
+    await execute('UPDATE pl_courses SET options = $options WHERE id = 1', {
       options: {},
     });
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
@@ -153,9 +153,9 @@ describe('features', () => {
   it('validates and typechecks feature flags', async () => {
     const features = new FeatureManager(['valid']);
 
-    await assert.isFulfilled(features.enable('valid'));
+    await expect(features.enable('valid')).resolves.not.toThrow();
 
     // @ts-expect-error -- Invalid feature flag name.
-    await assert.isRejected(features.enable('invalid'));
+    await expect(features.enable('invalid')).rejects.toThrow();
   });
 });

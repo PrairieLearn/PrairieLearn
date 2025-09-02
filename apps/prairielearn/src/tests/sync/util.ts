@@ -1,13 +1,37 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { assert } from 'vitest';
 import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  AlternativeGroupSchema,
+  AssessmentAccessRuleSchema,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  CourseInstanceAccessRuleSchema,
+  CourseInstanceSchema,
+  EnrollmentSchema,
+  QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
+  UserSchema,
+  ZoneSchema,
+} from '../../lib/db-types.js';
+import type {
+  AssessmentJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
+} from '../../schemas/index.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 interface CourseOptions {
@@ -202,13 +226,13 @@ export interface Question {
 }
 
 export interface CourseInstanceData {
-  assessments: Record<string, Assessment>;
-  courseInstance: CourseInstance;
+  assessments: Record<string, AssessmentJsonInput>;
+  courseInstance: CourseInstanceJsonInput;
 }
 
 export interface CourseData {
-  course: Course;
-  questions: Record<string, Question>;
+  course: CourseJsonInput;
+  questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -285,7 +309,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course: Course = {
+const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -326,7 +350,7 @@ const course: Course = {
       color: 'gray2',
       description: 'Another test topic',
     },
-  ],
+  ] as TopicJsonInput[],
   tags: [
     {
       name: 'test',
@@ -338,10 +362,13 @@ const course: Course = {
       color: 'blue2',
       description: 'Another test tag',
     },
-  ],
-};
+  ] as TagJsonInput[],
+  sharingSets: undefined as CourseJsonInput['sharingSets'],
+  options: undefined as CourseJsonInput['options'],
+  comment: undefined as CourseJsonInput['comment'],
+} satisfies CourseJsonInput;
 
-const questions: Record<string, Question> = {
+const questions: Record<string, QuestionJsonInput> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -429,7 +456,7 @@ const courseInstances: Record<string, CourseInstanceData> = {
 /**
  * @returns The base course data for syncing testing
  */
-export function getCourseData(): CourseData {
+export function getCourseData() {
   // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   return structuredClone({
@@ -503,13 +530,9 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
  * Returns an array of all records in a particular database table.
  *
  * @param tableName - The name of the table to query
- * @return The rows of the given table
+ * @param schema - The schema of the table to query
+ * @returns The rows of the given table
  */
-export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
-  const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
-  return res.rows;
-}
-
 export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
   tableName: string,
   schema: Schema,
@@ -519,20 +542,29 @@ export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
 
 export async function captureDatabaseSnapshot() {
   return {
-    courseInstances: await dumpTable('course_instances'),
-    assessments: await dumpTable('assessments'),
-    assessmentSets: await dumpTable('assessment_sets'),
-    topics: await dumpTable('topics'),
-    tags: await dumpTable('tags'),
-    courseInstanceAccessRules: await dumpTable('course_instance_access_rules'),
-    assessmentAccessRules: await dumpTable('assessment_access_rules'),
-    zones: await dumpTable('zones'),
-    alternativeGroups: await dumpTable('alternative_groups'),
-    assessmentQuestions: await dumpTable('assessment_questions'),
-    questions: await dumpTable('questions'),
-    questionTags: await dumpTable('question_tags'),
-    users: await dumpTable('users'),
-    enrollments: await dumpTable('enrollments'),
+    courseInstances: await dumpTableWithSchema('course_instances', CourseInstanceSchema),
+    assessments: await dumpTableWithSchema('assessments', AssessmentSchema),
+    assessmentSets: await dumpTableWithSchema('assessment_sets', AssessmentSetSchema),
+    topics: await dumpTableWithSchema('topics', TopicSchema),
+    tags: await dumpTableWithSchema('tags', TagSchema),
+    courseInstanceAccessRules: await dumpTableWithSchema(
+      'course_instance_access_rules',
+      CourseInstanceAccessRuleSchema,
+    ),
+    assessmentAccessRules: await dumpTableWithSchema(
+      'assessment_access_rules',
+      AssessmentAccessRuleSchema,
+    ),
+    zones: await dumpTableWithSchema('zones', ZoneSchema),
+    alternativeGroups: await dumpTableWithSchema('alternative_groups', AlternativeGroupSchema),
+    assessmentQuestions: await dumpTableWithSchema(
+      'assessment_questions',
+      AssessmentQuestionSchema,
+    ),
+    questions: await dumpTableWithSchema('questions', QuestionSchema),
+    questionTags: await dumpTableWithSchema('question_tags', QuestionTagSchema),
+    users: await dumpTableWithSchema('users', UserSchema),
+    enrollments: await dumpTableWithSchema('enrollments', EnrollmentSchema),
   };
 }
 
@@ -576,7 +608,7 @@ export function assertSnapshotsMatch(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
@@ -603,7 +635,7 @@ export function assertSnapshotSubset(
     'snapshots contained different keys',
   );
   for (const key of Object.keys(snapshotA)) {
-    if (ignoredKeys.indexOf(key) !== -1) continue;
+    if (ignoredKeys.includes(key)) continue;
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));

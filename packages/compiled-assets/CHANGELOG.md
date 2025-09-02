@@ -1,5 +1,90 @@
 # @prairielearn/compiled-assets
 
+## 3.2.5
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.2.4
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
+## 3.2.3
+
+### Patch Changes
+
+- 0edbdcb: Upgrade more JavaScript dependencies
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [23adb05]
+  - @prairielearn/html@4.0.17
+
+## 3.2.2
+
+### Patch Changes
+
+- 325af47: Fix paths for preloads
+
+## 3.2.1
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+- Updated dependencies [678b48a]
+  - @prairielearn/html@4.0.16
+
+## 3.2.0
+
+### Minor Changes
+
+- 6e2ba4f: Define `process.env.NODE_ENV` when bundling JavaScript
+
+## 3.1.0
+
+### Minor Changes
+
+- 791b1c7: Support preloading assets, and assets processed with ESM + code splitting
+
+## 3.0.18
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
+## 3.0.17
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
+## 3.0.16
+
+### Patch Changes
+
+- deb4635: Drop `express` dependency
+
+## 3.0.15
+
+### Patch Changes
+
+- cec09b5: Upgrade all JavaScript dependencies
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
+## 3.0.14
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
 ## 3.0.13
 
 ### Patch Changes

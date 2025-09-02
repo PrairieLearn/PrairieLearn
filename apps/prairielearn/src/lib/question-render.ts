@@ -1,5 +1,4 @@
 import * as async from 'async';
-import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -7,23 +6,24 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
+import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.js';
 import {
   type QuestionContext,
   type QuestionRenderContext,
 } from '../components/QuestionContainer.types.js';
-import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
+import { QuestionNavSideButton } from '../components/QuestionNavigation.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.js';
 import {
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
+  type SubmissionForRender,
   SubmissionPanel,
-} from '../components/SubmissionPanel.html.js';
-import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
+} from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import type { ResLocalsAuthnUser } from './authn.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -49,9 +49,16 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
-import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
+import { selectRubricData } from './manualGrading.js';
+import type { RubricData } from './manualGrading.types.js';
 import type { SubmissionPanels } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 
@@ -63,6 +70,7 @@ const IssueRenderDataSchema = IssueSchema.extend({
   user_name: z.string().nullable(),
   user_email: z.string().nullable(),
 });
+type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -135,8 +143,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user && locals.user.user_id ? locals.user.user_id : null;
-  const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  const user_id = locals.user?.user_id ?? null;
+  const authn_user_id = locals.authn_user?.user_id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -159,6 +167,7 @@ interface QuestionUrls {
   clientFilesCourseUrl: string;
   clientFilesQuestionGeneratedFileUrl: string;
   baseUrl: string;
+  externalImageCaptureUrl: string | null;
   workspaceUrl?: string;
 }
 
@@ -170,13 +179,14 @@ interface QuestionUrls {
  * @param variant The variant object for this question.
  * @param question The question.
  * @param instance_question The instance question.
- * @return An object containing the named URLs.
+ * @returns An object containing the named URLs.
  */
 export function buildQuestionUrls(
   urlPrefix: string,
   variant: Variant,
   question: Question,
   instance_question: InstanceQuestion | null,
+  publicQuestionPreview = false,
 ): QuestionUrls {
   let urls: QuestionUrls;
 
@@ -201,6 +211,9 @@ export function buildQuestionUrls(
       clientFilesQuestionGeneratedFileUrl:
         questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + questionUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   } else {
     // student question pages
@@ -221,14 +234,38 @@ export function buildQuestionUrls(
       clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
       clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
       baseUrl: urlPrefix,
+      externalImageCaptureUrl: config.serverCanonicalHost
+        ? config.serverCanonicalHost + iqUrl + 'externalImageCapture/variant/' + variant.id
+        : null,
     };
   }
 
   if (variant.workspace_id) {
-    urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    if (publicQuestionPreview) {
+      urls.workspaceUrl = `/pl/public/workspace/${variant.workspace_id}`;
+    } else {
+      urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
+    }
   }
 
   return urls;
+}
+
+export interface ResLocalsBuildLocals {
+  showGradeButton: boolean;
+  showSaveButton: boolean;
+  disableGradeButton: boolean;
+  disableSaveButton: boolean;
+  showNewVariantButton: boolean;
+  showTryAgainButton: boolean;
+  showTrueAnswer: boolean;
+  showGradingRequested: boolean;
+  allowAnswerEditing: boolean;
+  hasAttemptsOtherVariants: boolean;
+  variantAttemptsLeft: number;
+  variantAttemptsTotal: number;
+  submissions: SubmissionForRender[];
+  variantToken: string;
 }
 
 function buildLocals({
@@ -255,7 +292,7 @@ function buildLocals({
   group_config?: GroupConfig | null;
   authz_result?: any;
 }) {
-  const locals = {
+  const locals: ResLocalsBuildLocals = {
     showGradeButton: false,
     showSaveButton: false,
     disableGradeButton: false,
@@ -295,7 +332,7 @@ function buildLocals({
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
       // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
-      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
+      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100) {
         locals.showTrueAnswer = true;
       }
     }
@@ -372,6 +409,31 @@ function buildLocals({
   return locals;
 }
 
+// All properties that are added to the locals by `getAndRenderVariant`.
+interface ResLocalsQuestionRenderAdded {
+  question_is_shared: boolean;
+  variant: Variant;
+  urls: QuestionUrls;
+  showTrueAnswer: boolean;
+  submission: SubmissionForRender | null;
+  submissions: SubmissionForRender[];
+  effectiveQuestionType: questionServers.EffectiveQuestionType;
+  extraHeadersHtml: string;
+  questionHtml: string;
+  submissionHtmls: string[];
+  answerHtml: string;
+  issues: IssueRenderData[];
+  questionJsonBase64: string | undefined;
+}
+
+interface ResLocalsInstanceQuestionRenderAdded {
+  rubric_data: RubricData | null;
+}
+
+export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
+export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
+  ResLocalsInstanceQuestionRenderAdded;
+
 /**
  * Render all information needed for a question.
  *
@@ -384,35 +446,47 @@ export async function getAndRenderVariant(
   variant_seed: string | null,
   locals: {
     urlPrefix: string;
+    authn_user: ResLocalsAuthnUser['authn_user'];
+    is_administrator: boolean;
     course: Course;
     question: Question;
     user: User;
-    authn_user: User;
     course_instance?: CourseInstance;
     course_instance_id?: string;
     assessment?: Assessment;
     assessment_instance?: AssessmentInstance;
     assessment_question?: AssessmentQuestion;
     group_config?: GroupConfig;
-    group_role_permissions?: { can_view: boolean; can_submit: boolean };
+    group_role_permissions?: QuestionGroupPermissions;
     instance_question?: InstanceQuestionWithAllowGrade;
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
     client_fingerprint_id?: string | null;
-    is_administrator: boolean;
     questionRenderContext?: QuestionRenderContext;
-  },
-  options?: {
+  } & Partial<ResLocalsInstanceQuestionRenderAdded> &
+    Partial<ResLocalsQuestionRenderAdded>,
+  {
+    urlOverrides = {},
+    publicQuestionPreview = false,
+    issuesLoadExtraData = config.devMode || locals.authz_data?.has_course_permission_view,
+  }: {
     urlOverrides?: Partial<QuestionUrls>;
     publicQuestionPreview?: boolean;
-  },
+    /**
+     * Whether or not any recorded issues should have their extra data loaded.
+     * If not specified, the default is to load extra data if we're in dev mode
+     * or if the user has permission to view course data.
+     *
+     * This toggle is useful mainly for AI question generation, where we always
+     * want to load issue data so we can provided it as context to the model.
+     *
+     * The default conditions should match those in `components/QuestionContainer.html.ts`.
+     */
+    issuesLoadExtraData?: boolean;
+  } = {},
 ) {
-  // We write a fair amount of unstructured data back into locals,
-  // so we'll cast it to `any` once so we don't have to do it every time.
-  const resultLocals = locals as any;
-
   const question_course = await getQuestionCourse(locals.question, locals.course);
-  resultLocals.question_is_shared = await sqldb.queryRow(
+  locals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
     { question_id: locals.question.id },
     z.boolean(),
@@ -430,7 +504,7 @@ export async function getAndRenderVariant(
         authn_user: locals.authn_user,
         user: locals.user,
         is_administrator: locals.is_administrator,
-        publicQuestionPreview: options?.publicQuestionPreview,
+        publicQuestionPreview,
       });
     } else {
       const require_open = !!locals.assessment && locals.assessment.type !== 'Exam';
@@ -452,7 +526,7 @@ export async function getAndRenderVariant(
     }
   });
 
-  resultLocals.variant = variant;
+  locals.variant = variant;
 
   const {
     urlPrefix,
@@ -465,12 +539,17 @@ export async function getAndRenderVariant(
     assessment_question,
     group_config,
     group_role_permissions,
-    authz_data,
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question ?? null);
-  Object.assign(urls, options?.urlOverrides);
+  const urls = buildQuestionUrls(
+    urlPrefix,
+    variant,
+    question,
+    instance_question ?? null,
+    publicQuestionPreview,
+  );
+  Object.assign(urls, urlOverrides);
   Object.assign(locals, urls);
 
   const newLocals = buildLocals({
@@ -536,21 +615,20 @@ export async function getAndRenderVariant(
   });
 
   const submission = submissions[0] ?? null;
-  resultLocals.submissions = submissions;
-  resultLocals.submission = submission;
+  locals.submissions = submissions;
+  locals.submission = submission;
 
   if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
     // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
-    resultLocals.showTrueAnswer = true;
+    locals.showTrueAnswer = true;
   }
-
-  const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
-  resultLocals.effectiveQuestionType = effectiveQuestionType;
+  // We don't want to unconditionally hide things in the "else" case here,
+  // there's other code elsewhere that could have set showTrueAnswer to true, and we should respect that.
 
   const renderSelection: questionServers.RenderSelection = {
     question: true,
     submissions: submissions.length > 0,
-    answer: resultLocals.showTrueAnswer,
+    answer: locals.showTrueAnswer ?? false,
   };
   const htmls = await render(
     course,
@@ -562,28 +640,27 @@ export async function getAndRenderVariant(
     question_course,
     locals,
   );
-  resultLocals.extraHeadersHtml = htmls.extraHeadersHtml;
-  resultLocals.questionHtml = htmls.questionHtml;
-  resultLocals.submissionHtmls = htmls.submissionHtmls;
-  resultLocals.answerHtml = htmls.answerHtml;
+  locals.extraHeadersHtml = htmls.extraHeadersHtml;
+  locals.questionHtml = htmls.questionHtml;
+  locals.submissionHtmls = htmls.submissionHtmls;
+  locals.answerHtml = htmls.answerHtml;
 
-  // Load issues last in case there are issues from rendering.
-  //
-  // We'll only load the data that will be needed for this specific page render.
-  // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = config.devMode || authz_data?.has_course_permission_view;
-  resultLocals.issues = await sqldb.queryRows(
+  // Load issues last in case rendering produced any new ones.
+  locals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
       variant_id: variant.id,
-      load_course_data: loadExtraData,
-      load_system_data: loadExtraData,
+      load_course_data: issuesLoadExtraData,
+      load_system_data: issuesLoadExtraData,
     },
     IssueRenderDataSchema,
   );
 
   if (locals.instance_question) {
-    await manualGrading.populateRubricData(locals);
+    locals.rubric_data = await selectRubricData({
+      assessment_question: locals.assessment_question,
+      submission: locals.submission,
+    });
     await async.eachSeries(submissions, manualGrading.populateManualGradingData);
   }
 
@@ -591,7 +668,7 @@ export async function getAndRenderVariant(
     const questionJson = JSON.stringify({
       questionFilePath: urls.calculationQuestionFileUrl,
       questionGeneratedFilePath: urls.calculationQuestionGeneratedFileUrl,
-      effectiveQuestionType,
+      effectiveQuestionType: 'Calculation',
       course,
       courseInstance: course_instance,
       variant: {
@@ -600,12 +677,12 @@ export async function getAndRenderVariant(
       },
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
-      trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
+      trueAnswer: locals.showTrueAnswer ? variant.true_answer : null,
       submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);
-    resultLocals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
+    locals.questionJsonBase64 = Buffer.from(encodedJson).toString('base64');
   }
 }
 
@@ -848,15 +925,4 @@ export async function renderPanelsForSubmission({
     },
   ]);
   return panels;
-}
-
-/**
- * Expose the renderer in use to the client so that we can easily see
- * which renderer was used for a given request.
- */
-export function setRendererHeader(res: Response) {
-  const renderer = res.locals.question_renderer;
-  if (renderer) {
-    res.set('X-PrairieLearn-Question-Renderer', renderer);
-  }
 }

@@ -1,4 +1,4 @@
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -11,7 +11,7 @@ import {
   InstitutionRowSchema,
 } from './administratorInstitutions.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -29,7 +29,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_institution') {
-      await sqldb.queryAsync(sql.insert_institution, {
+      await sqldb.execute(sql.insert_institution, {
         short_name: req.body.short_name,
         long_name: req.body.long_name,
         display_timezone: req.body.display_timezone,

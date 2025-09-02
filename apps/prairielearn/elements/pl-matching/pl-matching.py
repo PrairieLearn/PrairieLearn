@@ -1,7 +1,6 @@
 import random
-from collections.abc import Callable
 from enum import Enum
-from typing import Any, TypeVar
+from typing import Any
 
 import chevron
 import lxml.html
@@ -61,29 +60,11 @@ def get_select_options(
         return {
             "index": index,
             "value": opt,
+            "blank": index == -1,
             "selected": "selected" if index == selected_value else "",
         }
 
     return [transform(i, opt) for i, opt in enumerate(options_list)]
-
-
-ListItem = TypeVar("ListItem")
-
-
-def partition(
-    data: list[ListItem], pred: Callable[[ListItem], bool]
-) -> tuple[list[ListItem], list[ListItem]]:
-    """
-    Split the data into two lists based on the predicate.
-    TODO move this into prairielearn.py once it's used in another element.
-    """
-    yes, no = [], []
-    for d in data:
-        if pred(d):
-            yes.append(d)
-        else:
-            no.append(d)
-    return (yes, no)
 
 
 def categorize_matches(
@@ -191,7 +172,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
     needed_options_keys = {s["match"] for s in statements}
-    needed_options, distractors = partition(
+    needed_options, distractors = pl.partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
 
@@ -354,12 +335,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "name": form_name,
                 "display_score_badge": display_score_badge,
                 "correct": display_score_badge and student_answer == correct_answer,
+                "statement_id": pl.get_uuid(),
             }
             statement_set.append(statement_html)
 
         option_set = []
-        for option in display_options:
-            option_html = {"key": option["key"], "html": option["html"].strip()}
+        for index, option in enumerate(display_options, start=1):
+            option_html = {
+                "key": option["key"],
+                "counter": get_counter(index, counter_type),
+                "html": option["html"].strip(),
+            }
             option_set.append(option_html)
 
         html_params: dict[str, str | bool | float | list[Any]] = {
@@ -371,6 +357,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "no_counters": no_counters,
             "options_placement": options_placement.value,
             "editable": data["editable"],
+            "uuid": pl.get_uuid(),
         }
 
         if score is not None:

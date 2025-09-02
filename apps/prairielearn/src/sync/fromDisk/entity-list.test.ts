@@ -1,4 +1,4 @@
-import { assert } from 'chai';
+import { assert, describe, it } from 'vitest';
 
 import { determineOperationsForEntities } from './entity-list.js';
 
@@ -323,7 +323,7 @@ describe('determineOperationsForEntities', () => {
     assert.deepEqual(result.entitiesToDelete, ['A', 'B']);
   });
 
-  it('does not delete if it should not', async () => {
+  it('does not delete if it should not', () => {
     const result = determineOperationsForEntities<TestEntityWithHeading>({
       courseEntities: [],
       existingEntities: [

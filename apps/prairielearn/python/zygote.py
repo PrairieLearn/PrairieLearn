@@ -58,7 +58,7 @@ if drop_privileges:
     texmf_var_path = "/tmp/texmf-var"
     texmf_home_path = "/tmp/texmf-home"
 
-    oldmask = os.umask(000)
+    oldmask = os.umask(0o000)
 
     os.makedirs(config_home_path, mode=0o777, exist_ok=True)
     os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
@@ -159,7 +159,7 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+        print(f"Error converting this object to json:\n{obj}\n", file=sys.stderr)
         raise
 
 
@@ -183,12 +183,25 @@ def worker_loop() -> None:
         # return the results. The caller should terminate us with a
         # SIGTERM.
         while True:
-            # wait for a single line of input
+            # Wait for a single line of input
             json_inp = sys.stdin.readline()
-            # unpack the input line as JSON
-            inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
 
-            # get the contents of the JSON input
+            # Sometimes we seem to get an empty line, so we'll just ignore it.
+            if json_inp == "\n":
+                continue
+
+            # If the input is empty, the server has died and we should exit to avoid
+            # becoming a zombie. Exit non-zero to ensure the parent process also exits
+            if json_inp == "":
+                sys.exit(1)
+
+            # Unpack the input line as JSON. If that fails, log the line for debugging.
+            try:
+                inp = json.loads(json_inp, parse_int=zu.safe_parse_int)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"Error decoding JSON input: {json_inp}") from exc
+
+            # Get the contents of the JSON input
             file = inp.get("file", None)
             fcn = inp.get("fcn", None)
             args = inp.get("args", None)

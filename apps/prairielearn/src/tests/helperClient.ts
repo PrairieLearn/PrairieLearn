@@ -1,6 +1,6 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch, { type RequestInit, type Response } from 'node-fetch';
+import { assert } from 'vitest';
 
 import { config } from '../lib/config.js';
 
@@ -40,7 +40,7 @@ export function getCSRFToken($: cheerio.CheerioAPI): string {
   assert.lengthOf(csrfTokenSpan, 1);
   const csrfToken = csrfTokenSpan.text();
   assert.isString(csrfToken);
-  return csrfToken as string;
+  return csrfToken;
 }
 
 /**
@@ -123,7 +123,7 @@ export function setUser(user: User): void {
 export function parseInstanceQuestionId(url: string): number {
   const match = url.match(/instance_question\/(\d+)/);
   assert(match);
-  const iqId = parseInt(match[1]);
+  const iqId = Number.parseInt(match[1]);
   assert.isNumber(iqId);
   return iqId;
 }
@@ -134,7 +134,7 @@ export function parseInstanceQuestionId(url: string): number {
 export function parseAssessmentInstanceId(url: string): number {
   const match = url.match(/assessment_instance\/(\d+)/);
   assert(match);
-  const iqId = parseInt(match[1]);
+  const iqId = Number.parseInt(match[1]);
   assert.isNumber(iqId);
   return iqId;
 }
@@ -163,7 +163,7 @@ export async function saveOrGrade(
   assert(typeof variantId === 'string');
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
-  if (payload && payload.postData) {
+  if (payload.postData) {
     const postData = JSON.parse(payload.postData);
     postData.variant.id = variantId;
     payload.postData = JSON.stringify(postData);

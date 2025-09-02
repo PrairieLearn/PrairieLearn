@@ -1,14 +1,13 @@
-import * as express from 'express';
+import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
-import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
@@ -19,21 +18,30 @@ import {
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
+import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
-import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { GenerationFailure } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+import {
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  getIntervalUsage,
+  regenerateQuestion,
+} from '../../lib/aiQuestionGeneration.js';
+import {
+  GenerationFailure,
+  RateLimitExceeded,
+} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
-const router = express.Router({ mergeParams: true });
+const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
 async function saveGeneratedQuestion(
-  res: express.Response,
+  res: Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
   title?: string,
@@ -123,7 +131,7 @@ async function saveRevisedQuestion({
 
   const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
+  await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
     prompting_user_id: authn_user.user_id,
     prompt_type: promptType,
@@ -158,7 +166,7 @@ router.use(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -194,16 +202,14 @@ router.get(
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals as any, {
+    await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
         newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
       },
     });
-    await setQuestionCopyTargets(res);
     await logPageView('instructorQuestionPreview', req, res);
-    setRendererHeader(res);
 
     res.send(
       InstructorAiGenerateDraftEditor({
@@ -219,7 +225,10 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!config.openAiApiKey || !config.openAiOrganization) {
+    if (
+      !config.aiQuestionGenerationOpenAiApiKey ||
+      !config.aiQuestionGenerationOpenAiOrganization
+    ) {
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
@@ -233,8 +242,8 @@ router.post(
     assertCanCreateQuestion(res.locals);
 
     const client = new OpenAI({
-      apiKey: config.openAiApiKey,
-      organization: config.openAiOrganization,
+      apiKey: config.aiQuestionGenerationOpenAiApiKey,
+      organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'regenerate_question') {
@@ -247,8 +256,27 @@ router.post(
         AiQuestionGenerationPromptSchema,
       );
 
-      if (prompts.length < 1) {
+      if (prompts.length === 0) {
         throw new error.HttpStatusError(403, 'Prompt history not found.');
+      }
+
+      const intervalCost = await getIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost(req.body.prompt);
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        res.send(
+          RateLimitExceeded({
+            // If the user has more than the threshold of 100 tokens,
+            // they can shorten their message to avoid reaching the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost >
+              config.costPerMillionPromptTokens * 100,
+          }),
+        );
+        return;
       }
 
       const result = await regenerateQuestion(
@@ -263,6 +291,13 @@ router.post(
         res.locals.authn_user.user_id,
         res.locals.authz_data.has_course_permission_edit,
       );
+
+      await addCompletionCostToIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+        promptTokens: result.promptTokens ?? 0,
+        completionTokens: result.completionTokens ?? 0,
+        intervalCost,
+      });
 
       if (result.htmlResult) {
         res.set({

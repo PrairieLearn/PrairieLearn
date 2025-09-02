@@ -232,20 +232,20 @@ mjx-container {
 }
 
 /* Button in submission header context prepends "hide" or "show" automatically */
-.submission-header .expand-icon {
+.collapsible-card-header .expand-icon {
   transition: transform 400ms;
 }
 
-.submission-header .expand-icon-container::before {
-  content: 'hide';
+.collapsible-card-header .expand-icon-container::before {
+  content: 'Hide';
 }
 
-.submission-header .expand-icon-container.collapsed .expand-icon {
+.collapsible-card-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header .expand-icon-container.collapsed::before {
-  content: 'show';
+.collapsible-card-header .expand-icon-container.collapsed::before {
+  content: 'Show';
 }
 
 /***************************************
@@ -422,4 +422,21 @@ small .user-output-invalid {
 .fixed-table-toolbar div.pagination,
 .fixed-table-toolbar div.pagination-detail {
   margin: 0 1em 0 0 !important;
+}
+
+/** Provide a higher-contrast focus indicator for tom-select dropdowns */
+.ts-dropdown .active {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+/**
+ * Fixes an accessibility issue with Bootstrap's navbar focus styles.
+ * https://github.com/twbs/bootstrap/issues/41395
+ */
+.nav-link:focus-visible {
+  box-shadow: none !important;
+  outline-style: revert;
+  outline-color: revert;
+  outline-width: revert;
 }

@@ -3,8 +3,11 @@ import { z } from 'zod';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { AdministratorQueryResultSchema } from '../../admin_queries/util.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import {
+  AdministratorQueryResultSchema,
+  type AdministratorQuerySpecs,
+} from '../../admin_queries/lib/util.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
@@ -18,25 +21,6 @@ export const AdministratorQueryRunParamsSchema = z.object({
   result: AdministratorQueryResultSchema.nullable(),
   formatted_date: z.string().optional().nullable(),
 });
-
-export const AdministratorQuerySchema = z.object({
-  description: z.string(),
-  resultFormats: z.any().optional(),
-  comment: z.any().optional(),
-  params: z
-    .array(
-      z.object({
-        name: z.string(),
-        description: z.string(),
-        default: z.string().optional(),
-        comment: z.string().optional(),
-      }),
-    )
-    .optional(),
-  sqlFilename: z.string().optional(),
-  link: z.string().optional(),
-});
-type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;
 
 export const QueryRunRowSchema = QueryRunSchema.extend({
   user_name: z.string().nullable(),
@@ -56,7 +40,7 @@ export function AdministratorQuery({
   query_run_id: string | null;
   query_run: QueryRun | null;
   queryFilename: string;
-  info: AdministratorQuery;
+  info: AdministratorQuerySpecs;
   recent_query_runs: QueryRunRow[];
 }) {
   return PageLayout({
@@ -106,7 +90,7 @@ export function AdministratorQuery({
                         name="${param.name}"
                         autocomplete="off"
                         ${query_run?.params?.[param.name]
-                          ? html`value="${query_run?.params[param.name]}"`
+                          ? html`value="${query_run.params[param.name]}"`
                           : html`value="${param.default ?? ''}"`}
                       />
 
@@ -128,8 +112,8 @@ export function AdministratorQuery({
         ${query_run
           ? html`
               <div class="card-body d-flex align-items-center p-2 bg-secondary text-white">
-                Query ran at: ${query_run.date ? formatDate(query_run.date, 'UTC') : 'unknown'}
-                ${query_run?.result != null
+                Query ran at: ${formatDate(query_run.date, 'UTC')}
+                ${query_run.result != null
                   ? html`
                       <div class="ms-auto">
                         <span class="me-2" data-testid="row-count">
@@ -212,7 +196,7 @@ export function AdministratorQuery({
                         <tr>
                           <td>
                             <a href="${`?query_run_id=${run.id}`}">
-                              ${run.date ? formatDate(run.date, 'UTC') : html`&mdash;`}
+                              ${formatDate(run.date, 'UTC')}
                             </a>
                           </td>
                           <td>
@@ -266,7 +250,7 @@ function shouldRenderColumn(columns: string[], col: string) {
   ) {
     return false;
   }
-  if (/^_sortval_/.test(col)) {
+  if (col.startsWith('_sortval_')) {
     return false;
   }
   return true;
@@ -277,29 +261,27 @@ function renderHeader(columns: string[], col: string) {
   return html`<th>${col}</th>`;
 }
 
-function renderCell(row: any, col: string, columns: string[], info: AdministratorQuery) {
+function renderCell(row: any, col: string, columns: string[], info: AdministratorQuerySpecs) {
   if (!shouldRenderColumn(columns, col)) return '';
   const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
 
   if (col === 'course' && 'course_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course/${row.course_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
-        <a href="${config.urlPrefix}/course_instance/${row['course_instance_id']}">${row[col]}</a>
+        <a href="${config.urlPrefix}/course_instance/${row.course_instance_id}">${row[col]}</a>
       </td>
     `;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a
-          href="${config.urlPrefix}/course_instance/${row[
-            'course_instance_id'
-          ]}/instructor/assessment/${row['assessment_id']}"
+          href="${config.urlPrefix}/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}"
         >
           ${row[col]}
         </a>

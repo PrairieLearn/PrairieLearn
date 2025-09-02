@@ -1,10 +1,9 @@
-import { AnsiUp } from 'ansi_up';
-
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import type { FileEdit } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
@@ -43,7 +42,6 @@ export function InstructorFileEditor({
   draftEdit: DraftEdit | null;
 }) {
   const { course, __csrf_token } = resLocals;
-  const ansiUp = new AnsiUp();
 
   return PageLayout({
     resLocals,
@@ -76,7 +74,7 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_errors))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.sync_errors))}</code></pre>
             </div>
           `
         : ''}
@@ -92,7 +90,7 @@ export function InstructorFileEditor({
               <pre
                 class="text-white rounded p-3 mb-0"
                 style="background-color: black;"
-              ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_warnings))}</code></pre>
+              ><code>${unsafeHtml(ansiToHtml(editorData.sync_warnings))}</code></pre>
             </div>
           `
         : ''}
@@ -320,7 +318,7 @@ export function InstructorFileEditor({
                         <button
                           class="btn btn-primary"
                           type="button"
-                          onClick="window.location.reload()"
+                          onclick="window.location.reload()"
                         >
                           Choose their version (discard my changes)
                         </button>

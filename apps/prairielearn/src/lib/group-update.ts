@@ -1,28 +1,17 @@
 import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import { z } from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from './db-types.js';
+import { selectAssessmentInfoForJob } from '../models/assessment.js';
+
+import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const AssessmentInfoSchema = z.object({
-  assessment_label: z.string(),
-  course_instance_id: IdSchema,
-  course_id: IdSchema,
-});
 
 function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
@@ -47,11 +36,8 @@ export async function uploadInstanceGroups(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -138,11 +124,8 @@ export async function randomGroups(
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
-  const { assessment_label, course_id, course_instance_id } = await queryRow(
-    sql.select_assessment_info,
-    { assessment_id },
-    AssessmentInfoSchema,
-  );
+  const { assessment_label, course_id, course_instance_id } =
+    await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
     courseId: course_id,
@@ -186,13 +169,6 @@ export async function randomGroups(
         let groupsCreated = 0,
           studentsGrouped = 0;
         await runInTransactionAsync(async () => {
-          // Find a group name of the format `groupNNN` that is not used
-          const unusedGroupNameSuffix = await queryOptionalRow(
-            sql.select_unused_group_name_suffix,
-            { assessment_id },
-            z.number(),
-          );
-
           // Create groups using the groups of maximum size where possible
           const userGroups = _.chunk(
             studentsToGroup.map((user) => user.uid),
@@ -205,7 +181,7 @@ export async function randomGroups(
             const usersToMove = userGroups
               .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
-              .map((group) => group.pop() as string);
+              .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(
                 `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
@@ -215,11 +191,8 @@ export async function randomGroups(
             smallGroup.push(...usersToMove);
           }
 
-          let i = unusedGroupNameSuffix ?? 1;
           for (const users of userGroups) {
-            const groupName = `group${i}`;
-            i++;
-            await createGroup(groupName, assessment_id, users, authn_user_id).then(
+            await createGroup(null, assessment_id, users, authn_user_id).then(
               () => {
                 groupsCreated++;
                 studentsGrouped += users.length;

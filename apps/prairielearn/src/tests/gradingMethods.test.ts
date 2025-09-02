@@ -1,11 +1,12 @@
-import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { io } from 'socket.io-client';
+import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { VariantSchema } from '../lib/db-types.js';
 
 import { type User, parseInstanceQuestionId, saveOrGrade, setUser } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -86,9 +87,7 @@ function getLatestSubmissionStatus($: cheerio.CheerioAPI): string {
   return $('[data-testid="submission-status"] .badge').first().text().trim();
 }
 
-describe('Grading method(s)', function () {
-  this.timeout(80000);
-
+describe('Grading method(s)', { timeout: 80_000 }, function () {
   let $hm1Body;
   let iqUrl;
   let gradeRes;
@@ -96,10 +95,11 @@ describe('Grading method(s)', function () {
   let questionsPage;
   let $questionsPage;
 
-  before('set up testing server', helperServer.before());
-  after('shut down testing server', helperServer.after);
+  beforeAll(helperServer.before());
 
-  after('reset default user', () => setUser(defaultUser));
+  afterAll(helperServer.after);
+
+  afterAll(() => setUser(defaultUser));
 
   describe('`gradingMethod` configuration', () => {
     describe('"Internal"', () => {
@@ -118,7 +118,8 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should submit "grade" action', async () => {
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade');
           assert.equal(gradeRes.status, 200);
@@ -127,13 +128,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should result in 1 grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 1);
+          const rowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(rowCount, 1);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -151,7 +152,8 @@ describe('Grading method(s)', function () {
           await fetch(iqUrl);
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
           assert.equal(gradeRes.status, 200);
@@ -160,13 +162,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -197,10 +199,10 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -229,10 +231,10 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -287,8 +289,8 @@ describe('Grading method(s)', function () {
         });
 
         it('should result in 1 grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 1);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 1);
         });
         it('should result in 1 "submission-block" component being rendered', async () => {
           // reload QuestionsPage to also check behaviour when results are ready on load
@@ -296,7 +298,7 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -322,13 +324,13 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -377,8 +379,8 @@ describe('Grading method(s)', function () {
         });
 
         it('should result in 1 grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 1);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 1);
         });
         it('should result in 1 "submission-block" component being rendered', async () => {
           // reload QuestionsPage to also check behaviour when results are ready on load
@@ -386,7 +388,7 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -414,7 +416,8 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should submit "grade" action', async () => {
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade');
           assert.equal(gradeRes.status, 200);
@@ -423,13 +426,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should result in 1 grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 1);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 1);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -450,7 +453,8 @@ describe('Grading method(s)', function () {
           await fetch(iqUrl);
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
           assert.equal(gradeRes.status, 200);
@@ -459,13 +463,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {
@@ -494,7 +498,9 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should be possible to submit a grade action to "Manual" type question', async () => {
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
+
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade');
           assert.equal(gradeRes.status, 200);
 
@@ -502,10 +508,10 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -532,7 +538,9 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should be possible to submit a save action', async () => {
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
+
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
           assert.equal(gradeRes.status, 200);
 
@@ -540,10 +548,10 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(
             getLatestSubmissionStatus($questionsPage),
             'manual grading: waiting for grading',
@@ -570,7 +578,8 @@ describe('Grading method(s)', function () {
           iqId = parseInstanceQuestionId(iqUrl);
         });
         it('should submit "grade" action', async () => {
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'grade');
           assert.equal(gradeRes.status, 200);
@@ -579,13 +588,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should result in 1 grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 1);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 1);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being displayed', () => {
@@ -602,7 +611,8 @@ describe('Grading method(s)', function () {
           await fetch(iqUrl);
           // get variant params
           iqId = parseInstanceQuestionId(iqUrl);
-          const variant = (await sqldb.queryOneRowAsync(sql.get_variant_by_iq, { iqId })).rows[0];
+          const variant = await sqldb.queryRow(sql.get_variant_by_iq, { iqId }, VariantSchema);
+          assert.ok(variant.params);
 
           gradeRes = await saveOrGrade(iqUrl, { c: variant.params.a + variant.params.b }, 'save');
           assert.equal(gradeRes.status, 200);
@@ -611,13 +621,13 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
         });
         it('should NOT result in any grading jobs', async () => {
-          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
-          assert.lengthOf(grading_jobs, 0);
+          const gradingJobsRowCount = await sqldb.execute(sql.get_grading_jobs_by_iq, { iqId });
+          assert.equal(gradingJobsRowCount, 0);
         });
         it('should result in 1 "submission-block" component being rendered', () => {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
-        it('should display submission status', async () => {
+        it('should display submission status', () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
         });
         it('should NOT result in "grading-block" component being displayed', () => {

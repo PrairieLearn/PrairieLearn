@@ -5,6 +5,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from typing import Literal, cast, get_args
 
 from utils import (
     buildx_builder,
@@ -23,9 +24,10 @@ BUILDER_NAME = "prairielearn-builder"
 # A mapping from images to their base images. We use this to know to rebuild images when their base image has changed.
 BASE_IMAGE_MAPPING = {
     # Core images.
-    "prairielearn/prairielearn": "prairielearn/plbase",
     "prairielearn/executor": "prairielearn/prairielearn",
     # Workspace images.
+    "prairielearn/workspace-jupyterlab-python": "prairielearn/workspace-jupyterlab-base",
+    "prairielearn/workspace-jupyterlab-r": "prairielearn/workspace-jupyterlab-base",
     "prairielearn/workspace-vscode-python": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-cpp": "prairielearn/workspace-vscode-base",
     "prairielearn/workspace-vscode-java": "prairielearn/workspace-vscode-base",
@@ -33,8 +35,11 @@ BASE_IMAGE_MAPPING = {
 
 BASE_IMAGES = list(set(BASE_IMAGE_MAPPING.values()))
 
+CacheStrategy = Literal["none", "pull", "update"]
+
 
 def get_image_path(image: str) -> str:
+    """Get the path to the Docker context for the given image."""
     if not image.startswith("prairielearn/"):
         raise ValueError(f"Cannot build non-PrairieLearn image: {image}")
 
@@ -48,9 +53,6 @@ def get_image_path(image: str) -> str:
         image = image[len("grader-") :]
         return f"graders/{image}"
 
-    if image == "plbase":
-        return "images/plbase"
-
     if image == "executor":
         return "images/executor"
 
@@ -62,6 +64,10 @@ def get_image_path(image: str) -> str:
 
 @functools.cache
 def check_path_modified(path: str) -> bool:
+    """Check if the given path has been modified since the last commit.
+
+    This is used to determine if we need to rebuild the image.
+    """
     branch = (
         subprocess.run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
@@ -120,6 +126,9 @@ def build_image(
     should_push: bool = False,
     base_image_digest: str | None = None,
     metadata_dir: str | None = None,
+    cache_strategy: CacheStrategy = "none",
+    # Only will use the cache strategy for these images -- all others will be built with cache_strategy="none".
+    cache_only: list[str] | None = None,
 ) -> str:
     """Builds a Docker image. Returns the digest of the built image."""
     base_image = BASE_IMAGE_MAPPING.get(image)
@@ -134,7 +143,6 @@ def build_image(
             builder,
             "--platform",
             platform,
-            "--no-cache",
             "--tag",
             f"localhost:5000/{image}",
             "--progress",
@@ -155,6 +163,31 @@ def build_image(
                 # Only tag it with the registry name if we're going to push.
                 "--tag",
                 image,
+            ])
+
+        cache_ref = f"{image}:buildcache-{platform.replace('/', '-')}"
+
+        should_cache = cache_only is not None and image in cache_only
+
+        if cache_strategy == "pull" and should_cache:
+            # We just want to pull from the cache.
+            args.extend([
+                "--pull",  # Always attempt to pull all referenced images
+                "--cache-from",
+                f"type=registry,ref={cache_ref}",
+            ])
+        elif cache_strategy == "update" and should_cache:
+            # We want to not only pull from the cache, but also push to it.
+            args.extend([
+                "--pull",  # Always attempt to pull all referenced images
+                "--cache-from",
+                f"type=registry,ref={cache_ref}",
+                "--cache-to",
+                f"type=registry,ref={cache_ref},mode=max",
+            ])
+        else:
+            args.extend([
+                "--no-cache",
             ])
 
         args.extend([image_path])
@@ -179,7 +212,7 @@ def build_image(
 
         # We need a unique name for the metadata file. We'll use the part of the
         # image name after the last slash, and a hash of the build ref.
-        name_without_scope = image.split("/")[-1]
+        name_without_scope = image.rsplit("/", maxsplit=1)[-1]
         hashed_build_ref = hashlib.sha256(build_ref.encode()).hexdigest()
         metadata_filename = f"{name_without_scope}_{hashed_build_ref}.json"
         with open(os.path.join(metadata_dir, metadata_filename), "w") as f:
@@ -196,7 +229,10 @@ def build_images(
     should_push: bool = False,
     only_changed: bool = False,
     metadata_dir: str | None = None,
+    cache_strategy: CacheStrategy = "none",
+    cache_only: list[str] | None = None,
 ) -> None:
+    """Builds a list of Docker images in the order they are given."""
     validate_image_order(images)
 
     image_digests: dict[str, str] = {}
@@ -219,6 +255,8 @@ def build_images(
             should_push=should_push,
             base_image_digest=base_image_digest,
             metadata_dir=metadata_dir,
+            cache_strategy=cache_strategy,
+            cache_only=cache_only,
         )
 
         image_digests[image] = digest
@@ -229,6 +267,16 @@ if __name__ == "__main__":
     metadata_dir = os.environ.get("METADATA_DIR")
     should_push = os.environ.get("PUSH_IMAGES", "false").lower() == "true"
     only_changed = os.environ.get("ONLY_CHANGED", "false").lower() == "true"
+    cache_strategy = os.environ.get("CACHE_STRATEGY", "none").lower()
+    cache_only_str = os.environ.get("CACHE_ONLY", "")
+    if cache_only_str:
+        cache_only = cache_only_str.split(",")
+    else:
+        cache_only = None
+
+    if cache_strategy not in get_args(CacheStrategy):
+        raise ValueError(f"Invalid cache strategy: {cache_strategy}")
+    cache_strategy = cast(CacheStrategy, cache_strategy)
 
     if metadata_dir:
         os.makedirs(metadata_dir, exist_ok=True)
@@ -257,4 +305,6 @@ if __name__ == "__main__":
             should_push=should_push,
             only_changed=only_changed,
             metadata_dir=metadata_dir,
+            cache_strategy=cache_strategy,
+            cache_only=cache_only,
         )

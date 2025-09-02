@@ -1,12 +1,11 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -27,7 +26,7 @@ const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 describe('Creating a course instance', () => {
-  before(async () => {
+  beforeAll(async () => {
     // Clone the course template for testing
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
@@ -49,12 +48,12 @@ describe('Creating a course instance', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await execute(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('create a new course instance', async () => {
+  test.sequential('create a new course instance', async () => {
     // Fetch the course instance page for the course
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
@@ -89,7 +88,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step('verify course instance has the correct info', async () => {
+  test.sequential('verify course instance has the correct info', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
       'Fa19', // Verify that the short_name has been used as the course instance folder's name
@@ -104,7 +103,7 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.allowAccess[0].endDate, '2021-01-02 00:00:00');
   });
 
-  step('add course instance with the same long_name and short_name', async () => {
+  test.sequential('add course instance with the same long_name and short_name', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
@@ -138,7 +137,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step('verify that the new course instance names had 2 appended to them', async () => {
+  test.sequential('verify that the new course instance names had 2 appended to them', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
       'Fa19_2',
@@ -150,7 +149,7 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.longName, 'Fall 2019 (2)');
   });
 
-  step('add course instance without start_access_date and end_access_date', async () => {
+  test.sequential('add course instance without start_access_date and end_access_date', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
@@ -182,7 +181,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step('verify course instance is created with an empty allowAccess array', async () => {
+  test.sequential('verify course instance is created with an empty allowAccess array', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
       'Fa20',
@@ -196,7 +195,7 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.allowAccess.length, 0);
   });
 
-  step('add course instance with access_dates_enabled unchecked', async () => {
+  test.sequential('add course instance with access_dates_enabled unchecked', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
@@ -229,7 +228,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step('verify course instance is created with an empty allowAccess array', async () => {
+  test.sequential('verify course instance is created with an empty allowAccess array', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
       'Sp21',
@@ -243,7 +242,7 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.allowAccess.length, 0);
   });
 
-  step('should not be able to create course instance with no short_name', async () => {
+  test.sequential('should not be able to create course instance with no short_name', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
@@ -274,7 +273,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step('should not be able to create course instance with no long_name', async () => {
+  test.sequential('should not be able to create course instance with no long_name', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
@@ -305,7 +304,7 @@ describe('Creating a course instance', () => {
     );
   });
 
-  step(
+  test.sequential(
     'should not be able to create course instance with short_name that falls outside correct root directory',
     async () => {
       const courseInstancePageResponse = await fetchCheerio(

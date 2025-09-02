@@ -1,5 +1,35 @@
 # @prairielearn/browser-utils
 
+## 2.2.12
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
+## 2.2.11
+
+### Patch Changes
+
+- Updated dependencies [be4444e]
+  - @prairielearn/html@4.0.15
+
+## 2.2.10
+
+### Patch Changes
+
+- Updated dependencies [cec09b5]
+  - @prairielearn/html@4.0.14
+
+## 2.2.9
+
+### Patch Changes
+
+- 82f9c2f: Upgrade all JavaScript dependencies
+- Updated dependencies [82f9c2f]
+  - @prairielearn/html@4.0.13
+
 ## 2.2.8
 
 ### Patch Changes

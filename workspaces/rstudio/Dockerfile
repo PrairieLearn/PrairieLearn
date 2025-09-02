@@ -44,25 +44,25 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.4.3
+FROM rocker/rstudio:4.5.1
+ARG CACHEBUST=2025-08-15-14-16-03
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
 USER 0
-RUN export OLD_UID=$(id -u rstudio) && \
-    export OLD_GID=$(id -g rstudio) && \
-    export NEW_UID=1001 && \
-    export NEW_GID=1001 && \
+RUN OLD_UID="$(id -u rstudio)" && \
+    OLD_GID="$(id -g rstudio)" && \
+    export OLD_GID OLD_UID NEW_UID=1001 NEW_GID=1001 && \
     groupmod -g 1001 rstudio && \
     usermod -u 1001 -g 1001 rstudio && \
-    find /home -user $OLD_UID -execdir chown -h $NEW_UID {} + && \
-    find /home -group $OLD_GID -execdir chgrp -h $NEW_GID {} + && \
+    find /home -user "$OLD_UID" -execdir chown -h "$NEW_UID" {} + && \
+    find /home -group "$OLD_GID" -execdir chgrp -h "$NEW_GID" {} + && \
     unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 USER 0
 RUN apt-get update && \
     # Run 'unminimize' to add docs
-    apt-get install -y man-db unminimize && \
+    apt-get install -y --no-install-recommends man-db unminimize && \
     yes | unminimize && \
     apt-get install -y --no-install-recommends \
     # Reverse proxy workaround for PrairieLearn:
@@ -126,7 +126,7 @@ EXPOSE 3939
 # editor settings, those will get reset in between sessions this way.)
 
 USER rstudio
-ENV EDITOR_FOCUS_DIR "/home/rstudio/workspace"
+ENV EDITOR_FOCUS_DIR="/home/rstudio/workspace"
 RUN mkdir -p "$EDITOR_FOCUS_DIR"
 
 # The .Rprofile hack will set the working directory of the left code panes but
@@ -155,19 +155,19 @@ RUN mkdir -p /pl-bin && \
 # Set some variables for RStudio Server to ensure everything works.
 # We need to run as user rstudio (1001:1001). Do not run as root.
 USER rstudio
-ENV USER rstudio
+ENV USER=rstudio
 # Judging from some discussion online, the PASSWORD variable may be necessary
 # due to a bug in RStudio Server's DISABLE_AUTH mode.
-ENV DISABLE_AUTH true
-ENV PASSWORD placeholder
+ENV DISABLE_AUTH=true
+ENV PASSWORD=placeholder
 # This tells s6 to use alternative, writable locations if the paths it
 # expects to write to are read-only.
-ENV S6_READ_ONLY_ROOT 1
+ENV S6_READ_ONLY_ROOT=1
 
 # On the production server, this will be overwritten dynamically when PL
 # creates the workspace at a different URL.
-ENV WORKSPACE_BASE_URL rstudio
+ENV WORKSPACE_BASE_URL=rstudio
 # PL_USER should be user 1001's intended name. The gosu helper uses this to
 # make sure local testing works even if the PL Docker tries to run as root.
-ENV PL_USER rstudio
-ENTRYPOINT /pl-bin/pl-gosu-helper.sh /pl-bin/pl-start.sh
+ENV PL_USER=rstudio
+ENTRYPOINT [ "/pl-bin/pl-gosu-helper.sh", "/pl-bin/pl-start.sh" ]

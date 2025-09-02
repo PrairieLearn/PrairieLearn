@@ -1,4 +1,6 @@
-# Converting Canvas assessments to PrairieLearn
+# Canvas conversion tool
+
+## Converting Canvas assessments to PrairieLearn
 
 This directory contains scripts that use the Canvas API to import course assessments into
 PrairieLearn. The current version includes a conversion of Canvas classic quizzes. Implementation of

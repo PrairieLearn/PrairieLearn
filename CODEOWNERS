@@ -1,5 +1,6 @@
+* @PrairieLearn/core
+
 /apps/prairielearn/elements/pl-big-o-input @eliotwrobson
-/apps/prairielearn/elements/pl-card @tdy
 /apps/prairielearn/elements/pl-dataframe @eliotwrobson
 /apps/prairielearn/elements/pl-external-grader-variables @nicknytko @eliotwrobson
 /apps/prairielearn/elements/pl-graph @nicknytko @eliotwrobson

@@ -1,14 +1,15 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
+import { CourseSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
@@ -46,9 +47,7 @@ const COURSE: courseDB.CourseData = {
 async function getAllChunksForCourse(course_id) {
   return await sqldb.queryRows(
     sql.select_all_chunks,
-    {
-      course_id,
-    },
+    { course_id },
     z.object({
       id: z.string(),
       uuid: z.string(),
@@ -139,7 +138,7 @@ describe('chunks', () => {
       );
     });
 
-    it('should identify complex assessment in simple course instance', () => {
+    it('should identify complex assessment in complex course instance', () => {
       const chunks = chunksLib.identifyChunksFromChangedFiles(
         [
           'courseInstances/complex/course/instance/assessments/complex/assessment/clientFilesAssessment/file.txt',
@@ -260,9 +259,7 @@ describe('chunks', () => {
     });
   });
 
-  describe('ensureChunksForCourse', function () {
-    this.timeout(60000);
-
+  describe('ensureChunksForCourse', { timeout: 60_000 }, function () {
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
@@ -272,7 +269,7 @@ describe('chunks', () => {
     let questionId;
     let nestedQuestionId;
 
-    beforeEach('set up testing server', async () => {
+    beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
@@ -293,47 +290,49 @@ describe('chunks', () => {
       config.chunksConsumerDirectory = tempChunksDir.path;
       config.chunksConsumer = true;
 
-      await helperServer.before(tempTestCourseDir.path).call(this);
+      await helperServer.before(tempTestCourseDir.path)();
 
       // Find the ID of this course
-      const results = await sqldb.queryOneRowAsync(sql.select_course_by_path, {
-        course_path: tempTestCourseDir.path,
-      });
-      courseId = results.rows[0].id;
+      const results = await sqldb.queryRow(
+        sql.select_course_by_path,
+        { course_path: tempTestCourseDir.path },
+        CourseSchema,
+      );
+      courseId = results.id;
 
       // Find the ID of the course instance
-      const courseInstanceResults = await sqldb.queryOneRowAsync(sql.select_course_instance, {
-        long_name: 'Spring 2015',
-      });
-      courseInstanceId = courseInstanceResults.rows[0].id;
+      courseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance,
+        { long_name: 'Spring 2015' },
+        IdSchema,
+      );
 
       // Find the ID of an assessment that has clientFilesAssessment
-      const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
-        tid: 'exam1-automaticTestSuite',
-      });
-      assessmentId = assessmentResults.rows[0].id;
+      assessmentId = await sqldb.queryRow(
+        sql.select_assessment,
+        { tid: 'exam1-automaticTestSuite' },
+        IdSchema,
+      );
 
       // Find the ID of a question.
-      const questionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'addNumbers',
-      });
-      questionId = questionResults.rows[0].id;
+      questionId = await sqldb.queryRow(sql.select_question, { qid: 'addNumbers' }, IdSchema);
 
       // Find the ID of a nested question.
-      const nestedQuestionResults = await sqldb.queryOneRowAsync(sql.select_question, {
-        qid: 'subfolder/nestedQuestion',
-      });
-      nestedQuestionId = nestedQuestionResults.rows[0].id;
+      nestedQuestionId = await sqldb.queryRow(
+        sql.select_question,
+        { qid: 'subfolder/nestedQuestion' },
+        IdSchema,
+      );
     });
 
-    afterEach('shut down testing server', async () => {
+    afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();
         await tempChunksDir.cleanup();
       } catch (err) {
         console.error(err);
       }
-      await helperServer.after.call(this);
+      await helperServer.after();
 
       config.chunksConsumer = false;
       config.chunksConsumerDirectory = originalChunksConsumerDirectory;

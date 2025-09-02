@@ -1,7 +1,6 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -33,92 +32,89 @@ const USER_3 = {
 };
 
 describe('Enroll page (enterprise)', function () {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
   const originalIsEnterprise = config.isEnterprise;
-  before(async () => (config.isEnterprise = true));
-  after(async () => (config.isEnterprise = originalIsEnterprise));
+  beforeAll(() => (config.isEnterprise = true));
+  afterAll(() => (config.isEnterprise = originalIsEnterprise));
 
-  step('enroll a single student', async () => {
+  test.sequential('enroll a single student', async () => {
     const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('enrolls the same student again', async () => {
+  test.sequential('enrolls the same student again', async () => {
     const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('unenroll a single student', async () => {
+  test.sequential('unenroll a single student', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('unenroll the same student again', async () => {
+  test.sequential('unenroll the same student again', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('apply a course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+  test.sequential('apply a course instance enrollment limit', async () => {
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  step('enroll one student', async () => {
+  test.sequential('enroll one student', async () => {
     const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('fail to enroll a second student', async () => {
+  test.sequential('fail to enroll a second student', async () => {
     const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
-  step('apply an institution-level course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
-    await queryAsync(
-      'UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1',
-      {},
-    );
+  test.sequential('apply an institution-level course instance enrollment limit', async () => {
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
+    await execute('UPDATE institutions SET course_instance_enrollment_limit = 1 WHERE id = 1');
   });
 
-  step('fail to enroll a second student', async () => {
+  test.sequential('fail to enroll a second student', async () => {
     const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
-  step('set a higher course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1', {});
+  test.sequential('set a higher course instance enrollment limit', async () => {
+    await execute('UPDATE course_instances SET enrollment_limit = 2 WHERE id = 1');
   });
 
-  step('enroll a second student', async () => {
+  test.sequential('enroll a second student', async () => {
     const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('fail to enroll a third student', async () => {
+  test.sequential('fail to enroll a third student', async () => {
     const res = await enrollUser('1', USER_3);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
   });
 
-  step('set a yearly enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1', {});
-    await queryAsync(
+  test.sequential('set a yearly enrollment limit', async () => {
+    await execute('UPDATE course_instances SET enrollment_limit = NULL WHERE id = 1');
+    await execute(
       'UPDATE institutions SET course_instance_enrollment_limit = 100000, yearly_enrollment_limit = 2 WHERE id = 1',
       {},
     );
   });
 
-  step('fail to enroll a third student', async () => {
+  test.sequential('fail to enroll a third student', async () => {
     const res = await enrollUser('1', USER_3);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll/limit_exceeded');
@@ -127,20 +123,20 @@ describe('Enroll page (enterprise)', function () {
 
 // Enrollment limits should not apply for non-enterprise instances (the default).
 describe('Enroll page (non-enterprise)', () => {
-  before(helperServer.before());
-  after(helperServer.after);
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
 
-  step('apply a course instance enrollment limit', async () => {
-    await queryAsync('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1', {});
+  test.sequential('apply a course instance enrollment limit', async () => {
+    await execute('UPDATE course_instances SET enrollment_limit = 1 WHERE id = 1');
   });
 
-  step('enroll one student', async () => {
+  test.sequential('enroll one student', async () => {
     const res = await enrollUser('1', USER_1);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
   });
 
-  step('enroll a second student', async () => {
+  test.sequential('enroll a second student', async () => {
     const res = await enrollUser('1', USER_2);
     assert.isOk(res.ok);
     assert.equal(res.url, baseUrl + '/enroll');
@@ -149,7 +145,7 @@ describe('Enroll page (non-enterprise)', () => {
   // We want to block access in Exam mode since a student could theoretically
   // use the name of a course on the enrollment page to infiltrate information
   // into an exam.
-  step('ensure that access is blocked in Exam mode', async () => {
+  test.sequential('ensure that access is blocked in Exam mode', async () => {
     const res = await fetch(`${baseUrl}/enroll`, {
       headers: {
         Cookie: 'pl_test_mode=Exam',

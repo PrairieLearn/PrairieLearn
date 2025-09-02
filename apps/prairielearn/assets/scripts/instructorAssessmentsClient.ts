@@ -2,9 +2,8 @@ import * as async from 'async';
 
 import { decodeData, onDocumentReady, parseHTML } from '@prairielearn/browser-utils';
 
+import { renderHistMini } from '../../src/components/HistMini.js';
 import { type StatsUpdateData } from '../../src/pages/instructorAssessments/instructorAssessments.types.js';
-
-import { histmini } from './lib/histmini.js';
 
 const statElements = [
   '.score-stat-number',
@@ -19,7 +18,7 @@ onDocumentReady(() => {
   const { assessmentIdsNeedingStatsUpdate, urlPrefix } =
     decodeData<StatsUpdateData>('stats-update-data');
   // Fetch new statistics in parallel, but with a limit to avoid saturating the server.
-  async.eachLimit(assessmentIdsNeedingStatsUpdate, 3, async (assessment_id) => {
+  void async.eachLimit(assessmentIdsNeedingStatsUpdate, 3, async (assessment_id) => {
     try {
       const response = await fetch(
         `${urlPrefix}/instance_admin/assessments/stats/${assessment_id}`,
@@ -52,5 +51,11 @@ onDocumentReady(() => {
 });
 
 function updatePlots(container: HTMLElement) {
-  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
+  container.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) =>
+    renderHistMini({
+      element,
+      data: JSON.parse(element.dataset.data ?? '[]'),
+      options: JSON.parse(element.dataset.options ?? '{}'),
+    }),
+  );
 }

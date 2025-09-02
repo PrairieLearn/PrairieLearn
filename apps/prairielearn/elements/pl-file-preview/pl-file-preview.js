@@ -1,5 +1,4 @@
-/* eslint-env browser,jquery */
-/* global nb, DOMPurify */
+/* global nb, DOMPurify, MathJax */
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -35,7 +34,13 @@
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const errorMessage = item.querySelector('.alert.error');
+        const infoMessage = item.querySelector('.js-info-alert');
+        const errorMessage = item.querySelector('.js-error-alert');
+
+        function showInfoMessage(message) {
+          infoMessage.textContent = message;
+          infoMessage.classList.remove('d-none');
+        }
 
         function showErrorMessage(message) {
           errorMessage.textContent = message;
@@ -114,21 +119,23 @@
               return result.blob();
             })
             .then(async (blob) => {
+              hideErrorMessage();
+
               const type = blob.type;
               if (type === 'text/plain') {
                 const text = await blob.text();
                 if (escapedFileName.endsWith('.ipynb')) {
-                  // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
-                  // importing DOMPurify sets the global variable DOMPurify.
                   await Promise.all([
                     import('marked'),
+                    import('@prairielearn/marked-mathjax'),
+                    // importing DOMPurify sets the global variable `DOMPurify`.
                     import('dompurify'),
+                    // importing the notebookjs library sets the global variable `nb`.
                     import('notebookjs'),
-                  ]).then(async ([Marked]) => {
-                    // Showdown has a small bug that doesn't allow it to be loaded dynamically.
-                    // This PR will fix it: https://github.com/showdownjs/showdown/pull/1017
-                    // Since the PR could take two weeks or two months, let's used Marked for now
-                    // and get this feature deployed.
+                    // MathJax needs to have been loaded before the extension can be used.
+                    MathJax.startup.promise,
+                  ]).then(async ([Marked, markedMathjax]) => {
+                    markedMathjax.addMathjaxExtension(Marked.marked, MathJax);
                     nb.markdown = Marked.marked.parse;
 
                     nb.sanitizer = (code) =>
@@ -136,7 +143,7 @@
                     const notebook = nb.parse(JSON.parse(text));
                     const rendered = notebook.render();
 
-                    notebookPreview.appendChild(rendered);
+                    notebookPreview.append(rendered);
                     notebookPreview.classList.remove('d-none');
 
                     // Typeset any math that might be in the notebook.
@@ -146,8 +153,6 @@
                   code.textContent = text;
                   pre.classList.remove('d-none');
                 }
-
-                hideErrorMessage();
 
                 // Only show the expand/collapse button if the content is tall
                 // enough where scrolling is necessary. This must be done before
@@ -167,18 +172,16 @@
                   URL.revokeObjectURL(url);
                 };
                 img.classList.remove('d-none');
-                hideErrorMessage();
               } else if (type === 'application/pdf') {
                 const url = URL.createObjectURL(blob);
                 iframe.src = url;
                 iframe.onload = () => {
                   URL.revokeObjectURL(url);
                 };
-                iframe.closest('.embed-responsive').classList.remove('d-none');
-                hideErrorMessage();
+                iframe.closest('.js-file-preview-pdf-container').classList.remove('d-none');
               } else {
                 // We can't preview this file.
-                showErrorMessage('Content preview is not available for this type of file.');
+                showInfoMessage('Content preview is not available for this type of file.');
               }
               wasOpened = true;
             })

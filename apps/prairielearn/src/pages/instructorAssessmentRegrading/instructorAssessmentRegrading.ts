@@ -1,25 +1,27 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   InstructorAssessmentRegrading,
   RegradingJobSequenceSchema,
 } from './instructorAssessmentRegrading.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const regradingJobSequences = await sqldb.queryRows(
       sql.select_regrading_job_sequences,
       { assessment_id: res.locals.assessment.id },

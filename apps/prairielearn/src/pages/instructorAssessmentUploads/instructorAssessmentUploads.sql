@@ -6,13 +6,14 @@ SELECT
 FROM
   job_sequences AS js
   JOIN pl_courses AS c ON (c.id = js.course_id)
-  JOIN users AS u on (u.user_id = js.user_id)
+  JOIN users AS u ON (u.user_id = js.user_id)
 WHERE
   js.assessment_id = $assessment_id
-  AND (
-    js.type = 'upload_instance_question_scores'
-    OR js.type = 'upload_assessment_instance_scores'
+  AND js.type IN (
+    'upload_instance_question_scores',
+    'upload_assessment_instance_scores',
+    'upload_submissions'
   )
 ORDER BY
   js.start_date DESC,
-  js.id;
+  js.id ASC;

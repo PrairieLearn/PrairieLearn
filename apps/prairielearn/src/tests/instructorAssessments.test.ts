@@ -1,12 +1,11 @@
 import * as path from 'path';
 
-import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
@@ -27,7 +26,7 @@ const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
 describe('Creating an assessment', () => {
-  before(async () => {
+  beforeAll(async () => {
     // Clone the course template for testing
     await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
       cwd: '.',
@@ -49,12 +48,12 @@ describe('Creating an assessment', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await queryAsync(sql.update_course_repo, { repo: courseOriginDir });
+    await execute(sql.update_course_repo, { repo: courseOriginDir });
   });
 
-  after(helperServer.after);
+  afterAll(helperServer.after);
 
-  step('create a new assessment without module', async () => {
+  test.sequential('create a new assessment without module', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -86,7 +85,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  step('verify the assessment has the correct info', async () => {
+  test.sequential('verify the assessment has the correct info', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir,
       'HW2', // Verify that the aid was used as the assessment folder's name
@@ -98,7 +97,7 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.set, 'Practice Quiz');
   });
 
-  step('create new assessment with module', async () => {
+  test.sequential('create new assessment with module', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -131,7 +130,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  step('verify the assessment has the correct info, including the module', async () => {
+  test.sequential('verify the assessment has the correct info, including the module', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir,
       'HW3', // Verify that the aid was used as the assessment folder's name
@@ -144,7 +143,7 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.module, 'Module2');
   });
 
-  step('create new assessment with duplicate aid, title', async () => {
+  test.sequential('create new assessment with duplicate aid, title', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -176,7 +175,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  step('verify that the title and aid had 2 appended to them', async () => {
+  test.sequential('verify that the title and aid had 2 appended to them', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir,
       'HW2_2', // Verify that the aid was used as the assessment folder's name
@@ -188,7 +187,7 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.set, 'Practice Quiz');
   });
 
-  step('should not be able to create an assessment without fields', async () => {
+  test.sequential('should not be able to create an assessment without fields', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -216,7 +215,7 @@ describe('Creating an assessment', () => {
     );
   });
 
-  step(
+  test.sequential(
     'should not be able to create an assessment with aid not contained in the root directory',
     async () => {
       // Fetch the assessments page for the course instance

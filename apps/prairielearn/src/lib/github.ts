@@ -13,7 +13,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
-import { type User } from './db-types.js';
+import { type Course, type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -116,6 +116,14 @@ async function addUserToRepo(
 /**
  * Starts a new server job to create a course GitHub repo, add it to the database, and then sync it locally.
  * @param options Options for creating the course, should contain the following keys:
+ * @param options.short_name - The short name of the course.
+ * @param options.title - The title of the course.
+ * @param options.institution_id - The institution ID of the course.
+ * @param options.display_timezone - The display timezone of the course.
+ * @param options.path - The path of the course.
+ * @param options.repo_short_name - The short name of the repository.
+ * @param options.github_user - The GitHub username of the instructor.
+ * @param options.course_request_id - The course request ID.
  * @param authn_user Authenticated user that is creating the course.
  */
 export async function createCourseRepoJob(
@@ -231,7 +239,7 @@ export async function createCourseRepoJob(
 
     // Give the owner required permissions
     job.info('Giving user owner permission');
-    await sqldb.queryOneRowAsync(sql.set_course_owner_permission, {
+    await sqldb.executeRow(sql.set_course_owner_permission, {
       course_id: inserted_course.id,
       course_request_id: options.course_request_id,
     });
@@ -255,7 +263,7 @@ export async function createCourseRepoJob(
     if (syncResult.status !== 'complete') {
       // Sync should never fail when creating a brand new repository, if we hit this
       // then we have a problem.
-      throw Error('Sync failed on brand new course repository');
+      throw new Error('Sync failed on brand new course repository');
     }
 
     // If we have chunks enabled, then create associated chunks for the new course
@@ -285,12 +293,12 @@ export async function createCourseRepoJob(
   serverJob.executeInBackground(async (job) => {
     try {
       await createCourseRepo(job);
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'approved',
         course_request_id: options.course_request_id,
       });
     } catch (err) {
-      await sqldb.queryAsync(sql.set_course_request_status, {
+      await sqldb.execute(sql.set_course_request_status, {
         status: 'failed',
         course_request_id: options.course_request_id,
       });
@@ -339,4 +347,17 @@ export function httpPrefixForCourseRepo(repository: string | null): string | nul
     }
   }
   return null;
+}
+
+export function courseRepoContentUrl(
+  course: Pick<Course, 'repository' | 'branch' | 'example_course'>,
+  path = '',
+): string | null {
+  if (path && !path.startsWith('/')) path = `/${path}`;
+  if (course.example_course) {
+    // The example course is not found at the root of its repository, so its path is hardcoded
+    return `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse${path}`;
+  }
+  const repoPrefix = httpPrefixForCourseRepo(course.repository);
+  return repoPrefix ? `${repoPrefix}/tree/${course.branch}${path}` : null;
 }

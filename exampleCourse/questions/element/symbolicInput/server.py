@@ -3,7 +3,7 @@ import sympy
 
 
 def generate(data):
-    (y, b, a, m) = sympy.var("y b a m")
+    (y, b, a, m) = sympy.symbols("y b a m")
     x = (y - b) / a
     z = m * (sympy.cos(a) + sympy.I * sympy.sin(a))
     c = a + sympy.I * b
@@ -13,6 +13,12 @@ def generate(data):
     data["correct_answers"]["c"] = pl.to_json(c)
     data["correct_answers"]["dx"] = "x"
     x = sympy.var("x")
+    data["correct_answers"]["lnx"] = pl.to_json(sympy.log(x) + 1)
+
+    # Sympy automatically simplifies expressions, irrespective of the element attributes.
+    # To prevent this, correct answers must be provided as a string.
+    data["correct_answers"]["nosimplify"] = "sin(atan(x))"
+
     data["correct_answers"]["simplify"] = pl.to_json(x**2 + x + 1)
 
     B = sympy.symbols("B", positive=True)

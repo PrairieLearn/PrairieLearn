@@ -1,9 +1,10 @@
-import { assert } from 'chai';
+import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
+import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
@@ -17,12 +18,12 @@ import { ensurePlanGrant } from './plan-grants.js';
 
 describe('getEnrollmentCountsForInstitution', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {
@@ -39,8 +40,12 @@ describe('getEnrollmentCountsForInstitution', () => {
     // The test course only has a single course instance, so we'll create a
     // second one for more complete tests.
     const courseInstance = await queryRow(
-      "INSERT INTO course_instances (course_id, display_timezone) VALUES (1, 'UTC') RETURNING *",
-      {},
+      'INSERT INTO course_instances (course_id, display_timezone, enrollment_code) VALUES ($course_id, $display_timezone, $enrollment_code) RETURNING *',
+      {
+        course_id: 1,
+        display_timezone: 'UTC',
+        enrollment_code: generateEnrollmentCode(),
+      },
       CourseInstanceSchema,
     );
 
@@ -122,12 +127,12 @@ describe('getEnrollmentCountsForInstitution', () => {
 
 describe('getEnrollmentCountsForCourse', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {
@@ -207,12 +212,12 @@ describe('getEnrollmentCountsForCourse', () => {
 
 describe('getEnrollmentCountsForCourseInstance', () => {
   beforeEach(async function () {
-    await helperDb.before.call(this);
+    await helperDb.before();
     await helperCourse.syncCourse();
   });
 
   afterEach(async function () {
-    await helperDb.after.call(this);
+    await helperDb.after();
   });
 
   it('returns zero enrollments by default', async () => {

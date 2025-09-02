@@ -1,4 +1,4 @@
-# randexam Conversion Tool
+# randexam conversion tool
 
 This converts multiple choice questions from [`randexam`](https://github.com/mwest1066/randexam)
 LaTeX format to the PrairieLearn directory question structure. Each question will automatically

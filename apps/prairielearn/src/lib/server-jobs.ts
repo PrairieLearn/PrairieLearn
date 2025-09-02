@@ -1,16 +1,15 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
 import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk } from './chalk.js';
+import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
@@ -47,7 +46,7 @@ export interface ServerJobLogger {
 
 export interface ServerJob extends ServerJobLogger {
   fail(msg: string): never;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
+  exec(file: string, args: string[], options: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
@@ -118,7 +117,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   async exec(
     file: string,
-    args: string[] = [],
+    args: string[],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
@@ -182,7 +181,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    */
   executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
-    this.executeInternal(fn, false);
+    void this.executeInternal(fn, false);
   }
 
   private checkAndMarkStarted() {
@@ -222,8 +221,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   private flush(force = false) {
     if (Date.now() - this.lastSent > 1000 || force) {
-      const ansiUp = new AnsiUp();
-      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      const ansifiedOutput = ansiToHtml(this.output);
       socketServer.io
         ?.to('job-' + this.jobId)
         .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
@@ -258,7 +256,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
     delete liveJobs[this.jobId];
 
-    await queryAsync(sql.update_job_on_finish, {
+    await execute(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
@@ -344,7 +342,7 @@ export function init() {
     const jobIds = Object.keys(liveJobs);
     if (jobIds.length === 0) return;
 
-    queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+    execute(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
       Sentry.captureException(err);
       logger.error('Error updating heartbeats for live server jobs', err);
     });
@@ -381,10 +379,7 @@ export function connection(socket) {
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
-
-        const ansiUp = new AnsiUp();
-        const output = ansiUp.ansi_to_html(liveJobs[msg.job_id]?.output ?? job.output ?? '');
-
+        const output = ansiToHtml(liveJobs[msg.job_id]?.output ?? job.output);
         callback({ status, output });
       },
       (err) => {
@@ -444,7 +439,7 @@ export async function errorAbandonedJobs() {
   for (const row of abandonedJobs) {
     logger.debug('Job abandoned by server, id: ' + row.id);
     try {
-      await queryAsync(sql.update_job_on_error, {
+      await execute(sql.update_job_on_error, {
         job_id: row.id,
         output: null,
         error_message: 'Job abandoned by server',

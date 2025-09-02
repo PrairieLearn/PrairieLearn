@@ -9,10 +9,10 @@ DECLARE
     assessment_type enum_assessment_type;
     used_all_tries boolean;
 BEGIN
-    PERFORM variants_lock(variant_id);
+    -- Does not explicitly lock the variant, since the sproc is only called from contexts that have already locked the variant.
 
     -- Increment num_tries
-    UPDATE variants AS v SET num_tries = v.num_tries + 1 WHERE v.id = variant_id;
+    UPDATE variants AS v SET num_tries = v.num_tries + 1, modified_at = NOW() WHERE v.id = variant_id;
 
     -- Get (1) flag that says whether or not the question has only a single variant,
     --     (2) type of assessment
@@ -32,7 +32,7 @@ BEGIN
     -- Close the variant if it's on a homework assessment, if it's not of a
     -- question with only one variant, and if the max num tries has been reached
     IF assessment_type = 'Homework' AND NOT single_variant AND (used_all_tries OR correct) THEN
-        UPDATE variants SET open = false WHERE id = variant_id;
+        UPDATE variants SET open = false, modified_at = NOW() WHERE id = variant_id;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

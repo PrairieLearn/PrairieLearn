@@ -1,8 +1,8 @@
-import { assert } from 'chai';
+import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as error from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
-import { makePostgresTestUtils, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, makePostgresTestUtils, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { SCHEMA_MIGRATIONS_PATH, init } from '../index.js';
 
@@ -67,11 +67,9 @@ async function getBatchedMigrationJobs(migrationId: string) {
 }
 
 async function resetFailedBatchedMigrationJobs(migrationId: string) {
-  await queryAsync(
+  await execute(
     "UPDATE batched_migration_jobs SET status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE batched_migration_id = $batched_migration_id AND status = 'failed'",
-    {
-      batched_migration_id: migrationId,
-    },
+    { batched_migration_id: migrationId },
   );
 }
 
@@ -92,7 +90,7 @@ async function insertTestBatchedMigration() {
 }
 
 describe('BatchedMigrationExecutor', () => {
-  before(async () => {
+  beforeAll(async () => {
     await postgresTestUtils.createDatabase();
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
       throw err;
@@ -104,7 +102,7 @@ describe('BatchedMigrationExecutor', () => {
     await postgresTestUtils.resetDatabase();
   });
 
-  after(async () => {
+  afterAll(async () => {
     await namedLocks.close();
     await postgresTestUtils.dropDatabase();
   });

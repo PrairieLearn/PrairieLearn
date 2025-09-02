@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   pl:
     build:
@@ -7,7 +6,6 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./testCourse:/course
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
       - .:/PrairieLearn
@@ -15,3 +13,7 @@ services:
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
       - DEV=true
+    # This must be changed if you've changed Docker's address pools.
+    # i.e., "default-address-pools" in /etc/docker/daemon.json
+    extra_hosts:
+      - 'host.docker.internal:172.17.0.1'

@@ -56,103 +56,114 @@ export function getMigrationsToExecute(
 export async function initWithLock(directories: string[], project: string) {
   logger.verbose('Starting DB schema migration');
 
-  // Create the migrations table if needed
-  await sqldb.queryAsync(sql.create_migrations_table, {});
-
-  // Apply necessary changes to the migrations table as needed.
+  const oldSchema = sqldb.defaultPool.getSearchSchema();
+  // Each postgres pool uses a unique schema every time the server starts up.
+  // After that code runs, the default schema is set to that schema instead of public, which
+  // causes the 'create_migrations_table' query to fail.
+  //
+  // We'll set the default schema to public before running the migrations, and then restore it
+  // after the migrations are run.
+  await sqldb.defaultPool.setSearchSchema('public');
   try {
-    await sqldb.queryAsync('SELECT project FROM migrations;', {});
-  } catch (err: any) {
-    if (err.routine === 'errorMissingColumn') {
-      logger.info('Altering migrations table');
-      await sqldb.queryAsync(sql.add_projects_column, {});
-    } else {
-      throw err;
-    }
-  }
-  try {
-    await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
-  } catch (err: any) {
-    if (err.routine === 'errorMissingColumn') {
-      logger.info('Altering migrations table again');
-      await sqldb.queryAsync(sql.add_timestamp_column, {});
-    } else {
-      throw err;
-    }
-  }
+    // Create the migrations table if needed
+    await sqldb.execute(sql.create_migrations_table);
 
-  let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-
-  const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
-    '.sql',
-    '.js',
-    '.ts',
-    '.mjs',
-  ]);
-
-  // Validation: if we not all previously-executed migrations have timestamps,
-  // prompt the user to deploy an earlier version that includes both indexes
-  // and timestamps.
-  const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
-  if (migrationsMissingTimestamps.length > 0) {
-    throw new Error(
-      [
-        'The following migrations are missing timestamps:',
-        migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
-        // This revision was the most recent commit to `master` before the
-        // code handling indexes was removed.
-        'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-      ].join('\n'),
-    );
-  }
-
-  // Refetch the list of migrations from the database.
-  allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-
-  // Sort the migration files into execution order.
-  const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
-
-  // Figure out which migrations have to be applied.
-  const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
-
-  for (const { directory, filename, timestamp } of migrationsToExecute) {
-    if (allMigrations.rows.length === 0) {
-      // if we are running all the migrations then log at a lower level
-      logger.verbose(`Running migration ${filename}`);
-    } else {
-      logger.info(`Running migration ${filename}`);
-    }
-
-    const migrationPath = path.join(directory, filename);
-    if (filename.endsWith('.sql')) {
-      const migrationSql = await fs.readFile(migrationPath, 'utf8');
-      const annotations = parseAnnotations(migrationSql);
-      try {
-        if (annotations.has('NO TRANSACTION')) {
-          await sqldb.queryAsync(migrationSql, {});
-        } else {
-          await sqldb.runInTransactionAsync(async () => {
-            await sqldb.queryAsync(migrationSql, {});
-          });
-        }
-      } catch (err) {
-        error.addData(err, { sqlFile: filename });
+    // Apply necessary changes to the migrations table as needed.
+    try {
+      await sqldb.execute('SELECT project FROM migrations;');
+    } catch (err: any) {
+      if (err.routine === 'errorMissingColumn') {
+        logger.info('Altering migrations table');
+        await sqldb.execute(sql.add_projects_column);
+      } else {
         throw err;
       }
-    } else {
-      const migrationModule = await import(migrationPath);
-      const implementation = migrationModule.default;
-      if (typeof implementation !== 'function') {
-        throw new Error(`Migration ${filename} does not export a default function`);
+    }
+    try {
+      await sqldb.execute('SELECT timestamp FROM migrations;');
+    } catch (err: any) {
+      if (err.routine === 'errorMissingColumn') {
+        logger.info('Altering migrations table again');
+        await sqldb.execute(sql.add_timestamp_column);
+      } else {
+        throw err;
       }
-      await implementation();
     }
 
-    // Record the migration.
-    await sqldb.queryAsync(sql.insert_migration, {
-      filename,
-      timestamp,
-      project,
-    });
+    let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+    const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
+      '.sql',
+      '.js',
+      '.ts',
+      '.mjs',
+    ]);
+
+    // Validation: if we not all previously-executed migrations have timestamps,
+    // prompt the user to deploy an earlier version that includes both indexes
+    // and timestamps.
+    const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
+    if (migrationsMissingTimestamps.length > 0) {
+      throw new Error(
+        [
+          'The following migrations are missing timestamps:',
+          migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
+          // This revision was the most recent commit to `master` before the
+          // code handling indexes was removed.
+          'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
+        ].join('\n'),
+      );
+    }
+
+    // Refetch the list of migrations from the database.
+    allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+
+    // Sort the migration files into execution order.
+    const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
+
+    // Figure out which migrations have to be applied.
+    const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
+    for (const { directory, filename, timestamp } of migrationsToExecute) {
+      if (allMigrations.rows.length === 0) {
+        // if we are running all the migrations then log at a lower level
+        logger.verbose(`Running migration ${filename}`);
+      } else {
+        logger.info(`Running migration ${filename}`);
+      }
+
+      const migrationPath = path.join(directory, filename);
+      if (filename.endsWith('.sql')) {
+        const migrationSql = await fs.readFile(migrationPath, 'utf8');
+        const annotations = parseAnnotations(migrationSql);
+        try {
+          if (annotations.has('NO TRANSACTION')) {
+            await sqldb.execute(migrationSql);
+          } else {
+            await sqldb.runInTransactionAsync(async () => {
+              await sqldb.execute(migrationSql);
+            });
+          }
+        } catch (err) {
+          error.addData(err, { sqlFile: filename });
+          throw err;
+        }
+      } else {
+        const migrationModule = await import(/* @vite-ignore */ migrationPath);
+        const implementation = migrationModule.default;
+        if (typeof implementation !== 'function') {
+          throw new Error(`Migration ${filename} does not export a default function`);
+        }
+        await implementation();
+      }
+
+      // Record the migration.
+      await sqldb.execute(sql.insert_migration, {
+        filename,
+        timestamp,
+        project,
+      });
+    }
+  } finally {
+    // Restore the search schema
+    await sqldb.defaultPool.setSearchSchema(oldSchema);
   }
 }

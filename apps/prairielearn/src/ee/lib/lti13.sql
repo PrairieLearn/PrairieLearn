@@ -46,7 +46,7 @@ WITH
     SELECT
       *
     FROM
-      jsonb_populate_recordset(null::lti13_assessments, $lineitems_import::jsonb)
+      jsonb_populate_recordset(NULL::lti13_assessments, $lineitems_import::jsonb)
   ),
   updating AS (
     UPDATE lti13_assessments
@@ -80,7 +80,7 @@ SELECT
       count(*)
     FROM
       updating
-  ) as updated,
+  ) AS updated,
   (
     SELECT
       count(*)
@@ -95,37 +95,43 @@ WHERE
   AND assessment_id = $assessment_id;
 
 -- BLOCK select_assessment_instances_for_scores
-SELECT
-  ai.*,
-  CASE
-    WHEN a.group_work
-    AND ai.group_id IS NOT NULL THEN (
-      SELECT
-        jsonb_agg(
-          to_jsonb(users) || jsonb_build_object('lti13_sub', lti13_users.sub)
-        )
-      FROM
-        group_users
-        JOIN users ON (group_users.user_id = users.user_id)
-        LEFT JOIN lti13_users ON (lti13_users.user_id = group_users.user_id)
-      WHERE
-        group_users.group_id = ai.group_id
-    )
-    ELSE jsonb_build_array(
-      to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub)
-    )
-  END AS users
+WITH
+  course_assessment_instances AS (
+    SELECT
+      COALESCE(ai.user_id, gu.user_id) AS user_id,
+      ai.id,
+      ai.assessment_id,
+      ai.score_perc,
+      ai.date,
+      ai.open
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      LEFT JOIN groups AS g ON (g.id = ai.group_id)
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+    WHERE
+      ai.assessment_id = $assessment_id
+      AND g.deleted_at IS NULL
+      AND ai.score_perc IS NOT NULL
+      AND ai.date IS NOT NULL
+  )
+  -- For each user, select the instance with the highest score for each assessment
+  -- Similar to the gradebook code
+SELECT DISTINCT
+  ON (cai.user_id, cai.assessment_id) cai.id,
+  cai.score_perc,
+  cai.date,
+  cai.open,
+  to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub) AS user
 FROM
-  assessment_instances AS ai
-  JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-  LEFT JOIN lti13_users AS lu ON (lu.user_id = ai.user_id)
-WHERE
-  ai.assessment_id = $assessment_id
-  AND ai.score_perc IS NOT NULL
-  AND ai.date IS NOT NULL
+  course_assessment_instances AS cai
+  JOIN users AS u ON (u.user_id = cai.user_id)
+  LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
 ORDER BY
-  ai.id;
+  cai.user_id ASC,
+  cai.assessment_id ASC,
+  cai.score_perc DESC,
+  cai.id DESC;
 
 -- BLOCK select_assessment_in_lti13_course_instance
 SELECT

@@ -1,15 +1,15 @@
+import z from 'zod';
+
 import type { HtmlValue } from '@prairielearn/html';
 
-export type NavbarType =
-  | 'plain'
-  | 'student'
-  | 'instructor'
-  | 'administrator_institution'
-  | 'institution'
-  | 'public'
-  | undefined;
+export const NavbarTypeSchema = z
+  .enum(['plain', 'student', 'instructor', 'administrator_institution', 'institution', 'public'])
+  .optional();
+
+export type NavbarType = z.infer<typeof NavbarTypeSchema>;
 
 export type NavPage =
+  | 'public_assessment'
   | 'public_question'
   | 'public_questions'
   | 'instance_admin'

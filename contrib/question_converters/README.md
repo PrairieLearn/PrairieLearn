@@ -1,8 +1,8 @@
-# Convert Learning Management System (LMS) questions to PrairieLearn questions
+# LMS question converters
 
-Within this directory are a set of conversion tools for moving previously written questions
-in a different Learning Management System (LMS) to the question format for PrairieLearn.
+This directory contains tools for converting questions from another Learning Management Systems (LMS) to PrairieLearn's question format.
 
-- [LON-CAPA Converter](lon-capa/)
-- [randexam Converter](randexam/)
-- [smartPhysics (FlipIt Physics) Converter](smart-physics/)
+- [Canvas Converter](./canvas/)
+- [LON-CAPA Converter](./lon-capa/)
+- [randexam Converter](./randexam/)
+- [smartPhysics (FlipIt Physics) Converter](./smart-physics/)

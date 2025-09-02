@@ -6,12 +6,13 @@
 !.eslintignore
 !.eslintrc.js
 !.htmlhintrc
-!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !.yarnrc.yml
+!pyproject.toml
 !tsconfig.json
 !turbo.json
+!vitest.config.ts
 !.yarn/
 !pyproject.toml
 !apps/

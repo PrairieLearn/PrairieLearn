@@ -87,9 +87,9 @@ export async function checkInvalidSharingSetDeletions(
   );
 
   const invalidSharingSetDeletions: string[] = [];
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
   sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames.includes(sharingSet)) {
+    if (!sharingSetNames.has(sharingSet)) {
       invalidSharingSetDeletions.push(sharingSet);
     }
   });
@@ -108,13 +108,13 @@ export function checkInvalidSharingSetAdditions(
   logger: ServerJobLogger,
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
-  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+  const sharingSetNames = new Set((courseData.course.data?.sharingSets || []).map((ss) => ss.name));
 
   for (const qid in courseData.questions) {
     const question = courseData.questions[qid];
     const questionSharingSets = question.data?.sharingSets || [];
     questionSharingSets.forEach((sharingSet) => {
-      if (!sharingSetNames.includes(sharingSet)) {
+      if (!sharingSetNames.has(sharingSet)) {
         if (!invalidSharingSetAdditions[qid]) {
           invalidSharingSetAdditions[qid] = [];
         }
@@ -187,6 +187,68 @@ export async function checkInvalidSharingSetRemovals(
   }
 
   return existInvalidSharingSetRemovals;
+}
+
+export function checkInvalidSharedAssessments(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedAssessments = new Set<string>();
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment.data?.shareSourcePublicly) {
+        continue;
+      }
+      for (const zone of assessment.data?.zones ?? []) {
+        for (const question of zone.questions) {
+          if (!question.id) {
+            continue;
+          }
+          const infoJson = courseData.questions[question.id];
+          if (!infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly) {
+            invalidSharedAssessments.add(tid);
+          }
+        }
+      }
+    }
+  }
+
+  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
+  if (existInvalidSharedAssessment) {
+    logger.error(
+      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
+    );
+  }
+  return existInvalidSharedAssessment;
+}
+
+export function checkInvalidSharedCourseInstances(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const invalidSharedCourseInstances = new Set<string>();
+
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+    if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
+
+    for (const tid in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[tid];
+      if (!assessment.data?.shareSourcePublicly) {
+        invalidSharedCourseInstances.add(courseInstance.courseInstance.data.longName);
+      }
+    }
+  }
+
+  const existInvalidSharedCourseInstance = invalidSharedCourseInstances.size > 0;
+  if (existInvalidSharedCourseInstance) {
+    logger.error(
+      `✖ Course sync completely failed. The following course instances are publicly shared but contain assessments which are not shared: ${Array.from(invalidSharedCourseInstances).join(', ')}`,
+    );
+  }
+  return existInvalidSharedCourseInstance;
 }
 
 export function checkInvalidDraftQuestionSharing(

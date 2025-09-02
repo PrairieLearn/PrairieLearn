@@ -7,17 +7,18 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { updateCourseInstanceUsagesForSubmission } from '../models/course-instance-usages.js';
+import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
+import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   type Course,
-  DateFromISOString,
-  GradingJobSchema,
   IdSchema,
   IntervalSchema,
   type Question,
   QuestionSchema,
+  SprocInstanceQuestionsNextAllowedGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -31,12 +32,6 @@ import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const NextAllowedGradeSchema = z.object({
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_left_ms: z.coerce.number(),
-  allow_grade_interval: z.string(),
-});
 
 const VariantDataSchema = z.object({
   instance_question_id: z.string().nullable(),
@@ -90,7 +85,7 @@ export async function insertSubmission({
   client_fingerprint_id?: string | null;
 }): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     // Select the variant, while updating the variant's `params` and
     // `correct_answer`, which is permitted to change during the `parse` phase
@@ -156,7 +151,7 @@ export async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
-      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+      await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
         delta,
@@ -173,7 +168,7 @@ export async function insertSubmission({
 /**
  * Save a new submission to a variant into the database.
  *
- * @param submission - The submission to save (should not have an id property yet).
+ * @param submissionData - The submission to save (should not have an id property yet).
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
@@ -216,13 +211,13 @@ export async function saveSubmission(
           submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
 
           if (!('_files' in submission.submitted_answer)) {
-            submission.submitted_answer['_files'] = [];
+            submission.submitted_answer._files = [];
           }
 
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer['_files'].push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents });
           }
           await fs.promises.unlink(zipPath);
         }
@@ -271,7 +266,7 @@ async function selectSubmissionForGrading(
   check_submission_id: string | null,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
-    await sqldb.callAsync('variants_lock', [variant_id]);
+    await lockVariant({ variant_id });
 
     const variantData = await sqldb.queryOptionalRow(
       sql.select_variant_data,
@@ -353,16 +348,12 @@ export async function gradeVariant(
     const resultNextAllowed = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
-      NextAllowedGradeSchema,
+      SprocInstanceQuestionsNextAllowedGradeSchema,
     );
     if (resultNextAllowed.allow_grade_left_ms > 0) return;
   }
 
-  const grading_job = await sqldb.callRow(
-    'grading_jobs_insert',
-    [submission.id, authn_user_id],
-    GradingJobSchema,
-  );
+  const grading_job = await insertGradingJob({ submission_id: submission.id, authn_user_id });
 
   if (question.grading_method === 'External') {
     // For external grading we just need to trigger the grading job to start.
@@ -405,29 +396,22 @@ export async function gradeVariant(
       courseData,
     );
 
-    const grading_job_post_update = await sqldb.callRow(
-      'grading_jobs_update_after_grading',
-      [
-        grading_job.id,
-        // `received_time` and `start_time` were already set when the
-        // grading job was inserted, so they'll remain unchanged.
-        // `finish_time` will be set to `now()` by this sproc.
-        null, // received_time
-        null, // start_time
-        null, // finish_time
-        data.submitted_answer,
-        data.format_errors,
-        !!data.gradable && !hasFatalIssue, // gradable
-        hasFatalIssue, // broken
-        data.params,
-        data.true_answer,
-        data.feedback,
-        data.partial_scores,
-        data.score,
-        data.v2_score,
-      ],
-      GradingJobSchema,
-    );
+    const grading_job_post_update = await updateGradingJobAfterGrading({
+      grading_job_id: grading_job.id,
+      // `received_time` and `start_time` were already set when the
+      // grading job was inserted, so they'll remain unchanged.
+      // `finish_time` will be set to `now()` by this function.
+      submitted_answer: data.submitted_answer,
+      format_errors: data.format_errors,
+      gradable: !!data.gradable && !hasFatalIssue,
+      broken: hasFatalIssue,
+      params: data.params,
+      true_answer: data.true_answer,
+      feedback: data.feedback,
+      partial_scores: data.partial_scores,
+      score: data.score,
+      v2_score: data.v2_score,
+    });
 
     // If the submission was marked invalid during grading the grading
     // job will be marked ungradable and we should bail here to prevent

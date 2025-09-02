@@ -1,5 +1,3 @@
-/* eslint-env browser */
-
 // This module is redefined in the import map with the same name
 import { ExcalidrawLib, React, ReactDOM } from '@prairielearn/excalidraw-builds';
 
@@ -48,7 +46,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
       setUnsaved(false);
     }, 250);
     return () => clearTimeout(autoSave);
-  }, [setHiddenInput, lib, sceneVer]);
+  }, [setHiddenInput, metadata.read_only, lib, sceneVer]);
 
   const props = {
     name: sketchName,
@@ -59,7 +57,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     excalidrawAPI: (it) => setLib(it),
     viewModeEnabled: metadata.read_only,
     onChange: (elts) => {
-      let thisVersion = ExcalidrawLib.getSceneVersion(elts);
+      const thisVersion = ExcalidrawLib.getSceneVersion(elts);
       if (sceneVer >= thisVersion) return;
       setUnsaved(true);
       setSceneVer(thisVersion);

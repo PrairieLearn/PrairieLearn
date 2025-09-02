@@ -8,7 +8,7 @@
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
-      "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+      "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
       "description": "Unique identifier (UUID v4).",
@@ -21,7 +21,8 @@
     },
     "shortName": {
       "description": "DEPRECATED -- do not use.",
-      "type": "string"
+      "type": "string",
+      "deprecated": true
     },
     "timezone": {
       "description": "The timezone for all date input and display (e.g., \"America/Chicago\"). Must be an official timezone identifier, as listed at <https://en.wikipedia.org/wiki/List_of_tz_database_time_zones>. A canonical identifier is preferred. If not specified, the timezone of the course will be used.",
@@ -30,7 +31,7 @@
     "allowIssueReporting": {
       "description": "DEPRECATED -- do not use.",
       "type": "boolean",
-      "default": true
+      "deprecated": true
     },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
@@ -39,14 +40,10 @@
     },
     "userRoles": {
       "description": "DEPRECATED -- do not use.",
-      "deprecated": true,
       "type": "object",
-      "patternProperties": {
-        ".+": {
-          "description": "The role for a given UID.",
-          "enum": ["Student", "TA", "Instructor"]
-        }
-      }
+      "additionalProperties": {},
+      "properties": {},
+      "deprecated": true
     },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
@@ -58,15 +55,16 @@
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
-            "anyOf": [{ "type": "string" }, { "type": "array" }, { "type": "object" }]
+            "$ref": "#/definitions/CommentJsonSchema"
           },
           "role": {
             "description": "DEPRECATED -- do not use.",
-            "deprecated": true,
-            "enum": ["Student", "TA", "Instructor", "Superuser"]
+            "type": "string",
+            "enum": ["Student", "TA", "Instructor", "Superuser"],
+            "deprecated": true
           },
           "uids": {
-            "description": "A list of UIDs, one of which is required for access",
+            "description": "A list of UIDs (like 'username@example.com'), one of which is required for access.",
             "type": "array",
             "items": {
               "type": "string"
@@ -85,13 +83,37 @@
             "type": "string"
           }
         }
-      }
+      },
+      "default": []
     },
     "groupAssessmentsBy": {
       "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
       "type": "string",
-      "default": "Set",
-      "enum": ["Set", "Module"]
+      "enum": ["Set", "Module"],
+      "default": "Set"
+    },
+    "shareSourcePublicly": {
+      "description": "If true, the course instance's JSON configuration and all of its assessment's JSON configurations are available for others to view and copy.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "definitions": {
+    "CommentJsonSchema": {
+      "description": "Arbitrary comment for reference purposes.",
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object",
+          "additionalProperties": {},
+          "properties": {}
+        }
+      ]
     }
   }
 }

@@ -63,7 +63,7 @@ export function parallelHistograms(
   const xOrdinal = scaleBand()
     .domain(range(numHistograms).map((d) => `${d}`))
     .rangeRound([0, width])
-    .padding(0.0);
+    .padding(0);
 
   const xLinear = scaleLinear().domain([0, numHistograms]).range([0, width]);
 
@@ -188,6 +188,6 @@ function calculate_max(data: Data[]) {
     }
   }
 
-  max = max * 1.1;
+  max *= 1.1;
   return max;
 }

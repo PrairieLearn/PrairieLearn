@@ -1,5 +1,3 @@
-/* eslint-env jquery, browser */
-
 window.PLOrderBlocks = function (uuid, options) {
   const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
   // drags and indents a block
@@ -25,7 +23,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function getIndentation(block) {
-    return Math.round(parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
+    return Math.round(Number.parseInt(block.style.marginLeft.replace('px', '') / TABWIDTH));
   }
 
   function setIndentation(block, indentation) {
@@ -61,9 +59,9 @@ window.PLOrderBlocks = function (uuid, options) {
       );
       if (!block.classList.contains('pl-order-blocks-selected')) {
         const moveBetweenOptionsOrDropzone = (options) => {
-          if (options && inDropzone(block) && optionsBlocks.length) {
+          if (options && inDropzone(block) && optionsBlocks.length > 0) {
             optionsBlocks[0].focus();
-          } else if (!options && !inDropzone(block) && dropzoneBlocks.length) {
+          } else if (!options && !inDropzone(block) && dropzoneBlocks.length > 0) {
             dropzoneBlocks[0].focus();
           }
         };
@@ -187,16 +185,16 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function setAnswer() {
-    var answerObjs = $(dropzoneElementId).children();
-    var studentAnswers = [];
+    const answerObjs = $(dropzoneElementId).children();
+    const studentAnswers = [];
     for (const answerObj of answerObjs) {
       if (!$(answerObj).hasClass('info-fixed')) {
-        var answerText = answerObj.getAttribute('string');
-        var answerUuid = answerObj.getAttribute('uuid');
-        var answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
-        var answerIndent = null;
+        const answerText = answerObj.getAttribute('string');
+        const answerUuid = answerObj.getAttribute('uuid');
+        const answerDistractorBin = answerObj.getAttribute('data-distractor-bin');
+        let answerIndent = null;
         if (enableIndentation) {
-          answerIndent = parseInt($(answerObj).css('marginLeft').replace('px', ''));
+          answerIndent = Number.parseInt($(answerObj).css('marginLeft').replace('px', ''));
           answerIndent = Math.round(answerIndent / TABWIDTH); // get how many times the answer is indented
         }
 
@@ -209,7 +207,7 @@ window.PLOrderBlocks = function (uuid, options) {
       }
     }
 
-    var textfieldName = '#' + uuid + '-input';
+    const textfieldName = '#' + uuid + '-input';
     $(textfieldName).val(JSON.stringify(studentAnswers));
   }
 
@@ -221,9 +219,9 @@ window.PLOrderBlocks = function (uuid, options) {
 
     let leftDiff = ui.position.left - parent.position().left;
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
-    let currentIndent = ui.item[0].style.marginLeft;
+    const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
-      leftDiff += parseInt(currentIndent);
+      leftDiff += Number.parseInt(currentIndent);
     }
 
     // limit leftDiff to be in within the bounds of the drag and drop box
@@ -238,14 +236,13 @@ window.PLOrderBlocks = function (uuid, options) {
     let indicator = document.getElementById('indicator-' + uuid);
     if (!indicator) {
       indicator = document.createElement('li');
-      indicator.classList.add('pl-order-blocks-pairing-indicator');
-      indicator.classList.add('list-group-item-info');
+      indicator.classList.add('pl-order-blocks-pairing-indicator', 'bg-info-subtle');
       indicator.setAttribute('data-distractor-bin', uuid);
       indicator.id = 'indicator-' + uuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
       if (createAt) {
-        createAt.insertAdjacentElement('beforebegin', indicator);
+        createAt.before(indicator);
       } else {
         $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
       }
@@ -254,21 +251,21 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function placePairingIndicators() {
-    let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
-    let allAns = answerObjs.concat(
+    const answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    const allAns = answerObjs.concat(
       Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')),
     );
 
-    let getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
-    let distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
+    const getDistractorBin = (block) => block.getAttribute('data-distractor-bin');
+    const distractorBins = new Set(allAns.map(getDistractorBin).filter((x) => x != null));
 
-    for (let binUuid of distractorBins) {
-      let blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
-      let indicator = getOrCreateIndicator(binUuid, blocks[0]);
-      let innerList = indicator.getElementsByClassName('inner-list')[0];
+    for (const binUuid of distractorBins) {
+      const blocks = answerObjs.filter((block) => getDistractorBin(block) === binUuid);
+      const indicator = getOrCreateIndicator(binUuid, blocks[0]);
+      const innerList = indicator.getElementsByClassName('inner-list')[0];
 
-      for (let block of blocks) {
-        innerList.insertAdjacentElement('beforeend', block);
+      for (const block of blocks) {
+        innerList.append(block);
       }
     }
   }
@@ -278,19 +275,19 @@ window.PLOrderBlocks = function (uuid, options) {
       // there aren't pairing indicators in the dropzone
       return;
     }
-    let binUuid = block.getAttribute('data-distractor-bin');
-    let containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
-    let containingIndicatorUuid = containingIndicator
+    const binUuid = block.getAttribute('data-distractor-bin');
+    const containingIndicator = block.closest('.pl-order-blocks-pairing-indicator');
+    const containingIndicatorUuid = containingIndicator
       ? containingIndicator.getAttribute('data-distractor-bin')
       : null;
 
     if (!binUuid && containingIndicatorUuid) {
-      containingIndicator.insertAdjacentElement('afterend', block);
+      containingIndicator.after(block);
     } else if (binUuid !== containingIndicatorUuid) {
-      let properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
+      const properIndicatorList = getOrCreateIndicator(binUuid, block).getElementsByClassName(
         'inner-list',
       )[0];
-      properIndicatorList.insertAdjacentElement('beforeend', block);
+      properIndicatorList.append(block);
     }
   }
 
@@ -307,7 +304,7 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
-  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
     // We add `a` to the default list of tags to account for help
@@ -324,8 +321,8 @@ window.PLOrderBlocks = function (uuid, options) {
     },
     sort(event, ui) {
       // update the location of the placeholder as the item is dragged
-      let placeholder = ui.placeholder;
-      let leftDiff = calculateIndent(ui, placeholder.parent());
+      const placeholder = ui.placeholder;
+      const leftDiff = calculateIndent(ui, placeholder.parent());
       placeholder[0].style.marginLeft = leftDiff + 'px';
       placeholder[0].style.height = ui.item[0].style.height;
 
@@ -336,7 +333,7 @@ window.PLOrderBlocks = function (uuid, options) {
     },
     stop(event, ui) {
       // when the user stops interacting with the list
-      let leftDiff = calculateIndent(ui, ui.item.parent());
+      const leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
 
