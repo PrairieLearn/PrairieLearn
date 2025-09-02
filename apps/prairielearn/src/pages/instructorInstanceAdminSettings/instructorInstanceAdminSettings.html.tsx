@@ -7,6 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { config } from '../../lib/config.js';
 import { type CourseInstance } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { hydrateHtml } from '../../lib/preact.js';
@@ -227,7 +228,9 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
-            ${renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)}
+            ${config.devMode
+              ? renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)
+              : ''}
 
             <h2 class="h4">Sharing</h2>
             ${CourseInstanceSharing({ courseInstance: resLocals.course_instance, publicLink })}
