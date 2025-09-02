@@ -2,7 +2,7 @@ import { useMemo, useState } from 'preact/hooks';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
-import type { RubricData } from '../lib/manualGrading.js';
+import type { RubricData } from '../lib/manualGrading.types.js';
 
 type RubricItemData = Partial<
   RubricItem & { num_submissions: number; disagreement_count: number | null }
