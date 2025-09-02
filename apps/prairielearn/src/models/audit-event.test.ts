@@ -77,8 +77,7 @@ describe('audit-event', () => {
       assert.deepEqual(auditEvent.new_row, { test: 'default user data' });
       assert.equal(auditEvent.agent_authn_user_id, null);
       assert.equal(auditEvent.agent_user_id, null);
-      // institution_id is inferred from the user, so it won't be null
-      assert.typeOf(auditEvent.institution_id, 'string');
+      assert.equal(auditEvent.institution_id, null);
       assert.equal(auditEvent.course_id, null);
       assert.equal(auditEvent.assessment_id, null);
       assert.equal(auditEvent.assessment_instance_id, null);
