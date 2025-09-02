@@ -517,12 +517,12 @@ export async function diffChunks({
         existingCourseChunks[courseChunk.type] = true;
         break;
       case 'question':
-        assert(courseChunk.question_name != null, 'question_name is required');
+        assert(courseChunk.question_name != null);
         existingCourseChunks.questions.add(courseChunk.question_name);
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
-        assert(courseInstanceName != null, 'course_instance_name is required');
+        assert(courseInstanceName != null);
         if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
@@ -535,8 +535,8 @@ export async function diffChunks({
       case 'clientFilesAssessment': {
         const courseInstanceName = courseChunk.course_instance_name;
         const assessmentName = courseChunk.assessment_name;
-        assert(courseInstanceName != null, 'course_instance_name is required');
-        assert(assessmentName != null, 'assessment_name is required');
+        assert(courseInstanceName != null);
+        assert(assessmentName != null);
         if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
@@ -598,20 +598,12 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
-      const existingCourseInstanceChunk =
-        ciid in existingCourseChunks.courseInstances
-          ? existingCourseChunks.courseInstances[ciid]
-          : null;
-
-      const changedCourseInstanceChunk =
-        ciid in changedCourseChunks.courseInstances
-          ? changedCourseChunks.courseInstances[ciid]
-          : null;
-
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseInstanceChunk?.clientFilesCourseInstance ||
-          changedCourseInstanceChunk?.clientFilesCourseInstance)
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -632,8 +624,10 @@ export async function diffChunks({
         );
         if (
           hasClientFilesAssessmentDirectory &&
-          (!existingCourseInstanceChunk?.assessments.has(tid) ||
-            changedCourseInstanceChunk?.assessments.has(tid))
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          (!existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ||
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid))
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -648,12 +642,11 @@ export async function diffChunks({
   // Check for any deleted course instances or their assessments.
   await Promise.all(
     Object.entries(existingCourseChunks.courseInstances).map(async ([ciid, courseInstanceInfo]) => {
-      const existingCourseInstance =
-        ciid in courseData.courseInstances ? courseData.courseInstances[ciid] : null;
+      const courseInstanceExists = ciid in courseData.courseInstances;
       const clientFilesCourseInstanceExists = await fs.pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
-      if (existingCourseInstance == null || !clientFilesCourseInstanceExists) {
+      if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
         deletedChunks.push({
           type: 'clientFilesCourseInstance',
           courseInstanceName: ciid,
@@ -663,7 +656,7 @@ export async function diffChunks({
       await Promise.all(
         [...courseInstanceInfo.assessments].map(async (tid) => {
           const assessmentExists =
-            existingCourseInstance != null && tid in existingCourseInstance.assessments;
+            courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
           const clientFilesAssessmentExists = await fs.pathExists(
             path.join(
               coursePath,
@@ -674,7 +667,7 @@ export async function diffChunks({
               'clientFilesAssessment',
             ),
           );
-          if (existingCourseInstance == null || !assessmentExists || !clientFilesAssessmentExists) {
+          if (!assessmentExists || !clientFilesAssessmentExists) {
             deletedChunks.push({
               type: 'clientFilesAssessment',
               courseInstanceName: ciid,
