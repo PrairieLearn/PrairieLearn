@@ -1,3 +1,4 @@
+import fs from 'fs';
 import * as path from 'path';
 
 import pg from 'pg';
@@ -65,6 +66,36 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     await initMigrations({
       directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       project: 'prairielearn',
+      beforeEachMigration: async ({ directory, filename }) => {
+        const baseName = path.parse(filename).name;
+        const beforeFile = path.resolve(directory, `${baseName}.before.ts`);
+
+        if (fs.existsSync(beforeFile)) {
+          const beforeModule = await import(/* @vite-ignore */ beforeFile);
+          try {
+            if (beforeModule.default && typeof beforeModule.default === 'function') {
+              await beforeModule.default();
+            }
+          } catch (error) {
+            console.error(`Error executing before hook: ${beforeFile}`, error);
+          }
+        }
+      },
+      afterEachMigration: async ({ directory, filename }) => {
+        const baseName = path.parse(filename).name;
+        const afterFile = path.resolve(directory, `${baseName}.before.ts`);
+
+        if (fs.existsSync(afterFile)) {
+          const afterModule = await import(/* @vite-ignore */ afterFile);
+          try {
+            if (afterModule.default && typeof afterModule.default === 'function') {
+              await afterModule.default();
+            }
+          } catch (error) {
+            console.error(`Error executing after hook: ${afterFile}`, error);
+          }
+        }
+      },
     });
   }
 
