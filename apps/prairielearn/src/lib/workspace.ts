@@ -95,7 +95,7 @@ export class SubmissionFormatError extends Error {
 }
 
 export function init(): void {
-  assert(socketServer.io, 'socketServer.io is required');
+  assert(socketServer.io);
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)

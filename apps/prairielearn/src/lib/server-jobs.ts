@@ -335,7 +335,7 @@ export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<
 */
 
 export function init() {
-  assert(socketServer.io, 'socketServer.io is required');
+  assert(socketServer.io);
   socketServer.io.on('connection', connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob

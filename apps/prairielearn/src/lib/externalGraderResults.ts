@@ -149,7 +149,7 @@ async function processMessage(data: {
     ...data,
   });
   if (data.event === 'job_received') {
-    assert(data.data, 'data.data should not be undefined');
+    assert(data.data);
     await sqldb.execute(sql.update_grading_received_time, {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,

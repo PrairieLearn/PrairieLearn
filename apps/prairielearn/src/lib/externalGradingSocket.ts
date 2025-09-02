@@ -31,7 +31,7 @@ let namespace: Namespace;
 
 /** This module MUST be initialized after socket-server */
 export function init() {
-  assert(socketServer.io, 'socketServer.io is required');
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
 }

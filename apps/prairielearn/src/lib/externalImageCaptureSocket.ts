@@ -15,7 +15,7 @@ import * as socketServer from './socket-server.js';
 let namespace: Namespace;
 
 export function init() {
-  assert(socketServer.io, 'socketServer.io is required');
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-image-capture');
   namespace.on('connection', connection);
 }
