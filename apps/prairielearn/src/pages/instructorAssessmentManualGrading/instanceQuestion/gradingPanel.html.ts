@@ -1,9 +1,9 @@
 import assert from 'assert';
 
-import { html } from '@prairielearn/html';
+import { escapeHtml, html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
-import { type Issue, type User } from '../../../lib/db-types.js';
+import { type AiSubmissionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
@@ -12,6 +12,7 @@ import {
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
+import { SubmissionGroups } from './submissionGroupsTable.html.js';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;
@@ -30,6 +31,7 @@ export function GradingPanel({
   submissionGroupName,
   aiGradingInfo,
   showAiSubmissionGroup = false,
+  aiSubmissionGroups
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
@@ -43,6 +45,7 @@ export function GradingPanel({
   submissionGroupName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   showAiSubmissionGroup?: boolean;
+  aiSubmissionGroups?: AiSubmissionGroup[];
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -99,7 +102,25 @@ export function GradingPanel({
         ${showAiSubmissionGroup && context === 'main'
           ? html`
               <li class="list-group-item align-items-center">
-                <label for="submission-group-toggle" class="form-label"> Submission Group: </label>
+                <div class="d-flex align-items-center">
+                  <label for="submission-group-toggle" class="form-label">
+                    Submission Group:
+                    ${aiSubmissionGroups && aiSubmissionGroups.length > 0 ? (
+                      html`<button
+                        type="button"
+                        class="btn btn-sm btn-ghost"
+                        data-bs-toggle="popover"
+                        data-bs-container="body"
+                        data-bs-html="true"
+                        data-bs-placement="auto"
+                        data-bs-title="Submission Groups"
+                        data-bs-content="${escapeHtml(SubmissionGroups(aiSubmissionGroups))}"
+                      >
+                        <i class="fas fa-circle-info"></i>
+                      </button>`
+                    ) : ''}
+                  </label>
+                </div>
                 <div class="dropdown w-100 mb-2" role="combobox">
                   <button
                     id="submission-group-toggle"

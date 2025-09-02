@@ -117,7 +117,7 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    const aiSubmissionGroupsExist = await selectAssessmentQuestionHasAiSubmissionGroups({
+    const aiSubmissionGroups = await selectAiSubmissionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -194,7 +194,7 @@ router.get(
         assignedGrader,
         lastGrader,
         submissionGroupName: submissionGroup?.submission_group_name,
-        aiSubmissionGroupsExist,
+        aiSubmissionGroups,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,

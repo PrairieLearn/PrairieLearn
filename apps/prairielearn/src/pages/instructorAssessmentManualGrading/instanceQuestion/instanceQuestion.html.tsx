@@ -11,7 +11,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { type AiSubmissionGroup, GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
@@ -34,7 +34,7 @@ export function InstanceQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
-  aiSubmissionGroupsExist,
+  aiSubmissionGroups,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
@@ -50,8 +50,10 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiSubmissionGroupsExist?: boolean;
+  aiSubmissionGroups?: AiSubmissionGroup[];
 }) {
+  const aiSubmissionGroupsExist = aiSubmissionGroups && aiSubmissionGroups.length > 0;
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -182,6 +184,7 @@ export function InstanceQuestion({
                 submissionGroupName,
                 aiGradingInfo,
                 showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
+                aiSubmissionGroups
               })}
             </div>
           </div>
