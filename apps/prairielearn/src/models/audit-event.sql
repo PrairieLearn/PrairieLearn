@@ -24,7 +24,7 @@ ORDER BY
 
 -- BLOCK insert_audit_event
 WITH
-  agent AS (
+  agent_meta AS (
     SELECT
       user_id
     FROM
@@ -32,15 +32,16 @@ WITH
     WHERE
       user_id = $agent_user_id
   ),
-  subject AS (
+  subject_meta AS (
     SELECT
-      user_id
+      user_id,
+      institution_id
     FROM
       users
     WHERE
       user_id = $subject_user_id
   ),
-  groups AS (
+  group_meta AS (
     SELECT
       id,
       course_instance_id
@@ -49,7 +50,7 @@ WITH
     WHERE
       id = $group_id
   ),
-  assessment_instance AS (
+  assessment_instance_meta AS (
     SELECT
       id,
       assessment_id
@@ -58,7 +59,7 @@ WITH
     WHERE
       id = $assessment_instance_id
   ),
-  assessment_question AS (
+  assessment_question_meta AS (
     SELECT
       id,
       assessment_id
@@ -67,7 +68,7 @@ WITH
     WHERE
       id = $assessment_question_id
   ),
-  assessment AS (
+  assessment_meta AS (
     SELECT
       id,
       course_instance_id
@@ -76,11 +77,25 @@ WITH
     WHERE
       id = coalesce(
         $assessment_id,
-        assessment_instance.assessment_id,
-        assessment_question.assessment_id
+        (
+          SELECT
+            assessment_id
+          FROM
+            assessment_instance_meta
+          WHERE
+            id = $assessment_instance_id
+        ),
+        (
+          SELECT
+            assessment_id
+          FROM
+            assessment_question_meta
+          WHERE
+            id = $assessment_question_id
+        )
       )
   ),
-  course_instance AS (
+  course_instance_meta AS (
     SELECT
       id,
       course_id
@@ -89,20 +104,44 @@ WITH
     WHERE
       id = coalesce(
         $course_instance_id,
-        groups.course_instance_id,
-        assessment.course_instance_id
+        (
+          SELECT
+            course_instance_id
+          FROM
+            group_meta
+          WHERE
+            id = $group_id
+        ),
+        (
+          SELECT
+            course_instance_id
+          FROM
+            assessment_meta
+          WHERE
+            id = $assessment_id
+        )
       )
   ),
-  course AS (
+  course_meta AS (
     SELECT
       id,
       institution_id
     FROM
       pl_courses
     WHERE
-      id = coalesce($course_id, course_instance.course_id)
+      id = coalesce(
+        $course_id,
+        (
+          SELECT
+            course_id
+          FROM
+            course_instance_meta
+          WHERE
+            id = $course_instance_id
+        )
+      )
   ),
-  institution AS (
+  institution_meta AS (
     SELECT
       id
     FROM
@@ -110,8 +149,22 @@ WITH
     WHERE
       id = coalesce(
         $institution_id,
-        subject.institution_id,
-        course.institution_id
+        (
+          SELECT
+            institution_id
+          FROM
+            subject_meta
+          WHERE
+            user_id = $subject_user_id
+        ),
+        (
+          SELECT
+            institution_id
+          FROM
+            course_meta
+          WHERE
+            id = $course_id
+        )
       )
   )
 INSERT INTO
@@ -138,33 +191,34 @@ SELECT
   $action,
   $action_detail,
   $table_name,
-  subject.user_id AS subject_user_id,
-  course_instance.id AS course_instance_id,
+  subject_meta.user_id AS subject_user_id,
+  course_instance_meta.id AS course_instance_id,
   $row_id,
   $context,
   $old_row,
   $new_row,
   $agent_authn_user_id,
-  agent.user_id AS agent_user_id,
-  institution.id AS institution_id,
-  course.id AS course_id,
-  assessment.id AS assessment_id,
-  assessment_instance.id AS assessment_instance_id,
-  assessment_question.id AS assessment_question_id,
-  groups.id AS group_id
+  agent_meta.user_id AS agent_user_id,
+  institution_meta.id AS institution_id,
+  course_meta.id AS course_id,
+  assessment_meta.id AS assessment_id,
+  -- We coalesce here since there is no foreign key constraint on assessment_instance_id
+  coalesce(assessment_instance_meta.id, $assessment_instance_id) AS assessment_instance_id,
+  assessment_question_meta.id AS assessment_question_id,
+  group_meta.id AS group_id
 FROM
   (
     SELECT
       1
   ) AS tmp -- dummy row to make the LEFT JOINs work
-  LEFT JOIN subject ON (TRUE)
-  LEFT JOIN course_instance ON (TRUE)
-  LEFT JOIN agent ON (TRUE)
-  LEFT JOIN institution ON (TRUE)
-  LEFT JOIN course ON (TRUE)
-  LEFT JOIN assessment ON (TRUE)
-  LEFT JOIN assessment_instance ON (TRUE)
-  LEFT JOIN assessment_question ON (TRUE)
-  LEFT JOIN groups ON (TRUE)
+  LEFT JOIN subject_meta ON (TRUE)
+  LEFT JOIN course_instance_meta ON (TRUE)
+  LEFT JOIN agent_meta ON (TRUE)
+  LEFT JOIN institution_meta ON (TRUE)
+  LEFT JOIN course_meta ON (TRUE)
+  LEFT JOIN assessment_meta ON (TRUE)
+  LEFT JOIN assessment_instance_meta ON (TRUE)
+  LEFT JOIN assessment_question_meta ON (TRUE)
+  LEFT JOIN group_meta ON (TRUE)
 RETURNING
   *;

@@ -30,6 +30,7 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
         action_detail: 'User created',
@@ -48,26 +49,36 @@ describe('audit-event', () => {
     });
 
     it('uses default values for optional parameters', async () => {
+      const user = await getOrCreateUser({
+        uid: 'default@example.com',
+        name: 'Default User',
+        uin: 'default',
+        email: 'default@example.com',
+      });
+
       const auditEvent = await insertAuditEvent({
         action: 'insert',
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: null,
-        subject_user_id: null,
+        agent_user_id: null,
+        subject_user_id: user.user_id,
+        new_row: { test: 'default user data' },
       });
 
       assert.equal(auditEvent.action, 'insert');
       assert.equal(auditEvent.table_name, 'users');
       assert.equal(auditEvent.row_id, '1');
-      assert.equal(auditEvent.subject_user_id, null);
+      assert.equal(auditEvent.subject_user_id, user.user_id);
       assert.equal(auditEvent.course_instance_id, null);
       assert.equal(auditEvent.action_detail, null);
       assert.deepEqual(auditEvent.context, {});
       assert.equal(auditEvent.old_row, null);
-      assert.equal(auditEvent.new_row, null);
+      assert.deepEqual(auditEvent.new_row, { test: 'default user data' });
       assert.equal(auditEvent.agent_authn_user_id, null);
       assert.equal(auditEvent.agent_user_id, null);
-      assert.equal(auditEvent.institution_id, null);
+      // institution_id is inferred from the user, so it won't be null
+      assert.typeOf(auditEvent.institution_id, 'string');
       assert.equal(auditEvent.course_id, null);
       assert.equal(auditEvent.assessment_id, null);
       assert.equal(auditEvent.assessment_instance_id, null);
@@ -139,6 +150,7 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
         context: { test: 'data1' },
@@ -149,8 +161,11 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        action_detail: 'Updated user data',
+        old_row: { test: 'old data' },
         context: { test: 'data2' },
       });
 
@@ -180,8 +195,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new user data' },
         context: { test: 'users' },
       });
 
@@ -190,8 +207,10 @@ describe('audit-event', () => {
         table_name: 'enrollments',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new enrollment data' },
         context: { test: 'enrollments' },
       });
 
@@ -201,8 +220,11 @@ describe('audit-event', () => {
         table_name: 'assessments',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        assessment_id: '1',
+        new_row: { test: 'new assessment data' },
         context: { test: 'assessments' },
       });
 
@@ -232,8 +254,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'course1 user data' },
         context: { test: 'course1' },
       });
 
@@ -242,8 +266,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '2',
+        new_row: { test: 'course2 user data' },
         context: { test: 'course2' },
       });
 
@@ -278,6 +304,7 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user1.user_id,
         course_instance_id: '1',
         context: { test: 'user1' },
@@ -288,6 +315,7 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user2.user_id,
         course_instance_id: '1',
         context: { test: 'user2' },
@@ -316,8 +344,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'older user data' },
         context: { test: 'older' },
       });
 
@@ -326,8 +356,11 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        action_detail: 'Updated user data',
+        old_row: { test: 'old data' },
         context: { test: 'newer' },
       });
 
@@ -357,8 +390,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new user data' },
         context: { test: 'null_user' },
       });
 
@@ -396,6 +431,7 @@ describe('audit-event', () => {
         assessment_id: '1',
         assessment_instance_id: '1',
         assessment_question_id: '1',
+        group_id: '1',
       });
 
       const result = await selectAuditEvents({

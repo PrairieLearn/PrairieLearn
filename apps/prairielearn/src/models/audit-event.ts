@@ -107,6 +107,7 @@ const requiredTableFields: Record<string, string[]> = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
+  enrollments: [], // No specific required fields
 };
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
