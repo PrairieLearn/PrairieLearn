@@ -13,8 +13,10 @@ import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
+  AssessmentQuestionSchema,
   type Course,
   IdSchema,
+  InstanceQuestionSchema,
   IntervalSchema,
   type Question,
   QuestionSchema,
@@ -34,11 +36,13 @@ import * as workspaceHelper from './workspace.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantDataSchema = z.object({
-  instance_question_id: z.string().nullable(),
   grading_method: QuestionSchema.shape.grading_method,
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  allow_real_time_grading: z.boolean().nullable(),
+  // These fields are only present when the variant is associated with an
+  // instance question (and thus an assessment).
+  instance_question_id: InstanceQuestionSchema.shape.id.nullable(),
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points.nullable(),
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points.nullable(),
+  allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading.nullable(),
 });
 
 const VariantForSubmissionSchema = VariantSchema.extend({
