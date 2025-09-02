@@ -1,26 +1,30 @@
 # Description
 
-<!-- summary of changes (add screenshots/videos to the bottom of the PR if applicable)
-- relevant context from Slack is summarized and included
-- disclose any AI usage -->
+<!--
 
-<!-- if this is a bug fix, include a link to the issue (e.g. `closes #123`), and how to reproduce the bug on master
-if this is a refactor/feature, why this change was made -->
+- Summarize your changes and explain the rationale for making them.
+- Include any relevant context from Slack, meetings, or other discussions.
+- If this change is resolving a specific issue, include a link to the issue (e.g. "closes #1234").
+- If applicable, include screenshots and/or videos.
+- Note any AI assistance used (i.e. specific IDEs, models, or tools).
+
+-->
 
 # Testing
 
-<!-- how you tested your changes
+<!--
 
-- if this is a UI change, mention what accessibility testing has been done
-- if applicable, include unit tests for complex functionality / behavior modifications -->
+- Share how you tested your changes.
+- If applicable, make sure you've authored unit and/or integration tests.
+- If applicable, provide instructions for a reviewer to test the changes for themselves.
+- If applicable, mention any accessibility testing that was done.
 
-<!-- if applicable, include instructions for how the reviewer can test the changes -->
+Self-reviews with GitHub's review UI are encouraged to point out the following:
 
-<!-- in a self-review of the code, point out:
+- Explanations for code or design decisions that may confuse reviewers.
+- Particularly important or core changes.
+- Items that may need further discussion.
 
-  - explanations for code/design decisions that may confuse reviewers
-  - important/core bits of the PR
-  - rationale for design decisions
-  - items that may need further discussion
+Thank you for contributing to PrairieLearn!
 
-Thank you for contributing to PrairieLearn! -->
+-->
