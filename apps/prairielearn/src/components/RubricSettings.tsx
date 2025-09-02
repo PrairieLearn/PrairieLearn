@@ -417,6 +417,13 @@ export function RubricSettings({
               class="btn btn-secondary me-2"
               onClick={() => {
                 setRubricItems(rubricItemDataMerged);
+                setReplaceAutoPoints(
+                  rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+                );
+                setStartingPoints(rubricData?.starting_points ?? 0);
+                setMinPoints(rubricData?.min_points ?? 0);
+                setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
+                setSettingsError(null);
                 setEditMode(false);
               }}
             >
