@@ -25,6 +25,7 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink,
   canEdit,
   enrollmentCount,
+  enrollmentManagementEnabled,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
@@ -37,6 +38,7 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink: string | null;
   canEdit: boolean;
   enrollmentCount: number;
+  enrollmentManagementEnabled: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -227,7 +229,9 @@ export function InstructorInstanceAdminSettings({
                 to share with students.
               </small>
             </div>
-            ${renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)}
+            ${enrollmentManagementEnabled
+              ? renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)
+              : ''}
 
             <h2 class="h4">Sharing</h2>
             ${CourseInstanceSharing({ courseInstance: resLocals.course_instance, publicLink })}

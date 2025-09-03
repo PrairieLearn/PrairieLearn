@@ -49,6 +49,7 @@ const RawPageContextSchema = z.object({
   }),
 
   urlPrefix: z.string(),
+  plainUrlPrefix: z.string(),
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,
