@@ -8,6 +8,9 @@
   "migrations": {
     "migrationsDir": "apps/prairielearn/src/migrations"
   },
+  "typecheck": {
+    "searchPath": ["public", "server*"]
+  },
   "files": {
     "ignore": []
   },
