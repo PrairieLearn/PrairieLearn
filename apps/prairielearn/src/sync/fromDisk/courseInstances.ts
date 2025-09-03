@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 
 import { z } from 'zod';
 
@@ -13,20 +13,30 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-export function generateEnrollmentCode() {
+export async function uniqueEnrollmentCode() {
+  let enrollmentCode = generateEnrollmentCode();
+  while (
+    (await sqldb.queryOptionalRow(
+      'SELECT 1 FROM course_instances WHERE enrollment_code = $enrollment_code',
+      { enrollment_code: enrollmentCode },
+      z.number(),
+    )) !== null
+  ) {
+    enrollmentCode = generateEnrollmentCode();
+  }
+  return enrollmentCode;
+}
+
+function generateEnrollmentCode() {
   const allowed = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  const totalChars = 10; // 4-3-3 groups
+  const totalChars = 10;
   let raw = '';
   while (raw.length < totalChars) {
-    const buf = randomBytes(totalChars);
-    for (let i = 0; i < buf.length && raw.length < totalChars; i++) {
-      // Map byte to an index in allowed characters to avoid bias
-      const idx = buf[i] % allowed.length;
-      raw += allowed[idx];
-    }
+    raw += allowed[randomInt(0, allowed.length)];
   }
-  // Format as XXXX-XXX-XXX (4-3-3)
-  return `${raw.slice(0, 4)}-${raw.slice(4, 7)}-${raw.slice(7, 10)}`;
+
+  // Format as XXX-XXX-XXXX
+  return `${raw.slice(0, 3)}-${raw.slice(3, 6)}-${raw.slice(6, 10)}`;
 }
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
@@ -108,7 +118,7 @@ export async function sync(
         shortName,
         courseInstance.uuid,
         // This enrollment code is only used for inserts, and not used on updates
-        generateEnrollmentCode(),
+        uniqueEnrollmentCode(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
