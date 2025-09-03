@@ -1,0 +1,29 @@
+{
+  "$schema": "https://pgtools.dev/main/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "migrations": {
+    "migrationsDir": "apps/prairielearn/src/migrations"
+  },
+  "typecheck": {
+    "searchPath": ["public", "server*"]
+  },
+  "files": {
+    "ignore": []
+  },
+  "linter": {
+    "rules": {
+      "recommended": true
+    }
+  },
+  "db": {
+    "host": "127.0.0.1",
+    "port": 5432,
+    "username": "postgres",
+    "database": "postgres",
+    "connTimeoutSecs": 10
+  }
+}
