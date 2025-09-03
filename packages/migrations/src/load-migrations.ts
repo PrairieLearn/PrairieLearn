@@ -3,8 +3,9 @@ import fs from 'fs-extra';
 /**
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
  * If this code is still around in the year 10000... good luck.
+ * We exclude the dot in the regex to ignore filenames like `20250822211535_enrollments__joined_at__add.test.sql`.
  */
-const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.[a-z]+/;
+const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_[^.]+\.[a-z]+/;
 
 /**
  * Annotations are expressed via the following:
@@ -24,6 +25,18 @@ export interface MigrationFile {
   timestamp: string;
 }
 
+export function extractTimestampFromFilename(filename: string): string {
+  const match = filename.match(MIGRATION_FILENAME_REGEX);
+  if (!match) {
+    throw new Error(`Invalid migration filename: ${filename}`);
+  }
+  const timestamp = match.at(1) ?? null;
+  if (timestamp === null) {
+    throw new Error(`Migration ${filename} does not have a timestamp`);
+  }
+  return timestamp;
+}
+
 export async function readAndValidateMigrationsFromDirectory(
   dir: string,
   extensions: string[],
@@ -33,17 +46,7 @@ export async function readAndValidateMigrationsFromDirectory(
   );
 
   const migrations = migrationFiles.map((mf) => {
-    const match = mf.match(MIGRATION_FILENAME_REGEX);
-
-    if (!match) {
-      throw new Error(`Invalid migration filename: ${mf}`);
-    }
-
-    const timestamp = match[1] ?? null;
-
-    if (timestamp === null) {
-      throw new Error(`Migration ${mf} does not have a timestamp`);
-    }
+    const timestamp = extractTimestampFromFilename(mf);
 
     return {
       directory: dir,
