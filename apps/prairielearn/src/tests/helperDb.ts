@@ -143,11 +143,7 @@ async function setupDatabases(
 ): Promise<void> {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
-  if (
-    !templateExists ||
-    creationSettings?.dropFirst === true ||
-    creationSettings?.ignoreIfExists === true
-  ) {
+  if (!templateExists || creationSettings?.dropFirst === true) {
     await createTemplate(migrationSettings);
   }
   await createFromTemplate({
@@ -209,13 +205,6 @@ export async function runAllMigrationsIncluding(
       ignoreIfExists: true,
     },
   );
-}
-
-export async function runRemainingMigrations() {
-  await setupDatabases(undefined, {
-    dropFirst: false,
-    ignoreIfExists: true,
-  });
 }
 
 export async function before(): Promise<void> {
