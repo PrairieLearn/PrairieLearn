@@ -14,9 +14,19 @@ import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export function generateEnrollmentCode() {
-  /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
-  // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
-  return randomBytes(6).toString('hex');
+  const allowed = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const totalChars = 10; // 4-3-3 groups
+  let raw = '';
+  while (raw.length < totalChars) {
+    const buf = randomBytes(totalChars);
+    for (let i = 0; i < buf.length && raw.length < totalChars; i++) {
+      // Map byte to an index in allowed characters to avoid bias
+      const idx = buf[i] % allowed.length;
+      raw += allowed[idx];
+    }
+  }
+  // Format as XXXX-XXX-XXX (4-3-3)
+  return `${raw.slice(0, 4)}-${raw.slice(4, 7)}-${raw.slice(7, 10)}`;
 }
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
