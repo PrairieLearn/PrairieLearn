@@ -10,5 +10,6 @@ SET
   joined_at = created_at
 WHERE
   joined_at IS NULL
+  AND created_at IS NOT NULL
   AND id >= $start
   AND id <= $end;
