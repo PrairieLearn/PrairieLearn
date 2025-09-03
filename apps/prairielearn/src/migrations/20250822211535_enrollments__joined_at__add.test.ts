@@ -4,9 +4,12 @@ import z from 'zod';
 import { loadSqlEquiv } from '@prairielearn/postgres';
 import * as sqldb from '@prairielearn/postgres';
 
-import { ensureEnrollment } from '../models/enrollment.js';
 import * as helperCourse from '../tests/helperCourse.js';
-import { runAllMigrationsBefore, runAllMigrationsIncluding } from '../tests/helperDb.js';
+import {
+  runAllMigrationsBefore,
+  runAllMigrationsIncluding,
+  runRemainingMigrations,
+} from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -52,4 +55,5 @@ test('joined_at migration works correctly', async () => {
   );
 
   assert.isDefined(migratedEnrollment.joined_at);
+  await runRemainingMigrations();
 });

@@ -3,9 +3,8 @@ import fs from 'fs-extra';
 /**
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
  * If this code is still around in the year 10000... good luck.
- * We exclude the dot in the regex to ignore filenames like `20250822211535_enrollments__joined_at__add.test.sql`.
  */
-const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_[^.]+\.[a-z]+/;
+const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.[a-z]+/;
 
 /**
  * Annotations are expressed via the following:
@@ -42,7 +41,7 @@ export async function readAndValidateMigrationsFromDirectory(
   extensions: string[],
 ): Promise<MigrationFile[]> {
   const migrationFiles = (await fs.readdir(dir)).filter((m) =>
-    extensions.some((e) => m.endsWith(e)),
+    extensions.includes('.' + (m.split('.', 2).pop() ?? '')),
   );
 
   const migrations = migrationFiles.map((mf) => {

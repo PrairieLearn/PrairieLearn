@@ -93,17 +93,25 @@ async function createFromTemplate({
   dbName,
   dbTemplateName,
   dropFirst,
+  ignoreIfExists,
+  migrationSettings = false,
 }: {
   dbName: string;
   dbTemplateName: string;
   dropFirst: boolean;
+  ignoreIfExists: boolean;
+  migrationSettings?: { beforeTimestamp: string; inclusiveBefore: boolean } | boolean;
 }): Promise<void> {
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
+    ignoreIfExists,
     database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
-    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false }),
+    prepare: async () => {
+      // All of our migrations should be idempotent, so we can always re-run them.
+      return await runMigrationsAndSprocs({ dbName, runMigrations: migrationSettings });
+    },
   });
 }
 
@@ -123,20 +131,27 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function setupDatabases(migrationSettings?: {
-  beforeTimestamp: string;
-  inclusiveBefore: boolean;
-  dropFirst: boolean;
-}): Promise<void> {
+async function setupDatabases(
+  migrationSettings?: {
+    beforeTimestamp: string;
+    inclusiveBefore: boolean;
+  },
+  creationSettings?: {
+    ignoreIfExists: boolean;
+    dropFirst: boolean;
+  },
+): Promise<void> {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
-  if (!templateExists) {
+  if (!templateExists || creationSettings?.dropFirst) {
     await createTemplate(migrationSettings);
   }
   await createFromTemplate({
     dbName,
     dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
-    dropFirst: migrationSettings?.dropFirst ?? true,
+    dropFirst: creationSettings?.dropFirst ?? true,
+    ignoreIfExists: creationSettings?.ignoreIfExists ?? false,
+    migrationSettings,
   });
 
   // Ideally this would happen only over in `helperServer`, but we need to use
@@ -157,11 +172,16 @@ export async function runAllMigrationsBefore(
   { drop = false }: { drop: boolean },
 ): Promise<void> {
   const beforeFile = migrationName.endsWith('.sql') ? migrationName : `${migrationName}.sql`;
-  await setupDatabases({
-    beforeTimestamp: extractTimestampFromFilename(beforeFile),
-    inclusiveBefore: false,
-    dropFirst: drop,
-  });
+  await setupDatabases(
+    {
+      beforeTimestamp: extractTimestampFromFilename(beforeFile),
+      inclusiveBefore: false,
+    },
+    {
+      dropFirst: drop,
+      ignoreIfExists: true,
+    },
+  );
 }
 
 /**
@@ -175,10 +195,22 @@ export async function runAllMigrationsIncluding(
   { drop = false }: { drop?: boolean } = {},
 ): Promise<void> {
   const beforeFile = migrationName.endsWith('.sql') ? migrationName : `${migrationName}.sql`;
-  await setupDatabases({
-    beforeTimestamp: extractTimestampFromFilename(beforeFile),
-    inclusiveBefore: true,
-    dropFirst: drop,
+  await setupDatabases(
+    {
+      beforeTimestamp: extractTimestampFromFilename(beforeFile),
+      inclusiveBefore: true,
+    },
+    {
+      dropFirst: drop,
+      ignoreIfExists: true,
+    },
+  );
+}
+
+export async function runRemainingMigrations() {
+  await setupDatabases(undefined, {
+    dropFirst: false,
+    ignoreIfExists: true,
   });
 }
 

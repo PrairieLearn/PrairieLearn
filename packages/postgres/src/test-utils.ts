@@ -17,6 +17,7 @@ export interface PostgresTestUtilsOptions {
 
 interface CreateDatabaseOptions {
   dropExistingDatabase?: boolean;
+  ignoreIfExists?: boolean;
   database?: string;
   templateDatabase?: string;
   configurePool?: boolean;
@@ -34,6 +35,7 @@ async function createDatabase(
   {
     dropExistingDatabase = true,
     configurePool = true,
+    ignoreIfExists = false,
     database,
     templateDatabase,
     prepare,
@@ -45,18 +47,28 @@ async function createDatabase(
   });
   await client.connect();
 
-  const escapedDatabase = client.escapeIdentifier(
-    database ?? getDatabaseNameForCurrentMochaWorker(options.database),
-  );
+  const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
+
+  const escapedDatabase = client.escapeIdentifier(databaseName);
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
   }
 
-  if (templateDatabase) {
-    const escapedTemplateDatabase = client.escapeIdentifier(templateDatabase);
-    await client.query(`CREATE DATABASE ${escapedDatabase} TEMPLATE ${escapedTemplateDatabase}`);
-  } else {
-    await client.query(`CREATE DATABASE ${escapedDatabase}`);
+  let createDatabase = true;
+  if (ignoreIfExists) {
+    const results = await client.query(
+      `SELECT 1 FROM pg_database WHERE datname = ${client.escapeLiteral(databaseName)}`,
+    );
+    createDatabase = (results.rowCount ?? 0) === 0;
+  }
+
+  if (createDatabase) {
+    if (templateDatabase) {
+      const escapedTemplateDatabase = client.escapeIdentifier(templateDatabase);
+      await client.query(`CREATE DATABASE ${escapedDatabase} TEMPLATE ${escapedTemplateDatabase}`);
+    } else {
+      await client.query(`CREATE DATABASE ${escapedDatabase}`);
+    }
   }
 
   await client.end();
