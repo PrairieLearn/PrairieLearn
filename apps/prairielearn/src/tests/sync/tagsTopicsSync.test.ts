@@ -1,5 +1,6 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
+import { CourseSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
 import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
 
@@ -46,7 +47,8 @@ async function testAdd(entityName: 'tags' | 'topics') {
   const newEntity = makeEntity();
   courseData.course[entityName].push(newEntity);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((e) => e.name === newEntity.name);
   checkEntity(syncedEntity, newEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
@@ -58,7 +60,8 @@ async function testAddMissingDescription(entityName: 'tags' | 'topics') {
   delete newEntity.description;
   courseData.course[entityName].push(newEntity);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((e) => e.name === newEntity.name);
   checkEntity(syncedEntity, { ...newEntity, description: '' });
   checkEntityOrder(entityName, syncedEntities, courseData);
@@ -71,7 +74,8 @@ async function testRemove(entityName: 'tags' | 'topics') {
   const { courseDir } = await util.writeAndSyncCourseData(courseData);
   courseData.course[entityName].splice(0, 1);
   await util.overwriteAndSyncCourseData(courseData, courseDir);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((e) => e.name === oldEntity.name);
   assert.isUndefined(syncedEntity);
   checkEntityOrder(entityName, syncedEntities, courseData);
@@ -91,7 +95,8 @@ async function testRemoveAll(entityName: 'tags' | 'topics') {
   await util.overwriteAndSyncCourseData(courseData, courseDir);
 
   // Ensure that the entity table is empty.
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   assert.isEmpty(syncedEntities);
 }
 
@@ -104,7 +109,8 @@ async function testRename(entityName: 'tags' | 'topics') {
   const newName = 'new name';
   courseData.course[entityName][0].name = newName;
   await util.overwriteAndSyncCourseData(courseData, courseDir);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   assert.isUndefined(syncedEntities.find((e) => e.name === oldName));
   const syncedEntity = syncedEntities.find((as) => as.name === newName);
   checkEntity(syncedEntity, oldEntity);
@@ -119,12 +125,15 @@ async function testDuplicate(entityName: 'tags' | 'topics') {
   newEntity2.description = 'description for another new entity';
   courseData.course[entityName].push(newEntity1, newEntity2);
   await util.writeAndSyncCourseData(courseData);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
   checkEntity(syncedEntity, newEntity2);
-  const syncedCourses = await util.dumpTable('pl_courses');
+  const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
   const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
-  assert.match(syncedCourse?.sync_warnings, new RegExp(`Found duplicates in '${entityName}'`));
+  assert.isDefined(syncedCourse);
+  assert.isNotNull(syncedCourse.sync_warnings);
+  assert.match(syncedCourse.sync_warnings, new RegExp(`Found duplicates in '${entityName}'`));
 }
 
 async function testImplicit(entityName: 'tags' | 'topics') {
@@ -136,7 +145,8 @@ async function testImplicit(entityName: 'tags' | 'topics') {
     question.topic = 'implicit';
   }
   await util.writeAndSyncCourseData(courseData);
-  const syncedEntities = await util.dumpTable(entityName);
+  const schema = entityName === 'tags' ? TagSchema : TopicSchema;
+  const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((as) => as.name === 'implicit');
   checkEntity(syncedEntity, {
     name: 'implicit',
@@ -215,14 +225,14 @@ describe('Tag/topic syncing', () => {
     const courseData = util.getCourseData();
 
     // The symbolic tag is in DEFAULT_TAGS but not in courseData
-    courseData.questions[util.QUESTION_ID]?.tags?.push('symbolic');
+    courseData.questions[util.QUESTION_ID].tags!.push('symbolic');
 
     // Similarly, the drawing tag is in DEFAULT_TAGS but not in courseData
-    courseData.questions[util.QUESTION_ID]?.tags?.push('drawing');
+    courseData.questions[util.QUESTION_ID].tags!.push('drawing');
 
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedTags = await util.dumpTable('tags');
+    const syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
 
     // Ensure that the symbolic tag was added and matches the corresponding tag in DEFAULT_TAGS
     const syncedSymbolicTag = syncedTags.find((t) => t.name === 'symbolic');
@@ -270,7 +280,7 @@ describe('Tag/topic syncing', () => {
     await util.writeAndSyncCourseData(courseData);
 
     // Assert that the expected topic is present and that it has the correct number.
-    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     assert.lengthOf(syncedTopics, 1);
     assert.equal(syncedTopics[0].name, 'X');
     assert.equal(syncedTopics[0].number, 1);
@@ -299,7 +309,7 @@ describe('Tag/topic syncing', () => {
     await util.writeAndSyncCourseData(courseData);
 
     // Assert that the expected tag is present and that it has the correct number.
-    const syncedTags = await util.dumpTable('tags');
+    const syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     assert.lengthOf(syncedTags, 1);
     assert.equal(syncedTags[0].name, 'X');
     assert.equal(syncedTags[0].number, 1);
@@ -336,14 +346,14 @@ describe('Tag/topic syncing', () => {
       newEntityObjectComment,
     );
     await util.writeAndSyncCourseData(courseData);
-    const syncedTags = await util.dumpTable('tags');
+    const syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
     const syncedStringTag = syncedTags.find((t) => t.name === 'String comment');
     const syncedArrayTag = syncedTags.find((t) => t.name === 'Array comment');
     const syncedObjectTag = syncedTags.find((t) => t.name === 'Object comment');
     assert.equal(syncedStringTag?.json_comment, 'string comment');
     assert.deepEqual(syncedArrayTag?.json_comment, ['comment1', 'comment2']);
     assert.deepEqual(syncedObjectTag?.json_comment, { comment1: 'comment1', comment2: 'comment2' });
-    const syncedTopics = await util.dumpTable('topics');
+    const syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     const syncedStringTopic = syncedTopics.find((t) => t.name === 'String comment');
     const syncedArrayTopic = syncedTopics.find((t) => t.name === 'Array comment');
     const syncedObjectTopic = syncedTopics.find((t) => t.name === 'Object comment');

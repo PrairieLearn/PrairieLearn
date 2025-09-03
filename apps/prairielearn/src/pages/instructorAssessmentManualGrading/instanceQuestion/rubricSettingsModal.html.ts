@@ -271,11 +271,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       </tr>
                     </thead>
                     <tbody>
-                      ${rubric_data?.rubric_items?.map((item, index) =>
+                      ${rubric_data?.rubric_items.map((item, index) =>
                         RubricItemRow({ item, index }),
                       )}
                       <tr
-                        class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
+                        class="js-no-rubric-item-note ${rubric_data?.rubric_items.length
                           ? 'd-none'
                           : ''}"
                       >
@@ -325,7 +325,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   <i class="fas fa-circle-info"></i>
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
+                  ${RubricItemRow({ item: null, index: rubric_data?.rubric_items.length ?? 0 })}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -449,7 +449,7 @@ function RubricItemRow({
           ? html` <label
               for="rubric-item-explanation-button-${item.id}"
               style="white-space: pre-wrap;"
-              >${item?.explanation}</label
+              >${item.explanation}</label
             >`
           : ''}
         <button
@@ -467,7 +467,7 @@ function RubricItemRow({
           ? html`<label
               for="rubric-item-grader-note-button-${item.id}"
               style="white-space: pre-wrap;"
-              >${item?.grader_note}</label
+              >${item.grader_note}</label
             > `
           : ''}
         <button

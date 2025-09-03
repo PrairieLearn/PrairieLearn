@@ -219,7 +219,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
       // must be executed. Typical vanilla JS alternatives don't support
       // this kind of script.
       $(answerContainer).html(msg.answerPanel);
-      mathjaxTypeset([answerContainer]);
+      void mathjaxTypeset([answerContainer]);
       answerContainer.closest('.grading-block')?.classList.remove('d-none');
     }
   }
@@ -230,7 +230,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
     $(submissionPanelSelector).replaceWith(msg.submissionPanel);
-    mathjaxTypeset([document.querySelector(submissionPanelSelector) as HTMLElement]);
+    void mathjaxTypeset([document.querySelector(submissionPanelSelector)!]);
   }
 
   if (msg.questionScorePanel) {

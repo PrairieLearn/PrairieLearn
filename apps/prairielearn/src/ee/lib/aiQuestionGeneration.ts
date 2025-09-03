@@ -2,7 +2,7 @@ import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { Cache } from '@prairielearn/cache';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
@@ -189,16 +189,16 @@ function extractFromCompletion(
   const html = completionText?.match(htmlSelector)?.groups?.code;
   const python = completionText?.match(pythonSelector)?.groups?.code;
 
-  const out = {};
+  const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
     job.info(`extracted html file: ${html}`);
-    out['html'] = html;
+    out.html = html;
   }
 
   if (python !== undefined) {
     job.info(`extracted python file: ${python}`);
-    out['python'] = python;
+    out.python = python;
   }
 
   return out;
@@ -395,7 +395,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       return;
     }
 
-    await queryAsync(sql.insert_draft_question_metadata, {
+    await execute(sql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
       creator_id: authnUserId,
     });
@@ -418,11 +418,11 @@ Keep in mind you are not just generating an example; you are generating an actua
       IdSchema,
     );
 
-    job.data['questionId'] = saveResults.question_id;
-    job.data['questionQid'] = saveResults.question_qid;
+    job.data.questionId = saveResults.question_id;
+    job.data.questionQid = saveResults.question_qid;
 
-    job.data['promptTokens'] = completion.usage?.prompt_tokens;
-    job.data['completionTokens'] = completion.usage?.completion_tokens;
+    job.data.promptTokens = completion.usage?.prompt_tokens;
+    job.data.completionTokens = completion.usage?.completion_tokens;
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
@@ -652,8 +652,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
-  job.data['promptTokens'] = completion.usage?.prompt_tokens;
-  job.data['completionTokens'] = completion.usage?.completion_tokens;
+  job.data.promptTokens = completion.usage?.prompt_tokens;
+  job.data.completionTokens = completion.usage?.completion_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
@@ -732,7 +732,7 @@ export async function regenerateQuestion(
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.data['questionQid'] = questionQid;
+    job.data.questionQid = questionQid;
     await regenInternal({
       job,
       client,

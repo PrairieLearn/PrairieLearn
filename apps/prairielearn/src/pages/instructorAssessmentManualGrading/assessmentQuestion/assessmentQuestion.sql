@@ -2,7 +2,7 @@
 WITH
   issue_count AS (
     SELECT
-      i.instance_question_id AS instance_question_id,
+      i.instance_question_id,
       count(*)::integer AS open_issue_count
     FROM
       issues AS i
@@ -25,7 +25,7 @@ WITH
     WHERE
       iq.assessment_question_id = $assessment_question_id
     ORDER BY
-      iq.id,
+      iq.id ASC,
       s.date DESC
   ),
   rubric_items_agg AS (

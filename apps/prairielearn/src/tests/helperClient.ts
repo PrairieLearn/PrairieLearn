@@ -40,7 +40,7 @@ export function getCSRFToken($: cheerio.CheerioAPI): string {
   assert.lengthOf(csrfTokenSpan, 1);
   const csrfToken = csrfTokenSpan.text();
   assert.isString(csrfToken);
-  return csrfToken as string;
+  return csrfToken;
 }
 
 /**
@@ -163,7 +163,7 @@ export async function saveOrGrade(
   assert(typeof variantId === 'string');
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
-  if (payload && payload.postData) {
+  if (payload.postData) {
     const postData = JSON.parse(payload.postData);
     postData.variant.id = variantId;
     payload.postData = JSON.stringify(postData);

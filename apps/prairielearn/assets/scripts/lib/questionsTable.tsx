@@ -63,7 +63,7 @@ onDocumentReady(() => {
     const sharing_sets = Object.fromEntries(
       data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
     );
-    sharing_sets['Public'] = 'Public';
+    sharing_sets.Public = 'Public';
     sharing_sets['Public source'] = 'Public source';
     return sharing_sets;
   };
@@ -79,12 +79,12 @@ onDocumentReady(() => {
       text += SyncProblemButtonHtml({
         type: 'error',
         output: question.sync_errors,
-      });
+      }).toString();
     } else if (question.sync_warnings) {
       text += SyncProblemButtonHtml({
         type: 'warning',
         output: question.sync_warnings,
-      });
+      }).toString();
     }
 
     // We only want to show the sharing name prefix for publicly-shared questions.
@@ -96,7 +96,7 @@ onDocumentReady(() => {
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
         ${prefix}${question.qid}
       </a>
-    `;
+    `.toString();
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge rounded-pill text-bg-danger ms-1"
@@ -104,7 +104,7 @@ onDocumentReady(() => {
           question.qid ?? '',
         )}"
         >${question.open_issue_count}</a
-      >`;
+      >`.toString();
     }
     return text.toString();
   };

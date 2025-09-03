@@ -320,7 +320,6 @@ export const ConfigSchema = z.object({
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
-  hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
     .array(
@@ -641,7 +640,7 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
-export async function resetConfig() {
+export function resetConfig() {
   loader.reset();
 }
 
