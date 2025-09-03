@@ -88,7 +88,7 @@ jobs:
       - name: Check if a changeset is required
         if: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group')
           && !contains(github.head_ref, 'changeset-release')
-          && github.actor != 'dependabot[bot]' }}
+          && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
