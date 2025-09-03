@@ -38,11 +38,30 @@
       "default": []
     },
     "authors": {
-      "description": "Contact information for those credited with having written the question.",
+      "description": "A list of authors that created this question.",
       "type": "array",
       "items": {
-        "description": "An author",
-        "type": "string"
+        "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
+        "type": "object",
+        "properties": {
+          "name": {
+            "description": "A human-readable name of a question author.",
+            "type": "string"
+          },
+          "email": {
+            "description": "An email address to contact a question author.",
+            "type": "string"
+          },
+          "orcid": {
+            "description": "An ORCiD that uniquely identifies an individual question author.",
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$"
+          },
+          "originCourse": {
+            "description": "The sharing name of a course whose staff is a question author.",
+            "type": "string"
+          }
+        }
       }
     },
     "clientFiles": {
