@@ -93,14 +93,11 @@ router.get(
     const { authz_data } = pageContext;
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
-    // For now, this is a development-only feature, so that can can get PRs merged without affecting users.
-    const hasEnrollmentManagementFeature = await features.enabled('enrollment-management', {
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
       institution_id: institution.id,
       course_id: course.id,
       course_instance_id: courseInstance.id,
     });
-    const enrollmentManagementEnabled =
-      hasEnrollmentManagementFeature && authz_data.is_administrator;
 
     res.send(
       InstructorInstanceAdminSettings({
