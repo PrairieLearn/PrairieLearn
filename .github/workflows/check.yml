@@ -83,7 +83,8 @@ jobs:
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
-      # Requires Git history and yarn install
+      # Requires Git history and yarn install. Not using the make version
+      # because the base ref is potentially different.
       - name: Check if a changeset is required
         if: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group')
           && !contains(github.head_ref, 'changeset-release')
