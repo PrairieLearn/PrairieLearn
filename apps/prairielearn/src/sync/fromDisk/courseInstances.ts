@@ -17,9 +17,9 @@ export async function uniqueEnrollmentCode() {
   let enrollmentCode = generateEnrollmentCode();
   while (
     (await sqldb.queryOptionalRow(
-      'SELECT 1 FROM course_instances WHERE enrollment_code = $enrollment_code',
+      sql.select_unique_enrollment_code,
       { enrollment_code: enrollmentCode },
-      z.number(),
+      z.string(),
     )) !== null
   ) {
     enrollmentCode = generateEnrollmentCode();
