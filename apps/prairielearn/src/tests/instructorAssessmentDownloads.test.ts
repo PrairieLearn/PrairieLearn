@@ -299,7 +299,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
       assert.isFalse(assessment.group_work);
 
-      const filenames = Object.values(
+      const filenames: string[] = Object.values(
         getFilenames({
           assessment,
           assessment_set: await selectAssessmentSetById(assessment.assessment_set_id),
