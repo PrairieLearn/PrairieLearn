@@ -3,7 +3,14 @@ import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
+import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+
+import { selectAssessmentSetById } from '../models/assessment-set.js';
+import { selectAssessmentById } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
+import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -278,6 +285,52 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.equal(data[0]['Correct'], 'TRUE');
       assert.equal(data[0]['Max points'], 5);
       assert.equal(data[0]['Question % score'], 100);
+    });
+  });
+
+  describe('13. Comprehensive test of all downloads', function () {
+    it('should attempt to download every file in getFilenames', async () => {
+      const assessment = await selectAssessmentById(locals.assessment_id);
+      assert.isNotNull(assessment.assessment_set_id);
+
+      // TODO: A future PR should also test the group work downloads
+      // This suite currently uses helperExam, which uses 'exam1-automaticTestSuite', which does
+      // not have group work enabled.
+
+      assert.isFalse(assessment.group_work);
+
+      const filenames = Object.values(
+        getFilenames({
+          assessment,
+          assessment_set: await selectAssessmentSetById(assessment.assessment_set_id),
+          course_instance: await selectCourseInstanceById(locals.variant.course_instance_id),
+          course: await selectCourseById(locals.variant.course_id),
+        }),
+      );
+
+      await Promise.all(
+        filenames.map(async (filename) => {
+          const downloadUrl =
+            locals.courseInstanceBaseUrl +
+            '/instructor/assessment/' +
+            locals.assessment_id +
+            '/downloads/' +
+            filename;
+          const res = await fetch(downloadUrl);
+          assert.equal(res.status, 200, `Failed to download ${filename}`);
+          if (filename.endsWith('.csv')) {
+            const csvContent = await res.text();
+            const data = csvParse<any>(csvContent, { columns: true, cast: true });
+            assert.isAtLeast(data.length, 1);
+          } else if (filename.endsWith('.zip')) {
+            const zipContent = Buffer.from(await res.arrayBuffer());
+            const zip = await unzipper.Open.buffer(zipContent);
+            assert.isAtLeast(zip.files.length, 1);
+          } else {
+            assert.fail(`Unknown file type: ${filename}`);
+          }
+        }),
+      );
     });
   });
 });
