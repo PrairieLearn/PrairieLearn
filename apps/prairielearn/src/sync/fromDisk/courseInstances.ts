@@ -111,8 +111,8 @@ export async function sync(
     });
   }
 
-  const courseInstanceParams = Object.entries(courseData.courseInstances).map(
-    async ([shortName, courseInstanceData]) => {
+  const courseInstanceParams = await Promise.all(
+    Object.entries(courseData.courseInstances).map(async ([shortName, courseInstanceData]) => {
       const { courseInstance } = courseInstanceData;
       return JSON.stringify([
         shortName,
@@ -123,7 +123,7 @@ export async function sync(
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
       ]);
-    },
+    }),
   );
 
   const result = await sqldb.callRow(
