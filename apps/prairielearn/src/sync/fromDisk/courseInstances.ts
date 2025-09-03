@@ -112,13 +112,13 @@ export async function sync(
   }
 
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
-    ([shortName, courseInstanceData]) => {
+    async ([shortName, courseInstanceData]) => {
       const { courseInstance } = courseInstanceData;
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
         // This enrollment code is only used for inserts, and not used on updates
-        uniqueEnrollmentCode(),
+        await uniqueEnrollmentCode(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),

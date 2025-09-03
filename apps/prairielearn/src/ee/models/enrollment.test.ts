@@ -44,7 +44,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       {
         course_id: 1,
         display_timezone: 'UTC',
-        enrollment_code: uniqueEnrollmentCode(),
+        enrollment_code: await uniqueEnrollmentCode(),
       },
       CourseInstanceSchema,
     );

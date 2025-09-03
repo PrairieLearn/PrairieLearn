@@ -254,7 +254,7 @@ router.post(
     } else if (req.body.__action === 'generate_enrollment_code') {
       await sqldb.execute(sql.update_enrollment_code, {
         course_instance_id: res.locals.course_instance.id,
-        enrollment_code: uniqueEnrollmentCode(),
+        enrollment_code: await uniqueEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');
       res.redirect(req.originalUrl);
