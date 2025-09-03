@@ -74,4 +74,6 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
   });
 }
 
+export const forTestOnly = 1;
+
 export default addMathjaxExtension;

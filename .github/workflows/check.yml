@@ -83,8 +83,9 @@ jobs:
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
+      # Requires Git history and yarn install
       - name: Check if a changeset is required
-        # TODO Ensure this doesn't run in dependabot or version packages PRs
+        if: "!contains(github.head_ref, 'changeset-status')" # TODO Change to dependabot or changeset-release
         run: yarn changeset status --since origin/master
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
