@@ -41,6 +41,10 @@ async function createDatabase(
     prepare,
   }: CreateDatabaseOptions = {},
 ): Promise<void> {
+  if (dropExistingDatabase && ignoreIfExists) {
+    throw new Error('dropExistingDatabase and ignoreIfExists cannot both be true');
+  }
+
   const client = new pg.Client({
     ...getPoolConfig(options),
     database: options.defaultDatabase ?? POSTGRES_DATABASE,
@@ -50,7 +54,7 @@ async function createDatabase(
   const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
 
   const escapedDatabase = client.escapeIdentifier(databaseName);
-  if (dropExistingDatabase ?? true) {
+  if (dropExistingDatabase) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
   }
 
