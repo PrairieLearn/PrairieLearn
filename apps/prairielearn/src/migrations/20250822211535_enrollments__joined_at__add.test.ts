@@ -7,9 +7,10 @@ import * as sqldb from '@prairielearn/postgres';
 import * as helperCourse from '../tests/helperCourse.js';
 import {
   after,
+  createTemplate,
   dropTemplate,
   runAllMigrationsBefore,
-  runAllMigrationsIncluding,
+  runAllMigrationsThrough,
 } from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
@@ -17,8 +18,9 @@ const sql = loadSqlEquiv(import.meta.url);
 
 test('joined_at migration works correctly', async () => {
   afterEach(async () => {
-    await after();
     await dropTemplate();
+    await createTemplate();
+    await after();
   });
   await runAllMigrationsBefore('20250822211535_enrollments__joined_at__add', {
     drop: true,
@@ -48,7 +50,7 @@ test('joined_at migration works correctly', async () => {
   assert.isUndefined(enrollment.foobar);
   assert.isUndefined(enrollment.joined_at);
 
-  await runAllMigrationsIncluding('20250822211535_enrollments__joined_at__add');
+  await runAllMigrationsThrough('20250822211535_enrollments__joined_at__add');
 
   const migratedEnrollment = await sqldb.queryRow(
     sql.select_enrollment_for_user_in_course_instance,

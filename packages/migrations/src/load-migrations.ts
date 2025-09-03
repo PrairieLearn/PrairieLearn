@@ -41,6 +41,7 @@ export async function readAndValidateMigrationsFromDirectory(
   extensions: string[],
 ): Promise<MigrationFile[]> {
   const migrationFiles = (await fs.readdir(dir)).filter((m) =>
+    // Get the full extension of the file (e.g. for `foo.test.ts`, return `.test.ts`).
     extensions.includes('.' + (m.split('.', 2).pop() ?? '')),
   );
 

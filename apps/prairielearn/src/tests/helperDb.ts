@@ -109,7 +109,6 @@ async function createFromTemplate({
     templateDatabase: dbTemplateName,
     configurePool: true,
     prepare: async () => {
-      // All of our migrations should be idempotent, so we can always re-run them.
       return await runMigrationsAndSprocs({ dbName, runMigrations: migrationSettings });
     },
   });
@@ -190,7 +189,7 @@ export async function runAllMigrationsBefore(
  * @param options
  * @param options.drop Whether to drop the database before running the migrations. Default false.
  */
-export async function runAllMigrationsIncluding(
+export async function runAllMigrationsThrough(
   migrationName: string,
   { drop = false }: { drop?: boolean } = {},
 ): Promise<void> {
