@@ -1,15 +1,13 @@
 import * as crypto from 'crypto';
 import { URL } from 'url';
-import { callbackify } from 'util';
 
-import { type NextFunction, type Request, type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { Issuer, Strategy, type TokenSet } from 'openid-client';
-import * as passport from 'passport';
+import * as client from 'openid-client';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
-import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
@@ -19,7 +17,7 @@ import type { Lti13Instance } from '../../../lib/db-types.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalUserByUin, updateUserUid } from '../../../models/user.js';
-import { Lti13Claim, Lti13ClaimSchema } from '../../lib/lti13.js';
+import { Lti13Claim, Lti13ClaimSchema, getOpenidClientConfig } from '../../lib/lti13.js';
 import { selectOptionalUserByLti13Sub, updateLti13UserSub } from '../../models/lti13-user.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
@@ -76,15 +74,14 @@ const OIDCLaunchFlowSchema = z.object({
   lti_deployment_id: z.string().optional(),
   client_id: z.string().optional(),
   target_link_uri: z.string(),
-  // also has deployment_id, canvas_environment, canvas_region, lti_storage_target
+  // also has canvas_environment, canvas_region, lti_storage_target
 });
 
-// https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
-// Can be POST or GET
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
-async function launchFlow(req: Request, res: Response, next: NextFunction) {
+async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
+  // Can be POST or GET
 
   const parameters = OIDCLaunchFlowSchema.passthrough().parse({ ...req.body, ...req.query });
 
@@ -101,44 +98,46 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
     return;
   }
 
+  const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
+
+  const openidClientConfig = await getOpenidClientConfig(lti13_instance);
+
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
   if ('test' in parameters) {
     state = state.concat(STATE_TEST);
   }
+  const nonce = client.randomNonce();
 
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  myPassport.authenticate('lti13', {
-    response_type: 'id_token',
-    lti_message_hint: parameters.lti_message_hint,
-    login_hint: parameters.login_hint,
-    prompt: 'none',
-    response_mode: 'form_post',
-    failWithError: true,
+  // Save for later
+  req.session.lti13_state = {
     state,
-  } as passport.AuthenticateOptions)(req, res, next);
-}
+    nonce,
+  };
 
-async function setupPassport(lti13_instance_id: string) {
-  const lti13_instance = await selectLti13Instance(lti13_instance_id);
+  // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
+  const requestParameters = {
+    scope: 'openid',
+    response_type: 'id_token',
+    client_id: lti13_instance.client_params.client_id,
+    redirect_uri: lti13_instance.client_params.redirect_uris[0],
+    login_hint: parameters.login_hint,
+    state,
+    response_mode: 'form_post',
+    nonce,
+    prompt: 'none',
+  };
 
-  const localPassport = new passport.Passport();
-  const issuer = new Issuer(lti13_instance.issuer_params);
-  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+  // If these parameters were offered, they must be included back:
+  // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
+  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
+    if (key in parameters) {
+      requestParameters[key] = parameters[key];
+    }
+  }
 
-  localPassport.use(
-    'lti13',
-    new Strategy(
-      {
-        client,
-        passReqToCallback: true,
-      },
-      // @ts-expect-error TODO: type correctly
-      callbackify(verify),
-    ),
-  );
-
-  return localPassport;
+  const redirectTo = client.buildAuthorizationUrl(openidClientConfig, requestParameters);
+  res.redirect(redirectTo.href);
 }
 
 const OIDCAuthResponseSchema = z.object({
@@ -150,9 +149,50 @@ const OIDCAuthResponseSchema = z.object({
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
+    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
+    const authResponse = OIDCAuthResponseSchema.parse(req.body);
+
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lti13_claims = await authenticate(req, res);
+    const openidClientConfig = await getOpenidClientConfig(lti13_instance);
+
+    // Needed for implicit flow
+    client.useIdTokenResponseType(openidClientConfig);
+
+    // URL href doesn't matter, openid-client only uses the url.hash to pass properties
+    // into client.implicitAuthentication
+    const url = new URL('https://example.com/');
+    url.hash = new URLSearchParams({
+      state: authResponse.state,
+      id_token: authResponse.id_token,
+    }).toString();
+
+    const lti13_claims = Lti13ClaimSchema.parse(
+      await client.implicitAuthentication(openidClientConfig, url, req.session.lti13_state.nonce, {
+        expectedState: req.session.lti13_state.state,
+      }),
+    );
+
+    // Check nonce to protect against reuse
+    const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims.nonce}`;
+    const cacheResult = await cache.get(nonceKey);
+    if (cacheResult) {
+      throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
+    }
+    cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
+    // Canvas OIDC logins expire after 3600 seconds
+
+    // Remove auth state from session
+    delete req.session.lti13_state;
+
+    // Save parameters about the platform back to the lti13_instance
+    // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
+    await execute(sql.verify_upsert, {
+      lti13_instance_id: req.params.lti13_instance_id,
+      tool_platform_name:
+        lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
+    });
+
     // If we get here, auth succeeded and lti13_claims is populated
 
     // Put the LTI 1.3 claims in the session
@@ -305,60 +345,3 @@ router.get(
 );
 
 export default router;
-
-async function authenticate(req: Request, res: Response): Promise<any> {
-  // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
-  OIDCAuthResponseSchema.passthrough().parse(req.body);
-
-  const myPassport = await setupPassport(req.params.lti13_instance_id);
-  return new Promise((resolve, reject) => {
-    // Callback arguments described at
-    // https://github.com/jaredhanson/passport/blob/33b92f96616642864844753a481df7c5b823e047/lib/middleware/authenticate.js#L34
-    myPassport.authenticate('lti13', ((err, user, info) => {
-      if (err) {
-        // Replay attack fails here
-        // "did not find expected authorization request details in session, req.session[\"oidc:localhost\"] is undefined"
-        // Passport's cleanup of the session might take care of nonce reuse without us having to
-        reject(err);
-      } else if (!user) {
-        // The authentication libraries under openid-connect will fail (silently) if the key length
-        // is too small, like with the Canvas development keys. It triggers that error in PL here.
-        reject(
-          new AugmentedError('Authentication failed, before user validation.', {
-            status: 400,
-            data: {
-              info_raw: info,
-              info: info?.toString(),
-            },
-          }),
-        );
-      } else {
-        resolve(user);
-      }
-    }) as passport.AuthenticateCallback)(req, res);
-  });
-}
-
-async function verify(req: Request, tokenSet: TokenSet) {
-  const lti13_claims = Lti13ClaimSchema.parse(tokenSet.claims());
-
-  // Check nonce to protect against reuse
-  const nonceKey = `lti13auth-nonce:${req.params.lti13_instance_id}:${lti13_claims['nonce']}`;
-  const cacheResult = await cache.get(nonceKey);
-  if (cacheResult) {
-    throw new HttpStatusError(500, 'Cannot reuse LTI 1.3 nonce, try login again');
-  }
-  cache.set(nonceKey, true, 60 * 60 * 1000); // 60 minutes
-  // Canvas OIDC logins expire after 3600 seconds
-
-  // Save parameters about the platform back to the lti13_instance
-  // https://www.imsglobal.org/spec/lti/v1p3#platform-instance-claim
-  const params = {
-    lti13_instance_id: req.params.lti13_instance_id,
-    tool_platform_name:
-      lti13_claims['https://purl.imsglobal.org/spec/lti/claim/tool_platform']?.name ?? null,
-  };
-  await execute(sql.verify_upsert, params);
-
-  return lti13_claims;
-}
