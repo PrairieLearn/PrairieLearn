@@ -101,7 +101,7 @@ update-jsonschema:
 # Runs additional third-party linters
 lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-shell lint-sql-migrations lint-sql
 
-lint: lint-js lint-python lint-html lint-links
+lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
 	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
@@ -129,6 +129,8 @@ lint-sql-migrations:
 	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
+lint-changeset:
+	@yarn changeset status
 
 # Runs additional third-party formatters
 format-all: format-js format-python format-sql
@@ -162,8 +164,6 @@ typecheck-python: python-deps
 changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
-check-changeset:
-	@yarn changeset status
 
 lint-docs: lint-d2 lint-links lint-markdown
 
@@ -179,4 +179,4 @@ lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
 
-ci: lint typecheck check-dependencies check-changeset test
+ci: lint typecheck check-dependencies test
