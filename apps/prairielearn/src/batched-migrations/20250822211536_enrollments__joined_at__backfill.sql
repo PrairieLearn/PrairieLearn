@@ -11,5 +11,6 @@ SET
 WHERE
   joined_at IS NULL
   AND created_at IS NOT NULL
+  AND status = 'joined'
   AND id >= $start
   AND id <= $end;
