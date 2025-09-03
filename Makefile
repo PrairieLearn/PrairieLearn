@@ -162,6 +162,8 @@ typecheck-python: python-deps
 changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
+check-changeset:
+	@yarn changeset status
 
 lint-docs: lint-d2 lint-links lint-markdown
 
@@ -177,4 +179,4 @@ lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
 
-ci: lint typecheck check-dependencies test
+ci: lint typecheck check-dependencies check-changeset test
