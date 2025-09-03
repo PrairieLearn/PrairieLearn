@@ -93,24 +93,17 @@ async function createFromTemplate({
   dbName,
   dbTemplateName,
   dropFirst,
-  ignoreIfExists,
-  migrationSettings = false,
 }: {
   dbName: string;
   dbTemplateName: string;
   dropFirst: boolean;
-  ignoreIfExists: boolean;
-  migrationSettings?: { beforeTimestamp: string; inclusiveBefore: boolean } | boolean;
 }): Promise<void> {
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
-    ignoreIfExists,
     database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
-    prepare: async () => {
-      return await runMigrationsAndSprocs({ dbName, runMigrations: migrationSettings });
-    },
+    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false }),
   });
 }
 
@@ -131,10 +124,12 @@ async function databaseExists(dbName: string): Promise<boolean> {
 }
 
 async function setupDatabases(
-  migrationSettings?: {
-    beforeTimestamp: string;
-    inclusiveBefore: boolean;
-  },
+  migrationSettings?:
+    | {
+        beforeTimestamp: string;
+        inclusiveBefore: boolean;
+      }
+    | boolean,
   creationSettings?: {
     ignoreIfExists: boolean;
     dropFirst: boolean;
@@ -142,16 +137,31 @@ async function setupDatabases(
 ): Promise<void> {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
-  if (!templateExists || creationSettings?.dropFirst === true) {
-    await createTemplate(migrationSettings);
+  if (!templateExists) {
+    await createTemplate();
   }
-  await createFromTemplate({
-    dbName,
-    dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
-    dropFirst: creationSettings?.dropFirst ?? true,
-    ignoreIfExists: creationSettings?.ignoreIfExists ?? false,
-    migrationSettings,
-  });
+  // If we have custom migration settings, we can't use the template database.
+  // We don't want to leave the template database with partial migrations.
+  if (migrationSettings) {
+    await postgresTestUtils.createDatabase({
+      dropExistingDatabase: creationSettings?.dropFirst ?? true,
+      ignoreIfExists: creationSettings?.ignoreIfExists ?? false,
+      database: dbName,
+      configurePool: true,
+      prepare: async () => {
+        return await runMigrationsAndSprocs({ dbName, runMigrations: migrationSettings });
+      },
+    });
+  } else {
+    if (creationSettings) {
+      throw new Error('Creation settings are not supported when using the template database.');
+    }
+    await createFromTemplate({
+      dbName,
+      dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
+      dropFirst: true,
+    });
+  }
 
   // Ideally this would happen only over in `helperServer`, but we need to use
   // the same database details, so this is a convenient place to do it.
@@ -161,7 +171,7 @@ async function setupDatabases(
 }
 
 /**
- * Runs all migrations before the given migration. Useful for testing migrations that have not yet been run in production.
+ * Runs all migrations with a timestamp before the given migration.
  * @param migrationName The name of the migration to run all migrations before.
  * @param options
  * @param options.drop Whether to drop the database before running the migrations. Default false.
@@ -184,7 +194,7 @@ export async function runAllMigrationsBefore(
 }
 
 /**
- * Runs all migrations including the given migration. Useful for testing migrations that have been run in production.
+ * Runs all migrations with a timestamp before the given migration, and including the given migration.
  * @param migrationName The name of the migration to run all migrations including.
  * @param options
  * @param options.drop Whether to drop the database before running the migrations. Default false.
@@ -204,6 +214,13 @@ export async function runAllMigrationsThrough(
       ignoreIfExists: true,
     },
   );
+}
+
+export async function runRemainingMigrations(): Promise<void> {
+  await setupDatabases(true, {
+    dropFirst: false,
+    ignoreIfExists: true,
+  });
 }
 
 export async function before(): Promise<void> {
@@ -226,10 +243,7 @@ export async function after(): Promise<void> {
   await postgresTestUtils.dropDatabase();
 }
 
-export async function createTemplate(migrationFilters?: {
-  beforeTimestamp: string;
-  inclusiveBefore: boolean;
-}): Promise<void> {
+export async function createTemplate(): Promise<void> {
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: true,
     database: POSTGRES_DATABASE_TEMPLATE,
@@ -237,7 +251,7 @@ export async function createTemplate(migrationFilters?: {
     prepare: () =>
       runMigrationsAndSprocs({
         dbName: POSTGRES_DATABASE_TEMPLATE,
-        runMigrations: migrationFilters ?? true,
+        runMigrations: true,
       }),
   });
 }
