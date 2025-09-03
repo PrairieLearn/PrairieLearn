@@ -1285,8 +1285,11 @@ export const TagSchema = z.object({
 export type Tag = z.infer<typeof TagSchema>;
 
 export const AuthorSchema = z.object({
+  author_name: z.string(),
+  email: z.string(),
   id: IdSchema,
-  author_string: z.string(),
+  orcid: z.string(),
+  sharing_set_id: IdSchema,
 });
 export type Author = z.infer<typeof AuthorSchema>;
 

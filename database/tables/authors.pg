@@ -1,10 +1,16 @@
 columns
-    author_string: text not null
+    author_name: text
+    orcid: character varying(16)
+    email: character varying(255)
+    origin_course: bigint 
     id: bigint not null default nextval('authors_id_seq'::regclass)
 
 indexes
     authors_pkey: PRIMARY KEY (id) USING btree (id)
-    authors_author_string_key: UNIQUE (author_string) USING btree (author_string)
+    authors_author_name_orcid_email_origin_course_key: UNIQUE NULLS NOT DISTINCT (author_name, orcid, email, origin_course) USING btree (author_name, orcid, email, origin_course) NULLS NOT DISTINCT
+
+foreign-key constraints
+    authors_origin_course_fkey: FOREIGN KEY (origin_course) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     question_authors: FOREIGN KEY (author_id) REFERENCES authors(id) ON UPDATE CASCADE ON DELETE CASCADE
