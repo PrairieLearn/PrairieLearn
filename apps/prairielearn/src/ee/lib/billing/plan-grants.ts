@@ -76,7 +76,7 @@ export async function checkPlanGrants({
 }
 
 export async function checkPlanGrantsForQuestion(res: Response) {
-  if (userHasRole(res)) {
+  if (userHasRole(res.locals.authz_data)) {
     return true;
   }
 
