@@ -21,7 +21,3 @@ export {
 } from './batched-migrations/index.js';
 
 export const SCHEMA_MIGRATIONS_PATH = path.resolve(import.meta.dirname, '..', 'schema-migrations');
-
-export function forTestOnly() {
-  return Math.random();
-}
