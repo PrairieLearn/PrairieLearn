@@ -49,6 +49,7 @@ describe('getPageContext', () => {
         },
       },
       __csrf_token: '123',
+      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
