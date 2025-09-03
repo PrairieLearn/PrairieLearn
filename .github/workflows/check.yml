@@ -86,7 +86,7 @@ jobs:
       # Requires Git history and yarn install
       - name: Check if a changeset is required
         if: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group')
-              && !contains(github.head_ref, 'changeset-release') }}
+          && !contains(github.head_ref, 'changeset-release') }}
         run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
