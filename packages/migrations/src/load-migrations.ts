@@ -40,10 +40,11 @@ export async function readAndValidateMigrationsFromDirectory(
   dir: string,
   extensions: string[],
 ): Promise<MigrationFile[]> {
-  const migrationFiles = (await fs.readdir(dir)).filter((m) =>
+  const migrationFiles = (await fs.readdir(dir)).filter((m) => {
     // Get the full extension of the file (e.g. for `foo.test.ts`, return `.test.ts`).
-    extensions.includes('.' + (m.split('.', 2).pop() ?? '')),
-  );
+    const [_name, ...extensionParts] = m.split('.');
+    return extensions.includes('.' + extensionParts.join('.'));
+  });
 
   const migrations = migrationFiles.map((mf) => {
     const timestamp = extractTimestampFromFilename(mf);
