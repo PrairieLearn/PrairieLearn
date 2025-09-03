@@ -223,7 +223,12 @@ export function RubricSettings({
                           type="radio"
                           disabled={!editMode}
                           checked={!replaceAutoPoints}
-                          onChange={() => setReplaceAutoPoints(false)}
+                          onChange={() => {
+                            setReplaceAutoPoints(false);
+                            if (startingPoints !== 0) {
+                              setStartingPoints(assessmentQuestion.max_manual_points ?? 0);
+                            }
+                          }}
                         />
                         Apply rubric to manual points (out of {assessmentQuestion.max_manual_points}
                         , keep auto points)
@@ -238,7 +243,12 @@ export function RubricSettings({
                           type="radio"
                           disabled={!editMode}
                           checked={replaceAutoPoints}
-                          onChange={() => setReplaceAutoPoints(true)}
+                          onChange={() => {
+                            setReplaceAutoPoints(true);
+                            if (startingPoints !== 0) {
+                              setStartingPoints(assessmentQuestion.max_points ?? 0);
+                            }
+                          }}
                         />
                         Apply rubric to total points (out of {assessmentQuestion.max_points}, ignore
                         auto points)
