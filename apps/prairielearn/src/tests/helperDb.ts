@@ -188,7 +188,7 @@ export async function runAllMigrationsBefore(
     },
     {
       dropFirst: drop,
-      ignoreIfExists: true,
+      ignoreIfExists: !drop,
     },
   );
 }
@@ -211,7 +211,7 @@ export async function runAllMigrationsThrough(
     },
     {
       dropFirst: drop,
-      ignoreIfExists: true,
+      ignoreIfExists: !drop,
     },
   );
 }

@@ -7,7 +7,6 @@ WHERE
   user_id = $user_id
   AND course_instance_id = $course_instance_id;
 
-
 -- BLOCK old_ensure_enrollment
 INSERT INTO
   enrollments (user_id, course_instance_id, status)
