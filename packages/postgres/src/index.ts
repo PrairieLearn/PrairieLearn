@@ -7,6 +7,8 @@ export * from './default-pool.js';
 
 export { formatQueryWithErrorPosition } from './error.js';
 
+export const forTestOnly = 1;
+
 export {
   makePostgresTestUtils,
   type PostgresTestUtils,
