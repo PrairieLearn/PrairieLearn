@@ -25,7 +25,7 @@ interface QuestionScorePanelContentProps {
   variant?: Variant;
   instance_question_info: {
     question_number: string | null;
-    previous_variants: SimpleVariantWithScore[] | null;
+    previous_variants?: SimpleVariantWithScore[] | null;
   };
   urlPrefix: string;
 }

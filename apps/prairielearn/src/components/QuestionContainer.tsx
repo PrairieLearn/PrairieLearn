@@ -17,6 +17,8 @@ import type {
 } from '../lib/db-types.js';
 import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { ResLocalsForPage } from '../lib/res-locals.js';
+import { assertDefined } from '../lib/types.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +39,10 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -47,13 +52,13 @@ export function QuestionContainer({
   questionCopyTargets?: CopyTarget[] | null;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
+  const course_instance = 'course_instance' in resLocals ? resLocals.course_instance : null;
   const {
     question,
     issues,
     variant,
     variantToken,
     questionJsonBase64,
-    course_instance,
     authz_data,
     is_administrator,
     showTrueAnswer,
@@ -228,10 +233,10 @@ export function IssuePanel({
   issue: Issue & {
     user_name: User['name'];
     user_email: User['email'];
-    user_uid: User['uid'];
+    user_uid: User['uid'] | null;
     formatted_date: string;
   };
-  course_instance: CourseInstance;
+  course_instance: CourseInstance | null;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -382,11 +387,13 @@ export function QuestionTitle({
 }: {
   questionContext: QuestionContext;
   question: Question;
-  questionNumber: string;
+  questionNumber?: string;
 }) {
   if (questionContext === 'student_homework') {
+    assertDefined(questionNumber);
     return `${questionNumber}. ${question.title}`;
   } else if (questionContext === 'student_exam') {
+    assertDefined(questionNumber);
     return `Question ${questionNumber}: ${question.title}`;
   } else {
     return question.title;
@@ -407,13 +414,13 @@ interface QuestionFooterResLocals {
   tryAgainUrl: string;
   question: Question;
   variant: Variant;
-  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
-  assessment_question: AssessmentQuestion | null;
-  instance_question_info: Record<string, any>;
-  authz_result: Record<string, any>;
-  group_config: GroupConfig | null;
-  group_info: GroupInfo | null;
-  group_role_permissions: {
+  instance_question?: InstanceQuestion & { allow_grade_left_ms?: number };
+  assessment_question?: AssessmentQuestion;
+  instance_question_info?: Record<string, any>;
+  authz_result?: Record<string, any>;
+  group_config?: GroupConfig | null;
+  group_info?: GroupInfo | null;
+  group_role_permissions?: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
@@ -533,7 +540,7 @@ export function QuestionFooterContent({
                   </button>
                 `
               : ''}
-            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+            ${group_config?.has_roles && group_role_permissions?.can_submit === false && group_info
               ? html`
                   <button
                     type="button"
@@ -565,7 +572,7 @@ export function QuestionFooterContent({
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info?.previous_variants?.some((variant) => variant.open)
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -618,7 +625,7 @@ function SubmitRateFooter({
   questionContext: QuestionContext;
   showGradeButton: boolean;
   disableGradeButton: boolean;
-  assessment_question: AssessmentQuestion | null;
+  assessment_question?: AssessmentQuestion;
   allowGradeLeftMs: number;
 }) {
   if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
@@ -707,8 +714,8 @@ function AvailablePointsNotes({
   assessment_question,
 }: {
   questionContext: QuestionContext;
-  instance_question: InstanceQuestion | null;
-  assessment_question: AssessmentQuestion | null;
+  instance_question?: InstanceQuestion;
+  assessment_question?: AssessmentQuestion;
 }) {
   if (questionContext !== 'student_exam' || !instance_question?.points_list) return '';
 
@@ -744,7 +751,10 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals:
+    | ResLocalsForPage['course-question']
+    | ResLocalsForPage['course-instance-question']
+    | ResLocalsForPage['instance-question'];
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -752,7 +762,9 @@ function QuestionPanel({
   aiGradingPreviewUrl?: string;
   questionCopyTargets?: CopyTarget[] | null;
 }) {
-  const { question, questionHtml, course, instance_question_info } = resLocals;
+  const instance_question_info =
+    'instance_question_info' in resLocals ? resLocals.instance_question_info : null;
+  const { question, questionHtml, course } = resLocals;
   // Show even when questionCopyTargets is empty.
   // We'll show a CTA to request a course if the user isn't an editor of any course.
 
@@ -832,8 +844,7 @@ function QuestionPanel({
       </div>
       ${showFooter
         ? QuestionFooter({
-            // TODO: propagate more precise types upwards.
-            resLocals: resLocals as any,
+            resLocals,
             questionContext,
           })
         : ''}

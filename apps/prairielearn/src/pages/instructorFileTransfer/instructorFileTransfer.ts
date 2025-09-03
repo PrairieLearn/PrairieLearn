@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { type Response, Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
@@ -10,6 +9,7 @@ import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
@@ -60,7 +60,7 @@ export function getContentDir(fullPath: string, parentDir: string): string {
 
 router.get(
   '/:file_transfer_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (config.filesRoot == null) throw new Error('config.filesRoot is null');
     const file_transfer = await getFileTransfer(
       req.params.file_transfer_id,
@@ -71,7 +71,7 @@ router.get(
     if (file_transfer.transfer_type === 'CopyQuestion') {
       const qid = getContentDir(file_transfer.from_filename, 'questions');
       const editor = new QuestionCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         from_qid: qid,
         from_course_short_name: from_course.short_name,
         from_path: path.join(config.filesRoot, file_transfer.storage_filename),
@@ -100,7 +100,7 @@ router.get(
       });
 
       const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         from_course: course,
         from_path: path.join(config.filesRoot, file_transfer.storage_filename),
         course_instance: fromCourseInstance,

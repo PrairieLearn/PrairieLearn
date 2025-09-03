@@ -6,12 +6,13 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function PublicQuestionPreview({
   resLocals,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['course-question'];
   questionCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({

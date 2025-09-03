@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -9,6 +8,7 @@ import { IdSchema, UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
@@ -43,7 +43,7 @@ async function setLocals(req, res) {
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-question'>(async (req, res) => {
     await setLocals(req, res);
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res, { publicQuestionPreview: true });
@@ -61,7 +61,7 @@ router.post(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-question'>(async (req, res) => {
     await setLocals(req, res);
 
     const variant = await selectAndAuthzVariant({
@@ -96,11 +96,11 @@ router.get(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-question'>(async (req, res) => {
     await setLocals(req, res);
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-    await getAndRenderVariant(variant_id, variant_seed, res.locals as any, {
+    await getAndRenderVariant(variant_id, variant_seed, res.locals, {
       publicQuestionPreview: true,
     });
     await logPageView('publicQuestionPreview', req, res);

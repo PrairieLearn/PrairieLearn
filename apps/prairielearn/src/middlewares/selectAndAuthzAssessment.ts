@@ -22,7 +22,15 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment_label: z.string(),
 });
 
-export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
+export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema> & {
+  /**
+   * We can make certain guarantees about the assessment data.
+   * Specifically, `tid` will never be null for non-deleted assessments.
+   */
+  assessment: NonNullable<z.infer<typeof SelectAndAuthzAssessmentSchema>['assessment']> & {
+    tid: string;
+  };
+};
 
 export default asyncHandler(async (req, res, next) => {
   const row = await queryOptionalRow(

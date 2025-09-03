@@ -8,6 +8,7 @@ import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWar
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
@@ -28,7 +29,7 @@ export function InstructorQuestionPreview({
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['course-instance-question'];
 }) {
   return PageLayout({
     resLocals,
