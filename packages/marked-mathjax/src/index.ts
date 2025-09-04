@@ -12,6 +12,7 @@ const startMath = /(\$|\\\(|\\\[)/;
  * has been resolved). In server-side code, this is the result of
  * `require('mathjax').init()`.
  */
+// eslint-disable-next-line no-restricted-syntax
 export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({

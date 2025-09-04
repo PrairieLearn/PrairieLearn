@@ -40,6 +40,11 @@ const NO_RESTRICTED_SYNTAX = [
     message: 'Use a default import instead of a namespace import for fs-extra',
     selector: 'ImportDeclaration[source.value="fs-extra"]:has(ImportNamespaceSpecifier)',
   },
+  {
+    message: 'Do not use property names that start with an uppercase letter',
+    selector:
+      'FunctionDeclaration:has(> .params:has(Identifier[parent.type=/^(FunctionDeclaration|Property)$/][name=/^[A-Z]/]))',
+  },
 ];
 
 export default tseslint.config([

@@ -806,12 +806,12 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
     return s;
   }
 
-  function rotToMatlab(R) {
+  function rotToMatlab(rotationMatrix) {
     let s = '% The orientation of the body frame as a rotation matrix.\n';
     s += 'R = [ ';
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
-        s += numToString(R[i + 4 * j], 4, 7);
+        s += numToString(rotationMatrix[i + 4 * j], 4, 7);
         if (j < 2) {
           s += ' ';
         }
@@ -824,13 +824,13 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
     return s;
   }
 
-  function rotToPython(R) {
+  function rotToPython(rotationMatrix) {
     let s = '# The orientation of the body frame as a rotation matrix.\n';
     s += 'R = np.array([';
     for (let i = 0; i < 3; i++) {
       s += '[ ';
       for (let j = 0; j < 3; j++) {
-        s += numToString(R[i + 4 * j], 4, 7);
+        s += numToString(rotationMatrix[i + 4 * j], 4, 7);
         if (j < 2) {
           s += ', ';
         }
@@ -844,12 +844,12 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
     return s;
   }
 
-  function homToMatlab(R) {
+  function homToMatlab(rotationMatrix) {
     let s = '% The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = [ ';
     for (let i = 0; i < 4; i++) {
       for (let j = 0; j < 4; j++) {
-        s += numToString(R[i + 4 * j], 4, 7);
+        s += numToString(rotationMatrix[i + 4 * j], 4, 7);
         if (j < 3) {
           s += ' ';
         }
@@ -862,13 +862,13 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
     return s;
   }
 
-  function homToPython(R) {
+  function homToPython(rotationMatrix) {
     let s = '# The pose of the body frame as a homogeneous transformation matrix.\n';
     s += 'T = np.array([';
     for (let i = 0; i < 4; i++) {
       s += '[ ';
       for (let j = 0; j < 4; j++) {
-        s += numToString(R[i + 4 * j], 4, 7);
+        s += numToString(rotationMatrix[i + 4 * j], 4, 7);
         if (j < 3) {
           s += ', ';
         }
