@@ -43,7 +43,7 @@ export function InviteStudentModal({
     data: eligibilityData,
     isFetching,
     isPending,
-  } = useQuery<StaffEnrollment>({
+  } = useQuery<StaffEnrollment | null>({
     queryKey: ['enrollments', 'invite-eligibility', uidValue],
     enabled: show && !errors.uid,
     queryFn: async () => {
