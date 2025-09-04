@@ -176,7 +176,7 @@ async function setupDatabases(
  * @param options
  * @param options.drop Whether to drop the database before running the migrations. Default false.
  */
-export async function runAllMigrationsBefore(
+export async function runMigrationsBefore(
   migrationName: string,
   { drop = false }: { drop: boolean },
 ): Promise<void> {
@@ -199,7 +199,7 @@ export async function runAllMigrationsBefore(
  * @param options
  * @param options.drop Whether to drop the database before running the migrations. Default false.
  */
-export async function runAllMigrationsThrough(
+export async function runMigrationsThrough(
   migrationName: string,
   { drop = false }: { drop?: boolean } = {},
 ): Promise<void> {
