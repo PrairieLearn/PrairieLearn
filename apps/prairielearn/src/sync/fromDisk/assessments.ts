@@ -238,6 +238,9 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          // This is the "resolved" setting that takes into account configuration at
+          // all levels of the assessment hierarchy, with lower levels overriding
+          // higher ones.
           allow_real_time_grading: alternative.allowRealTimeGrading,
           json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
           question_id: questionId,
@@ -290,7 +293,8 @@ function getParamsForAssessment(
         ? assessment.type === 'Exam'
         : assessment.shuffleQuestions,
     allow_issue_reporting: assessment.allowIssueReporting,
-    allow_real_time_grading: assessment.allowRealTimeGrading,
+    allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
+    json_allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
     // NOTE: There are various homeworks with requireHonorCode set to true in the database (see #12675 for more details)

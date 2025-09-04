@@ -1027,7 +1027,7 @@ function validateAssessment({
     );
   }
 
-  const allowRealTimeGrading = assessment.allowRealTimeGrading;
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.

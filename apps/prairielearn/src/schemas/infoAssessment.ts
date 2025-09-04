@@ -351,10 +351,9 @@ export const AssessmentJsonSchema = z
     allowRealTimeGrading: z
       .boolean()
       .describe(
-        'Removes the student "Grade" buttons to prevent real-time grading while the assessment is being taken.',
+        'Removes the student "Grade" buttons to prevent real-time grading while the assessment is being taken. Real-time grading is allowed by default.',
       )
-      .optional()
-      .default(true),
+      .optional(),
     requireHonorCode: z
       .boolean()
       .describe(
