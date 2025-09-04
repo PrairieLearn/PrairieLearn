@@ -15,7 +15,7 @@ import {
   StaffUserSchema,
 } from './safe-db-types.js';
 
-const RawPageContextSchema = z.object({
+export const RawPageContextSchema = z.object({
   __csrf_token: z.string(),
   authz_data: z.object({
     // TODO: Type these more accurately into a course instance version.
@@ -49,6 +49,7 @@ const RawPageContextSchema = z.object({
   }),
 
   urlPrefix: z.string(),
+  plainUrlPrefix: z.string(),
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,

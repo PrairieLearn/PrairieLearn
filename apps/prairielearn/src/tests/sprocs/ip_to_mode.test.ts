@@ -34,7 +34,7 @@ describe('sproc ip_to_mode tests', function () {
   });
 
   describe('Center exam with IP restrictions', () => {
-    describe('before check-in', () => {
+    describe('before check-in', { timeout: 20_000 }, () => {
       // This test is oddly flaky in CI (it times out), but not locally. In an
       // effort to figure out what's happening, we're temporarily adding some
       // extra logging here.
