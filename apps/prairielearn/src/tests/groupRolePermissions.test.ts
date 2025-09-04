@@ -216,9 +216,9 @@ async function prepareGroup() {
     '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -451,10 +451,10 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,

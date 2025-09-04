@@ -135,7 +135,7 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
       ? html`
           <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
             ${unsafeHtml(course.announcement_html)}
