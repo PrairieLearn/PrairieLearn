@@ -234,6 +234,7 @@ export const AssessmentSchema = z.object({
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
   id: IdSchema,
+  json_allow_real_time_grading: z.boolean().nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
@@ -330,6 +331,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
   ai_grading_mode: z.boolean(),
+  allow_real_time_grading: z.boolean().nullable(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),

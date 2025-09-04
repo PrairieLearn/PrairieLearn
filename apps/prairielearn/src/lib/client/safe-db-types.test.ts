@@ -139,6 +139,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   group_work: null,
   honor_code: null,
   id: '2',
+  json_allow_real_time_grading: null,
   json_can_submit: null,
   json_can_view: null,
   json_comment: null,
@@ -325,6 +326,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
   ai_grading_mode: false,
+  allow_real_time_grading: null,
   alternative_group_id: null,
   assessment_id: '2',
   average_average_submission_score: null,
