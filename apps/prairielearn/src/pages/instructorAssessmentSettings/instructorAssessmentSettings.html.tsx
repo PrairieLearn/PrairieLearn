@@ -309,7 +309,7 @@ ${resLocals.assessment.honor_code}</textarea
             ${resLocals.assessment.share_source_publicly
               ? PublicLinkSharing({
                   publicLink,
-                  SharingMessage: "This assessment's source is publicly shared.",
+                  sharingMessage: "This assessment's source is publicly shared.",
                   publicLinkMessage:
                     'The link that other instructors can use to view this assessment.',
                 })

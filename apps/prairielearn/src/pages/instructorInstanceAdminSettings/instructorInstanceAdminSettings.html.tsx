@@ -203,7 +203,7 @@ export function InstructorInstanceAdminSettings({
             ${resLocals.course_instance.share_source_publicly
               ? PublicLinkSharing({
                   publicLink,
-                  SharingMessage: "This course instance's source is publicly shared.",
+                  sharingMessage: "This course instance's source is publicly shared.",
                   publicLinkMessage:
                     'The link that other instructors can use to view this course instance.',
                 })

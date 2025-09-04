@@ -2,14 +2,18 @@ import { html } from '@prairielearn/html';
 
 export function PublicLinkSharing({
   publicLink,
-  SharingMessage,
+  sharingMessage,
   publicLinkMessage,
 }: {
   publicLink: string;
-  SharingMessage: string;
+  sharingMessage: string;
   publicLinkMessage: string;
 }) {
   return html`
+    <p>
+      <span class="badge color-green3 me-1">Public source</span>
+      ${sharingMessage}
+    </p>
     <div class="mb-3">
       <label for="publicLink">Public link</label>
       <span class="input-group">
