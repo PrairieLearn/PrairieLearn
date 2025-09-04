@@ -73,7 +73,7 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   course_id: '1',
   deleted_at: null,
   display_timezone: 'UTC',
-  enrollment_code: 'aaaaaaaaaaa',
+  enrollment_code: 'AAA-BBB-CCCC',
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
