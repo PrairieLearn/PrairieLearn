@@ -69,6 +69,13 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
+// Result of assessment_instances_grade sproc
+export const SprocAssessmentInstancesGradeSchema = z.object({
+  new_points: z.number(),
+  new_score_perc: z.number(),
+  updated: z.boolean(),
+});
+
 // Result of assessments_format_for_question sproc
 export const SprocAssessmentsFormatForQuestionSchema = z.array(
   z.object({
@@ -133,6 +140,44 @@ export const SprocAuthzCourseSchema = z.object({
   has_course_permission_view: z.boolean(),
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
+
+// Result of ip_to_mode sproc
+export const SprocIpToModeSchema = z.object({
+  mode: EnumModeSchema,
+  mode_reason: EnumModeReasonSchema,
+});
+export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
+
+// Result of users_is_instructor_in_course_instance sproc
+export const SprocUsersIsInstructorInCourseInstanceSchema = z.boolean();
+
+// Result of users_select_or_insert sproc
+export const SprocUsersSelectOrInsertSchema = z.object({
+  result: z.enum(['success', 'invalid_authn_provider']),
+  user_id: IdSchema.nullable(),
+  user_institution_id: IdSchema.nullable(),
+});
+
+// Result of question_order sproc
+export const SprocQuestionOrderSchema = z.object({
+  instance_question_id: IdSchema,
+  question_number: z.string(),
+  row_order: z.number().int(),
+  sequence_locked: z.boolean(),
+});
+
+// Result of server_loads_current sproc
+export const SprocServerLoadsCurrentSchema = z.object({
+  current_jobs: z.number(),
+  instance_count: z.number().int(),
+  job_type: z.string(),
+  load_perc: z.number(),
+  max_jobs: z.number(),
+  timestamp_formatted: z.string(),
+});
+
+// Result of sync_assessments sproc
+export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
@@ -234,6 +279,7 @@ export const AssessmentSchema = z.object({
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
   id: IdSchema,
+  json_allow_real_time_grading: z.boolean().nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
@@ -330,6 +376,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
   ai_grading_mode: z.boolean(),
+  allow_real_time_grading: z.boolean().nullable(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
