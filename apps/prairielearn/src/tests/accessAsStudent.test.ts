@@ -55,9 +55,7 @@ describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
     it('should not have access to assessments page with no access rule', async () => {
       const courseInstanceId = await sqldb.queryRow(
         sql.insert_course_instance,
-        {
-          enrollment_code: uniqueEnrollmentCode(),
-        },
+        { enrollment_code: await uniqueEnrollmentCode() },
         IdSchema,
       );
       const newAssessmentsUrl = baseUrl + `/course_instance/${courseInstanceId}/assessments`;
