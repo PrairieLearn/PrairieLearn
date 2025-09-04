@@ -1,8 +1,36 @@
+import { Blockquote } from '@tiptap/extension-blockquote';
+import { Bold } from '@tiptap/extension-bold';
+import { BulletList } from '@tiptap/extension-bullet-list';
+import { Code } from '@tiptap/extension-code';
+import { Document } from '@tiptap/extension-document';
+import { Dropcursor } from '@tiptap/extension-dropcursor';
+import { Gapcursor } from '@tiptap/extension-gapcursor';
+import { Heading } from '@tiptap/extension-heading';
+import { Italic } from '@tiptap/extension-italic';
+import { ListItem, ListKeymap, OrderedList } from '@tiptap/extension-list';
+import { Paragraph } from '@tiptap/extension-paragraph';
+import { Strike } from '@tiptap/extension-strike';
+import { Subscript } from '@tiptap/extension-subscript';
+import { Superscript } from '@tiptap/extension-superscript';
+import { Text } from '@tiptap/extension-text';
+import { Underline } from '@tiptap/extension-underline';
+import { UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import StarterKit from '@tiptap/starter-kit';
+import { useState } from 'preact/compat';
+import prettierHtmlPlugin from 'prettier/plugins/html';
+import prettier from 'prettier/standalone';
 
 import { RawHtml } from './extensions/raw-html.js';
+
+function formatHtmlWithPrettier(html: string): Promise<string> {
+  return prettier.format(html, {
+    parser: 'html',
+    plugins: [prettierHtmlPlugin],
+    tabWidth: 2,
+    printWidth: 100,
+  });
+}
 
 /**
  * The main rich text editor component.
@@ -18,10 +46,46 @@ const RichTextEditor = ({
   csrfToken: string;
 }) => {
   const editor = useEditor({
-    extensions: [StarterKit, RawHtml],
-    content: htmlContents,
     immediatelyRender: false,
+    enableContentCheck: true,
+    emitContentError: true,
+    onContentError: (event) => {
+      throw new Error(event.error.message);
+    },
+    editorProps: {
+      attributes: {
+        autocomplete: 'off',
+        autocorrect: 'off',
+        autocapitalize: 'off',
+        'aria-label': 'Main content area, start typing to enter text.',
+      },
+    },
+    extensions: [
+      Blockquote,
+      BulletList,
+      Document,
+      Heading,
+      ListItem,
+      OrderedList,
+      Paragraph,
+      Text,
+      Bold,
+      Code,
+      Italic,
+      Strike,
+      Underline,
+      Dropcursor,
+      Gapcursor,
+      UndoRedo,
+      ListKeymap,
+      Underline,
+      Superscript,
+      Subscript,
+      RawHtml,
+    ],
+    content: htmlContents,
   });
+  const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
 
   if (htmlContents === null) {
     return null;
@@ -30,6 +94,11 @@ const RichTextEditor = ({
   if (editor === null) {
     return null;
   }
+
+  editor?.on('update', async () => {
+    const formattedHtml = await formatHtmlWithPrettier(editor?.getHTML() ?? '');
+    setFormattedHtml(formattedHtml);
+  });
 
   return (
     <>
