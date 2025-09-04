@@ -13,7 +13,7 @@ import { Node, getNodeType, isNodeActive } from '@tiptap/core';
 export const PlQuestionPanel = Node.create({
   name: 'plQuestionPanel',
   group: 'block',
-  content: 'paragraph block+',
+  content: '(paragraph | block)+',
 
   parseHTML() {
     return [

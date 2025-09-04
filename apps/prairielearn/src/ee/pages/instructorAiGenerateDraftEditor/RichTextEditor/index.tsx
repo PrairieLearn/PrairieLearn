@@ -96,7 +96,6 @@ const RichTextEditor = ({
         Superscript,
         Text,
         Underline,
-        Underline,
         UndoRedo,
         // For this to work, we need all the nodes to be matched correctly by the other extensions.
         RawHtml,

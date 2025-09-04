@@ -26,6 +26,7 @@ export const RawHtml = Node.create({
   atom: true,
 
   // Match last.
+  priority: 1000,
 
   addAttributes() {
     return {

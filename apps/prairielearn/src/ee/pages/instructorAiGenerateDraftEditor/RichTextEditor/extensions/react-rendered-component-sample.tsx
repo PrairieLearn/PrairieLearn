@@ -19,7 +19,7 @@ def square(x):
 </pl-code>
 */
 const PLCodeBlockComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
-  const updateAttributes = props.updateAttributes as (attrs: PlCodeAttrs) => void;
+  const updateAttributes = props.updateAttributes as (attrs: Partial<PlCodeAttrs>) => void;
   return (
     <NodeViewWrapper class="react-component">
       <button type="button" onClick={() => updateAttributes({ language: 'python' })}>
@@ -32,26 +32,23 @@ const PLCodeBlockComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
 };
 
 interface PlCodeAttrs {
-  language?: string;
-  style?: string;
-  noHighlight?: boolean;
-  preventSelect?: boolean;
-  highlightLines?: number[];
-  highlightLinesColor?: string;
-  copyCodeButton?: boolean;
-  showLineNumbers?: boolean;
-  normalizeWhitespace?: boolean;
+  language: string;
+  style: string;
+  noHighlight: boolean;
+  preventSelect: boolean;
+  highlightLines: number[];
+  highlightLinesColor: string;
+  copyCodeButton: boolean;
+  showLineNumbers: boolean;
+  normalizeWhitespace: boolean;
 }
 
 // The UI needs to be aware of the defaults on these attributes so that it can
 // render the correct UI.
-const plCodeAttrs: PlCodeAttrs = {
-  language: undefined,
+const plCodeAttrs: Partial<PlCodeAttrs> = {
   style: 'friendly',
   noHighlight: false,
   preventSelect: false,
-  highlightLines: undefined,
-  highlightLinesColor: undefined,
   copyCodeButton: false,
   showLineNumbers: false,
   normalizeWhitespace: false,
