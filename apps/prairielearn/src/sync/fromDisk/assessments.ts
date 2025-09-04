@@ -227,6 +227,10 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          // This is the "resolved" setting. Although it's currently unused,
+          // it'll be used at runtime once we add per-question configuration
+          // of real-time grading. Soon we'll add per-zone and per-alternative-group
+          // settings of this as well, and this will take that into account.
           allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
