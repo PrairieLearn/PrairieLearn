@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
 import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
@@ -21,11 +20,12 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
   if (effectiveAccess) {
     return;
   } else if (authenticatedAccess) {
-    const pageContext = getPageContext(res.locals);
+    // This middleware can run before the csrfToken middleware, so we can't use getPageContext.
+
     return PageLayout({
       resLocals: res.locals,
       navContext: {
-        type: pageContext.navbarType,
+        type: res.locals.navbarType,
         page: 'error',
       },
       pageTitle: 'Insufficient access',
@@ -36,9 +36,9 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
               'has_course_permission_preview',
               'has_course_instance_permission_view',
             ]}
-            authzData={pageContext.authz_data}
-            authnUser={pageContext.authn_user}
-            authzUser={pageContext.authz_data.user}
+            authzData={res.locals.authz_data}
+            authnUser={res.locals.authn_user}
+            authzUser={res.locals.authz_data.user}
           />
         </Hydrate>
       ),

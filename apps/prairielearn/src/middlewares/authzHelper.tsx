@@ -9,7 +9,6 @@ import { type NextFunction, type Request, type Response } from 'express';
 import { HttpStatusError } from '@prairielearn/error';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
 import { Hydrate } from '../lib/preact.js';
 
 import {
@@ -67,13 +66,13 @@ export const createAuthzMiddleware =
     }
 
     if (authenticatedAccess && !req.cookies.pl_test_user) {
-      const pageContext = getPageContext(res.locals);
+      // This middleware can run before the csrfToken middleware, so we can't use getPageContext.
 
       res.status(403).send(
         PageLayout({
           resLocals: res.locals,
           navContext: {
-            type: pageContext.navbarType,
+            type: res.locals.navbarType,
             page: 'error',
           },
           pageTitle: 'Insufficient access',
@@ -83,7 +82,7 @@ export const createAuthzMiddleware =
                 errorExplanation={errorExplanation ?? getErrorExplanation(oneOfPermissions)}
                 oneOfPermissionKeys={oneOfPermissions}
                 authzData={authzData}
-                authnUser={pageContext.authn_user}
+                authnUser={res.locals.authn_user}
                 authzUser={authzData.user ?? null}
               />
             </Hydrate>
