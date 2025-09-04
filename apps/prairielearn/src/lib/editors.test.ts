@@ -10,8 +10,8 @@ describe('editors', () => {
           shortNames: ['Fa18', 'Fa19'],
           longNames: ['Fall 2018', 'Fall 2019'],
         });
-        assert.equal(names['shortName'], 'New_1');
-        assert.equal(names['longName'], 'New (1)');
+        assert.equal(names.shortName, 'New_1');
+        assert.equal(names.longName, 'New (1)');
       });
     });
 
@@ -23,8 +23,8 @@ describe('editors', () => {
           shortName: 'Fa20',
           longName: 'Fall 2020',
         });
-        assert.equal(names['shortName'], 'Fa20');
-        assert.equal(names['longName'], 'Fall 2020');
+        assert.equal(names.shortName, 'Fa20');
+        assert.equal(names.longName, 'Fall 2020');
       });
     });
 
@@ -36,8 +36,8 @@ describe('editors', () => {
           shortName: 'Fa19',
           longName: 'Fall 2019 Section 1',
         });
-        assert.equal(names['shortName'], 'Fa19_2');
-        assert.equal(names['longName'], 'Fall 2019 Section 1 (2)');
+        assert.equal(names.shortName, 'Fa19_2');
+        assert.equal(names.longName, 'Fall 2019 Section 1 (2)');
       });
     });
 
@@ -56,8 +56,8 @@ describe('editors', () => {
           longName: 'Fall 2019 Section 2',
         });
 
-        assert.equal(names['shortName'], 'Fa19_5');
-        assert.equal(names['longName'], 'Fall 2019 Section 2 (5)');
+        assert.equal(names.shortName, 'Fa19_5');
+        assert.equal(names.longName, 'Fall 2019 Section 2 (5)');
       });
     });
 
@@ -70,8 +70,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fall19_2');
-        assert.equal(names['longName'], 'Fall 2019 (2)');
+        assert.equal(names.shortName, 'Fall19_2');
+        assert.equal(names.longName, 'Fall 2019 (2)');
       });
     });
 
@@ -84,8 +84,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fall_19_4');
-        assert.equal(names['longName'], 'Fall 2019 (4)');
+        assert.equal(names.shortName, 'Fall_19_4');
+        assert.equal(names.longName, 'Fall 2019 (4)');
       });
     });
 
@@ -98,8 +98,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fa19_2');
-        assert.equal(names['longName'], 'Fall 2019 (2)');
+        assert.equal(names.shortName, 'Fa19_2');
+        assert.equal(names.longName, 'Fall 2019 (2)');
       });
     });
 
@@ -112,8 +112,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fa19_4');
-        assert.equal(names['longName'], 'Fall 2019 (4)');
+        assert.equal(names.shortName, 'Fa19_4');
+        assert.equal(names.longName, 'Fall 2019 (4)');
       });
     });
 
@@ -126,8 +126,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fa19_4');
-        assert.equal(names['longName'], 'Fall 2019 (4)');
+        assert.equal(names.shortName, 'Fa19_4');
+        assert.equal(names.longName, 'Fall 2019 (4)');
       });
     });
 
@@ -140,8 +140,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'Fa19_4');
-        assert.equal(names['longName'], 'Fall 2019 (4)');
+        assert.equal(names.shortName, 'Fa19_4');
+        assert.equal(names.longName, 'Fall 2019 (4)');
       });
     });
 
@@ -154,8 +154,8 @@ describe('editors', () => {
           longName: 'Fall 2019',
         });
 
-        assert.equal(names['shortName'], 'fa19_2');
-        assert.equal(names['longName'], 'Fall 2019 (2)');
+        assert.equal(names.shortName, 'fa19_2');
+        assert.equal(names.longName, 'Fall 2019 (2)');
       });
     });
 
@@ -173,8 +173,8 @@ describe('editors', () => {
           longName: 'Fall 2019 Section 2',
         });
 
-        assert.equal(names['shortName'], 'fa19_4');
-        assert.equal(names['longName'], 'Fall 2019 Section 2 (4)');
+        assert.equal(names.shortName, 'fa19_4');
+        assert.equal(names.longName, 'Fall 2019 Section 2 (4)');
       });
     });
   });

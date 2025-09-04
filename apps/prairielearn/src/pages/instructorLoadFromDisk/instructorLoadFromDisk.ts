@@ -26,7 +26,7 @@ async function update(locals: Record<string, any>) {
   });
 
   serverJob.executeInBackground(async (job) => {
-    let anyCourseHadJsonErrors = false;
+    let anyCourseHadJsonErrors = false as boolean;
 
     // Merge the list of courses in the config with the list of courses in the database.
     // We use a set to ensure that we don't double-count courses that are both

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -91,7 +92,7 @@ describe('Course instance syncing', () => {
     );
     assert.equal(
       syncedAccessRules.length,
-      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess?.length,
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess.length,
     );
 
     // Ensure that the access rules are correctly synced.
@@ -360,8 +361,8 @@ describe('Course instance syncing', () => {
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at != null,
     );
     assert.isOk(deletedCourseInstance);
-    assert.equal(deletedCourseInstance?.uuid, originalCourseInstance.courseInstance.uuid);
-    assert.equal(deletedCourseInstance?.sync_errors, null);
+    assert.equal(deletedCourseInstance.uuid, originalCourseInstance.courseInstance.uuid);
+    assert.equal(deletedCourseInstance.sync_errors, null);
   });
 
   // https://github.com/PrairieLearn/PrairieLearn/issues/6539
