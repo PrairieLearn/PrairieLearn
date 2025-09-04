@@ -1928,6 +1928,59 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('syncs implicit real-time grading enabled configuration correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.zones = [
+      {
+        questions: [{ id: util.QUESTION_ID, points: [5] }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.isTrue(syncedData.assessment.allow_real_time_grading);
+    assert.isNull(syncedData.assessment.json_allow_real_time_grading);
+    assert.lengthOf(syncedData.assessment_questions, 1);
+    assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
+  });
+
+  it('syncs explicit real-time grading enabled configuration correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = true;
+    assessment.zones = [
+      {
+        questions: [{ id: util.QUESTION_ID, points: [5] }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.isTrue(syncedData.assessment.allow_real_time_grading);
+    assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
+    assert.lengthOf(syncedData.assessment_questions, 1);
+    assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
+  });
+
+  it('syncs real-time grading disabled configuration correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowRealTimeGrading = false;
+    assessment.zones = [
+      {
+        questions: [{ id: util.QUESTION_ID, points: [5] }],
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.isFalse(syncedData.assessment.allow_real_time_grading);
+    assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
+    assert.lengthOf(syncedData.assessment_questions, 1);
+    assert.isFalse(syncedData.assessment_questions[0].allow_real_time_grading);
+  });
+
   it('records an error if real-time grading is disallowed on a homework assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
