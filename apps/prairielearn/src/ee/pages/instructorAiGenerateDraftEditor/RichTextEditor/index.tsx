@@ -2,6 +2,8 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 
+import { RawHtml } from './extensions/raw-html.js';
+
 /**
  * The main rich text editor component.
  * @param params
@@ -16,7 +18,7 @@ const RichTextEditor = ({
   csrfToken: string;
 }) => {
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, RawHtml],
     content: htmlContents,
     immediatelyRender: false,
   });
