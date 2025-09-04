@@ -3066,23 +3066,28 @@ describe('Assessment syncing', () => {
 
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingDefault');
 
-      // Assessment-level default should be true
+      // Assessment-level value should be true. This is only temporary for
+      // backwards compatibility.
       assert.isTrue(syncedData.assessment.allow_real_time_grading);
-      assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
 
-      // Zone-level should cascade to null (inherits from assessment)
+      // Assessment JSON config is not explicitly set.
+      assert.isNull(syncedData.assessment.json_allow_real_time_grading);
+
+      // Zone JSON config is not explicitly set.
       assert.isNotEmpty(syncedData.zones);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
-      // Alternative group should cascade to null (inherits from zone/assessment)
+      // Alternative group JSON config is not explicitly set.
       assert.isNotEmpty(syncedData.alternative_groups);
       assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
 
-      // Assessment questions should cascade to null (inherits from hierarchy)
       assert.isNotEmpty(syncedData.assessment_questions);
       syncedData.assessment_questions.forEach((aq) => {
-        assert.isNull(aq.json_allow_real_time_grading);
+        // The resolved config for each assessment question should be true.
         assert.isTrue(aq.allow_real_time_grading);
+
+        // Assessment question JSON config is not explicitly set.
+        assert.isNull(aq.json_allow_real_time_grading);
       });
     });
 
