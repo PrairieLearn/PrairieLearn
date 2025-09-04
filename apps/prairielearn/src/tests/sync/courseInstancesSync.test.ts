@@ -570,12 +570,7 @@ describe('Course instance syncing', () => {
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').toLocaleString(
-            'en-US',
-            {
-              timeZone: timezone,
-            },
-          ),
+          self_enrollment_enabled_before_date: new Date('2020-01-01T11:11:11').toLocaleString(),
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -588,12 +583,7 @@ describe('Course instance syncing', () => {
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date('2020-01-01 11:11:12').toLocaleString(
-            'en-US',
-            {
-              timeZone: timezone,
-            },
-          ),
+          self_enrollment_enabled_before_date: new Date('2020-01-01 11:11:12').toLocaleString(),
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
