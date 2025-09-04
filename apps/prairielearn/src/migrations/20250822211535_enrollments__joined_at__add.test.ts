@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as helperCourse from '../tests/helperCourse.js';
 import {
+  after,
   runMigrationsBefore,
   runMigrationsThrough,
   runRemainingMigrations,
@@ -40,7 +41,6 @@ test('joined_at migration works correctly', async () => {
     z.any(),
   );
 
-  assert.isUndefined(enrollment.foobar);
   assert.isUndefined(enrollment.joined_at);
 
   await runMigrationsThrough('20250822211535_enrollments__joined_at__add');
@@ -57,4 +57,5 @@ test('joined_at migration works correctly', async () => {
   assert.isDefined(migratedEnrollment.joined_at);
 
   await runRemainingMigrations();
+  await after();
 });
