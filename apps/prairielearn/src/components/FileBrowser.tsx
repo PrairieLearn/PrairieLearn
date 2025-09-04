@@ -66,6 +66,7 @@ interface DirectoryEntryFile extends DirectoryEntry {
   canDelete: boolean;
   sync_errors: string | null;
   sync_warnings: string | null;
+  uuid: string | null;
 }
 
 interface DirectoryListings {
@@ -115,11 +116,8 @@ export async function browseDirectory({
         const editable = !(await isBinaryFile(filepath));
         const movable = !paths.cannotMove.includes(filepath);
         const relative_path = path.relative(paths.coursePath, filepath);
-        const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
-          paths.courseId,
-          relative_path,
-        );
-        return {
+        const fileMetadata = await editorUtil.getFileMetadataForPath(paths.courseId, relative_path);
+        const result: DirectoryEntryFile = {
           id: file.index,
           name: file.name,
           isFile: true,
@@ -133,13 +131,15 @@ export async function browseDirectory({
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-          sync_errors: sync_data.errors,
-          sync_warnings: sync_data.warnings,
-        } as DirectoryEntryFile;
+          sync_errors: fileMetadata.syncErrors,
+          sync_warnings: fileMetadata.syncWarnings,
+          uuid: fileMetadata.uuid,
+        };
+        return result;
       } else if (stats.isDirectory()) {
         // The .git directory is hidden in the browser interface.
         if (file.name === '.git') return null;
-        return {
+        const result: DirectoryEntryDirectory = {
           id: file.index,
           name: file.name,
           isFile: false,
@@ -147,15 +147,16 @@ export async function browseDirectory({
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-        } as DirectoryEntryDirectory;
+        };
+        return result;
       } else {
         return null;
       }
     },
   );
   return {
-    files: all_files.filter((f) => f?.isFile === true),
-    dirs: all_files.filter((f) => f?.isFile === false),
+    files: all_files.filter((f): f is DirectoryEntryFile => f?.isFile === true),
+    dirs: all_files.filter((f): f is DirectoryEntryDirectory => f?.isFile === false),
   };
 }
 
