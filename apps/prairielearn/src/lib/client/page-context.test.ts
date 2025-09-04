@@ -2,11 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type z from 'zod';
 
 import {
+  type RawPageContextSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
   getCourseInstanceContext,
   getPageContext,
 } from './page-context.js';
+import type { StaffUser } from './safe-db-types.js';
 
 describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
@@ -40,22 +42,23 @@ describe('getPageContext', () => {
           name: 'Test User',
           uid: 'test@illinois.edu',
           email: 'test@illinois.edu',
-          institution_id: 1,
+          institution_id: '1',
           uin: '123456789',
-          user_id: 1,
+          user_id: '1',
           foo: 'bar',
         },
       },
       __csrf_token: '123',
+      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
         name: 'Test User',
         uid: 'test@illinois.edu',
         email: 'test@illinois.edu',
-        institution_id: 1,
+        institution_id: '1',
         uin: '123456789',
-        user_id: 1,
+        user_id: '1',
         foo: 'bar',
       },
       navbarType: 'student',
@@ -63,7 +66,7 @@ describe('getPageContext', () => {
       anotherExtraField: 123,
     };
 
-    const expected = {
+    const expected: z.infer<typeof RawPageContextSchema> = {
       authz_data: {
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
@@ -96,9 +99,10 @@ describe('getPageContext', () => {
           institution_id: '1',
           uin: '123456789',
           user_id: '1',
-        },
+        } as StaffUser,
       },
       __csrf_token: '123',
+      plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
       access_as_administrator: false,
       authn_user: {
@@ -108,7 +112,7 @@ describe('getPageContext', () => {
         institution_id: '1',
         uin: '123456789',
         user_id: '1',
-      },
+      } as StaffUser,
       navbarType: 'student',
     };
 
