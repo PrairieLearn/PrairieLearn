@@ -362,7 +362,8 @@ export function RubricSettings({
               <tr>
                 <td colSpan={7}>
                   <em>
-                    This question does not have any rubric items. Click "Add item" below to add some
+                    This question does not have any rubric items!. Click "Add item" below to add
+                    some
                     {wasUsingRubric && (
                       <>
                         , or select <strong>Disable rubric</strong> below to switch back to manual
@@ -548,10 +549,11 @@ export function RubricRow({
           disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
-          value={item.explanation ?? ''}
           aria-label="Explanation"
           onInput={(e: any) => updateRubricItem({ explanation: e.currentTarget.value })}
-        />
+        >
+          {item.explanation}
+        </textarea>
       </td>
 
       <td class="align-middle">
@@ -560,10 +562,11 @@ export function RubricRow({
           disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
-          value={item.grader_note ?? ''}
           aria-label="Grader note"
           onInput={(e: any) => updateRubricItem({ grader_note: e.currentTarget.value })}
-        />
+        >
+          {item.grader_note}
+        </textarea>
       </td>
 
       <td class="align-middle">
