@@ -1,7 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useEffect } from 'preact/compat';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -24,52 +22,16 @@ export function InviteStudentModal({
   const {
     register,
     handleSubmit,
-    watch,
-    setError,
     clearErrors,
     reset,
 
     formState: { errors, isSubmitting, isValid },
   } = useForm<z.infer<typeof FormSchema>>({
     resolver: zodResolver(FormSchema),
-    mode: 'onChange',
-    reValidateMode: 'onChange',
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
     defaultValues: { uid: '' },
   });
-
-  const uidValue = watch('uid');
-
-  const {
-    data: eligibilityData,
-    isFetching,
-    isPending,
-  } = useQuery<StaffEnrollment | null>({
-    queryKey: ['enrollments', 'invite-eligibility', uidValue],
-    enabled: show && !errors.uid,
-    queryFn: async () => {
-      const params = new URLSearchParams({ uid: uidValue });
-      const res = await fetch(`${window.location.pathname}/enrollment.json?${params.toString()}`);
-      if (!res.ok) return null;
-      return await res.json();
-    },
-  });
-
-  const loading = isFetching || isPending;
-
-  useEffect(() => {
-    if (loading) return;
-    if (eligibilityData) {
-      const isEnrolled = eligibilityData.status === 'joined';
-      const isInvited = eligibilityData.status === 'invited';
-      if (isEnrolled) {
-        setError('uid', { type: 'server', message: 'This student is already enrolled' });
-      } else if (isInvited) {
-        setError('uid', { type: 'server', message: 'This student has a pending invitation' });
-      } else {
-        clearErrors('uid');
-      }
-    }
-  }, [eligibilityData, loading, clearErrors, setError]);
 
   const onClose = () => {
     clearErrors();
@@ -84,16 +46,12 @@ export function InviteStudentModal({
       </Modal.Header>
 
       <form
-        onSubmit={handleSubmit(async ({ uid }) => {
-          try {
-            clearErrors();
-            await onSubmit(uid.trim());
-            reset();
-          } catch (e) {
-            const message = e instanceof Error ? e.message : 'Failed to invite';
-            setError('root', { type: 'server', message });
-          }
-        })}
+        onSubmit={handleSubmit(
+          async ({ uid }) => await onSubmit(uid),
+          ({ uid }) => {
+            console.log('error', uid);
+          },
+        )}
       >
         <Modal.Body>
           {errors.root && (
@@ -118,9 +76,28 @@ export function InviteStudentModal({
               type="email"
               placeholder="Enter UID"
               aria-invalid={errors.uid ? 'true' : 'false'}
-              {...register('uid')}
+              {...register('uid', {
+                validate: {
+                  checkEnrollment: async (uid) => {
+                    console.log('checkEnrollment', uid);
+                    const params = new URLSearchParams({ uid });
+                    const res = await fetch(
+                      `${window.location.pathname}/enrollment.json?${params.toString()}`,
+                    );
+                    if (!res.ok) return 'Failed to fetch enrollment';
+                    const data: StaffEnrollment | null = await res.json();
+                    if (!data) {
+                      return true;
+                    }
+
+                    if (data.status === 'joined') return 'This student is already enrolled';
+                    if (data.status === 'invited') return 'This student has a pending invitation';
+
+                    return true;
+                  },
+                },
+              })}
             />
-            {loading && !errors.uid?.message && <div class="form-text">Checking status...</div>}
             {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
           </div>
         </Modal.Body>
