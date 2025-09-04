@@ -6,7 +6,7 @@ FROM
 WHERE
   short_name = ANY ($short_names::text[]);
 
--- BLOCK select_unique_enrollment_code
+-- BLOCK select_existing_enrollment_code
 SELECT
   enrollment_code
 FROM

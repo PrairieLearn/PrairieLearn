@@ -14,17 +14,17 @@ import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
 export async function uniqueEnrollmentCode() {
-  let enrollmentCode = generateEnrollmentCode();
-  while (
-    (await sqldb.queryOptionalRow(
-      sql.select_unique_enrollment_code,
+  while (true) {
+    const enrollmentCode = generateEnrollmentCode();
+    const existingEnrollmentCode = await sqldb.queryOptionalRow(
+      sql.select_existing_enrollment_code,
       { enrollment_code: enrollmentCode },
       z.string(),
-    )) !== null
-  ) {
-    enrollmentCode = generateEnrollmentCode();
+    );
+    if (existingEnrollmentCode === null) {
+      return enrollmentCode;
+    }
   }
-  return enrollmentCode;
 }
 
 function generateEnrollmentCode() {
@@ -35,9 +35,7 @@ function generateEnrollmentCode() {
   while (raw.length < totalChars) {
     raw += allowed[randomInt(0, allowed.length)];
   }
-
-  // Format as XXX-XXX-XXXX
-  return `${raw.slice(0, 3)}-${raw.slice(3, 6)}-${raw.slice(6, 10)}`;
+  return raw;
 }
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {

@@ -34,14 +34,14 @@ WITH
         '5159a291-566f-4463-8f11-b07c931ad72a',
         1,
         'UTC',
-        'KN5-Y4H-NHXS'
+        'KN5Y4HNHXS'
       ),
       (
         2,
         '5159a291-566f-4463-8f11-b07c931ad72b',
         1,
         'UTC',
-        'QDX-M3P-76AP'
+        'QDXM3P76AP'
       )
   ),
   setup_ciars AS (
