@@ -62,6 +62,8 @@ export const RawHtml = Node.create({
     }
     div.innerHTML = node.attrs.html;
     div.dataset.type = 'raw';
+    div.classList.add('border', 'border-warning');
+
     return div;
   },
 });

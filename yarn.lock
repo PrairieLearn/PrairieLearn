@@ -3925,10 +3925,12 @@ __metadata:
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.12"
     "@tanstack/table-core": "npm:^8.21.3"
+    "@tiptap/core": "npm:^3.4.1"
     "@tiptap/extension-blockquote": "npm:^3.4.1"
     "@tiptap/extension-bold": "npm:^3.4.1"
     "@tiptap/extension-bullet-list": "npm:^3.4.1"
     "@tiptap/extension-code": "npm:^3.4.1"
+    "@tiptap/extension-code-block": "npm:^3.4.1"
     "@tiptap/extension-document": "npm:^3.4.1"
     "@tiptap/extension-dropcursor": "npm:^3.4.1"
     "@tiptap/extension-gapcursor": "npm:^3.4.1"
@@ -5492,6 +5494,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tiptap/core@npm:^3.4.1":
+  version: 3.4.1
+  resolution: "@tiptap/core@npm:3.4.1"
+  peerDependencies:
+    "@tiptap/pm": ^3.4.1
+  checksum: 10c0/186b9dcd67aff8ccb76353186dd78218efcbca355cb868de41d0a1c30b970dce82b6b2282f75fcfb0e8b42d878e80dc0b7038980b92579461448253a839675c5
+  languageName: node
+  linkType: hard
+
 "@tiptap/extension-blockquote@npm:^3.4.1":
   version: 3.4.1
   resolution: "@tiptap/extension-blockquote@npm:3.4.1"
@@ -5528,6 +5539,16 @@ __metadata:
   peerDependencies:
     "@tiptap/extension-list": ^3.4.1
   checksum: 10c0/f1a140e6ffaf2bde95be5755efb523b9774a7213910b503ad3e1c6fbf9ae5e50c0f60408c31e30c71be2177c55ed6b8d7da2459c58aedd6d54ca69d8c8e1b0b5
+  languageName: node
+  linkType: hard
+
+"@tiptap/extension-code-block@npm:^3.4.1":
+  version: 3.4.1
+  resolution: "@tiptap/extension-code-block@npm:3.4.1"
+  peerDependencies:
+    "@tiptap/core": ^3.4.1
+    "@tiptap/pm": ^3.4.1
+  checksum: 10c0/01f55e06371b3d90a9404f3f86a6b86b00e20f74433fb41fa23aa61a894f030a45f5f8a9af7361bcd23c07a88bd218b58d3a24ed8d945beb674775fc0b5a16a5
   languageName: node
   linkType: hard
 

@@ -1,3 +1,5 @@
+/* eslint perfectionist/sort-sets: error */
+
 import { Blockquote } from '@tiptap/extension-blockquote';
 import { Bold } from '@tiptap/extension-bold';
 import { BulletList } from '@tiptap/extension-bullet-list';
@@ -14,21 +16,23 @@ import { Subscript } from '@tiptap/extension-subscript';
 import { Superscript } from '@tiptap/extension-superscript';
 import { Text } from '@tiptap/extension-text';
 import { Underline } from '@tiptap/extension-underline';
-import { UndoRedo } from '@tiptap/extensions';
+import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
-import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
+// import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
 import { useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
+import { Card, Form } from 'react-bootstrap';
 
+import { PlQuestionPanel } from './extensions/pl-question-panel.js';
 import { RawHtml } from './extensions/raw-html.js';
 
 function formatHtmlWithPrettier(html: string): Promise<string> {
   return prettier.format(html, {
     parser: 'html',
     plugins: [prettierHtmlPlugin],
-    tabWidth: 2,
     printWidth: 100,
+    tabWidth: 2,
   });
 }
 
@@ -39,53 +43,68 @@ function formatHtmlWithPrettier(html: string): Promise<string> {
  * @param params.csrfToken
  */
 const RichTextEditor = ({
-  htmlContents,
   csrfToken: _csrfToken,
+  htmlContents,
 }: {
   htmlContents: string | null;
   csrfToken: string;
 }) => {
   const editor = useEditor({
-    immediatelyRender: false,
-    enableContentCheck: true,
+    editorProps: {
+      attributes: {
+        'aria-label': 'Main content area, start typing to enter text.',
+        autocapitalize: 'off',
+        autocomplete: 'off',
+        autocorrect: 'off',
+      },
+    },
     emitContentError: true,
+    enableContentCheck: true,
+    immediatelyRender: false,
     onContentError: (event) => {
       throw new Error(event.error.message);
     },
-    editorProps: {
-      attributes: {
-        autocomplete: 'off',
-        autocorrect: 'off',
-        autocapitalize: 'off',
-        'aria-label': 'Main content area, start typing to enter text.',
-      },
+    onCreate: async ({ editor }) => {
+      const formattedHtml = await formatHtmlWithPrettier(editor.getHTML());
+      setFormattedHtml(formattedHtml);
     },
-    extensions: [
-      Blockquote,
-      BulletList,
-      Document,
-      Heading,
-      ListItem,
-      OrderedList,
-      Paragraph,
-      Text,
-      Bold,
-      Code,
-      Italic,
-      Strike,
-      Underline,
-      Dropcursor,
-      Gapcursor,
-      UndoRedo,
-      ListKeymap,
-      Underline,
-      Superscript,
-      Subscript,
-      RawHtml,
-    ],
+    onUpdate: async ({ editor }) => {
+      const formattedHtml = await formatHtmlWithPrettier(editor.getHTML());
+      setFormattedHtml(formattedHtml);
+    },
     content: htmlContents,
+    extensions: [
+      ...new Set([
+        Blockquote,
+        Bold,
+        BulletList,
+        Code,
+        Document,
+        Dropcursor,
+        Focus,
+        Gapcursor,
+        Heading,
+        Italic,
+        ListItem,
+        ListKeymap,
+        OrderedList,
+        Paragraph,
+        PlQuestionPanel,
+        Selection,
+        Strike,
+        Subscript,
+        Superscript,
+        Text,
+        Underline,
+        Underline,
+        UndoRedo,
+        // For this to work, we need all the nodes to be matched correctly by the other extensions.
+        RawHtml,
+      ]),
+    ],
   });
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
+  const [debugMode, setDebugMode] = useState<boolean>(false);
 
   if (htmlContents === null) {
     return null;
@@ -95,16 +114,38 @@ const RichTextEditor = ({
     return null;
   }
 
-  editor?.on('update', async () => {
-    const formattedHtml = await formatHtmlWithPrettier(editor?.getHTML() ?? '');
-    setFormattedHtml(formattedHtml);
-  });
-
   return (
     <>
-      <EditorContent editor={editor} />
-      <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu>
-      <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu>
+      <Card class="m-3">
+        <Card.Header>
+          <div class="d-flex align-items-center justify-content-between">
+            Rich Text Editor
+            <Form.Check
+              type="switch"
+              id="rich-text-editor-debug-mode"
+              label="Debug mode"
+              checked={debugMode}
+              onChange={(e) => setDebugMode(e.currentTarget.checked)}
+            />
+          </div>
+        </Card.Header>
+        <Card.Body>
+          <div class="mb-3" />
+          <EditorContent editor={editor} class="border" />
+          {debugMode ? (
+            <Card class="mt-3">
+              <Card.Header>Formatted HTML</Card.Header>
+              <Card.Body>
+                <pre class="mb-0">
+                  <code>{formattedHtml ?? ''}</code>
+                </pre>
+              </Card.Body>
+            </Card>
+          ) : null}
+        </Card.Body>
+        {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
+        {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}
+      </Card>
     </>
   );
 };
