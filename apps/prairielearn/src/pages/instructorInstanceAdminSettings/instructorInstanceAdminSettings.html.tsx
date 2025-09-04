@@ -25,8 +25,6 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink,
   canEdit,
   enrollmentCount,
-  linkType,
-  studentLinkMessage,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
@@ -39,8 +37,6 @@ export function InstructorInstanceAdminSettings({
   instanceGHLink: string | null;
   canEdit: boolean;
   enrollmentCount: number;
-  linkType: string;
-  studentLinkMessage: string;
 }) {
   return PageLayout({
     resLocals,
@@ -197,11 +193,20 @@ export function InstructorInstanceAdminSettings({
                 links to the course can be used for enrollment.
               </div>
             </div>
-            ${StudentLinkSharing({ studentLink, studentLinkMessage })}
+            ${StudentLinkSharing({
+              studentLink,
+              studentLinkMessage:
+                'This is the link that students will use to access the course. You can copy this link to share with students.',
+            })}
             ${renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)}
             <h2 class="h4">Sharing</h2>
             ${resLocals.course_instance.share_source_publicly
-              ? PublicLinkSharing({ publicLink, linkType })
+              ? PublicLinkSharing({
+                  publicLink,
+                  SharingMessage: "This course instance's source is publicly shared.",
+                  publicLinkMessage:
+                    'The link that other instructors can use to view this course instance.',
+                })
               : html`<p>This course instance is not being shared.</p>`}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,

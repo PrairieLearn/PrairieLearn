@@ -2,16 +2,14 @@ import { html } from '@prairielearn/html';
 
 export function PublicLinkSharing({
   publicLink,
-  linkType,
+  SharingMessage,
+  publicLinkMessage,
 }: {
   publicLink: string;
-  linkType: string;
+  SharingMessage: string;
+  publicLinkMessage: string;
 }) {
   return html`
-    <p>
-      <span class="badge color-green3 me-1">Public source</span>
-      This ${linkType}'s source is publicly shared.
-    </p>
     <div class="mb-3">
       <label for="publicLink">Public link</label>
       <span class="input-group">
@@ -41,9 +39,7 @@ export function PublicLinkSharing({
           <i class="fas fa-qrcode"></i>
         </button>
       </span>
-      <small class="form-text text-muted">
-        The link that other instructors can use to view this ${linkType}.
-      </small>
+      <small class="form-text text-muted"> ${publicLinkMessage} </small>
     </div>
   `;
 }

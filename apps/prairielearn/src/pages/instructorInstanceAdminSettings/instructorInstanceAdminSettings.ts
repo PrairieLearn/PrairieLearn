@@ -90,10 +90,6 @@ router.get(
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
-    const linkType = 'course instance';
-    const studentLinkMessage =
-      'This is the link that students will use to access the course. You can copy this link to share with students.';
-
     res.send(
       InstructorInstanceAdminSettings({
         resLocals: res.locals,
@@ -107,8 +103,6 @@ router.get(
         instanceGHLink,
         canEdit,
         enrollmentCount,
-        linkType,
-        studentLinkMessage,
       }),
     );
   }),
