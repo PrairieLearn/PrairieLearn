@@ -12,16 +12,22 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import { renderHtml } from '../../../lib/preact-html.js';
+import { Hydrate } from '../../../lib/preact.js';
+
+import { RichTextEditor } from './RichTextEditor/index.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
   prompts,
   question,
+  richTextEditorEnabled,
   variantId,
 }: {
   resLocals: Record<string, any>;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
+  richTextEditorEnabled: boolean;
   variantId?: string | undefined;
 }) {
   // This page has a very custom layout, so we don't use the usual `PageLayout`
@@ -124,6 +130,13 @@ export function InstructorAiGenerateDraftEditor({
                   <li class="nav-item">
                     <a a class="nav-link" data-bs-toggle="tab" href="#question-code">Files</a>
                   </li>
+                  ${richTextEditorEnabled
+                    ? html` <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor"
+                          >Rich Text Editor</a
+                        >
+                      </li>`
+                    : ''}
                 </ul>
                 <div
                   class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
@@ -266,6 +279,16 @@ function QuestionAndFilePreview({
           pythonContents: prompts[prompts.length - 1].python,
           csrfToken: resLocals.__csrf_token,
         })}
+      </div>
+      <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
+        ${renderHtml(
+          <Hydrate>
+            <RichTextEditor
+              htmlContents={prompts[prompts.length - 1].html}
+              csrfToken={resLocals.__csrf_token}
+            />
+          </Hydrate>,
+        )}
       </div>
     </div>
   `;
