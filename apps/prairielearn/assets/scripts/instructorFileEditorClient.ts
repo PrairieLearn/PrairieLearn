@@ -113,11 +113,7 @@ class InstructorFileEditor {
     }
 
     // Override the save button click to show confirmation modal if needed
-    if (!this.saveElement) {
-      throw new Error('Save element not found');
-    }
-
-    this.saveElement.addEventListener('click', (e) => this.handleSaveClick(e));
+    this.saveElement!.addEventListener('click', (e) => this.handleSaveClick(e));
   }
 
   /**
@@ -182,36 +178,20 @@ class InstructorFileEditor {
    * @param issues - The issues to display in the modal.
    */
   showConfirmationModal(issues: string[]) {
-    // Update the issues list in the modal
     const issuesList = document.getElementById('save-confirmation-issues');
-    if (issuesList) {
-      issuesList.innerHTML = issues.map((issue) => `<li>${issue}</li>`).join('');
-    }
+    issuesList!.innerHTML = issues.map((issue) => `<li>${issue}</li>`).join('');
 
-    // Get the modal and show it
-    const modalElement = document.getElementById('save-confirmation-modal');
-    if (!modalElement) {
-      throw new Error('Save confirmation modal not found');
-    }
+    const modalElement = document.getElementById('save-confirmation-modal')!;
 
     const modal = window.bootstrap.Modal.getOrCreateInstance(modalElement);
-    // Show the modal
     modal.show();
 
-    // Handle confirm button click
     const confirmButton = modalElement.querySelector('#confirm-save-button');
-    if (!confirmButton) {
-      throw new Error('Confirm save button not found');
-    }
 
-    confirmButton.addEventListener('click', () => {
+    confirmButton!.addEventListener('click', () => {
       modal.hide();
       this.confirmedSave = true;
-
-      if (!this.saveElement) {
-        throw new Error('Save element not found');
-      }
-      this.saveElement.click();
+      this.saveElement!.click();
     });
   }
 
