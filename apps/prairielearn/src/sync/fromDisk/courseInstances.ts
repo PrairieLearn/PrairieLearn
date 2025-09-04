@@ -28,6 +28,7 @@ export async function uniqueEnrollmentCode() {
 }
 
 function generateEnrollmentCode() {
+  // We exclude O/0 and I/1 because they are easily confused.
   const allowed = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   const totalChars = 10;
   let raw = '';
