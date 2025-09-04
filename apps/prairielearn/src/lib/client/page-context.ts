@@ -11,10 +11,12 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
 
-const RawPageContextSchema = z.object({
+export const RawPageContextSchema = z.object({
+  __csrf_token: z.string(),
   authz_data: z.object({
     // TODO: Type these more accurately into a course instance version.
     authn_is_administrator: z.boolean(),
@@ -47,6 +49,7 @@ const RawPageContextSchema = z.object({
   }),
 
   urlPrefix: z.string(),
+  plainUrlPrefix: z.string(),
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,
@@ -99,6 +102,7 @@ const RawStaffCourseInstanceContextSchema = z.object({
       short_name: z.string(),
     })
     .brand('StaffCourse'),
+  institution: StaffInstitutionSchema,
 });
 export const StaffCourseInstanceContextSchema =
   RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();
