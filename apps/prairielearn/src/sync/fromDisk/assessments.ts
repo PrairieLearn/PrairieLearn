@@ -227,6 +227,7 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -238,7 +239,6 @@ function getParamsForAssessment(
             zone.advanceScorePerc ??
             assessment.advanceScorePerc ??
             0,
-          allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
           comment: alternative.comment,
         };
       });
