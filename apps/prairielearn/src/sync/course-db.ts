@@ -787,7 +787,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
             const error = run(() => {
               let error = `Missing JSON file: ${infoFilePath}.`;
               if (!hasFiles) {
-                error += ` If you intended to delete this, delete the directory ${infoFileDir}.`;
+                error += ` Either create the file or delete the ${infoFileDir} directory.`;
               }
               return error;
             });
