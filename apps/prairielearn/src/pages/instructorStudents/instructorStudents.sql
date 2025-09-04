@@ -30,7 +30,6 @@ VALUES
   ($course_instance_id, 'invited', $uid)
 ON CONFLICT (course_instance_id, pending_uid) DO UPDATE
 SET
-  lti_synced = FALSE,
   pending_lti13_instance_id = NULL,
   pending_sub = NULL,
   pending_uid = $uid,

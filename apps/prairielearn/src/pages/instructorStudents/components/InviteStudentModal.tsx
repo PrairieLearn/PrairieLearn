@@ -6,6 +6,8 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import type { StaffEnrollment } from '../../../lib/client/safe-db-types.js';
+
 export function InviteStudentModal({
   show,
   onHide,
@@ -41,7 +43,7 @@ export function InviteStudentModal({
     data: eligibilityData,
     isFetching,
     isPending,
-  } = useQuery({
+  } = useQuery<StaffEnrollment>({
     queryKey: ['enrollments', 'invite-eligibility', uidValue],
     enabled: show && !errors.uid,
     queryFn: async () => {
@@ -58,10 +60,10 @@ export function InviteStudentModal({
     if (loading) return;
     if (eligibilityData) {
       const isEnrolled = eligibilityData.status === 'joined';
-      const isPending = eligibilityData.status === 'invited' && !eligibilityData.lti_synced;
+      const isInvited = eligibilityData.status === 'invited';
       if (isEnrolled) {
         setError('uid', { type: 'server', message: 'This student is already enrolled' });
-      } else if (isPending) {
+      } else if (isInvited) {
         setError('uid', { type: 'server', message: 'This student has a pending invitation' });
       } else {
         clearErrors('uid');
