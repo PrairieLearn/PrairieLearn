@@ -149,7 +149,11 @@ class InstructorFileEditor {
       try {
         const parsedContent = JSON.parse(currentContents);
 
-        if (this.fileMetadata.uuid) {
+        if (typeof parsedContent !== 'object') {
+          issues.push(
+            `The ${friendlyNameForFileType(this.fileMetadata.type).toLowerCase()} metadata cannot be parsed as JSON.`,
+          );
+        } else if (this.fileMetadata.uuid) {
           if ('uuid' in parsedContent) {
             if (parsedContent.uuid !== this.fileMetadata.uuid) {
               issues.push(
