@@ -15,7 +15,7 @@ export default asyncHandler(async (req, res, next) => {
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // then we can enroll the user.
-  const selfEnrollmentEnabled =
+  const selfEnrollmentAllowed =
     courseInstance.self_enrollment_enabled &&
     (courseInstance.self_enrollment_enabled_before_date == null ||
       new Date() < courseInstance.self_enrollment_enabled_before_date);
@@ -26,7 +26,7 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    selfEnrollmentEnabled
+    selfEnrollmentAllowed
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,

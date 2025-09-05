@@ -15,7 +15,6 @@ import {
   StaffCourseSchema,
   StaffEnrollmentSchema,
   StaffInstitutionSchema,
-  StaffLti13CourseInstanceSchema,
   StaffQuestionSchema,
   StaffTagSchema,
   StaffTopicSchema,
@@ -26,7 +25,6 @@ import {
   StudentAssessmentSetSchema,
   StudentCourseInstanceSchema,
   StudentCourseSchema,
-  StudentLti13CourseInstanceSchema,
   StudentUserSchema,
 } from './safe-db-types.js';
 
@@ -314,31 +312,6 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   table_name: 'assessment_instances',
 };
 
-const minimalStaffLti13CourseInstance: z.input<typeof StaffLti13CourseInstanceSchema> = {
-  context_id: 'context-123',
-  context_label: 'CS101',
-  context_memberships_url: 'https://example.com/memberships',
-  context_title: 'Introduction to Computer Science',
-  course_instance_id: '1',
-  created_at: new Date(),
-  deployment_id: 'deployment-456',
-  enrollment_lti_enforced: false,
-  enrollment_lti_enforced_after_date: null,
-  id: '2',
-  lineitems_url: 'https://example.com/lineitems',
-  lti13_instance_id: '3',
-};
-
-const minimalStudentLti13CourseInstance: z.input<typeof StudentLti13CourseInstanceSchema> = {
-  context_id: 'context-123',
-  context_label: 'CS101',
-  context_title: 'Introduction to Computer Science',
-  course_instance_id: '1',
-  created_at: new Date(),
-  id: '2',
-  lti13_instance_id: '3',
-};
-
 const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> = {
   advance_score_perc: null,
   assessment_id: '2',
@@ -612,23 +585,6 @@ describe('safe-db-types schemas', () => {
     expect(parsed).toMatchObject(minimalStaffAuditEvent);
   });
 
-  it('parses valid StaffLti13CourseInstance and drops extra fields', () => {
-    const parsed = StaffLti13CourseInstanceSchema.parse({
-      ...minimalStaffLti13CourseInstance,
-      extra: 123,
-    });
-    expect(parsed).not.toHaveProperty('extra');
-    expect(parsed).toMatchObject(minimalStaffLti13CourseInstance);
-  });
-
-  it('parses valid StudentLti13CourseInstance and drops extra fields', () => {
-    const parsed = StudentLti13CourseInstanceSchema.parse({
-      ...minimalStudentLti13CourseInstance,
-      extra: 123,
-    });
-    expect(parsed).not.toHaveProperty('extra');
-    expect(parsed).toMatchObject(minimalStudentLti13CourseInstance);
-  });
   it('parses valid StaffAlternativeGroup and drops extra fields', () => {
     const parsed = StaffAlternativeGroupSchema.parse({
       ...minimalStaffAlternativeGroup,

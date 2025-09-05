@@ -13,7 +13,6 @@ import {
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
   InstitutionSchema as RawInstitutionSchema,
-  Lti13CourseInstanceSchema as RawLti13CourseInstanceSchema,
   QuestionSchema as RawQuestionSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
@@ -256,22 +255,3 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
-
-/** LTI 1.3 Course Instances */
-export const RawStaffLti13CourseInstanceSchema = RawLti13CourseInstanceSchema;
-export const StaffLti13CourseInstanceSchema =
-  RawStaffLti13CourseInstanceSchema.brand<'StaffLti13CourseInstance'>();
-export type StaffLti13CourseInstance = z.infer<typeof StaffLti13CourseInstanceSchema>;
-
-export const RawStudentLti13CourseInstanceSchema = RawStaffLti13CourseInstanceSchema.pick({
-  context_id: true,
-  context_label: true,
-  context_title: true,
-  course_instance_id: true,
-  created_at: true,
-  id: true,
-  lti13_instance_id: true,
-});
-export const StudentLti13CourseInstanceSchema =
-  RawStudentLti13CourseInstanceSchema.brand<'StudentLti13CourseInstance'>();
-export type StudentLti13CourseInstance = z.infer<typeof StudentLti13CourseInstanceSchema>;
