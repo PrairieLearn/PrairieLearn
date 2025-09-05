@@ -4,7 +4,7 @@ import fs from 'fs-extra';
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
  * If this code is still around in the year 10000... good luck.
  */
-const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.[a-z]+/;
+const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+/;
 
 /**
  * Annotations are expressed via the following:

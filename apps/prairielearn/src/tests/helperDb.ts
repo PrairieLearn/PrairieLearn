@@ -112,6 +112,44 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
+async function createAndInitDatabaseWithMigrations({
+  dbName,
+  beforeTimestamp,
+  inclusiveBefore,
+  dropFirst,
+  allMigrations,
+}: {
+  dbName: string;
+  beforeTimestamp?: string;
+  inclusiveBefore?: boolean;
+  allMigrations?: boolean;
+  dropFirst: boolean;
+}): Promise<void> {
+  const runMigrations = allMigrations
+    ? true
+    : {
+        beforeTimestamp: beforeTimestamp ?? '',
+        inclusiveBefore: inclusiveBefore ?? false,
+      };
+  await postgresTestUtils.createDatabase({
+    dropExistingDatabase: dropFirst,
+    ignoreIfExists: !dropFirst,
+    database: dbName,
+    configurePool: true,
+    prepare: () =>
+      runMigrationsAndSprocs({
+        dbName,
+        runMigrations,
+      }),
+  });
+
+  // Ideally this would happen only over in `helperServer`, but we need to use
+  // the same database details, so this is a convenient place to do it.
+  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+    throw err;
+  });
+}
+
 async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
@@ -123,45 +161,14 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function setupDatabases(
-  migrationSettings?:
-    | {
-        beforeTimestamp: string;
-        inclusiveBefore: boolean;
-      }
-    | boolean,
-  creationSettings?: {
-    ignoreIfExists: boolean;
-    dropFirst: boolean;
-  },
-): Promise<void> {
+async function setupDatabases(): Promise<void> {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
     await createTemplate();
   }
-  // If we have custom migration settings, we can't use the template database.
-  // We don't want to leave the template database with partial migrations.
-  if (migrationSettings) {
-    await postgresTestUtils.createDatabase({
-      dropExistingDatabase: creationSettings?.dropFirst ?? true,
-      ignoreIfExists: creationSettings?.ignoreIfExists ?? false,
-      database: dbName,
-      configurePool: true,
-      prepare: async () => {
-        return await runMigrationsAndSprocs({ dbName, runMigrations: migrationSettings });
-      },
-    });
-  } else {
-    if (creationSettings) {
-      throw new Error('Creation settings are not supported when using the template database.');
-    }
-    await createFromTemplate({
-      dbName,
-      dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
-      dropFirst: true,
-    });
-  }
+
+  await createFromTemplate({ dbName, dbTemplateName: POSTGRES_DATABASE_TEMPLATE, dropFirst: true });
 
   // Ideally this would happen only over in `helperServer`, but we need to use
   // the same database details, so this is a convenient place to do it.
@@ -178,19 +185,15 @@ async function setupDatabases(
  */
 export async function runMigrationsBefore(
   migrationName: string,
-  { drop = false }: { drop: boolean },
+  { drop = false }: { drop?: boolean } = {},
 ): Promise<void> {
-  const beforeFile = migrationName.endsWith('.sql') ? migrationName : `${migrationName}.sql`;
-  await setupDatabases(
-    {
-      beforeTimestamp: extractTimestampFromFilename(beforeFile),
-      inclusiveBefore: false,
-    },
-    {
-      dropFirst: drop,
-      ignoreIfExists: !drop,
-    },
-  );
+  const dbName = getDatabaseNameForCurrentWorker();
+  await createAndInitDatabaseWithMigrations({
+    dbName,
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: false,
+    dropFirst: drop,
+  });
 }
 
 /**
@@ -203,23 +206,22 @@ export async function runMigrationsThrough(
   migrationName: string,
   { drop = false }: { drop?: boolean } = {},
 ): Promise<void> {
-  const beforeFile = migrationName.endsWith('.sql') ? migrationName : `${migrationName}.sql`;
-  await setupDatabases(
-    {
-      beforeTimestamp: extractTimestampFromFilename(beforeFile),
-      inclusiveBefore: true,
-    },
-    {
-      dropFirst: drop,
-      ignoreIfExists: !drop,
-    },
-  );
+  const dbName = getDatabaseNameForCurrentWorker();
+  await createAndInitDatabaseWithMigrations({
+    dbName,
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: true,
+    dropFirst: drop,
+  });
 }
 
-export async function runRemainingMigrations(): Promise<void> {
-  await setupDatabases(true, {
-    dropFirst: false,
-    ignoreIfExists: true,
+export async function runRemainingMigrations({
+  drop = false,
+}: { drop?: boolean } = {}): Promise<void> {
+  await createAndInitDatabaseWithMigrations({
+    dbName: getDatabaseNameForCurrentWorker(),
+    allMigrations: true,
+    dropFirst: drop,
   });
 }
 
@@ -263,6 +265,38 @@ export async function dropTemplate(): Promise<void> {
     // Always drop the template regardless of PL_KEEP_TEST_DB env
     force: true,
   });
+}
+
+/**
+ * Helper function for testing migrations.
+ * @param params
+ * @param params.name The name of the migration to test.
+ * @param params.beforeMigration A function to run before the migration.
+ * @param params.afterMigration A function to run after the migration.
+ */
+export async function testMigration<T>({
+  name,
+  beforeMigration,
+  afterMigration,
+}: {
+  name: string;
+  beforeMigration?: () => Promise<T> | T;
+  afterMigration?: (beforeResult: T) => Promise<void> | void;
+}): Promise<void> {
+  await runMigrationsBefore(name, { drop: true });
+
+  const result = (await beforeMigration?.()) as T;
+
+  await runMigrationsThrough(name, { drop: false });
+
+  if (afterMigration) {
+    await afterMigration(result);
+  }
+
+  await runRemainingMigrations();
+
+  await closeSql();
+  await postgresTestUtils.dropDatabase();
 }
 
 export async function resetDatabase(): Promise<void> {
