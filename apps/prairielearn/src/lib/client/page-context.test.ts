@@ -161,10 +161,13 @@ describe('getCourseInstanceContext', () => {
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
       ...mockStudentData.course_instance,
-      enrollment_code: '1234567890ab',
+      enrollment_code: 'AAABBBDDDD',
       enrollment_limit: 10,
       json_comment: 'foo',
       share_source_publicly: true,
+      self_enrollment_enabled: true,
+      self_enrollment_requires_secret_link: false,
+      self_enrollment_enabled_before_date: null,
       sync_errors: null,
       sync_job_sequence_id: null,
       sync_warnings: null,
