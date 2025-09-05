@@ -212,7 +212,7 @@ function DeletePersonalNoteButton({
       <input type="hidden" name="file_id" value="${file.id}" />
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete</button>
+        <button type="submit" class="btn btn-danger">Delete</button>
       </div>
     </form>
   `;
