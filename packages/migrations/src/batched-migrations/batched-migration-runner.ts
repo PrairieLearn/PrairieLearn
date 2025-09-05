@@ -161,6 +161,7 @@ export class BatchedMigrationRunner {
   private async runMigrationJob(
     migration: BatchedMigrationRow,
     migrationImplementation: BatchedMigrationImplementation,
+    logError = true,
   ) {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {
@@ -176,10 +177,12 @@ export class BatchedMigrationRunner {
       }
 
       if (error) {
-        logger.error(
-          `Error running job ${nextJob.id} for batched migration ${migration.filename}`,
-          error,
-        );
+        if (logError) {
+          logger.error(
+            `Error running job ${nextJob.id} for batched migration ${migration.filename}`,
+            error,
+          );
+        }
         await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
       } else {
         await this.finishJob(nextJob, 'succeeded');
@@ -193,7 +196,8 @@ export class BatchedMigrationRunner {
     signal,
     iterations,
     durationMs,
-  }: { signal?: AbortSignal; iterations?: number; durationMs?: number } = {}) {
+    logError = true,
+  }: { signal?: AbortSignal; iterations?: number; durationMs?: number; logError?: boolean } = {}) {
     let iterationCount = 0;
     const endTime = durationMs ? Date.now() + durationMs : null;
     while (
@@ -202,7 +206,7 @@ export class BatchedMigrationRunner {
       (endTime ? Date.now() < endTime : true) &&
       (this.migrationStatus === 'running' || this.migrationStatus === 'finalizing')
     ) {
-      await this.runMigrationJob(this.migration, this.migrationImplementation);
+      await this.runMigrationJob(this.migration, this.migrationImplementation, logError);
       iterationCount += 1;
       // Always refresh the status so we can detect if the migration was marked
       // as paused by another process.

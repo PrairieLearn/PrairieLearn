@@ -99,6 +99,7 @@ describe('BatchedMigrationsRunner', () => {
     await expect(
       runner.finalizeBatchedMigration('20230406184107_failing_migration', {
         logProgress: false,
+        logError: false,
       }),
     ).rejects.toThrow("but it is 'failed'");
     const migrations = await selectAllBatchedMigrations('test');
