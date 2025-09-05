@@ -474,18 +474,19 @@ export function RubricRow({
   rowDragOver: () => void;
 }) {
   return (
-    <tr>
+    <tr onDragOver={rowDragOver}>
       <td class="text-nowrap align-middle">
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost"
-          disabled={!editMode}
-          draggable
+        <span
+          role="button"
+          tabIndex={editMode ? 0 : -1}
+          aria-disabled={!editMode}
+          class={`btn btn-sm btn-ghost ${!editMode ? 'disabled' : ''}`}
+          style={{ cursor: 'grab' }}
+          draggable={editMode}
           onDragStart={rowDragStart}
-          onDragOver={rowDragOver}
         >
           <i class="fas fa-arrows-up-down" />
-        </button>
+        </span>
         <button
           type="button"
           class="visually-hidden"
