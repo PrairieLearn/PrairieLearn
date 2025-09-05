@@ -5,8 +5,6 @@ import OpenAI from 'openai';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 
-import { benchmarkAiQuestionGeneration } from '../../ee/lib/ai-question-generation-benchmark.js';
-import { syncContextDocuments } from '../../ee/lib/contextEmbeddings.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
@@ -59,6 +57,7 @@ router.post(
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
+      const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
@@ -77,6 +76,9 @@ router.post(
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
+      const { benchmarkAiQuestionGeneration } = await import(
+        '../../ee/lib/ai-question-generation-benchmark.js'
+      );
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         client,
         authnUserId: res.locals.authn_user.user_id,
