@@ -3,7 +3,7 @@ columns
     email: character varying(255)
     id: bigint not null default nextval('authors_id_seq'::regclass)
     orcid: character varying(16)
-    origin_course: bigint 
+    origin_course: bigint
 
 indexes
     authors_pkey: PRIMARY KEY (id) USING btree (id)

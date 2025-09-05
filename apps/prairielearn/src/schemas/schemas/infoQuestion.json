@@ -38,11 +38,11 @@
       "default": []
     },
     "authors": {
-      "description": "A list of authors that created this question.",
       "type": "array",
       "items": {
         "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "name": {
             "description": "A human-readable name of a question author.",
@@ -62,7 +62,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "default": []
     },
     "clientFiles": {
       "description": "The list of question files accessible by the client.",
