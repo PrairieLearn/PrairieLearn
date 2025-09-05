@@ -9,7 +9,9 @@ export default asyncHandler(async (req, res, next) => {
   // they were enrolled, automatically enroll them. However, we will not
   // attempt to enroll them if they are an instructor (that is, if they have
   // a specific role in the course or course instance) or if they are
-  // impersonating another user, or if self-enrollment requires a secret link.
+  // impersonating another user.
+
+  // TODO: check if self-enrollment requires a secret link.
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
