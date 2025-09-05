@@ -546,7 +546,7 @@ describe('Course instance syncing', () => {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
         self_enrollment_enabled: boolean;
-        self_enrollment_enabled_before_date: string | null;
+        self_enrollment_enabled_before_date: Date | null;
         self_enrollment_requires_secret_link: boolean;
       } | null;
       errors: string[];
@@ -566,20 +566,17 @@ describe('Course instance syncing', () => {
       {
         json: {
           enabled: false,
-          // This time was interpreted within the timezone of the course instance, and sent to the database to be stored as a UTC date.
+          // This time is interpreted within the timezone of the course instance and stored as a UTC date.
           beforeDate: '2020-01-01T11:11:11',
           requiresSecretLink: true,
         },
         db: {
           self_enrollment_enabled: false,
-          // The database UTC date in the database representing the same point in time.
-          self_enrollment_enabled_before_date: Temporal.ZonedDateTime.from(
-            `2020-01-01T11:11:11[${timezone}]`,
-          )
-            .toPlainDateTime()
-            .toLocaleString('en-US', {
-              timeZone: timezone,
-            }),
+          self_enrollment_enabled_before_date: new Date(
+            Temporal.PlainDateTime.from('2020-01-01T11:11:11').toZonedDateTime(
+              timezone,
+            ).epochMilliseconds,
+          ),
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -592,13 +589,11 @@ describe('Course instance syncing', () => {
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: Temporal.ZonedDateTime.from(
-            `2020-01-01 11:11:12[${timezone}]`,
-          )
-            .toPlainDateTime()
-            .toLocaleString('en-US', {
-              timeZone: timezone,
-            }),
+          self_enrollment_enabled_before_date: new Date(
+            Temporal.PlainDateTime.from('2020-01-01 11:11:12').toZonedDateTime(
+              timezone,
+            ).epochMilliseconds,
+          ),
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -672,11 +667,8 @@ describe('Course instance syncing', () => {
 
         const result = {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
-          // The time was read out of the database as UTC and turned into a date object. We then convert it back to a timezone-aware date object.
           self_enrollment_enabled_before_date:
-            syncedCourseInstance.self_enrollment_enabled_before_date?.toLocaleString('en-US', {
-              timeZone: timezone,
-            }) ?? null,
+            syncedCourseInstance.self_enrollment_enabled_before_date,
           self_enrollment_requires_secret_link:
             syncedCourseInstance.self_enrollment_requires_secret_link,
         };
