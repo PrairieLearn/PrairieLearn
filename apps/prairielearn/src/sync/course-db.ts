@@ -757,7 +757,6 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
-    let hasFiles = false;
 
     // For each file in the directory, assume it is a question directory
     // and attempt to access `info.json`. If we can successfully read it,
@@ -779,25 +778,16 @@ async function loadInfoForDirectory<T extends ZodSchema>({
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
         try {
-          const { infoFiles: subInfoFiles, hasFiles: subHasFiles } = await walk(
-            path.join(relativeDir, dir),
-          );
-          hasFiles = hasFiles || subHasFiles;
+          const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.isEmpty(subInfoFiles)) {
-            const error = run(() => {
-              let error = `Missing JSON file: ${infoFilePath}.`;
-              if (!hasFiles) {
-                error += ` Either create the file or delete the ${infoFileDir} directory.`;
-              }
-              return error;
-            });
-            infoFiles[path.join(relativeDir, dir)] = infofile.makeError(error);
+            infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
+              `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
+            );
           }
           Object.assign(infoFiles, subInfoFiles);
         } catch (e) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
-            hasFiles = true;
           } else if (e.code === 'ENOENT') {
             // Missing directory; record it
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
@@ -810,12 +800,11 @@ async function loadInfoForDirectory<T extends ZodSchema>({
         }
       }
     });
-    return { infoFiles, hasFiles };
+    return infoFiles;
   };
 
   try {
-    const { infoFiles } = await walk('');
-    return infoFiles;
+    return await walk('');
   } catch (e) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
