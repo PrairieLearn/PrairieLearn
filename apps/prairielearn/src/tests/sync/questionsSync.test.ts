@@ -293,7 +293,7 @@ describe('Question syncing', () => {
       (a) =>
         a.author_name === newAuthor.name &&
         a.email === newAuthor.email &&
-        a.orcid === newAuthor.orcid,
+        a.orcid === newAuthor.orcid.replaceAll('-', ''),
     );
     assert.ok(author);
 
@@ -370,7 +370,7 @@ describe('Question syncing', () => {
       (a) =>
         a.author_name === newAuthor.name &&
         a.email === newAuthor.email &&
-        a.orcid === newAuthor.orcid,
+        a.orcid === newAuthor.orcid.replaceAll('-', ''),
     );
     assert.isOk(author);
     assert.equal(
@@ -378,7 +378,7 @@ describe('Question syncing', () => {
         (a) =>
           a.author_name === newAuthor.name &&
           a.email === newAuthor.email &&
-          a.orcid === newAuthor.orcid,
+          a.orcid === newAuthor.orcid.replaceAll('-', ''),
       ).length,
       1,
     );
