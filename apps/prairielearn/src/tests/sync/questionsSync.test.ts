@@ -5,7 +5,14 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { QuestionSchema, QuestionTagSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
+import {
+  AuthorSchema,
+  QuestionAuthorSchema,
+  QuestionSchema,
+  QuestionTagSchema,
+  TagSchema,
+  TopicSchema,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   type QuestionJsonInput,
@@ -264,12 +271,16 @@ describe('Question syncing', () => {
 
   it('Authors are put into database', async () => {
     const courseData = util.getCourseData();
-    const newAuthor = 'example@example.com';
+    const newAuthor = {
+      name: 'Example',
+      email: 'example@example.org',
+      orcid: '0000-0000-0000-0001',
+    };
 
     if (!courseData.questions[util.QUESTION_ID].authors) {
       courseData.questions[util.QUESTION_ID].authors = [];
     }
-    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
@@ -277,12 +288,20 @@ describe('Question syncing', () => {
     assert.ok(originalSyncedQuestion);
 
     // Check that the author was added to the authors table
-    const authors = await util.dumpTable('authors');
-    const author = authors.find((a) => a.author_string === newAuthor);
+    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
+    const author = authors.find(
+      (a) =>
+        a.author_name === newAuthor.name &&
+        a.email === newAuthor.email &&
+        a.orcid === newAuthor.orcid,
+    );
     assert.ok(author);
 
     // Check that the question-author relationship was created
-    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthors = await util.dumpTableWithSchema(
+      'question_authors',
+      QuestionAuthorSchema,
+    );
     const questionAuthor = questionAuthors.find(
       (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
     );
@@ -291,12 +310,16 @@ describe('Question syncing', () => {
 
   it('Authors are removed when removed from question', async () => {
     const courseData = util.getCourseData();
-    const newAuthor = 'example@example.com';
+    const newAuthor = {
+      name: 'Example',
+      email: 'example@example.org',
+      orcid: '0000-0000-0000-0001',
+    };
 
     if (!courseData.questions[util.QUESTION_ID].authors) {
       courseData.questions[util.QUESTION_ID].authors = [];
     }
-    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
@@ -308,7 +331,10 @@ describe('Question syncing', () => {
     assert.isOk(originalSyncedQuestion);
 
     // Check that the question-author relationship was removed
-    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthors = await util.dumpTableWithSchema(
+      'question_authors',
+      QuestionAuthorSchema,
+    );
     const questionAuthor = questionAuthors.find(
       (qa) => qa.question_id === originalSyncedQuestion.id,
     );
@@ -317,31 +343,51 @@ describe('Question syncing', () => {
 
   it('Authors are shared between questions', async () => {
     const courseData = util.getCourseData();
-    const newAuthor = 'example@example.com';
+    const newAuthor = {
+      name: 'Example',
+      email: 'example@example.org',
+      orcid: '0000-0000-0000-0001',
+    };
 
     // Add author to first question
     if (!courseData.questions[util.QUESTION_ID].authors) {
       courseData.questions[util.QUESTION_ID].authors = [];
     }
-    courseData.questions[util.QUESTION_ID].authors?.push(newAuthor);
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
 
     // Add same author to second question
     if (!courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors) {
       courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors = [];
     }
-    courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors?.push(newAuthor);
+    courseData.questions[util.ALTERNATIVE_QUESTION_ID].authors.push(newAuthor);
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
     // Check that only one author record was created
-    const authors = await util.dumpTable('authors');
-    const author = authors.find((a) => a.author_string === newAuthor);
+    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
+    const author = authors.find(
+      (a) =>
+        a.author_name === newAuthor.name &&
+        a.email === newAuthor.email &&
+        a.orcid === newAuthor.orcid,
+    );
     assert.isOk(author);
-    assert.equal(authors.filter((a) => a.author_string === newAuthor).length, 1);
+    assert.equal(
+      authors.filter(
+        (a) =>
+          a.author_name === newAuthor.name &&
+          a.email === newAuthor.email &&
+          a.orcid === newAuthor.orcid,
+      ).length,
+      1,
+    );
 
     // Check that both questions have the author relationship
-    const questionAuthors = await util.dumpTable('question_authors');
+    const questionAuthors = await util.dumpTableWithSchema(
+      'question_authors',
+      QuestionAuthorSchema,
+    );
     const question1 = await findSyncedQuestion(util.QUESTION_ID);
     const question2 = await findSyncedQuestion(util.ALTERNATIVE_QUESTION_ID);
     assert.isOk(question1);
