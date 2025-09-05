@@ -23,7 +23,8 @@ SELECT
   v.instance_question_id,
   q.grading_method,
   aq.max_auto_points,
-  aq.max_manual_points
+  aq.max_manual_points,
+  aq.allow_real_time_grading
 FROM
   variants AS v
   JOIN questions AS q ON (q.id = v.question_id)

@@ -13,8 +13,10 @@ import * as questionServers from '../question-servers/index.js';
 
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
+  AssessmentQuestionSchema,
   type Course,
   IdSchema,
+  InstanceQuestionSchema,
   IntervalSchema,
   type Question,
   QuestionSchema,
@@ -34,10 +36,13 @@ import * as workspaceHelper from './workspace.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantDataSchema = z.object({
-  instance_question_id: z.string().nullable(),
   grading_method: QuestionSchema.shape.grading_method,
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
+  // These fields are only present when the variant is associated with an
+  // instance question (and thus an assessment).
+  instance_question_id: InstanceQuestionSchema.shape.id.nullable(),
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points.nullable(),
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points.nullable(),
+  allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading.nullable(),
 });
 
 const VariantForSubmissionSchema = VariantSchema.extend({
@@ -264,6 +269,7 @@ export async function saveSubmission(
 async function selectSubmissionForGrading(
   variant_id: string,
   check_submission_id: string | null,
+  overrideRealTimeGradingDisabled: boolean,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -285,6 +291,18 @@ async function selectSubmissionForGrading(
       if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
         return null;
       }
+    }
+
+    // Unlike the above, we can't rely solely on the UI and POST handlers to prevent
+    // students from grading questions with real-time grading disabled. This is
+    // because the "Grade N saved answers" button can be used without closing the
+    // assessment, so we must explicitly skip questions where real-time grading is disabled.
+    if (
+      variantData.instance_question_id != null &&
+      variantData.allow_real_time_grading === false &&
+      !overrideRealTimeGradingDisabled
+    ) {
+      return null;
     }
 
     // Select the most recent submission
@@ -329,6 +347,7 @@ async function selectSubmissionForGrading(
  * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
  */
 export async function gradeVariant(
   variant: Variant,
@@ -338,10 +357,15 @@ export async function gradeVariant(
   user_id: string | null,
   authn_user_id: string | null,
   overrideGradeRateCheck: boolean,
+  overrideRealTimeGradingDisabled: boolean,
 ): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
-  const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
+  const submission = await selectSubmissionForGrading(
+    variant.id,
+    check_submission_id,
+    overrideRealTimeGradingDisabled,
+  );
   if (submission == null) return;
 
   if (!overrideGradeRateCheck) {
@@ -437,6 +461,7 @@ export async function gradeVariant(
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
  * @returns submission_id
  */
 export async function saveAndGradeSubmission(
@@ -445,6 +470,7 @@ export async function saveAndGradeSubmission(
   question: Question,
   course: Course,
   overrideGradeRateCheck: boolean,
+  overrideRealTimeGradingDisabled: boolean,
 ) {
   const { submission_id, variant: updated_variant } = await saveSubmission(
     submissionData,
@@ -466,6 +492,7 @@ export async function saveAndGradeSubmission(
     submissionData.user_id,
     submissionData.auth_user_id,
     overrideGradeRateCheck,
+    overrideRealTimeGradingDisabled,
   );
   return submission_id;
 }

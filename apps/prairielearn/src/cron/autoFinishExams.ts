@@ -38,6 +38,8 @@ export async function run() {
     const close = !!assessment_instance.open;
     // Override any submission or grading rate limits.
     const overrideGradeRate = true;
+    // Override real-time grading disabled checks.
+    const overrideRealTimeGradingDisabled = true;
     // We don't have a client fingerprint ID, so pass null.
     const clientFingerprintId = null;
     try {
@@ -48,6 +50,7 @@ export async function run() {
         requireOpen,
         close,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
         clientFingerprintId,
       );
     } catch (err) {

@@ -3,6 +3,7 @@ columns
     assessment_id: bigint not null
     best_questions: integer
     id: bigint not null default nextval('zones_id_seq'::regclass)
+    json_allow_real_time_grading: boolean
     json_can_submit: text[]
     json_can_view: text[]
     json_comment: jsonb

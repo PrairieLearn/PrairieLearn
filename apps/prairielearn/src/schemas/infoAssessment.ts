@@ -151,6 +151,12 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
+    )
+    .optional(),
 });
 
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
@@ -186,6 +192,12 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question. If not specified, inherits from the zone level.',
     )
     .optional(),
   canSubmit: uniqueArray(z.string())
@@ -239,6 +251,12 @@ export const ZoneAssessmentJsonSchema = z.object({
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for questions in this zone. If not specified, inherits from the assessment level.',
     )
     .optional(),
   canSubmit: uniqueArray(z.string())
