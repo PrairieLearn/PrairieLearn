@@ -4,7 +4,7 @@ SELECT
 FROM
   pl_courses
 WHERE
-  sharing_name == $origin_course;
+  sharing_name = $origin_course;
 
 
 -- BLOCK insert_authors
