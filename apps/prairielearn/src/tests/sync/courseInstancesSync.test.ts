@@ -542,6 +542,17 @@ describe('Course instance syncing', () => {
 
   describe('syncs self-enrollment settings correctly', async () => {
     const timezone = 'America/New_York';
+
+    // We pick an arbitrary date to use.
+    const date = new Date('2025-09-05T20:52:49.000Z');
+
+    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
+    // interpreted in the course instance's timezone.
+    const jsonDate = Temporal.Instant.from(date.toISOString())
+      .toZonedDateTimeISO(timezone)
+      .toPlainDateTime()
+      .toString();
+
     const schemaMappings: {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
@@ -566,34 +577,24 @@ describe('Course instance syncing', () => {
       {
         json: {
           enabled: false,
-          // This time is interpreted within the timezone of the course instance and stored as a UTC date.
-          beforeDate: '2020-01-01T11:11:11',
+          beforeDate: jsonDate,
           requiresSecretLink: true,
         },
         db: {
           self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date(
-            Temporal.PlainDateTime.from('2020-01-01T11:11:11').toZonedDateTime(
-              timezone,
-            ).epochMilliseconds,
-          ),
+          self_enrollment_enabled_before_date: date,
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
       },
       {
         json: {
-          enabled: false,
-          beforeDate: '2020-01-01 11:11:12',
+          beforeDate: jsonDate,
           requiresSecretLink: true,
         },
         db: {
-          self_enrollment_enabled: false,
-          self_enrollment_enabled_before_date: new Date(
-            Temporal.PlainDateTime.from('2020-01-01 11:11:12').toZonedDateTime(
-              timezone,
-            ).epochMilliseconds,
-          ),
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: date,
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
