@@ -3,7 +3,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { InstanceQuestionSchema, VariantSchema } from '../../lib/db-types.js';
+import {
+  InstanceQuestionSchema,
+  SprocUsersSelectOrInsertSchema,
+  VariantSchema,
+} from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -41,20 +45,16 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   beforeAll(async function () {
-    await sqldb.callAsync('users_select_or_insert', [
-      'instructor@example.com',
-      'Instructor User',
-      '100000000',
-      'instructor@example.com',
-      'dev',
-    ]);
-    await sqldb.callAsync('users_select_or_insert', [
-      'student@example.com',
-      'Student User',
-      '000000001',
-      'student@example.com',
-      'dev',
-    ]);
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',

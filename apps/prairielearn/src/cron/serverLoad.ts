@@ -5,20 +5,22 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../lib/aws.js';
 import { config } from '../lib/config.js';
+import { SprocServerLoadsCurrentSchema } from '../lib/db-types.js';
 
 export async function run() {
   if (!config.runningInEc2) return;
 
-  const result = await sqldb.callAsync('server_loads_current', [
-    config.groupName,
-    config.serverLoadAverageIntervalSec,
-  ]);
-  if (result.rowCount === 0) {
+  const serverLoads = await sqldb.callRows(
+    'server_loads_current',
+    [config.groupName, config.serverLoadAverageIntervalSec],
+    SprocServerLoadsCurrentSchema,
+  );
+  if (serverLoads.length === 0) {
     // Nothing to report.
     return;
   }
   const cloudwatch = new CloudWatch(makeAwsClientConfig());
-  await async.each(result.rows, async (row) => {
+  await async.each(serverLoads, async (row) => {
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'Job Type', Value: row.job_type },
