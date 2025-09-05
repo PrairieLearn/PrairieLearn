@@ -45,7 +45,7 @@ type FeatureContext =
   | CourseInstanceContext;
 
 export class FeatureManager<FeatureName extends string> {
-  features: Set<string>;
+  features: Set<FeatureName>;
   als: AsyncLocalStorage<FeatureOverrides>;
   globalOverrides: FeatureOverrides = {};
 
@@ -67,11 +67,11 @@ export class FeatureManager<FeatureName extends string> {
   }
 
   hasFeature(feature: string): feature is FeatureName {
-    return this.features.has(feature);
+    return this.features.has(feature as FeatureName);
   }
 
   allFeatures() {
-    return [...this.features] as FeatureName[];
+    return [...this.features];
   }
 
   /**

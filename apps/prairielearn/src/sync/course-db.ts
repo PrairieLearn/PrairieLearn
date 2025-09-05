@@ -762,7 +762,8 @@ async function loadInfoForDirectory<T extends ZodSchema>({
     // and attempt to access `info.json`. If we can successfully read it,
     // hooray, we're done.
     await async.each(files, async (dir: string) => {
-      const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
+      const infoFileDir = path.join(directory, relativeDir, dir);
+      const infoFilePath = path.join(infoFileDir, infoFilename);
       const info = await loadAndValidateJson({
         coursePath,
         filePath: infoFilePath,
@@ -780,7 +781,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
           const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.isEmpty(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`,
+              `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
             );
           }
           Object.assign(infoFiles, subInfoFiles);
@@ -1027,7 +1028,7 @@ function validateAssessment({
     );
   }
 
-  const allowRealTimeGrading = assessment.allowRealTimeGrading;
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
