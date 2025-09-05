@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -322,7 +320,6 @@ function buildLocals({
     locals.showNewVariantButton = true;
   } else {
     // student question pages
-    assert(question, 'question is required on student question pages');
     if (assessment.type === 'Homework') {
       locals.showGradeButton = true;
       locals.showSaveButton = true;

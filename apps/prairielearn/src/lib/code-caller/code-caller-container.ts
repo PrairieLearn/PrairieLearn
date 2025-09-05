@@ -674,10 +674,6 @@ export class CodeCallerContainer implements CodeCaller {
       );
     }
 
-    if (![CREATED, WAITING, IN_CALL, EXITING, EXITED].includes(this.state)) {
-      return this._logError(`Invalid CodeCallerContainer state: ${String(this.state)}`);
-    }
-
     const containerNull = [CREATED, EXITED].includes(this.state);
     const callbackNull = this.state !== IN_CALL;
     const timeoutIDNull = this.state !== IN_CALL;
