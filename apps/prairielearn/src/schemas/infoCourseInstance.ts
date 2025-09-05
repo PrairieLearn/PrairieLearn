@@ -48,12 +48,6 @@ export const CourseInstanceJsonSchema = z
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
     selfEnrollment: z
       .object({
-        beforeDate: z
-          .string()
-          .describe(
-            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
-          )
-          .optional(),
         enabled: z
           .boolean()
           .describe(
@@ -61,6 +55,12 @@ export const CourseInstanceJsonSchema = z
           )
           .optional()
           .default(true),
+        beforeDate: z
+          .string()
+          .describe(
+            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+          )
+          .optional(),
         requiresSecretLink: z
           .boolean()
           .describe(
