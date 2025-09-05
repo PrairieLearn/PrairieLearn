@@ -1290,7 +1290,7 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('still validates when groupMinSize is 0 (truthy checks would skip)', async () => {
+  it('still validates when groupMinSize is 0', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
@@ -1309,7 +1309,9 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('still validates when groupMaxSize is 0 (truthy checks would skip)', async () => {
+  // TODO: groupMaxSize is 0 should itself be a completely invalid scenario.
+  // After we fix that, this test should be updated/changed.
+  it('still validates when groupMaxSize is 0', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
