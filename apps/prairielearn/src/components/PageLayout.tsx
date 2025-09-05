@@ -60,13 +60,7 @@ export function PageLayout({
   /** The content of the page in the body after the main container. */
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
-  const resolvedOptions = {
-    hxExt: '',
-    paddingBottom: true,
-    fullHeight: false,
-    fullWidth: false,
-    ...options,
-  };
+  const paddingBottom = options.paddingBottom ?? true;
 
   const headContentString = asHtmlSafe(headContent);
   const preContentString = asHtmlSafe(preContent);
@@ -120,14 +114,14 @@ export function PageLayout({
           ${HeadContents({
             resLocals,
             pageTitle,
-            pageNote: resolvedOptions.pageNote,
+            pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
           ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
-          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${resolvedOptions.hxExt}"
+          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           <div
             id="app-container"
@@ -163,9 +157,7 @@ export function PageLayout({
                   </nav>
                 `
               : ''}
-            <div
-              class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}"
-            >
+            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                   ? AssessmentNavigation({
@@ -186,9 +178,9 @@ export function PageLayout({
                 <main
                   id="content"
                   class="${clsx(
-                    resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-                    resolvedOptions.paddingBottom && 'pb-4',
-                    resolvedOptions.fullHeight && 'h-100',
+                    options.fullWidth ? 'container-fluid' : 'container',
+                    paddingBottom && 'pb-4',
+                    options.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
                   )}"
@@ -205,18 +197,18 @@ export function PageLayout({
   } else {
     return html`
       <!doctype html>
-      <html lang="en" class="${resolvedOptions.fullHeight ? 'h-100' : ''}">
+      <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
         <head>
           ${HeadContents({
             resLocals,
             pageTitle,
-            pageNote: resolvedOptions.pageNote,
+            pageNote: options.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
         </head>
         <body
-          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${resolvedOptions.hxExt}"
+          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${options.hxExt ?? ''}"
         >
           ${Navbar({
             resLocals,
@@ -228,11 +220,9 @@ export function PageLayout({
           <main
             id="content"
             class="
-            ${clsx(
-              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
-              resolvedOptions.paddingBottom && 'pb-4',
-              resolvedOptions.fullHeight && 'flex-grow-1',
-            )}
+            ${options.fullWidth ? 'container-fluid' : 'container'} 
+            ${paddingBottom ? 'pb-4' : ''}
+            ${options.fullHeight ? 'flex-grow-1' : ''}
           "
           >
             ${contentString}
