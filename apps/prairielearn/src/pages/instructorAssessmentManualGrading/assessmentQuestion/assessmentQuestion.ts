@@ -84,7 +84,7 @@ router.get(
 );
 
 router.get(
-  '/next_ungraded',
+  '/next',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -95,17 +95,27 @@ router.get(
     ) {
       throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
+
+    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
     res.redirect(
-      await manualGrading.nextUngradedInstanceQuestionUrl(
-        res.locals.urlPrefix,
-        res.locals.assessment.id,
-        res.locals.assessment_question.id,
-        res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id ?? null,
-      ),
+      await manualGrading.nextInstanceQuestionUrl({
+        urlPrefix: res.locals.urlPrefix,
+        assessment_id: res.locals.assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+        user_id: res.locals.authz_data.user.user_id,
+        prior_instance_question_id: req.query.prior_instance_question_id ?? null,
+        skip_graded_submissions: req.session.skip_graded_submissions,
+      }),
     );
   }),
 );
+
+// Route handler for the legacy 'next_ungraded' route.
+// TODO: Remove this once the new 'next' route has been fully deployed.
+router.get('/next_ungraded', (req, res) => {
+  const searchParams = new URLSearchParams(req.query as Record<string, string>);
+  res.redirect('next?' + searchParams.toString());
+});
 
 router.post(
   '/',
