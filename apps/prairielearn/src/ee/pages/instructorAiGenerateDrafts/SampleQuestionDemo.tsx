@@ -72,7 +72,6 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     if (cardRef.current) {
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       void onMathjaxTypeset([cardRef.current]);
     }
   }, [variant?.question, onMathjaxTypeset]);
