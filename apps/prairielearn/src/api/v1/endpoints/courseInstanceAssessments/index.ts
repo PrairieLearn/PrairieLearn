@@ -12,6 +12,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   SprocGroupInfoSchema,
+  SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../../../lib/db-types.js';
 
@@ -73,7 +74,7 @@ export const AssessmentInstanceDataSchema = z.array(
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),
-    user_role: z.string().nullable(),
+    user_role: SprocUsersGetDisplayedRoleSchema,
     max_points: AssessmentInstanceSchema.shape.max_points,
     max_bonus_points: AssessmentInstanceSchema.shape.max_bonus_points,
     points: AssessmentInstanceSchema.shape.points,

@@ -17,6 +17,7 @@ import {
   RubricGradingItemSchema,
   RubricGradingSchema,
   SprocGroupInfoSchema,
+  SprocUsersGetDisplayedRoleSchema,
   SubmissionSchema,
   UserSchema,
   VariantSchema,
@@ -57,7 +58,7 @@ export const SubmissionDataSchema = z.array(
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),
-    user_role: z.string().nullable(),
+    user_role: SprocUsersGetDisplayedRoleSchema,
 
     // left join group_info sproc
     group_id: SprocGroupInfoSchema.shape.id.nullable(),
