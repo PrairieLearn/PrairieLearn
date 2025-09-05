@@ -411,10 +411,10 @@ export function RubricSettings({
         {wasUsingRubric && (
           <button
             type="button"
-            class="btn btn-link btn-sm me-auto"
+            class="btn btn-link btn-sm me-auto text-danger"
             onClick={() => submitSettings(false)}
           >
-            Disable rubric
+            Delete rubric
           </button>
         )}
         {!editMode ? (
