@@ -122,6 +122,3 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
-
-## Question drafts
-testCourse/questions/__drafts__/
