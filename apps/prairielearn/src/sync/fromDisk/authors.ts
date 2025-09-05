@@ -13,7 +13,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function normalizeOrcid(orcid: string): string | null {
   if (!orcid) return null;
 
-  const digits = orcid.replaceAll(/[-\s]/g, '');
+  const digits = orcid.replaceAll('-', '');
   if (!/^\d{15}[\dX]$/.test(digits)) {
     return null;
   }
@@ -55,9 +55,8 @@ export async function sync(
   }
 
   // Collect all unique authors from all questions
-  const uniqueAuthors = new Set<NormalizedAuthor>();
-  // Setting up reverse lookup of resolved authors from database back to JSON
-  const authorLookup = new Map<string, JSONAuthor>();
+  // Also setting up reverse lookup of resolved authors from database back to JSON
+  const uniqueAuthors = new Map<string, JSONAuthor>();
 
   for (const qid of Object.keys(courseData.questions)) {
     const question = courseData.questions[qid];
@@ -95,18 +94,18 @@ export async function sync(
         resolvedAuthor.originCourse = originCourseID;
       }
 
-      uniqueAuthors.add(resolvedAuthor);
-      authorLookup.set(JSON.stringify(resolvedAuthor), author);
+      uniqueAuthors.set(JSON.stringify(resolvedAuthor), author);
     }
   }
 
+  const authorsForDB = {
+    authors: JSON.stringify(Array.from(uniqueAuthors.keys()).map((a) => JSON.parse(a))),
+  };
   // Insert all unique authors
-  await sqldb.execute(sql.insert_authors, {
-    authors: JSON.stringify(Array.from(uniqueAuthors.keys())),
-  });
+  await sqldb.execute(sql.insert_authors, authorsForDB);
 
   // Re-load authors from DB (including IDs) and build new map directly from JSONAuthor to ID
-  const authors = await sqldb.queryRows(sql.select_authors, {}, AuthorSchema);
+  const authors = await sqldb.queryRows(sql.select_authors, authorsForDB, AuthorSchema);
   const authorIdMap = new Map<string, string>();
   for (const author of authors) {
     // A bit awkward: reconstructing normalized author from DB author to then lookup JSON author
@@ -116,7 +115,7 @@ export async function sync(
       orcid: author.orcid ?? undefined,
       originCourse: author.origin_course ?? undefined,
     };
-    const jsonAuthor = authorLookup.get(JSON.stringify(normalizedAuthor));
+    const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
 
     // This should never happen in practice
     if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} not found`);
