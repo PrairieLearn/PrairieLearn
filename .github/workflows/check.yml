@@ -95,6 +95,8 @@ jobs:
       # in those cases.
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
+      - name: Non-enterprise build succeeds
+        run: rm -rf apps/prairielearn/src/ee && make build
 
   check-python:
     name: Python
