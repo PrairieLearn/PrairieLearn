@@ -4,6 +4,9 @@ import * as path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
+import { features } from '../../lib/features/index.js';
+
+import * as sqldb from '@prairielearn/postgres';
 
 import {
   AuthorSchema,
@@ -23,6 +26,8 @@ import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Makes an empty question.
@@ -306,6 +311,69 @@ describe('Question syncing', () => {
       (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author.id,
     );
     assert.ok(questionAuthor);
+  });
+
+  it('Authors with origin course are put into database', async () => {
+    await features.enable('question-sharing');
+    const courseData = util.getCourseData();
+    const consumingCourseData = util.getCourseData();
+    consumingCourseData.course.name = 'CONSUMING 101';
+    consumingCourseData.questions = {}; // To prevent duplicate QIDs
+
+    await util.writeAndSyncCourseData(consumingCourseData);
+    await sqldb.execute(sql.set_sharing_name, {
+      course_name: consumingCourseData.course.name,
+      sharing_name: 'CONSUMING 101 SHARED',
+    });
+
+    const newAuthor = {
+      name: 'Example',
+      email: 'example@example.org',
+      orcid: '0000-0000-0000-0001',
+    };
+    const newAuthorWithOriginCourse = {
+      originCourse: 'CONSUMING 101 SHARED',
+    };
+
+    if (!courseData.questions[util.QUESTION_ID].authors) {
+      courseData.questions[util.QUESTION_ID].authors = [];
+    }
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthorWithOriginCourse);
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
+    assert.ok(originalSyncedQuestion);
+
+    // Check that the author was added to the authors table
+    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
+    const author1 = authors.find(
+      (a) =>
+        a.author_name === newAuthor.name &&
+        a.email === newAuthor.email &&
+        a.orcid === newAuthor.orcid.replaceAll('-', ''),
+    );
+    const author2 = authors.find((a) => a.origin_course === '1'); // Any easy way to avoid hardcoding the number?
+    assert.ok(author1);
+    assert.ok(author2);
+    assert.notDeepEqual(author1, author2);
+
+    // Check that the question-author relationship was created
+    const questionAuthors = await util.dumpTableWithSchema(
+      'question_authors',
+      QuestionAuthorSchema,
+    );
+
+    const questionAuthor1 = questionAuthors.find(
+      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author1.id,
+    );
+    const questionAuthor2 = questionAuthors.find(
+      (qa) => qa.question_id === originalSyncedQuestion.id && qa.author_id === author2.id,
+    );
+    assert.ok(questionAuthor1);
+    assert.ok(questionAuthor2);
   });
 
   it('Authors are removed when removed from question', async () => {
