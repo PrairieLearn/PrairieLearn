@@ -14,6 +14,7 @@ import {
   IdSchema,
   RubricItemSchema,
   RubricSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
@@ -600,13 +601,17 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callAsync('assessment_instances_grade', [
-        current_submission.assessment_instance_id,
-        authn_user_id,
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ]);
+      await sqldb.callRow(
+        'assessment_instances_grade',
+        [
+          current_submission.assessment_instance_id,
+          authn_user_id,
+          100, // credit
+          false, // only_log_if_score_updated
+          true, // allow_decrease
+        ],
+        SprocAssessmentInstancesGradeSchema,
+      );
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);

@@ -1,5 +1,7 @@
 import * as path from 'path';
 
+import z from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -92,12 +94,19 @@ export async function getErrorsAndWarningsForFilePath(
       return { errors: null, warnings: null };
   }
 
-  const res = await sqldb.queryZeroOrOneRowAsync(query, queryParams);
-  if (res.rowCount === 0) {
+  const res = await sqldb.queryOptionalRow(
+    query,
+    queryParams,
+    z.object({
+      sync_errors: z.string().nullable(),
+      sync_warnings: z.string().nullable(),
+    }),
+  );
+  if (res === null) {
     return { errors: null, warnings: null };
   }
   return {
-    errors: res.rows[0].sync_errors,
-    warnings: res.rows[0].sync_warnings,
+    errors: res.sync_errors,
+    warnings: res.sync_warnings,
   };
 }
