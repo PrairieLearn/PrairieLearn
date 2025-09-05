@@ -28,6 +28,12 @@ import { PlQuestionPanel } from './extensions/pl-question-panel.js';
 import { RawHtml } from './extensions/raw-html.js';
 
 function formatHtmlWithPrettier(html: string): Promise<string> {
+  // TODO: This is just for debugging, but is currently not sufficient for writing HTML back to a file.
+  /* Our custom syntax isn't standard HTML.
+  this means we'll need an HTML formatter that's aware of our own special flavor of HTML, with 
+  e.g. <markdown>, <pl-code> being indentation-sensitive, Mustache, and so on. Maybe Prettier is the wrong tool for the job here?
+  */
+
   return prettier.format(html, {
     parser: 'html',
     plugins: [prettierHtmlPlugin],
@@ -150,4 +156,4 @@ const RichTextEditor = ({
 };
 
 RichTextEditor.displayName = 'RichTextEditor';
-export { RichTextEditor };
+export default RichTextEditor;

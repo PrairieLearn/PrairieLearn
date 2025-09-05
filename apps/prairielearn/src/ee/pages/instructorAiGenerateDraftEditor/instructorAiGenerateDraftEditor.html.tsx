@@ -15,7 +15,7 @@ import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-
 import { renderHtml } from '../../../lib/preact-html.js';
 import { Hydrate } from '../../../lib/preact.js';
 
-import { RichTextEditor } from './RichTextEditor/index.js';
+import RichTextEditor from './RichTextEditor/index.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
@@ -133,7 +133,11 @@ export function InstructorAiGenerateDraftEditor({
                   ${richTextEditorEnabled
                     ? html`
                         <li class="nav-item">
-                          <a class="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
+                          <a
+                            class="nav-link"
+                            data-bs-toggle="tab"
+                            href="#question-rich-text-editor"
+                          >
                             Rich Text Editor
                           </a>
                         </li>

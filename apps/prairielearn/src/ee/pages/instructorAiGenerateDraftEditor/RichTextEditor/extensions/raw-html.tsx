@@ -57,6 +57,10 @@ export const RawHtml = Node.create({
   renderHTML({ node }) {
     // TODO: Can we use HTMLAttributes here?
     // https://github.com/ueberdosis/tiptap/blob/e0567acfcad097f65dd76e87804eff1c9d805320/packages/extension-list/src/item/list-item.ts#L30
+
+    // FIXME: This current implementation doesn't properly use a node view to render the HTML as a 'div' element.
+    // This means that even though the underlying representation of the HTML is correct, what is rendered in the DOM
+    // are these non-standard tags. This needs to be fixed.
     const div = document.createElement(node.attrs.tag);
     for (const attr of node.attrs.attrs) {
       div.setAttribute(attr.name, attr.value);
