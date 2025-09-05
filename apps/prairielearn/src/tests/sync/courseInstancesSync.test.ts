@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
@@ -13,7 +14,6 @@ import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
-import { Temporal } from '@js-temporal/polyfill';
 
 /**
  * Makes an empty course instance.
