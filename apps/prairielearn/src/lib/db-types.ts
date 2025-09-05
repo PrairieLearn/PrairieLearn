@@ -69,6 +69,13 @@ export const JsonCommentSchema = z.union([z.string(), z.array(z.any()), z.record
 // Sproc schemas. These should be alphabetized by their corresponding sproc name.
 // *******************************************************************************
 
+// Result of assessment_instances_grade sproc
+export const SprocAssessmentInstancesGradeSchema = z.object({
+  new_points: z.number(),
+  new_score_perc: z.number(),
+  updated: z.boolean(),
+});
+
 // Result of assessments_format_for_question sproc
 export const SprocAssessmentsFormatForQuestionSchema = z.array(
   z.object({
@@ -89,6 +96,20 @@ const SprocCheckAssessmentAccessSchema = z.object({
   start_date: z.union([z.string(), z.literal('—')]),
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
+
+// Result of users_get_displayed_role sproc
+export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
+export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
+
+// Result of group_info sproc
+export const SprocGroupInfoSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  uid_list: z.array(z.string()),
+  user_name_list: z.array(z.string()),
+  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
+});
+export type SprocGroupInfo = z.infer<typeof SprocGroupInfoSchema>;
 
 // Result of authz_assessment sproc
 export const SprocAuthzAssessmentSchema = z.object({
@@ -133,6 +154,44 @@ export const SprocAuthzCourseSchema = z.object({
   has_course_permission_view: z.boolean(),
 });
 export type SprocAuthzCourse = z.infer<typeof SprocAuthzCourseSchema>;
+
+// Result of ip_to_mode sproc
+export const SprocIpToModeSchema = z.object({
+  mode: EnumModeSchema,
+  mode_reason: EnumModeReasonSchema,
+});
+export type SprocIpToMode = z.infer<typeof SprocIpToModeSchema>;
+
+// Result of users_is_instructor_in_course_instance sproc
+export const SprocUsersIsInstructorInCourseInstanceSchema = z.boolean();
+
+// Result of users_select_or_insert sproc
+export const SprocUsersSelectOrInsertSchema = z.object({
+  result: z.enum(['success', 'invalid_authn_provider']),
+  user_id: IdSchema.nullable(),
+  user_institution_id: IdSchema.nullable(),
+});
+
+// Result of question_order sproc
+export const SprocQuestionOrderSchema = z.object({
+  instance_question_id: IdSchema,
+  question_number: z.string(),
+  row_order: z.number().int(),
+  sequence_locked: z.boolean(),
+});
+
+// Result of server_loads_current sproc
+export const SprocServerLoadsCurrentSchema = z.object({
+  current_jobs: z.number(),
+  instance_count: z.number().int(),
+  job_type: z.string(),
+  load_perc: z.number(),
+  max_jobs: z.number(),
+  timestamp_formatted: z.string(),
+});
+
+// Result of sync_assessments sproc
+export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({

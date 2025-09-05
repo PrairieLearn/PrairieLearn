@@ -1,4 +1,4 @@
-import z from 'zod';
+import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
@@ -7,18 +7,10 @@ const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const max = await queryRow(
-      'SELECT MAX(id) as max from questions;',
-      z.bigint({ coerce: true }).nullable(),
-    );
-    return {
-      min: 1n,
-      max,
-      batchSize: 1000,
-    };
+    const result = await queryRow(sql.select_bounds, z.bigint({ coerce: true }).nullable());
+    return { min: 1n, max: result, batchSize: 1000 };
   },
-
   async execute(start: bigint, end: bigint): Promise<void> {
-    await execute(sql.backfill_share_publicly, { start, end });
+    await execute(sql.update_enrollments_joined_at, { start, end });
   },
 });

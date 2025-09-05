@@ -48,7 +48,7 @@ export function Home({
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
       <ActionsHeader />
 
-      <div class="container py-5">
+      <div class="container pt-5">
         <DevModeCard />
         <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
         <InstructorCoursesCard instructorCourses={instructorCourses} />
@@ -217,17 +217,17 @@ interface CourseInstanceListProps {
 
 function CourseInstanceList({ courseInstances }: CourseInstanceListProps) {
   return (
-    <>
+    <div class="d-flex flex-wrap gap-2 my-1">
       {courseInstances.map((courseInstance) => (
         <a
           key={courseInstance.id}
-          class="btn btn-outline-primary btn-sm my-1"
+          class="btn btn-outline-primary btn-sm"
           href={`${config.urlPrefix}/course_instance/${courseInstance.id}/instructor`}
         >
           {courseInstance.long_name}
         </a>
       ))}
-    </>
+    </div>
   );
 }
 
