@@ -9,6 +9,9 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
+    self_enrollment_enabled: boolean default true
+    self_enrollment_enabled_before_date: timestamp with time zone
+    self_enrollment_requires_secret_link: boolean default false
     share_source_publicly: boolean not null default false
     short_name: text
     sync_errors: text
@@ -19,6 +22,7 @@ columns
 indexes
     course_instances_pkey: PRIMARY KEY (id) USING btree (id)
     course_instances_course_id_uuid_key: UNIQUE (course_id, uuid) USING btree (course_id, uuid)
+    course_instances_enrollment_code_key: UNIQUE (enrollment_code) USING btree (enrollment_code)
     course_instances_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
