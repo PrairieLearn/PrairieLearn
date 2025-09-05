@@ -19,6 +19,7 @@ columns
 indexes
     course_instances_pkey: PRIMARY KEY (id) USING btree (id)
     course_instances_course_id_uuid_key: UNIQUE (course_id, uuid) USING btree (course_id, uuid)
+    course_instances_enrollment_code_key: UNIQUE (enrollment_code) USING btree (enrollment_code)
     course_instances_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
