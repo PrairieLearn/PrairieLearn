@@ -23,7 +23,7 @@ export const AdministratorQuerySpecsSchema = z.object({
   /** If true, res.locals is passed as the 'locals' parameter to the query function. */
   pass_locals: z.boolean().optional(),
 });
-export type AdministratorQuerySpecs = z.input<typeof AdministratorQuerySpecsSchema>;
+export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
 export const AdministratorQueryResultSchema = z.object({
   rows: z.record(z.any()).array(),

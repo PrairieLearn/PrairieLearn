@@ -64,7 +64,7 @@ const randomChoice = <T>(array: T[] | readonly T[]): T => {
   return array[Math.floor(Math.random() * array.length)];
 };
 
-const makeRowContent = (tableName: TableName): Record<string, any> => {
+const makeRowContent = (tableName: TableName): { action_detail: string } & Record<string, any> => {
   const baseContent = {
     id: Math.floor(Math.random() * 1000000),
   };
@@ -75,26 +75,31 @@ const makeRowContent = (tableName: TableName): Record<string, any> => {
         ...baseContent,
         name: 'John Doe',
         email: 'john.doe@example.com',
+        action_detail: 'name_and_email',
       };
     case 'assessments':
       return {
         ...baseContent,
         title: 'Assessment 1',
+        action_detail: 'title',
       };
     case 'questions':
       return {
         ...baseContent,
         title: 'Question 1',
+        action_detail: 'title',
       };
     case 'enrollments':
       return {
         ...baseContent,
         status: randomChoice(Object.values(EnumEnrollmentStatusSchema.Values)),
+        action_detail: 'status',
       };
     case 'submissions':
       return {
         ...baseContent,
         score: Math.random() * 100,
+        action_detail: 'score',
       };
     default:
       assertNever(tableName);
@@ -132,8 +137,8 @@ export default async function ({
 
       const currentTableName = table_name === 'random' ? randomChoice(tableNames) : table_name;
 
-      let newRow = currentAction === 'delete' ? null : makeRowContent(currentTableName);
-      const oldRow = currentAction === 'insert' ? null : makeRowContent(currentTableName);
+      let { action_detail, ...newRow } = makeRowContent(currentTableName);
+      const { action_detail: _, ...oldRow } = makeRowContent(currentTableName);
 
       if (currentAction === 'update') {
         newRow = {
@@ -144,14 +149,16 @@ export default async function ({
 
       const result = await insertAuditEvent({
         action: currentAction,
-        action_detail: `Generated audit event ${index + 1} for testing`,
+        // Update events have an associated action_detail, but insert and delete events do not.
+        action_detail: currentAction === 'update' ? action_detail : undefined,
+        context: { source: 'generate_audit_events', index },
         agent_authn_user_id: locals.authn_user.user_id,
         agent_user_id: locals.authn_user.user_id,
         course_id: course?.id,
         course_instance_id,
         institution_id: course?.institution_id,
-        new_row: newRow,
-        old_row: oldRow,
+        new_row: currentAction === 'delete' ? undefined : newRow,
+        old_row: currentAction === 'insert' ? undefined : oldRow,
         row_id: newRow?.id ?? oldRow?.id,
         subject_user_id,
         table_name: currentTableName,
