@@ -9,11 +9,11 @@ WHERE
 
 -- BLOCK insert_authors
 INSERT INTO authors (author_name, email, orcid, origin_course)
-SELECT author->>'name',
-       author->>'email',
-       author->>'orcid',
-       (author->>'originCourse')::bigint
-FROM jsonb_to_recordset(to_jsonb(:authors::json)) AS author(
+SELECT name,
+       email,
+       orcid,
+       originCourse::bigint
+FROM jsonb_to_recordset($authors::jsonb) AS author(
   name text,
   email text,
   orcid text,
@@ -23,7 +23,7 @@ ON CONFLICT (author_name, email, orcid, origin_course) DO NOTHING;
 
 -- BLOCK select_authors
 SELECT a.*
-FROM jsonb_to_recordset(to_jsonb(:authors::json)) AS author(
+FROM jsonb_to_recordset($authors::jsonb) AS author(
   name text,
   email text,
   orcid text,
