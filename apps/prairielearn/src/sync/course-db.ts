@@ -1348,7 +1348,7 @@ function validateCourseInstance({
     }
   }
 
-  // TODO: Remove these warnings once we've migrated all courses to the new schema.
+  // TODO: Remove these warnings once we've implemented support for the properties.
   // These are warnings (and not errors) so that we can test syncing with the new schema.
 
   if (courseInstance.selfEnrollment.enabled !== true) {
