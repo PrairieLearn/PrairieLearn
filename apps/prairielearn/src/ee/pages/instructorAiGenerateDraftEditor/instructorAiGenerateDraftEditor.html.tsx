@@ -131,11 +131,13 @@ export function InstructorAiGenerateDraftEditor({
                     <a a class="nav-link" data-bs-toggle="tab" href="#question-code">Files</a>
                   </li>
                   ${richTextEditorEnabled
-                    ? html` <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor"
-                          >Rich Text Editor</a
-                        >
-                      </li>`
+                    ? html`
+                        <li class="nav-item">
+                          <a class="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
+                            Rich Text Editor
+                          </a>
+                        </li>
+                      `
                     : ''}
                 </ul>
                 <div
