@@ -61,7 +61,7 @@ export async function loadAdminQueryModule(query: string): Promise<{
     throw new Error(`Query module ${query} could not be imported`);
   }
   try {
-    AdministratorQuerySpecsSchema.parse(module.specs);
+    module.specs = AdministratorQuerySpecsSchema.parse(module.specs);
   } catch (err) {
     logger.error(`Failed to parse specs for query ${query}:`, err);
     throw new Error(`Query module ${query} does not provide valid specs object`);
