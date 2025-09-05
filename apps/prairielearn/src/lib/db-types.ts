@@ -97,13 +97,17 @@ const SprocCheckAssessmentAccessSchema = z.object({
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
 
+// Result of users_get_displayed_role sproc
+export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
+export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
+
 // Result of group_info sproc
 export const SprocGroupInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   uid_list: z.array(z.string()),
   user_name_list: z.array(z.string()),
-  user_roles_list: z.array(z.string()),
+  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
 });
 export type SprocGroupInfo = z.infer<typeof SprocGroupInfoSchema>;
 
