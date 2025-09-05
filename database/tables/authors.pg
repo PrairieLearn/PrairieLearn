@@ -1,9 +1,9 @@
 columns
     author_name: text
-    orcid: character varying(16)
     email: character varying(255)
-    origin_course: bigint 
     id: bigint not null default nextval('authors_id_seq'::regclass)
+    orcid: character varying(16)
+    origin_course: bigint 
 
 indexes
     authors_pkey: PRIMARY KEY (id) USING btree (id)

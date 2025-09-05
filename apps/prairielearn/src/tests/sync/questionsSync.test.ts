@@ -4,7 +4,6 @@ import * as path from 'path';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
-import { features } from '../../lib/features/index.js';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -16,6 +15,7 @@ import {
   TagSchema,
   TopicSchema,
 } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   type QuestionJsonInput,
@@ -338,8 +338,7 @@ describe('Question syncing', () => {
     if (!courseData.questions[util.QUESTION_ID].authors) {
       courseData.questions[util.QUESTION_ID].authors = [];
     }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor);
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthorWithOriginCourse);
+    courseData.questions[util.QUESTION_ID].authors.push(newAuthor, newAuthorWithOriginCourse);
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
