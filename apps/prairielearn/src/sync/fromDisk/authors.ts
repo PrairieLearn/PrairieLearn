@@ -54,8 +54,10 @@ export async function sync(
     id?: string;
   }
 
-  // Collect all unique authors from all questions (mapping JSON authors to normalized ones)
-  const uniqueAuthors = new Map<JSONAuthor, NormalizedAuthor>();
+  // Collect all unique authors from all questions
+  const uniqueAuthors = new Set<NormalizedAuthor>();
+  // Setting up reverse lookup of resolved authors from database back to JSON
+  const authorLookup = new Map<string, JSONAuthor>();
 
   for (const qid of Object.keys(courseData.questions)) {
     const question = courseData.questions[qid];
@@ -93,7 +95,8 @@ export async function sync(
         resolvedAuthor.originCourse = originCourseID;
       }
 
-      uniqueAuthors.set(resolvedAuthor, author);
+      uniqueAuthors.add(resolvedAuthor);
+      authorLookup.set(JSON.stringify(resolvedAuthor), author);
     }
   }
 
@@ -102,33 +105,37 @@ export async function sync(
     authors: JSON.stringify(Array.from(uniqueAuthors.keys())),
   });
 
-  // Get the mapping of author names to their IDs
+  // Re-load authors from DB (including IDs) and build new map directly from JSONAuthor to ID
   const authors = await sqldb.queryRows(sql.select_authors, {}, AuthorSchema);
-  const authorIdMap = new Map<NormalizedAuthor, string>();
+  const authorIdMap = new Map<string, string>();
   for (const author of authors) {
-    authorIdMap.set(
-      {
-        name: author.author_name ?? undefined,
-        email: author.email ?? undefined,
-        orcid: author.orcid ?? undefined,
-        originCourse: author.origin_course ?? undefined,
-      },
-      author.id,
-    );
+    // A bit awkward: reconstructing normalized author from DB author to then lookup JSON author
+    const normalizedAuthor: NormalizedAuthor = {
+      name: author.author_name ?? undefined,
+      email: author.email ?? undefined,
+      orcid: author.orcid ?? undefined,
+      originCourse: author.origin_course ?? undefined,
+    };
+    const jsonAuthor = authorLookup.get(JSON.stringify(normalizedAuthor));
+
+    // This should never happen in practice
+    if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} not found`);
+
+    authorIdMap.set(JSON.stringify(jsonAuthor), author.id);
   }
 
   // Create question-author relationships
   const questionAuthorsParam: string[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
-    const dedupedQuestionAuthors = new Set<JSONAuthor>();
-    (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(a));
+    const dedupedQuestionAuthors = new Set<string>();
+    (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
     const questionTagIds = [...dedupedQuestionAuthors].map((a) => {
       const author = authorIdMap.get(a);
 
       // This should never happen in practice, but this keeps the type checker
       // happy, and if it does happen, we want it to fail obviously and loudly.
-      if (!author) throw new Error(`Author ${JSON.stringify(a)} not found`);
+      if (!author) throw new Error(`Author ${a} not found`);
 
       return author;
     });
