@@ -1138,6 +1138,12 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
+export const QuestionAuthorSchema = z.object({
+  author_id: z.string(),
+  id: IdSchema,
+  question_id: z.string(),
+});
+
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1349,6 +1355,15 @@ export const TagSchema = z.object({
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
+
+export const AuthorSchema = z.object({
+  author_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: IdSchema,
+  orcid: z.string().nullable(),
+  origin_course: IdSchema.nullable(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
 
 export const TimeSeriesSchema = null;
 
