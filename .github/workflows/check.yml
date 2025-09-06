@@ -84,9 +84,13 @@ jobs:
       - name: Run the GitHub Actions linter
         run: make lint-actions
       # Requires Git history and yarn install. Not using the make version
-      # because the base ref is potentially different.
+      # because the base ref is potentially different. Does not run in
+      # changeset-release or dependabot PRs, since they are expected to change
+      # packages without creating a changeset. Also does not run in merge_group
+      # events due to issues with the check for changeset, which can be tricky
+      # in merge branches.
       - name: Check if a changeset is required
-        if: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group')
+        if: ${{github.event_name == 'pull_request'
           && !contains(github.event.pull_request.head.ref, 'changeset-release')
           && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
