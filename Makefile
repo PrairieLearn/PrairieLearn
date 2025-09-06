@@ -159,7 +159,7 @@ typecheck-js:
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
-	@yarn postgrestools check apps/prairielearn/src
+	@yarn postgrestools check .
 
 changeset:
 	@yarn changeset

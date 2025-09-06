@@ -12,11 +12,11 @@
     "searchPath": ["public", "server*"]
   },
   "files": {
-    "ignore": []
+    "ignore": ["*.pg"]
   },
   "linter": {
     "rules": {
-      "recommended": true
+      "recommended": false
     }
   },
   "db": {
