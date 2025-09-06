@@ -16,15 +16,24 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-// sorted alphabetically by qid
-export const questionsArray: {
+interface TestExamQuestion {
   qid: string;
   type: 'Freeform' | 'Calculation';
   maxPoints: number;
   points?: number;
   id?: string;
   url?: string;
-}[] = [
+}
+
+interface TestExam {
+  maxPoints: number;
+  tid: string;
+  title: string;
+  questions: TestExamQuestion[];
+  keyedQuestions: Record<string, TestExamQuestion>;
+}
+
+const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
   { qid: 'addNumbers', type: 'Freeform', maxPoints: 5 },
   { qid: 'addVectors', type: 'Calculation', maxPoints: 11 },
   { qid: 'brokenGeneration', type: 'Freeform', maxPoints: 10 },
@@ -34,12 +43,23 @@ export const questionsArray: {
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 13 },
 ];
 
-export const questions = _.keyBy(questionsArray, 'qid');
+export const exams: Record<string, TestExam> = {
+  'exam1-automaticTestSuite': {
+    maxPoints: 94,
+    tid: 'exam1-automaticTestSuite',
+    title: 'Exam for automatic test suite',
+    questions: exam1AutomaticTestSuiteQuestions,
+    keyedQuestions: _.keyBy(exam1AutomaticTestSuiteQuestions, 'qid'),
+  },
+};
 
-// must be the sum of maxPoints in questionsArray, but we hard-code it for reference
-export const assessmentMaxPoints = 94;
+export const exam1AutomaticTestSuite = exams['exam1-automaticTestSuite'];
 
-export function startExam(locals: Record<string, any>) {
+export function startExam(locals: Record<string, any>, examTid: keyof typeof exams) {
+  if (!(examTid in exams)) {
+    throw new Error(`Exam ${examTid} not found`);
+  }
+  const exam = exams[examTid];
   describe('startExam-1. the locals object', function () {
     it('should be cleared', function () {
       for (const prop in locals) {
@@ -62,7 +82,7 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-2. the questions', function () {
     it('should have cleared data', function () {
-      questionsArray.forEach(function (question) {
+      exam.questions.forEach(function (question) {
         for (const prop in question) {
           if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
             delete question[prop];
@@ -159,7 +179,7 @@ export function startExam(locals: Record<string, any>) {
     it('should have the correct assessment_instance.assessment_id', function () {
       assert.equal(locals.assessment_instance?.assessment_id, locals.assessment_id);
     });
-    it(`should create ${questionsArray.length} instance_questions`, async function () {
+    it(`should create ${exam.questions.length} instance_questions`, async function () {
       const result = await sqldb.queryRows(
         sql.select_instance_questions,
         z.object({
@@ -167,10 +187,10 @@ export function startExam(locals: Record<string, any>) {
           qid: QuestionSchema.shape.qid,
         }),
       );
-      assert.equal(result.length, questionsArray.length);
+      assert.equal(result.length, exam.questions.length);
       locals.instance_questions = result;
     });
-    questionsArray.forEach(function (question, i) {
+    exam.questions.forEach(function (question, i) {
       it(`should have question #${i + 1} as QID ${question.qid}`, function () {
         assert(locals.instance_questions);
         question.id = locals.instance_questions[i].id;
@@ -187,7 +207,7 @@ export function startExam(locals: Record<string, any>) {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    questionsArray.forEach(function (question) {
+    exam.questions.forEach(function (question) {
       it(`should link to ${question.qid} question`, function () {
         assert(locals.$);
         const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
