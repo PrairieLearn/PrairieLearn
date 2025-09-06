@@ -182,9 +182,9 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
   if (file.isBinary) {
     const type = await fileTypeFromFile(paths.workingPath);
     if (type) {
-      if (type?.mime.startsWith('image')) {
+      if (type.mime.startsWith('image')) {
         file.isImage = true;
-      } else if (type?.mime === 'application/pdf') {
+      } else if (type.mime === 'application/pdf') {
         file.isPDF = true;
       }
     }
@@ -488,7 +488,7 @@ function DirectoryBrowserActions({
   csrfToken: string;
 }) {
   return html`
-    ${paths.specialDirs?.map(
+    ${paths.specialDirs.map(
       (d) => html`
         <button
           type="button"
@@ -589,7 +589,7 @@ function DirectoryBrowserBody({
           </tr>
         </thead>
         <tbody>
-          ${directoryListings.files?.map(
+          ${directoryListings.files.map(
             (f) => html`
               <tr>
                 <td class="align-middle">

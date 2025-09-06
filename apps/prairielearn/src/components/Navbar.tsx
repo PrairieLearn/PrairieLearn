@@ -179,16 +179,18 @@ function NavbarByType({
         navbarType,
       });
     } else {
-      if (navbarType == null || navbarType === 'plain') {
-        return NavbarPlain({ resLocals, navPage });
-      } else if (navbarType === 'instructor') {
-        return NavbarInstructor({ resLocals, navPage, navSubPage });
-      } else if (navbarType === 'administrator_institution') {
-        return NavbarAdministratorInstitution({ resLocals });
-      } else if (navbarType === 'institution') {
-        return NavbarInstitution({ resLocals });
-      } else {
-        assertNever(navbarType);
+      switch (navbarType) {
+        case 'plain':
+        case undefined:
+          return NavbarPlain({ resLocals, navPage });
+        case 'instructor':
+          return NavbarInstructor({ resLocals, navPage, navSubPage });
+        case 'administrator_institution':
+          return NavbarAdministratorInstitution({ resLocals });
+        case 'institution':
+          return NavbarInstitution({ resLocals });
+        default:
+          assertNever(navbarType);
       }
     }
   }

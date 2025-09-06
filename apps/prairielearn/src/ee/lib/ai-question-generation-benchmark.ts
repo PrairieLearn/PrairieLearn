@@ -262,7 +262,7 @@ export async function benchmarkAiQuestionGeneration({
         job.info(prompt.response.trimEnd());
         job.info('\n');
 
-        if (prompt.errors?.length) {
+        if (prompt.errors.length > 0) {
           job.error('Errors');
           job.error('======');
           job.error(JSON.stringify(prompt.errors, null, 2));
