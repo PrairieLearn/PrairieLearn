@@ -3089,6 +3089,60 @@ describe('Assessment syncing', () => {
     assert.isFalse(secondQuestionSecondAlt.force_max_points);
   });
 
+  it('cascades triesPerVariant correctly from question to alternatives', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'zone 1',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 10,
+          triesPerVariant: 2,
+        },
+        {
+          points: 15,
+          triesPerVariant: 3,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+              triesPerVariant: 4,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['triesPerVariantTest'] =
+      assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('triesPerVariantTest');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID && aq.number === 1,
+    );
+    assert.ok(firstQuestion);
+    assert.strictEqual(firstQuestion.tries_per_variant, 2);
+
+    const secondQuestionFirstAlt = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID && aq.number === 2,
+    );
+    assert.ok(secondQuestionFirstAlt);
+    assert.strictEqual(secondQuestionFirstAlt.tries_per_variant, 3);
+
+    const secondQuestionSecondAlt = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID && aq.number === 3,
+    );
+    assert.ok(secondQuestionSecondAlt);
+    assert.strictEqual(secondQuestionSecondAlt.tries_per_variant, 4);
+  });
+
   it('defaults requireHonorCode based on assessment type', async () => {
     const courseData = util.getCourseData();
 
