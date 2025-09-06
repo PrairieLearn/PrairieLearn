@@ -4,6 +4,7 @@ import pg from 'pg';
 
 import {
   SCHEMA_MIGRATIONS_PATH,
+  extractTimestampFromFilename,
   initBatchedMigrations,
   init as initMigrations,
   stopBatchedMigrations,
@@ -36,7 +37,18 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
   },
 });
 
-async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): Promise<void> {
+async function runMigrationsAndSprocs({
+  dbName,
+  runMigrations,
+}: {
+  dbName: string;
+  runMigrations:
+    | boolean
+    | {
+        beforeTimestamp: string;
+        inclusiveBefore: boolean;
+      };
+}): Promise<void> {
   const pgConfig = {
     user: POSTGRES_USER,
     database: dbName,
@@ -61,11 +73,12 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
   });
 
-  if (runMigrations) {
-    await initMigrations(
-      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
-      'prairielearn',
-    );
+  if (typeof runMigrations === 'object' || runMigrations) {
+    await initMigrations({
+      directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      project: 'prairielearn',
+      migrationFilters: typeof runMigrations === 'object' ? runMigrations : undefined,
+    });
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');
@@ -76,23 +89,65 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   await sqldb.closeAsync();
 }
 
-async function createFromTemplate(
-  dbName: string,
-  dbTemplateName: string,
-  dropFirst: boolean,
-): Promise<void> {
+async function createFromTemplate({
+  dbName,
+  dbTemplateName,
+  dropFirst,
+}: {
+  dbName: string;
+  dbTemplateName: string;
+  dropFirst: boolean;
+}): Promise<void> {
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
     database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
-    prepare: () => runMigrationsAndSprocs(dbName, false),
+    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false }),
   });
 }
 
 async function closeSql(): Promise<void> {
   await namedLocks.close();
   await sqldb.closeAsync();
+}
+
+async function createAndInitDatabaseWithMigrations({
+  dbName,
+  beforeTimestamp,
+  inclusiveBefore,
+  dropFirst,
+  allMigrations,
+}: {
+  dbName: string;
+  beforeTimestamp?: string;
+  inclusiveBefore?: boolean;
+  allMigrations?: boolean;
+  dropFirst: boolean;
+}): Promise<void> {
+  const runMigrations = allMigrations
+    ? true
+    : {
+        beforeTimestamp: beforeTimestamp ?? '',
+        inclusiveBefore: inclusiveBefore ?? false,
+      };
+  await postgresTestUtils.createDatabase({
+    dropExistingDatabase: dropFirst,
+    ignoreIfExists: !dropFirst,
+    database: dbName,
+    configurePool: true,
+    prepare: () =>
+      runMigrationsAndSprocs({
+        dbName,
+        runMigrations,
+      }),
+  });
+
+  // Ideally this would happen only over in `helperServer`, but we need to use
+  // the same database details, so this is a convenient place to do it.
+  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+    throw err;
+  });
 }
 
 async function databaseExists(dbName: string): Promise<boolean> {
@@ -112,12 +167,61 @@ async function setupDatabases(): Promise<void> {
   if (!templateExists) {
     await createTemplate();
   }
-  await createFromTemplate(dbName, POSTGRES_DATABASE_TEMPLATE, true);
+
+  await createFromTemplate({ dbName, dbTemplateName: POSTGRES_DATABASE_TEMPLATE, dropFirst: true });
 
   // Ideally this would happen only over in `helperServer`, but we need to use
   // the same database details, so this is a convenient place to do it.
   await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
     throw err;
+  });
+}
+
+/**
+ * Runs all migrations with a timestamp before the given migration.
+ * @param migrationName The name of the migration to run all migrations before.
+ * @param options
+ * @param options.drop Whether to drop the database before running the migrations. Default false.
+ */
+export async function runMigrationsBefore(
+  migrationName: string,
+  { drop = false }: { drop?: boolean } = {},
+): Promise<void> {
+  const dbName = getDatabaseNameForCurrentWorker();
+  await createAndInitDatabaseWithMigrations({
+    dbName,
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: false,
+    dropFirst: drop,
+  });
+}
+
+/**
+ * Runs all migrations with a timestamp before the given migration, and including the given migration.
+ * @param migrationName The name of the migration to run all migrations including.
+ * @param options
+ * @param options.drop Whether to drop the database before running the migrations. Default false.
+ */
+export async function runMigrationsThrough(
+  migrationName: string,
+  { drop = false }: { drop?: boolean } = {},
+): Promise<void> {
+  const dbName = getDatabaseNameForCurrentWorker();
+  await createAndInitDatabaseWithMigrations({
+    dbName,
+    beforeTimestamp: extractTimestampFromFilename(migrationName),
+    inclusiveBefore: true,
+    dropFirst: drop,
+  });
+}
+
+export async function runRemainingMigrations({
+  drop = false,
+}: { drop?: boolean } = {}): Promise<void> {
+  await createAndInitDatabaseWithMigrations({
+    dbName: getDatabaseNameForCurrentWorker(),
+    allMigrations: true,
+    dropFirst: drop,
   });
 }
 
@@ -146,7 +250,11 @@ export async function createTemplate(): Promise<void> {
     dropExistingDatabase: true,
     database: POSTGRES_DATABASE_TEMPLATE,
     configurePool: false,
-    prepare: () => runMigrationsAndSprocs(POSTGRES_DATABASE_TEMPLATE, true),
+    prepare: () =>
+      runMigrationsAndSprocs({
+        dbName: POSTGRES_DATABASE_TEMPLATE,
+        runMigrations: true,
+      }),
   });
 }
 
@@ -157,6 +265,38 @@ export async function dropTemplate(): Promise<void> {
     // Always drop the template regardless of PL_KEEP_TEST_DB env
     force: true,
   });
+}
+
+/**
+ * Helper function for testing migrations.
+ * @param params
+ * @param params.name The name of the migration to test.
+ * @param params.beforeMigration A function to run before the migration.
+ * @param params.afterMigration A function to run after the migration.
+ */
+export async function testMigration<T>({
+  name,
+  beforeMigration,
+  afterMigration,
+}: {
+  name: string;
+  beforeMigration?: () => Promise<T> | T;
+  afterMigration?: (beforeResult: T) => Promise<void> | void;
+}): Promise<void> {
+  await runMigrationsBefore(name, { drop: true });
+
+  const result = (await beforeMigration?.()) as T;
+
+  await runMigrationsThrough(name, { drop: false });
+
+  if (afterMigration) {
+    await afterMigration(result);
+  }
+
+  await runRemainingMigrations();
+
+  await closeSql();
+  await postgresTestUtils.dropDatabase();
 }
 
 export async function resetDatabase(): Promise<void> {

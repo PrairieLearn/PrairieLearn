@@ -16,7 +16,11 @@ describe('migrations', () => {
           timestamp: '20220101010101',
         },
       ];
-      assert.deepEqual(getMigrationsToExecute(migrationFiles, []), migrationFiles);
+      assert.deepEqual(
+        getMigrationsToExecute(migrationFiles, { excludeMigrations: [] }),
+        migrationFiles,
+      );
+      assert.deepEqual(getMigrationsToExecute(migrationFiles, {}), migrationFiles);
     });
 
     it('handles case where subset of migrations have been executed', () => {
@@ -45,14 +49,88 @@ describe('migrations', () => {
           timestamp: '20220101010102',
         },
       ];
-      assert.deepEqual(getMigrationsToExecute(migrationFiles, executedMigrations), [
+      assert.deepEqual(
+        getMigrationsToExecute(migrationFiles, { excludeMigrations: executedMigrations }),
+        [
+          {
+            directory: 'migrations',
+            timestamp: '20220101010103',
+            filename: '20220101010103_testing_3.sql',
+          },
+        ],
+      );
+    });
+  });
+
+  it('handles case where beforeTimestamp is specified', () => {
+    const migrationFiles = [
+      {
+        directory: 'migrations',
+        filename: '20220101010101_testing_1.sql',
+        timestamp: '20220101010101',
+      },
+      {
+        directory: 'migrations',
+        filename: '20220101010102_testing_2.sql',
+        timestamp: '20220101010102',
+      },
+      {
+        directory: 'migrations',
+        filename: '20220101010103_testing_3.sql',
+        timestamp: '20220101010103',
+      },
+    ];
+    assert.deepEqual(
+      getMigrationsToExecute(migrationFiles, {
+        excludeMigrations: [],
+        beforeTimestamp: '20220101010102',
+      }),
+      [
         {
           directory: 'migrations',
-          timestamp: '20220101010103',
-          filename: '20220101010103_testing_3.sql',
+          filename: '20220101010101_testing_1.sql',
+          timestamp: '20220101010101',
         },
-      ]);
-    });
+      ],
+    );
+  });
+  it('handles case where inclusiveBefore is specified', () => {
+    const migrationFiles = [
+      {
+        directory: 'migrations',
+        filename: '20220101010101_testing_1.sql',
+        timestamp: '20220101010101',
+      },
+      {
+        directory: 'migrations',
+        filename: '20220101010102_testing_2.sql',
+        timestamp: '20220101010102',
+      },
+      {
+        directory: 'migrations',
+        filename: '20220101010103_testing_3.sql',
+        timestamp: '20220101010103',
+      },
+    ];
+    assert.deepEqual(
+      getMigrationsToExecute(migrationFiles, {
+        excludeMigrations: [],
+        beforeTimestamp: '20220101010102',
+        inclusiveBefore: true,
+      }),
+      [
+        {
+          directory: 'migrations',
+          filename: '20220101010101_testing_1.sql',
+          timestamp: '20220101010101',
+        },
+        {
+          directory: 'migrations',
+          filename: '20220101010102_testing_2.sql',
+          timestamp: '20220101010102',
+        },
+      ],
+    );
   });
 
   describe('initWithLock', () => {
@@ -70,7 +148,7 @@ describe('migrations', () => {
 
     it('runs both SQL and JavaScript migrations', async () => {
       const migrationDir = path.join(import.meta.dirname, 'fixtures');
-      await initWithLock([migrationDir], 'prairielearn_migrations');
+      await initWithLock({ directories: [migrationDir], project: 'prairielearn_migrations' });
 
       // If both migrations ran successfully, there should be a single user
       // in the database.

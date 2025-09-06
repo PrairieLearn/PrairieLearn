@@ -20,4 +20,5 @@ export {
   retryFailedBatchedMigrationJobs,
 } from './batched-migrations/index.js';
 
+export { extractTimestampFromFilename } from './load-migrations.js';
 export const SCHEMA_MIGRATIONS_PATH = path.resolve(import.meta.dirname, '..', 'schema-migrations');
