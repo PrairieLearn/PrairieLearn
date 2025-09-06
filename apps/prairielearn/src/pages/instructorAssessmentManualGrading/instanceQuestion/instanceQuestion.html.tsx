@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
@@ -10,7 +11,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { type AiSubmissionGroup, GradingJobSchema, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
@@ -29,15 +30,18 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  submissionGroupName,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  aiSubmissionGroups,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  submissionGroupName?: string;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -46,7 +50,10 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiSubmissionGroups?: AiSubmissionGroup[];
 }) {
+  const aiSubmissionGroupsExist = aiSubmissionGroups && aiSubmissionGroups.length > 0;
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -79,6 +86,13 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+      ${EncodedData(
+        {
+          instanceQuestionId: resLocals.instance_question.id,
+          aiSubmissionGroupsExist,
+        },
+        'instance-question-data',
+      )}
     `,
     preContent: html`
       <div class="container-fluid">
@@ -167,7 +181,10 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
+                submissionGroupName,
                 aiGradingInfo,
+                showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
+                aiSubmissionGroups,
               })}
             </div>
           </div>
@@ -254,9 +271,9 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     disable: true,
-                    hide_back_to_question: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    showAiSubmissionGroup: false,
                   })}
                 </div>
               </div>
@@ -282,6 +299,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    showAiSubmissionGroup: false,
                   })}
                 </div>
               </div>

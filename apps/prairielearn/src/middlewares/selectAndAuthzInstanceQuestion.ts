@@ -77,6 +77,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   instance_question_info: InstanceQuestionInfo & {
     previous_variants?: SimpleVariantWithScore[];
   };
+  skip_graded_submissions?: boolean;
 
   /** These are only set if the assessment has group work. */
   prev_instance_question_role_permissions?: QuestionGroupPermissions;
@@ -101,6 +102,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row);
+
   if (res.locals.assessment.group_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(
