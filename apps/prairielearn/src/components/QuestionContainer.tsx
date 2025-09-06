@@ -231,7 +231,7 @@ export function IssuePanel({
     user_uid: User['uid'];
     formatted_date: string;
   };
-  course_instance: CourseInstance;
+  course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -483,6 +483,7 @@ export function QuestionFooterContent({
       return 'This question is complete and cannot be answered again.';
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (authz_result?.authorized_edit === false) {
       return html`<div class="alert alert-warning mt-2" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
@@ -924,12 +925,12 @@ function CopyQuestionModal({
       <input
         type="hidden"
         name="__csrf_token"
-        value="${questionCopyTargets[0]?.__csrf_token ?? ''}"
+        value="${questionCopyTargets.at(0)?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${questionCopyTargets?.length > 0
+      ${questionCopyTargets.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
               Copy question

@@ -146,18 +146,18 @@ export function SubmissionPanel({
                                 submission.rubric_grading?.rubric_items?.[item.id] ?? null,
                             }),
                           )}
-                        ${submission.rubric_grading?.adjust_points
+                        ${submission.rubric_grading.adjust_points
                           ? html`
                               <div class="mb-2">
                                 <span class="text-muted"> Manual grading adjustment: </span>
                                 <span
-                                  class="text-${submission.rubric_grading?.adjust_points >= 0
+                                  class="text-${submission.rubric_grading.adjust_points >= 0
                                     ? 'success'
                                     : 'danger'}"
                                 >
                                   <strong data-testid="rubric-adjust-points">
-                                    [${(submission.rubric_grading?.adjust_points >= 0 ? '+' : '') +
-                                    submission.rubric_grading?.adjust_points}]
+                                    [${(submission.rubric_grading.adjust_points >= 0 ? '+' : '') +
+                                    submission.rubric_grading.adjust_points}]
                                   </strong>
                                 </span>
                               </div>

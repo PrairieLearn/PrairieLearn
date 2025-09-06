@@ -128,21 +128,22 @@ export async function aiGrade({
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
-      if (mode === 'human_graded') {
-        // Things that have been graded by a human
-        return (
-          !instance_question.requires_manual_grading &&
-          instance_question.status !== 'unanswered' &&
-          !instance_question.is_ai_graded
-        );
-      } else if (mode === 'all') {
-        // Everything
-        return true;
-      } else if (mode === 'selected') {
-        // Things that have been selected by checkbox
-        return instance_question_ids?.includes(instance_question.id);
-      } else {
-        assertNever(mode);
+      switch (mode) {
+        case 'human_graded':
+          // Things that have been graded by a human
+          return (
+            !instance_question.requires_manual_grading &&
+            instance_question.status !== 'unanswered' &&
+            !instance_question.is_ai_graded
+          );
+        case 'all':
+          // Everything
+          return true;
+        case 'selected':
+          // Things that have been selected by checkbox
+          return instance_question_ids?.includes(instance_question.id);
+        default:
+          assertNever(mode);
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
@@ -459,10 +460,15 @@ export async function aiGrade({
           logger.error(err);
         } finally {
           for (const log of logs) {
-            if (log.messageType === 'info') {
-              job.info(log.message);
-            } else if (log.messageType === 'error') {
-              job.error(log.message);
+            switch (log.messageType) {
+              case 'info':
+                job.info(log.message);
+                break;
+              case 'error':
+                job.error(log.message);
+                break;
+              default:
+                assertNever(log.messageType);
             }
           }
         }

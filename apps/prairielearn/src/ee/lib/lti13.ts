@@ -560,12 +560,7 @@ export async function queryAndLinkLineitem(
   unsafe_assessment_id: string | number,
 ) {
   const item = await getLineitem(instance, lineitem_id_url);
-
-  if (item) {
-    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
-  } else {
-    throw new HttpStatusError(400, 'Lineitem not found');
-  }
+  await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
 }
 
 export async function unlinkAssessment(
@@ -591,10 +586,6 @@ export async function linkAssessment(
     },
     AssessmentSchema,
   );
-
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment id');
-  }
 
   await execute(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
@@ -846,6 +837,7 @@ class Lti13ContextMembership {
     for (const match of ['uid', 'email']) {
       const memberResults = this.#membershipsByEmail[user[match]];
 
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
@@ -877,10 +869,6 @@ export async function updateLti13Scores(
       context_memberships_url: z.string(),
     }),
   );
-
-  if (assessment === null) {
-    throw new HttpStatusError(403, 'Invalid assessment.id');
-  }
 
   job.info(`Working on assessment ${assessment.title} (${assessment.tid})`);
 
