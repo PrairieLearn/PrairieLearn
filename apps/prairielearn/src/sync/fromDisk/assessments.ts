@@ -141,7 +141,7 @@ function getParamsForAssessment(
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints,
-            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
+            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant, // XXX
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
