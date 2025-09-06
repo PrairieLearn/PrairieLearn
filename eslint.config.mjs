@@ -648,7 +648,6 @@ export default tseslint.config([
       'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
       'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
       'apps/prairielearn/src/pages/**/*.{ts,tsx}',
-      'apps/prairielearn/src/question-servers/**/*.{ts,tsx}',
       'apps/prairielearn/src/server.ts',
       'apps/prairielearn/*.config.ts',
     ],
