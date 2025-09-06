@@ -16,9 +16,12 @@ export const AdministratorQuerySpecsSchema = z.object({
         name: z.string(),
         description: z.string(),
         default: z.string().optional(),
+        options: z.array(z.string()).optional(),
       }),
     )
     .optional(),
+  /** If true, res.locals is passed as the 'locals' parameter to the query function. */
+  pass_locals: z.boolean().optional(),
 });
 export type AdministratorQuerySpecs = z.infer<typeof AdministratorQuerySpecsSchema>;
 
@@ -59,7 +62,7 @@ export async function loadAdminQueryModule(query: string): Promise<{
     throw new Error(`Query module ${query} could not be imported`);
   }
   try {
-    AdministratorQuerySpecsSchema.parse(module.specs);
+    module.specs = AdministratorQuerySpecsSchema.parse(module.specs);
   } catch (err) {
     logger.error(`Failed to parse specs for query ${query}:`, err);
     throw new Error(`Query module ${query} does not provide valid specs object`);
