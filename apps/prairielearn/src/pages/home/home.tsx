@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
@@ -87,7 +88,9 @@ router.get(
                 </a>
               </div>
             </footer>
-          ) : undefined,
+          ) : (
+            <PageFooter />
+          ),
       }),
     );
   }),

@@ -1,5 +1,13 @@
 # @prairielearn/migrations
 
+## 3.0.25
+
+### Patch Changes
+
+- d6f506e: Update README for migrations to use modern function calls
+- Updated dependencies [c6f661c]
+  - @prairielearn/postgres@4.2.0
+
 ## 3.0.24
 
 ### Patch Changes
