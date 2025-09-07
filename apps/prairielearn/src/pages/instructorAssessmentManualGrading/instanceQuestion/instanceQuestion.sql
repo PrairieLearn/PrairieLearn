@@ -84,7 +84,7 @@ SELECT
   COALESCE(
     iq.manual_submission_group_id,
     iq.ai_submission_group_id
-  ) as selected_submission_group_id
+  ) AS selected_submission_group_id
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
