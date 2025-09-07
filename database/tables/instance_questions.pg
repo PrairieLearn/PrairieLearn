@@ -54,6 +54,7 @@ foreign-key constraints
     instance_questions_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_last_grader_fkey: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_manual_submission_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, manual_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_manual_submission_group_id_fkey: FOREIGN KEY (manual_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     files: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL

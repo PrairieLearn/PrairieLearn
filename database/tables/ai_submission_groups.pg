@@ -15,3 +15,5 @@ foreign-key constraints
 referenced by
     instance_questions: FOREIGN KEY (assessment_question_id, ai_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions: FOREIGN KEY (ai_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (assessment_question_id, manual_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (manual_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
