@@ -46,6 +46,13 @@ SET
 WHERE
   id = $instance_question_id;
 
+-- BLOCK update_instance_question_manual_submission_group
+UPDATE instance_questions
+SET
+  manual_submission_group_id = $manual_submission_group_id
+WHERE
+  id = $instance_question_id;
+
 -- BLOCK delete_instance_questions_ai_submission_groups
 WITH
   updated AS (

@@ -1,8 +1,8 @@
 import z from 'zod';
 
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -37,7 +37,7 @@ export async function insertDefaultAiSubmissionGroups({
 
   await runInTransactionAsync(async () => {
     for (const groupInfo of STANDARD_SUBMISSION_GROUPS) {
-      await queryAsync(sql.insert_ai_submission_group, {
+      await execute(sql.insert_ai_submission_group, {
         assessment_question_id,
         submission_group_name: groupInfo.submission_group_name,
         submission_group_description: groupInfo.submission_group_description,
@@ -56,18 +56,39 @@ export async function selectAiSubmissionGroup(ai_submission_group_id: string) {
   );
 }
 
-/** Set the AI submission group of an instance question. */
 export async function updateAiSubmissionGroup({
   instance_question_id,
   ai_submission_group_id,
 }: {
   instance_question_id: string;
-  ai_submission_group_id: string;
+  ai_submission_group_id: string | null;
 }) {
-  await queryAsync(sql.update_instance_question_ai_submission_group, {
+  await execute(sql.update_instance_question_ai_submission_group, {
     instance_question_id,
     ai_submission_group_id,
   });
+}
+
+/** Set the submission group of an instance question manually. */
+export async function updateManualSubmissionGroup({
+  instance_question_id,
+  manual_submission_group_id,
+}: {
+  instance_question_id: string;
+  manual_submission_group_id: string | null;
+}) {
+  await execute(sql.update_instance_question_manual_submission_group, {
+    instance_question_id,
+    manual_submission_group_id,
+  });
+
+  if (!manual_submission_group_id) {
+    // Also clear the AI submission group
+    await updateAiSubmissionGroup({
+      instance_question_id,
+      ai_submission_group_id: null,
+    });
+  }
 }
 
 export async function selectAssessmentQuestionHasAiSubmissionGroups({

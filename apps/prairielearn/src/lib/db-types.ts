@@ -882,6 +882,7 @@ export const InstanceQuestionSchema = z.object({
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
   manual_points: z.number().nullable(),
+  manual_submission_group_id: IdSchema.nullable(),
   max_submission_score: z.number().nullable(),
   modified_at: DateFromISOString,
   number: z.number().nullable(),

@@ -40,5 +40,5 @@ export interface InstanceQuestionTableData {
   aiGradingMode: boolean;
   csrfToken: string;
   rubric_data: RubricData | null;
-  aiSubmissionGroups: AiSubmissionGroup[]
+  aiSubmissionGroups: AiSubmissionGroup[];
 }

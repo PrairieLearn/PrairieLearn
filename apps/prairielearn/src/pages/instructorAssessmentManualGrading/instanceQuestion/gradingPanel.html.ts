@@ -1,6 +1,6 @@
 import assert from 'assert';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type AiSubmissionGroup, type Issue, type User } from '../../../lib/db-types.js';
@@ -12,7 +12,6 @@ import {
   TotalPointsSection,
 } from './gradingPointsSection.html.js';
 import { RubricInputSection } from './rubricInputSection.html.js';
-import { SubmissionGroups } from './submissionGroupsTable.html.js';
 
 interface SubmissionOrGradingJob {
   feedback: Record<string, any> | null;
@@ -106,8 +105,7 @@ export function GradingPanel({
                   <label for="submission-group-toggle" class="form-label">
                     Submission Group:
                     ${aiSubmissionGroups && aiSubmissionGroups.length > 0
-                      ? html`
-                          <i class="fas fa-circle-info"></i>`
+                      ? html` <i class="fas fa-circle-info"></i>`
                       : ''}
                   </label>
                 </div>

@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import {
@@ -49,7 +50,11 @@ export interface AiGradingGeneralStats {
  * and calculating point and/or rubric difference between human and AI.
  */
 export async function fillInstanceQuestionColumns<
-  T extends { id: string; ai_submission_group_id: string | null },
+  T extends {
+    id: string;
+    ai_submission_group_id: string | null;
+    manual_submission_group_id: string | null;
+  },
 >(
   instance_questions: T[],
   assessment_question: AssessmentQuestion,
@@ -133,8 +138,19 @@ export async function fillInstanceQuestionColumns<
     }
 
     // Retrieve the current submission group of the instance question
-    instance_question.ai_submission_group_name = instance_question.ai_submission_group_id
-      ? (aiSubmissionGroupIdToName[instance_question.ai_submission_group_id] ?? null)
+
+    const selectedSubmissionGroupId = run(() => {
+      if (instance_question.manual_submission_group_id) {
+        return instance_question.manual_submission_group_id;
+      }
+      if (instance_question.ai_submission_group_id) {
+        return instance_question.ai_submission_group_id;
+      }
+      return null;
+    });
+
+    instance_question.ai_submission_group_name = selectedSubmissionGroupId
+      ? (aiSubmissionGroupIdToName[selectedSubmissionGroupId] ?? null)
       : null;
   }
   return results;

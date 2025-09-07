@@ -13,7 +13,10 @@ LIMIT
 
 -- BLOCK ai_submission_group_id_for_instance_question
 SELECT
-  ai_submission_group_id
+  COALESCE(
+    manual_submission_group_id,
+    ai_submission_group_id
+  )
 FROM
   instance_questions AS iq
 WHERE
@@ -26,7 +29,11 @@ WITH
       iq.id,
       iq.assigned_grader,
       ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
-      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order
+      (($prior_instance_question_id % 21317) * 45989) % 3767 AS prior_iq_stable_order,
+      COALESCE(
+        iq.manual_submission_group_id,
+        iq.ai_submission_group_id
+      ) AS selected_submission_group_id
     FROM
       instance_questions AS iq
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -40,9 +47,9 @@ WITH
         -- Otherwise, this filter has no effect.
         NOT $use_ai_submission_groups
         OR (
-          iq.ai_submission_group_id = $prior_ai_submission_group_id
+          selected_submission_group_id = $prior_ai_submission_group_id
           OR (
-            iq.ai_submission_group_id IS NULL
+            selected_submission_group_id IS NULL
             AND $prior_ai_submission_group_id IS NULL
           )
         )

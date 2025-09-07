@@ -85,7 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
-          aiSubmissionGroups
+          aiSubmissionGroups,
         },
         'instance-question-table-data',
       )}

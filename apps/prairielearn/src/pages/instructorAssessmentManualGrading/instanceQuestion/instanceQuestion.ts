@@ -7,6 +7,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   selectLastSubmissionId,
@@ -18,7 +19,7 @@ import {
   selectAiSubmissionGroup,
   selectAiSubmissionGroups,
   selectAssessmentQuestionHasAiSubmissionGroups,
-  updateAiSubmissionGroup,
+  updateManualSubmissionGroup,
 } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 import {
   AiGradingJobSchema,
@@ -108,9 +109,16 @@ router.get(
       : null;
 
     const instance_question = res.locals.instance_question as InstanceQuestion;
-    const submissionGroup = instance_question.ai_submission_group_id
-      ? await selectAiSubmissionGroup(instance_question.ai_submission_group_id)
-      : null;
+
+    const submissionGroup = await run(async () => {
+      if (instance_question.manual_submission_group_id) {
+        return await selectAiSubmissionGroup(instance_question.manual_submission_group_id);
+      } else if (instance_question.ai_submission_group_id) {
+        return await selectAiSubmissionGroup(instance_question.ai_submission_group_id);
+      }
+      return null;
+    });
+
     if (instance_question == null) {
       throw new error.HttpStatusError(404, 'Instance question not found');
     }
@@ -188,18 +196,6 @@ router.get(
       }
     }
 
-    const aiGradingMode =
-      (await features.enabledFromLocals('ai-grading', res.locals)) &&
-      res.locals.assessment_question.ai_grading_mode;
-    const useAiSubmissionGroups =
-      aiGradingMode &&
-      (await selectAssessmentQuestionHasAiSubmissionGroups({
-        assessmentQuestionId: res.locals.assessment_question.id,
-      }));
-
-
-
-
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -233,25 +229,28 @@ router.get(
             id: '',
           },
         ],
-        currentSubmissionGroupId: res.locals.instance_question.ai_submission_group_id ?? null,
+        currentSubmissionGroupId:
+          (res.locals.instance_question.manual_submission_group_id ||
+            res.locals.instance_question.ai_submission_group_id) ??
+          null,
       }),
     );
   }),
 );
 
 router.put(
-  '/ai_submission_group',
+  '/manual_submission_group',
   asyncHandler(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     if (!aiGradingEnabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const aiSubmissionGroupId = req.body.aiSubmissionGroupId;
+    const manualSubmissionGroupId = req.body.manualSubmissionGroupId;
 
-    await updateAiSubmissionGroup({
+    await updateManualSubmissionGroup({
       instance_question_id: res.locals.instance_question.id,
-      ai_submission_group_id: aiSubmissionGroupId || null,
+      manual_submission_group_id: manualSubmissionGroupId || null,
     });
 
     res.sendStatus(204);
@@ -480,15 +479,17 @@ router.post(
         throw new error.HttpStatusError(400, 'Submission groups not generated.');
       }
 
-      const ai_submission_group_id = res.locals.instance_question.ai_submission_group_id;
-      if (!ai_submission_group_id) {
+      const selected_submission_group_id =
+        res.locals.instance_question.manual_submission_group_id ||
+        res.locals.instance_question.ai_submission_group_id;
+      if (!selected_submission_group_id) {
         throw new error.HttpStatusError(404, 'Selected AI submission group not found');
       }
 
       const instanceQuestionsInGroup = await sqldb.queryRows(
         sql.select_instance_question_ids_in_submission_group,
         {
-          submission_group_id: ai_submission_group_id,
+          submission_group_id: selected_submission_group_id,
           assessment_id: res.locals.assessment.id,
           skip_graded_submissions:
             body.__action === 'add_manual_grade_for_submission_group_ungraded',

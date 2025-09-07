@@ -974,13 +974,13 @@ function addSubmissionGroupSelectionDropdownListeners() {
       'data-submission-group-id',
     );
 
-    await fetch(`${instanceQuestionId}/ai_submission_group`, {
+    await fetch(`${instanceQuestionId}/manual_submission_group`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        aiSubmissionGroupId: selectedAiSubmissionGroupId,
+        manualSubmissionGroupId: selectedAiSubmissionGroupId,
       }),
     });
 

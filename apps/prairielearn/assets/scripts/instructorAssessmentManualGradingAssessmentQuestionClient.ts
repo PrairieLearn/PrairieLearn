@@ -34,7 +34,10 @@ onDocumentReady(() => {
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   const aiSubmissionGroupsByName = Object.fromEntries(
-    aiSubmissionGroups.map((group) => [group.submission_group_name, group.submission_group_description]),
+    aiSubmissionGroups.map((group) => [
+      group.submission_group_name,
+      group.submission_group_description,
+    ]),
   );
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -236,13 +239,17 @@ onDocumentReady(() => {
               class: 'text-center',
               formatter: (value: string | null) => {
                 if (!value) {
-                  return html`<span class="text-muted">No group</span>`;
+                  return html`<span class="text-secondary">No group</span>`;
                 }
                 return html`
                   <span class="d-flex align-items-center justify-content-center gap-2">
                     ${value ?? 'No group'}
-                    <div data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="${aiSubmissionGroupsByName[value]}">
-                      <i class="fas fa-circle-info text-muted"></i>
+                    <div
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-title="${aiSubmissionGroupsByName[value]}"
+                    >
+                      <i class="fas fa-circle-info text-secondary"></i>
                     </div>
                   </span>
                 `;

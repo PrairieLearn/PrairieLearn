@@ -40,10 +40,12 @@ WHERE
   )
   AND (
     NOT $ungrouped_instance_questions_only
-    OR iq.ai_submission_group_id IS NULL
+    OR (
+      iq.ai_submission_group_id IS NULL
+      AND iq.manual_submission_group_id IS NULL
+    )
   )
-
--- BLOCK insert_ai_grading_job
+  -- BLOCK insert_ai_grading_job
 INSERT INTO
   ai_grading_jobs (
     grading_job_id,

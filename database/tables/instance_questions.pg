@@ -19,6 +19,7 @@ columns
     last_grader: bigint
     last_submission_score: double precision
     manual_points: double precision
+    manual_submission_group_id: bigint
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
@@ -52,6 +53,7 @@ foreign-key constraints
     instance_questions_assigned_grader_fkey: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_last_grader_fkey: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_manual_submission_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, manual_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     files: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
