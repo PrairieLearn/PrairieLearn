@@ -95,24 +95,24 @@ interface InsertAuditEventParams {
   /** Most events should have an associated authorized user */
   agent_user_id: string | null;
   /** Only 'update' actions require an action_detail */
-  action_detail?: string;
+  action_detail?: string | null;
   /** Most events have no context */
-  context?: Record<string, any>;
+  context?: Record<string, any> | null;
   /** Creation events have no old row */
-  old_row?: Record<string, any>;
+  old_row?: Record<string, any> | null;
   /** Deletion events have no new row */
-  new_row?: Record<string, any>;
+  new_row?: Record<string, any> | null;
 
   // The remaining fields depend on the action and table
 
-  subject_user_id?: string;
-  assessment_id?: string;
-  assessment_instance_id?: string;
-  assessment_question_id?: string;
-  course_id?: string;
-  course_instance_id?: string;
-  group_id?: string;
-  institution_id?: string;
+  subject_user_id?: string | null;
+  assessment_id?: string | null;
+  assessment_instance_id?: string | null;
+  assessment_question_id?: string | null;
+  course_id?: string | null;
+  course_instance_id?: string | null;
+  group_id?: string | null;
+  institution_id?: string | null;
 }
 
 /**
