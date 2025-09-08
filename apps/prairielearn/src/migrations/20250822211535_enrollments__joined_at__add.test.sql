@@ -1,3 +1,12 @@
+-- BLOCK insert_course_instance
+INSERT INTO
+  course_instances (course_id, display_timezone)
+VALUES
+  ($course_id, $display_timezone)
+RETURNING
+  id;
+
+
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT
   *
