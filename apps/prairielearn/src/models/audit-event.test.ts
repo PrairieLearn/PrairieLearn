@@ -25,7 +25,7 @@ describe('audit-event', () => {
         email: 'student@example.com',
       });
 
-      const { date, ...auditEvent } = await insertAuditEvent({
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
         table_name: 'users',
         row_id: '1',
@@ -36,7 +36,6 @@ describe('audit-event', () => {
         action_detail: 'User created',
         context: { test: 'basic' },
       });
-      assert(date instanceof Date);
       expect(auditEvent).toMatchInlineSnapshot(`
         {
           "action": "insert",
@@ -84,7 +83,7 @@ describe('audit-event', () => {
         email: 'default@example.com',
       });
 
-      const { date, ...auditEvent } = await insertAuditEvent({
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
         table_name: 'users',
         row_id: '1',
@@ -93,7 +92,6 @@ describe('audit-event', () => {
         subject_user_id: user.user_id,
         new_row: { test: 'default user data' },
       });
-      assert(date instanceof Date);
       expect(auditEvent).toMatchInlineSnapshot(`
         {
           "action": "insert",
@@ -135,19 +133,16 @@ describe('audit-event', () => {
         agent_authn_user_id: '1',
         agent_user_id: '1',
         subject_user_id: user.user_id,
-        course_instance_id: '1',
         assessment_id: '1',
         new_row: { title: 'Midterm 1' },
-        context: { area: 'assessments' },
       });
-      assert(auditEvent.date instanceof Date);
-      assert(auditEvent.course_id === '1');
-      assert(auditEvent.course_instance_id === '1');
-      assert(auditEvent.assessment_id === '1');
-      assert(auditEvent.institution_id === '1');
+      assert.equal(auditEvent.course_id, '1');
+      assert.equal(auditEvent.course_instance_id, '1');
+      assert.equal(auditEvent.assessment_id, '1');
+      assert.equal(auditEvent.institution_id, '1');
     });
 
-    it('fills in missing fields for assessment instances', async () => {
+    it('fills in missing fields for assessment questions', async () => {
       const user = await getOrCreateUser({
         uid: 'student2@example.com',
         name: 'Example Student 2',
@@ -157,23 +152,19 @@ describe('audit-event', () => {
 
       const auditEvent = await insertAuditEvent({
         action: 'insert',
-        table_name: 'assessment_instances',
+        table_name: 'assessment_questions',
         row_id: '1',
         agent_authn_user_id: '1',
         agent_user_id: '1',
         subject_user_id: user.user_id,
-        course_instance_id: '1',
-        assessment_id: '1',
-        assessment_instance_id: '1',
+        assessment_question_id: '1',
         new_row: { status: 'active' },
-        context: { area: 'assessment_instances' },
       });
-      assert(auditEvent.date instanceof Date);
-      assert(auditEvent.course_id === '1');
-      assert(auditEvent.course_instance_id === '1');
-      assert(auditEvent.assessment_id === '1');
-      assert(auditEvent.assessment_instance_id === '1');
-      assert(auditEvent.institution_id === '1');
+      assert.equal(auditEvent.course_id, '1');
+      assert.equal(auditEvent.course_instance_id, '1');
+      assert.equal(auditEvent.assessment_id, '1');
+      assert.equal(auditEvent.assessment_question_id, '1');
+      assert.equal(auditEvent.institution_id, '1');
     });
   });
 
@@ -502,7 +493,7 @@ describe('audit-event', () => {
         email: 'student@example.com',
       });
 
-      const { date, ...auditEvent } = await insertAuditEvent({
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'update',
         table_name: 'users',
         row_id: '1',
@@ -528,7 +519,6 @@ describe('audit-event', () => {
       });
 
       assert.equal(result[0].id, auditEvent.id);
-      assert(date instanceof Date);
       expect(auditEvent).toMatchInlineSnapshot(`
         {
           "action": "update",

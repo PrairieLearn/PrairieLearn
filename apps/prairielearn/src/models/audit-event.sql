@@ -24,24 +24,41 @@ ORDER BY
 
 -- BLOCK insert_audit_event
 WITH
-  group_meta AS (
-    SELECT
-      id,
-      course_instance_id
-    FROM
-      groups
-    WHERE
-      id = $group_id
-      AND id IS NOT NULL
-  ),
   assessment_instance_meta AS (
     SELECT
       id,
+      group_id,
       assessment_id
     FROM
       assessment_instances
     WHERE
       id = $assessment_instance_id
+      AND id IS NOT NULL
+  ),
+  group_meta AS (
+    SELECT
+      id,
+      (
+        SELECT
+          assessment_id
+        FROM
+          group_configs
+        WHERE
+          id = g.group_config_id
+      ) AS assessment_id,
+      course_instance_id
+    FROM
+      groups AS g
+    WHERE
+      id = coalesce(
+        $group_id,
+        (
+          SELECT
+            group_id
+          FROM
+            assessment_instance_meta
+        )
+      )
       AND id IS NOT NULL
   ),
   assessment_question_meta AS (
@@ -74,6 +91,12 @@ WITH
             assessment_id
           FROM
             assessment_question_meta
+        ),
+        (
+          SELECT
+            assessment_id
+          FROM
+            group_meta
         )
       )
       AND id IS NOT NULL
