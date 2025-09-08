@@ -175,10 +175,10 @@ export class PostgresPool {
     pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
-    this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     if (this.pool != null) {
       throw new Error('Postgres pool already initialized');
     }
+    this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
       const lastQuery = lastQueryMap.get(client);
