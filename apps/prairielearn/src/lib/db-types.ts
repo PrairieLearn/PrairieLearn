@@ -1496,7 +1496,7 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // Miscellaneous schemas.
 // *******************************************************************************
 
-const TableNames = [
+export const TableNames = [
   'access_logs',
   'access_tokens',
   'administrators',
@@ -1598,5 +1598,4 @@ const TableNames = [
   'workspaces',
   'zones',
 ] as const;
-export const TableNameSchema = z.enum(TableNames as unknown as [string, ...string[]]);
 export type TableName = (typeof TableNames)[number];

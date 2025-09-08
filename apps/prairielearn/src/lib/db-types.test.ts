@@ -7,7 +7,7 @@ import { describeDatabase } from '@prairielearn/postgres-tools';
 import * as helperDb from '../tests/helperDb.js';
 
 import * as DbSchemas from './db-types.js';
-import { TableNameSchema } from './db-types.js';
+import { TableNames } from './db-types.js';
 
 const schemaNameOverrides = {
   // https://github.com/PrairieLearn/PrairieLearn/issues/12428
@@ -19,7 +19,7 @@ const schemaNameOverrides = {
 };
 
 const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
-const unusedSchemas = new Set(['JsonCommentSchema', 'TableNameSchema']);
+const unusedSchemas = new Set(['JsonCommentSchema']);
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
@@ -107,8 +107,8 @@ describe('Database Schema Sync Test', () => {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);
     }
 
-    const remainingTableNames = _.difference(nonPtTables, TableNameSchema.options);
-    const remainingSchemaNames = _.difference(TableNameSchema.options, nonPtTables);
+    const remainingTableNames = _.difference(nonPtTables, TableNames);
+    const remainingSchemaNames = _.difference(TableNames, nonPtTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
         `table definitions missing from TableNameSchema: ${remainingTableNames.join(', ')}`,
