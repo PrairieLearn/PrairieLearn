@@ -131,8 +131,6 @@ export async function loadUser(
       SprocUsersSelectOrInsertSchema,
     );
 
-    assert(userSelectOrInsertRes.user_id !== null);
-    user_id = userSelectOrInsertRes.user_id;
     const { result, user_institution_id } = userSelectOrInsertRes;
     if (result === 'invalid_authn_provider') {
       assert(user_institution_id !== null);
@@ -140,6 +138,9 @@ export async function loadUser(
         `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
       );
     }
+
+    assert(userSelectOrInsertRes.user_id !== null);
+    user_id = userSelectOrInsertRes.user_id;
   }
 
   const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
