@@ -19,12 +19,6 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function ensureArray<T>(value: T | T[]): T[] {
-  if (Array.isArray(value)) return value;
-  if (value) return [value];
-  return [];
-}
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
