@@ -15,12 +15,11 @@ columns
     duration_stat_mean: interval not null default '00:00:00'::interval
     duration_stat_median: interval not null default '00:00:00'::interval
     duration_stat_min: interval not null default '00:00:00'::interval
-    duration_stat_threshold_labels: text[] not null default ARRAY[]::text[]
-    duration_stat_threshold_seconds: double precision[] not null default ARRAY[]::double precision[]
     duration_stat_thresholds: interval[] not null default ARRAY[]::interval[]
     group_work: boolean default false
     honor_code: text
     id: bigint not null default nextval('assessments_id_seq'::regclass)
+    json_allow_real_time_grading: boolean
     json_can_submit: text[]
     json_can_view: text[]
     json_comment: jsonb
