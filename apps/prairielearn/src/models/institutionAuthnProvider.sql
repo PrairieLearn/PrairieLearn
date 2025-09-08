@@ -96,34 +96,3 @@ WITH
 SELECT
   1;
 
--- BLOCK delete_institution_authn_providers
-WITH
-  deleted_authn_providers AS (
-    DELETE FROM institution_authn_providers
-    WHERE
-      institution_id = $institution_id
-    RETURNING
-      *
-  ),
-  audit_logs_deleted_authn_providers AS (
-    INSERT INTO
-      audit_logs (
-        authn_user_id,
-        table_name,
-        action,
-        institution_id,
-        row_id,
-        old_state
-      )
-    SELECT
-      $authn_user_id,
-      'institution_authn_providers',
-      'delete',
-      dap.institution_id,
-      dap.id,
-      to_jsonb(dap.*)
-    FROM
-      deleted_authn_providers AS dap
-  )
-SELECT
-  1;

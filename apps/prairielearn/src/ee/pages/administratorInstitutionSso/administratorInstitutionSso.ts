@@ -35,14 +35,10 @@ router.post(
     const enabledProviders = enabledProvidersSchema
       .parse(rawEnabledAuthnProviderIds)
       .filter((id) => supportedAuthenticationProviderIds.has(id));
-    if (enabledProviders.length === 0) {
-      throw new Error('At least one authentication provider must be enabled');
-    }
 
     let defaultProvider = req.body.default_authn_provider_id;
     if (defaultProvider === '') defaultProvider = null;
 
-    // Use the shared model function instead of inline SQL
     await updateInstitutionAuthnProviders({
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,

@@ -94,8 +94,8 @@ router.post(
       await updateInstitutionAuthnProviders({
         institution_id: institutionId,
         enabled_authn_provider_ids: enabledProviders,
+        default_authn_provider_id: null,
         authn_user_id: res.locals.authn_user.user_id.toString(),
-        allow_no_providers: true,
       });
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');

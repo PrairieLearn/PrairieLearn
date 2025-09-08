@@ -8,7 +8,7 @@ import { type AuthnProvider, AuthnProviderSchema } from './db-types.js';
  * Filters out providers that are not enabled in the application configuration.
  */
 export async function getSupportedAuthenticationProviders(): Promise<AuthnProvider[]> {
-  const authProviders = await queryRows('SELECT * FROM authn_providers', [], AuthnProviderSchema);
+  const authProviders = await queryRows('SELECT * FROM authn_providers', AuthnProviderSchema);
   return authProviders.filter((row) => {
     if (row.name === 'Shibboleth') {
       return config.hasShib;
