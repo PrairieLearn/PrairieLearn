@@ -1,3 +1,4 @@
+import { escapeIdentifier } from 'pg';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
@@ -64,7 +65,7 @@ async function getCurrentRowData(
     if (table_name === 'users') {
       return 'SELECT * FROM users WHERE user_id = $row_id';
     }
-    return `SELECT * FROM ${table_name} WHERE id = $row_id`;
+    return `SELECT * FROM ${escapeIdentifier(table_name)} WHERE id = $row_id`;
   });
   return await queryOptionalRow(query, { row_id }, CurrentRowDataSchema);
 }
