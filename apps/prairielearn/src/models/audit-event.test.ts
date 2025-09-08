@@ -4,6 +4,8 @@ import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
+import { selectAssessmentQuestionById } from './assessment-question.js';
+import { selectAssessmentById } from './assessment.js';
 import { insertAuditEvent, selectAuditEvents } from './audit-event.js';
 
 describe('audit-event', () => {
@@ -126,6 +128,8 @@ describe('audit-event', () => {
         email: 'instructor@example.com',
       });
 
+      const assessment = await selectAssessmentById('1');
+
       const auditEvent = await insertAuditEvent({
         action: 'insert',
         table_name: 'assessments',
@@ -133,12 +137,11 @@ describe('audit-event', () => {
         agent_authn_user_id: '1',
         agent_user_id: '1',
         subject_user_id: user.user_id,
-        assessment_id: '1',
+        assessment_id: assessment.id,
         new_row: { title: 'Midterm 1' },
       });
       assert.equal(auditEvent.course_id, '1');
-      // Depending on the database, the course_instance_id may be 1 or 2.
-      assert.includeMembers(['1', '2'], [auditEvent.course_instance_id]);
+      assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
       assert.equal(auditEvent.assessment_id, '1');
       assert.equal(auditEvent.institution_id, '1');
     });
@@ -151,6 +154,9 @@ describe('audit-event', () => {
         email: 'student2@example.com',
       });
 
+      const assessmentQuestion = await selectAssessmentQuestionById('1');
+      const assessment = await selectAssessmentById(assessmentQuestion.assessment_id);
+
       const auditEvent = await insertAuditEvent({
         action: 'insert',
         table_name: 'assessment_questions',
@@ -158,13 +164,12 @@ describe('audit-event', () => {
         agent_authn_user_id: '1',
         agent_user_id: '1',
         subject_user_id: user.user_id,
-        assessment_question_id: '1',
+        assessment_question_id: assessmentQuestion.id,
         new_row: { status: 'active' },
       });
       assert.equal(auditEvent.course_id, '1');
-      // Depending on the database, the course_instance_id/assessment_id may be 1 or 2.
-      assert.includeMembers(['1', '2'], [auditEvent.course_instance_id]);
-      assert.includeMembers(['1', '2'], [auditEvent.assessment_id]);
+      assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
+      assert.equal(auditEvent.assessment_id, assessment.id);
       assert.equal(auditEvent.assessment_question_id, '1');
       assert.equal(auditEvent.institution_id, '1');
     });

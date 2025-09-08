@@ -75,9 +75,9 @@ interface InsertAuditEventParams {
   action: EnumAuditEventAction;
   table_name: TableName;
   row_id: string;
-  /** Most events should have an associated authorized user */
-  agent_authn_user_id: string | null;
   /** Most events should have an associated authenticated user */
+  agent_authn_user_id: string | null;
+  /** Most events should have an associated authorized user */
   agent_user_id: string | null;
   /** Only 'update' actions require an action_detail */
   action_detail?: string;
@@ -89,6 +89,7 @@ interface InsertAuditEventParams {
   new_row?: Record<string, any>;
 
   // The remaining fields depend on the action and table
+
   subject_user_id?: string;
   assessment_id?: string;
   assessment_instance_id?: string;
