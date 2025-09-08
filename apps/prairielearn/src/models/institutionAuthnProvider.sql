@@ -95,4 +95,3 @@ WITH
   )
 SELECT
   1;
-
