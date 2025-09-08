@@ -97,7 +97,11 @@ interface InsertAuditEventParams {
   institution_id?: string;
 }
 
-// To prevent mistakes where fields are omitted, we track which fields are required for each table.
+/**
+ * These fields are required to insert an audit event for a given table.
+ *
+ * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
+ */
 const requiredTableFields: Partial<Record<TableName, string[]>> = {
   course_instances: ['course_instance_id'],
   pl_courses: ['course_id'],
@@ -107,7 +111,7 @@ const requiredTableFields: Partial<Record<TableName, string[]>> = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
-  enrollments: ['subject_user_id'], // No specific required fields
+  enrollments: ['course_instance_id', 'subject_user_id'],
 };
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
@@ -171,33 +175,57 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
   }
 
   // Depending on the table, certain fields are required.
-  if (!requiredTableFields[table_name]?.every((field) => Boolean(params[field]))) {
+  if (!(table_name in requiredTableFields)) {
+    throw new Error(`${table_name} must mark its required fields in requiredTableFields`);
+  }
+
+  // As a fallback, try to infer IDs from the new row.
+  const {
+    assessment_id: inferred_assessment_id,
+    assessment_instance_id: inferred_assessment_instance_id,
+    assessment_question_id: inferred_assessment_question_id,
+    course_id: inferred_course_id,
+    course_instance_id: inferred_course_instance_id,
+    group_id: inferred_group_id,
+    institution_id: inferred_institution_id,
+  } = new_row ?? {};
+
+  const resolvedParams = {
+    action,
+    action_detail,
+    agent_authn_user_id,
+    agent_user_id,
+    assessment_id:
+      assessment_id ?? (table_name === 'assessments' ? row_id : null) ?? inferred_assessment_id,
+    assessment_instance_id:
+      assessment_instance_id ??
+      (table_name === 'assessment_instances' ? row_id : null) ??
+      inferred_assessment_instance_id,
+    assessment_question_id:
+      assessment_question_id ??
+      (table_name === 'assessment_questions' ? row_id : null) ??
+      inferred_assessment_question_id,
+    context,
+    course_id: course_id ?? (table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id,
+    course_instance_id:
+      course_instance_id ??
+      (table_name === 'course_instances' ? row_id : null) ??
+      inferred_course_instance_id,
+    group_id: group_id ?? (table_name === 'groups' ? row_id : null) ?? inferred_group_id,
+    institution_id:
+      institution_id ?? (table_name === 'institutions' ? row_id : null) ?? inferred_institution_id,
+    new_row,
+    old_row,
+    row_id,
+    subject_user_id: subject_user_id ?? (table_name === 'users' ? row_id : null),
+    table_name,
+  };
+
+  if (!requiredTableFields[table_name]!.every((field) => resolvedParams[field] !== undefined)) {
     throw new Error(
       `${table_name} requires the following fields: ${requiredTableFields[table_name]?.join(', ')}`,
     );
   }
 
-  return await queryRow(
-    sql.insert_audit_event,
-    {
-      action,
-      action_detail,
-      agent_authn_user_id,
-      agent_user_id,
-      assessment_id,
-      assessment_instance_id,
-      assessment_question_id,
-      context,
-      course_id,
-      course_instance_id,
-      group_id,
-      institution_id,
-      new_row,
-      old_row,
-      row_id,
-      subject_user_id,
-      table_name,
-    },
-    StaffAuditEventSchema,
-  );
+  return await queryRow(sql.insert_audit_event, resolvedParams, StaffAuditEventSchema);
 }
