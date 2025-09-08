@@ -70,7 +70,7 @@ router.post(
       }
 
       // First, create the institution and get its ID
-      const result = await sqldb.queryRow(
+      const institutionId = await sqldb.queryRow(
         sql.insert_institution,
         {
           short_name: req.body.short_name.trim(),
@@ -78,10 +78,8 @@ router.post(
           display_timezone: req.body.display_timezone,
           uid_regexp: req.body.uid_regexp?.trim() || null,
         },
-        z.object({ id: z.string() }),
+        z.string(),
       );
-
-      const institutionId = result.id;
 
       // Handle authentication provider setup
       const allSupportedProviders = await getSupportedAuthenticationProviders();

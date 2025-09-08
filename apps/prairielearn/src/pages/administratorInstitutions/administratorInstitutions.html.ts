@@ -64,6 +64,7 @@ export function AdministratorInstitutions({
                 id="short_name"
                 name="short_name"
                 placeholder="Short name"
+                required
               />
               <small id="short_name_help" class="form-text text-muted">
                 Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
@@ -77,6 +78,7 @@ export function AdministratorInstitutions({
                 id="long_name"
                 name="long_name"
                 placeholder="Long name"
+                required
               />
               <small id="long_name_help" class="form-text text-muted">
                 Use the full name of the university. E.g., "University of Illinois
@@ -85,7 +87,7 @@ export function AdministratorInstitutions({
             </div>
             <div class="mb-3">
               <label class="form-label" for="display_timezone">Timezone</label>
-              <select class="form-select" id="display_timezone" name="display_timezone">
+              <select class="form-select" id="display_timezone" name="display_timezone" required>
                 <option value="" selected disabled hidden>Timezone</option>
                 ${availableTimezones.map(
                   (tz, i) => html`
@@ -112,6 +114,7 @@ export function AdministratorInstitutions({
                 id="uid_regexp"
                 name="uid_regexp"
                 placeholder="UID regexp"
+                required
               />
               <small id="uid_regexp_help" class="form-text text-muted">
                 Should match the non-username part of students' UIDs. E.g., @example\\.com$.
