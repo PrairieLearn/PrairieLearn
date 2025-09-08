@@ -71,7 +71,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isFalse(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(result.uuid, UUID);
@@ -87,7 +87,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -100,7 +100,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -113,7 +113,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -129,7 +129,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -145,7 +145,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
-        assert(result !== null);
+        assert.ok(result);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);

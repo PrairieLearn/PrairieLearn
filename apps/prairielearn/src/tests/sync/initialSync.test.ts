@@ -39,7 +39,7 @@ describe('Initial Sync', () => {
     const topics = await util.dumpTableWithSchema('topics', TopicSchema);
     // Cannot precisely assert the length of the topics array given that we'll
     // have additional default topics added for us
-    assert(topics.length >= courseData.course.topics.length);
+    assert.isAtLeast(topics.length, courseData.course.topics.length);
     for (const topic of courseData.course.topics) {
       const syncedTopic = topics.find((t) => t.name === topic.name);
       assert.isOk(syncedTopic);
@@ -50,7 +50,7 @@ describe('Initial Sync', () => {
 
     const tags = await util.dumpTableWithSchema('tags', TagSchema);
     // As above, we don't know exactly how many tags there will be
-    assert(tags.length >= courseData.course.tags.length);
+    assert.isAtLeast(tags.length, courseData.course.tags.length);
     for (const tag of courseData.course.tags) {
       const syncedTag = tags.find((t) => t.name === tag.name);
       assert.isOk(syncedTag);

@@ -133,7 +133,12 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
       ? JSON.stringify(rawData)
       : rawData;
 
-  let data: Record<string, any>;
+  let data: Record<string, any> & {
+    succeeded?: boolean;
+    results?: Record<string, any> & {
+      score?: number;
+    };
+  };
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(dataStr.replaceAll('\0', '\ufffd'));

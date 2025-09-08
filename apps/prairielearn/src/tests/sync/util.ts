@@ -412,7 +412,7 @@ export function assertSnapshotsMatch(
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(
+  assert.isTrue(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
     'snapshots contained different keys',
   );
@@ -421,7 +421,7 @@ export function assertSnapshotsMatch(
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
-    assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
+    assert.isTrue(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
   }
 }
 
@@ -439,7 +439,7 @@ export function assertSnapshotSubset(
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(
+  assert.isTrue(
     checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
     'snapshots contained different keys',
   );
@@ -448,7 +448,7 @@ export function assertSnapshotSubset(
     // Build a set of deterministically-stringified rows for each snapshot
     const setA = new Set(snapshotA[key].map((s) => stringify(s)));
     const setB = new Set(snapshotB[key].map((s) => stringify(s)));
-    assert(
+    assert.isTrue(
       [...setA].every((entry) => setB.has(entry)),
       `Snapshot of ${key} is not a subset`,
     );

@@ -63,14 +63,14 @@ const OTHER_STUDENT_USER: AuthUser = {
 
 function getVariantId(cheerio: CheerioAPI): string {
   const variantId = cheerio('.question-container').attr('data-variant-id');
-  assert(variantId);
+  assert.ok(variantId);
   assert.isString(variantId);
   return variantId;
 }
 
 function getWorkspaceId(cheerio: CheerioAPI): string {
   const workspaceId = cheerio('.question-container').attr('data-workspace-id');
-  assert(workspaceId);
+  assert.ok(workspaceId);
   assert.isString(workspaceId);
   return workspaceId;
 }
@@ -93,7 +93,7 @@ async function makeSubmission(url: string, cheerio: CheerioAPI): Promise<string>
   const submission = res.$('[data-testid="submission-with-feedback"]');
   assert.lengthOf(submission, 1);
   const submissionId = submission.find('.js-submission-body').attr('data-submission-id');
-  assert(submissionId);
+  assert.ok(submissionId);
   assert.isString(submissionId);
   return submissionId;
 }
@@ -273,7 +273,7 @@ describe('Variant access', () => {
       const instanceQuestionPath = assessmentRes
         .$('a:contains("Test access to a variant and its resources")')
         .attr('href');
-      assert(instanceQuestionPath);
+      assert.ok(instanceQuestionPath);
       assert.isString(instanceQuestionPath);
       studentInstanceQuestionPath = instanceQuestionPath;
 
@@ -298,7 +298,7 @@ describe('Variant access', () => {
       const instanceQuestionPath = assessmentRes
         .$('a:contains("Test access to a variant and its resources")')
         .attr('href');
-      assert(instanceQuestionPath);
+      assert.ok(instanceQuestionPath);
       assert.isString(instanceQuestionPath);
       otherStudentInstanceQuestionPath = instanceQuestionPath;
 

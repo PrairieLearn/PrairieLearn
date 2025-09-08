@@ -636,6 +636,20 @@ export default tseslint.config([
     },
   },
   {
+    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...NO_RESTRICTED_SYNTAX,
+        {
+          message:
+            'You should not use a plain assert in tests, prefer `assert.equal`, `assert.ok`, etc.',
+          selector: 'CallExpression[callee.name="assert"]',
+        },
+      ],
+    },
+  },
+  {
     // TODO: enable this rule for all files.
     files: [
       'apps/prairielearn/**/*.test.ts',

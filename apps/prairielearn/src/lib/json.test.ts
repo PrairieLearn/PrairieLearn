@@ -4,15 +4,15 @@ import { applyKeyOrder } from './json.js';
 
 describe('applyKeyOrder', () => {
   it('works with a string', () => {
-    assert(applyKeyOrder('a', 'b') === 'b');
+    assert.equal(applyKeyOrder('a', 'b'), 'b');
   });
 
   it('works with a number', () => {
-    assert(applyKeyOrder(1, 2) === 2);
+    assert.equal(applyKeyOrder(1, 2), 2);
   });
 
   it('works with a boolean', () => {
-    assert(applyKeyOrder(true, false) === false);
+    assert.equal(applyKeyOrder(true, false), false);
   });
 
   it('works with a simple object', () => {
@@ -60,12 +60,12 @@ describe('applyKeyOrder', () => {
   });
 
   it('handles null', () => {
-    assert(applyKeyOrder(null, 'a') === 'a');
-    assert(applyKeyOrder('a', null) === null);
+    assert.equal(applyKeyOrder(null, 'a'), 'a');
+    assert.isNull(applyKeyOrder('a', null));
   });
 
   it('handles undefined', () => {
-    assert(applyKeyOrder(undefined, 'a') === 'a');
-    assert(applyKeyOrder('a', undefined) === undefined);
+    assert.equal(applyKeyOrder(undefined, 'a'), 'a');
+    assert.isUndefined(applyKeyOrder('a', undefined));
   });
 });
