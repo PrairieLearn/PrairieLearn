@@ -8,6 +8,7 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -110,6 +111,7 @@ export default tseslint.config([
       '@html-eslint': html,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
+      '@tanstack/query': pluginQuery,
       perfectionist,
       unicorn: eslintPluginUnicorn,
     },
@@ -465,6 +467,10 @@ export default tseslint.config([
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
+      ...pluginQuery.configs['flat/recommended'][0].rules,
+      '@tanstack/query/no-rest-destructuring': 'error',
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
