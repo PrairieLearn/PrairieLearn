@@ -4,7 +4,7 @@ import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielea
 import { run } from '@prairielearn/run';
 
 import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
-import { type EnumAuditEventAction } from '../lib/db-types.js';
+import { type EnumAuditEventAction, type TableName } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -27,7 +27,7 @@ export async function selectAuditEvents({
   agent_authn_user_id?: string;
   course_instance_id: string;
   subject_user_id?: string;
-  table_names: string[];
+  table_names: TableName[];
 }): Promise<StaffAuditEvent[]> {
   if (!subject_user_id && !agent_authn_user_id) {
     throw new Error('subject_user_id or agent_authn_user_id must be provided');
@@ -71,7 +71,7 @@ async function getCurrentRowData(
 
 interface InsertAuditEventParams {
   action: EnumAuditEventAction;
-  table_name: string;
+  table_name: TableName;
   row_id: string;
   /** Most events should have an associated authorized user */
   agent_authn_user_id: string | null;
@@ -98,7 +98,7 @@ interface InsertAuditEventParams {
 }
 
 // To prevent mistakes where fields are omitted, we track which fields are required for each table.
-const requiredTableFields: Record<string, string[]> = {
+const requiredTableFields: Partial<Record<TableName, string[]>> = {
   course_instances: ['course_instance_id'],
   pl_courses: ['course_id'],
   users: ['subject_user_id'],
@@ -107,7 +107,7 @@ const requiredTableFields: Record<string, string[]> = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
-  enrollments: [], // No specific required fields
+  enrollments: ['subject_user_id'], // No specific required fields
 };
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
@@ -171,9 +171,9 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
   }
 
   // Depending on the table, certain fields are required.
-  if (!requiredTableFields[table_name].every((field) => Boolean(params[field]))) {
+  if (!requiredTableFields[table_name]?.every((field) => Boolean(params[field]))) {
     throw new Error(
-      `${table_name} requires the following fields: ${requiredTableFields[table_name].join(', ')}`,
+      `${table_name} requires the following fields: ${requiredTableFields[table_name]?.join(', ')}`,
     );
   }
 
