@@ -2,6 +2,8 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
+
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
 import { updateInstitutionAuthnProviders } from '../../../models/institutionAuthnProvider.js';
 import {
@@ -14,14 +16,6 @@ import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.
 
 const router = Router({ mergeParams: true });
 
-const enabledProvidersSchema = z.array(z.string());
-
-function ensureArray<T>(value: T | T[]): T[] {
-  if (Array.isArray(value)) return value;
-  if (value) return [value];
-  return [];
-}
-
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -30,15 +24,21 @@ router.post(
       supportedAuthenticationProviders.map((p) => p.id),
     );
 
-    const rawEnabledAuthnProviderIds = ensureArray(req.body.enabled_authn_provider_ids ?? []);
-    const enabledProviders = enabledProvidersSchema
-      .parse(rawEnabledAuthnProviderIds)
-      .filter((id) => supportedAuthenticationProviderIds.has(id));
+    const body = z
+      .object({
+        default_authn_provider_id: z.string().transform((s) => (s === '' ? null : s)),
+        enabled_authn_provider_ids: ArrayFromCheckboxSchema,
+      })
+      .parse(req.body);
+
+    const enabledProviders = body.enabled_authn_provider_ids.filter((id) =>
+      supportedAuthenticationProviderIds.has(id),
+    );
 
     await updateInstitutionAuthnProviders({
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
-      default_authn_provider_id: req.body.default_authn_provider_id || null,
+      default_authn_provider_id: body.default_authn_provider_id,
       authn_user_id: res.locals.authn_user.user_id.toString(),
     });
 
