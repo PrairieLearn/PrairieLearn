@@ -99,7 +99,8 @@ interface InsertAuditEventParams {
 }
 
 /**
- * These fields are required to insert an audit event for a given table.
+ * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
+ * it will pass this check.
  *
  * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
  */
@@ -114,6 +115,7 @@ const requiredTableFields: Partial<Record<TableName, string[]>> = {
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id'],
 };
+
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
  *
@@ -189,6 +191,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_instance_id: inferred_course_instance_id,
     group_id: inferred_group_id,
     institution_id: inferred_institution_id,
+    user_id: inferred_subject_user_id,
   } = new_row ?? {};
 
   const resolvedParams = {
@@ -218,11 +221,17 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     new_row,
     old_row,
     row_id,
-    subject_user_id: subject_user_id ?? (table_name === 'users' ? row_id : null),
+    subject_user_id:
+      subject_user_id ?? (table_name === 'users' ? row_id : null) ?? inferred_subject_user_id,
     table_name,
   };
 
-  if (!requiredTableFields[table_name]!.every((field) => resolvedParams[field] !== undefined)) {
+  if (
+    !requiredTableFields[table_name]!.every(
+      // params[field] === null is a special case for when the field is explicitly marked as NULL.
+      (field) => params[field] === null || Boolean(resolvedParams[field]),
+    )
+  ) {
     throw new Error(
       `${table_name} requires the following fields: ${requiredTableFields[table_name]?.join(', ')}`,
     );
