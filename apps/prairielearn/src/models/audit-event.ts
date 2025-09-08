@@ -10,6 +10,24 @@ import { type EnumAuditEventAction, type TableName } from '../lib/db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
+ * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
+ * it will pass this check.
+ *
+ * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
+ */
+const requiredTableFields = {
+  course_instances: ['course_instance_id'],
+  pl_courses: ['course_id'],
+  users: ['subject_user_id'],
+  groups: ['group_id'],
+  assessment_instances: ['assessment_instance_id'],
+  assessment_questions: ['assessment_question_id'],
+  assessments: ['assessment_id'],
+  institutions: ['institution_id'],
+  enrollments: ['course_instance_id', 'subject_user_id'],
+} satisfies Partial<Record<TableName, string[]>>;
+
+/**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
  *
@@ -28,7 +46,7 @@ export async function selectAuditEvents({
   agent_authn_user_id?: string;
   course_instance_id: string;
   subject_user_id?: string;
-  table_names: TableName[];
+  table_names: keyof (typeof requiredTableFields)[];
 }): Promise<StaffAuditEvent[]> {
   if (!subject_user_id && !agent_authn_user_id) {
     throw new Error('subject_user_id or agent_authn_user_id must be provided');
@@ -70,7 +88,7 @@ export async function getCurrentRowData<T extends ZodSchema>(
 
 interface InsertAuditEventParams {
   action: EnumAuditEventAction;
-  table_name: TableName;
+  table_name: keyof typeof requiredTableFields;
   row_id: string;
   /** Most events should have an associated authenticated user */
   agent_authn_user_id: string | null;
@@ -96,24 +114,6 @@ interface InsertAuditEventParams {
   group_id?: string;
   institution_id?: string;
 }
-
-/**
- * These fields are required to insert an audit event for a given table. If a parameter is explicitly marked as NULL,
- * it will pass this check.
- *
- * The value will be taken from parameters, or inferred from the current row data or row ID if not provided.
- */
-const requiredTableFields: Partial<Record<TableName, string[]>> = {
-  course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
-  users: ['subject_user_id'],
-  groups: ['group_id'],
-  assessment_instances: ['assessment_instance_id'],
-  assessment_questions: ['assessment_question_id'],
-  assessments: ['assessment_id'],
-  institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id'],
-};
 
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
@@ -225,7 +225,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
   };
 
   if (
-    !requiredTableFields[table_name]!.every(
+    !requiredTableFields[table_name].every(
       // params[field] === null is a special case for when the field is explicitly marked as NULL.
       (field) => params[field] === null || Boolean(resolvedParams[field]),
     )
