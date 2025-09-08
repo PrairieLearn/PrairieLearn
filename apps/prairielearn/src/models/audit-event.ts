@@ -79,7 +79,7 @@ interface InsertAuditEventParams {
   agent_authn_user_id: string | null;
   /** Most events should have an associated authenticated user */
   agent_user_id: string | null;
-  /** only 'update' actions require an action_detail */
+  /** Only 'update' actions require an action_detail */
   action_detail?: string;
   /** Most events have no context */
   context?: Record<string, any>;
