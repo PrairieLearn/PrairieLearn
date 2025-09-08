@@ -262,10 +262,7 @@ export function planGrantsMatchFeatures(
 ): boolean {
   const grantedPlans = getPlansForPlanGrants(planGrants);
   const grantedFeatures = getFeaturesForPlans(grantedPlans);
-  return (
-    grantedFeatures.length === features.length &&
-    grantedFeatures.every((feature) => features.includes(feature))
-  );
+  return features.every((feature) => grantedFeatures.includes(feature));
 }
 
 /**
