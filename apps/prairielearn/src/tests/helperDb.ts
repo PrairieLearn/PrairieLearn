@@ -40,6 +40,7 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
 async function runMigrationsAndSprocs({
   dbName,
   runMigrations,
+  initDatabase,
 }: {
   dbName: string;
   runMigrations:
@@ -48,6 +49,7 @@ async function runMigrationsAndSprocs({
         beforeTimestamp: string;
         inclusiveBefore: boolean;
       };
+  initDatabase: boolean;
 }): Promise<void> {
   const pgConfig = {
     user: POSTGRES_USER,
@@ -60,7 +62,9 @@ async function runMigrationsAndSprocs({
   function idleErrorHandler(err) {
     throw err;
   }
-  await sqldb.initAsync(pgConfig, idleErrorHandler);
+  if (initDatabase) {
+    await sqldb.initAsync(pgConfig, idleErrorHandler);
+  }
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.
@@ -103,7 +107,7 @@ async function createFromTemplate({
     database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
-    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false }),
+    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false, initDatabase: true }),
   });
 }
 
@@ -140,6 +144,7 @@ async function createAndInitDatabaseWithMigrations({
       runMigrationsAndSprocs({
         dbName,
         runMigrations,
+        initDatabase: dropFirst,
       }),
   });
 
@@ -254,6 +259,7 @@ export async function createTemplate(): Promise<void> {
       runMigrationsAndSprocs({
         dbName: POSTGRES_DATABASE_TEMPLATE,
         runMigrations: true,
+        initDatabase: true,
       }),
   });
 }
