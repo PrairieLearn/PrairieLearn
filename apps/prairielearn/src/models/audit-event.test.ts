@@ -162,9 +162,9 @@ describe('audit-event', () => {
         new_row: { status: 'active' },
       });
       assert.equal(auditEvent.course_id, '1');
-      // Depending on the database, the course_instance_id may be 1 or 2.
+      // Depending on the database, the course_instance_id/assessment_id may be 1 or 2.
       assert.includeMembers(['1', '2'], [auditEvent.course_instance_id]);
-      assert.equal(auditEvent.assessment_id, '1');
+      assert.includeMembers(['1', '2'], [auditEvent.assessment_id]);
       assert.equal(auditEvent.assessment_question_id, '1');
       assert.equal(auditEvent.institution_id, '1');
     });
