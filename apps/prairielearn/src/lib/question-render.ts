@@ -347,7 +347,7 @@ function buildLocals({
         locals.showTrueAnswer = true;
       }
     }
-    if (assessment_question?.allow_real_time_grading === false) {
+    if (assessment_question.allow_real_time_grading === false) {
       locals.showGradeButton = false;
     }
     if (instance_question.allow_grade_left_ms > 0) {
