@@ -81,7 +81,6 @@ ORDER BY
   z.id,
   aq.number;
 
-
 -- BLOCK select_assessment_question_by_id
 SELECT
   *
