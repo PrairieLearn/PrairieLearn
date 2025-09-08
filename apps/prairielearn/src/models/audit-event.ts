@@ -54,6 +54,7 @@ export async function selectAuditEvents({
 
 const CurrentRowDataSchema = z.record(z.string(), z.any());
 type CurrentRowData = z.infer<typeof CurrentRowDataSchema>;
+
 /**
  * Fetches the current row for a given table and row ID
  */
