@@ -5,7 +5,7 @@ import { z } from 'zod';
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
 import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
-import { updateInstitutionAuthnProviders } from '../../../models/institutionAuthnProvider.js';
+import { updateInstitutionAuthnProviders } from '../../../models/institution-authn-provider.js';
 import {
   getInstitution,
   getInstitutionAuthenticationProviders,

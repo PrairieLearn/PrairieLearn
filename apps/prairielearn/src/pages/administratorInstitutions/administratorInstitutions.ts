@@ -9,7 +9,7 @@ import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { updateInstitutionAuthnProviders } from '../../models/institutionAuthnProvider.js';
+import { updateInstitutionAuthnProviders } from '../../models/institution-authn-provider.js';
 
 import {
   AdministratorInstitutions,
@@ -79,8 +79,7 @@ router.post(
       const allSupportedProviders = await getSupportedAuthenticationProviders();
       const supportedProviderIds = new Set(allSupportedProviders.map((p) => p.id));
 
-      const rawEnabledAuthnProviderIds = ensureArray(req.body.enabled_authn_provider_ids ?? []);
-      const enabledProviders = rawEnabledAuthnProviderIds.filter((id) =>
+      const enabledProviders = body.enabled_authn_provider_ids.filter((id) =>
         supportedProviderIds.has(id),
       );
 
@@ -92,7 +91,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id.toString(),
       });
 
-      flash('success', `Institution "${req.body.short_name.trim()}" created successfully.`);
+      flash('success', `Institution "${body.short_name}" created successfully.`);
 
       res.redirect(req.originalUrl);
     } else {
