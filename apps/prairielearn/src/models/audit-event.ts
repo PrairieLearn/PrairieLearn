@@ -87,8 +87,8 @@ interface InsertAuditEventParams {
   old_row?: Record<string, any>;
   /** Deletion events have no new row */
   new_row?: Record<string, any>;
-  // The remaining fields depend on the action and table
 
+  // The remaining fields depend on the action and table
   subject_user_id?: string;
   assessment_id?: string;
   assessment_instance_id?: string;
