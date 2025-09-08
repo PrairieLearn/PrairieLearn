@@ -135,7 +135,7 @@ async function createAndInitDatabaseWithMigrations({
     dropExistingDatabase: dropFirst,
     ignoreIfExists: !dropFirst,
     database: dbName,
-    configurePool: true,
+    configurePool: dropFirst,
     prepare: () =>
       runMigrationsAndSprocs({
         dbName,
