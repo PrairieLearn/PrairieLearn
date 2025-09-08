@@ -6,7 +6,6 @@ VALUES
 RETURNING
   id;
 
-
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT
   *
