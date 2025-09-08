@@ -27,7 +27,7 @@ describe('externalGraderCommon', () => {
       });
 
       assert.isTrue(result.grading.feedback.succeeded);
-      assert.ok('results' in result.grading.feedback);
+      assert.property(result.grading.feedback, 'results');
       assert.equal(result.grading.feedback.results?.tests[0].name, 'Test \ufffd');
       assert.equal(
         result.grading.format_errors,
