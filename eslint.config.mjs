@@ -411,6 +411,9 @@ export default tseslint.config([
       // TODO: fix the violations so we can enable this rule.
       '@typescript-eslint/no-dynamic-delete': 'off',
 
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+
       // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
@@ -554,7 +557,10 @@ export default tseslint.config([
   },
   {
     // We only include apps/prairielearn for performance reasons.
-    extends: [tseslint.configs.recommendedTypeCheckedOnly],
+    extends: [
+      tseslint.configs.recommendedTypeCheckedOnly,
+      tseslint.configs.stylisticTypeCheckedOnly,
+    ],
     files: ['apps/prairielearn/**/*.{ts,tsx}'],
     languageOptions: {
       parserOptions: {
@@ -613,7 +619,9 @@ export default tseslint.config([
           allowThrowingUnknown: true,
         },
       ],
+      '@typescript-eslint/prefer-nullish-coalescing': 'off', // TODO: enable
       '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/prefer-regexp-exec': 'off',
       '@typescript-eslint/restrict-template-expressions': [
         'error',
         {
@@ -624,6 +632,20 @@ export default tseslint.config([
           allowNumber: true,
           allowRegExp: true,
         },
+      ],
+    },
+  },
+  {
+    // TODO: enable this rule for all files.
+    files: [
+      'apps/prairielearn/**/*.test.ts',
+      'apps/prairielearn/src/lib/**/*.ts',
+      'apps/prairielearn/src/tests/**/*.ts',
+    ],
+    rules: {
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
       ],
     },
   },

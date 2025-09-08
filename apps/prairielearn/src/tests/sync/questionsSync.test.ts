@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -73,7 +74,7 @@ describe('Question syncing', () => {
     const midSyncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
     const midSyncedQuestion = midSyncedQuestions.find((q) => q.qid === util.QUESTION_ID);
     assert.isOk(midSyncedQuestion);
-    assert.isNotNull(midSyncedQuestion?.deleted_at);
+    assert.isNotNull(midSyncedQuestion.deleted_at);
 
     courseData.questions[util.QUESTION_ID] = oldQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -92,7 +93,7 @@ describe('Question syncing', () => {
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
     assert.isTrue(syncedTag.implicit);
-    assert.isNotEmpty(syncedTag?.description, 'tag should not have empty description');
+    assert.isNotEmpty(syncedTag.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -121,7 +122,7 @@ describe('Question syncing', () => {
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
     assert.isTrue(syncedTopic.implicit);
-    assert.isNotEmpty(syncedTopic?.description, 'topic should not have empty description');
+    assert.isNotEmpty(syncedTopic.description, 'topic should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -220,13 +221,14 @@ describe('Question syncing', () => {
     courseData.course.topics.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const newSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.equal(newSyncedQuestion?.id, originalSyncedQuestion?.id);
+    assert.equal(newSyncedQuestion.id, originalSyncedQuestion.id);
 
     // Check that we have a valid auto-created topic
     const syncedTopics = await util.dumpTableWithSchema('topics', TopicSchema);
     const syncedTopic = syncedTopics.find((t) => t.name === newTopic.name);
-    assert.equal(newSyncedQuestion?.topic_id, syncedTopic?.id);
-    assert.isTrue(syncedTopic?.implicit);
+    assert.isDefined(syncedTopic);
+    assert.equal(newSyncedQuestion.topic_id, syncedTopic.id);
+    assert.isTrue(syncedTopic.implicit);
   });
 
   it('preserves question tag even if question tag is deleted', async () => {
@@ -246,7 +248,7 @@ describe('Question syncing', () => {
     courseData.course.tags.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const newSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
-    assert.equal(newSyncedQuestion?.id, originalSyncedQuestion?.id);
+    assert.equal(newSyncedQuestion.id, originalSyncedQuestion.id);
 
     // Check that we have a valid auto-created tag
     const syncedTags = await util.dumpTableWithSchema('tags', TagSchema);
@@ -254,9 +256,9 @@ describe('Question syncing', () => {
     assert.isDefined(syncedTag);
     const syncedQuestionTags = await util.dumpTableWithSchema('question_tags', QuestionTagSchema);
     const syncedQuestionTag = syncedQuestionTags.find(
-      (qt) => idsEqual(qt.question_id, newSyncedQuestion?.id) && idsEqual(qt.tag_id, syncedTag.id),
+      (qt) => idsEqual(qt.question_id, newSyncedQuestion.id) && idsEqual(qt.tag_id, syncedTag.id),
     );
-    assert.isTrue(syncedTag?.implicit);
+    assert.isTrue(syncedTag.implicit);
     assert.ok(syncedQuestionTag);
   });
 
@@ -355,7 +357,7 @@ describe('Question syncing', () => {
     question.uuid = '49c8b795-dfde-4c13-a040-0fd1ba711dc5';
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedQuestion = await findSyncedUndeletedQuestion('repeatedQuestion');
-    assert.equal(syncedQuestion?.uuid, question.uuid);
+    assert.equal(syncedQuestion.uuid, question.uuid);
   });
 
   it('does not modify deleted questions', async () => {
@@ -374,8 +376,9 @@ describe('Question syncing', () => {
     const deletedQuestion = syncedQuestions.find(
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
-    assert.equal(deletedQuestion?.uuid, originalQuestion.uuid);
-    assert.equal(deletedQuestion?.title, originalQuestion.title);
+    assert.isDefined(deletedQuestion);
+    assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
+    assert.equal(deletedQuestion.title, originalQuestion.title);
   });
 
   it('does not add errors to deleted questions', async () => {
@@ -407,8 +410,8 @@ describe('Question syncing', () => {
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at != null,
     );
     assert.isDefined(deletedQuestion);
-    assert.equal(deletedQuestion?.uuid, originalQuestion.uuid);
-    assert.isNull(deletedQuestion?.sync_errors);
+    assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
+    assert.isNull(deletedQuestion.sync_errors);
   });
 
   // https://github.com/PrairieLearn/PrairieLearn/issues/6539
@@ -446,11 +449,13 @@ describe('Question syncing', () => {
 
     // New questions should exist and have the correct UUIDs.
     const newQuestionRow1 = questions.find((q) => q.qid === 'b' && q.deleted_at === null);
-    assert.isNull(newQuestionRow1?.deleted_at);
-    assert.equal(newQuestionRow1?.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    assert.isDefined(newQuestionRow1);
+    assert.isNull(newQuestionRow1.deleted_at);
+    assert.equal(newQuestionRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
     const newQuestionRow2 = questions.find((q) => q.qid === 'c' && q.deleted_at === null);
-    assert.isNull(newQuestionRow2?.deleted_at);
-    assert.equal(newQuestionRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
+    assert.isDefined(newQuestionRow2);
+    assert.isNull(newQuestionRow2.deleted_at);
+    assert.equal(newQuestionRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 
   it('syncs draft questions', async () => {

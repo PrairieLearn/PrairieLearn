@@ -163,7 +163,6 @@ async function initiateFileTransfer({
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
-  if (config.filesRoot == null) throw new Error('config.filesRoot is null');
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });

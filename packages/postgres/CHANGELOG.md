@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 4.2.0
+
+### Minor Changes
+
+- c6f661c: Make parameters optional, support single-columns schema for queryCursor
+
+## 4.1.1
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 4.1.0
 
 ### Minor Changes
