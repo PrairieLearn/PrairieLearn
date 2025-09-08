@@ -477,7 +477,6 @@ describe('LTI 1.3', () => {
       );
       assert.equal(jwt.iss, CLIENT_ID);
       assert.property(jwt, 'jti');
-
       res.send(
         JSON.stringify({
           access_token: ACCESS_TOKEN,

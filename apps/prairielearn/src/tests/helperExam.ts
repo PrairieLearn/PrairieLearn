@@ -85,14 +85,14 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-4. GET to assessments URL', function () {
     it('should load successfully', async function () {
-      assert(locals.assessmentsUrl);
+      assert.ok(locals.assessmentsUrl);
       const response = await fetch(locals.assessmentsUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain E1 and have the correct link', function () {
-      assert(locals.$);
+      assert.ok(locals.$);
       const elemList = locals.$('td a:contains("Exam for automatic test suite")');
       assert.lengthOf(elemList, 1);
       locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
@@ -105,24 +105,24 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-5. GET to assessment URL', function () {
     it('should load successfully', async function () {
-      assert(locals.assessmentUrl);
+      assert.ok(locals.assessmentUrl);
       const response = await fetch(locals.assessmentUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
     it('should contain "Exam 1"', function () {
-      assert(locals.$);
+      assert.ok(locals.$);
       const elemList = locals.$('p.lead strong:contains("Exam 1")');
       assert.lengthOf(elemList, 1);
     });
     it('should contain "QA 101"', function () {
-      assert(locals.$);
+      assert.ok(locals.$);
       const elemList = locals.$('p.lead strong:contains("QA 101")');
       assert.lengthOf(elemList, 1);
     });
     it('should have a CSRF token', function () {
-      assert(locals.$);
+      assert.ok(locals.$);
       const elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -133,8 +133,8 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-6. POST to assessment URL', function () {
     it('should load successfully', async function () {
-      assert(locals.assessmentUrl);
-      assert(locals.__csrf_token);
+      assert.ok(locals.assessmentUrl);
+      assert.ok(locals.__csrf_token);
       locals.preStartTime = Date.now();
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
@@ -172,7 +172,7 @@ export function startExam(locals: Record<string, any>) {
     });
     questionsArray.forEach(function (question, i) {
       it(`should have question #${i + 1} as QID ${question.qid}`, function () {
-        assert(locals.instance_questions);
+        assert.ok(locals.instance_questions);
         question.id = locals.instance_questions[i].id;
         assert.equal(locals.instance_questions[i].qid, question.qid);
       });
@@ -181,7 +181,7 @@ export function startExam(locals: Record<string, any>) {
 
   describe('startExam-7. GET to assessment_instance URL', function () {
     it('should load successfully', async function () {
-      assert(locals.assessmentInstanceUrl);
+      assert.ok(locals.assessmentInstanceUrl);
       const response = await fetch(locals.assessmentInstanceUrl);
       assert.equal(response.status, 200);
       const page = await response.text();
@@ -189,7 +189,7 @@ export function startExam(locals: Record<string, any>) {
     });
     questionsArray.forEach(function (question) {
       it(`should link to ${question.qid} question`, function () {
-        assert(locals.$);
+        assert.ok(locals.$);
         const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
         question.url = locals.siteUrl + urlTail;
         const elemList = locals.$(`td a[href="${urlTail}"]`);

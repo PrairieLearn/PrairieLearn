@@ -34,11 +34,10 @@ export function waitForJobSequence(locals: Record<string, any>) {
           { job_sequence_id: locals.job_sequence_id },
           JobSequenceSchema,
         );
-        assert(locals.job_sequence);
       } while (locals.job_sequence.status === 'Running');
     });
     it('should be successful', async () => {
-      assert(locals.job_sequence);
+      assert.ok(locals.job_sequence);
       if (locals.job_sequence.status !== 'Success') {
         console.log(locals.job_sequence);
         const result = await sqldb.queryRows(
@@ -56,7 +55,7 @@ export function waitForJobSequence(locals: Record<string, any>) {
 export function getInstanceQuestion(locals: Record<string, any>) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
-      assert(locals.question);
+      assert.isDefined(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
       const response = await fetch(questionUrl);
@@ -66,10 +65,10 @@ export function getInstanceQuestion(locals: Record<string, any>) {
     });
     it('should contain parsable question data if Calculation', function () {
       if (locals.question?.type !== 'Calculation') return;
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('.question-data');
       assert.lengthOf(elemList, 1);
-      assert(elemList.text());
+      assert.isString(elemList.text());
       locals.questionData = JSON.parse(
         decodeURIComponent(Buffer.from(elemList.text(), 'base64').toString()),
       );
@@ -87,7 +86,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       ) {
         return;
       }
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('.question-form input[name="__variant_id"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -146,7 +145,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       ) {
         return;
       }
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('.question-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -154,7 +153,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       assert.isString(locals.__csrf_token);
     });
     it('should have or not have grade button', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList =
         locals.question?.type === 'Freeform'
           ? locals.$('button[name="__action"][value="grade"]')
@@ -166,7 +165,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       }
     });
     it('should have or not have save button', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList =
         locals.question?.type === 'Freeform'
           ? locals.$('button[name="__action"][value="save"]')
@@ -178,7 +177,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       }
     });
     it('should have or not have newVariant button', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('a:contains(New variant)');
       if (locals.shouldHaveButtons?.includes('newVariant')) {
         assert.lengthOf(elemList, 1);
@@ -187,7 +186,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
       }
     });
     it('should have or not have tryAgain button', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('a:contains(Try a new variant)');
       if (locals.shouldHaveButtons?.includes('tryAgain')) {
         assert.lengthOf(elemList, 1);
@@ -201,7 +200,7 @@ export function getInstanceQuestion(locals: Record<string, any>) {
 export function postInstanceQuestion(locals: Record<string, any>) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
-      assert(locals.getSubmittedAnswer);
+      assert.isDefined(locals.getSubmittedAnswer);
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
     });
     it('should load successfully', async function () {
@@ -259,11 +258,11 @@ export function postInstanceQuestion(locals: Record<string, any>) {
     });
     it('should have the correct assessment_instance duration if student page', function () {
       if (locals.isStudentPage) {
-        assert(locals.preEndTime);
-        assert(locals.postEndTime);
-        assert(locals.preStartTime);
-        assert(locals.postStartTime);
-        assert(locals.assessment_instance_duration);
+        assert.isDefined(locals.preEndTime);
+        assert.isDefined(locals.postEndTime);
+        assert.isDefined(locals.preStartTime);
+        assert.isDefined(locals.postStartTime);
+        assert.isDefined(locals.assessment_instance_duration);
         const min_duration = (locals.preEndTime - locals.postStartTime) / 1000;
         const max_duration = (locals.postEndTime - locals.preStartTime) / 1000;
         assert.isAbove(locals.assessment_instance_duration, min_duration);
@@ -276,7 +275,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
 export function postInstanceQuestionAndFail(locals: Record<string, any>, expectedStatus: number) {
   describe('POST to instance_question URL', function () {
     it('should generate the submittedAnswer', function () {
-      assert(locals.getSubmittedAnswer);
+      assert.isDefined(locals.getSubmittedAnswer);
       locals.submittedAnswer = locals.getSubmittedAnswer(locals.variant);
     });
     it('should error', async function () {
@@ -359,8 +358,8 @@ export function checkQuestionScore(locals: Record<string, any>) {
       );
     });
     it('should have the correct instance_question points', function () {
-      assert(locals.instance_question);
-      assert(locals.expectedResult);
+      assert.isDefined(locals.instance_question);
+      assert.isDefined(locals.expectedResult);
       assert.approximately(
         locals.instance_question?.points,
         locals.expectedResult.instance_question_points,
@@ -368,8 +367,8 @@ export function checkQuestionScore(locals: Record<string, any>) {
       );
     });
     it('should have the correct instance_question score_perc', function () {
-      assert(locals.instance_question);
-      assert(locals.expectedResult);
+      assert.isDefined(locals.instance_question);
+      assert.isDefined(locals.expectedResult);
       assert.approximately(
         locals.instance_question?.score_perc,
         locals.expectedResult.instance_question_score_perc,
@@ -378,7 +377,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
     });
     it('should have the correct instance_question auto_points', function () {
       if (locals.expectedResult?.instance_question_auto_points !== undefined) {
-        assert(locals.instance_question);
+        assert.isDefined(locals.instance_question);
         assert.approximately(
           locals.instance_question?.auto_points,
           locals.expectedResult.instance_question_auto_points,
@@ -388,7 +387,7 @@ export function checkQuestionScore(locals: Record<string, any>) {
     });
     it('should have the correct instance_question manual_points', function () {
       if (locals.expectedResult?.instance_question_manual_points !== undefined) {
-        assert(locals.instance_question);
+        assert.isDefined(locals.instance_question);
         assert.approximately(
           locals.instance_question?.manual_points,
           locals.expectedResult.instance_question_manual_points,
@@ -434,8 +433,8 @@ export function checkAssessmentScore(locals: Record<string, any>) {
       );
     });
     it('should have the correct assessment_instance points', function () {
-      assert(locals.assessment_instance);
-      assert(locals.expectedResult);
+      assert.isDefined(locals.assessment_instance);
+      assert.isDefined(locals.expectedResult);
       assert.approximately(
         locals.assessment_instance.points,
         locals.expectedResult.assessment_instance_points,
@@ -443,8 +442,8 @@ export function checkAssessmentScore(locals: Record<string, any>) {
       );
     });
     it('should have the correct assessment_instance score_perc', function () {
-      assert(locals.assessment_instance);
-      assert(locals.expectedResult);
+      assert.isDefined(locals.assessment_instance);
+      assert.isDefined(locals.expectedResult);
       assert.approximately(
         locals.assessment_instance.score_perc,
         locals.expectedResult.assessment_instance_score_perc,
@@ -489,7 +488,7 @@ export function regradeAssessment(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('#regrade-all-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -499,7 +498,7 @@ export function regradeAssessment(locals: Record<string, any>) {
   });
   describe('POST to instructorAssessmentRegrading URL for regrading', function () {
     it('should succeed', async function () {
-      assert(locals.instructorAssessmentRegradingUrl);
+      assert.isDefined(locals.instructorAssessmentRegradingUrl);
       const response = await fetch(locals.instructorAssessmentRegradingUrl, {
         method: 'POST',
         body: new URLSearchParams({
@@ -527,7 +526,7 @@ export function uploadInstanceQuestionScores(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$('#upload-instance-question-scores-form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -541,7 +540,7 @@ export function uploadInstanceQuestionScores(locals: Record<string, any>) {
       formData.append('__action', 'upload_instance_question_scores');
       formData.append('__csrf_token', locals.__csrf_token);
       formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
+      assert.isDefined(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
@@ -566,7 +565,7 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
-      assert(locals.$);
+      assert.isDefined(locals.$);
       const elemList = locals.$(
         '#upload-assessment-instance-scores-form input[name="__csrf_token"]',
       );
@@ -582,7 +581,7 @@ export function uploadAssessmentInstanceScores(locals: Record<string, any>) {
       formData.append('__action', 'upload_assessment_instance_scores');
       formData.append('__csrf_token', locals.__csrf_token);
       formData.append('file', new Blob([Buffer.from(locals.csvData)]), 'data.csv');
-      assert(locals.instructorAssessmentUploadsUrl);
+      assert.isDefined(locals.instructorAssessmentUploadsUrl);
       const response = await fetch(locals.instructorAssessmentUploadsUrl, {
         method: 'POST',
         body: formData,
@@ -627,7 +626,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
     });
     describe('GET to instructor question settings URL', function () {
       it('should load successfully', async function () {
-        assert(locals.question);
+        assert.isDefined(locals.question);
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
         const response = await fetch(questionUrl);
         assert.equal(response.status, 200);
@@ -635,7 +634,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         locals.$ = cheerio.load(page);
       });
       it('should have a CSRF token', function () {
-        assert(locals.$);
+        assert.isDefined(locals.$);
         const elemList = locals.$('form[name="question-tests-form"] input[name="__csrf_token"]');
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
@@ -645,8 +644,8 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
     });
     describe('the test job sequence', function () {
       it('should start with POST to instructor question settings URL for test_once', async function () {
-        assert(locals.question);
-        assert(locals.__csrf_token);
+        assert.isDefined(locals.question);
+        assert.isDefined(locals.__csrf_token);
         const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
         const response = await fetch(questionUrl, {
           method: 'POST',
@@ -672,7 +671,7 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         } while (locals.job_sequence.status === 'Running');
       });
       it('should be successful and produce no issues', async function () {
-        assert(locals.job_sequence);
+        assert.isDefined(locals.job_sequence);
         const issues = await sqldb.queryRows(
           sql.select_issues_for_last_variant,
           z.object({

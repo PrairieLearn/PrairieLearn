@@ -138,6 +138,10 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     results?: Record<string, any> & {
       score?: number;
     };
+    format_errors?: string[] | string;
+    received_time?: string;
+    start_time?: string;
+    end_time?: string;
   };
   try {
     // replace NULL with unicode replacement character
@@ -183,7 +187,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   }
 
   let score = 0;
-  if (typeof data.results.score === 'number' || !Number.isNaN(data.results.score)) {
+  if (typeof data.results.score === 'number' && !Number.isNaN(data.results.score)) {
     score = data.results.score;
   } else {
     return makeGradingFailureWithMessage(
@@ -224,6 +228,7 @@ function makeGradingFailureWithMessage(jobId: string, data: any, message: string
       feedback: {
         succeeded: false,
         message,
+        results: undefined,
       },
       format_errors: {},
     },

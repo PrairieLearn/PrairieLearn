@@ -74,7 +74,7 @@ export function extractAndSaveCSRFTokenFromDataContent(
   const parent = $(parentSelector);
   assert.lengthOf(parent, 1);
   const content = parent.attr('data-bs-content');
-  assert(content);
+  assert.ok(content);
   const inner$ = cheerio.load(content);
   const csrfTokenInput = inner$('input[name="__csrf_token"]');
   assert.lengthOf(csrfTokenInput, 1);
@@ -122,7 +122,7 @@ export function setUser(user: User): void {
  */
 export function parseInstanceQuestionId(url: string): number {
   const match = url.match(/instance_question\/(\d+)/);
-  assert(match);
+  assert.ok(match);
   const iqId = Number.parseInt(match[1]);
   assert.isNumber(iqId);
   return iqId;
@@ -133,7 +133,7 @@ export function parseInstanceQuestionId(url: string): number {
  */
 export function parseAssessmentInstanceId(url: string): number {
   const match = url.match(/assessment_instance\/(\d+)/);
-  assert(match);
+  assert.ok(match);
   const iqId = Number.parseInt(match[1]);
   assert.isNumber(iqId);
   return iqId;
@@ -159,8 +159,8 @@ export async function saveOrGrade(
   const fileUploadInputName = $instanceQuestionPage('input[name^=_file_upload]').attr('name');
   const fileEditorInputName = $instanceQuestionPage('input[name^=_file_editor]').attr('name');
 
-  assert(typeof token === 'string');
-  assert(typeof variantId === 'string');
+  assert.isString(token);
+  assert.isString(variantId);
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
   if (payload.postData) {

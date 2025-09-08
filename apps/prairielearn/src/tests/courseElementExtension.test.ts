@@ -26,7 +26,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
 
     const check_ext = (loaded) => {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
-      assert(
+      assert.isTrue(
         _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
         'could not load all extensions',
       );
@@ -135,7 +135,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok, 'could not fetch question page');
 
       const image = Array.from(response.$('img')).find((img) => img.attribs.src.includes(incImg));
-      assert(image != null, 'could not find image on page');
+      assert.ok(image, 'could not find image on page');
 
       const image_response = await helperClient.fetchCheerio(locals.siteUrl + image.attribs.src);
       assert.isTrue(image_response.ok, 'could not fetch image');

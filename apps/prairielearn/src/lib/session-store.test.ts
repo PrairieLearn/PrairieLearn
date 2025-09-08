@@ -23,7 +23,7 @@ describe('PostgresSessionStore', () => {
 
       let session = await store.get('1');
 
-      assert(session);
+      assert.ok(session);
       assert.deepEqual(session.data, { foo: 'bar' });
       assert.deepEqual(session.expiresAt, expiresAt);
 
@@ -33,7 +33,7 @@ describe('PostgresSessionStore', () => {
 
       session = await store.get('1');
 
-      assert(session);
+      assert.ok(session);
       assert.deepEqual(session.data, { bar: 'baz' });
       assert.deepEqual(session.expiresAt, expiresAt);
 
@@ -69,7 +69,7 @@ describe('PostgresSessionStore', () => {
 
       const session = await store.get('1');
 
-      assert(session);
+      assert.ok(session);
       assert.deepEqual(session.data, { foo: 'bar', user_id: user.user_id });
       assert.deepEqual(session.expiresAt, expiresAt);
 

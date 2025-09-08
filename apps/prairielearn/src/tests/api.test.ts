@@ -52,7 +52,7 @@ describe('API', { timeout: 60_000 }, function () {
       const page$ = cheerio.load(await res.text());
 
       const button = page$('[data-testid="generate-token-button"]').get(0);
-      assert(button);
+      assert.ok(button);
 
       // Load the popover content
       assert.isString(button.attribs['data-bs-content']);
