@@ -16,11 +16,10 @@ const router = Router({ mergeParams: true });
 
 const enabledProvidersSchema = z.array(z.string());
 
-function ensureArray(value) {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  return [value];
+function ensureArray<T>(value: T | T[]): T[] {
+  if (Array.isArray(value)) return value;
+  if (value) return [value];
+  return [];
 }
 
 router.post(
@@ -36,13 +35,10 @@ router.post(
       .parse(rawEnabledAuthnProviderIds)
       .filter((id) => supportedAuthenticationProviderIds.has(id));
 
-    let defaultProvider = req.body.default_authn_provider_id;
-    if (defaultProvider === '') defaultProvider = null;
-
     await updateInstitutionAuthnProviders({
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
-      default_authn_provider_id: defaultProvider,
+      default_authn_provider_id: req.body.default_authn_provider_id || null,
       authn_user_id: res.locals.authn_user.user_id.toString(),
     });
 

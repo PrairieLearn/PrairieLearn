@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
@@ -17,16 +19,9 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/**
- * Helper function to ensure form values are arrays
- */
-function ensureArray(value: any): string[] {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  if (value) {
-    return [value];
-  }
+function ensureArray<T>(value: T | T[]): T[] {
+  if (Array.isArray(value)) return value;
+  if (value) return [value];
   return [];
 }
 
@@ -58,27 +53,26 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_institution') {
-      // Validate required fields
-      if (!req.body.short_name?.trim()) {
-        throw new error.HttpStatusError(400, 'Short name is required');
-      }
-      if (!req.body.long_name?.trim()) {
-        throw new error.HttpStatusError(400, 'Long name is required');
-      }
-      if (!req.body.display_timezone) {
-        throw new error.HttpStatusError(400, 'Timezone is required');
-      }
+      const body = z
+        .object({
+          short_name: z.string().trim().min(1),
+          long_name: z.string().trim().min(1),
+          display_timezone: z.string().trim().min(1),
+          uid_regexp: z.string().trim(),
+          enabled_authn_provider_ids: ArrayFromCheckboxSchema,
+        })
+        .parse(req.body);
 
       // First, create the institution and get its ID
       const institutionId = await sqldb.queryRow(
         sql.insert_institution,
         {
-          short_name: req.body.short_name.trim(),
-          long_name: req.body.long_name.trim(),
-          display_timezone: req.body.display_timezone,
-          uid_regexp: req.body.uid_regexp?.trim() || null,
+          short_name: body.short_name.trim(),
+          long_name: body.long_name.trim(),
+          display_timezone: body.display_timezone.trim(),
+          uid_regexp: body.uid_regexp || null,
         },
-        z.string(),
+        IdSchema,
       );
 
       // Handle authentication provider setup
@@ -97,11 +91,13 @@ router.post(
         default_authn_provider_id: null,
         authn_user_id: res.locals.authn_user.user_id.toString(),
       });
+
+      flash('success', `Institution "${req.body.short_name.trim()}" created successfully.`);
+
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }
-
-    res.redirect(req.originalUrl);
   }),
 );
 

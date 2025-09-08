@@ -67,7 +67,8 @@ export function AdministratorInstitutions({
                 required
               />
               <small id="short_name_help" class="form-text text-muted">
-                Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
+                An abbreviation or short name, e.g. "illinois.edu" or "ubc.ca". Usually this should
+                be the institution's domain.
               </small>
             </div>
             <div class="mb-3">
@@ -81,8 +82,7 @@ export function AdministratorInstitutions({
                 required
               />
               <small id="long_name_help" class="form-text text-muted">
-                Use the full name of the university. E.g., "University of Illinois
-                Urbana-Champaign".
+                Use the full name of the university, e.g. "University of Illinois Urbana-Champaign".
               </small>
             </div>
             <div class="mb-3">
@@ -102,8 +102,8 @@ export function AdministratorInstitutions({
                   target="_blank"
                   rel="noreferrer"
                   >tz database</a
-                >. It's best to use a city-based timezone that has the same times as you. E.g.,
-                "America/Chicago".
+                >. It's best to use a city-based timezone that has the same times as the
+                institution, e.g. "America/Chicago".
               </small>
             </div>
             <div class="mb-3">
@@ -114,10 +114,10 @@ export function AdministratorInstitutions({
                 id="uid_regexp"
                 name="uid_regexp"
                 placeholder="UID regexp"
-                required
               />
               <small id="uid_regexp_help" class="form-text text-muted">
-                Should match the non-username part of students' UIDs. E.g., @example\\.com$.
+                Should match the non-username part of user UIDs, e.g. <code>@example\\.com$</code>.
+                This should be set for institution-based access restrictions to work correctly.
               </small>
             </div>
             ${supportedAuthenticationProviders.length > 0
