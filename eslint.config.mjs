@@ -643,7 +643,11 @@ export default tseslint.config([
   },
   {
     // TODO: enable this rule for all files.
-    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    files: [
+      'apps/prairielearn/**/*.test.ts',
+      'apps/prairielearn/src/lib/**/*.ts',
+      'apps/prairielearn/src/tests/**/*.ts',
+    ],
     rules: {
       '@typescript-eslint/no-unnecessary-condition': [
         'error',

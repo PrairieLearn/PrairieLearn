@@ -18,6 +18,7 @@ const featureNames = [
   'legacy-navigation-user-toggle',
   // Can be applied to any context.
   'enrollment-management',
+  'rich-text-editor',
   'legacy-navigation',
 ] as const;
 

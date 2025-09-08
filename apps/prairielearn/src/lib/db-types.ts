@@ -97,13 +97,17 @@ const SprocCheckAssessmentAccessSchema = z.object({
   time_limit_min: z.union([z.string(), z.literal('—')]),
 });
 
+// Result of users_get_displayed_role sproc
+export const SprocUsersGetDisplayedRoleSchema = z.enum(['Staff', 'Student', 'None']);
+export type SprocUsersGetDisplayedRole = z.infer<typeof SprocUsersGetDisplayedRoleSchema>;
+
 // Result of group_info sproc
 export const SprocGroupInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   uid_list: z.array(z.string()),
   user_name_list: z.array(z.string()),
-  user_roles_list: z.array(z.string()),
+  user_roles_list: z.array(SprocUsersGetDisplayedRoleSchema),
 });
 export type SprocGroupInfo = z.infer<typeof SprocGroupInfoSchema>;
 
@@ -281,10 +285,6 @@ export const AssessmentSchema = z.object({
   duration_stat_mean: IntervalSchema,
   duration_stat_median: IntervalSchema,
   duration_stat_min: IntervalSchema,
-  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
-  duration_stat_threshold_labels: z.unknown().optional(),
-  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
-  duration_stat_threshold_seconds: z.unknown().optional(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
@@ -577,6 +577,9 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  self_enrollment_enabled: z.boolean(),
+  self_enrollment_enabled_before_date: DateFromISOString.nullable(),
+  self_enrollment_requires_secret_link: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
@@ -999,6 +1002,8 @@ export const Lti13CourseInstanceSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
   deployment_id: z.string(),
+  enrollment_lti_enforced: z.boolean(),
+  enrollment_lti_enforced_after_date: DateFromISOString.nullable(),
   id: IdSchema,
   lineitems_url: z.string().nullable(),
   lti13_instance_id: IdSchema,

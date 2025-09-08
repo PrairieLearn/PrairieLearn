@@ -29,7 +29,7 @@ import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
-import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
+import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -254,7 +254,7 @@ router.post(
     } else if (req.body.__action === 'generate_enrollment_code') {
       await sqldb.execute(sql.update_enrollment_code, {
         course_instance_id: res.locals.course_instance.id,
-        enrollment_code: generateEnrollmentCode(),
+        enrollment_code: await uniqueEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');
       res.redirect(req.originalUrl);
