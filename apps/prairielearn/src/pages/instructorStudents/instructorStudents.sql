@@ -38,4 +38,5 @@ SET
   pending_uid = $uid,
   status = 'invited',
   user_id = NULL
-RETURNING *;
+RETURNING
+  *;
