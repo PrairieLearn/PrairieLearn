@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -88,11 +88,15 @@ router.post(
       );
 
       if (!existingEnrollment) {
-        await execute(sql.upsert_enrollment_by_uid, {
-          course_instance_id: courseInstance.id,
-          uid: body.uid,
-        });
-        res.json({ ok: true });
+        const enrollment = await queryRow(
+          sql.upsert_enrollment_by_uid,
+          {
+            course_instance_id: courseInstance.id,
+            uid: body.uid,
+          },
+          StaffEnrollmentSchema,
+        );
+        res.json({ ok: true, data: enrollment });
         return;
       }
 
@@ -114,12 +118,16 @@ router.post(
       // If the user is synced via LTI, they are either invited via LTI or removed via LTI. The UI has
       // already confirmed that the instructor means to de-sync them from LTI and invite them again.
       // If they are not synced via LTI, we can invite them. So in both cases, we can invite them.
-      await execute(sql.upsert_enrollment_by_uid, {
-        course_instance_id: courseInstance.id,
-        uid: body.uid,
-      });
+      const enrollment = await queryRow(
+        sql.upsert_enrollment_by_uid,
+        {
+          course_instance_id: courseInstance.id,
+          uid: body.uid,
+        },
+        StaffEnrollmentSchema,
+      );
 
-      res.json({ ok: true });
+      res.json({ ok: true, data: enrollment });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }

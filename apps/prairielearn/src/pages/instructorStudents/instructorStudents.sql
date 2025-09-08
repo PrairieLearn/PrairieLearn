@@ -37,4 +37,5 @@ SET
   pending_lti13_sub = NULL,
   pending_uid = $uid,
   status = 'invited',
-  user_id = NULL;
+  user_id = NULL
+RETURNING *;
