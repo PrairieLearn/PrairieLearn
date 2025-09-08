@@ -1,10 +1,13 @@
-import { zodResolver } from '@hookform/resolvers/zod';
 import clsx from 'clsx';
 import { Alert, Modal } from 'react-bootstrap';
-import { useForm } from 'react-hook-form';
+import { type SubmitHandler, useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import type { StaffEnrollment } from '../../../lib/client/safe-db-types.js';
+
+interface InviteStudentForm {
+  uid: string;
+}
 
 export function InviteStudentModal({
   show,
@@ -13,29 +16,24 @@ export function InviteStudentModal({
 }: {
   show: boolean;
   onHide: () => void;
-  onSubmit: (uid: string) => Promise<void> | void;
+  onSubmit: SubmitHandler<InviteStudentForm>;
 }) {
-  const FormSchema = z.object({
-    uid: z.string().email('Enter a valid UID'),
-  });
-
   const {
     register,
     handleSubmit,
     clearErrors,
     reset,
-
-    formState: { errors, isSubmitting, isValid },
-  } = useForm<z.infer<typeof FormSchema>>({
-    resolver: zodResolver(FormSchema),
+    setError,
+    formState: { errors, isSubmitting, isValidating },
+  } = useForm<InviteStudentForm>({
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
     defaultValues: { uid: '' },
   });
 
   const onClose = () => {
-    clearErrors();
     reset();
+    clearErrors();
     onHide();
   };
 
@@ -46,24 +44,27 @@ export function InviteStudentModal({
       </Modal.Header>
 
       <form
-        onSubmit={handleSubmit(
-          async ({ uid }) => await onSubmit(uid),
-          ({ uid }) => {
-            console.log('error', uid);
-          },
-        )}
+        onSubmit={handleSubmit(async (data) => {
+          try {
+            await onSubmit(data);
+          } catch (error) {
+            // errors with root as the key will not persist with each submission
+            setError('root.serverError', {
+              message: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        })}
       >
         <Modal.Body>
-          {errors.root && (
+          {errors.root?.serverError && (
             <Alert
               variant="danger"
               dismissible
               onClose={() => {
-                clearErrors();
-                reset();
+                clearErrors('root.serverError');
               }}
             >
-              {errors.root.message}
+              {errors.root.serverError.message}
             </Alert>
           )}
           <div class="mb-3">
@@ -77,24 +78,22 @@ export function InviteStudentModal({
               placeholder="Enter UID"
               aria-invalid={errors.uid ? 'true' : 'false'}
               {...register('uid', {
-                validate: {
-                  checkEnrollment: async (uid) => {
-                    console.log('checkEnrollment', uid);
-                    const params = new URLSearchParams({ uid });
-                    const res = await fetch(
-                      `${window.location.pathname}/enrollment.json?${params.toString()}`,
-                    );
-                    if (!res.ok) return 'Failed to fetch enrollment';
-                    const data: StaffEnrollment | null = await res.json();
-                    if (!data) {
-                      return true;
-                    }
+                validate: async (uid) => {
+                  if (!uid) return 'UID is required';
+                  if (!z.string().email().safeParse(uid).success) return 'Invalid UID';
 
+                  const params = new URLSearchParams({ uid });
+                  const res = await fetch(
+                    `${window.location.pathname}/enrollment.json?${params.toString()}`,
+                  );
+                  if (!res.ok) return 'Failed to fetch enrollment';
+                  const data: StaffEnrollment | null = await res.json();
+                  if (data) {
                     if (data.status === 'joined') return 'This student is already enrolled';
                     if (data.status === 'invited') return 'This student has a pending invitation';
+                  }
 
-                    return true;
-                  },
+                  return true;
                 },
               })}
             />
@@ -105,7 +104,7 @@ export function InviteStudentModal({
           <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onClose}>
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={!isValid || isSubmitting}>
+          <button type="submit" class="btn btn-primary" disabled={isSubmitting || isValidating}>
             Invite
           </button>
         </Modal.Footer>

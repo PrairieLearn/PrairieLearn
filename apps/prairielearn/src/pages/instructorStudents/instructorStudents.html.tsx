@@ -348,7 +348,7 @@ function StudentsCard({
       <InviteStudentModal
         show={showInvite}
         onHide={() => setShowInvite(false)}
-        onSubmit={async (uid) => {
+        onSubmit={async ({ uid }) => {
           await inviteMutation.mutateAsync(uid);
         }}
       />
