@@ -1,3 +1,4 @@
+import assert from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { execa } from 'execa';
@@ -124,13 +125,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
-    let didOutput = false;
+    let didOutput = false as boolean;
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
-    proc2.all?.setEncoding('utf-8');
-    proc2.all?.on('data', (data) => {
+    proc2.all.setEncoding('utf-8');
+    proc2.all.on('data', (data) => {
       didOutput = true;
       this.addToOutput(data);
     });
@@ -334,6 +335,7 @@ export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<
 */
 
 export function init() {
+  assert(socketServer.io);
   socketServer.io.on('connection', connection);
 
   // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
@@ -379,7 +381,8 @@ export function connection(socket) {
     queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
       (job) => {
         const status = job.status;
-        const output = ansiToHtml(liveJobs[msg.job_id]?.output ?? job.output);
+        const liveJob = msg.job_id in liveJobs ? liveJobs[msg.job_id] : null;
+        const output = ansiToHtml(liveJob?.output ?? job.output);
         callback({ status, output });
       },
       (err) => {
@@ -448,16 +451,16 @@ export async function errorAbandonedJobs() {
       Sentry.captureException(err);
       logger.error('errorAbandonedJobs: error updating job on error', err);
     } finally {
-      socketServer.io.to('job-' + row.id).emit('update');
+      socketServer.io!.to('job-' + row.id).emit('update');
       if (row.job_sequence_id != null) {
-        socketServer.io.to('jobSequence-' + row.job_sequence_id).emit('update');
+        socketServer.io!.to('jobSequence-' + row.job_sequence_id).emit('update');
       }
     }
   }
 
   const abandonedJobSequences = await queryRows(sql.error_abandoned_job_sequences, IdSchema);
   abandonedJobSequences.forEach(function (job_sequence_id) {
-    socketServer.io.to('jobSequence-' + job_sequence_id).emit('update');
+    socketServer.io!.to('jobSequence-' + job_sequence_id).emit('update');
   });
 }
 

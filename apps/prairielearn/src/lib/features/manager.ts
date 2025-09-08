@@ -110,7 +110,7 @@ export class FeatureManager<FeatureName extends string> {
     // in `infoCourse.json`.
     if (config.devMode && 'course_id' in context) {
       const course = await selectCourseById(context.course_id);
-      const devModeFeatures = course?.options?.devModeFeatures;
+      const devModeFeatures = course.options?.devModeFeatures;
 
       if (Array.isArray(devModeFeatures)) {
         // Legacy support: `devModeFeatures` used to be an array, not an object.

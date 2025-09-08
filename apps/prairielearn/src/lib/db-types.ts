@@ -286,10 +286,6 @@ export const AssessmentSchema = z.object({
   duration_stat_mean: IntervalSchema,
   duration_stat_median: IntervalSchema,
   duration_stat_min: IntervalSchema,
-  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
-  duration_stat_threshold_labels: z.unknown().optional(),
-  /** @deprecated Column will be dropped soon, use duration_stat_thresholds instead */
-  duration_stat_threshold_seconds: z.unknown().optional(),
   duration_stat_thresholds: IntervalSchema.array(),
   group_work: z.boolean().nullable(),
   honor_code: z.string().nullable(),
