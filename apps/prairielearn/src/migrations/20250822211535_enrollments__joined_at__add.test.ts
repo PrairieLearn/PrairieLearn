@@ -1,3 +1,8 @@
+/**
+ * This is a example test for a migration that adds a new column to the database.
+ *
+ * We typically don't need to test migrations other than backfills and constraint changes.
+ */
 import { assert, test } from 'vitest';
 import z from 'zod';
 
