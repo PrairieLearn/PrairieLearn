@@ -1,5 +1,5 @@
 import { escapeIdentifier } from 'pg';
-import { z } from 'zod';
+import { type ZodSchema, type z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
@@ -51,24 +51,21 @@ export async function selectAuditEvents({
     StaffAuditEventSchema,
   );
 }
-
-const CurrentRowDataSchema = z.record(z.string(), z.any());
-type CurrentRowData = z.infer<typeof CurrentRowDataSchema>;
-
 /**
  * Fetches the current row for a given table and row ID
  */
-async function getCurrentRowData(
+export async function getCurrentRowData<T extends ZodSchema>(
   table_name: string,
   row_id: string,
-): Promise<CurrentRowData | null> {
+  table_schema: T,
+): Promise<z.infer<T> | null> {
   const query = run(() => {
     if (table_name === 'users') {
       return 'SELECT * FROM users WHERE user_id = $row_id';
     }
     return `SELECT * FROM ${escapeIdentifier(table_name)} WHERE id = $row_id`;
   });
-  return await queryOptionalRow(query, { row_id }, CurrentRowDataSchema);
+  return await queryOptionalRow(query, { row_id }, table_schema);
 }
 
 interface InsertAuditEventParams {
@@ -154,13 +151,12 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_instance_id = null,
     group_id = null,
     institution_id = null,
-    new_row: given_new_row = null,
+    new_row = null,
     old_row = null,
     row_id,
     subject_user_id = null,
     table_name,
   } = params;
-  const new_row = given_new_row ?? (await getCurrentRowData(table_name, row_id));
 
   // Depending on the action, certain fields are required.
   if ((action === 'update' || action === 'delete') && !old_row) {
