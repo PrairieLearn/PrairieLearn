@@ -44,7 +44,8 @@ export function InviteStudentModal({
       </Modal.Header>
 
       <form
-        onSubmit={handleSubmit(async (data) => {
+        onSubmit={handleSubmit(async (data, event) => {
+          event.preventDefault();
           try {
             await onSubmit(data);
           } catch (error) {
