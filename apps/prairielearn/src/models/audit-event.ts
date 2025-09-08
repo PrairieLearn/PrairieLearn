@@ -46,7 +46,7 @@ export async function selectAuditEvents({
   agent_authn_user_id?: string;
   course_instance_id: string;
   subject_user_id?: string;
-  table_names: keyof (typeof requiredTableFields)[];
+  table_names: (keyof typeof requiredTableFields)[];
 }): Promise<StaffAuditEvent[]> {
   if (!subject_user_id && !agent_authn_user_id) {
     throw new Error('subject_user_id or agent_authn_user_id must be provided');
