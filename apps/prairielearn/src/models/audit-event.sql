@@ -195,7 +195,8 @@ SELECT
   institution_meta.id AS institution_id,
   course_meta.id AS course_id,
   assessment_meta.id AS assessment_id,
-  -- We coalesce here since there is no foreign key constraint on assessment_instance_id
+  -- We coalesce here since it is possible that assessment_instance_meta.id is null, and $assessment_instance_id is not null.
+  -- There is no foreign key constraint on assessment_instance_id since it can be hard-deleted, and we want to preserve the nonexistent ID for auditing.
   coalesce(
     assessment_instance_meta.id,
     $assessment_instance_id
