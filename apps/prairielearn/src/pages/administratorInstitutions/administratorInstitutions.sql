@@ -24,6 +24,12 @@ ORDER BY
   i.long_name,
   i.id;
 
+-- BLOCK select_authentication_providers
+SELECT
+  *
+FROM
+  authn_providers;
+
 -- BLOCK insert_institution
 INSERT INTO
   institutions (
@@ -38,4 +44,6 @@ VALUES
     $short_name,
     $display_timezone,
     $uid_regexp
-  );
+  )
+RETURNING
+  id;

@@ -2,8 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-
+import { updateInstitutionAuthnProviders } from '../../../models/institutionAuthnProvider.js';
 import {
   getInstitution,
   getInstitutionAuthenticationProviders,
@@ -13,7 +12,6 @@ import {
 
 import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 const enabledProvidersSchema = z.array(z.string());
@@ -44,13 +42,13 @@ router.post(
     let defaultProvider = req.body.default_authn_provider_id;
     if (defaultProvider === '') defaultProvider = null;
 
-    await execute(sql.update_institution_sso_config, {
-      institution_id: req.params.institution_id,
-      enabled_authn_provider_ids: enabledProviders,
-      default_authn_provider_id: defaultProvider,
-      // For audit logs
-      authn_user_id: res.locals.authn_user.user_id,
-    });
+    // Use the shared model function instead of inline SQL
+    await updateInstitutionAuthnProviders(
+      req.params.institution_id,
+      enabledProviders,
+      defaultProvider,
+      res.locals.authn_user.user_id.toString(),
+    );
 
     res.redirect(req.originalUrl);
   }),

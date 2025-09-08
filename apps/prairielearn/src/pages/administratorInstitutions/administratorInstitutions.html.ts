@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { InstitutionSchema } from '../../lib/db-types.js';
+import { type AuthnProvider, InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
@@ -17,10 +17,12 @@ type InstitutionRow = z.infer<typeof InstitutionRowSchema>;
 export function AdministratorInstitutions({
   institutions,
   availableTimezones,
+  supportedAuthenticationProviders,
   resLocals,
 }: {
   institutions: InstitutionRow[];
   availableTimezones: Timezone[];
+  supportedAuthenticationProviders: AuthnProvider[];
   resLocals: Record<string, any>;
 }) {
   return PageLayout({
@@ -114,6 +116,39 @@ export function AdministratorInstitutions({
               <small id="uid_regexp_help" class="form-text text-muted">
                 Should match the non-username part of students' UIDs. E.g., @example\\.com$.
               </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Authentication providers</label>
+              <small class="form-text text-muted mb-2">
+                Select which authentication methods users can use to log in. Google and Microsoft
+                are good defaults for most institutions. You can also configure authentication
+                providers after the institution is created. SAML authentication must be configured
+                separately after institution creation.
+              </small>
+              ${supportedAuthenticationProviders.map((provider) => {
+                // Default Google and Azure/Microsoft to checked, others unchecked
+                const isDefaultChecked = provider.name === 'Google' || provider.name === 'Azure';
+                // Don't show LTI providers in creation modal as they require special setup
+                if (provider.name === 'LTI' || provider.name === 'LTI 1.3') {
+                  return '';
+                }
+
+                return html`
+                  <div class="form-check">
+                    <input
+                      class="form-check-input"
+                      type="checkbox"
+                      value="${provider.id}"
+                      id="authn-provider-${provider.id}"
+                      name="enabled_authn_provider_ids"
+                      ${isDefaultChecked ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="authn-provider-${provider.id}">
+                      ${provider.name}
+                    </label>
+                  </div>
+                `;
+              })}
             </div>
           `,
           footer: html`
