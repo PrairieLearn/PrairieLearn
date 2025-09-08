@@ -5,11 +5,9 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config.js';
-import { type AuthnProvider, AuthnProviderSchema } from '../../lib/db-types.js';
-import { isEnterprise } from '../../lib/license.js';
+import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
-import { insertInstitutionAuthnProviders } from '../../models/institutionAuthnProvider.js';
+import { updateInstitutionAuthnProviders } from '../../models/institutionAuthnProvider.js';
 
 import {
   AdministratorInstitutions,
@@ -18,31 +16,6 @@ import {
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-/**
- * Get supported authentication providers based on configuration.
- * Similar to the enterprise version but simplified for this context.
- */
-async function getSupportedAuthenticationProviders(): Promise<AuthnProvider[]> {
-  const authProviders = await sqldb.queryRows(
-    sql.select_authentication_providers,
-    AuthnProviderSchema,
-  );
-  return authProviders.filter((row) => {
-    if (row.name === 'Shibboleth') {
-      return config.hasShib;
-    }
-    if (row.name === 'Google') {
-      return config.hasOauth;
-    }
-    if (row.name === 'Azure') {
-      return config.hasAzure;
-    }
-
-    // Default to true for all other providers.
-    return true;
-  });
-}
 
 /**
  * Helper function to ensure form values are arrays
@@ -62,7 +35,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const institutions = await sqldb.queryRows(sql.select_institutions, InstitutionRowSchema);
     const availableTimezones = await getCanonicalTimezones();
-    const supportedAuthenticationProviders = await getSupportedAuthenticationProviders();
+    const allSupportedProviders = await getSupportedAuthenticationProviders();
+
+    // Only show Google and Microsoft for institution creation. Other providers
+    // can be enabled later via SSO settings.
+    const supportedAuthenticationProviders = allSupportedProviders.filter(
+      (provider) => provider.name === 'Google' || provider.name === 'Azure',
+    );
+
     res.send(
       AdministratorInstitutions({
         institutions,
@@ -104,8 +84,8 @@ router.post(
       const institutionId = result.id;
 
       // Handle authentication provider setup
-      const supportedAuthenticationProviders = await getSupportedAuthenticationProviders();
-      const supportedProviderIds = new Set(supportedAuthenticationProviders.map((p) => p.id));
+      const allSupportedProviders = await getSupportedAuthenticationProviders();
+      const supportedProviderIds = new Set(allSupportedProviders.map((p) => p.id));
 
       const rawEnabledAuthnProviderIds = ensureArray(req.body.enabled_authn_provider_ids ?? []);
       const enabledProviders = rawEnabledAuthnProviderIds.filter((id) =>
@@ -113,11 +93,12 @@ router.post(
       );
 
       // Set up the authentication providers for the new institution (if any selected)
-      await insertInstitutionAuthnProviders(
-        institutionId,
-        enabledProviders,
-        res.locals.authn_user.user_id.toString(),
-      );
+      await updateInstitutionAuthnProviders({
+        institution_id: institutionId,
+        enabled_authn_provider_ids: enabledProviders,
+        authn_user_id: res.locals.authn_user.user_id.toString(),
+        allow_no_providers: true,
+      });
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }

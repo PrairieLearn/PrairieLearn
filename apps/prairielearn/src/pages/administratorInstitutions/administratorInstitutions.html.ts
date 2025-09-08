@@ -117,39 +117,46 @@ export function AdministratorInstitutions({
                 Should match the non-username part of students' UIDs. E.g., @example\\.com$.
               </small>
             </div>
-            <div class="mb-3">
-              <label class="form-label">Authentication providers</label>
-              <small class="form-text text-muted mb-2">
-                Select which authentication methods users can use to log in. Google and Microsoft
-                are good defaults for most institutions. You can also configure authentication
-                providers after the institution is created. SAML authentication must be configured
-                separately after institution creation.
-              </small>
-              ${supportedAuthenticationProviders.map((provider) => {
-                // Default Google and Azure/Microsoft to checked, others unchecked
-                const isDefaultChecked = provider.name === 'Google' || provider.name === 'Azure';
-                // Don't show LTI providers in creation modal as they require special setup
-                if (provider.name === 'LTI' || provider.name === 'LTI 1.3') {
-                  return '';
-                }
+            ${supportedAuthenticationProviders.length > 0
+              ? html`
+                  <div class="mb-3">
+                    <label class="form-label">Authentication providers</label>
+                    <div class="mb-2">
+                      ${supportedAuthenticationProviders.map((provider) => {
+                        // Default Google and Azure/Microsoft to checked
+                        const isDefaultChecked =
+                          provider.name === 'Google' || provider.name === 'Azure';
 
-                return html`
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      value="${provider.id}"
-                      id="authn-provider-${provider.id}"
-                      name="enabled_authn_provider_ids"
-                      ${isDefaultChecked ? 'checked' : ''}
-                    />
-                    <label class="form-check-label" for="authn-provider-${provider.id}">
-                      ${provider.name}
-                    </label>
+                        return html`
+                          <div class="form-check">
+                            <input
+                              class="form-check-input"
+                              type="checkbox"
+                              value="${provider.id}"
+                              id="authn-provider-${provider.id}"
+                              name="enabled_authn_provider_ids"
+                              ${isDefaultChecked ? 'checked' : ''}
+                            />
+                            <label class="form-check-label" for="authn-provider-${provider.id}">
+                              ${provider.name}
+                            </label>
+                          </div>
+                        `;
+                      })}
+                    </div>
+                    <small class="form-text text-muted">
+                      Select which authentication methods users from this institution can use to log
+                      in. Google and Azure (Microsoft) are good defaults for most institutions. You
+                      can configure authentication providers after the institution is created.
+                    </small>
                   </div>
-                `;
-              })}
-            </div>
+                `
+              : html`
+                  <div class="alert alert-info">
+                    Neither Google nor Microsoft authentication is configured for this PrairieLearn
+                    installation. Additional SSO authentication providers can be configured later.
+                  </div>
+                `}
           `,
           footer: html`
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

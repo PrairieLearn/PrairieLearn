@@ -96,41 +96,6 @@ WITH
 SELECT
   1;
 
--- BLOCK insert_institution_authn_providers
-WITH
-  inserted_authn_providers AS (
-    INSERT INTO
-      institution_authn_providers (institution_id, authn_provider_id)
-    SELECT
-      $institution_id,
-      unnest($enabled_authn_provider_ids::bigint[])
-    ON CONFLICT DO NOTHING
-    RETURNING
-      *
-  ),
-  audit_logs_inserted_authn_providers AS (
-    INSERT INTO
-      audit_logs (
-        authn_user_id,
-        table_name,
-        action,
-        institution_id,
-        row_id,
-        new_state
-      )
-    SELECT
-      $authn_user_id,
-      'institution_authn_providers',
-      'insert',
-      iap.institution_id,
-      iap.id,
-      to_jsonb(iap.*)
-    FROM
-      inserted_authn_providers AS iap
-  )
-SELECT
-  1;
-
 -- BLOCK delete_institution_authn_providers
 WITH
   deleted_authn_providers AS (

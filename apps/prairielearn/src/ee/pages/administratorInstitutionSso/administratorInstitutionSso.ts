@@ -2,12 +2,12 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
 import { updateInstitutionAuthnProviders } from '../../../models/institutionAuthnProvider.js';
 import {
   getInstitution,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-  getSupportedAuthenticationProviders,
 } from '../../lib/institution.js';
 
 import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';
@@ -43,12 +43,12 @@ router.post(
     if (defaultProvider === '') defaultProvider = null;
 
     // Use the shared model function instead of inline SQL
-    await updateInstitutionAuthnProviders(
-      req.params.institution_id,
-      enabledProviders,
-      defaultProvider,
-      res.locals.authn_user.user_id.toString(),
-    );
+    await updateInstitutionAuthnProviders({
+      institution_id: req.params.institution_id,
+      enabled_authn_provider_ids: enabledProviders,
+      default_authn_provider_id: defaultProvider,
+      authn_user_id: res.locals.authn_user.user_id.toString(),
+    });
 
     res.redirect(req.originalUrl);
   }),
