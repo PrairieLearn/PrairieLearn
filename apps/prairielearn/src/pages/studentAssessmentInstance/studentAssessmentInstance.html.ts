@@ -200,35 +200,9 @@ export function StudentAssessmentInstance({
         </div>
 
         <div class="card-body">
-          ${run(() => {
-            const allQuestionsDisabled = instance_question_rows.every(
-              (q) => !q.allow_real_time_grading,
-            );
-            const someQuestionsDisabled = instance_question_rows.some(
-              (q) => !q.allow_real_time_grading,
-            );
-
-            if (allQuestionsDisabled && resLocals.assessment_instance.open) {
-              return html`
-                <div class="alert alert-warning">
-                  This assessment will only be graded after it is finished. You should save answers
-                  for all questions and your exam will be graded later. You can use the
-                  <span class="badge badge-outline text-bg-light">Finish assessment</span>
-                  button below to finish and calculate your final grade.
-                </div>
-              `;
-            } else if (someQuestionsDisabled && resLocals.assessment_instance.open) {
-              return html`
-                <div class="alert alert-info">
-                  Some questions in this assessment allow real-time grading while others will only
-                  be graded after the assessment is finished. Check the individual question pages to
-                  see which grading mode applies to each question. You can use the
-                  <span class="badge badge-outline text-bg-light">Finish assessment</span>
-                  button below to finish and calculate your final grade.
-                </div>
-              `;
-            }
-            return '';
+          ${RealTimeGradingInformationAlert({
+            instance_question_rows,
+            assessment_instance: resLocals.assessment_instance,
           })}
           <div class="row align-items-center">
             ${run(() => {
@@ -687,6 +661,38 @@ function AssessmentStatus({
   }
 
   return html`Assessment is <strong>closed</strong> and you cannot answer questions.`;
+}
+
+function RealTimeGradingInformationAlert({
+  instance_question_rows,
+  assessment_instance,
+}: {
+  instance_question_rows: InstanceQuestionRow[];
+  assessment_instance: AssessmentInstance;
+}) {
+  const allQuestionsDisabled = instance_question_rows.every((q) => !q.allow_real_time_grading);
+  const someQuestionsDisabled = instance_question_rows.some((q) => !q.allow_real_time_grading);
+
+  if (allQuestionsDisabled && assessment_instance.open) {
+    return html`
+      <div class="alert alert-warning">
+        This assessment will only be graded after it is finished. You should save answers for all
+        questions and your exam will be graded later. You can use the
+        <span class="badge badge-outline text-bg-light">Finish assessment</span>
+        button below to finish and calculate your final grade.
+      </div>
+    `;
+  } else if (someQuestionsDisabled && assessment_instance.open) {
+    return html`
+      <div class="alert alert-info">
+        Some questions in this assessment allow real-time grading while others will only be graded
+        after the assessment is finished. Check the individual question pages to see which grading
+        mode applies to each question. You can use the
+        <span class="badge badge-outline text-bg-light">Finish assessment</span>
+        button below to finish and calculate your final grade.
+      </div>
+    `;
+  }
 }
 
 function InstanceQuestionTableHeader({
