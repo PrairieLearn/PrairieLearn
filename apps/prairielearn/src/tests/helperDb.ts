@@ -141,7 +141,7 @@ async function runMigrations(
  * Runs all migrations with a timestamp before the given migration.
  * @param migrationName The name of the migration to run all migrations before.
  */
-export async function runMigrationsBefore(migrationName: string): Promise<void> {
+async function runMigrationsBefore(migrationName: string): Promise<void> {
   await runMigrations({
     beforeTimestamp: extractTimestampFromFilename(migrationName),
     inclusiveBefore: false,
@@ -152,7 +152,7 @@ export async function runMigrationsBefore(migrationName: string): Promise<void> 
  * Runs all migrations with a timestamp before the given migration, and including the given migration.
  * @param migrationName The name of the migration to run all migrations including.
  */
-export async function runMigrationsThrough(migrationName: string): Promise<void> {
+async function runMigrationsThrough(migrationName: string): Promise<void> {
   await runMigrations({
     beforeTimestamp: extractTimestampFromFilename(migrationName),
     inclusiveBefore: true,
@@ -162,7 +162,7 @@ export async function runMigrationsThrough(migrationName: string): Promise<void>
 /**
  * Runs any migrations that have not yet been run.
  */
-export async function runRemainingMigrations(): Promise<void> {
+async function runRemainingMigrations(): Promise<void> {
   await runMigrations();
 }
 
@@ -245,7 +245,7 @@ export async function testMigration<T>({
     await runMigrationsBefore(name);
 
     // This is done to support tests that may need to use sprocs. This might fail
-    // if the migration creates tables that the sprocs depend on. We'll cross that
+    // if the migration creates tables that any sproc depends on. We'll cross that
     // bridge if we come to it.
     await sqldb.setRandomSearchSchemaAsync('test');
     await sprocs.init();
