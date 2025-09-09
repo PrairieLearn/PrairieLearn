@@ -14,6 +14,7 @@ import {
   IdSchema,
   RubricItemSchema,
   RubricSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
@@ -89,9 +90,9 @@ export async function selectRubricData({
   if (submission) {
     // Render rubric items: description, explanation and grader note
     const mustache_data = {
-      correct_answers: submission?.true_answer ?? {},
-      params: submission?.params ?? {},
-      submitted_answers: submission?.submitted_answer,
+      correct_answers: submission.true_answer ?? {},
+      params: submission.params ?? {},
+      submitted_answers: submission.submitted_answer,
     };
 
     await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
@@ -160,7 +161,7 @@ export async function updateAssessmentQuestionRubric(
 ): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
-    if (!rubric_items?.length) {
+    if (rubric_items.length === 0) {
       throw new Error('No rubric items were provided.');
     }
 
@@ -323,12 +324,12 @@ export async function insertRubricGrading(
   return sqldb.runInTransactionAsync(async () => {
     const { rubric_data, rubric_item_data } = await sqldb.queryRow(
       sql.select_rubric_items,
-      { rubric_id, rubric_items: rubric_items?.map((item) => item.rubric_item_id) || [] },
+      { rubric_id, rubric_items: rubric_items.map((item) => item.rubric_item_id) },
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
     const sum_rubric_item_points = _.sum(
-      rubric_items?.map(
+      rubric_items.map(
         (item) =>
           (item.score ?? 1) *
           (rubric_item_data.find((db_item) => idsEqual(db_item.id, item.rubric_item_id))?.points ??
@@ -348,7 +349,7 @@ export async function insertRubricGrading(
         rubric_id,
         computed_points,
         adjust_points: adjust_points || 0,
-        rubric_items: JSON.stringify(rubric_items || []),
+        rubric_items: JSON.stringify(rubric_items),
       },
       IdSchema,
     );
@@ -430,7 +431,7 @@ export async function updateInstanceQuestionScore(
     let new_manual_points: number | null = null;
     let manual_rubric_grading_id: string | null = null;
 
-    if (score?.partial_scores) {
+    if (score.partial_scores) {
       if (typeof score.partial_scores !== 'object') {
         throw new Error('partial_scores is not an object');
       }
@@ -441,23 +442,23 @@ export async function updateInstanceQuestionScore(
         (100 *
           _.sumBy(
             Object.values(score.partial_scores),
-            (value) => (value?.score ?? 0) * (value?.weight ?? 1),
+            (value) => (value.score ?? 0) * (value.weight ?? 1),
           )) /
-        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        _.sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
-    if (score?.auto_score_perc != null) {
-      if (score?.auto_points != null) {
+    if (score.auto_score_perc != null) {
+      if (score.auto_points != null) {
         throw new Error('Cannot set both auto_score_perc and auto_points');
       }
-      if (score?.score_perc != null) {
+      if (score.score_perc != null) {
         throw new Error('Cannot set both auto_score_perc and score_perc');
       }
       new_auto_score_perc = Number(score.auto_score_perc);
       new_auto_points = (new_auto_score_perc * (current_submission.max_auto_points ?? 0)) / 100;
-    } else if (score?.auto_points != null) {
-      if (score?.points != null) {
+    } else if (score.auto_points != null) {
+      if (score.points != null) {
         throw new Error('Cannot set both auto_points and points');
       }
       new_auto_points = Number(score.auto_points);
@@ -467,13 +468,13 @@ export async function updateInstanceQuestionScore(
           : 0;
     }
 
-    if (current_submission.manual_rubric_id && score?.manual_rubric_data?.rubric_id) {
+    if (current_submission.manual_rubric_id && score.manual_rubric_data?.rubric_id) {
       const manual_rubric_grading = await insertRubricGrading(
-        score?.manual_rubric_data?.rubric_id,
+        score.manual_rubric_data.rubric_id,
         current_submission.max_points ?? 0,
         current_submission.max_manual_points ?? 0,
-        score?.manual_rubric_data?.applied_rubric_items || [],
-        score?.manual_rubric_data?.adjust_points ?? 0,
+        score.manual_rubric_data.applied_rubric_items ?? [],
+        score.manual_rubric_data.adjust_points ?? 0,
       );
       score.manual_points =
         manual_rubric_grading.computed_points -
@@ -484,10 +485,10 @@ export async function updateInstanceQuestionScore(
       manual_rubric_grading_id = manual_rubric_grading.id;
     } else if (
       current_submission.manual_rubric_id &&
-      score?.points == null &&
-      score?.score_perc == null &&
-      score?.manual_points == null &&
-      score?.manual_score_perc == null
+      score.points == null &&
+      score.score_perc == null &&
+      score.manual_points == null &&
+      score.manual_score_perc == null
     ) {
       // If there is a rubric, and the manual_points will not be updated, keep the current rubric grading.
       manual_rubric_grading_id = current_submission.manual_rubric_grading_id;
@@ -496,11 +497,11 @@ export async function updateInstanceQuestionScore(
       manual_rubric_grading_id = null;
     }
 
-    if (score?.manual_score_perc != null) {
-      if (score?.manual_points != null) {
+    if (score.manual_score_perc != null) {
+      if (score.manual_points != null) {
         throw new Error('Cannot set both manual_score_perc and manual_points');
       }
-      if (score?.score_perc != null) {
+      if (score.score_perc != null) {
         throw new Error('Cannot set both manual_score_perc and score_perc');
       }
       new_manual_points =
@@ -510,8 +511,8 @@ export async function updateInstanceQuestionScore(
         current_submission.max_points != null && current_submission.max_points > 0
           ? (new_points * 100) / current_submission.max_points
           : 0;
-    } else if (score?.manual_points != null) {
-      if (score?.points != null) {
+    } else if (score.manual_points != null) {
+      if (score.points != null) {
         throw new Error('Cannot set both manual_points and points');
       }
       new_manual_points = Number(score.manual_points);
@@ -520,14 +521,14 @@ export async function updateInstanceQuestionScore(
         current_submission.max_points != null && current_submission.max_points > 0
           ? (new_points * 100) / current_submission.max_points
           : 0;
-    } else if (score?.score_perc != null) {
-      if (score?.points != null) {
+    } else if (score.score_perc != null) {
+      if (score.points != null) {
         throw new Error('Cannot set both score_perc and points');
       }
       new_score_perc = Number(score.score_perc);
       new_points = (new_score_perc * (current_submission.max_points ?? 0)) / 100;
       new_manual_points = new_points - (new_auto_points ?? current_submission.auto_points ?? 0);
-    } else if (score?.points != null) {
+    } else if (score.points != null) {
       new_points = Number(score.points);
       new_score_perc =
         current_submission.max_points != null && current_submission.max_points > 0
@@ -550,8 +551,8 @@ export async function updateInstanceQuestionScore(
       current_submission.submission_id &&
       ((submission_id != null && idsEqual(current_submission.submission_id, submission_id)) ||
         new_score_perc != null ||
-        score?.feedback ||
-        score?.partial_scores)
+        score.feedback ||
+        score.partial_scores)
     ) {
       grading_job_id = await sqldb.queryRow(
         sql.insert_grading_job,
@@ -563,8 +564,8 @@ export async function updateInstanceQuestionScore(
           score: new_score_perc == null ? null : new_score_perc / 100,
           auto_points: new_auto_points,
           manual_points: new_manual_points,
-          feedback: score?.feedback,
-          partial_scores: score?.partial_scores,
+          feedback: score.feedback,
+          partial_scores: score.partial_scores,
           manual_rubric_grading_id,
         },
         IdSchema,
@@ -573,8 +574,8 @@ export async function updateInstanceQuestionScore(
       if (!current_submission.modified_at_conflict && current_submission.submission_id) {
         await sqldb.executeRow(sql.update_submission_score, {
           submission_id: current_submission.submission_id,
-          feedback: score?.feedback,
-          partial_scores: score?.partial_scores,
+          feedback: score.feedback,
+          partial_scores: score.partial_scores,
           manual_rubric_grading_id,
           score: new_auto_score_perc == null ? null : new_auto_score_perc / 100,
           correct: new_auto_score_perc == null ? null : new_auto_score_perc > 50,
@@ -600,13 +601,17 @@ export async function updateInstanceQuestionScore(
         is_ai_graded,
       });
 
-      await sqldb.callAsync('assessment_instances_grade', [
-        current_submission.assessment_instance_id,
-        authn_user_id,
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ]);
+      await sqldb.callRow(
+        'assessment_instances_grade',
+        [
+          current_submission.assessment_instance_id,
+          authn_user_id,
+          100, // credit
+          false, // only_log_if_score_updated
+          true, // allow_decrease
+        ],
+        SprocAssessmentInstancesGradeSchema,
+      );
 
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);

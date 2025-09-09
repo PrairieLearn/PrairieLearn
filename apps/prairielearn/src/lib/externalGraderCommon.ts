@@ -101,7 +101,7 @@ export async function buildDirectory(
       partial_scores: submission.partial_scores ?? {},
       score: submission.score ?? 0,
       feedback: submission.feedback ?? {},
-      variant_seed: Number.parseInt(variant.variant_seed ?? '0', 36),
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: variant.options || {},
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
@@ -212,9 +212,9 @@ function makeGradingFailureWithMessage(jobId: string, data: any, message: string
   return {
     gradingId: jobId,
     grading: {
-      receivedTime: (data && data.received_time) || null,
-      startTime: (data && data.start_time) || null,
-      endTime: (data && data.end_time) || null,
+      receivedTime: data?.received_time || null,
+      startTime: data?.start_time || null,
+      endTime: data?.end_time || null,
       score: 0,
       feedback: {
         succeeded: false,

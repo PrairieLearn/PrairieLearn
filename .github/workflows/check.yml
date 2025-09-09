@@ -28,7 +28,10 @@ jobs:
     name: JavaScript
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
+          fetch-depth: 0
 
       - name: Install additional dependencies
         run: |-
@@ -80,6 +83,17 @@ jobs:
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
+      # Requires Git history and yarn install. Not using the make version
+      # because the base ref is potentially different. Does not run in
+      # changeset-release or dependabot PRs, since they are expected to change
+      # packages without creating a changeset. Also does not run in merge_group
+      # events due to issues with the check for changeset, which can be tricky
+      # in merge branches.
+      - name: Check if a changeset is required
+        if: ${{github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.head.ref, 'changeset-release')
+          && github.event.pull_request.user.login != 'dependabot[bot]' }}
+        run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in
       # dependabot PRs, but we still want all other tests above to run
       # in those cases.
@@ -90,7 +104,7 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Install OS packages
         run: sudo apt-get install -y graphviz libgraphviz-dev
@@ -137,7 +151,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
+        uses: codecov/codecov-action@v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -147,7 +161,7 @@ jobs:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install additional dependencies
         run: |-
           sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
