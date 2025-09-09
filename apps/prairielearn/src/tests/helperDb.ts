@@ -116,45 +116,6 @@ async function closeSql(): Promise<void> {
   await sqldb.closeAsync();
 }
 
-async function createAndInitDatabaseWithMigrations({
-  dbName,
-  beforeTimestamp,
-  inclusiveBefore,
-  dropFirst,
-  allMigrations,
-}: {
-  dbName: string;
-  beforeTimestamp?: string;
-  inclusiveBefore?: boolean;
-  allMigrations?: boolean;
-  dropFirst: boolean;
-}): Promise<void> {
-  const runMigrations = allMigrations
-    ? true
-    : {
-        beforeTimestamp: beforeTimestamp ?? '',
-        inclusiveBefore: inclusiveBefore ?? false,
-      };
-  await postgresTestUtils.createDatabase({
-    dropExistingDatabase: dropFirst,
-    ignoreIfExists: !dropFirst,
-    database: dbName,
-    configurePool: dropFirst,
-    prepare: () =>
-      runMigrationsAndSprocs({
-        dbName,
-        runMigrations,
-        initDatabase: dropFirst,
-      }),
-  });
-
-  // Ideally this would happen only over in `helperServer`, but we need to use
-  // the same database details, so this is a convenient place to do it.
-  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
-    throw err;
-  });
-}
-
 async function databaseExists(dbName: string): Promise<boolean> {
   const client = new pg.Client(POSTGRES_INIT_CONNECTION_STRING);
   await client.connect();
@@ -182,52 +143,40 @@ async function setupDatabases(): Promise<void> {
   });
 }
 
+async function runMigrations(
+  migrationFilters: Parameters<typeof initMigrations>[0]['migrationFilters'] = {},
+): Promise<void> {
+  await initMigrations({
+    directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+    project: 'prairielearn',
+    migrationFilters,
+  });
+}
+
 /**
  * Runs all migrations with a timestamp before the given migration.
  * @param migrationName The name of the migration to run all migrations before.
- * @param options
- * @param options.drop Whether to drop the database before running the migrations. Default false.
  */
-export async function runMigrationsBefore(
-  migrationName: string,
-  { drop = false }: { drop?: boolean } = {},
-): Promise<void> {
-  const dbName = getDatabaseNameForCurrentWorker();
-  await createAndInitDatabaseWithMigrations({
-    dbName,
+export async function runMigrationsBefore(migrationName: string): Promise<void> {
+  await runMigrations({
     beforeTimestamp: extractTimestampFromFilename(migrationName),
     inclusiveBefore: false,
-    dropFirst: drop,
   });
 }
 
 /**
  * Runs all migrations with a timestamp before the given migration, and including the given migration.
  * @param migrationName The name of the migration to run all migrations including.
- * @param options
- * @param options.drop Whether to drop the database before running the migrations. Default false.
  */
-export async function runMigrationsThrough(
-  migrationName: string,
-  { drop = false }: { drop?: boolean } = {},
-): Promise<void> {
-  const dbName = getDatabaseNameForCurrentWorker();
-  await createAndInitDatabaseWithMigrations({
-    dbName,
+export async function runMigrationsThrough(migrationName: string): Promise<void> {
+  await runMigrations({
     beforeTimestamp: extractTimestampFromFilename(migrationName),
     inclusiveBefore: true,
-    dropFirst: drop,
   });
 }
 
-export async function runRemainingMigrations({
-  drop = false,
-}: { drop?: boolean } = {}): Promise<void> {
-  await createAndInitDatabaseWithMigrations({
-    dbName: getDatabaseNameForCurrentWorker(),
-    allMigrations: true,
-    dropFirst: drop,
-  });
+export async function runRemainingMigrations(): Promise<void> {
+  await runMigrations();
 }
 
 export async function before(): Promise<void> {
@@ -289,20 +238,54 @@ export async function testMigration<T>({
   beforeMigration?: () => Promise<T> | T;
   afterMigration?: (beforeResult: T) => Promise<void> | void;
 }): Promise<void> {
-  await runMigrationsBefore(name, { drop: true });
+  const dbName = getDatabaseNameForCurrentWorker();
 
-  const result = (await beforeMigration?.()) as T;
+  await postgresTestUtils.createDatabase({
+    dropExistingDatabase: true,
+    database: dbName,
+    configurePool: true,
+  });
 
-  await runMigrationsThrough(name, { drop: false });
+  // We have to do this here so that `migrations.init` can successfully
+  // acquire a lock.
+  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+    throw err;
+  });
 
-  if (afterMigration) {
-    await afterMigration(result);
+  // Some migrations will call `enqueueBatchedMigration` and `finalizeBatchedMigration`,
+  // so we need to make sure the batched migration machinery is initialized.
+  initBatchedMigrations({
+    project: 'prairielearn',
+    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
+  });
+
+  try {
+    await runMigrationsBefore(name);
+
+    // This is done to support tests that may need to use sprocs. This might fail
+    // if the migration creates tables that the sprocs depend on. We'll cross that
+    // bridge if we come to it.
+    await sqldb.setRandomSearchSchemaAsync('test');
+    await sprocs.init();
+
+    const result = (await beforeMigration?.()) as T;
+
+    await runMigrationsThrough(name);
+
+    if (afterMigration) {
+      await afterMigration(result);
+    }
+
+    await runRemainingMigrations();
+
+    await closeSql();
+    await postgresTestUtils.dropDatabase();
+  } catch (err) {
+    await stopBatchedMigrations();
+    await namedLocks.close();
+    await sqldb.closeAsync();
+    throw err;
   }
-
-  await runRemainingMigrations();
-
-  await closeSql();
-  await postgresTestUtils.dropDatabase();
 }
 
 export async function resetDatabase(): Promise<void> {
