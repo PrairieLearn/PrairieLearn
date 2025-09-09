@@ -94,6 +94,7 @@ describe('audit-event', () => {
         agent_authn_user_id: null,
         agent_user_id: null,
         subject_user_id: user.user_id,
+        institution_id: user.institution_id,
         new_row: { test: 'default user data' },
       });
       expect(auditEvent).toMatchInlineSnapshot(`
@@ -110,7 +111,7 @@ describe('audit-event', () => {
           "course_instance_id": null,
           "group_id": null,
           "id": "1",
-          "institution_id": null,
+          "institution_id": "1",
           "new_row": {
             "test": "default user data",
           },
@@ -254,6 +255,7 @@ describe('audit-event', () => {
         subject_user_id: user.user_id,
         course_instance_id: '1',
         action_detail: 'Updated user data',
+        new_row: await getCurrentRowData('users', '1', UserSchema),
         old_row: { test: 'old data' },
         context: { test: 'data2' },
       });
@@ -287,6 +289,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        institution_id: user.institution_id,
         new_row: { test: 'new user data' },
         context: { test: 'users' },
       });
@@ -346,6 +349,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        institution_id: user.institution_id,
         new_row: { test: 'course1 user data' },
         context: { test: 'course1' },
       });
@@ -358,6 +362,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '2',
+        institution_id: user.institution_id,
         new_row: { test: 'course2 user data' },
         context: { test: 'course2' },
       });
@@ -438,6 +443,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        institution_id: user.institution_id,
         new_row: { test: 'older user data' },
         context: { test: 'older' },
       });
@@ -450,6 +456,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        institution_id: user.institution_id,
         action_detail: 'Updated user data',
         old_row: { test: 'old data' },
         context: { test: 'newer' },
@@ -484,6 +491,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        institution_id: user.institution_id,
         new_row: { test: 'new user data' },
         context: { test: 'null_user' },
       });
