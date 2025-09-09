@@ -8,6 +8,11 @@ type BaseNewAuditLog = Omit<AuditLog, 'id' | 'date'>;
 type RequiredNewAuditLog = Required<Pick<BaseNewAuditLog, 'action' | 'table_name'>>;
 type NewAuditLog = RequiredNewAuditLog & Partial<Omit<BaseNewAuditLog, keyof RequiredNewAuditLog>>;
 
+/**
+ * @deprecated We are slowly deprecating this table in favor of the `audit_events` table.
+ *
+ * You should use `insertAuditEvent` instead.
+ */
 export async function insertAuditLog(auditLog: NewAuditLog): Promise<AuditLog> {
   return await queryRow(
     sql.insert_audit_log,
