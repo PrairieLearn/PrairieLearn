@@ -1,7 +1,6 @@
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
-import type { StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { useForm } from 'react-hook-form';
@@ -9,31 +8,21 @@ import { QRCodeModal } from '../../components/QRCodeModal.js';
 import { GitHubButton } from '../../components/GitHubButton.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { NavPage } from '../../components/Navbar.types.js';
+import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 
 interface SettingsFormValues {
   ciid: string;
   long_name: string;
   display_timezone: string;
-  group_assessments_by: 'Set' | 'Module';
+  group_assessments_by: StaffCourseInstanceContext['course_instance']['assessments_group_by'];
   hide_in_enroll_page: boolean;
 }
 
-function copyToClipboard(text: string) {
-  void (async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-    } catch {
-      const ta = document.createElement('textarea');
-      ta.value = text;
-      document.body.appendChild(ta);
-      ta.select();
-      document.execCommand('copy');
-      document.body.removeChild(ta);
-    }
-  })();
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
 }
 
-function StudentLinkSharingPreact({
+function StudentLinkSharing({
   studentLink,
   studentLinkMessage,
 }: {
@@ -52,7 +41,7 @@ function StudentLinkSharingPreact({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => copyToClipboard(studentLink)}
+            onClick={async () => await copyToClipboard(studentLink)}
             aria-label="Copy student link"
           >
             <i class="bi bi-clipboard" />
@@ -81,7 +70,7 @@ function StudentLinkSharingPreact({
   );
 }
 
-function PublicLinkSharingPreact({
+function PublicLinkSharing({
   publicLink,
   sharingMessage,
   publicLinkMessage,
@@ -104,7 +93,7 @@ function PublicLinkSharingPreact({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => copyToClipboard(publicLink)}
+            onClick={async () => await copyToClipboard(publicLink)}
             aria-label="Copy public link"
           >
             <i class="far fa-clipboard" />
@@ -153,7 +142,7 @@ export function InstructorInstanceAdminSettings({
   navPage: NavPage;
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
-  courseInstance: StaffCourseInstance;
+  courseInstance: StaffCourseInstanceContext['course_instance'];
   shortNames: string[];
   availableTimezones: Timezone[];
   origHash: string;
@@ -165,11 +154,11 @@ export function InstructorInstanceAdminSettings({
   infoCourseInstancePath: string;
 }) {
   const defaultValues: SettingsFormValues = {
-    ciid: courseInstance.short_name ?? '',
+    ciid: courseInstance.short_name,
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
-    group_assessments_by: (courseInstance.assessments_group_by as 'Set' | 'Module') ?? 'Set',
-    hide_in_enroll_page: Boolean(courseInstance.hide_in_enroll_page),
+    group_assessments_by: courseInstance.assessments_group_by,
+    hide_in_enroll_page: courseInstance.hide_in_enroll_page ?? false,
   };
 
   const {
@@ -314,7 +303,7 @@ export function InstructorInstanceAdminSettings({
             </div>
           </div>
 
-          <StudentLinkSharingPreact
+          <StudentLinkSharing
             studentLink={studentLink}
             studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
           />
@@ -325,7 +314,7 @@ export function InstructorInstanceAdminSettings({
 
           <h2 class="h4">Sharing</h2>
           {courseInstance.share_source_publicly ? (
-            <PublicLinkSharingPreact
+            <PublicLinkSharing
               publicLink={publicLink}
               sharingMessage={"This course instance's source is publicly shared."}
               publicLinkMessage="The link that other instructors can use to view this course instance."
