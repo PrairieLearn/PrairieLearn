@@ -17,11 +17,10 @@ export default makeBatchedMigration({
     };
   },
 
-  async execute(start: bigint, end: bigint) {
+  async execute(start: bigint, _end: bigint) {
     await execute(sql.update_course_instances_enrollment_code, {
-      start,
+      idx: start,
       enrollment_code: await uniqueEnrollmentCode(),
-      end,
     });
   },
 });
