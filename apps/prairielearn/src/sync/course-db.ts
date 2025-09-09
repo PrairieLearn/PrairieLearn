@@ -254,7 +254,7 @@ export async function loadFullCourse(
 
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
-        assessmentSetsInUse.add(assessment.data?.set);
+        assessmentSetsInUse.add(assessment.data.set);
       }
     }
 
@@ -512,13 +512,13 @@ export async function loadCourseInfo({
     return maybeNullLoadedData;
   }
 
-  if (!maybeNullLoadedData?.data) {
+  const info = maybeNullLoadedData?.data;
+  if (!info) {
     throw new Error('Could not load infoCourse.json');
   }
 
   // Reassign to a non-null type.
   const loadedData = maybeNullLoadedData;
-  const info = maybeNullLoadedData.data;
 
   if (config.checkSharingOnSync && !sharingEnabled && info.sharingSets) {
     infofile.addError(
@@ -540,7 +540,7 @@ export async function loadCourseInfo({
     const known = new Map();
     const duplicateEntryIds = new Set<string>();
 
-    (info[fieldName] || []).forEach((entry) => {
+    (info![fieldName] ?? []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
@@ -595,7 +595,7 @@ export async function loadCourseInfo({
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures = run(() => {
-    const features = info?.options?.devModeFeatures ?? {};
+    const features = info.options.devModeFeatures ?? {};
 
     // Support for legacy values, where features were an array of strings instead
     // of an object mapping feature names to booleans.
@@ -977,7 +977,7 @@ function validateQuestion({
     }
   }
 
-  if (question.type && question.options) {
+  if (question.options) {
     try {
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
@@ -1370,14 +1370,14 @@ function validateCourseInstance({
   }
 
   let accessibleInFuture = false;
-  courseInstance.allowAccess.forEach((rule) => {
+  for (const rule of courseInstance.allowAccess) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
-  });
+  }
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
