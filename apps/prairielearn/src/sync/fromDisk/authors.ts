@@ -13,11 +13,14 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 function normalizeOrcid(orcid: string): string | null {
   if (!orcid) return null;
 
+  // Drop any dashes
   const digits = orcid.replaceAll('-', '');
   if (!/^\d{15}[\dX]$/.test(digits)) {
     return null;
   }
 
+  // Calculate and verify checksum
+  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
   let total = 0;
   for (let i = 0; i < 15; i++) {
     total = (total + Number.parseInt(digits[i])) * 2;
@@ -69,15 +72,33 @@ export async function sync(
         );
       }
 
-      const resolvedAuthor: NormalizedAuthor = { name: author.name, email: author.email };
+      const resolvedAuthor: NormalizedAuthor = {};
 
-      // Not making any attempt to validate email or author name
+      if (author.name) {
+        if (author.name.length < 3 || author.name.length > 255) {
+          throw new Error(
+            `The provided author name ${author.name} is invalid. Author names must be 3-255 characters long`,
+          );
+        }
+        resolvedAuthor.name = author.name;
+      }
+
+      if (author.email) {
+        const parsedEmail = z.string().max(255).email().safeParse(author.email);
+
+        if (!parsedEmail.success) {
+          throw new Error(
+            `The provided author email address ${author.email} is invalid. Author email addresses must be valid and at most 255 characters long`,
+          );
+        }
+        resolvedAuthor.email = parsedEmail.data;
+      }
 
       if (author.orcid) {
         const orcidNormalized = normalizeOrcid(author.orcid);
         if (!orcidNormalized) {
           throw new Error(
-            `The provided ORCiD ${author.orcid} is invalid. ORCiDs must be 16 characters long (excluding dashes) and have a valid checksum`,
+            `The provided author ORCiD ${author.orcid} is invalid. ORCiDs must be 16 characters long (excluding dashes) and have a valid checksum. See the official website (https://orcid.org) for info on how to create or look up an ORCiD`,
           );
         }
         resolvedAuthor.orcid = orcidNormalized;
@@ -108,7 +129,7 @@ export async function sync(
   const authors = await sqldb.queryRows(sql.select_authors, authorsForDB, AuthorSchema);
   const authorIdMap = new Map<string, string>();
   for (const author of authors) {
-    // A bit awkward: reconstructing normalized author from DB author to then lookup JSON author
+    // Reconstructing normalized author from DB author to then lookup JSON author
     const normalizedAuthor: NormalizedAuthor = {
       name: author.author_name ?? undefined,
       email: author.email ?? undefined,
@@ -117,8 +138,10 @@ export async function sync(
     };
     const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
 
-    // This should never happen in practice
-    if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} not found`);
+    // This should never happen in practice, but this keeps the type checker
+    // happy, and if it does happen, we want it to fail obviously and loudly.
+    if (!jsonAuthor)
+      throw new Error(`Author ${JSON.stringify(author)} not found after adding to database`);
 
     authorIdMap.set(JSON.stringify(jsonAuthor), author.id);
   }
