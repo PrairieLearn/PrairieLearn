@@ -46,7 +46,7 @@ export function RubricSettings({
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
-      .map((item) => item.points ?? 0)
+      .map((item) => (item.points ? Number(item.points) : 0))
       .reduce<
         [number, number]
       >(([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]), [startingPoints, startingPoints]);
@@ -526,7 +526,7 @@ export function RubricRow({
           value={item.points}
           aria-label="Points"
           required
-          onInput={(e: any) => updateRubricItem({ points: Number(e.currentTarget.value) })}
+          onInput={(e: any) => updateRubricItem({ points: e.currentTarget.value })}
         />
       </td>
 
