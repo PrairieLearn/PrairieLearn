@@ -231,7 +231,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     )
   ) {
     throw new Error(
-      `${table_name} requires the following fields: ${requiredTableFields[table_name]?.join(', ')}`,
+      `${table_name} requires the following fields: ${requiredTableFields[table_name].join(', ')}`,
     );
   }
 
