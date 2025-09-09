@@ -5,7 +5,6 @@ import { Bold } from '@tiptap/extension-bold';
 import { BulletList } from '@tiptap/extension-bullet-list';
 import { Code } from '@tiptap/extension-code';
 import { Document } from '@tiptap/extension-document';
-import DragHandle from '@tiptap/extension-drag-handle-react';
 import { Dropcursor } from '@tiptap/extension-dropcursor';
 import { Gapcursor } from '@tiptap/extension-gapcursor';
 import { Heading } from '@tiptap/extension-heading';
@@ -23,8 +22,9 @@ import { EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
-import { Button, Card, Form, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
+import { Card, Form } from 'react-bootstrap';
 
+import DragHandleMenu from './components/DragHandleMenu.js';
 import { PlPanel } from './extensions/pl-panel.js';
 import { RawHtml } from './extensions/raw-html.js';
 
@@ -146,93 +146,10 @@ const RichTextEditor = ({
           </div>
         </Card.Header>
         <Card.Body>
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <Button
-              variant={
-                editor.isActive('plPanel', { tag: 'pl-question-panel' }) ? 'primary' : 'light'
-              }
-              size="sm"
-              title="Toggle Question Panel"
-              onClick={() => editor.chain().focus().togglePanel('question').run()}
-            >
-              <i class="bi bi-question-square" aria-hidden="true" />
-            </Button>
-          </div>
+          <div class="d-flex align-items-center gap-2 mb-2" />
           <div class="mb-3" />
           <EditorContent editor={editor} class="border" />
-          <OverlayTrigger
-            placement="left"
-            overlay={<Tooltip id="drag-tooltip">Click for options</Tooltip>}
-          >
-            <div class="position-relative">
-              <DragHandle editor={editor} computePositionConfig={{ placement: 'left' }}>
-                <OverlayTrigger
-                  placement="right"
-                  trigger="click"
-                  overlay={
-                    <Popover id="visibility-menu">
-                      <Popover.Header as="h3">Visibility</Popover.Header>
-                      <Popover.Body>
-                        <div class="d-flex flex-column gap-2">
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-light d-flex align-items-center gap-2"
-                            onClick={() =>
-                              editor.chain().focus().setPanelVisibility('question').run()
-                            }
-                          >
-                            <i
-                              class={`bi ${editor.isActive('plPanel', { tag: 'pl-question-panel' }) ? 'bi-check-square' : 'bi-square'}`}
-                            />
-                            In question
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-light d-flex align-items-center gap-2"
-                            onClick={() =>
-                              editor.chain().focus().setPanelVisibility('submission').run()
-                            }
-                          >
-                            <i
-                              class={`bi ${editor.isActive('plPanel', { tag: 'pl-submission-panel' }) ? 'bi-check-square' : 'bi-square'}`}
-                            />
-                            In submission
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-light d-flex align-items-center gap-2"
-                            onClick={() =>
-                              editor.chain().focus().setPanelVisibility('answer').run()
-                            }
-                          >
-                            <i
-                              class={`bi ${editor.isActive('plPanel', { tag: 'pl-answer-panel' }) ? 'bi-check-square' : 'bi-square'}`}
-                            />
-                            In answer
-                          </button>
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-light d-flex align-items-center gap-2"
-                            onClick={() =>
-                              editor.chain().focus().setPanelVisibility('always').run()
-                            }
-                          >
-                            <i
-                              class={`bi ${editor.isActive('plPanel') ? 'bi-square' : 'bi-check-square'}`}
-                            />
-                            Always
-                          </button>
-                        </div>
-                      </Popover.Body>
-                    </Popover>
-                  }
-                  rootClose
-                >
-                  <i class="bi bi-grip-vertical" />
-                </OverlayTrigger>
-              </DragHandle>
-            </div>
-          </OverlayTrigger>
+          <DragHandleMenu editor={editor} />
           {debugMode ? (
             <Card class="mt-3">
               <Card.Header>Formatted HTML</Card.Header>
