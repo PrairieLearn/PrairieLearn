@@ -1,18 +1,26 @@
+import z from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const results = await queryAsync(sql.select_bounds, {});
+    const results = await queryRow(
+      sql.select_bounds,
+      z.object({
+        min: z.bigint({ coerce: true }).nullable(),
+        max: z.bigint({ coerce: true }).nullable(),
+      }),
+    );
     return {
-      min: results.rows[0].min,
-      max: results.rows[0].max,
+      min: results.min,
+      max: results.max,
       batchSize: 1000,
     };
   },
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(sql.backfill_authn_user_id, { start, end });
+    await execute(sql.backfill_authn_user_id, { start, end });
   },
 });

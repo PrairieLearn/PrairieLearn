@@ -201,6 +201,8 @@ router.get(
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
+    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+
     // Render the preview.
     await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
@@ -216,6 +218,7 @@ router.get(
         resLocals: res.locals,
         prompts,
         question: res.locals.question,
+        richTextEditorEnabled,
         variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
       }),
     );
