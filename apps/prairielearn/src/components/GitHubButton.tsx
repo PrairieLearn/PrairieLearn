@@ -1,3 +1,5 @@
+import { Button } from 'react-bootstrap';
+
 import { html } from '@prairielearn/html';
 import { Button } from 'react-bootstrap';
 

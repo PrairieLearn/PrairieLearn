@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
-import { GitHubButton, GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';

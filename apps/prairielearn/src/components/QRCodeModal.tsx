@@ -1,10 +1,10 @@
+import { useMemo } from 'preact/compat';
 import QR from 'qrcode-svg';
-
-import { html, unsafeHtml } from '@prairielearn/html';
 import { Modal } from 'react-bootstrap';
 
+import { html, unsafeHtml } from '@prairielearn/html';
+
 import { Modal as HtmlModal } from './Modal.js';
-import { useMemo } from 'preact/compat';
 
 export function QRCodeModalHtml({
   id,
@@ -40,7 +40,7 @@ export function QRCodeModal({
 }) {
   const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]);
   return (
-    <Modal show={show} onHide={onHide} aria-labelledby={`${id}-title`} backdrop="static">
+    <Modal show={show} aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
       </Modal.Header>

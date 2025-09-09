@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { GitHubButton, GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
