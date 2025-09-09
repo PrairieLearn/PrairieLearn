@@ -18,7 +18,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const requiredTableFields = {
   course_instances: ['course_instance_id'],
   pl_courses: ['course_id'],
-  users: ['subject_user_id'],
+  users: ['subject_user_id', 'institution_id'],
   groups: ['group_id'],
   assessment_instances: ['assessment_instance_id'],
   assessment_questions: ['assessment_question_id'],

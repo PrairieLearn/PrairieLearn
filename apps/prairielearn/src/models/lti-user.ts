@@ -49,9 +49,8 @@ export async function selectOrInsertAndEnrollLtiUser({
       table_name: 'users',
       row_id: user.user_id,
       new_row: user,
-      institution_id,
-      course_instance_id: lti_course_instance_id,
-      subject_user_id: user.user_id,
+      // This is done by the system
+      agent_user_id: null,
       agent_authn_user_id: null,
     });
   }
@@ -71,23 +70,13 @@ export async function selectOrInsertAndEnrollLtiUser({
       row_id: user.user_id,
       old_row: oldUser,
       new_row: user,
-      institution_id,
-      course_instance_id: lti_course_instance_id,
-      subject_user_id: user.user_id,
+      // This is done by the system
+      agent_user_id: null,
       agent_authn_user_id: null,
     });
   }
 
   const userId = user.user_id;
-
-  if (!userId) {
-    throw new Error('computed NULL user_id');
-  }
-  const userIdNum = Number.parseInt(userId);
-  if (userIdNum < 1 || userIdNum > 1000000000) {
-    throw new Error('user_id out of bounds');
-  }
-
   const hasAccess = await callRow(
     'check_course_instance_access',
     [lti_course_instance_id, user.uid, user.institution_id, req_date],
