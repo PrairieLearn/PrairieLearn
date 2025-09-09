@@ -1,12 +1,13 @@
 import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
+import { UserSchema } from '../lib/db-types.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import { selectAssessmentQuestionById } from './assessment-question.js';
 import { selectAssessmentById } from './assessment.js';
-import { insertAuditEvent, selectAuditEvents } from './audit-event.js';
+import { getCurrentRowData, insertAuditEvent, selectAuditEvents } from './audit-event.js';
 
 describe('audit-event', () => {
   beforeEach(async function () {
@@ -36,6 +37,7 @@ describe('audit-event', () => {
         subject_user_id: user.user_id,
         course_instance_id: '1',
         action_detail: 'User created',
+        new_row: await getCurrentRowData('users', '1', UserSchema),
         context: { test: 'basic' },
       });
       expect(auditEvent).toMatchInlineSnapshot(`
@@ -239,6 +241,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: await getCurrentRowData('users', '1', UserSchema),
         context: { test: 'data1' },
       });
 
@@ -393,6 +396,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user1.user_id,
         course_instance_id: '1',
+        new_row: user1,
         context: { test: 'user1' },
       });
 
@@ -404,7 +408,8 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user2.user_id,
         course_instance_id: '1',
-        context: { test: 'user2' },
+        context: user2,
+        new_row: await getCurrentRowData('users', '1', UserSchema),
       });
 
       const result = await selectAuditEvents({
