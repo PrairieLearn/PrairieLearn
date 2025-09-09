@@ -20,7 +20,7 @@ export default makeBatchedMigration({
   async execute(start: bigint, end: bigint) {
     await execute(sql.update_course_instances_enrollment_code, {
       start,
-      enrollment_code: uniqueEnrollmentCode(),
+      enrollment_code: await uniqueEnrollmentCode(),
       end,
     });
   },
