@@ -91,7 +91,7 @@ async function createFromTemplate({
     database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
-    prepare: () => runMigrationsAndSprocs({ dbName, runMigrations: false, initDatabase: true }),
+    prepare: () => runMigrationsAndSprocs(dbName, false),
   });
 }
 
@@ -188,12 +188,7 @@ export async function createTemplate(): Promise<void> {
     dropExistingDatabase: true,
     database: POSTGRES_DATABASE_TEMPLATE,
     configurePool: false,
-    prepare: () =>
-      runMigrationsAndSprocs({
-        dbName: POSTGRES_DATABASE_TEMPLATE,
-        runMigrations: true,
-        initDatabase: true,
-      }),
+    prepare: () => runMigrationsAndSprocs(POSTGRES_DATABASE_TEMPLATE, true),
   });
 }
 
