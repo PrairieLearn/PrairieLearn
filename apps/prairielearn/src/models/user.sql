@@ -14,15 +14,6 @@ FROM
 WHERE
   uid = $uid;
 
--- BLOCK select_user_by_uid_and_institution
-SELECT
-  *
-FROM
-  users
-WHERE
-  uid = $uid
-  AND institution_id = $institution_id;
-
 -- BLOCK select_user_by_uin
 SELECT
   *

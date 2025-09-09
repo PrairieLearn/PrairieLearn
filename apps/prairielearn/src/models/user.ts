@@ -3,6 +3,8 @@ import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres
 import { type User, UserSchema } from '../lib/db-types.js';
 import * as faker from '../lib/faker.js';
 
+import { insertAuditEvent } from './audit-event.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectUserById(user_id: string): Promise<User> {
@@ -24,11 +26,12 @@ export async function selectUserByUidAndInstitution({
   uid: string;
   institution_id: string;
 }): Promise<User | null> {
-  return await queryOptionalRow(
-    sql.select_user_by_uid_and_institution,
-    { uid, institution_id },
-    UserSchema,
-  );
+  // UIDs are globally unique, so if the institution_id doesn't match, the user is not in the institution.
+  const user = await selectOptionalUserByUid(uid);
+  if (user && user.institution_id !== institution_id) {
+    return null;
+  }
+  return user;
 }
 
 export async function selectOptionalUserByUin({
@@ -67,11 +70,21 @@ export async function insertUserLti({
   lti_context_id: string;
   institution_id: string;
 }): Promise<User> {
-  return await queryRow(
+  const user = await queryRow(
     sql.insert_user_lti,
     { uid, name, lti_course_instance_id, lti_user_id, lti_context_id, institution_id },
     UserSchema,
   );
+  await insertAuditEvent({
+    action: 'insert',
+    table_name: 'users',
+    row_id: user.user_id,
+    new_row: user,
+    // This is done by the system
+    agent_user_id: null,
+    agent_authn_user_id: null,
+  });
+  return user;
 }
 
 export async function updateUserName({
@@ -81,7 +94,20 @@ export async function updateUserName({
   user_id: string;
   name: string;
 }): Promise<User> {
-  return await queryRow(sql.update_user_name, { user_id, name }, UserSchema);
+  const oldUser = await selectUserById(user_id);
+  const newUser = await queryRow(sql.update_user_name, { user_id, name }, UserSchema);
+  await insertAuditEvent({
+    action: 'update',
+    action_detail: 'name',
+    table_name: 'users',
+    row_id: user_id,
+    old_row: oldUser,
+    new_row: newUser,
+    // This is done by the system
+    agent_user_id: null,
+    agent_authn_user_id: null,
+  });
+  return newUser;
 }
 
 export async function updateUserUid({ user_id, uid }: { user_id: string; uid: string }) {

@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import { callRow } from '@prairielearn/postgres';
 
-import { insertAuditEvent } from './audit-event.js';
 import { ensureEnrollment } from './enrollment.js';
 import { selectInstitutionByShortName } from './institution.js';
 import { insertUserLti, selectUserByUidAndInstitution, updateUserName } from './user.js';
@@ -43,36 +42,13 @@ export async function selectOrInsertAndEnrollLtiUser({
       lti_context_id,
       institution_id,
     });
-
-    await insertAuditEvent({
-      action: 'insert',
-      table_name: 'users',
-      row_id: user.user_id,
-      new_row: user,
-      // This is done by the system
-      agent_user_id: null,
-      agent_authn_user_id: null,
-    });
   }
 
   // Update user name if needed
   if (name !== null && name !== user.name) {
-    const oldUser = user;
     user = await updateUserName({
       user_id: user.user_id,
       name,
-    });
-
-    await insertAuditEvent({
-      action: 'update',
-      action_detail: 'name',
-      table_name: 'users',
-      row_id: user.user_id,
-      old_row: oldUser,
-      new_row: user,
-      // This is done by the system
-      agent_user_id: null,
-      agent_authn_user_id: null,
     });
   }
 
