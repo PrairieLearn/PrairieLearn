@@ -25,6 +25,7 @@ import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
+  AssessmentQuestionSchema,
   DateFromISOString,
   type GroupConfig,
   IdSchema,
@@ -43,7 +44,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
   init_points: z.number().nullable(),
-  allow_real_time_grading: z.boolean().nullable(),
+  allow_real_time_grading: AssessmentQuestionSchema.shape.allow_real_time_grading,
   row_order: z.number(),
   question_number: z.string(),
   zone_max_points: z.number().nullable(),
@@ -378,7 +379,7 @@ export function StudentAssessmentInstance({
                               instance_question: instance_question_row,
                               assessment_question: instance_question_row, // Required fields are in instance_question
                               displaySavedAsGradable:
-                                (instance_question_row.allow_real_time_grading ?? true) &&
+                                instance_question_row.allow_real_time_grading &&
                                 someQuestionsAllowRealTimeGrading &&
                                 someQuestionsForbidRealTimeGrading,
                             })}

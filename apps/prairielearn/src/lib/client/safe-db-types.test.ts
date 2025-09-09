@@ -330,7 +330,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
   ai_grading_mode: false,
-  allow_real_time_grading: null,
+  allow_real_time_grading: true,
   alternative_group_id: null,
   assessment_id: '2',
   average_average_submission_score: null,
