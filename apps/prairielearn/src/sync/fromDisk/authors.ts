@@ -15,6 +15,8 @@ function normalizeOrcid(orcid: string): string | null {
 
   // Drop any dashes
   const digits = orcid.replaceAll('-', '');
+
+  // Sanity check that should not fail since the ORCiD format is baked into the JSON schema
   if (!/^\d{15}[\dX]$/.test(digits)) {
     return null;
   }
@@ -67,18 +69,22 @@ export async function sync(
     const authors = question.data?.authors ?? [];
     for (const author of authors) {
       if (!author.email && !author.orcid && !author.originCourse) {
-        throw new Error(
+        infofile.addError(
+          question,
           'Either email, orcid, or originCourse must be provided for each question author',
         );
+        continue;
       }
 
       const resolvedAuthor: NormalizedAuthor = {};
 
       if (author.name) {
         if (author.name.length < 3 || author.name.length > 255) {
-          throw new Error(
+          infofile.addError(
+            question,
             `The provided author name ${author.name} is invalid. Author names must be 3-255 characters long`,
           );
+          continue;
         }
         resolvedAuthor.name = author.name;
       }
@@ -87,9 +93,11 @@ export async function sync(
         const parsedEmail = z.string().max(255).email().safeParse(author.email);
 
         if (!parsedEmail.success) {
-          throw new Error(
+          infofile.addError(
+            question,
             `The provided author email address ${author.email} is invalid. Author email addresses must be valid and at most 255 characters long`,
           );
+          continue;
         }
         resolvedAuthor.email = parsedEmail.data;
       }
@@ -97,20 +105,26 @@ export async function sync(
       if (author.orcid) {
         const orcidNormalized = normalizeOrcid(author.orcid);
         if (!orcidNormalized) {
-          throw new Error(
-            `The provided author ORCiD ${author.orcid} is invalid. ORCiDs must be 16 characters long (excluding dashes) and have a valid checksum. See the official website (https://orcid.org) for info on how to create or look up an ORCiD`,
+          infofile.addError(
+            question,
+            `The provided author ORCiD ${author.orcid} has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an ORCiD`,
           );
+          continue;
         }
         resolvedAuthor.orcid = orcidNormalized;
       }
       if (author.originCourse) {
-        const originCourseID = await sqldb.queryRow(
+        const originCourseID = await sqldb.queryOptionalRow(
           sql.select_sharing_name,
           { origin_course: author.originCourse },
           z.string(),
         );
         if (originCourseID == null) {
-          throw new Error(`Unable to find course with sharing name ${author.originCourse}`);
+          infofile.addError(
+            question,
+            `Unable to find course with sharing name ${author.originCourse}`,
+          );
+          continue;
         }
         resolvedAuthor.originCourse = originCourseID;
       }
@@ -138,10 +152,8 @@ export async function sync(
     };
     const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
 
-    // This should never happen in practice, but this keeps the type checker
-    // happy, and if it does happen, we want it to fail obviously and loudly.
-    if (!jsonAuthor)
-      throw new Error(`Author ${JSON.stringify(author)} not found after adding to database`);
+    // This should never happen in practice (an author was inserted, but cannot be looked up in the database)
+    if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} database lookup failed`);
 
     authorIdMap.set(JSON.stringify(jsonAuthor), author.id);
   }
@@ -155,9 +167,8 @@ export async function sync(
     const questionTagIds = [...dedupedQuestionAuthors].map((a) => {
       const author = authorIdMap.get(a);
 
-      // This should never happen in practice, but this keeps the type checker
-      // happy, and if it does happen, we want it to fail obviously and loudly.
-      if (!author) throw new Error(`Author ${a} not found`);
+      // This should never happen in practice (an author found in a question was not inserted in the previous step)
+      if (!author) throw new Error(`Author ${a} list out of sync with question list`);
 
       return author;
     });
