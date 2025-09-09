@@ -1,17 +1,19 @@
 import { type HtmlSafeString, html } from '@prairielearn/html';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
-import { GitHubButton } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
 import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
+
+import SelfEnrollmentSettings from './components/SelfEnrollmentSettings.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
@@ -59,17 +61,17 @@ export function InstructorInstanceAdminSettings({
         />,
       )}
       ${GenerateSelfEnrollmentLinkModal({ csrfToken: resLocals.__csrf_token })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'selfEnrollmentLinkModal',
         title: 'Self-enrollment Link QR Code',
         content: selfEnrollLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'publicLinkModal',
         title: 'Public Link QR Code',
         content: publicLink,
@@ -83,7 +85,7 @@ export function InstructorInstanceAdminSettings({
               ? 'General course instance settings'
               : 'Course instance settings'}
           </h1>
-          ${GitHubButton(instanceGHLink)}
+          ${GitHubButtonHtml(instanceGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">
@@ -253,74 +255,6 @@ function GenerateSelfEnrollmentLinkModal({ csrfToken }: { csrfToken: string }): 
       `,
     })}
   `;
-}
-
-function SelfEnrollmentSettings({ selfEnrollLink }: { selfEnrollLink: string }) {
-  return (
-    <div class="mb-3">
-      <label class="form-label" for="self_enrollment_link">
-        Self-enrollment Link
-      </label>
-      <span class="input-group">
-        <input
-          type="text"
-          class="form-control"
-          id="self_enrollment_link"
-          name="self_enrollment_link"
-          value={selfEnrollLink}
-          disabled
-        />
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary btn-copy"
-          data-bs-toggle="tooltip"
-          data-bs-placement="top"
-          data-bs-title="Copy"
-          data-clipboard-text={selfEnrollLink}
-          aria-label="Copy self-enrollment link"
-        >
-          <i class="bi bi-clipboard" />
-        </button>
-
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary p-0"
-          data-bs-toggle="modal"
-          data-bs-target="#selfEnrollmentLinkModal"
-          aria-label="Self-enrollment Link QR Code"
-        >
-          <span
-            class="px-2 py-2"
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            data-bs-title="View QR Code"
-          >
-            <i class="bi bi-qr-code-scan" />
-          </span>
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary p-0"
-          data-bs-toggle="modal"
-          data-bs-target="#generateSelfEnrollmentLinkModal"
-          aria-label="Generate new self-enrollment link"
-        >
-          <span
-            class="px-2 py-2"
-            data-bs-toggle="tooltip"
-            data-bs-placement="top"
-            data-bs-title="Regenerate"
-          >
-            <i class="bi-arrow-repeat" />
-          </span>
-        </button>
-      </span>
-      <small class="form-text text-muted">
-        This is the link that students will use to enroll in the course if self-enrollment is
-        enabled.
-      </small>
-    </div>
-  );
 }
 
 function EditConfiguration({
