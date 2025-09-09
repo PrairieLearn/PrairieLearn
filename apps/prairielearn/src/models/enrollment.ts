@@ -180,7 +180,7 @@ export async function inviteStudentByUid({
         course_instance_id,
         uid,
       },
-      StaffEnrollmentSchema,
+      EnrollmentSchema,
     );
     let old_row: Enrollment | null = null;
     if (existing_enrollment_id) {
@@ -196,6 +196,6 @@ export async function inviteStudentByUid({
       agent_user_id,
       agent_authn_user_id,
     });
-    return enrollment;
+    return StaffEnrollmentSchema.parse(enrollment);
   });
 }
