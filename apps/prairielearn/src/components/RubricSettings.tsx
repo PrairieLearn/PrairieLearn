@@ -474,7 +474,12 @@ export function RubricRow({
   rowDragOver: () => void;
 }) {
   return (
-    <tr onDragOver={rowDragOver}>
+    <tr
+      onDragOver={(e) => {
+        e.preventDefault();
+        rowDragOver();
+      }}
+    >
       <td class="text-nowrap align-middle">
         <span
           role="button"
