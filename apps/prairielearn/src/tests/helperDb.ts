@@ -159,6 +159,9 @@ export async function runMigrationsThrough(migrationName: string): Promise<void>
   });
 }
 
+/**
+ * Runs any migrations that have not yet been run.
+ */
 export async function runRemainingMigrations(): Promise<void> {
   await runMigrations();
 }
