@@ -190,7 +190,7 @@ export async function inviteStudentByUid({
       table_name: 'enrollments',
       action: existing_enrollment_id ? 'update' : 'insert',
       row_id: enrollment.id,
-      subject_user_id: enrollment.pending_uid,
+      subject_user_id: null,
       new_row: enrollment,
       old_row,
       agent_user_id,
