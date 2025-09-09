@@ -2,4 +2,5 @@
 '@prairielearn/migrations': major
 ---
 
-Add ability to perform partial migrations, and change function calls to option-style
+- `init(...)` now accepts an options object instead of positional arguments.
+- `init(...)` now supports a `migrationFilters` option to control which migrations to run.
