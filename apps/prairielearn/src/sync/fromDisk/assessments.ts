@@ -108,8 +108,7 @@ function getParamsForAssessment(
   const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
-    const zoneAllowRealTimeGrading =
-      zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading ?? true;
+    const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
     const zoneCanView = zone.canView.length > 0 ? zone.canView : assessmentCanView;
     const zoneCanSubmit = zone.canSubmit.length > 0 ? zone.canSubmit : assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -152,7 +151,8 @@ function getParamsForAssessment(
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
-            allowRealTimeGrading: alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading,
+            allowRealTimeGrading:
+              alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading ?? true,
             jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
@@ -173,7 +173,7 @@ function getParamsForAssessment(
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
-            allowRealTimeGrading: questionAllowRealTimeGrading,
+            allowRealTimeGrading: questionAllowRealTimeGrading ?? true,
             jsonAllowRealTimeGrading: question.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
