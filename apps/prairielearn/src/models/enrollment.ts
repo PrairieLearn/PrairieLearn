@@ -1,10 +1,16 @@
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
+import { type StaffEnrollment, StaffEnrollmentSchema } from '../lib/client/safe-db-types.js';
 import {
   type Course,
   type CourseInstance,
@@ -40,12 +46,13 @@ export async function ensureEnrollment({
     );
     if (inserted) {
       await insertAuditEvent({
-        action: 'insert',
-        subject_user_id: user_id,
-        course_instance_id,
-        agent_authn_user_id: null,
         table_name: 'enrollments',
+        action: 'insert',
         row_id: inserted.id,
+        new_row: inserted,
+        // This is done by the system
+        agent_user_id: null,
+        agent_authn_user_id: null,
       });
     }
   });
@@ -132,5 +139,59 @@ export async function generateAndEnrollUsers({
       await ensureEnrollment({ course_instance_id, user_id: user.user_id });
     }
     return users;
+  });
+}
+
+export async function selectEnrollmentById({ id }: { id: string }) {
+  return await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
+}
+
+export async function selectEnrollmentByUid({
+  course_instance_id,
+  uid,
+}: {
+  course_instance_id: string;
+  uid: string;
+}) {
+  return await queryRow(
+    sql.select_enrollment_by_uid,
+    { course_instance_id, uid },
+    StaffEnrollmentSchema,
+  );
+}
+
+export async function inviteStudentByUid({
+  course_instance_id,
+  uid,
+  existing_enrollment_id,
+}: {
+  course_instance_id: string;
+  uid: string;
+  existing_enrollment_id: string | null;
+}): Promise<StaffEnrollment> {
+  return await runInTransactionAsync(async () => {
+    const enrollment = await queryRow(
+      sql.upsert_enrollment_invitation_by_uid,
+      {
+        course_instance_id,
+        uid,
+      },
+      StaffEnrollmentSchema,
+    );
+    let old_row: Enrollment | null = null;
+    if (existing_enrollment_id) {
+      old_row = await selectEnrollmentById({ id: existing_enrollment_id });
+    }
+    await insertAuditEvent({
+      table_name: 'enrollments',
+      action: existing_enrollment_id ? 'update' : 'insert',
+      row_id: enrollment.id,
+      subject_user_id: enrollment.pending_uid,
+      new_row: enrollment,
+      old_row,
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
+    return enrollment;
   });
 }

@@ -4,19 +4,19 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { inviteStudentByUid, selectEnrollmentByUid } from '../../models/enrollment.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -34,7 +34,7 @@ router.get(
     }
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
     const students = await queryRows(
-      sql.select_students,
+      sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
       StudentRowSchema,
     );
@@ -51,11 +51,13 @@ router.get(
     }
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
     const { uid } = req.query;
-    const staffEnrollment = await queryOptionalRow(
-      sql.select_enrollment_by_uid,
-      { course_instance_id: courseInstance.id, uid },
-      StaffEnrollmentSchema,
-    );
+    if (typeof uid !== 'string') {
+      throw new HttpStatusError(400, 'UID must be a string');
+    }
+    const staffEnrollment = await selectEnrollmentByUid({
+      course_instance_id: courseInstance.id,
+      uid,
+    });
     res.json(staffEnrollment);
   }),
 );
@@ -88,14 +90,11 @@ router.post(
       );
 
       if (!existingEnrollment) {
-        const enrollment = await queryRow(
-          sql.upsert_enrollment_by_uid,
-          {
-            course_instance_id: courseInstance.id,
-            uid: body.uid,
-          },
-          StaffEnrollmentSchema,
-        );
+        const enrollment = await inviteStudentByUid({
+          course_instance_id: courseInstance.id,
+          uid: body.uid,
+          existing_enrollment_id: null,
+        });
         res.json({ ok: true, data: enrollment });
         return;
       }
@@ -118,14 +117,11 @@ router.post(
       // If the user is synced via LTI, they are either invited via LTI or removed via LTI. The UI has
       // already confirmed that the instructor means to de-sync them from LTI and invite them again.
       // If they are not synced via LTI, we can invite them. So in both cases, we can invite them.
-      const enrollment = await queryRow(
-        sql.upsert_enrollment_by_uid,
-        {
-          course_instance_id: courseInstance.id,
-          uid: body.uid,
-        },
-        StaffEnrollmentSchema,
-      );
+      const enrollment = await inviteStudentByUid({
+        course_instance_id: courseInstance.id,
+        uid: body.uid,
+        existing_enrollment_id: existingEnrollment.id,
+      });
 
       res.json({ ok: true, data: enrollment });
     } catch (err) {
