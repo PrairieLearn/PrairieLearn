@@ -37,20 +37,7 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
   },
 });
 
-async function runMigrationsAndSprocs({
-  dbName,
-  runMigrations,
-  initDatabase,
-}: {
-  dbName: string;
-  runMigrations:
-    | boolean
-    | {
-        beforeTimestamp: string;
-        inclusiveBefore: boolean;
-      };
-  initDatabase: boolean;
-}): Promise<void> {
+async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): Promise<void> {
   const pgConfig = {
     user: POSTGRES_USER,
     database: dbName,
@@ -62,9 +49,7 @@ async function runMigrationsAndSprocs({
   function idleErrorHandler(err) {
     throw err;
   }
-  if (initDatabase) {
-    await sqldb.initAsync(pgConfig, idleErrorHandler);
-  }
+  await sqldb.initAsync(pgConfig, idleErrorHandler);
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.
@@ -77,11 +62,10 @@ async function runMigrationsAndSprocs({
     directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
   });
 
-  if (typeof runMigrations === 'object' || runMigrations) {
+  if (runMigrations) {
     await initMigrations({
       directories: [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       project: 'prairielearn',
-      migrationFilters: typeof runMigrations === 'object' ? runMigrations : undefined,
     });
   }
 
