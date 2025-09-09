@@ -2,4 +2,4 @@
 '@prairielearn/cache': minor
 ---
 
-Require a type parameter for fetching from the cache
+Add support for an optional type parameter to `cache.get(...)`
