@@ -7,6 +7,8 @@ import * as authnLib from '../lib/authn.js';
 import { type LoadUserAuth } from '../lib/authn.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
+import { EnrollmentSchema } from '../lib/db-types.js';
+import { insertAuditEvent } from '../models/audit-event.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -58,10 +60,24 @@ export default asyncHandler(async (req, res, next) => {
     });
 
     // Enroll the load test user in the example course.
-    // No audit event is logged for this enrollment.
-    await sqldb.execute(sql.enroll_user_in_example_course, {
-      user_id: res.locals.authn_user.user_id,
-    });
+    const enrollment = await sqldb.queryOptionalRow(
+      sql.enroll_user_in_example_course,
+      {
+        user_id: res.locals.authn_user.user_id,
+      },
+      EnrollmentSchema,
+    );
+
+    if (enrollment) {
+      await insertAuditEvent({
+        table_name: 'enrollments',
+        action: 'insert',
+        row_id: enrollment.id,
+        new_row: enrollment,
+        agent_user_id: null,
+        agent_authn_user_id: null,
+      });
+    }
 
     return next();
   }
