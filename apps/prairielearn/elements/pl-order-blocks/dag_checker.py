@@ -10,6 +10,8 @@ class HaltingReason(Enum):
     SOURCE = "source"
     CYCLE = "cycle"
 
+Multigraph = dict[str, list[list[str]]] | dict[str, list[str]]
+
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -73,8 +75,6 @@ def solve_mgraph(
         dag_to_nx(graph, {})
         for graph in collapse_multigraph(depends_multi_graph, final, path_names)
     ]
-    for graph in collapse_multigraph(depends_multi_graph, final, path_names):
-        print(graph)
 
     sort = [list(nx.topological_sort(graph)) for graph in graphs]
 
@@ -198,6 +198,28 @@ def grade_dag(
     grouping_correctness = check_grouping(submission, group_belonging)
 
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
+
+
+def grade_dag_list(
+    submission: list[str],
+    depends_graphs: list[Mapping[str, list[str]]],
+    group_belonging: Mapping[str, str | None],
+) -> tuple[int, int, dict[str, list[str]]]:
+    top_sort_correctness = []
+    #TODO add grouping correctness for block groups grading
+    # grouping_correctness = []
+    graphs = [dag_to_nx(graph, group_belonging) for graph in depends_graphs]
+    for graph in depends_graphs:
+        print(graph)
+
+    for graph in graphs:
+        sub = [x if x in graph.nodes() else None for x in submission]
+        top_sort_correctness.append(check_topological_sorting(sub, graph))
+        # grouping_correctness.append(check_grouping(submission, group_belonging))
+
+    min_index = top_sort_correctness.index(min(top_sort_correctness))
+    print(f"MIN: {depends_graphs[min_index]}")
+    return max(top_sort_correctness), graphs[min_index].number_of_nodes(), depends_graphs[min_index]
 
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
@@ -337,9 +359,8 @@ def dfs_until(
     return HaltingReason.SOURCE, traversed
 
 
-Multigraph = dict[str, list[list[str]]] | dict[str, list[str]]
 def collapse_multigraph(
-    depends_multi_graph: Multigraph,
+    depends_multi_graph: dict[str, list[str] | list[list[str]]],
     final: str,
     path_names: dict[str, str] = {},
 ) -> Generator:
@@ -361,7 +382,7 @@ def collapse_multigraph(
             yield dag
             continue
 
-        # DFS halted for a cycle, therefore we can ignore that collapsing graph
+        # DFS halted for a cycle, cycles are not allowed at this time.
         if reason == HaltingReason.CYCLE:
             raise Exception(
                 f"Cycle encountered druing collapse of multigraph.\nProblem DAG: {dag}\nQuestion Multigraph: {depends_multi_graph}."
