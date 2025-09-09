@@ -109,7 +109,7 @@ router.get(
         infoCourseInstancePath,
         availableTimezones,
         origHash,
-        instanceGHLink,
+        instanceGHLink: instanceGHLink ?? null,
         canEdit,
         enrollmentCount,
         enrollmentManagementEnabled,
