@@ -32,6 +32,10 @@ import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { Hydrate } from '../../lib/preact.js';
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -43,6 +47,7 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
+      has_enhanced_navigation,
     } = getCourseInstanceContext(res.locals, 'instructor');
     const pageContext = getPageContext(res.locals);
     const { plainUrlPrefix } = pageContext;
@@ -100,19 +105,53 @@ router.get(
     });
 
     res.send(
-      InstructorInstanceAdminSettings({
+      PageLayout({
         resLocals: res.locals,
-        shortNames,
-        selfEnrollLink,
-        studentLink,
-        publicLink,
-        infoCourseInstancePath,
-        availableTimezones,
-        origHash,
-        instanceGHLink: instanceGHLink ?? null,
-        canEdit,
-        enrollmentCount,
-        enrollmentManagementEnabled,
+        pageTitle: 'Settings',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'settings',
+        },
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={{
+                has_course_instance_permission_edit:
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false,
+              }}
+              courseInstance={courseInstance}
+              course={course}
+              urlPrefix={pageContext.urlPrefix}
+            />
+            <Hydrate>
+              <InstructorInstanceAdminSettings
+                csrfToken={pageContext.__csrf_token}
+                urlPrefix={pageContext.urlPrefix}
+                navPage={pageContext.navPage}
+                hasEnhancedNavigation={has_enhanced_navigation}
+                canEdit={canEdit}
+                courseInstance={courseInstance}
+                shortNames={shortNames}
+                availableTimezones={availableTimezones}
+                origHash={origHash}
+                instanceGHLink={instanceGHLink}
+                studentLink={studentLink}
+                publicLink={publicLink}
+                selfEnrollLink={selfEnrollLink}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
+                infoCourseInstancePath={infoCourseInstancePath}
+              />
+            </Hydrate>
+            <Hydrate>
+              <DeleteCourseInstanceModal
+                shortName={courseInstance.short_name ?? ''}
+                enrolledCount={enrollmentCount}
+                csrfToken={pageContext.__csrf_token}
+              />
+            </Hydrate>
+          </>
+        ),
       }),
     );
   }),

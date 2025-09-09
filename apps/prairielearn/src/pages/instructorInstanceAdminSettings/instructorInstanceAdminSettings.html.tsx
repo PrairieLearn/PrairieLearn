@@ -1,92 +1,14 @@
-import { useMemo, useState } from 'preact/compat';
-import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useState } from 'preact/compat';
+import { Button, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
-import { PageLayout } from '../../components/PageLayout.js';
-import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import type { StaffCourse, StaffCourseInstance } from '../../lib/client/safe-db-types.js';
-import { Hydrate } from '../../lib/preact.js';
+import type { StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { useForm } from 'react-hook-form';
-import QR from 'qrcode-svg';
-
-export function InstructorInstanceAdminSettings({
-  resLocals,
-  shortNames,
-  selfEnrollLink,
-  studentLink,
-  publicLink,
-  infoCourseInstancePath,
-  availableTimezones,
-  origHash,
-  instanceGHLink,
-  canEdit,
-  enrollmentCount,
-  enrollmentManagementEnabled,
-}: {
-  resLocals: Record<string, any>;
-  shortNames: string[];
-  selfEnrollLink: string;
-  studentLink: string;
-  publicLink: string;
-  infoCourseInstancePath: string;
-  availableTimezones: Timezone[];
-  origHash: string;
-  instanceGHLink: string | undefined | null;
-  canEdit: boolean;
-  enrollmentCount: number;
-  enrollmentManagementEnabled: boolean;
-}) {
-  const courseInstance = resLocals.course_instance as StaffCourseInstance;
-  const course = resLocals.course as StaffCourse;
-
-  return PageLayout({
-    resLocals,
-    pageTitle: 'Settings',
-    navContext: {
-      type: 'instructor',
-      page: 'instance_admin',
-      subPage: 'settings',
-    },
-    content: (
-      <>
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          courseInstance={courseInstance}
-          course={course}
-          urlPrefix={resLocals.urlPrefix}
-        />
-        <Hydrate>
-          <InstructorInstanceAdminSettingsPage
-            csrfToken={resLocals.__csrf_token}
-            urlPrefix={resLocals.urlPrefix}
-            navPage={resLocals.navPage}
-            hasEnhancedNavigation={resLocals.has_enhanced_navigation}
-            canEdit={canEdit}
-            courseInstance={courseInstance}
-            shortNames={shortNames}
-            availableTimezones={availableTimezones}
-            origHash={origHash}
-            instanceGHLink={instanceGHLink}
-            studentLink={studentLink}
-            publicLink={publicLink}
-            selfEnrollLink={selfEnrollLink}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
-            infoCourseInstancePath={infoCourseInstancePath}
-          />
-        </Hydrate>
-        <Hydrate>
-          <DeleteCourseInstanceModal
-            shortName={courseInstance.short_name ?? ''}
-            enrolledCount={enrollmentCount}
-            csrfToken={resLocals.__csrf_token}
-          />
-        </Hydrate>
-      </>
-    ),
-  });
-}
+import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
+import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
+import type { NavPage } from '../../components/Navbar.types.js';
 
 interface SettingsFormValues {
   ciid: string;
@@ -94,52 +16,6 @@ interface SettingsFormValues {
   display_timezone: string;
   group_assessments_by: 'Set' | 'Module';
   hide_in_enroll_page: boolean;
-}
-
-function GitHubButtonPreact({ gitHubLink }: { gitHubLink: string | null }) {
-  if (!gitHubLink) return null;
-  return (
-    <Button
-      as="a"
-      size="sm"
-      variant="light"
-      href={gitHubLink}
-      target="_blank"
-      rel="noreferrer"
-      aria-label="View on GitHub"
-    >
-      <i class="bi bi-github" /> <span class="d-none d-sm-inline">View on GitHub</span>
-    </Button>
-  );
-}
-
-function QRCodeModalPreact({
-  id,
-  title,
-  content,
-  show,
-  onHide,
-}: {
-  id: string;
-  title: string;
-  content: string;
-  show: boolean;
-  onHide: () => void;
-}) {
-  const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]);
-  return (
-    <Modal show={show} onHide={onHide} aria-labelledby={`${id}-title`} backdrop="static">
-      <Modal.Header closeButton>
-        <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <div class="d-flex" style="max-height: 80vh;">
-          {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
-          <div dangerouslySetInnerHTML={{ __html: svg }} />
-        </div>
-      </Modal.Body>
-    </Modal>
-  );
 }
 
 function copyToClipboard(text: string) {
@@ -194,7 +70,7 @@ function StudentLinkSharingPreact({
         </OverlayTrigger>
       </InputGroup>
       <small class="form-text text-muted">{studentLinkMessage}</small>
-      <QRCodeModalPreact
+      <QRCodeModal
         id="studentLinkModal"
         title="Student Link QR Code"
         content={studentLink}
@@ -244,7 +120,7 @@ function PublicLinkSharingPreact({
         </InputGroup>
         <small class="form-text text-muted">{publicLinkMessage}</small>
       </div>
-      <QRCodeModalPreact
+      <QRCodeModal
         id="publicLinkModal"
         title="Public Link QR Code"
         content={publicLink}
@@ -255,92 +131,7 @@ function PublicLinkSharingPreact({
   );
 }
 
-function SelfEnrollmentSettingsPreact({
-  selfEnrollLink,
-  csrfToken,
-}: {
-  selfEnrollLink: string;
-  csrfToken: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  return (
-    <div class="mb-3">
-      <label class="form-label" for="self_enrollment_link">
-        Self-enrollment Link
-      </label>
-      <InputGroup>
-        <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>Copy</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            onClick={() => copyToClipboard(selfEnrollLink)}
-            aria-label="Copy self-enrollment link"
-          >
-            <i class="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            onClick={() => setShowQR(true)}
-            aria-label="Self-enrollment Link QR Code"
-          >
-            <i class="bi bi-qr-code-scan" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            onClick={() => setShowConfirm(true)}
-            aria-label="Generate new self-enrollment link"
-          >
-            <i class="bi-arrow-repeat" />
-          </Button>
-        </OverlayTrigger>
-      </InputGroup>
-      <small class="form-text text-muted">
-        This is the link that students will use to enroll in the course if self-enrollment is
-        enabled.
-      </small>
-      <QRCodeModalPreact
-        id="selfEnrollmentLinkModal"
-        title="Self-enrollment Link QR Code"
-        content={selfEnrollLink}
-        show={showQR}
-        onHide={() => setShowQR(false)}
-      />
-      <Modal show={showConfirm} onHide={() => setShowConfirm(false)} backdrop="static">
-        <Modal.Header closeButton>
-          <Modal.Title>Generate new self-enrollment link</Modal.Title>
-        </Modal.Header>
-        <form method="POST">
-          <Modal.Body>
-            <div>
-              Are you sure you want to generate a new self-enrollment link?{' '}
-              <strong>The current link will be deactivated.</strong> This action cannot be undone.
-            </div>
-          </Modal.Body>
-          <Modal.Footer>
-            <input type="hidden" name="__action" value="generate_enrollment_code" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <Button variant="secondary" type="button" onClick={() => setShowConfirm(false)}>
-              Cancel
-            </Button>
-            <Button variant="danger" type="submit">
-              Generate new link
-            </Button>
-          </Modal.Footer>
-        </form>
-      </Modal>
-    </div>
-  );
-}
-
-export function InstructorInstanceAdminSettingsPage({
+export function InstructorInstanceAdminSettings({
   csrfToken,
   urlPrefix,
   navPage,
@@ -359,7 +150,7 @@ export function InstructorInstanceAdminSettingsPage({
 }: {
   csrfToken: string;
   urlPrefix: string;
-  navPage: string;
+  navPage: NavPage;
   hasEnhancedNavigation: boolean;
   canEdit: boolean;
   courseInstance: StaffCourseInstance;
@@ -383,7 +174,7 @@ export function InstructorInstanceAdminSettingsPage({
 
   const {
     register,
-    trigger,
+    handleSubmit,
     formState: { isDirty, errors },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
@@ -396,16 +187,15 @@ export function InstructorInstanceAdminSettingsPage({
         <h1>
           {hasEnhancedNavigation ? 'General course instance settings' : 'Course instance settings'}
         </h1>
-        <GitHubButtonPreact gitHubLink={instanceGHLink ?? null} />
+        <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
         <form
           method="POST"
           name="edit-course-instance-settings-form"
-          onSubmit={async (e) => {
-            const valid = await trigger();
-            if (!valid) e.preventDefault();
-          }}
+          onSubmit={handleSubmit((_data, e) => {
+            e.target.submit();
+          })}
         >
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
@@ -530,7 +320,7 @@ export function InstructorInstanceAdminSettingsPage({
           />
 
           {enrollmentManagementEnabled && (
-            <SelfEnrollmentSettingsPreact selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
+            <SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
           )}
 
           <h2 class="h4">Sharing</h2>
@@ -614,4 +404,4 @@ export function InstructorInstanceAdminSettingsPage({
     </div>
   );
 }
-InstructorInstanceAdminSettingsPage.displayName = 'InstructorInstanceAdminSettingsPage';
+InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';
