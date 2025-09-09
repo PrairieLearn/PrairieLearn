@@ -10,4 +10,4 @@ SET
   enrollment_code = $enrollment_code
 WHERE
   enrollment_code IS NULL
-  AND id = $idx;
+  AND id = $id;

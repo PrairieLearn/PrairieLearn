@@ -12,14 +12,14 @@ export default makeBatchedMigration({
     const max = await queryRow(sql.select_bounds, z.coerce.bigint().nullable());
     return {
       min: 1n,
-      max: max ?? 1n,
+      max,
       batchSize: 1,
     };
   },
 
   async execute(start: bigint, _end: bigint) {
     await execute(sql.update_course_instances_enrollment_code, {
-      idx: start,
+      id: start,
       enrollment_code: await uniqueEnrollmentCode(),
     });
   },
