@@ -1369,15 +1369,15 @@ function validateCourseInstance({
     warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
   }
 
-  let accessibleInFuture = false as boolean;
-  courseInstance.allowAccess.forEach((rule) => {
+  let accessibleInFuture = false;
+  for (const rule of courseInstance.allowAccess) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
-  });
+  }
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
