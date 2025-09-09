@@ -1038,17 +1038,17 @@ function validateAssessment({
     }
 
     // Check that real-time grading is not disabled at any level in the hierarchy
-    (assessment.zones || []).forEach((zone) => {
+    assessment.zones.forEach((zone) => {
       if (zone.allowRealTimeGrading === false) {
         errors.push('Real-time grading cannot be disabled for Homework-type assessments');
       }
 
-      (zone.questions || []).forEach((question) => {
+      zone.questions.forEach((question) => {
         if (question.allowRealTimeGrading === false) {
           errors.push('Real-time grading cannot be disabled for Homework-type assessments');
         }
 
-        (question.alternatives || []).forEach((alternative) => {
+        question.alternatives?.forEach((alternative) => {
           if (alternative.allowRealTimeGrading === false) {
             errors.push('Real-time grading cannot be disabled for Homework-type assessments');
           }
