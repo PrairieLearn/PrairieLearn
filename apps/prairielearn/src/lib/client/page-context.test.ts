@@ -224,6 +224,7 @@ describe('getCourseInstanceContext', () => {
     const studentDataWithExtra = {
       course_instance: { ...mockStudentData.course_instance, extra: 'field' },
       course: { ...mockStudentData.course, another: 'field' },
+      has_enhanced_navigation: false,
     };
     const result = getCourseInstanceContext(studentDataWithExtra, 'student');
     expect(result.course_instance).not.toHaveProperty('extra');
@@ -235,6 +236,7 @@ describe('getCourseInstanceContext', () => {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
       institution: { ...mockInstructorData.institution, extra: 'field' },
+      has_enhanced_navigation: false,
     };
     const result = getCourseInstanceContext(instructorDataWithExtra, 'instructor');
     expect(result.course_instance).not.toHaveProperty('extra');
