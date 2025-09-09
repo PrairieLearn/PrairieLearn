@@ -274,7 +274,7 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  it('Authors are put into database', async () => {
+  it('puts authors into database', async () => {
     const courseData = util.getCourseData();
     const newAuthor = {
       name: 'Example',
@@ -313,7 +313,7 @@ describe('Question syncing', () => {
     assert.ok(questionAuthor);
   });
 
-  it('Authors with origin course are put into database', async () => {
+  it('puts authors with origin course into database', async () => {
     await features.enable('question-sharing');
     const courseData = util.getCourseData();
     const consumingCourseData = util.getCourseData();
@@ -375,7 +375,35 @@ describe('Question syncing', () => {
     assert.ok(questionAuthor2);
   });
 
-  it('Authors are removed when removed from question', async () => {
+  it('records an error if "authors" object is invalid', async () => {
+    const courseData = util.getCourseData();
+    const invalidAuthors = [
+      {
+        orcid: '0000-0000-0000-0010', // Invalid checksum
+      },
+      {
+        name: 'Example', // Name only authors not allowed
+      },
+      {
+        email: 'noemail', // Invalid email
+      },
+      {
+        originCourse: 'NONEXISTENT', // Non-existent origin course
+      },
+    ];
+
+    for (const author of invalidAuthors) {
+      courseData.questions[util.QUESTION_ID].authors = [author];
+      const courseDir = await util.writeCourseToTempDirectory(courseData);
+      await util.syncCourseData(courseDir);
+      const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
+      const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+      assert.isDefined(syncedQuestion);
+      assert.isNotNull(syncedQuestion.sync_errors);
+    }
+  });
+
+  it('syncs authors removed from questions', async () => {
     const courseData = util.getCourseData();
     const newAuthor = {
       name: 'Example',
@@ -408,7 +436,7 @@ describe('Question syncing', () => {
     assert.isUndefined(questionAuthor);
   });
 
-  it('Authors are shared between questions', async () => {
+  it('adds authors that are shared between questions', async () => {
     const courseData = util.getCourseData();
     const newAuthor = {
       name: 'Example',
