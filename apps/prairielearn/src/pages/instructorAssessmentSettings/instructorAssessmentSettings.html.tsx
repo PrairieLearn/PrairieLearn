@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
 
-import { GitHubButton } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
@@ -52,12 +52,12 @@ export function InstructorAssessmentSettings({
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'publicLinkModal',
         title: 'Public Link QR Code',
         content: publicLink,
@@ -67,7 +67,7 @@ export function InstructorAssessmentSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
-          ${GitHubButton(assessmentGHLink)}
+          ${GitHubButtonHtml(assessmentGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">
