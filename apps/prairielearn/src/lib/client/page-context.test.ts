@@ -157,6 +157,7 @@ describe('getCourseInstanceContext', () => {
       template_course: false,
       title: 'Example Student Course',
     },
+    has_enhanced_navigation: false,
   };
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
@@ -196,6 +197,7 @@ describe('getCourseInstanceContext', () => {
       long_name: 'Example Institution',
       short_name: 'EI',
     },
+    has_enhanced_navigation: false,
   };
 
   it('parses student context correctly', () => {
