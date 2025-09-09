@@ -12,6 +12,7 @@ import { renderHtml } from '../../lib/preact-html.js';
 import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
+
 import SelfEnrollmentSettings from './components/SelfEnrollmentSettings.js';
 
 export function InstructorInstanceAdminSettings({
