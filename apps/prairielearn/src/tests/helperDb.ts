@@ -259,14 +259,10 @@ export async function testMigration<T>({
     }
 
     await runRemainingMigrations();
-
+  } finally {
+    await stopBatchedMigrations();
     await closeSql();
     await postgresTestUtils.dropDatabase();
-  } catch (err) {
-    await stopBatchedMigrations();
-    await namedLocks.close();
-    await sqldb.closeAsync();
-    throw err;
   }
 }
 
