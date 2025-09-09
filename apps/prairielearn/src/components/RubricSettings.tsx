@@ -183,7 +183,6 @@ export function RubricSettings({
 
   return (
     <div id="rubric-editing" class="card overflow-hidden p-2 mb-3">
-      {/* Settings */}
       <div class="card mb-2 mt-1">
         <button
           type="button"
@@ -192,16 +191,6 @@ export function RubricSettings({
           data-bs-target="#rubric-setting"
           aria-expanded="false"
           aria-controls="rubric-setting"
-          onClick={(e: any) => {
-            const icon = (e.currentTarget as HTMLElement).querySelector('.fa-angle-down');
-            if (icon instanceof HTMLElement) {
-              const current = icon.style.transform;
-              // Toggle between rotated and not rotated
-              icon.style.transform =
-                current === 'rotateX(180deg)' ? 'rotateX(0deg)' : 'rotateX(180deg)';
-              icon.style.transition = 'all 400ms';
-            }
-          }}
         >
           <div class="card-title mb-0 me-auto d-flex align-items-center">
             <span>Rubric Settings</span>
@@ -211,6 +200,7 @@ export function RubricSettings({
           </div>
         </button>
         <div id="rubric-setting" class="collapse p-2">
+          {/* Settings */}
           <div>
             {!!assessmentQuestion.max_auto_points && (
               <>
@@ -324,127 +314,128 @@ export function RubricSettings({
               </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Rubric table */}
-      <div class="table-responsive">
-        <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
-          <thead>
-            <tr class="table-light fw-bold">
-              <td style="width:1px" />
-              <td>Points</td>
-              <td>Description</td>
-              <td>Detailed explanation</td>
-              <td>Grader note</td>
-              <td>Show to students</td>
-              {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
-            </tr>
-          </thead>
-          <tbody>
-            {rubricItems.length > 0 ? (
-              rubricItems.map((it, idx) => (
-                <RubricRow
-                  key={it.id ?? `row-${idx}`}
-                  item={it}
-                  editMode={editMode}
-                  showAiGradingStats={showAiGradingStats}
-                  submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-                  deleteRow={() => deleteRow(idx)}
-                  moveUp={() => moveUp(idx)}
-                  moveDown={() => moveDown(idx)}
-                  rowDragStart={() => rowDragStart(idx)}
-                  rowDragOver={() => rowDragOver(idx)}
-                  updateRubricItem={(patch) => updateRubricItem(idx, patch)}
-                />
-              ))
-            ) : (
-              <tr>
-                <td colSpan={7}>
-                  <em>
-                    This question does not have any rubric items!. Click "Add item" below to add
-                    some
-                    {wasUsingRubric && (
-                      <>
-                        , or select <strong>Disable rubric</strong> below to switch back to manual
-                        grade input
-                      </>
-                    )}
-                    .
-                  </em>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+          {/* Rubric table */}
+          <div class="table-responsive">
+            <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
+              <thead>
+                <tr class="table-light fw-bold">
+                  <td style="width:1px" />
+                  <td>Points</td>
+                  <td>Description</td>
+                  <td>Detailed explanation</td>
+                  <td>Grader note</td>
+                  <td>Show to students</td>
+                  {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
+                </tr>
+              </thead>
+              <tbody>
+                {rubricItems.length > 0 ? (
+                  rubricItems.map((it, idx) => (
+                    <RubricRow
+                      key={it.id ?? `row-${idx}`}
+                      item={it}
+                      editMode={editMode}
+                      showAiGradingStats={showAiGradingStats}
+                      submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
+                      deleteRow={() => deleteRow(idx)}
+                      moveUp={() => moveUp(idx)}
+                      moveDown={() => moveDown(idx)}
+                      rowDragStart={() => rowDragStart(idx)}
+                      rowDragOver={() => rowDragOver(idx)}
+                      updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                    />
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={7}>
+                      <em>
+                        This question does not have any rubric items! Click "Add item" below to add
+                        some
+                        {wasUsingRubric && (
+                          <>
+                            , or select <strong>Disable rubric</strong> below to switch back to
+                            manual grade input
+                          </>
+                        )}
+                        .
+                      </em>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
 
-      {pointsWarnings.map((warning) => (
-        <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
-          {warning}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
-        </div>
-      ))}
-      <div class="mb-3">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          disabled={!editMode}
-          onClick={addRubricItemRow}
-        >
-          Add item
-        </button>
-      </div>
-      {settingsError && (
-        <div
-          key={settingsError}
-          class="alert alert-danger alert-dismissible fade show"
-          role="alert"
-        >
-          {settingsError}
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
-        </div>
-      )}
-
-      {/* Footer actions */}
-      <div class="text-end">
-        {wasUsingRubric && (
-          <button
-            type="button"
-            class="btn btn-link btn-sm me-auto text-danger"
-            onClick={() => submitSettings(false)}
-          >
-            Delete rubric
-          </button>
-        )}
-        {!editMode ? (
-          <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
-            Edit rubric
-          </button>
-        ) : (
-          <>
+          {/* Warnings */}
+          {pointsWarnings.map((warning) => (
+            <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
+              {warning}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            </div>
+          ))}
+          <div class="mb-3">
             <button
               type="button"
-              class="btn btn-secondary me-2"
-              onClick={() => {
-                setRubricItems(rubricItemDataMerged);
-                setReplaceAutoPoints(
-                  rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
-                );
-                setStartingPoints(rubricData?.starting_points ?? 0);
-                setMinPoints(rubricData?.min_points ?? 0);
-                setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
-                setSettingsError(null);
-                setEditMode(false);
-              }}
+              class="btn btn-secondary"
+              disabled={!editMode}
+              onClick={addRubricItemRow}
             >
-              Cancel
+              Add item
             </button>
-            <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
-              Save
-            </button>
-          </>
-        )}
+          </div>
+          {settingsError && (
+            <div
+              key={settingsError}
+              class="alert alert-danger alert-dismissible fade show"
+              role="alert"
+            >
+              {settingsError}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            </div>
+          )}
+
+          {/* Footer actions */}
+          <div class="text-end">
+            {wasUsingRubric && (
+              <button
+                type="button"
+                class="btn btn-link btn-sm me-auto text-danger"
+                onClick={() => submitSettings(false)}
+              >
+                Delete rubric
+              </button>
+            )}
+            {!editMode ? (
+              <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
+                Edit rubric
+              </button>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  class="btn btn-secondary me-2"
+                  onClick={() => {
+                    setRubricItems(rubricItemDataMerged);
+                    setReplaceAutoPoints(
+                      rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+                    );
+                    setStartingPoints(rubricData?.starting_points ?? 0);
+                    setMinPoints(rubricData?.min_points ?? 0);
+                    setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
+                    setSettingsError(null);
+                    setEditMode(false);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+                  Save
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
