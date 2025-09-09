@@ -1033,28 +1033,22 @@ function validateAssessment({
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
-    if (!allowRealTimeGrading) {
-      errors.push('Real-time grading cannot be disabled for Homework-type assessments');
-    }
-
-    // Check that real-time grading is not disabled at any level in the hierarchy
-    assessment.zones.forEach((zone) => {
-      if (zone.allowRealTimeGrading === false) {
-        errors.push('Real-time grading cannot be disabled for Homework-type assessments');
-      }
-
-      zone.questions.forEach((question) => {
-        if (question.allowRealTimeGrading === false) {
-          errors.push('Real-time grading cannot be disabled for Homework-type assessments');
-        }
-
-        question.alternatives?.forEach((alternative) => {
-          if (alternative.allowRealTimeGrading === false) {
-            errors.push('Real-time grading cannot be disabled for Homework-type assessments');
-          }
+    const anyRealTimeGradingDisabled = run(() => {
+      if (assessment.allowRealTimeGrading === false) return true;
+      return assessment.zones.some((zone) => {
+        if (zone.allowRealTimeGrading === false) return true;
+        return zone.questions.some((question) => {
+          if (question.allowRealTimeGrading === false) return true;
+          return question.alternatives?.some((alternative) => {
+            return alternative.allowRealTimeGrading === false;
+          });
         });
       });
     });
+
+    if (anyRealTimeGradingDisabled) {
+      errors.push('Real-time grading cannot be disabled for Homework-type assessments');
+    }
 
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
