@@ -1,4 +1,50 @@
 import { Node } from '@tiptap/core';
+import { NodeSelection } from '@tiptap/pm/state';
+import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
+import { type ComponentType } from 'preact/compat';
+import { Card, Form } from 'react-bootstrap';
+
+interface RawHtmlAttrs {
+  html: string;
+  tag: string;
+}
+
+const RawHtmlComponent = (
+  props: ReactNodeViewProps<HTMLDivElement> & {
+    updateAttributes: (attrs: Partial<RawHtmlAttrs>) => void;
+    node: ReactNodeViewProps<HTMLDivElement>['node'] & {
+      attrs: RawHtmlAttrs;
+    };
+  },
+) => {
+  const { node, updateAttributes } = props;
+  return (
+    <NodeViewWrapper class="p-0" contentEditable={false}>
+      <Card class="border-warning">
+        <Card.Header class="bg-warning-subtle">Raw HTML</Card.Header>
+        <Card.Body>
+          <Form>
+            <Form.Group controlId="rawHtmlEditor">
+              <Form.Control
+                as="textarea"
+                rows={10}
+                value={node.attrs.html}
+                onFocus={() => {
+                  const pos = props.getPos?.();
+                  if (typeof pos === 'number') {
+                    const { state, view } = props.editor;
+                    view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
+                  }
+                }}
+                onChange={(e) => updateAttributes({ html: e.currentTarget.value })}
+              />
+            </Form.Group>
+          </Form>
+        </Card.Body>
+      </Card>
+    </NodeViewWrapper>
+  );
+};
 
 // https://github.com/ueberdosis/tiptap/discussions/2272
 // https://tiptap.dev/docs/editor/extensions/custom-extensions/create-new/node
@@ -26,20 +72,16 @@ export const RawHtml = Node.create({
   atom: true,
 
   // Match last.
-  priority: 1000,
+  priority: -1000,
 
   addAttributes() {
     return {
       html: {
-        parseHTML: (element) => element.innerHTML,
+        parseHTML: (element) => element.outerHTML,
         rendered: false,
       },
       tag: {
         parseHTML: (element) => element.tagName.toLowerCase(),
-        rendered: false,
-      },
-      attrs: {
-        parseHTML: (element) => element.attributes,
         rendered: false,
       },
     };
@@ -54,21 +96,19 @@ export const RawHtml = Node.create({
     ];
   },
 
+  /**
+   * This node view should render the HTML as a Block that says "Raw HTML" with a border.
+   * On click, it should show the HTML in a modal for editing.
+   */
+  addNodeView() {
+    return ReactNodeViewRenderer(
+      RawHtmlComponent as ComponentType<ReactNodeViewProps<HTMLDivElement>>,
+    );
+  },
+
   renderHTML({ node }) {
-    // TODO: Can we use HTMLAttributes here?
-    // https://github.com/ueberdosis/tiptap/blob/e0567acfcad097f65dd76e87804eff1c9d805320/packages/extension-list/src/item/list-item.ts#L30
-
-    // FIXME: This current implementation doesn't properly use a node view to render the HTML as a 'div' element.
-    // This means that even though the underlying representation of the HTML is correct, what is rendered in the DOM
-    // are these non-standard tags. This needs to be fixed.
-    const div = document.createElement(node.attrs.tag);
-    for (const attr of node.attrs.attrs) {
-      div.setAttribute(attr.name, attr.value);
-    }
-    div.innerHTML = node.attrs.html;
-    div.dataset.type = 'raw';
-    div.classList.add('border', 'border-warning');
-
-    return div;
+    const template = document.createElement('template');
+    template.innerHTML = node.attrs.html;
+    return template.content.firstChild!;
   },
 });
