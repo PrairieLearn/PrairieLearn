@@ -1,5 +1,6 @@
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
 
 export function SelfEnrollmentSettings({
@@ -22,10 +23,10 @@ export function SelfEnrollmentSettings({
           <Button
             size="sm"
             variant="outline-secondary"
+            aria-label="Copy self-enrollment link"
             onClick={async () => {
               await navigator.clipboard.writeText(selfEnrollLink);
             }}
-            aria-label="Copy self-enrollment link"
           >
             <i class="bi bi-clipboard" />
           </Button>
@@ -34,8 +35,8 @@ export function SelfEnrollmentSettings({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => setShowQR(true)}
             aria-label="Self-enrollment Link QR Code"
+            onClick={() => setShowQR(true)}
           >
             <i class="bi bi-qr-code-scan" />
           </Button>
@@ -44,8 +45,8 @@ export function SelfEnrollmentSettings({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => setShowConfirm(true)}
             aria-label="Generate new self-enrollment link"
+            onClick={() => setShowConfirm(true)}
           >
             <i class="bi-arrow-repeat" />
           </Button>
@@ -62,7 +63,7 @@ export function SelfEnrollmentSettings({
         show={showQR}
         onHide={() => setShowQR(false)}
       />
-      <Modal show={showConfirm} onHide={() => setShowConfirm(false)} backdrop="static">
+      <Modal show={showConfirm} backdrop="static" onHide={() => setShowConfirm(false)}>
         <Modal.Header closeButton>
           <Modal.Title>Generate new self-enrollment link</Modal.Title>
         </Modal.Header>

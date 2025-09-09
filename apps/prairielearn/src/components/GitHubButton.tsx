@@ -1,7 +1,6 @@
 import { Button } from 'react-bootstrap';
 
 import { html } from '@prairielearn/html';
-import { Button } from 'react-bootstrap';
 
 export function GitHubButtonHtml(gitHubLink: string | null) {
   if (gitHubLink == null) {

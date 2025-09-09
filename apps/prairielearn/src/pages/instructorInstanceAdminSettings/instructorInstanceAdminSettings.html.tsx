@@ -1,14 +1,15 @@
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
+import { GitHubButton } from '../../components/GitHubButton.js';
+import type { NavPage } from '../../components/Navbar.types.js';
+import { QRCodeModal } from '../../components/QRCodeModal.js';
+import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
-import { useForm } from 'react-hook-form';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
-import { GitHubButton } from '../../components/GitHubButton.js';
+
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
-import type { NavPage } from '../../components/Navbar.types.js';
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 
 interface SettingsFormValues {
   ciid: string;
@@ -41,8 +42,8 @@ function StudentLinkSharing({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={async () => await copyToClipboard(studentLink)}
             aria-label="Copy student link"
+            onClick={async () => await copyToClipboard(studentLink)}
           >
             <i class="bi bi-clipboard" />
           </Button>
@@ -51,8 +52,8 @@ function StudentLinkSharing({
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => setShowQR(true)}
             aria-label="Student Link QR Code"
+            onClick={() => setShowQR(true)}
           >
             <i class="bi bi-qr-code-scan" />
           </Button>
@@ -87,22 +88,22 @@ function PublicLinkSharing({
         {sharingMessage}
       </p>
       <div class="mb-3">
-        <label htmlFor="publicLink">Public link</label>
+        <label for="publicLink">Public link</label>
         <InputGroup>
           <Form.Control id="publicLink" value={publicLink} disabled />
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={async () => await copyToClipboard(publicLink)}
             aria-label="Copy public link"
+            onClick={async () => await copyToClipboard(publicLink)}
           >
             <i class="far fa-clipboard" />
           </Button>
           <Button
             size="sm"
             variant="outline-secondary"
-            onClick={() => setShowQR(true)}
             aria-label="Public Link QR Code"
+            onClick={() => setShowQR(true)}
           >
             <i class="fas fa-qrcode" />
           </Button>
@@ -198,14 +199,16 @@ export function InstructorInstanceAdminSettings({
               id="ciid"
               aria-invalid={errors.ciid ? 'true' : 'false'}
               pattern="[-A-Za-z0-9_/]+"
-              required
               disabled={!canEdit}
+              required
               {...register('ciid', {
                 validate: (value) => {
-                  if (!/^[-A-Za-z0-9_/]+$/.test(value))
+                  if (!/^[-A-Za-z0-9_/]+$/.test(value)) {
                     return 'Use only letters, numbers, dashes, slashes, and underscores, with no spaces';
-                  if (shortNames.includes(value) && value !== defaultValues.ciid)
+                  }
+                  if (shortNames.includes(value) && value !== defaultValues.ciid) {
                     return 'This ID is already in use';
+                  }
                   return true;
                 },
               })}
@@ -227,8 +230,8 @@ export function InstructorInstanceAdminSettings({
               type="text"
               class="form-control"
               id="long_name"
-              required
               disabled={!canEdit}
+              required
               {...register('long_name')}
               name="long_name"
             />
@@ -247,7 +250,11 @@ export function InstructorInstanceAdminSettings({
               name="display_timezone"
             >
               {availableTimezones.map((tz) => (
-                <option value={tz.name} selected={tz.name === defaultValues.display_timezone}>
+                <option
+                  key={tz.name}
+                  value={tz.name}
+                  selected={tz.name === defaultValues.display_timezone}
+                >
                   {formatTimezone(tz)}
                 </option>
               ))}
