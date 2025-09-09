@@ -33,14 +33,24 @@ export async function fetchCheerio(
 }
 
 /**
- * Gets the test CSRF token from the page.
+ * Gets a CSRF token. If an {@link cheerio.CheerioAPI} is provided, the token
+ * will come from the test span. Otherwise, it's assumed to be an element with
+ * a single hidden CSRF input, and the return value will be the value of that input.
  */
-export function getCSRFToken($: cheerio.CheerioAPI): string {
-  const csrfTokenSpan = $('span#test_csrf_token');
-  assert.lengthOf(csrfTokenSpan, 1);
-  const csrfToken = csrfTokenSpan.text();
+export function getCSRFToken($: cheerio.CheerioAPI | cheerio.Cheerio<any>): string {
+  if ('load' in $) {
+    const csrfTokenSpan = $('span#test_csrf_token');
+    assert.lengthOf(csrfTokenSpan, 1);
+    const csrfToken = csrfTokenSpan.text();
+    assert.isString(csrfToken);
+    return csrfToken;
+  }
+
+  const csrfTokenInput = $.find('input[name="__csrf_token"]');
+  assert.lengthOf(csrfTokenInput, 1);
+  const csrfToken = csrfTokenInput.val();
   assert.isString(csrfToken);
-  return csrfToken;
+  return csrfToken as string;
 }
 
 /**
@@ -53,12 +63,9 @@ export function extractAndSaveCSRFToken(
   $: cheerio.CheerioAPI,
   parentSelector = '',
 ): string {
-  const csrfTokenInput = $(`${parentSelector} input[name="__csrf_token"]`);
-  assert.lengthOf(csrfTokenInput, 1);
-  const csrfToken = csrfTokenInput.val();
-  assert.isString(csrfToken);
+  const csrfToken = getCSRFToken($(parentSelector));
   context.__csrf_token = csrfToken;
-  return csrfToken as string;
+  return csrfToken;
 }
 
 /**
@@ -163,7 +170,7 @@ export async function saveOrGrade(
   assert(typeof variantId === 'string');
 
   // handles case where __variant_id should exist inside postData on only some instance questions submissions
-  if (payload?.postData) {
+  if (payload.postData) {
     const postData = JSON.parse(payload.postData);
     postData.variant.id = variantId;
     payload.postData = JSON.stringify(postData);

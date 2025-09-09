@@ -16,6 +16,7 @@ WITH
     WHERE
       course_id = $course_id
       AND external_grading_enabled = TRUE
+      AND deleted_at IS NULL
   ),
   workspace_count AS (
     SELECT
@@ -25,6 +26,7 @@ WITH
     WHERE
       course_id = $course_id
       AND workspace_image IS NOT NULL
+      AND deleted_at IS NULL
   )
 SELECT
   wc.count AS workspace_question_count,
