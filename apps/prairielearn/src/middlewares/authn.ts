@@ -58,6 +58,7 @@ export default asyncHandler(async (req, res, next) => {
     });
 
     // Enroll the load test user in the example course.
+    // No audit event is logged for this enrollment.
     await sqldb.execute(sql.enroll_user_in_example_course, {
       user_id: res.locals.authn_user.user_id,
     });

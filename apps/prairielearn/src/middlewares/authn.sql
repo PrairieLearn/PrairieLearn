@@ -14,4 +14,6 @@ INSERT INTO
       u.user_id = $user_id
       AND c.example_course IS TRUE
   )
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING
+  *;

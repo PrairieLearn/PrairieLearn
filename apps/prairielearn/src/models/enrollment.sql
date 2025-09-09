@@ -4,7 +4,8 @@ INSERT INTO
 VALUES
   ($user_id, $course_instance_id, 'joined', now())
 ON CONFLICT DO NOTHING
-RETURNING *;
+RETURNING
+  *;
 
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT
@@ -14,7 +15,6 @@ FROM
 WHERE
   user_id = $user_id
   AND course_instance_id = $course_instance_id;
-
 
 -- BLOCK select_enrollment_by_id
 SELECT

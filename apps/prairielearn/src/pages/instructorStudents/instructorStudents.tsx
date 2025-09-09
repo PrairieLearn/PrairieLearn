@@ -94,6 +94,8 @@ router.post(
           course_instance_id: courseInstance.id,
           uid: body.uid,
           existing_enrollment_id: null,
+          agent_user_id: pageContext.authz_data.user.user_id,
+          agent_authn_user_id: pageContext.authn_user.user_id,
         });
         res.json({ ok: true, data: enrollment });
         return;
@@ -121,6 +123,8 @@ router.post(
         course_instance_id: courseInstance.id,
         uid: body.uid,
         existing_enrollment_id: existingEnrollment.id,
+        agent_user_id: pageContext.authz_data.user.user_id,
+        agent_authn_user_id: pageContext.authn_user.user_id,
       });
 
       res.json({ ok: true, data: enrollment });

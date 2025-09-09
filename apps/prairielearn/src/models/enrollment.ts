@@ -164,10 +164,14 @@ export async function inviteStudentByUid({
   course_instance_id,
   uid,
   existing_enrollment_id,
+  agent_user_id,
+  agent_authn_user_id,
 }: {
   course_instance_id: string;
   uid: string;
   existing_enrollment_id: string | null;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
 }): Promise<StaffEnrollment> {
   return await runInTransactionAsync(async () => {
     const enrollment = await queryRow(
@@ -189,8 +193,8 @@ export async function inviteStudentByUid({
       subject_user_id: enrollment.pending_uid,
       new_row: enrollment,
       old_row,
-      agent_user_id: null,
-      agent_authn_user_id: null,
+      agent_user_id,
+      agent_authn_user_id,
     });
     return enrollment;
   });
