@@ -903,7 +903,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 0);
       });
     });
-    helperQuestion.getInstanceQuestion(locals, { silentLogging: true });
+    helperQuestion.getInstanceQuestion(locals, { errorExpected: true });
     describe('access the question', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
@@ -916,7 +916,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.equal(rowCount, 1);
       });
     });
-    helperQuestion.getInstanceQuestion(locals, { silentLogging: true });
+    helperQuestion.getInstanceQuestion(locals, { errorExpected: true });
     describe('access the question again', function () {
       it('should display "Broken question"', function () {
         elemList = locals.$('div.question-body:contains("Broken question")');
