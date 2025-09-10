@@ -23,6 +23,143 @@ ORDER BY
   date DESC;
 
 -- BLOCK insert_audit_event
+WITH
+  assessment_instance_meta AS (
+    SELECT
+      id,
+      group_id,
+      assessment_id
+    FROM
+      assessment_instances
+    WHERE
+      id = $assessment_instance_id
+      AND id IS NOT NULL
+  ),
+  group_meta AS (
+    SELECT
+      id,
+      (
+        SELECT
+          assessment_id
+        FROM
+          group_configs
+        WHERE
+          id = g.group_config_id
+      ) AS assessment_id,
+      course_instance_id
+    FROM
+      groups AS g
+    WHERE
+      id = coalesce(
+        $group_id,
+        (
+          SELECT
+            group_id
+          FROM
+            assessment_instance_meta
+        )
+      )
+      AND id IS NOT NULL
+  ),
+  assessment_question_meta AS (
+    SELECT
+      id,
+      assessment_id
+    FROM
+      assessment_questions
+    WHERE
+      id = $assessment_question_id
+      AND id IS NOT NULL
+  ),
+  assessment_meta AS (
+    SELECT
+      id,
+      course_instance_id
+    FROM
+      assessments
+    WHERE
+      id = coalesce(
+        $assessment_id,
+        (
+          SELECT
+            assessment_id
+          FROM
+            assessment_instance_meta
+        ),
+        (
+          SELECT
+            assessment_id
+          FROM
+            assessment_question_meta
+        ),
+        (
+          SELECT
+            assessment_id
+          FROM
+            group_meta
+        )
+      )
+      AND id IS NOT NULL
+  ),
+  course_instance_meta AS (
+    SELECT
+      id,
+      course_id
+    FROM
+      course_instances
+    WHERE
+      id = coalesce(
+        $course_instance_id,
+        (
+          SELECT
+            course_instance_id
+          FROM
+            group_meta
+        ),
+        (
+          SELECT
+            course_instance_id
+          FROM
+            assessment_meta
+        )
+      )
+      AND id IS NOT NULL
+  ),
+  course_meta AS (
+    SELECT
+      id,
+      institution_id
+    FROM
+      pl_courses
+    WHERE
+      id = coalesce(
+        $course_id,
+        (
+          SELECT
+            course_id
+          FROM
+            course_instance_meta
+        )
+      )
+      AND id IS NOT NULL
+  ),
+  institution_meta AS (
+    SELECT
+      id
+    FROM
+      institutions
+    WHERE
+      id = coalesce(
+        $institution_id,
+        (
+          SELECT
+            institution_id
+          FROM
+            course_meta
+        )
+      )
+      AND id IS NOT NULL
+  )
 INSERT INTO
   audit_events (
     action,
@@ -43,25 +180,40 @@ INSERT INTO
     assessment_question_id,
     group_id
   )
-VALUES
+SELECT
+  $action,
+  $action_detail,
+  $table_name,
+  $subject_user_id,
+  course_instance_meta.id AS course_instance_id,
+  $row_id,
+  $context,
+  $old_row,
+  $new_row,
+  $agent_authn_user_id,
+  $agent_user_id,
+  institution_meta.id AS institution_id,
+  course_meta.id AS course_id,
+  assessment_meta.id AS assessment_id,
+  -- We coalesce here since it is possible that assessment_instance_meta.id is null, and $assessment_instance_id is not null.
+  -- There is no foreign key constraint on assessment_instance_id since it can be hard-deleted, and we want to preserve the nonexistent ID for auditing.
+  coalesce(
+    assessment_instance_meta.id,
+    $assessment_instance_id
+  ) AS assessment_instance_id,
+  assessment_question_meta.id AS assessment_question_id,
+  group_meta.id AS group_id
+FROM
   (
-    $action,
-    $action_detail,
-    $table_name,
-    $subject_user_id,
-    $course_instance_id,
-    $row_id,
-    $context,
-    $old_row,
-    $new_row,
-    $agent_authn_user_id,
-    $agent_user_id,
-    $institution_id,
-    $course_id,
-    $assessment_id,
-    $assessment_instance_id,
-    $assessment_question_id,
-    $group_id
-  )
+    SELECT
+      1
+  ) AS tmp -- dummy row to make the LEFT JOINs work
+  LEFT JOIN course_instance_meta ON (TRUE)
+  LEFT JOIN institution_meta ON (TRUE)
+  LEFT JOIN course_meta ON (TRUE)
+  LEFT JOIN assessment_meta ON (TRUE)
+  LEFT JOIN assessment_instance_meta ON (TRUE)
+  LEFT JOIN assessment_question_meta ON (TRUE)
+  LEFT JOIN group_meta ON (TRUE)
 RETURNING
   *;

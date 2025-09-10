@@ -7,6 +7,7 @@ import { describeDatabase } from '@prairielearn/postgres-tools';
 import * as helperDb from '../tests/helperDb.js';
 
 import * as DbSchemas from './db-types.js';
+import { TableNames } from './db-types.js';
 
 const schemaNameOverrides = {
   // https://github.com/PrairieLearn/PrairieLearn/issues/12428
@@ -52,12 +53,9 @@ describe('Database Schema Sync Test', () => {
     const data = await describeDatabase(dbName);
     const tables = Object.keys(data.tables);
     const usedSchemas = new Set<string>();
-    for (const tableName of tables) {
-      // Skip PrairieTest tables
-      if (tableName.startsWith('pt_')) {
-        continue;
-      }
-
+    // Skip PrairieTest tables
+    const nonPtTables = tables.filter((tableName) => !tableName.startsWith('pt_'));
+    for (const tableName of nonPtTables) {
       const schemaName = tableNameToSchemaName(tableName);
       // A null schema name means that the schema should be ignored.
       if (schemaName === null) {
@@ -107,6 +105,19 @@ describe('Database Schema Sync Test', () => {
     );
     if (remainingSchemas.length > 0) {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);
+    }
+
+    const remainingTableNames = _.difference(nonPtTables, TableNames);
+    const remainingSchemaNames = _.difference(TableNames, nonPtTables);
+    if (remainingTableNames.length > 0) {
+      throw new Error(
+        `table definitions missing from TableNameSchema: ${remainingTableNames.join(', ')}`,
+      );
+    }
+    if (remainingSchemaNames.length > 0) {
+      throw new Error(
+        `tables listed in TableNameSchema but not in database: ${remainingSchemaNames.join(', ')}`,
+      );
     }
   });
 });

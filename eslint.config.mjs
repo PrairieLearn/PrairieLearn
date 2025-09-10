@@ -611,6 +611,10 @@ export default tseslint.config([
           },
         },
       ],
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
       '@typescript-eslint/only-throw-error': [
         'error',
         {
@@ -644,15 +648,17 @@ export default tseslint.config([
   {
     // TODO: enable this rule for all files.
     files: [
-      'apps/prairielearn/**/*.test.ts',
-      'apps/prairielearn/src/lib/**/*.ts',
-      'apps/prairielearn/src/tests/**/*.ts',
+      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
+      'apps/prairielearn/src/components/**/*.{ts,tsx}',
+      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
+      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
+      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
+      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
+      'apps/prairielearn/src/server.ts',
+      'apps/prairielearn/*.config.ts',
     ],
     rules: {
-      '@typescript-eslint/no-unnecessary-condition': [
-        'error',
-        { allowConstantLoopConditions: 'only-allowed-literals' },
-      ],
+      '@typescript-eslint/no-unnecessary-condition': 'off',
     },
   },
   {
