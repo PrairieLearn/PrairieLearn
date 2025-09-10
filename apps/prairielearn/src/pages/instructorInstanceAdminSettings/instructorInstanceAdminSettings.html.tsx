@@ -39,7 +39,7 @@ function StudentLinkSharing({
         Student Link
       </label>
       <InputGroup>
-        <Form.Control id="student_link" value={studentLink} disabled />
+        <Form.Control type="text" id="student_link" value={studentLink} disabled />
         <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
           <Button
             size="sm"
@@ -97,7 +97,7 @@ function PublicLinkSharing({
       <div class="mb-3">
         <label for="publicLink">Public link</label>
         <InputGroup>
-          <Form.Control id="publicLink" value={publicLink} disabled />
+          <Form.Control type="text" id="publicLink" value={publicLink} disabled />
           <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
             <Button
               size="sm"
