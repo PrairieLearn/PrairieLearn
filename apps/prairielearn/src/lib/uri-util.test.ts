@@ -1,10 +1,10 @@
 import { assert, describe, it } from 'vitest';
 
 import { encodePath as encodePathNormalized } from './uri-util.js';
-import { encodePathClient } from './uri-util.shared.js';
+import { encodePathNoNormalize } from './uri-util.shared.js';
 
 function encodePath(originalPath: string): string {
-  const client = encodePathClient(originalPath);
+  const client = encodePathNoNormalize(originalPath);
   const server = encodePathNormalized(originalPath);
   assert.equal(client, server);
   return client;
