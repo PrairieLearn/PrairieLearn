@@ -10,11 +10,16 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const [showMenu, setShowMenu] = useState(false);
   if (editor === null) return null;
 
-  const tagActiveMap = Object.fromEntries(
-    Object.keys(panelMeta).map((tag) => [tag, editor.isActive('plPanel', { tag })]),
-  ) as Record<keyof typeof panelMeta, boolean>;
+  const inQuestionPanel = editor.isActive('plPanel', { tag: 'pl-question-panel' });
+  const inSubmissionPanel = editor.isActive('plPanel', { tag: 'pl-submission-panel' });
+  const inAnswerPanel = editor.isActive('plPanel', { tag: 'pl-answer-panel' });
+  const isInsidePanel = inQuestionPanel || inSubmissionPanel || inAnswerPanel;
 
-  const isInsidePanel = editor.isActive('plPanel');
+  const tagActiveMap = {
+    'pl-question-panel': inQuestionPanel,
+    'pl-submission-panel': inSubmissionPanel,
+    'pl-answer-panel': inAnswerPanel,
+  };
 
   return (
     <OverlayTrigger
