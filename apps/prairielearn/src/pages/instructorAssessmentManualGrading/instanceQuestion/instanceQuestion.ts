@@ -39,6 +39,7 @@ import {
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
+import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -123,6 +124,7 @@ router.get(
           id: GradingJobSchema.shape.id,
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
+          response: AiGradingJobSchema.shape.completion,
         }),
       );
 
@@ -164,11 +166,25 @@ router.get(
                 .trimStart()
             : '';
 
+        const responseForGradingJob =
+          ai_grading_job_data.response as ParsedChatCompletion<any> | null;
+        const formattedResponse =
+          responseForGradingJob !== null
+            ? (
+                await formatJsonWithPrettier(
+                  JSON.stringify(responseForGradingJob.choices[0].message, null, 2),
+                )
+              )
+                .replaceAll('\\n', '\n')
+                .trimStart()
+            : '';
+
         aiGradingInfo = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           promptImageUrls,
+          response: formattedResponse,
         };
       }
     }

@@ -229,6 +229,7 @@ export async function aiGrade({
           );
         }
         const RubricGradingResultSchema = z.object({
+          explanation: z.string(),
           rubric_items: RubricGradingItemsSchema,
         });
         const completion = await openai.chat.completions.parse({
@@ -359,7 +360,7 @@ export async function aiGrade({
 
             if (instance_question.requires_manual_grading) {
               // Requires grading: update instance question score
-              const feedback = response.parsed.feedback;
+              const feedback = response.parsed.explanation;
               await runInTransactionAsync(async () => {
                 const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                   assessment_question.assessment_id,

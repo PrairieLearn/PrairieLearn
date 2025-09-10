@@ -113,6 +113,13 @@ export function QuestionContainer({
             promptImageUrls: aiGradingInfo.promptImageUrls,
           })
         : ''}
+      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
+      aiGradingInfo?.prompt
+        ? AIGradingResponse({
+            variantId: variant.id,
+            response: aiGradingInfo.response,
+          })
+        : ''}
       ${submissions.length > 0
         ? html`
             ${SubmissionList({
@@ -217,6 +224,39 @@ function AIGradingPrompt({
       </div>
     </div>
   `;
+}
+
+function AIGradingResponse({ variantId, response }: { variantId: string; response: string }) {
+  return html`<div class="card mb-3 grading-block">
+    <div
+      class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
+    >
+      <h2>AI Grading Response</h2>
+      <button
+        type="button"
+        class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
+        data-bs-toggle="collapse"
+        data-bs-target="#ai-grading-response-${variantId}-body"
+        aria-expanded="true"
+        aria-controls="ai-grading-response-${variantId}-body"
+      >
+        <i class="fa fa-angle-up ms-1 expand-icon"></i>
+      </button>
+    </div>
+    <div
+      class="js-submission-body js-collapsible-card-body show"
+      id="ai-grading-response-${variantId}-body"
+    >
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item my-0">
+            <h5 class="card-title mt-2 mb-3">Raw response</h5>
+            <pre class="mb-0"><code>${response}</code></pre>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>`;
 }
 
 export function IssuePanel({
