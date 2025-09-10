@@ -157,6 +157,7 @@ describe('getCourseInstanceContext', () => {
       template_course: false,
       title: 'Example Student Course',
     },
+    has_enhanced_navigation: false,
   };
   const mockInstructorData: z.input<typeof StaffCourseInstanceContextSchema> = {
     course_instance: {
@@ -196,6 +197,7 @@ describe('getCourseInstanceContext', () => {
       long_name: 'Example Institution',
       short_name: 'EI',
     },
+    has_enhanced_navigation: false,
   };
 
   it('parses student context correctly', () => {
@@ -222,6 +224,7 @@ describe('getCourseInstanceContext', () => {
     const studentDataWithExtra = {
       course_instance: { ...mockStudentData.course_instance, extra: 'field' },
       course: { ...mockStudentData.course, another: 'field' },
+      has_enhanced_navigation: false,
     };
     const result = getCourseInstanceContext(studentDataWithExtra, 'student');
     expect(result.course_instance).not.toHaveProperty('extra');
@@ -233,6 +236,7 @@ describe('getCourseInstanceContext', () => {
       course_instance: { ...mockInstructorData.course_instance, extra: 'field' },
       course: { ...mockInstructorData.course, another: 'field' },
       institution: { ...mockInstructorData.institution, extra: 'field' },
+      has_enhanced_navigation: false,
     };
     const result = getCourseInstanceContext(instructorDataWithExtra, 'instructor');
     expect(result.course_instance).not.toHaveProperty('extra');
