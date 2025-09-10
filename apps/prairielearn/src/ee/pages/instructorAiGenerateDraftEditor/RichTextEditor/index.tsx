@@ -19,7 +19,7 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useEffect, useState } from 'preact/compat';
+import { useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
 import { Card, Form } from 'react-bootstrap';
@@ -111,16 +111,6 @@ const RichTextEditor = ({
   });
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
-  const [_selectionVersion, setSelectionVersion] = useState<number>(0);
-
-  useEffect(() => {
-    if (editor === null) return;
-    const handleSelectionUpdate = () => setSelectionVersion((v) => v + 1);
-    editor.on('selectionUpdate', handleSelectionUpdate);
-    return () => {
-      editor.off('selectionUpdate', handleSelectionUpdate);
-    };
-  }, [editor]);
 
   if (htmlContents === null) {
     return null;
