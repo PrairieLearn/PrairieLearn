@@ -6,6 +6,14 @@
  *
  */
 import { Node, getNodeType, isNodeActive } from '@tiptap/core';
+import {
+  NodeViewContent,
+  NodeViewWrapper,
+  type ReactNodeViewProps,
+  ReactNodeViewRenderer,
+} from '@tiptap/react';
+import { type ComponentType } from 'preact/compat';
+import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 // https://github.com/ueberdosis/tiptap/blob/develop/packages/core/src/commands/toggleNode.ts
 // https://github.com/ueberdosis/tiptap/discussions/2272
@@ -36,6 +44,58 @@ export const PlPanel = Node.create({
         rendered: false,
       },
     };
+  },
+
+  addNodeView() {
+    const PlPanelComponent = (
+      props: ReactNodeViewProps<HTMLDivElement> & {
+        node: ReactNodeViewProps<HTMLDivElement>['node'] & {
+          attrs: { tag: 'pl-question-panel' | 'pl-submission-panel' | 'pl-answer-panel' };
+        };
+      },
+    ) => {
+      const tag = props.node.attrs.tag;
+      const panelToStyle = {
+        'pl-question-panel': {
+          color: 'primary',
+          icon: 'bi-question-circle',
+          label: 'Question Panel',
+        },
+        'pl-answer-panel': { color: 'success', icon: 'bi-check-circle', label: 'Answer Panel' },
+        'pl-submission-panel': {
+          color: 'warning',
+          icon: 'bi-arrow-repeat',
+          label: 'Submission Panel',
+        },
+      } as const;
+      const style = panelToStyle[tag];
+
+      return (
+        <NodeViewWrapper as="div" class="my-2">
+          <div class={`d-flex border-start border-4 border-${style.color} rounded-1`}>
+            <div
+              class="d-flex align-items-center justify-content-center"
+              style={{ width: '2.25rem' }}
+            >
+              <OverlayTrigger placement="top" overlay={<Tooltip>{style.label}</Tooltip>}>
+                <i
+                  class={`bi ${style.icon} text-${style.color}`}
+                  aria-label={style.label}
+                  role="img"
+                />
+              </OverlayTrigger>
+            </div>
+            <div class="flex-grow-1 ps-2 pe-2 py-2">
+              <NodeViewContent as="div" />
+            </div>
+          </div>
+        </NodeViewWrapper>
+      );
+    };
+
+    return ReactNodeViewRenderer(
+      PlPanelComponent as ComponentType<ReactNodeViewProps<HTMLDivElement>>,
+    );
   },
 
   renderHTML({ node }) {

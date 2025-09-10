@@ -2,7 +2,7 @@ import { Node } from '@tiptap/core';
 import { NodeSelection } from '@tiptap/pm/state';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import { type ComponentType } from 'preact/compat';
-import { Card, Form } from 'react-bootstrap';
+import { Card, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 interface RawHtmlAttrs {
   html: string;
@@ -21,7 +21,20 @@ const RawHtmlComponent = (
   return (
     <NodeViewWrapper class="p-0" contentEditable={false}>
       <Card class="border-warning">
-        <Card.Header class="bg-warning-subtle">Raw HTML</Card.Header>
+        <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
+          Raw HTML
+          <OverlayTrigger
+            placement="left"
+            overlay={
+              <Tooltip id="raw-html-tooltip">
+                This node type isn't supported by the rich text editor yet. You can edit the
+                underlying HTML here.
+              </Tooltip>
+            }
+          >
+            <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
+          </OverlayTrigger>
+        </Card.Header>
         <Card.Body>
           <Form>
             <Form.Group controlId="rawHtmlEditor">
@@ -30,8 +43,9 @@ const RawHtmlComponent = (
                 rows={10}
                 value={node.attrs.html}
                 onFocus={() => {
-                  const pos = props.getPos?.();
-                  if (typeof pos === 'number') {
+                  // On focus, set the selection to this node so that the user can set the panel visibility.
+                  const pos = props.getPos();
+                  if (pos != null) {
                     const { state, view } = props.editor;
                     view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
                   }
