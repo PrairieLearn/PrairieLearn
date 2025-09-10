@@ -219,7 +219,7 @@ function DeletePersonalNoteButton({
 
   return html`
     <button
-      class="btn btn-xs btn-secondary"
+      class="btn btn-xs btn-danger"
       aria-label="Delete personal note ${file.display_filename}"
       data-bs-toggle="popover"
       data-bs-container="body"
