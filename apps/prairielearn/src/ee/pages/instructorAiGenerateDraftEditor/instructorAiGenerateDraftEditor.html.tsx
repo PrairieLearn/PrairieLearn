@@ -51,7 +51,7 @@ export function InstructorAiGenerateDraftEditor({
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">
-        <div class="app-container">
+        <div class="app-container" style="--chat-width: 400px;">
           <div class="app-grid">
             <div class="app-navbar">
               ${Navbar({
@@ -113,6 +113,7 @@ export function InstructorAiGenerateDraftEditor({
                     </div>
                   </form>
                 </div>
+                <div class="app-chat-resizer" aria-label="Resize chat" role="separator"></div>
               </div>
 
               <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
@@ -166,11 +167,6 @@ export function InstructorAiGenerateDraftEditor({
         </div>
         ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
       </body>
-      <script>
-        // TODO: something different on narrow viewports?
-        const chatHistory = document.querySelector('.app-chat-history');
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-      </script>
     </html>
   `.toString();
 }
