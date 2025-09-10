@@ -19,18 +19,14 @@ export async function withConfig<T>(
  * Temporarily set the logger to silent.
  *
  * @param fn - The function to run with the logger set to silent.
- * @param options
- * @param options.silent - Whether to set the logger to silent (default: true).
  * @returns The result of the function.
  */
-export async function withoutLogging<T>(
-  fn: () => T | Promise<T>,
-  { silent = true }: { silent?: boolean } = {},
-): Promise<T> {
-  logger.silent = silent;
+export async function withoutLogging<T>(fn: () => T | Promise<T>): Promise<T> {
+  const originalSilent = logger.silent;
+  logger.silent = true;
   try {
     return await fn();
   } finally {
-    logger.silent = false;
+    logger.silent = originalSilent;
   }
 }
