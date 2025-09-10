@@ -109,7 +109,6 @@ export const PlPanel = Node.create({
           const isActive = isNodeActive(state, type, {});
           if (panelType === 'always') {
             // Remove the panel wrapper if present
-            console.log('togglePanelVisibility', panelType, isActive);
             if (isActive) {
               return commands.lift(type);
             }
