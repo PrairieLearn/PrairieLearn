@@ -1,6 +1,5 @@
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config.js';
 import {
   type AuthnProvider,
   AuthnProviderSchema,
@@ -34,22 +33,4 @@ export async function getInstitutionAuthenticationProviders(
     { institution_id },
     AuthnProviderSchema,
   );
-}
-
-export async function getSupportedAuthenticationProviders(): Promise<AuthnProvider[]> {
-  const authProviders = await queryRows(sql.select_authentication_providers, AuthnProviderSchema);
-  return authProviders.filter((row) => {
-    if (row.name === 'Shibboleth') {
-      return config.hasShib;
-    }
-    if (row.name === 'Google') {
-      return config.hasOauth;
-    }
-    if (row.name === 'Azure') {
-      return config.hasAzure;
-    }
-
-    // Default to true for all other providers.
-    return true;
-  });
 }

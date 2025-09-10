@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { randomInt } from 'node:crypto';
 
 import { z } from 'zod';
 
@@ -13,10 +13,29 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-export function generateEnrollmentCode() {
-  /** A 12-character hex string should be resistant to brute force attacks. These do not have to be unique. */
-  // Similar to https://github.com/PrairieLearnInc/PrairieTest/blob/25228ee37c60b51d7d3b38240dcafa5d44bb2236/src/models/courses.ts#L526-L527
-  return randomBytes(6).toString('hex');
+export async function uniqueEnrollmentCode() {
+  while (true) {
+    const enrollmentCode = generateEnrollmentCode();
+    const existingEnrollmentCode = await sqldb.queryOptionalRow(
+      sql.select_existing_enrollment_code,
+      { enrollment_code: enrollmentCode },
+      z.string(),
+    );
+    if (existingEnrollmentCode === null) {
+      return enrollmentCode;
+    }
+  }
+}
+
+function generateEnrollmentCode() {
+  // We exclude O/0 and I/1 because they are easily confused.
+  const allowed = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const totalChars = 10;
+  let raw = '';
+  while (raw.length < totalChars) {
+    raw += allowed[randomInt(0, allowed.length)];
+  }
+  return raw;
 }
 
 function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | undefined) {
@@ -42,6 +61,9 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     hide_in_enroll_page: courseInstance.hideInEnrollPage,
     display_timezone: courseInstance.timezone ?? null,
     access_rules: accessRules,
+    self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
+    self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
+    self_enrollment_requires_secret_link: courseInstance.selfEnrollment.requiresSecretLink,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
     share_source_publicly: courseInstance.shareSourcePublicly,
@@ -78,8 +100,8 @@ export async function sync(
       // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
-          ?.filter(isAccessRuleAccessibleInFuture)
-          ?.map((accessRule) => accessRule?.institution)
+          .filter(isAccessRuleAccessibleInFuture)
+          .map((accessRule) => accessRule.institution)
           .filter((institution) => institution != null),
       );
 
@@ -91,19 +113,19 @@ export async function sync(
     });
   }
 
-  const courseInstanceParams = Object.entries(courseData.courseInstances).map(
-    ([shortName, courseInstanceData]) => {
+  const courseInstanceParams = await Promise.all(
+    Object.entries(courseData.courseInstances).map(async ([shortName, courseInstanceData]) => {
       const { courseInstance } = courseInstanceData;
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
         // This enrollment code is only used for inserts, and not used on updates
-        generateEnrollmentCode(),
+        await uniqueEnrollmentCode(),
         infofile.stringifyErrors(courseInstance),
         infofile.stringifyWarnings(courseInstance),
         getParamsForCourseInstance(courseInstance.data),
       ]);
-    },
+    }),
   );
 
   const result = await sqldb.callRow(
