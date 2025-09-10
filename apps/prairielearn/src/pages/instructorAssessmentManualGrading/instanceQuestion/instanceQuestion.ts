@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
@@ -39,7 +40,6 @@ import {
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
-import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
