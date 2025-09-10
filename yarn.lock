@@ -4111,6 +4111,7 @@ __metadata:
     react: "npm:^19.1.1"
     react-bootstrap: "npm:3.0.0-beta.3"
     react-dom: "npm:^19.1.1"
+    react-hook-form: "npm:^7.62.0"
     remark-gfm: "npm:^4.0.1"
     remark-parse: "npm:^11.0.0"
     remark-stringify: "npm:^11.0.0"
@@ -4142,7 +4143,7 @@ __metadata:
     unified: "npm:^11.0.5"
     unzipper: "npm:^0.12.3"
     uuid: "npm:^11.1.0"
-    vite: "npm:^7.1.3"
+    vite: "npm:^7.1.5"
     vitest: "npm:^3.2.4"
     winston: "npm:^3.17.0"
     xml-formatter: "npm:^3.6.6"
@@ -4286,7 +4287,7 @@ __metadata:
     picomatch: "npm:^4.0.2"
     strip-ansi: "npm:^7.1.0"
     typescript: "npm:^5.9.2"
-    vite: "npm:^7.1.3"
+    vite: "npm:^7.1.5"
   languageName: unknown
   linkType: soft
 
@@ -5419,6 +5420,17 @@ __metadata:
   peerDependencies:
     eslint: ">=9.0.0"
   checksum: 10c0/806a96beae7744b37f5f60c9f3ed074f6abb64afe009d58d99f33b30723101d0c6ed9ccbcdbc1418c9e9842a46f689aa52fae67a44ce5c55b1540ad7218e6939
+  languageName: node
+  linkType: hard
+
+"@tanstack/eslint-plugin-query@npm:^5.83.1":
+  version: 5.86.0
+  resolution: "@tanstack/eslint-plugin-query@npm:5.86.0"
+  dependencies:
+    "@typescript-eslint/utils": "npm:^8.37.0"
+  peerDependencies:
+    eslint: ^8.57.0 || ^9.0.0
+  checksum: 10c0/0e90d77bca3d91645c9972a390d2e58cac59e377dbc75bfd7e5ccde7bd2b619d931f82708cd59bd3c89993410afad33f26f7fca261e36d336d661064b88c1536
   languageName: node
   linkType: hard
 
@@ -7013,7 +7025,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript-eslint/utils@npm:8.42.0, @typescript-eslint/utils@npm:^8.24.1, @typescript-eslint/utils@npm:^8.34.1, @typescript-eslint/utils@npm:^8.42.0":
+"@typescript-eslint/utils@npm:8.42.0, @typescript-eslint/utils@npm:^8.24.1, @typescript-eslint/utils@npm:^8.34.1, @typescript-eslint/utils@npm:^8.37.0, @typescript-eslint/utils@npm:^8.42.0":
   version: 8.42.0
   resolution: "@typescript-eslint/utils@npm:8.42.0"
   dependencies:
@@ -10776,7 +10788,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fdir@npm:^6.4.4, fdir@npm:^6.5.0":
+"fdir@npm:^6.5.0":
   version: 6.5.0
   resolution: "fdir@npm:6.5.0"
   peerDependencies:
@@ -15064,6 +15076,7 @@ __metadata:
     "@html-eslint/eslint-plugin": "npm:^0.46.2"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@stylistic/eslint-plugin": "npm:^5.2.3"
+    "@tanstack/eslint-plugin-query": "npm:^5.83.1"
     "@types/tar-stream": "npm:^3.1.4"
     "@vitest/coverage-v8": "npm:^3.2.4"
     "@vitest/eslint-plugin": "npm:^1.3.8"
@@ -15717,6 +15730,15 @@ __metadata:
   resolution: "react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
   languageName: node
   linkType: soft
+
+"react-hook-form@npm:^7.62.0":
+  version: 7.62.0
+  resolution: "react-hook-form@npm:7.62.0"
+  peerDependencies:
+    react: ^16.8.0 || ^17 || ^18 || ^19
+  checksum: 10c0/451a25a2ddf07be14f690d2ad3f2f970e0b933fd059ef141c6da9e19d0566d739e9d5cc9c482e3533f3fd01d97e658b896a01ce45a1259ad7b0d4638ba0112c6
+  languageName: node
+  linkType: hard
 
 "react-is@npm:^16.13.1":
   version: 16.13.1
@@ -17162,13 +17184,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinyglobby@npm:^0.2.12, tinyglobby@npm:^0.2.14":
-  version: 0.2.14
-  resolution: "tinyglobby@npm:0.2.14"
+"tinyglobby@npm:^0.2.12, tinyglobby@npm:^0.2.14, tinyglobby@npm:^0.2.15":
+  version: 0.2.15
+  resolution: "tinyglobby@npm:0.2.15"
   dependencies:
-    fdir: "npm:^6.4.4"
-    picomatch: "npm:^4.0.2"
-  checksum: 10c0/f789ed6c924287a9b7d3612056ed0cda67306cd2c80c249fd280cf1504742b12583a2089b61f4abbd24605f390809017240e250241f09938054c9b363e51c0a6
+    fdir: "npm:^6.5.0"
+    picomatch: "npm:^4.0.3"
+  checksum: 10c0/869c31490d0d88eedb8305d178d4c75e7463e820df5a9b9d388291daf93e8b1eb5de1dad1c1e139767e4269fe75f3b10d5009b2cc14db96ff98986920a186844
   languageName: node
   linkType: hard
 
@@ -17987,9 +18009,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0, vite@npm:^7.1.3":
-  version: 7.1.4
-  resolution: "vite@npm:7.1.4"
+"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0, vite@npm:^7.1.5":
+  version: 7.1.5
+  resolution: "vite@npm:7.1.5"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.5.0"
@@ -17997,7 +18019,7 @@ __metadata:
     picomatch: "npm:^4.0.3"
     postcss: "npm:^8.5.6"
     rollup: "npm:^4.43.0"
-    tinyglobby: "npm:^0.2.14"
+    tinyglobby: "npm:^0.2.15"
   peerDependencies:
     "@types/node": ^20.19.0 || >=22.12.0
     jiti: ">=1.21.0"
@@ -18038,7 +18060,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/dbe2ba29926ffe8985c93d1b3718dcc9040080b7fa10a74c82a52aad7449136a391ba17b265288ff03b864e6f1033b9b537247521a96d5491a9d4af90ac04702
+  checksum: 10c0/782d2f20c25541b26d1fb39bef5f194149caff39dc25b7836e25f049ca919f2e2ce186bddb21f3f20f6195354b3579ec637a8ca08d65b117f8b6f81e3e730a9c
   languageName: node
   linkType: hard
 
