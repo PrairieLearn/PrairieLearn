@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import { NavbarTypeSchema } from '../../components/Navbar.types.js';
+import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -53,6 +53,7 @@ export const RawPageContextSchema = z.object({
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,
+  navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,
 });
@@ -83,6 +84,7 @@ const RawStudentCourseInstanceContextSchema = z.object({
       short_name: z.string(),
     })
     .brand('StudentCourse'),
+  has_enhanced_navigation: z.boolean(),
 });
 export const StudentCourseInstanceContextSchema =
   RawStudentCourseInstanceContextSchema.brand<'StudentCourseInstanceContext'>();
@@ -103,6 +105,7 @@ const RawStaffCourseInstanceContextSchema = z.object({
     })
     .brand('StaffCourse'),
   institution: StaffInstitutionSchema,
+  has_enhanced_navigation: z.boolean(),
 });
 export const StaffCourseInstanceContextSchema =
   RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();

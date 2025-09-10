@@ -17,11 +17,11 @@ const CourseInstanceAccessRuleDataSchema = z.array(
     course_instance_short_name: CourseInstanceSchema.shape.short_name,
     course_instance_long_name: z.string(),
     course_instance_course_id: CourseInstanceSchema.shape.course_id,
-    end_date: z.string(),
+    end_date: z.string().nullable(),
     course_instance_access_rule_id: CourseInstanceAccessRuleSchema.shape.id,
     institution: CourseInstanceAccessRuleSchema.shape.institution,
     course_instance_access_rule_number: CourseInstanceAccessRuleSchema.shape.number,
-    start_date: z.string(),
+    start_date: z.string().nullable(),
     uids: CourseInstanceAccessRuleSchema.shape.uids,
   }),
 );

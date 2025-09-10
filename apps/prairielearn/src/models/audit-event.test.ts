@@ -1,10 +1,13 @@
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
+import { selectAssessmentQuestionById } from './assessment-question.js';
+import { selectAssessmentById } from './assessment.js';
 import { insertAuditEvent, selectAuditEvents } from './audit-event.js';
+import { selectUserById } from './user.js';
 
 describe('audit-event', () => {
   beforeEach(async function () {
@@ -25,56 +28,152 @@ describe('audit-event', () => {
         email: 'student@example.com',
       });
 
-      const auditEvent = await insertAuditEvent({
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
         action_detail: 'User created',
+        new_row: await selectUserById('1'),
         context: { test: 'basic' },
       });
-
-      assert.equal(auditEvent.action, 'insert');
-      assert.equal(auditEvent.table_name, 'users');
-      assert.equal(auditEvent.row_id, '1');
-      assert.equal(auditEvent.subject_user_id, user.user_id);
-      assert.equal(auditEvent.course_instance_id, '1');
-      assert.equal(auditEvent.action_detail, 'User created');
-      assert.deepEqual(auditEvent.context, { test: 'basic' });
-      assert.instanceOf(auditEvent.date, Date);
-      assert.typeOf(auditEvent.id, 'string');
+      expect(auditEvent).toMatchInlineSnapshot(`
+        {
+          "action": "insert",
+          "action_detail": "User created",
+          "agent_authn_user_id": "1",
+          "agent_user_id": "1",
+          "assessment_id": null,
+          "assessment_instance_id": null,
+          "assessment_question_id": null,
+          "context": {
+            "test": "basic",
+          },
+          "course_id": "1",
+          "course_instance_id": "1",
+          "group_id": null,
+          "id": "1",
+          "institution_id": "1",
+          "new_row": {
+            "deleted_at": null,
+            "email": "student@example.com",
+            "institution_id": "1",
+            "lti_context_id": null,
+            "lti_course_instance_id": null,
+            "lti_user_id": null,
+            "name": "Example Student",
+            "stripe_customer_id": null,
+            "terms_accepted_at": null,
+            "uid": "student@example.com",
+            "uin": "student",
+            "user_id": "1",
+          },
+          "old_row": null,
+          "row_id": "1",
+          "subject_user_id": "1",
+          "table_name": "users",
+        }
+      `);
     });
 
     it('uses default values for optional parameters', async () => {
-      const auditEvent = await insertAuditEvent({
+      const user = await getOrCreateUser({
+        uid: 'default@example.com',
+        name: 'Default User',
+        uin: 'default',
+        email: 'default@example.com',
+      });
+
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'insert',
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: null,
-        subject_user_id: null,
+        agent_user_id: null,
+        subject_user_id: user.user_id,
+        new_row: { test: 'default user data' },
+      });
+      expect(auditEvent).toMatchInlineSnapshot(`
+        {
+          "action": "insert",
+          "action_detail": null,
+          "agent_authn_user_id": null,
+          "agent_user_id": null,
+          "assessment_id": null,
+          "assessment_instance_id": null,
+          "assessment_question_id": null,
+          "context": {},
+          "course_id": null,
+          "course_instance_id": null,
+          "group_id": null,
+          "id": "1",
+          "institution_id": null,
+          "new_row": {
+            "test": "default user data",
+          },
+          "old_row": null,
+          "row_id": "1",
+          "subject_user_id": "1",
+          "table_name": "users",
+        }
+      `);
+    });
+
+    it('fills in missing fields for assessments', async () => {
+      const user = await getOrCreateUser({
+        uid: 'instructor@example.com',
+        name: 'Instructor',
+        uin: 'instructor',
+        email: 'instructor@example.com',
       });
 
-      assert.equal(auditEvent.action, 'insert');
-      assert.equal(auditEvent.table_name, 'users');
-      assert.equal(auditEvent.row_id, '1');
-      assert.equal(auditEvent.subject_user_id, null);
-      assert.equal(auditEvent.course_instance_id, null);
-      assert.equal(auditEvent.action_detail, null);
-      assert.deepEqual(auditEvent.context, {});
-      assert.equal(auditEvent.old_row, null);
-      assert.equal(auditEvent.new_row, null);
-      assert.equal(auditEvent.agent_authn_user_id, null);
-      assert.equal(auditEvent.agent_user_id, null);
-      assert.equal(auditEvent.institution_id, null);
-      assert.equal(auditEvent.course_id, null);
-      assert.equal(auditEvent.assessment_id, null);
-      assert.equal(auditEvent.assessment_instance_id, null);
-      assert.equal(auditEvent.assessment_question_id, null);
-      assert.equal(auditEvent.group_id, null);
-      assert.instanceOf(auditEvent.date, Date);
-      assert.typeOf(auditEvent.id, 'string');
+      const assessment = await selectAssessmentById('1');
+
+      const auditEvent = await insertAuditEvent({
+        action: 'insert',
+        table_name: 'assessments',
+        row_id: '1',
+        agent_authn_user_id: '1',
+        agent_user_id: '1',
+        subject_user_id: user.user_id,
+        assessment_id: assessment.id,
+        new_row: { title: 'Midterm 1' },
+      });
+      assert.equal(auditEvent.course_id, '1');
+      assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
+      assert.equal(auditEvent.assessment_id, '1');
+      assert.equal(auditEvent.institution_id, '1');
+    });
+
+    it('fills in missing fields for assessment questions', async () => {
+      const user = await getOrCreateUser({
+        uid: 'student2@example.com',
+        name: 'Example Student 2',
+        uin: 'student2',
+        email: 'student2@example.com',
+      });
+
+      const assessmentQuestion = await selectAssessmentQuestionById('1');
+      const assessment = await selectAssessmentById(assessmentQuestion.assessment_id);
+
+      const auditEvent = await insertAuditEvent({
+        action: 'insert',
+        table_name: 'assessment_questions',
+        row_id: '1',
+        agent_authn_user_id: '1',
+        agent_user_id: '1',
+        subject_user_id: user.user_id,
+        assessment_question_id: assessmentQuestion.id,
+        new_row: { status: 'active' },
+      });
+      assert.equal(auditEvent.course_id, '1');
+      assert.equal(auditEvent.course_instance_id, assessment.course_instance_id);
+      assert.equal(auditEvent.assessment_id, assessment.id);
+      assert.equal(auditEvent.assessment_question_id, '1');
+      assert.equal(auditEvent.institution_id, '1');
     });
   });
 
@@ -139,8 +238,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: await selectUserById('1'),
         context: { test: 'data1' },
       });
 
@@ -149,8 +250,11 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        action_detail: 'Updated user data',
+        old_row: { test: 'old data' },
         context: { test: 'data2' },
       });
 
@@ -180,8 +284,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new user data' },
         context: { test: 'users' },
       });
 
@@ -190,8 +296,10 @@ describe('audit-event', () => {
         table_name: 'enrollments',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new enrollment data' },
         context: { test: 'enrollments' },
       });
 
@@ -201,8 +309,11 @@ describe('audit-event', () => {
         table_name: 'assessments',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        assessment_id: '1',
+        new_row: { test: 'new assessment data' },
         context: { test: 'assessments' },
       });
 
@@ -232,8 +343,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'course1 user data' },
         context: { test: 'course1' },
       });
 
@@ -242,8 +355,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '2',
+        new_row: { test: 'course2 user data' },
         context: { test: 'course2' },
       });
 
@@ -278,8 +393,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user1.user_id,
         course_instance_id: '1',
+        new_row: user1,
         context: { test: 'user1' },
       });
 
@@ -288,9 +405,11 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user2.user_id,
         course_instance_id: '1',
-        context: { test: 'user2' },
+        context: user2,
+        new_row: await selectUserById('1'),
       });
 
       const result = await selectAuditEvents({
@@ -316,8 +435,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'older user data' },
         context: { test: 'older' },
       });
 
@@ -326,8 +447,11 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        action_detail: 'Updated user data',
+        old_row: { test: 'old data' },
         context: { test: 'newer' },
       });
 
@@ -357,8 +481,10 @@ describe('audit-event', () => {
         table_name: 'users',
         row_id: '1',
         agent_authn_user_id: '1',
+        agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
+        new_row: { test: 'new user data' },
         context: { test: 'null_user' },
       });
 
@@ -379,7 +505,7 @@ describe('audit-event', () => {
         email: 'student@example.com',
       });
 
-      const auditEvent = await insertAuditEvent({
+      const { date: _date, ...auditEvent } = await insertAuditEvent({
         action: 'update',
         table_name: 'users',
         row_id: '1',
@@ -396,34 +522,43 @@ describe('audit-event', () => {
         assessment_id: '1',
         assessment_instance_id: '1',
         assessment_question_id: '1',
+        group_id: '1',
       });
-
       const result = await selectAuditEvents({
         subject_user_id: user.user_id,
         table_names: ['users'],
         course_instance_id: '1',
       });
 
-      assert.equal(result.length, 1);
-      const event = result[0];
-      assert.equal(event.id, auditEvent.id);
-      assert.equal(event.action, 'update');
-      assert.equal(event.action_detail, 'Updated user profile');
-      assert.equal(event.table_name, 'users');
-      assert.equal(event.subject_user_id, user.user_id);
-      assert.equal(event.course_instance_id, '1');
-      assert.equal(event.row_id, '1');
-      assert.deepEqual(event.context, { test: 'full_fields' });
-      assert.deepEqual(event.old_row, { name: 'Old Name' });
-      assert.deepEqual(event.new_row, { name: 'New Name' });
-      assert.equal(event.agent_authn_user_id, '1');
-      assert.equal(event.agent_user_id, '1');
-      assert.equal(event.institution_id, '1');
-      assert.equal(event.course_id, '1');
-      assert.equal(event.assessment_id, '1');
-      assert.equal(event.assessment_instance_id, '1');
-      assert.equal(event.assessment_question_id, '1');
-      assert.instanceOf(event.date, Date);
+      assert.equal(result[0].id, auditEvent.id);
+      expect(auditEvent).toMatchInlineSnapshot(`
+        {
+          "action": "update",
+          "action_detail": "Updated user profile",
+          "agent_authn_user_id": "1",
+          "agent_user_id": "1",
+          "assessment_id": "1",
+          "assessment_instance_id": "1",
+          "assessment_question_id": "1",
+          "context": {
+            "test": "full_fields",
+          },
+          "course_id": "1",
+          "course_instance_id": "1",
+          "group_id": null,
+          "id": "1",
+          "institution_id": "1",
+          "new_row": {
+            "name": "New Name",
+          },
+          "old_row": {
+            "name": "Old Name",
+          },
+          "row_id": "1",
+          "subject_user_id": "1",
+          "table_name": "users",
+        }
+      `);
     });
   });
 });
