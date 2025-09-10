@@ -7,7 +7,7 @@ import type { NavPage } from '../../components/Navbar.types.js';
 import { QRCodeModal } from '../../components/QRCodeModal.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
-import { encodePathClient } from '../../lib/uri-util.shared.js';
+import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 
@@ -355,7 +355,7 @@ export function InstructorInstanceAdminSettings({
                   <p class="mb-0">
                     <a
                       data-testid="edit-course-instance-configuration-link"
-                      href={encodePathClient(
+                      href={encodePathNoNormalize(
                         `${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}`,
                       )}
                     >

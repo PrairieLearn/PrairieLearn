@@ -6,7 +6,7 @@
  * @param originalPath path of the file that is the basis for the encoding
  * @returns Encoded path
  */
-export function encodePathClient(originalPath: string): string {
+export function encodePathNoNormalize(originalPath: string): string {
   try {
     return originalPath.split('/').map(encodeURIComponent).join('/');
   } catch {
