@@ -1,7 +1,8 @@
 import { Node } from '@tiptap/core';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
-import { type ComponentType } from 'preact/compat';
-import { Card, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import clsx from 'clsx';
+import { type ComponentType, useState } from 'preact/compat';
+import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 interface RawHtmlAttrs {
   html: string;
@@ -17,15 +18,31 @@ const RawHtmlComponent = (
   },
 ) => {
   const { node, updateAttributes } = props;
+  const [nodeCount, setNodeCount] = useState(1);
+  const textareaRows = Math.min(10, node.attrs.html.split('\n').length);
   return (
     <NodeViewWrapper class="p-0" contentEditable={false}>
       <Card class="border-warning">
         <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
-          Raw HTML
+          <div class="d-flex gap-2">
+            Raw HTML
+            {nodeCount !== 1 ? (
+              <OverlayTrigger
+                placement="right"
+                overlay={<Tooltip>You need to wrap your HTML in a single root element.</Tooltip>}
+              >
+                <i
+                  class="bi bi-exclamation-triangle text-danger"
+                  aria-label="Raw HTML warning"
+                  role="img"
+                />
+              </OverlayTrigger>
+            ) : null}
+          </div>
           <OverlayTrigger
             placement="left"
             overlay={
-              <Tooltip id="raw-html-tooltip">
+              <Tooltip>
                 This node type isn't supported by the rich text editor yet. You can edit the
                 underlying HTML here.
               </Tooltip>
@@ -35,32 +52,32 @@ const RawHtmlComponent = (
           </OverlayTrigger>
         </Card.Header>
         <Card.Body>
-          <Form>
-            <Form.Group controlId="rawHtmlEditor">
-              <Form.Control
-                as="textarea"
-                rows={10}
-                value={node.attrs.html}
-                onChange={(e) => {
-                  const newHtml = e.currentTarget.value;
-                  // If the value is empty, delete the node.
-                  // TODO: Is this the cleanest way to do this?
-                  if (newHtml.length === 0) {
-                    const pos = props.getPos();
-                    if (pos != null) {
-                      props.editor
-                        .chain()
-                        .focus()
-                        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
-                        .run();
-                    }
-                  } else {
-                    updateAttributes({ html: newHtml });
-                  }
-                }}
-              />
-            </Form.Group>
-          </Form>
+          <textarea
+            rows={textareaRows}
+            value={node.attrs.html}
+            class={clsx('form-control', nodeCount !== 1 && 'border-danger')}
+            onChange={(e) => {
+              const newHtml = e.currentTarget.value;
+              const template = document.createElement('template');
+              template.innerHTML = newHtml;
+              setNodeCount(template.content.childNodes.length);
+
+              // If the value is empty, delete the node.
+              // TODO: Is this the cleanest way to do this?
+              if (newHtml.length === 0) {
+                const pos = props.getPos();
+                if (pos != null) {
+                  props.editor
+                    .chain()
+                    .focus()
+                    .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+                    .run();
+                }
+              } else {
+                updateAttributes({ html: newHtml });
+              }
+            }}
+          />
         </Card.Body>
       </Card>
     </NodeViewWrapper>
