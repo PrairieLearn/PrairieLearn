@@ -8,6 +8,7 @@ import { panelMeta } from '../extensions/pl-panel.js';
 
 export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const [showMenu, setShowMenu] = useState(false);
+  const [lastPos, setLastPos] = useState<number | null>(null);
   if (editor === null) return null;
 
   const inQuestionPanel = editor.isActive('plPanel', { tag: 'pl-question-panel' });
@@ -32,12 +33,18 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
           computePositionConfig={{ placement: 'left' }}
           onNodeChange={({ editor, pos }) => {
             // When a node changes, set the selection to the node.
+            // https://discuss.prosemirror.net/t/difficulty-with-programmatically-unwrapping-lifting-blockquote-nodes-extended-with-nodeview-in-a-tiptap-prosemirror-editor-in-vue-js/5747/3
             // This ensures that the panel visibility applies to the correct node.
-            const { state, view } = editor;
+            const { state } = editor;
             if (pos != null && pos !== -1) {
-              const nodeSelection = NodeSelection.create(state.doc, pos);
-              console.log('nodeSelection', nodeSelection);
-              view.dispatch(state.tr.setSelection(nodeSelection));
+              let lastPos = pos;
+              try {
+                // For elements with children, we need to select the next position.
+                NodeSelection.create(state.doc, pos + 1);
+              } catch {
+                lastPos = pos;
+              }
+              setLastPos(lastPos);
             }
           }}
         >
@@ -57,8 +64,10 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                         class="btn btn-sm btn-light d-flex align-items-center gap-2"
                         onClick={() => {
                           if (!isInsidePanel) setShowMenu(false);
+                          if (lastPos === null) return;
                           editor
                             .chain()
+                            .setNodeSelection(lastPos)
                             .focus()
                             .togglePanelVisibility(tag as keyof typeof panelMeta)
                             .run();
