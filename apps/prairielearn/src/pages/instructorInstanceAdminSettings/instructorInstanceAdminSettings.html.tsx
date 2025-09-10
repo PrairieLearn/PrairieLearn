@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -31,6 +32,7 @@ function StudentLinkSharing({
   studentLinkMessage: string;
 }) {
   const [showQR, setShowQR] = useState(false);
+  const [copied, setCopied] = useState(false);
   return (
     <div class="mb-3">
       <label class="form-label" for="student_link">
@@ -38,12 +40,16 @@ function StudentLinkSharing({
       </label>
       <InputGroup>
         <Form.Control id="student_link" value={studentLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>Copy</Tooltip>}>
+        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
           <Button
             size="sm"
             variant="outline-secondary"
             aria-label="Copy student link"
-            onClick={async () => await copyToClipboard(studentLink)}
+            onClick={async () => {
+              await copyToClipboard(studentLink);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }}
           >
             <i class="bi bi-clipboard" />
           </Button>
@@ -81,6 +87,7 @@ function PublicLinkSharing({
   publicLinkMessage: string;
 }) {
   const [showQR, setShowQR] = useState(false);
+  const [copied, setCopied] = useState(false);
   return (
     <>
       <p>
@@ -91,14 +98,20 @@ function PublicLinkSharing({
         <label for="publicLink">Public link</label>
         <InputGroup>
           <Form.Control id="publicLink" value={publicLink} disabled />
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy public link"
-            onClick={async () => await copyToClipboard(publicLink)}
-          >
-            <i class="far fa-clipboard" />
-          </Button>
+          <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+            <Button
+              size="sm"
+              variant="outline-secondary"
+              aria-label="Copy public link"
+              onClick={async () => {
+                await copyToClipboard(publicLink);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 1500);
+              }}
+            >
+              <i class="far fa-clipboard" />
+            </Button>
+          </OverlayTrigger>
           <Button
             size="sm"
             variant="outline-secondary"
@@ -164,8 +177,8 @@ export function InstructorInstanceAdminSettings({
 
   const {
     register,
-    handleSubmit,
-    formState: { isDirty, errors },
+    reset,
+    formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -180,13 +193,8 @@ export function InstructorInstanceAdminSettings({
         <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
-        <form
-          method="POST"
-          name="edit-course-instance-settings-form"
-          onSubmit={handleSubmit((_data, e) => {
-            e.target.submit();
-          })}
-        >
+        {/* Any javascript submit will not contain the value of the submit button. */}
+        <form method="POST" name="edit-course-instance-settings-form">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
           <div class="mb-3">
@@ -195,31 +203,35 @@ export function InstructorInstanceAdminSettings({
             </label>
             <input
               type="text"
-              class={'form-control font-monospace' + (errors.ciid ? ' is-invalid' : '')}
+              class={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
               id="ciid"
               aria-invalid={errors.ciid ? 'true' : 'false'}
-              pattern="[-A-Za-z0-9_/]+"
+              pattern="[\-A-Za-z0-9_\/]+"
               disabled={!canEdit}
               required
               {...register('ciid', {
-                validate: (value) => {
-                  if (!/^[-A-Za-z0-9_/]+$/.test(value)) {
-                    return 'Use only letters, numbers, dashes, slashes, and underscores, with no spaces';
-                  }
-                  if (shortNames.includes(value) && value !== defaultValues.ciid) {
-                    return 'This ID is already in use';
-                  }
-                  return true;
+                required: 'CIID is required',
+                pattern: /^[-A-Za-z0-9_/]+$/,
+                validate: {
+                  duplicate: (value) => {
+                    if (shortNames.includes(value) && value !== defaultValues.ciid) {
+                      return 'This ID is already in use';
+                    }
+                    return true;
+                  },
                 },
               })}
-              name="ciid"
             />
-            {errors.ciid?.message && <div class="invalid-feedback">{errors.ciid.message}</div>}
+            {errors.ciid?.type !== 'pattern' && (
+              <div class="invalid-feedback">{errors.ciid?.message}</div>
+            )}
             <small class="form-text text-muted">
-              Use only letters, numbers, dashes, and underscores, with no spaces. You may use
-              forward slashes to separate directories. The recommended format is <code>Fa19</code>{' '}
-              or <code>Fall2019</code>. Add suffixes if there are multiple versions, like{' '}
-              <code>Fa19honors</code>.
+              <span class={clsx(errors.ciid && errors.ciid.type === 'pattern' && 'text-danger')}>
+                Use only letters, numbers, dashes, and underscores, with no spaces.
+              </span>{' '}
+              You may use forward slashes to separate directories. The recommended format is{' '}
+              <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
+              versions, like <code>Fa19honors</code>.
             </small>
           </div>
           <div class="mb-3">
@@ -330,49 +342,45 @@ export function InstructorInstanceAdminSettings({
             <p>This course instance is not being shared.</p>
           )}
 
-          {!canEdit && !courseInstance ? null : (
+          {canEdit ? (
             <>
-              {canEdit ? (
-                <>
-                  <button
-                    id="save-button"
-                    type="submit"
-                    class="btn btn-primary mb-2"
-                    name="__action"
-                    value="update_configuration"
-                    disabled={!isDirty}
-                  >
-                    Save
-                  </button>
-                  <button
-                    id="cancel-button"
-                    type="button"
-                    class="btn btn-secondary mb-2 ms-2"
-                    onClick={() => window.location.reload()}
-                  >
-                    Cancel
-                  </button>
-                  <p class="mb-0">
-                    <a
-                      data-testid="edit-course-instance-configuration-link"
-                      href={encodePathNoNormalize(
-                        `${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}`,
-                      )}
-                    >
-                      Edit course instance configuration
-                    </a>{' '}
-                    in <code>infoCourseInstance.json</code>
-                  </p>
-                </>
-              ) : (
-                <p class="mb-0">
-                  <a href={`${urlPrefix}/${navPage}/file_view/${infoCourseInstancePath}`}>
-                    View course instance configuration
-                  </a>{' '}
-                  in <code>infoCourseInstance.json</code>
-                </p>
-              )}
+              <button
+                id="save-button"
+                type="submit"
+                class="btn btn-primary mb-2"
+                name="__action"
+                value="update_configuration"
+                disabled={!isDirty || !isValid}
+              >
+                Save
+              </button>
+              <button
+                id="cancel-button"
+                type="button"
+                class="btn btn-secondary mb-2 ms-2"
+                onClick={() => reset()}
+              >
+                Cancel
+              </button>
+              <p class="mb-0">
+                <a
+                  data-testid="edit-course-instance-configuration-link"
+                  href={encodePathNoNormalize(
+                    `${urlPrefix}/${navPage}/file_edit/${infoCourseInstancePath}`,
+                  )}
+                >
+                  Edit course instance configuration
+                </a>{' '}
+                in <code>infoCourseInstance.json</code>
+              </p>
             </>
+          ) : (
+            <p class="mb-0">
+              <a href={`${urlPrefix}/${navPage}/file_view/${infoCourseInstancePath}`}>
+                View course instance configuration
+              </a>{' '}
+              in <code>infoCourseInstance.json</code>
+            </p>
           )}
         </form>
       </div>
