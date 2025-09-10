@@ -183,7 +183,7 @@ export function RubricSettings({
 
   return (
     <div id="rubric-editing" class="card overflow-hidden mb-3">
-      <div class="card-header d-flex border-top-0 border-start-0 border-end-0 text-start gap-2 align-items-center">
+      <div class="card-header d-flex border-top-0 border-start-0 border-end-0 gap-2 align-items-center justify-content-between">
         <span>Rubric Settings</span>
         <button
           type="button"
@@ -193,7 +193,7 @@ export function RubricSettings({
           aria-expanded="false"
           aria-controls="rubric-setting"
         >
-          Hide/Show
+          Hide / Show
         </button>
       </div>
       <div id="rubric-setting" class="collapse p-2">
