@@ -17,6 +17,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   IdSchema,
+  type Author,
   type Question,
   type Tag,
   type Topic,
@@ -55,6 +56,7 @@ export function InstructorQuestionSettings({
   questionTestCsrfToken,
   questionGHLink,
   qids,
+  authors,
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
@@ -70,6 +72,7 @@ export function InstructorQuestionSettings({
   questionTestCsrfToken: string;
   questionGHLink: string | null;
   qids: string[];
+  authors: Author[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
@@ -150,6 +153,51 @@ export function InstructorQuestionSettings({
                 numbers, dashes, and underscores, with no spaces. You may use forward slashes to
                 separate directories.
               </small>
+            </div>
+            <div class="mb-3">
+              <h3 class="h4">Author Information</h3>
+              ${authors.map((author) => {
+                return html`
+                <div class="mb-3">
+                <label class="form-label" for="author_name">Name</label>
+              <input
+                type="text"
+                class="form-control font-monospace"
+                id="author_name"
+                name="author_name"
+                value="${author?.author_name ?? ''}"
+                ${'disabled'}
+              />
+              <label class="form-label" for="author_email">Email</label>
+              <input
+                type="email"
+                class="form-control font-monospace"
+                id="author_email"
+                name="author_email"
+                value="${author?.email ?? ''}"
+                ${'disabled'}
+              />
+              <label class="form-label" for="author_orcid">ORCID</label>
+              <input
+                type="email"
+                class="form-control font-monospace"
+                id="author_orcid"
+                name="author_orcid"
+                value="${author?.orcid ?? ''}"
+                ${'disabled'}
+              />
+              <label class="form-label" for="author_reference_course">Reference Course</label>
+              <input
+                type="email"
+                class="form-control font-monospace"
+                id="author_reference_course"
+                name="author_reference_course"
+                value="${author?.origin_course ?? ''}"
+                ${'disabled'}
+              />
+              </div>`;
+              })}
+              
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>

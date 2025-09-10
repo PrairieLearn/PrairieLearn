@@ -21,7 +21,7 @@ import {
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
-import { EnumGradingMethodSchema } from '../../lib/db-types.js';
+import { AuthorSchema, EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   MultiEditor,
@@ -426,6 +426,18 @@ router.get(
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
+
+    const author_ids = await sqldb.queryRows(sql.author_for_qid, {question_id: res.locals.question.id}, z.string());
+    let authors: Authors[] = [];
+    for (var i = 0; i < author_ids.length; i++) {
+      const author_for_id = await sqldb.queryRows(sql.author_for_author_id, {author_id: author_ids[i]}, AuthorSchema);
+      if (author_for_id) {
+        authors.push(author_for_id);
+      }
+    }
+    authors = authors.flat();
+
+
     res.send(
       InstructorQuestionSettings({
         resLocals: res.locals,
@@ -433,6 +445,7 @@ router.get(
         questionTestCsrfToken,
         questionGHLink,
         qids,
+        authors,
         assessmentsWithQuestion,
         sharingEnabled,
         sharingSetsIn,
