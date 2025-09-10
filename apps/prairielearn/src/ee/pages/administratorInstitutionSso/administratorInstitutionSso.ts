@@ -2,28 +2,19 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
+import { getSupportedAuthenticationProviders } from '../../../lib/authn-providers.js';
+import { updateInstitutionAuthnProviders } from '../../../models/institution-authn-provider.js';
 import {
   getInstitution,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-  getSupportedAuthenticationProviders,
 } from '../../lib/institution.js';
 
 import { AdministratorInstitutionSso } from './administratorInstitutionSso.html.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-const enabledProvidersSchema = z.array(z.string());
-
-function ensureArray(value) {
-  if (Array.isArray(value)) {
-    return value;
-  }
-  return [value];
-}
 
 router.post(
   '/',
@@ -33,23 +24,22 @@ router.post(
       supportedAuthenticationProviders.map((p) => p.id),
     );
 
-    const rawEnabledAuthnProviderIds = ensureArray(req.body.enabled_authn_provider_ids ?? []);
-    const enabledProviders = enabledProvidersSchema
-      .parse(rawEnabledAuthnProviderIds)
-      .filter((id) => supportedAuthenticationProviderIds.has(id));
-    if (enabledProviders.length === 0) {
-      throw new Error('At least one authentication provider must be enabled');
-    }
+    const body = z
+      .object({
+        default_authn_provider_id: z.string().transform((s) => (s === '' ? null : s)),
+        enabled_authn_provider_ids: ArrayFromCheckboxSchema,
+      })
+      .parse(req.body);
 
-    let defaultProvider = req.body.default_authn_provider_id;
-    if (defaultProvider === '') defaultProvider = null;
+    const enabledProviders = body.enabled_authn_provider_ids.filter((id) =>
+      supportedAuthenticationProviderIds.has(id),
+    );
 
-    await execute(sql.update_institution_sso_config, {
+    await updateInstitutionAuthnProviders({
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
-      default_authn_provider_id: defaultProvider,
-      // For audit logs
-      authn_user_id: res.locals.authn_user.user_id,
+      default_authn_provider_id: body.default_authn_provider_id,
+      authn_user_id: res.locals.authn_user.user_id.toString(),
     });
 
     res.redirect(req.originalUrl);
