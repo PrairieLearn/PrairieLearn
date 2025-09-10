@@ -34,10 +34,10 @@ const router = Router({ mergeParams: true });
 router.use(selectAndAuthzAssessment);
 router.use(studentAssessmentRedirect);
 router.use(studentAssessmentAccess);
-router.use(logPageView('studentAssessment'));
 
 router.get(
   '/',
+  logPageView('studentAssessmentInstance'),
   asyncHandler(async function (req, res) {
     if (!(res.locals.authz_result?.active ?? true)) {
       // If the student had started the assessment already, they would have been

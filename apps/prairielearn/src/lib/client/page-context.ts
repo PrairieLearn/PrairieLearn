@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import { NavbarTypeSchema } from '../../components/Navbar.types.js';
+import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -11,10 +11,12 @@ import {
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
+  StaffInstitutionSchema,
   StaffUserSchema,
 } from './safe-db-types.js';
 
-const RawPageContextSchema = z.object({
+export const RawPageContextSchema = z.object({
+  __csrf_token: z.string(),
   authz_data: z.object({
     // TODO: Type these more accurately into a course instance version.
     authn_is_administrator: z.boolean(),
@@ -47,9 +49,11 @@ const RawPageContextSchema = z.object({
   }),
 
   urlPrefix: z.string(),
+  plainUrlPrefix: z.string(),
   access_as_administrator: z.boolean(),
 
   authn_user: StaffUserSchema,
+  navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,
 });
@@ -80,6 +84,7 @@ const RawStudentCourseInstanceContextSchema = z.object({
       short_name: z.string(),
     })
     .brand('StudentCourse'),
+  has_enhanced_navigation: z.boolean(),
 });
 export const StudentCourseInstanceContextSchema =
   RawStudentCourseInstanceContextSchema.brand<'StudentCourseInstanceContext'>();
@@ -99,6 +104,8 @@ const RawStaffCourseInstanceContextSchema = z.object({
       short_name: z.string(),
     })
     .brand('StaffCourse'),
+  institution: StaffInstitutionSchema,
+  has_enhanced_navigation: z.boolean(),
 });
 export const StaffCourseInstanceContextSchema =
   RawStaffCourseInstanceContextSchema.brand<'StaffCourseInstanceContext'>();

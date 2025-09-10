@@ -204,7 +204,7 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${headContentString}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
         </head>
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"

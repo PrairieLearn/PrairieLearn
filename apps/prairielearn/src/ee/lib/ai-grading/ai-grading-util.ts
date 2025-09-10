@@ -8,7 +8,7 @@ import type {
 import { z } from 'zod';
 
 import {
-  callAsync,
+  callRow,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
@@ -27,6 +27,7 @@ import {
   type Question,
   type RubricItem,
   RubricItemSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
   type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
@@ -491,14 +492,18 @@ export async function deleteAiGradingJobs({
     );
 
     for (const iq of iqs) {
-      await callAsync('assessment_instances_grade', [
-        iq.assessment_instance_id,
-        // We use the user who is performing the deletion.
-        authn_user_id,
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ]);
+      await callRow(
+        'assessment_instances_grade',
+        [
+          iq.assessment_instance_id,
+          // We use the user who is performing the deletion.
+          authn_user_id,
+          100, // credit
+          false, // only_log_if_score_updated
+          true, // allow_decrease
+        ],
+        SprocAssessmentInstancesGradeSchema,
+      );
     }
 
     return iqs;

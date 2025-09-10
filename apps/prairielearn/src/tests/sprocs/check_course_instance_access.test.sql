@@ -21,19 +21,27 @@ WITH
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone)
+      course_instances (
+        id,
+        uuid,
+        course_id,
+        display_timezone,
+        enrollment_code
+      )
     VALUES
       (
         1,
         '5159a291-566f-4463-8f11-b07c931ad72a',
         1,
-        'UTC'
+        'UTC',
+        'KN5Y4HNHXS'
       ),
       (
         2,
         '5159a291-566f-4463-8f11-b07c931ad72b',
         1,
-        'UTC'
+        'UTC',
+        'QDXM3P76AP'
       )
   ),
   setup_ciars AS (

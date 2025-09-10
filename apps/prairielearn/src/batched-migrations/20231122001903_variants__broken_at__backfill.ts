@@ -1,19 +1,24 @@
+import z from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(id) as max from variants;', {});
+    const max = await queryRow(
+      'SELECT MAX(id) as max from variants;',
+      z.bigint({ coerce: true }).nullable(),
+    );
     return {
       min: 1n,
-      max: result.rows[0].max,
+      max,
       batchSize: 1000,
     };
   },
 
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(sql.update_variants_broken_at, { start, end });
+    await execute(sql.update_variants_broken_at, { start, end });
   },
 });

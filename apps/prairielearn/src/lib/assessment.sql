@@ -747,8 +747,6 @@ SET
   duration_stat_mean = duration_stats.mean,
   duration_stat_median = duration_stats.median,
   duration_stat_thresholds = duration_stats.thresholds,
-  duration_stat_threshold_seconds = interval_array_to_seconds (duration_stats.thresholds),
-  duration_stat_threshold_labels = interval_array_to_strings (duration_stats.thresholds),
   duration_stat_hist = duration_hist_stats.hist
 FROM
   score_stats,

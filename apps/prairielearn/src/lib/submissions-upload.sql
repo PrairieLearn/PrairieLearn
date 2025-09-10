@@ -42,6 +42,7 @@ RETURNING
 INSERT INTO
   variants (
     course_id,
+    course_instance_id,
     instance_question_id,
     question_id,
     authn_user_id,
@@ -55,6 +56,7 @@ INSERT INTO
 VALUES
   (
     $course_id,
+    $course_instance_id,
     $instance_question_id,
     $question_id,
     $authn_user_id,

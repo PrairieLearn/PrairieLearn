@@ -60,19 +60,24 @@ A `makeBatchedMigration()` function is available to help ensure you're writing a
 ```ts
 // batched-migrations/20230411002409_example_migration.ts
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
+import { queryRow, execute } from '@prairielearn/postgres';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(id) as max from examples;', {});
+    const max = await queryRow(
+      'SELECT MAX(id) as max from examples;',
+      z.bigint({ coerce: true }).nullable(),
+    );
+
     return {
-      max: result.rows[0].max,
+      min: 1n,
+      max,
       batchSize: 1000,
     };
   },
 
   async execute(min: bigint, max: bigint) {
-    await queryAsync('UPDATE examples SET text = TRIM(text) WHERE id >= $min AND id <= $max', {
+    await execute('UPDATE examples SET text = TRIM(text) WHERE id >= $min AND id <= $max', {
       min,
       max,
     });

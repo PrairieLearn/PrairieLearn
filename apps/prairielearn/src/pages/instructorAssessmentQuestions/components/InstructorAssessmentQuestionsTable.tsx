@@ -15,6 +15,7 @@ import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
@@ -93,13 +94,15 @@ export function InstructorAssessmentQuestionsTable({
     init_points: number | null;
   }) {
     if (max_auto_points || !max_manual_points) {
-      if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points])
-          .map((p) => (p ?? 0) - (max_manual_points ?? 0))
-          .join(',');
-      }
-      if (assessmentType === 'Homework') {
-        return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+      switch (assessmentType) {
+        case 'Exam':
+          return (points_list || [max_manual_points])
+            .map((p) => (p ?? 0) - (max_manual_points ?? 0))
+            .join(',');
+        case 'Homework':
+          return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+        default:
+          assertNever(assessmentType);
       }
     } else {
       return '—';
@@ -149,7 +152,7 @@ export function InstructorAssessmentQuestionsTable({
                         />
                         <IssueBadge
                           urlPrefix={urlPrefix}
-                          count={questionRow.open_issue_count ?? 0}
+                          count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />
                       </td>

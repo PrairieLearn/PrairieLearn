@@ -108,8 +108,8 @@ let manualGradingNextUngradedUrl: string;
 let $manualGradingPage: cheerio.CheerioAPI;
 let score_percent: number, score_points: number, adjust_points: number | null;
 let feedback_note: string;
-let rubric_items: RubricItem[];
-let selected_rubric_items: number[];
+let rubric_items: RubricItem[] | undefined;
+let selected_rubric_items: number[] | undefined;
 
 async function submitGradeForm(
   method: 'rubric' | 'points' | 'percentage' = 'rubric',
@@ -128,7 +128,7 @@ async function submitGradeForm(
   });
   if (adjust_points) params.append('score_manual_adjust_points', adjust_points.toString());
   (selected_rubric_items || [])
-    .map((index) => rubric_items[index].id)
+    .map((index) => rubric_items?.[index].id)
     .forEach((id) => {
       assert(id);
       params.append('rubric_item_selected_manual', id);
@@ -154,6 +154,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
 
     if (rubric_items) {
       rubric_items.forEach((item, index) => {
+        assert.isDefined(selected_rubric_items);
         const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
         assert.equal(checkbox.length, 1);
         assert.equal(checkbox.is(':checked'), selected_rubric_items.includes(index));
@@ -249,6 +250,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
       assert.equal(container.length, 0);
     } else {
       rubric_items.forEach((item, index) => {
+        assert.isDefined(selected_rubric_items);
         const container = feedbackBlock.find(`[data-testid="rubric-item-container-${item.id}"]`);
         if (item.always_show_to_students || selected_rubric_items.includes(index)) {
           assert.equal(container.length, 1);
@@ -310,6 +312,7 @@ function checkSettingsResults(
 
     const idFields = form.find('input[name^="rubric_item"][name$="[id]"]');
 
+    assert.isDefined(rubric_items);
     rubric_items.forEach((item, index) => {
       const idField = $manualGradingIQPage(idFields.get(index));
       assert.equal(idField.length, 1);
@@ -342,6 +345,7 @@ function checkSettingsResults(
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=manual-grading-form]');
 
+    assert.isDefined(rubric_items);
     rubric_items.forEach((item) => {
       const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
       assert.equal(checkbox.length, 1);
@@ -814,6 +818,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
+          assert.isDefined(rubric_items);
           rubric_items[2].points = 1;
           score_points = 5.4;
           score_percent = 90;
@@ -858,6 +863,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
+          assert.isDefined(rubric_items);
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
@@ -926,6 +932,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings]');
+          assert.isDefined(rubric_items);
           score_points = 6.9;
           score_percent = 115;
 

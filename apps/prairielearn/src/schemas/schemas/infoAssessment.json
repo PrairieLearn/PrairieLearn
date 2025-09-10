@@ -43,16 +43,16 @@
       "default": false
     },
     "shuffleQuestions": {
-      "description": "Whether the questions will be shuffled in the student view of an assessment",
-      "type": "boolean",
-      "default": false
+      "description": "Whether the questions will be shuffled in the student view of an assessment. If the assessment type is Exam, this is true by default, and otherwise false.",
+      "type": "boolean"
     },
     "allowAccess": {
       "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/AssessmentAccessRuleJsonSchema"
-      }
+      },
+      "default": []
     },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
@@ -68,7 +68,8 @@
     },
     "allowPersonalNotes": {
       "description": "Whether students are allowed to upload personal notes for this assessment.",
-      "type": "boolean"
+      "type": "boolean",
+      "default": true
     },
     "autoClose": {
       "description": "Whether to automatically close the assessment after a period of inactivity.",
@@ -80,7 +81,8 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/ZoneAssessmentJsonSchema"
-      }
+      },
+      "default": []
     },
     "constantQuestionValue": {
       "description": "Whether to keep the value of a question constant after a student solves it correctly.",
@@ -88,14 +90,12 @@
       "default": false
     },
     "allowRealTimeGrading": {
-      "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
-      "type": "boolean",
-      "default": true
+      "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken. Real-time grading is allowed by default.",
+      "type": "boolean"
     },
     "requireHonorCode": {
-      "description": "Requires the student to accept an honor code before starting the assessment. Only available for Exam assessments.",
-      "type": "boolean",
-      "default": true
+      "description": "Requires the student to accept an honor code before starting the assessment. Set to true for Exam assessments by default. Only configurable for Exam assessments.",
+      "type": "boolean"
     },
     "honorCode": {
       "description": "Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.",
@@ -119,7 +119,8 @@
       "type": "array",
       "items": {
         "$ref": "#/definitions/GroupRoleJsonSchema"
-      }
+      },
+      "default": []
     },
     "canSubmit": {
       "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
@@ -374,7 +375,8 @@
         },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
+          "default": false
         },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
@@ -387,8 +389,7 @@
         "numberChoose": {
           "description": "Number of questions to choose from this group.",
           "type": "integer",
-          "minimum": 0,
-          "default": 1
+          "minimum": 0
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
@@ -460,7 +461,7 @@
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
-          "default": 1
+          "minimum": 1
         },
         "advanceScorePerc": {
           "description": "Minimum score percentage to unlock access to subsequent questions.",

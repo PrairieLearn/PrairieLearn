@@ -9,7 +9,10 @@ import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
 import clsx from 'clsx';
 import { type JSX, useEffect, useRef, useState } from 'preact/compat';
 
+import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
+
+import { StatusColumnFilter } from './StatusColumnFilter.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -85,7 +88,15 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({ table }: { table: Table<StudentRow> }) {
+export function StudentsTable({
+  table,
+  enrollmentStatusFilter,
+  setEnrollmentStatusFilter,
+}: {
+  table: Table<StudentRow>;
+  enrollmentStatusFilter: EnumEnrollmentStatus[];
+  setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
+}) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
@@ -225,6 +236,7 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                     const isPinned = header.column.getIsPinned();
                     const sortDirection = header.column.getIsSorted();
                     const canSort = header.column.getCanSort();
+                    const canFilter = header.column.getCanFilter();
                     const columnName =
                       typeof header.column.columnDef.header === 'string'
                         ? header.column.columnDef.header
@@ -251,48 +263,58 @@ export function StudentsTable({ table }: { table: Table<StudentRow> }) {
                         aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
                         role="columnheader"
                       >
-                        <button
-                          class="text-nowrap"
-                          style={{
-                            cursor: canSort ? 'pointer' : 'default',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            background: 'transparent',
-                            border: 'none',
-                          }}
-                          type="button"
-                          aria-label={
-                            canSort
-                              ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
-                              : undefined
-                          }
-                          onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
-                          onKeyDown={
-                            canSort
-                              ? (e) => {
-                                  const handleSort = header.column.getToggleSortingHandler();
-                                  if (e.key === 'Enter' && handleSort) {
-                                    e.preventDefault();
-                                    handleSort(e);
+                        <div class="d-flex align-items-center justify-content-between gap-2">
+                          <button
+                            class="text-nowrap flex-grow-1 text-start"
+                            style={{
+                              cursor: canSort ? 'pointer' : 'default',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              background: 'transparent',
+                              border: 'none',
+                            }}
+                            type="button"
+                            aria-label={
+                              canSort
+                                ? `'${columnName}' column, current sort is ${getAriaSort(sortDirection)}`
+                                : undefined
+                            }
+                            onClick={canSort ? header.column.getToggleSortingHandler() : undefined}
+                            onKeyDown={
+                              canSort
+                                ? (e) => {
+                                    const handleSort = header.column.getToggleSortingHandler();
+                                    if (e.key === 'Enter' && handleSort) {
+                                      e.preventDefault();
+                                      handleSort(e);
+                                    }
                                   }
-                                }
-                              : undefined
-                          }
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(header.column.columnDef.header, header.getContext())}
-                          {canSort && (
-                            <span class="ms-2" aria-hidden="true">
-                              <SortIcon sortMethod={sortDirection || false} />
-                            </span>
+                                : undefined
+                            }
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(header.column.columnDef.header, header.getContext())}
+                            {canSort && (
+                              <span class="ms-2" aria-hidden="true">
+                                <SortIcon sortMethod={sortDirection || false} />
+                              </span>
+                            )}
+                            {canSort && (
+                              <span class="visually-hidden">
+                                , {getAriaSort(sortDirection)}, click to sort
+                              </span>
+                            )}
+                          </button>
+
+                          {header.column.id === 'enrollment_status' && canFilter && (
+                            <StatusColumnFilter
+                              columnId={header.column.id}
+                              enrollmentStatusFilter={enrollmentStatusFilter}
+                              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+                            />
                           )}
-                          {canSort && (
-                            <span class="visually-hidden">
-                              , {getAriaSort(sortDirection)}, click to sort
-                            </span>
-                          )}
-                        </button>
+                        </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
                         index === headerGroup.headers.length - 1 ? null : (

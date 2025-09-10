@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 
 import { logger } from '@prairielearn/logger';
@@ -13,6 +15,7 @@ import * as socketServer from './socket-server.js';
 let namespace: Namespace;
 
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-image-capture');
   namespace.on('connection', connection);
 }

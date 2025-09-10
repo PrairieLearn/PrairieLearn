@@ -181,7 +181,7 @@ export async function randomGroups(
             const usersToMove = userGroups
               .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
-              .map((group) => group.pop() as string);
+              .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(
                 `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,

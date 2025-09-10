@@ -19,7 +19,6 @@ export async function init() {
       'histogram.sql',
       'array_histogram.sql',
       'format_interval.sql',
-      'format_interval_short.sql',
       'format_date_iso8601.sql',
       'format_date_short.sql',
       'format_date_full.sql',

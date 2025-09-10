@@ -294,7 +294,7 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const course_instance_id = (course_instance && course_instance.id) || null;
+  const course_instance_id = course_instance?.id || null;
   const options = {};
   const require_open = true;
   const client_fingerprint_id = null;
@@ -481,9 +481,7 @@ export async function startTestQuestion(
         authn_user_id,
       );
       success = success && result.success;
-      if (result.stats) {
-        stats.push(result.stats);
-      }
+      stats.push(result.stats);
     }
 
     function printStats(label: string, key: keyof TestResultStats) {

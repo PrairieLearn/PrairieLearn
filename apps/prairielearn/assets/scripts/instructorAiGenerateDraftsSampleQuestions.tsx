@@ -20,7 +20,7 @@ import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDraf
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
-  const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
+  const sampleQuestions = document.querySelector('#sample-questions')!;
   render(<SampleQuestion />, sampleQuestions);
 });
 
@@ -120,7 +120,7 @@ function SampleQuestionSelector({
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
-    const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm')!;
     promptTextarea.value = prompt;
   };
 

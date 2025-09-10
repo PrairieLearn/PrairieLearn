@@ -22,7 +22,7 @@ export function Lti13Test({
   url: URL;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 test' })}

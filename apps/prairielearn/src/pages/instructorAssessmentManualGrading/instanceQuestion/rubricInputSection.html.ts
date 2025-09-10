@@ -112,13 +112,12 @@ function RubricItems({
   disable: boolean;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
 }) {
-  const ai_selected_rubric_item_ids_set =
-    aiGradingInfo && aiGradingInfo.submissionManuallyGraded
-      ? new Set(aiGradingInfo.selectedRubricItemIds)
-      : null;
+  const ai_selected_rubric_item_ids_set = aiGradingInfo?.submissionManuallyGraded
+    ? new Set(aiGradingInfo.selectedRubricItemIds)
+    : null;
 
   return html`
-    ${aiGradingInfo && aiGradingInfo?.submissionManuallyGraded
+    ${aiGradingInfo?.submissionManuallyGraded
       ? html`
           <div
             class="d-flex align-items-center gap-2 text-secondary mb-1"

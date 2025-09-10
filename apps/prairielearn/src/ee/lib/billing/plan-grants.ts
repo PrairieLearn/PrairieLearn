@@ -25,10 +25,18 @@ function userHasRole(authz_data: any) {
   // or course instance. We always grant instructor-like users access to all
   // features.
   //
+  // Note that we specifically check the authenticated user's roles, not their
+  // effective roles. This allows instructors to use "Student view" (as well
+  // as "Student view without access restrictions") even when plan grant
+  // requirements are in effect. Otherwise, we'd potentially be prompting the
+  // instructor to pay.
+  //
   // This function should always be run after the `authzCourseOrInstance`
   // middleware, which will have taken into account the effective user
   // and any overridden roles.
-  return authz_data.course_role !== 'None' || authz_data.course_instance_role !== 'None';
+  return (
+    authz_data.authn_course_role !== 'None' || authz_data.authn_course_instance_role !== 'None'
+  );
 }
 
 export async function checkPlanGrantsForLocals(locals: ResLocals) {
@@ -76,7 +84,7 @@ export async function checkPlanGrants({
 }
 
 export async function checkPlanGrantsForQuestion(res: Response) {
-  if (userHasRole(res)) {
+  if (userHasRole(res.locals.authz_data)) {
     return true;
   }
 

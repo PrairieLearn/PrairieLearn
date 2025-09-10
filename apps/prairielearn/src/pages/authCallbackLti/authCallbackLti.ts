@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import oauthSignature from 'oauth-signature';
@@ -8,7 +10,12 @@ import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
+import {
+  IdSchema,
+  LtiCredentialSchema,
+  LtiLinkSchema,
+  SprocUsersIsInstructorInCourseInstanceSchema,
+} from '../../lib/db-types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
@@ -53,12 +60,14 @@ router.post(
     );
     if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
 
+    assert(ltiResult.secret !== null);
+
     const genSignature = oauthSignature.generate(
       'POST',
       ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      ltiResult.secret as string,
+      ltiResult.secret,
       undefined,
       { encodeSignature: false },
     );
@@ -159,16 +168,17 @@ router.post(
     } else {
       // No linked assessment
 
-      const instructorResult = await sqldb.callAsync('users_is_instructor_in_course_instance', [
-        userResult.user_id,
-        ltiResult.course_instance_id,
-      ]);
+      const isInstructor = await sqldb.callOptionalRow(
+        'users_is_instructor_in_course_instance',
+        [userResult.user_id, ltiResult.course_instance_id],
+        SprocUsersIsInstructorInCourseInstanceSchema,
+      );
 
-      if (instructorResult.rowCount === 0) {
+      if (isInstructor == null) {
         throw new HttpStatusError(403, 'Access denied (could not determine if user is instructor)');
       }
 
-      if (!instructorResult.rows[0].is_instructor) {
+      if (!isInstructor) {
         // Show an error that the assignment is unavailable
         throw new HttpStatusError(403, 'Assignment not available yet');
       }

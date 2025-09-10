@@ -1,5 +1,4 @@
 import {
-  callAsync,
   callRow,
   loadSqlEquiv,
   queryOptionalRow,
@@ -11,6 +10,7 @@ import {
   type GradingJob,
   GradingJobSchema,
   IdSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
@@ -71,11 +71,11 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await callAsync('assessment_instances_grade', [
-        assessment_instance_id,
-        authn_user_id,
-        credit,
-      ]);
+      await callRow(
+        'assessment_instances_grade',
+        [assessment_instance_id, authn_user_id, credit],
+        SprocAssessmentInstancesGradeSchema,
+      );
     }
     return grading_job;
   });

@@ -72,10 +72,10 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
       assert.equal(questionResponse.status, 200);
 
-      partialCredit1VariantId = questionResponse
-        .$('input[name=__variant_id]')
-        .val()
-        ?.toString() as string;
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+
+      partialCredit1VariantId = variantIdInputValue.toString();
 
       const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`, {
         method: 'POST',
@@ -99,10 +99,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
       assert.equal(questionResponse.status, 200);
 
-      partialCredit2VariantId = questionResponse
-        .$('input[name=__variant_id]')
-        .val()
-        ?.toString() as string;
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+      partialCredit2VariantId = variantIdInputValue.toString();
 
       const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`, {
         method: 'POST',
@@ -166,8 +165,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() as string;
-      assert.notEqual(variantId, partialCredit1VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit1VariantId);
     });
   });
 
@@ -180,8 +180,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() as string;
-      assert.notEqual(variantId, partialCredit2VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit2VariantId);
     });
   });
 });

@@ -94,7 +94,6 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
       _mostRecentAppModule = appModule;
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const app = appModule[config.exportName!];
     if (!app) {
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
@@ -107,7 +106,6 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
   }
 
   if (config.initAppOnBoot) {
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     server.httpServer!.once('listening', async () => {
       await _loadApp(config).catch(() => {});
     });

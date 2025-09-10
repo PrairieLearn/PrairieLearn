@@ -225,10 +225,10 @@ describe('Tag/topic syncing', () => {
     const courseData = util.getCourseData();
 
     // The symbolic tag is in DEFAULT_TAGS but not in courseData
-    courseData.questions[util.QUESTION_ID]?.tags?.push('symbolic');
+    courseData.questions[util.QUESTION_ID].tags!.push('symbolic');
 
     // Similarly, the drawing tag is in DEFAULT_TAGS but not in courseData
-    courseData.questions[util.QUESTION_ID]?.tags?.push('drawing');
+    courseData.questions[util.QUESTION_ID].tags!.push('drawing');
 
     await util.writeAndSyncCourseData(courseData);
 

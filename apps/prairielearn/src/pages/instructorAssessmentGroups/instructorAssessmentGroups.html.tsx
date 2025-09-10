@@ -171,7 +171,7 @@ export function InstructorAssessmentGroups({
                         <td class="text-center">${row.size}</td>
                         <td class="text-center">
                           <small>
-                            ${row.users?.length > 0
+                            ${row.users.length > 0
                               ? row.users.map((user) => user.uid).join(', ')
                               : '(empty)'}
                           </small>
@@ -275,8 +275,8 @@ export function InstructorAssessmentGroups({
                           <strong>
                             ${notAssigned?.length
                               ? html`
-                        ${notAssigned?.length}
-                        student${notAssigned?.length > 1 ? html`s` : ''} not yet
+                        ${notAssigned.length}
+                        student${notAssigned.length > 1 ? html`s` : ''} not yet
                         assigned:
                       </strong>
                       `

@@ -1,27 +1,69 @@
+import { z } from 'zod';
+
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
-import type { LtiCredential, User } from '../../lib/db-types.js';
+import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
-export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<string, any> }) {
-  const {
-    authz_data,
-    course_owners,
-    lti_credentials,
-    lti11_enabled,
-    __csrf_token: csrfToken,
-    lti_links,
-    assessments,
-    course_instance: courseInstance,
-    course,
-    urlPrefix,
-  } = resLocals;
+export const LtiDataSchema = z.object({
+  assessments: z
+    .array(
+      z.object({
+        assessment_id: AssessmentSchema.shape.id,
+        label: z.string(),
+        title: AssessmentSchema.shape.title,
+        tid: AssessmentSchema.shape.tid,
+      }),
+    )
+    .nullable(),
+  lti_credentials: z
+    .array(
+      z.object({
+        ...LtiCredentialSchema.pick({
+          id: true,
+          course_instance_id: true,
+          consumer_key: true,
+          secret: true,
+          created_at: true,
+        }).shape,
+        created: z.string(),
+        deleted: z.string().nullable(),
+      }),
+    )
+    .nullable(),
+  lti_links: z
+    .array(
+      z.object({
+        ...LtiLinkSchema.pick({
+          id: true,
+          resource_link_title: true,
+          resource_link_description: true,
+          assessment_id: true,
+          created_at: true,
+        }).shape,
+        created: z.string(),
+      }),
+    )
+    .nullable(),
+});
+type LtiData = z.infer<typeof LtiDataSchema>;
 
+export function InstructorInstanceAdminLti({
+  assessments,
+  lti_credentials,
+  lti_links,
+  resLocals,
+}: {
+  assessments: LtiData['assessments'];
+  lti_credentials: LtiData['lti_credentials'];
+  lti_links: LtiData['lti_links'];
+  resLocals: Record<string, any>;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'LTI',
@@ -47,73 +89,45 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authzData={authz_data}
-          courseInstance={courseInstance}
-          course={course}
-          urlPrefix={urlPrefix}
+          authzData={resLocals.authz_data}
+          courseInstance={resLocals.course_instance}
+          course={resLocals.course}
+          urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${!authz_data.has_course_permission_edit
-        ? html`
-            <div class="card mb-4">
-              <div class="card-header bg-danger text-white">
-                <h1>LTI configuration</h1>
-              </div>
-              <div class="card-body">
-                <h2>Insufficient permissions</h2>
-                <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
-                ${course_owners.length > 0
-                  ? html`
-                      <p>Contact one of the below course owners to request access.</p>
-                      <ul>
-                        ${course_owners.map(
-                          (owner: User) => html`
-                            <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                          `,
-                        )}
-                      </ul>
-                    `
-                  : ''}
-              </div>
-            </div>
-          `
-        : html`
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white">
-                <h1>LTI configuration</h1>
-              </div>
-              <div class="card-body">
-                <p>
-                  The LTI (Learning Tools Interoperability) standard allows other online learning
-                  websites to embed PrairieLearn assessments within them. PrairieLearn acts as a
-                  <em>Tool Provider</em> for LTI. See the
-                  <a href="https://www.imsglobal.org/basic-overview-how-lti-works">
-                    LTI overview
-                  </a>
-                  for more information.
-                </p>
-                <p>
-                  <strong>
-                    This version of LTI is deprecated.
-                    ${isEnterprise()
-                      ? html`See the "Integrations" tab for more information about newer integration
-                        methods.`
-                      : html`Check with your PrairieLearn admins about newer integration methods.`}
-                  </strong>
-                </p>
-                ${!lti11_enabled
-                  ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
-                  : ''}
-              </div>
-            </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h1>LTI configuration</h1>
+        </div>
+        <div class="card-body">
+          <p>
+            The LTI (Learning Tools Interoperability) standard allows other online learning websites
+            to embed PrairieLearn assessments within them. PrairieLearn acts as a
+            <em>Tool Provider</em> for LTI. See the
+            <a href="https://www.imsglobal.org/basic-overview-how-lti-works"> LTI overview </a>
+            for more information.
+          </p>
+          <p>
+            <strong>
+              This version of LTI is deprecated.
+              ${isEnterprise()
+                ? html`See the "Integrations" tab for more information about newer integration
+                  methods.`
+                : html`Check with your PrairieLearn admins about newer integration methods.`}
+            </strong>
+          </p>
+          ${!resLocals.lti11_enabled
+            ? html`<p><em>LTI 1.1 is not enabled for this course instance.</em></p>`
+            : ''}
+        </div>
+      </div>
 
-            ${lti11_enabled
-              ? html`
-                  ${LtiCredentialCard({ lti_credentials, csrfToken })}
-                  ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken })}
-                `
-              : ''}
-          `}
+      ${resLocals.lti11_enabled
+        ? html`
+            ${LtiCredentialCard({ lti_credentials, csrfToken: resLocals.__csrf_token })}
+            ${LtiLinkTargetsCard({ lti_links, assessments, csrfToken: resLocals.__csrf_token })}
+          `
+        : ''}
     `,
   });
 }
@@ -122,10 +136,7 @@ function LtiCredentialCard({
   lti_credentials,
   csrfToken,
 }: {
-  lti_credentials: (Omit<LtiCredential, 'deleted_at'> & {
-    created: string | null;
-    deleted: string | null;
-  })[];
+  lti_credentials: LtiData['lti_credentials'];
   csrfToken: string;
 }) {
   return html`
@@ -242,19 +253,8 @@ function LtiLinkTargetsCard({
   assessments,
   csrfToken,
 }: {
-  lti_links: {
-    id: string;
-    resource_link_title: string | null;
-    resource_link_description: string | null;
-    assessment_id: string | null;
-    created: string | null;
-  }[];
-  assessments: {
-    assessment_id: string;
-    label: string;
-    title: string | null;
-    tid: string | null;
-  }[];
+  lti_links: LtiData['lti_links'];
+  assessments: LtiData['assessments'];
   csrfToken: string;
 }) {
   return html`
