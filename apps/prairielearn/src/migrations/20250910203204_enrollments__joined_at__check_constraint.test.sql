@@ -7,25 +7,32 @@ RETURNING
   id;
 
 -- BLOCK insert_user
-INSERT INTO users (
-            uid,
-            name,
-            uin,
-            email,
-            institution_id
-        ) VALUES (
-            $uid,
-            $name,
-            $uin,
-            $email,
-            $institution_id
-        )
-RETURNING *;
+INSERT INTO
+  users (uid, name, uin, email, institution_id)
+VALUES
+  ($uid, $name, $uin, $email, $institution_id)
+RETURNING
+  *;
 
 -- BLOCK enroll_user
 INSERT INTO
-  enrollments (user_id, course_instance_id, status, created_at, joined_at, pending_uid)
+  enrollments (
+    user_id,
+    course_instance_id,
+    status,
+    created_at,
+    joined_at,
+    pending_uid
+  )
 VALUES
-  ($user_id, $course_instance_id, $status, $created_at, $joined_at, $pending_uid)
+  (
+    $user_id,
+    $course_instance_id,
+    $status,
+    $created_at,
+    $joined_at,
+    $pending_uid
+  )
 ON CONFLICT DO NOTHING
-RETURNING *;
+RETURNING
+  *;
