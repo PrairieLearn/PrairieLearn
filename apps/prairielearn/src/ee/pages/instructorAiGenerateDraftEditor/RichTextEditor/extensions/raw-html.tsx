@@ -84,7 +84,7 @@ export const RawHtml = Node.create({
   // Determines whether this node is considered an important parent node during replace operations (such as paste).
   // https://prosemirror.net/docs/ref/#model.NodeSpec.definingForContent
   // In inserted content the defining parents of the content are preserved when possible.
-  defining: true,
+  defining: false,
 
   // Whitespace *may* be important, preserve it.
   whitespace: 'pre',
@@ -96,6 +96,8 @@ export const RawHtml = Node.create({
   priority: -1000,
 
   selectable: true,
+
+  isolating: false,
 
   addAttributes() {
     return {

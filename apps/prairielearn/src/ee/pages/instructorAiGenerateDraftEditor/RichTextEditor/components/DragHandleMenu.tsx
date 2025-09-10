@@ -13,7 +13,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const inQuestionPanel = editor.isActive('plPanel', { tag: 'pl-question-panel' });
   const inSubmissionPanel = editor.isActive('plPanel', { tag: 'pl-submission-panel' });
   const inAnswerPanel = editor.isActive('plPanel', { tag: 'pl-answer-panel' });
-  const isInsidePanel = inQuestionPanel || inSubmissionPanel || inAnswerPanel;
+  const isInsidePanel = editor.isActive('plPanel');
 
   const tagActiveMap = {
     'pl-question-panel': inQuestionPanel,
@@ -35,7 +35,9 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
             // This ensures that the panel visibility applies to the correct node.
             const { state, view } = editor;
             if (pos != null && pos !== -1) {
-              view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
+              const nodeSelection = NodeSelection.create(state.doc, pos);
+              console.log('nodeSelection', nodeSelection);
+              view.dispatch(state.tr.setSelection(nodeSelection));
             }
           }}
         >

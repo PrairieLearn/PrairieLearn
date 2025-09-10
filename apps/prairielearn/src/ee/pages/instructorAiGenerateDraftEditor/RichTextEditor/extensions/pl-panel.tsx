@@ -110,8 +110,16 @@ export const PlPanel = Node.create({
           if (panelType === 'always') {
             // Remove the panel wrapper if present
             if (isActive) {
-              return commands.lift(type);
+              const res = commands.lift('plPanel');
+              if (!res) {
+                console.log('lift failed');
+                return false;
+                // commands.toggleNode('plPanel');
+              }
+              console.log('lift', res);
+              return res;
             }
+            console.log('do nothing');
             return true;
           }
 
