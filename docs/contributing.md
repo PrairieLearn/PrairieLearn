@@ -36,6 +36,10 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 
 ### Code review guidelines
 
+- **Review lifecycle**
+  - After all comments have been addressed or responded to, the author should re-request review from the primary reviewer.
+    - This is an important step to let the reviewer know that you are done addressing their comments, and are ready for another review.
+
 - **Self review**
   - It's almost always very valuable for an author to review their own code before requesting a PR from others. This gives the author a chance to catch any mistakes and clarify their own understanding of the code.
   - Self review is also a good opportunity for the author to add comments to the PR for other reviewers. For example, the author may want to highlight specific changes that are particularly important or may be difficult to understand.
@@ -50,6 +54,7 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 
 - **Addressing code review comments**
   - All code review comments should be addressed before merging.
+    - If you made a change that resolved a comment, you should reply to the comment with the commit that resolves it.
   - Addressing a comment does not always mean making a change. It may involve:
     - Explaining why a change is unnecessary. Ideally, wait for the reviewer to acknowledge this before considering the comment to be addressed.
     - Deferring a fix to a fast-follow PR and explicitly stating that in a comment.
