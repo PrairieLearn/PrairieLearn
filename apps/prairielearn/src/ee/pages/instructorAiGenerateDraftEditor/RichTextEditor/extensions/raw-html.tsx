@@ -1,5 +1,4 @@
 import { Node } from '@tiptap/core';
-import { NodeSelection } from '@tiptap/pm/state';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import { type ComponentType } from 'preact/compat';
 import { Card, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
@@ -42,15 +41,23 @@ const RawHtmlComponent = (
                 as="textarea"
                 rows={10}
                 value={node.attrs.html}
-                onFocus={() => {
-                  // On focus, set the selection to this node so that the user can set the panel visibility.
-                  const pos = props.getPos();
-                  if (pos != null) {
-                    const { state, view } = props.editor;
-                    view.dispatch(state.tr.setSelection(NodeSelection.create(state.doc, pos)));
+                onChange={(e) => {
+                  const newHtml = e.currentTarget.value;
+                  // If the value is empty, delete the node.
+                  // TODO: Is this the cleanest way to do this?
+                  if (newHtml.length === 0) {
+                    const pos = props.getPos();
+                    if (pos != null) {
+                      props.editor
+                        .chain()
+                        .focus()
+                        .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+                        .run();
+                    }
+                  } else {
+                    updateAttributes({ html: newHtml });
                   }
                 }}
-                onChange={(e) => updateAttributes({ html: e.currentTarget.value })}
               />
             </Form.Group>
           </Form>
@@ -77,7 +84,7 @@ export const RawHtml = Node.create({
   // Determines whether this node is considered an important parent node during replace operations (such as paste).
   // https://prosemirror.net/docs/ref/#model.NodeSpec.definingForContent
   // In inserted content the defining parents of the content are preserved when possible.
-  defining: false,
+  defining: true,
 
   // Whitespace *may* be important, preserve it.
   whitespace: 'pre',
@@ -87,6 +94,8 @@ export const RawHtml = Node.create({
 
   // Match last.
   priority: -1000,
+
+  selectable: true,
 
   addAttributes() {
     return {
