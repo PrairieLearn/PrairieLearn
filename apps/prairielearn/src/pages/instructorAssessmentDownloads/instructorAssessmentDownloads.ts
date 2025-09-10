@@ -18,6 +18,7 @@ import {
   QuestionSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
+  SprocUsersGetDisplayedRoleSchema,
   type Submission,
   SubmissionSchema,
   UserSchema,
@@ -41,7 +42,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   uid: UserSchema.shape.uid.nullable(),
   uin: UserSchema.shape.uin.nullable(),
   name: UserSchema.shape.name.nullable(),
-  role: z.string().nullable(),
+  role: SprocUsersGetDisplayedRoleSchema,
   assessment_label: z.string(),
   assessment_instance_number: AssessmentInstanceSchema.shape.number,
   qid: QuestionSchema.shape.qid,
@@ -89,6 +90,8 @@ type AssessmentInstanceSubmissionRow = z.infer<typeof AssessmentInstanceSubmissi
 const ManualGradingSubmissionRowSchema = z.object({
   uid: UserSchema.shape.uid.nullable(),
   uin: UserSchema.shape.uin.nullable(),
+  zone_number: z.number(),
+  zone_title: z.string().nullable(),
   qid: QuestionSchema.shape.qid,
   old_score_perc: InstanceQuestionSchema.shape.score_perc,
   old_auto_points: InstanceQuestionSchema.shape.auto_points,
@@ -263,7 +266,7 @@ async function pipeCursorToArchive<T>(
       }
     }
   }
-  archive.finalize();
+  await archive.finalize();
 }
 
 router.get(
@@ -285,7 +288,7 @@ router.get(
 function stringifyWithColumns(columns: Columns, transform?: (record: any) => any) {
   return stringifyStream({
     header: true,
-    columns: columns.map(([header, key]) => ({ header, key: key ?? header })),
+    columns: columns.map(([header, key]) => ({ header, key })),
     transform,
   });
 }
@@ -421,7 +424,7 @@ router.get(
       const cursor = await sqldb.queryCursor(
         sql.submissions_for_manual_grading,
         { assessment_id: res.locals.assessment.id, include_files: false },
-        z.unknown(),
+        ManualGradingSubmissionRowSchema,
       );
 
       // Replace user-friendly column names with upload-friendly names
@@ -546,7 +549,7 @@ router.get(
         sql.group_configs,
         { assessment_id: res.locals.assessment.id },
         z.object({
-          group_name: GroupSchema.shape.name,
+          name: GroupSchema.shape.name,
           uid: UserSchema.shape.uid,
           roles: z.array(GroupRoleSchema.shape.role_name),
         }),

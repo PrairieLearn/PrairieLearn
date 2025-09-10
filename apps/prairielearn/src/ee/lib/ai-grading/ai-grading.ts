@@ -207,7 +207,7 @@ export async function aiGrade({
         embedding: submission_embedding.embedding,
         limit: 5,
       });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length > 0 ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
       }

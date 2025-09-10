@@ -1,33 +1,46 @@
-import { html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type CourseInstance } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
+
+import SelfEnrollmentSettings from './components/SelfEnrollmentSettings.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
+  selfEnrollLink,
   studentLink,
   publicLink,
   infoCourseInstancePath,
   availableTimezones,
   origHash,
+  instanceGHLink,
   canEdit,
+  enrollmentCount,
+  enrollmentManagementEnabled,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
+  selfEnrollLink: string;
   studentLink: string;
   publicLink: string;
   infoCourseInstancePath: string;
   availableTimezones: Timezone[];
   origHash: string;
+  instanceGHLink: string | null;
   canEdit: boolean;
+  enrollmentCount: number;
+  enrollmentManagementEnabled: boolean;
 }) {
   return PageLayout({
     resLocals,
@@ -41,29 +54,38 @@ export function InstructorInstanceAdminSettings({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${QRCodeModal({
+      ${GenerateSelfEnrollmentLinkModal({ csrfToken: resLocals.__csrf_token })}
+      ${QRCodeModalHtml({
+        id: 'selfEnrollmentLinkModal',
+        title: 'Self-enrollment Link QR Code',
+        content: selfEnrollLink,
+      })}
+      ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'publicLinkModal',
         title: 'Public Link QR Code',
         content: publicLink,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>
             ${resLocals.has_enhanced_navigation
               ? 'General course instance settings'
               : 'Course instance settings'}
           </h1>
+          ${GitHubButtonHtml(instanceGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-course-instance-settings-form" method="POST">
@@ -175,42 +197,23 @@ export function InstructorInstanceAdminSettings({
                 links to the course can be used for enrollment.
               </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="student_link">Student Link</label>
-              <span class="input-group">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="student_link"
-                  name="student_link"
-                  value="${studentLink}"
-                  disabled
-                />
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary btn-copy"
-                  data-clipboard-text="${studentLink}"
-                  aria-label="Copy student link"
-                >
-                  <i class="far fa-clipboard"></i>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  aria-label="Student Link QR Code"
-                  data-bs-toggle="modal"
-                  data-bs-target="#studentLinkModal"
-                >
-                  <i class="fas fa-qrcode"></i>
-                </button>
-              </span>
-              <small class="form-text text-muted">
-                This is the link that students will use to access the course. You can copy this link
-                to share with students.
-              </small>
-            </div>
+            ${StudentLinkSharing({
+              studentLink,
+              studentLinkMessage:
+                'This is the link that students will use to access the course. You can copy this link to share with students.',
+            })}
+            ${enrollmentManagementEnabled
+              ? renderHtml(<SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} />)
+              : ''}
             <h2 class="h4">Sharing</h2>
-            ${CourseInstanceSharing({ courseInstance: resLocals.course_instance, publicLink })}
+            ${resLocals.course_instance.share_source_publicly
+              ? PublicLinkSharing({
+                  publicLink,
+                  sharingMessage: "This course instance's source is publicly shared.",
+                  publicLinkMessage:
+                    'The link that other instructors can use to view this course instance.',
+                })
+              : html`<p>This course instance is not being shared.</p>`}
             ${EditConfiguration({
               hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
               hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
@@ -222,14 +225,36 @@ export function InstructorInstanceAdminSettings({
           </form>
         </div>
         ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
-          ? CopyCourseInstanceForm({
+          ? CourseInstanceActions({
               csrfToken: resLocals.__csrf_token,
               shortName: resLocals.course_instance.short_name,
+              enrollmentCount,
             })
           : ''}
       </div>
     `,
   });
+}
+
+function GenerateSelfEnrollmentLinkModal({ csrfToken }: { csrfToken: string }): HtmlSafeString {
+  return html`
+    ${Modal({
+      id: 'generateSelfEnrollmentLinkModal',
+      title: 'Generate new self-enrollment link',
+      body: html`
+        <div>
+          Are you sure you want to generate a new self-enrollment link?
+          <strong>The current link will be deactivated.</strong> This action cannot be undone.
+        </div>
+      `,
+      footer: html`
+        <input type="hidden" name="__action" value="generate_enrollment_code" />
+        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="submit" class="btn btn-danger">Generate new link</button>
+      `,
+    })}
+  `;
 }
 
 function EditConfiguration({
@@ -291,12 +316,14 @@ function EditConfiguration({
   }
 }
 
-function CopyCourseInstanceForm({
+function CourseInstanceActions({
   csrfToken,
   shortName,
+  enrollmentCount,
 }: {
   csrfToken: string;
   shortName: string;
+  enrollmentCount: number;
 }) {
   return html`
     <div class="card-footer d-flex flex-wrap align-items-center">
@@ -319,71 +346,13 @@ function CopyCourseInstanceForm({
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
-      ${Modal({
-        id: 'deleteCourseInstanceModal',
-        title: 'Delete course instance',
-        body: html`
-          <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
-        `,
-        footer: html`
-          <input type="hidden" name="__action" value="delete_course_instance" />
-          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-danger">Delete</button>
-        `,
-      })}
-    </div>
-  `;
-}
-
-function CourseInstanceSharing({
-  courseInstance,
-  publicLink,
-}: {
-  courseInstance: CourseInstance;
-  publicLink: string;
-}) {
-  if (!courseInstance.share_source_publicly) {
-    return html`<p>This course instance is not being shared.</p>`;
-  }
-
-  return html`
-    <p>
-      <span class="badge color-green3 me-1">Public source</span>
-      This course instance's source is publicly shared.
-    </p>
-    <div class="mb-3">
-      <label for="publicLink">Public link</label>
-      <span class="input-group">
-        <input
-          type="text"
-          class="form-control"
-          id="publicLink"
-          name="publicLink"
-          value="${publicLink}"
-          disabled
-        />
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary btn-copy"
-          data-clipboard-text="${publicLink}"
-          aria-label="Copy public link"
-        >
-          <i class="far fa-clipboard"></i>
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-          aria-label="Public Link QR Code"
-          data-bs-toggle="modal"
-          data-bs-target="#publicLinkModal"
-        >
-          <i class="fas fa-qrcode"></i>
-        </button>
-      </span>
-      <small class="form-text text-muted">
-        The link that other instructors can use to view this course instance.
-      </small>
+      ${hydrateHtml(
+        <DeleteCourseInstanceModal
+          shortName={shortName}
+          enrolledCount={enrollmentCount}
+          csrfToken={csrfToken}
+        />,
+      )}
     </div>
   `;
 }

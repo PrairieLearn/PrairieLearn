@@ -5,8 +5,8 @@ import { z } from 'zod';
 import { AugmentedError } from '@prairielearn/error';
 import {
   callRow,
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -47,7 +47,7 @@ export async function resetVariantsForAssessmentQuestion({
   unsafe_assessment_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_assessment_question, {
+  await execute(sql.reset_variants_for_assessment_question, {
     assessment_id,
     unsafe_assessment_question_id,
     authn_user_id,
@@ -63,7 +63,7 @@ export async function resetVariantsForInstanceQuestion({
   unsafe_instance_question_id: string;
   authn_user_id: string;
 }) {
-  await queryAsync(sql.reset_variants_for_instance_question, {
+  await execute(sql.reset_variants_for_instance_question, {
     assessment_instance_id,
     unsafe_instance_question_id,
     authn_user_id,
@@ -236,4 +236,20 @@ export async function selectAndAuthzVariant(options: {
   }
 
   return variant;
+}
+
+/**
+ * Locks the variant before a grading operation can proceed. If the variant is
+ * associated to an assessment instance, lock the assessment instance instead.
+ * Assumes that the caller is already within a transaction.
+ */
+export async function lockVariant({ variant_id }: { variant_id: string }) {
+  const locked = await queryOptionalRow(
+    sql.select_and_lock_assessment_instance_or_variant,
+    { variant_id },
+    z.boolean(),
+  );
+  if (!locked) {
+    throw new Error('Variant or assessment instance could not be locked.');
+  }
 }

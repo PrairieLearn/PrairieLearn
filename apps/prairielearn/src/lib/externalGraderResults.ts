@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { S3 } from '@aws-sdk/client-s3';
 import {
   DeleteMessageCommand,
@@ -35,7 +37,7 @@ export async function init() {
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
-  (async () => {
+  void (async () => {
     while (true) {
       // Spin until we can get at least one message from the queue.
       let messages: ReceiveMessageResult['Messages'];
@@ -131,7 +133,7 @@ async function loadQueueUrl(sqs: SQSClient): Promise<string> {
 async function processMessage(data: {
   jobId: string;
   event: string;
-  data: {
+  data?: {
     receivedTime: string;
   };
 }) {
@@ -147,7 +149,8 @@ async function processMessage(data: {
     ...data,
   });
   if (data.event === 'job_received') {
-    await sqldb.queryAsync(sql.update_grading_received_time, {
+    assert(data.data);
+    await sqldb.execute(sql.update_grading_received_time, {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });

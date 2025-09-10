@@ -1,8 +1,8 @@
 CREATE FUNCTION
     sync_course_instances(
-        IN disk_course_instances_data JSONB[],
+        IN disk_course_instances_data jsonb[],
         IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
+        OUT name_to_id_map jsonb
     )
 AS $$
 DECLARE
@@ -23,6 +23,7 @@ BEGIN
     CREATE TEMPORARY TABLE disk_course_instances (
         short_name TEXT NOT NULL,
         uuid uuid,
+        enrollment_code VARCHAR(255),
         errors TEXT,
         warnings TEXT,
         data JSONB
@@ -31,6 +32,7 @@ BEGIN
     INSERT INTO disk_course_instances (
         short_name,
         uuid,
+        enrollment_code,
         errors,
         warnings,
         data
@@ -39,7 +41,8 @@ BEGIN
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        entries->>4,
+        (entries->5)::JSONB
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src
@@ -54,6 +57,8 @@ BEGIN
         SELECT DISTINCT ON (src_short_name)
             src.short_name AS src_short_name,
             src.uuid AS src_uuid,
+            -- This enrollment code is only used for inserts, and not used on updates
+            src.enrollment_code AS src_enrollment_code,
             dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
@@ -83,8 +88,8 @@ BEGIN
     insert_unmatched_src_rows AS (
         -- UTC is used as a temporary timezone, which will be updated in following statements
         INSERT INTO course_instances AS dest
-            (course_id, short_name, uuid, display_timezone, deleted_at)
-        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
+            (course_id, short_name, uuid, display_timezone, deleted_at, enrollment_code)
+        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL, src_enrollment_code
         FROM matched_rows
         WHERE dest_id IS NULL
         -- This is a total hack, but the test suite hardcoded course instance ID 1
@@ -147,6 +152,9 @@ BEGIN
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         json_comment = (src.data->>'comment')::jsonb,
+        self_enrollment_enabled = (src.data->>'self_enrollment_enabled')::boolean,
+        self_enrollment_enabled_before_date = input_date(src.data->>'self_enrollment_enabled_before_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
+        self_enrollment_requires_secret_link = (src.data->>'self_enrollment_requires_secret_link')::boolean,
         share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings

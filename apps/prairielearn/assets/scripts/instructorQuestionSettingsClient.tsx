@@ -12,7 +12,7 @@ import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
 
 onDocumentReady(() => {
-  const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
+  const qidField = document.querySelector<HTMLInputElement>('input[name="qid"]')!;
   const otherQids = qidField.dataset.otherValues?.split(',') ?? [];
   const questionSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-question-settings-form"]',

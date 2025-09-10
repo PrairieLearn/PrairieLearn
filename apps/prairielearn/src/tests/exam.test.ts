@@ -845,10 +845,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         locals.question = helperExam.questions.brokenGeneration;
       });
       it('should result in no variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 0);
+        assert.equal(rowCount, 0);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -858,10 +858,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created one variant', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 1);
+        assert.equal(rowCount, 1);
       });
     });
     helperQuestion.getInstanceQuestion(locals);
@@ -871,10 +871,10 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
         assert.lengthOf(elemList, 1);
       });
       it('should have created two variants', async () => {
-        const result = await sqldb.queryAsync(sql.select_variants_for_qid, {
+        const rowCount = await sqldb.execute(sql.select_variants_for_qid, {
           qid: locals.question.qid,
         });
-        assert.lengthOf(result.rows, 2);
+        assert.equal(rowCount, 2);
       });
     });
   });
@@ -1060,7 +1060,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
 
   describe('31. close exam', function () {
     it('should succeed', async () => {
-      await sqldb.queryOneRowAsync(sql.close_all_assessment_instances, []);
+      await sqldb.executeRow(sql.close_all_assessment_instances, []);
     });
   });
 
@@ -1088,7 +1088,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('33. regrading', function () {
     describe('set forceMaxPoints = true for question addVectors', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_addVectors_force_max_points, []);
+        await sqldb.execute(sql.update_addVectors_force_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);
@@ -1240,19 +1240,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('35. instance question points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.questions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1488,19 +1489,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('38. instance question split points uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.questions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1625,19 +1627,20 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
   describe('39. instance question split score_perc uploads', function () {
     describe('prepare the CSV upload data', function () {
       it('should get the submission_ids for addNumbers', async () => {
-        const params = {
-          qid: helperExam.questions.addNumbers.qid,
-        };
-        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
-        const rowCount = result.rowCount ?? 0;
+        const result = await sqldb.queryRows(
+          sql.select_submissions_by_qid,
+          { qid: helperExam.questions.addNumbers.qid },
+          SubmissionSchema,
+        );
+        const rowCount = result.length;
         // make sure we've got lots of submissions to make the later checks work
         assert.isAtLeast(rowCount, 4);
         // we are going to add feedback to one of the submissions
-        locals.submission_id_for_feedback = result.rows[2].id;
+        locals.submission_id_for_feedback = result[2].id;
         // all the the other submissions should not be modified
-        locals.submission_id_preserve0 = result.rows[0].id;
-        locals.submission_id_preserve1 = result.rows[1].id;
-        locals.submission_id_preserveN = result.rows[rowCount - 1].id;
+        locals.submission_id_preserve0 = result[0].id;
+        locals.submission_id_preserve1 = result[1].id;
+        locals.submission_id_preserveN = result[rowCount - 1].id;
       });
       it('should succeed', function () {
         locals.csvData =
@@ -1843,7 +1846,7 @@ describe('Exam assessment', { timeout: 60_000 }, function () {
             helperQuestion.checkQuestionStats(locals);
             helperQuestion.checkAssessmentScore(locals);
           } else {
-            throw Error('unknown action: ' + questionTest.action);
+            throw new Error('unknown action: ' + questionTest.action);
           }
         });
       });

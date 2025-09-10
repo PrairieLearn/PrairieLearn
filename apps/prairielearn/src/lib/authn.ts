@@ -1,4 +1,6 @@
 // @ts-check
+import assert from 'node:assert';
+
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 
@@ -8,7 +10,12 @@ import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
 import { config } from './config.js';
-import { InstitutionSchema, type User, UserSchema } from './db-types.js';
+import {
+  InstitutionSchema,
+  SprocUsersSelectOrInsertSchema,
+  type User,
+  UserSchema,
+} from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';
 
@@ -28,6 +35,25 @@ export interface LoadUserAuth {
   /** If present, skip the users_select_or_insert call */
   user_id?: number | string;
   institution_id?: number | string | null;
+}
+
+const SelectUserSchema = z.object({
+  user: UserSchema,
+  institution: InstitutionSchema,
+  is_administrator: z.boolean(),
+  news_item_notification_count: z.number(),
+});
+type SelectUser = z.infer<typeof SelectUserSchema>;
+
+export interface ResLocalsAuthnUser {
+  authn_user: SelectUser['user'];
+  authn_institution: SelectUser['institution'];
+  authn_provider_name: LoadUserAuth['provider'];
+  authn_is_administrator: SelectUser['is_administrator'];
+  access_as_administrator: boolean;
+  is_administrator: boolean;
+  is_institution_administrator: boolean;
+  news_item_notification_count: SelectUser['news_item_notification_count'];
 }
 
 async function handlePendingLti13User({
@@ -99,27 +125,25 @@ export async function loadUser(
       authnParams.institution_id,
     ];
 
-    const userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
+    const userSelectOrInsertRes = await sqldb.callRow(
+      'users_select_or_insert',
+      params,
+      SprocUsersSelectOrInsertSchema,
+    );
 
-    user_id = userSelectOrInsertRes.rows[0].user_id;
-    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    const { result, user_institution_id } = userSelectOrInsertRes;
     if (result === 'invalid_authn_provider') {
+      assert(user_institution_id !== null);
       throw new HttpRedirect(
         `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
       );
     }
+
+    assert(userSelectOrInsertRes.user_id !== null);
+    user_id = userSelectOrInsertRes.user_id;
   }
 
-  const selectedUser = await sqldb.queryOptionalRow(
-    sql.select_user,
-    { user_id },
-    z.object({
-      user: UserSchema,
-      institution: InstitutionSchema,
-      is_administrator: z.boolean(),
-      news_item_notification_count: z.number(),
-    }),
-  );
+  const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
 
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);

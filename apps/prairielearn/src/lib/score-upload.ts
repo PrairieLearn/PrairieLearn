@@ -53,7 +53,7 @@ export async function uploadInstanceQuestionScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -174,7 +174,7 @@ export async function uploadAssessmentInstanceScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -212,11 +212,7 @@ export async function uploadAssessmentInstanceScores(
         } catch (err) {
           errorCount++;
           const msg = String(err);
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+          output += '\n' + msg;
         }
         outputCount++;
         if (outputCount >= outputThreshold) {
@@ -255,7 +251,7 @@ function getJsonPropertyOrNull(json: Record<string, any>, key: string): any {
 
 function getNumericJsonPropertyOrNull(json: Record<string, any>, key: string): number | null {
   const value = getJsonPropertyOrNull(json, key);
-  if (value != null && (typeof value !== 'number' || isNaN(value))) {
+  if (value != null && (typeof value !== 'number' || Number.isNaN(value))) {
     throw new Error(`Value of ${key} is not a numeric value`);
   }
   return value;

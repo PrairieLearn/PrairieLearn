@@ -216,9 +216,9 @@ async function prepareGroup() {
     '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -389,7 +389,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneFirstUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.equal(
@@ -409,7 +409,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneSecondtUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
@@ -451,10 +451,10 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,

@@ -3,8 +3,10 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { type Config, config } from '../lib/config.js';
+import { uniqueEnrollmentCode } from '../sync/fromDisk/courseInstances.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -51,8 +53,12 @@ describe('Test student auto-enrollment', { timeout: 20_000 }, function () {
 
   describe('A student user with no access to course instance', function () {
     it('should not have access to assessments page with no access rule', async () => {
-      const result = (await sqldb.queryAsync(sql.insert_course_instance, {})).rows[0];
-      const newAssessmentsUrl = baseUrl + `/course_instance/${result.id}/assessments`;
+      const courseInstanceId = await sqldb.queryRow(
+        sql.insert_course_instance,
+        { enrollment_code: await uniqueEnrollmentCode() },
+        IdSchema,
+      );
+      const newAssessmentsUrl = baseUrl + `/course_instance/${courseInstanceId}/assessments`;
       const response = await fetch(newAssessmentsUrl);
       assert.equal(response.status, 403);
     });

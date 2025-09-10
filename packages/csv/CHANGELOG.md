@@ -1,5 +1,17 @@
 # @prairielearn/csv
 
+## 2.0.19
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 2.0.18
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
 ## 2.0.17
 
 ### Patch Changes

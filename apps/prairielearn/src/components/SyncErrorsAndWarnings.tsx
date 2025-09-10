@@ -2,20 +2,20 @@ import clsx from 'clsx';
 
 import { ansiToHtml } from '../lib/chalk.js';
 import type { StaffCourse, StaffCourseInstance } from '../lib/client/safe-db-types.js';
-import { type Assessment, type Question } from '../lib/db-types.js';
+import { type Assessment, type Course, type Question } from '../lib/db-types.js';
 
 export function CourseSyncErrorsAndWarnings({
-  authz_data,
+  authzData,
   course,
   urlPrefix,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
-  course: StaffCourse;
+  authzData: { has_course_instance_permission_edit: boolean };
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
     <SyncErrorsAndWarnings
-      authz_data={authz_data}
+      authzData={authzData}
       exampleCourse={course.example_course}
       syncErrors={course.sync_errors}
       syncWarnings={course.sync_warnings}
@@ -26,19 +26,19 @@ export function CourseSyncErrorsAndWarnings({
 }
 
 export function QuestionSyncErrorsAndWarnings({
-  authz_data,
+  authzData,
   question,
   course,
   urlPrefix,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
+  authzData: { has_course_instance_permission_edit: boolean };
   question: Question;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
     <SyncErrorsAndWarnings
-      authz_data={authz_data}
+      authzData={authzData}
       exampleCourse={course.example_course}
       syncErrors={question.sync_errors}
       syncWarnings={question.sync_warnings}
@@ -49,19 +49,19 @@ export function QuestionSyncErrorsAndWarnings({
 }
 
 export function CourseInstanceSyncErrorsAndWarnings({
-  authz_data,
+  authzData,
   courseInstance,
   course,
   urlPrefix,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
+  authzData: { has_course_instance_permission_edit: boolean };
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
   return (
     <SyncErrorsAndWarnings
-      authz_data={authz_data}
+      authzData={authzData}
       exampleCourse={course.example_course}
       syncErrors={courseInstance.sync_errors}
       syncWarnings={courseInstance.sync_warnings}
@@ -72,21 +72,29 @@ export function CourseInstanceSyncErrorsAndWarnings({
 }
 
 export function AssessmentSyncErrorsAndWarnings({
-  authz_data,
+  authzData,
   assessment,
   courseInstance,
   course,
   urlPrefix,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
+  authzData: { has_course_instance_permission_edit?: boolean };
   assessment: Assessment;
   courseInstance: StaffCourseInstance;
-  course: StaffCourse;
+  course: StaffCourse | Course;
   urlPrefix: string;
 }) {
+  // This should never happen, but we are waiting on a better type system for res.locals.authz_data
+  // to be able to express this.
+  if (authzData.has_course_instance_permission_edit === undefined) {
+    throw new Error('has_course_instance_permission_edit is undefined');
+  }
+
   return (
     <SyncErrorsAndWarnings
-      authz_data={authz_data}
+      authzData={{
+        has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
+      }}
       exampleCourse={course.example_course}
       syncErrors={assessment.sync_errors}
       syncWarnings={assessment.sync_warnings}
@@ -97,21 +105,21 @@ export function AssessmentSyncErrorsAndWarnings({
 }
 
 function SyncErrorsAndWarnings({
-  authz_data,
+  authzData,
   exampleCourse,
   syncErrors,
   syncWarnings,
   fileEditUrl,
   context,
 }: {
-  authz_data: { has_course_instance_permission_edit: boolean };
+  authzData: { has_course_instance_permission_edit: boolean };
   exampleCourse: boolean;
   syncErrors: string | null;
   syncWarnings: string | null;
   fileEditUrl: string;
   context: 'course' | 'question' | 'course instance' | 'assessment';
 }) {
-  if (!authz_data.has_course_instance_permission_edit) {
+  if (!authzData.has_course_instance_permission_edit) {
     return null;
   }
   if (!syncErrors && !syncWarnings) {
