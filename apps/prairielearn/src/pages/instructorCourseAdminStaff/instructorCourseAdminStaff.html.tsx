@@ -218,7 +218,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Remove all student data access</button>
+        <button type="submit" class="btn btn-danger">Remove all student data access</button>
       </div>
     </form>
   `;
@@ -239,7 +239,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete users with no access</button>
+        <button type="submit" class="btn btn-danger">Delete users with no access</button>
       </div>
     </form>
   `;
