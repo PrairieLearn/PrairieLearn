@@ -9,14 +9,14 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/** Validate ORCiD and return normalized (16 chars, no dashes) if valid. */
+/** Validate ORCID and return normalized (16 chars, no dashes) if valid. */
 function normalizeOrcid(orcid: string): string | null {
   if (!orcid) return null;
 
   // Drop any dashes
   const digits = orcid.replaceAll('-', '');
 
-  // Sanity check that should not fail since the ORCiD format is baked into the JSON schema
+  // Sanity check that should not fail since the ORCID format is baked into the JSON schema
   if (!/^\d{15}[\dX]$/.test(digits)) {
     return null;
   }
@@ -107,7 +107,7 @@ export async function sync(
         if (!orcidNormalized) {
           infofile.addError(
             question,
-            `The provided author ORCiD ${author.orcid} has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an ORCiD`,
+            `The provided author ORCID ${author.orcid} has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an ORCID`,
           );
           continue;
         }
