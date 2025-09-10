@@ -8,19 +8,17 @@ import { panelMeta } from '../extensions/pl-panel.js';
 
 export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const [showMenu, setShowMenu] = useState(false);
-  const [lastPos, setLastPos] = useState<number | null>(null);
+  const [lastPos, setLastPos] = useState<{ pos: number; offset: number } | null>(null);
   if (editor === null) return null;
 
-  const inQuestionPanel = editor.isActive('plPanel', { tag: 'pl-question-panel' });
-  const inSubmissionPanel = editor.isActive('plPanel', { tag: 'pl-submission-panel' });
-  const inAnswerPanel = editor.isActive('plPanel', { tag: 'pl-answer-panel' });
-  const isInsidePanel = editor.isActive('plPanel');
+  const node = lastPos !== null ? editor.$pos(lastPos.pos + lastPos.offset).node : null;
+  const tagActiveMap = Object.fromEntries(
+    Object.keys(panelMeta).map((tag) => {
+      return [tag, node?.type.name === 'plPanel' && node.attrs.tag === tag];
+    }),
+  );
 
-  const tagActiveMap = {
-    'pl-question-panel': inQuestionPanel,
-    'pl-submission-panel': inSubmissionPanel,
-    'pl-answer-panel': inAnswerPanel,
-  };
+  const isInsidePanel = Object.values(tagActiveMap).some(Boolean);
 
   return (
     <OverlayTrigger
@@ -32,19 +30,23 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
           editor={editor}
           computePositionConfig={{ placement: 'left' }}
           onNodeChange={({ editor, pos }) => {
-            // When a node changes, set the selection to the node.
-            // https://discuss.prosemirror.net/t/difficulty-with-programmatically-unwrapping-lifting-blockquote-nodes-extended-with-nodeview-in-a-tiptap-prosemirror-editor-in-vue-js/5747/3
-            // This ensures that the panel visibility applies to the correct node.
+            // If the menu is shown, don't update the last position.
+            if (showMenu) {
+              return;
+            }
+
+            // Track the last node that was interacted with so that the panel visibility applies to the correct node.
             const { state } = editor;
             if (pos != null && pos !== -1) {
-              let lastPos = pos;
+              let offset = 1;
               try {
-                // For elements with children, we need to select the next position.
+                // For elements with children, we need to select the next position for some reason.
+                // See https://discuss.prosemirror.net/t/difficulty-with-programmatically-unwrapping-lifting-blockquote-nodes-extended-with-nodeview-in-a-tiptap-prosemirror-editor-in-vue-js/5747/3
                 NodeSelection.create(state.doc, pos + 1);
               } catch {
-                lastPos = pos;
+                offset = 0;
               }
-              setLastPos(lastPos);
+              setLastPos({ pos, offset });
             }
           }}
         >
@@ -67,8 +69,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                           if (lastPos === null) return;
                           editor
                             .chain()
-                            .setNodeSelection(lastPos)
-                            .focus()
+                            .setNodeSelection(lastPos.pos + lastPos.offset)
                             .togglePanelVisibility(tag as keyof typeof panelMeta)
                             .run();
                         }}
