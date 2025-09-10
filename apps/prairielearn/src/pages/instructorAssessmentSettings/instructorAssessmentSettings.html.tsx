@@ -1,11 +1,13 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { type Assessment, type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorAssessmentSettings({
@@ -43,26 +45,29 @@ export function InstructorAssessmentSettings({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'publicLinkModal',
         title: 'Public Link QR Code',
         content: publicLink,
       })}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
+          ${GitHubButtonHtml(assessmentGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">
@@ -70,9 +75,6 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="aid">AID</label>
-              ${assessmentGHLink
-                ? html`<a target="_blank" href="${assessmentGHLink}">view on GitHub</a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -299,41 +301,19 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            <div class="mb-3">
-              <label class="form-label" for="studentLink">Student Link</label>
-              <span class="input-group">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="studentLink"
-                  name="studentLink"
-                  value="${studentLink}"
-                  disabled
-                />
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary btn-copy"
-                  data-clipboard-text="${studentLink}"
-                  aria-label="Copy student link"
-                >
-                  <i class="far fa-clipboard"></i>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-secondary"
-                  aria-label="Student Link QR Code"
-                  data-bs-toggle="modal"
-                  data-bs-target="#studentLinkModal"
-                >
-                  <i class="fas fa-qrcode"></i>
-                </button>
-              </span>
-              <small class="form-text text-muted">
-                The link that students will use to access this assessment.
-              </small>
-            </div>
+            ${StudentLinkSharing({
+              studentLink,
+              studentLinkMessage: 'The link that students will use to access this assessment.',
+            })}
             <h2 class="h4">Sharing</h2>
-            ${AssessmentSharing({ assessment: resLocals.assessment, publicLink })}
+            ${resLocals.assessment.share_source_publicly
+              ? PublicLinkSharing({
+                  publicLink,
+                  sharingMessage: "This assessment's source is publicly shared.",
+                  publicLinkMessage:
+                    'The link that other instructors can use to view this assessment.',
+                })
+              : html`<p>This assessment is not being shared.</p>`}
             ${resLocals.authz_data.has_course_permission_view
               ? canEdit
                 ? html`
@@ -422,56 +402,4 @@ ${resLocals.assessment.honor_code}</textarea
       </div>
     `,
   });
-}
-
-function AssessmentSharing({
-  assessment,
-  publicLink,
-}: {
-  assessment: Assessment;
-  publicLink: string;
-}) {
-  if (!assessment.share_source_publicly) {
-    return html`<p>This assessment is not being shared.</p>`;
-  }
-
-  return html`
-    <p>
-      <span class="badge color-green3 me-1">Public source</span>
-      This assessment's source is publicly shared.
-    </p>
-    <div class="mb-3">
-      <label for="publicLink">Public link</label>
-      <span class="input-group">
-        <input
-          type="text"
-          class="form-control"
-          id="publicLink"
-          name="publicLink"
-          value="${publicLink}"
-          disabled
-        />
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary btn-copy"
-          data-clipboard-text="${publicLink}"
-          aria-label="Copy public link"
-        >
-          <i class="far fa-clipboard"></i>
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-outline-secondary"
-          aria-label="Public Link QR Code"
-          data-bs-toggle="modal"
-          data-bs-target="#publicLinkModal"
-        >
-          <i class="fas fa-qrcode"></i>
-        </button>
-      </span>
-      <small class="form-text text-muted">
-        The link that other instructors can use to view this assessment.
-      </small>
-    </div>
-  `;
 }

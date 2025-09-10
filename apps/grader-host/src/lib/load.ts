@@ -8,9 +8,13 @@ import logger from './logger.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let initialized = false;
-let currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
+let currentJobs: number;
+let maxJobs: number;
+let lastEstimateTimeMS: number;
+let lastIncrementTimeMS: number;
+let integratedLoad: number;
 
-export function init(newMaxJobs) {
+export function init(newMaxJobs: number) {
   maxJobs = newMaxJobs;
   const nowMS = Date.now();
   lastEstimateTimeMS = nowMS;
@@ -73,13 +77,13 @@ function _reportLoad() {
   };
   // Query will run in the background, without awaiting
   sqldb
-    .queryAsync(sql.insert_load, params)
+    .execute(sql.insert_load, params)
     .catch((err) => {
       logger.error('Error reporting load:', err);
     })
     .finally(() => {
       // Report load again in the future
-      setTimeout(_reportLoad.bind(this), config.reportIntervalSec * 1000);
+      setTimeout(_reportLoad, config.reportIntervalSec * 1000);
     });
 }
 
@@ -91,7 +95,7 @@ function _reportConfig() {
     max_jobs: 0,
     config,
   };
-  sqldb.queryAsync(sql.insert_config, params).catch((err) => {
+  sqldb.execute(sql.insert_config, params).catch((err) => {
     logger.error('Error reporting config:', err);
   });
 }

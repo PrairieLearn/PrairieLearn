@@ -1,5 +1,47 @@
 # @prairielearn/cache
 
+## 2.1.0
+
+### Minor Changes
+
+- e1c7f75: Add support for an optional type parameter to `cache.get(...)`
+
+## 2.0.24
+
+### Patch Changes
+
+- 2f5ce1f: Upgrade all JavaScript dependencies
+- Updated dependencies [2f5ce1f]
+  - @prairielearn/sentry@4.0.4
+
+## 2.0.23
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/logger@2.0.20
+  - @prairielearn/sentry@4.0.3
+
+## 2.0.22
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/logger@2.0.19
+  - @prairielearn/sentry@4.0.1
+
+## 2.0.21
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [a7d1ad9]
+- Updated dependencies [23adb05]
+  - @prairielearn/sentry@4.0.0
+  - @prairielearn/logger@2.0.18
+
 ## 2.0.20
 
 ### Patch Changes

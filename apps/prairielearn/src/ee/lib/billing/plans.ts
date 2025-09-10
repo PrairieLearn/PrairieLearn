@@ -194,14 +194,14 @@ async function reconcilePlanGrants(
   authn_user_id: string,
 ) {
   const newPlans = desiredPlans.filter(
-    (plan) => !existingPlanGrants.find((p) => p.plan_name === plan.plan),
+    (plan) => !existingPlanGrants.some((p) => p.plan_name === plan.plan),
   );
   const updatedPlanGrants = existingPlanGrants.map((planGrant) => ({
     planGrant,
     newType: desiredPlans.find((p) => p.plan === planGrant.plan_name)?.grantType,
   }));
   const deletedPlanGrants = existingPlanGrants.filter(
-    (plan) => !desiredPlans.find((p) => p.plan === plan.plan_name),
+    (plan) => !desiredPlans.some((p) => p.plan === plan.plan_name),
   );
 
   for (const plan of newPlans) {
@@ -262,10 +262,7 @@ export function planGrantsMatchFeatures(
 ): boolean {
   const grantedPlans = getPlansForPlanGrants(planGrants);
   const grantedFeatures = getFeaturesForPlans(grantedPlans);
-  return (
-    grantedFeatures.length === features.length &&
-    grantedFeatures.every((feature) => features.includes(feature))
-  );
+  return features.every((feature) => grantedFeatures.includes(feature));
 }
 
 /**

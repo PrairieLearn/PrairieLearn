@@ -162,13 +162,13 @@ export function PageLayout({
               : ''}
             ${sideNavEnabled
               ? html`
-                  <div class="app-side-nav bg-light border-end">
+                  <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
                     ${SideNav({
                       resLocals,
                       page: navContext.page,
                       subPage: navContext.subPage,
                     })}
-                  </div>
+                  </nav>
                 `
               : ''}
             <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
@@ -218,7 +218,7 @@ export function PageLayout({
             pageTitle,
             pageNote: options.pageNote,
           })}
-          ${headContentString}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
         </head>
         <body
           class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"

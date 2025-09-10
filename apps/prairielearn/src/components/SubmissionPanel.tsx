@@ -15,7 +15,7 @@ import {
   type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -123,7 +123,7 @@ export function SubmissionPanel({
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
                 >
-                  <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                  <i class="fa fa-angle-up ms-1 expand-icon"></i>
                 </button>
               </div>
               <div
@@ -214,7 +214,7 @@ export function SubmissionPanel({
               data-bs-target="#submissionInfoModal-${submission.id}"
               aria-label="Submission info"
             >
-              <i class="fa fa-info-circle fa-fw"></i>
+              <i class="fa fa-info-circle"></i>
             </button>
             <button
               type="button"
@@ -226,7 +226,7 @@ export function SubmissionPanel({
               aria-expanded="${expanded ? 'true' : 'false'}"
               aria-controls="submission-${submission.id}-body"
             >
-              <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+              <i class="fa fa-angle-up ms-1 expand-icon"></i>
             </button>
           </div>
         </div>

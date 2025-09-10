@@ -14,6 +14,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as b64Util from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
@@ -268,7 +269,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
+      await sqldb.execute(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });
@@ -735,8 +736,8 @@ function writeAndPushFileInDev(fileName, fileContents) {
 function waitForJobSequence(locals, expectedResult: 'Success' | 'Error') {
   describe('The job sequence', function () {
     it('should have an id', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      locals.job_sequence_id = result.rows[0].id;
+      const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
+      locals.job_sequence_id = jobSequence.id;
     });
     it('should complete', async () => {
       await helperServer.waitForJobSequenceStatus(locals.job_sequence_id, expectedResult);

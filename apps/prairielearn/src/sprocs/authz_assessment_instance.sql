@@ -1,7 +1,7 @@
 CREATE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
-        IN authz_data JSONB,
+        IN authz_data jsonb,
         IN req_date timestamptz,
         IN display_timezone text,
         IN group_work boolean,
@@ -9,7 +9,7 @@ CREATE FUNCTION
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string TEXT, -- For display to the user.
+        OUT credit_date_string text, -- For display to the user.
         OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT password text,           -- Password (if any) for this assessment.
@@ -18,7 +18,7 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
 DECLARE

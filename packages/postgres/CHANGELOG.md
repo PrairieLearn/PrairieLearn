@@ -1,5 +1,47 @@
 # @prairielearn/postgres
 
+## 4.3.0
+
+### Minor Changes
+
+- 4bb97ac: Throw an error when the database pool gets reinitialized
+
+## 4.2.0
+
+### Minor Changes
+
+- c6f661c: Make parameters optional, support single-columns schema for queryCursor
+
+## 4.1.1
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 4.1.0
+
+### Minor Changes
+
+- 56a813a: Add `execute` and `executeRow` helpers that don't return the actual values from a query.
+
+## 4.0.1
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 4.0.0
+
+### Major Changes
+
+- cd5ed49: `queryCursor` was removed, and now requires a Zod schema. `queryValidatedCursor` was renamed to `queryCursor`.
+- 2c19e43: - Remove callback-based query functions.
+  - Deprecate query functions with Zod-validated alternatives.
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 3.0.0
 
 ### Major Changes

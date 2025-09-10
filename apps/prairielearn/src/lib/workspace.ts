@@ -94,7 +94,8 @@ export class SubmissionFormatError extends Error {
   }
 }
 
-export async function init(): Promise<void> {
+export function init(): void {
+  assert(socketServer.io);
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
@@ -129,12 +130,8 @@ function connection(socket: Socket) {
   // that the client possesses a token that is valid for this workspace ID.
   const workspace_id = socket.handshake.auth.workspace_id;
 
-  socket.on('joinWorkspace', (...args) => {
-    // Forwards compatibility with clients who may no longer be sending a message.
-    // TODO: remove this in the future once all clients have been updated.
-    const callback = args.at(-1);
-
-    socket.join(`workspace-${workspace_id}`);
+  socket.on('joinWorkspace', (callback: (result: any) => void) => {
+    void socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
@@ -156,15 +153,12 @@ function connection(socket: Socket) {
     });
   });
 
-  socket.on('heartbeat', (...args) => {
-    // Forwards compatibility with clients who may no longer be sending a message.
-    // TODO: remove this in the future once all clients have been updated.
-    const callback = args.at(-1);
-
+  socket.on('heartbeat', (callback?: (result: any) => void) => {
+    // TODO: remove the callback parameter in the future once all clients have been updated.
     sqldb.queryRow(sql.update_workspace_heartbeat_at_now, { workspace_id }, DateFromISOString).then(
-      (heartbeat_at) => callback({ workspace_id, heartbeat_at }),
+      (heartbeat_at) => callback?.({ workspace_id, heartbeat_at }),
       (err) => {
-        callback({ errorMessage: err.message });
+        callback?.({ errorMessage: err.message });
         Sentry.captureException(err);
       },
     );
@@ -262,7 +256,7 @@ async function startup(workspace_id: string): Promise<void> {
   //   stopped -> launching -> stopped -> launching
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
-  let shouldAssignHost = false;
+  let shouldAssignHost = false as boolean;
   await sqldb.runInTransactionAsync(async () => {
     // First, lock the workspace row.
     const workspace = await sqldb.queryRow(
@@ -285,7 +279,7 @@ async function startup(workspace_id: string): Promise<void> {
         // that we don't try to write on top of an existing directory, as this
         // could lead to unexpected behavior.
         try {
-          const timestampSuffix = new Date().toISOString().replace(/[^a-zA-Z0-9]/g, '-');
+          const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
           await fs.move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
@@ -500,7 +494,7 @@ export async function generateWorkspaceFiles({
     (params?._workspace_files as DynamicWorkspaceFile[] | null)
       ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
-        if (!file?.name) {
+        if (!file.name) {
           fileGenerationErrors.push({
             file: `Dynamic file ${i}`,
             msg: 'Dynamic workspace file does not include a name. File ignored.',
@@ -676,7 +670,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   }
 
   // Zip files from filesystem to zip file
-  (gradedFiles ?? []).forEach((file) => {
+  gradedFiles.forEach((file) => {
     const remotePath = path.join(remoteDir, file.path);
     debug(`Zipping graded file ${remotePath} into ${zipPath}`);
     archive.file(remotePath, { name: file.path });

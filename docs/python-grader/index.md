@@ -282,13 +282,15 @@ Some courses may use libraries that are common across multiple questions. For su
 }
 ```
 
+The process above is suitable for small utility libraries that are specific to a particular course. For larger libraries, including those installed from the [Python package index](https://pypi.org/) (i.e., via `pip install` or equivalent), you are strongly encouraged to [create your own custom grader image](../dockerImages.md#custom-variations-of-maintained-images), as that will provide better performance and improve student experience.
+
 ### Example usage of `serverFilesCourse` for static data
 
 The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
 
 To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
 
-```json title="info.json" hl_lines="6"
+```json title="info.json" hl_lines="5"
 {
   "externalGradingOptions": {
     "enabled": true,

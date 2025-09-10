@@ -25,6 +25,7 @@ function buildCsvFilename(locals: Record<string, any>) {
 
 // TODO: The student gradebook should be refactored to use the new data model, rather than the old SQL data model.
 // This was done to avoid substantial changes to the gradebook code, while still allowing for reuse of the gradebook SQL query.
+
 function mapRow(
   raw: StudentGradebookRow,
   prev: StudentGradebookRow | null,
@@ -44,10 +45,9 @@ function mapRow(
   };
 }
 
-router.use(logPageView('studentGradebook'));
-
 router.get(
   '/',
+  logPageView('studentGradebook'),
   asyncHandler(async (req, res) => {
     const rawRows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,

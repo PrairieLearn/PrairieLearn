@@ -19,7 +19,7 @@ const regexpExpressParamRegexp = /\(\?:\\?\\?\/?\([^)]+\)\)/g;
 const regexpExpressPathParamRegexp = /(:[^)]+)\([^)]+\)/g;
 
 const EXPRESS_ROOT_PATH_REGEXP_VALUE = '/^\\/?(?=\\/|$)/i';
-const STACK_ITEM_VALID_NAMES = ['router', 'bound dispatch', 'mounted_app'];
+const STACK_ITEM_VALID_NAMES = new Set(['router', 'bound dispatch', 'mounted_app']);
 
 /**
  * Returns all the verbs detected for the passed route
@@ -53,7 +53,7 @@ function hasParams(expressPathRegExp: string): boolean {
 /**
  * @param route Express route object to be parsed
  * @param basePath The basePath the route is on
- * @return Endpoints info
+ * @returns Endpoints info
  */
 function parseExpressRoute(route: Route, basePath: string): Endpoint[] {
   const paths = [];
@@ -68,7 +68,7 @@ function parseExpressRoute(route: Route, basePath: string): Endpoint[] {
     const completePath = basePath && path === '/' ? basePath : `${basePath}${path}`;
 
     const endpoint: Endpoint = {
-      path: completePath.replace(regexpExpressPathParamRegexp, '$1'),
+      path: completePath.replaceAll(regexpExpressPathParamRegexp, '$1'),
       methods: getRouteMethods(route),
       middlewares: getRouteMiddlewares(route),
     };
@@ -112,7 +112,7 @@ function parseExpressPath(expressPathRegExp: RegExp, params: any[]): string {
     throw new Error('Error parsing express path');
   }
 
-  const parsedPath = expressPathRegExpExec[1].replace(/\\\//g, '/');
+  const parsedPath = expressPathRegExpExec[1].replaceAll('\\/', '/');
 
   return parsedPath;
 }
@@ -128,7 +128,7 @@ function parseEndpoints(
   basePath = basePath || '';
 
   if (!stack) {
-    if (endpoints.length) {
+    if (endpoints.length > 0) {
       endpoints = addEndpoints(endpoints, [
         {
           path: basePath,
@@ -179,7 +179,7 @@ function parseStack(stack: any[], basePath: string, endpoints: Endpoint[]): Endp
       const newEndpoints = parseExpressRoute(stackItem.route, basePath);
 
       endpoints = addEndpoints(endpoints, newEndpoints);
-    } else if (STACK_ITEM_VALID_NAMES.includes(stackItem.name)) {
+    } else if (STACK_ITEM_VALID_NAMES.has(stackItem.name)) {
       const isExpressPathRegexp = regExpToParseExpressPathRegExp.test(stackItem.regexp);
 
       let newBasePath = basePath;

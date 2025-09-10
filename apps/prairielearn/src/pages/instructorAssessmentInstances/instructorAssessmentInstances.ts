@@ -13,6 +13,7 @@ import {
   gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
@@ -37,10 +38,11 @@ router.get(
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
   }),
 );
@@ -135,7 +137,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit, params);
+      await sqldb.execute(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'set_time_limit_all') {
       const params = {
@@ -166,7 +168,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit_all, params);
+      await sqldb.execute(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

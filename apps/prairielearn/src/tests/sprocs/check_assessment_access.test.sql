@@ -43,13 +43,20 @@ WITH
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone)
+      course_instances (
+        id,
+        uuid,
+        course_id,
+        display_timezone,
+        enrollment_code
+      )
     VALUES
       (
         1,
         'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
         1,
-        'UTC'
+        'UTC',
+        'XXXYYY1111'
       )
   ),
   setup_assessment_sets AS (
@@ -154,8 +161,8 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        null,
-        null
+        NULL,
+        NULL
       ),
       (
         11,
@@ -165,7 +172,7 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         '890884f9-aa9d-4fc0-b910-5229794906fb',
-        null
+        NULL
       ),
       (
         12,
@@ -175,7 +182,7 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3',
-        null
+        NULL
       ),
       (
         50,
@@ -184,7 +191,7 @@ WITH
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        null,
+        NULL,
         '{valid@example.com}'
       ),
       (
@@ -195,31 +202,31 @@ WITH
         '2010-12-31 23:59:59-00',
         100,
         'bf6df059-6760-4cf0-ac32-35a43e28a3e7',
-        null
+        NULL
       ),
       (
         53,
         1,
-        null,
+        NULL,
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
         '890884f9-aa9d-4fc0-b910-5229794906fb',
-        null
+        NULL
       ),
       (
         54,
         1,
-        null,
+        NULL,
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
-        null,
-        null
+        NULL,
+        NULL
       )
   )
 SELECT
-  true;
+  TRUE;
 
 -- BLOCK insert_pt_reservation
 INSERT INTO

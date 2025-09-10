@@ -1,7 +1,7 @@
 import Stripe from 'stripe';
 
 import { cache } from '@prairielearn/cache';
-import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { selectAndLockUserById, selectUserById } from '../../../models/user.js';
@@ -41,7 +41,7 @@ export async function getOrCreateStripeCustomerId(
   // the alternative would require locking during a network operation.
   await runInTransactionAsync(async () => {
     await selectAndLockUserById(user_id);
-    await queryAsync(sql.maybe_update_user_stripe_customer_id, {
+    await execute(sql.maybe_update_user_stripe_customer_id, {
       user_id,
       stripe_customer_id: customer.id,
     });
@@ -66,7 +66,7 @@ function stripeProductCacheKey(id: string): string {
  */
 export async function getStripeProduct(id: string): Promise<Stripe.Product> {
   const cacheKey = stripeProductCacheKey(id);
-  let product: Stripe.Product = await cache.get(cacheKey);
+  let product = await cache.get<Stripe.Product>(cacheKey);
   if (!product) {
     const stripe = getStripeClient();
     product = await stripe.products.retrieve(id, { expand: ['default_price'] });
