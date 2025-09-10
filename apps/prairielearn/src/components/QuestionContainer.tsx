@@ -114,7 +114,7 @@ export function QuestionContainer({
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.prompt
+      aiGradingInfo?.response
         ? AIGradingResponse({
             variantId: variant.id,
             response: aiGradingInfo.response,
