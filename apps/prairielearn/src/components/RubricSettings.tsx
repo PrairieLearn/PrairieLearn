@@ -183,20 +183,20 @@ export function RubricSettings({
 
   return (
     <div id="rubric-editing" class="card overflow-hidden mb-3">
-      <div class="card-header d-flex border-top-0 border-start-0 border-end-0 gap-2 align-items-center justify-content-between">
-        <span>Rubric Settings</span>
+      <div class="card-header collapsible-card-header d-flex align-items-center">
+        <h2>Rubric Settings</h2>
         <button
           type="button"
-          class="btn btn-secondary"
+          class="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto"
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
-          aria-expanded="false"
-          aria-controls="rubric-setting"
+          aria-expanded="true"
+          aria-controls="#rubric-setting"
         >
-          Hide / Show
+          <i class="fa fa-angle-up ms-1 expand-icon" />
         </button>
       </div>
-      <div id="rubric-setting" class="collapse p-2">
+      <div id="rubric-setting" class="js-collapsible-card-body show p-2">
         {/* Settings */}
         <div>
           {!!assessmentQuestion.max_auto_points && (
