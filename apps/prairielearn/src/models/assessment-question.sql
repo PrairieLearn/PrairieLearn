@@ -80,3 +80,11 @@ ORDER BY
   z.number,
   z.id,
   aq.number;
+
+-- BLOCK select_assessment_question_by_id
+SELECT
+  *
+FROM
+  assessment_questions
+WHERE
+  id = $id;

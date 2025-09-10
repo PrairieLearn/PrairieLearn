@@ -805,8 +805,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      res.locals.lti11_enabled =
-        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
+      res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
       next();
     }),
   );
@@ -1452,6 +1451,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
+  // Perform auth for all student-facing instance question routes.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+    (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
@@ -1459,27 +1465,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
-  );
-
-  if (config.devMode) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    );
-  }
-
-  // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
-    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for questions
@@ -1512,6 +1497,27 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
     (await import('./pages/legacyQuestionText/legacyQuestionText.js')).default,
+  );
+
+  if (config.devMode) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
+      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
+      (await import('./pages/jobSequence/jobSequence.js')).default,
+    );
+  }
+
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -2321,10 +2327,10 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
 
       if (argv['migrate-and-exit']) {
         logger.info('option --migrate-and-exit passed, running DB setup and exiting');
