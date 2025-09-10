@@ -182,259 +182,255 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editing" class="card overflow-hidden p-2 mb-3">
-      <div class="card mb-2 mt-1">
+    <div id="rubric-editing" class="card overflow-hidden mb-3">
+      <div class="card-header d-flex border-top-0 border-start-0 border-end-0 text-start gap-2 align-items-center">
+        <span>Rubric Settings</span>
         <button
           type="button"
-          class="card-header d-flex border-top-0 border-start-0 border-end-0 text-start"
+          class="btn btn-secondary"
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
           aria-expanded="false"
           aria-controls="rubric-setting"
         >
-          <div class="card-title mb-0 me-auto d-flex align-items-center">
-            <span>Rubric Settings</span>
-          </div>
-          <div class="ms-2">
-            <span class="fa fa-angle-down" />
-          </div>
+          Hide/Show
         </button>
-        <div id="rubric-setting" class="collapse p-2">
-          {/* Settings */}
-          <div>
-            {!!assessmentQuestion.max_auto_points && (
-              <>
-                <div class="row">
-                  <div class="col-12 col-lg-6">
-                    <div class="form-check">
-                      <label class="form-check-label">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          disabled={!editMode}
-                          checked={!replaceAutoPoints}
-                          onChange={() => {
-                            setReplaceAutoPoints(false);
-                            if (startingPoints !== 0) {
-                              setStartingPoints(assessmentQuestion.max_manual_points ?? 0);
-                            }
-                          }}
-                        />
-                        Apply rubric to manual points (out of {assessmentQuestion.max_manual_points}
-                        , keep auto points)
-                      </label>
-                    </div>
-                  </div>
-                  <div class="col-12 col-lg-6">
-                    <div class="form-check">
-                      <label class="form-check-label">
-                        <input
-                          class="form-check-input"
-                          type="radio"
-                          disabled={!editMode}
-                          checked={replaceAutoPoints}
-                          onChange={() => {
-                            setReplaceAutoPoints(true);
-                            if (startingPoints !== 0) {
-                              setStartingPoints(assessmentQuestion.max_points ?? 0);
-                            }
-                          }}
-                        />
-                        Apply rubric to total points (out of {assessmentQuestion.max_points}, ignore
-                        auto points)
-                      </label>
-                    </div>
+      </div>
+      <div id="rubric-setting" class="collapse p-2">
+        {/* Settings */}
+        <div>
+          {!!assessmentQuestion.max_auto_points && (
+            <>
+              <div class="row">
+                <div class="col-12 col-lg-6">
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        disabled={!editMode}
+                        checked={!replaceAutoPoints}
+                        onChange={() => {
+                          setReplaceAutoPoints(false);
+                          if (startingPoints !== 0) {
+                            setStartingPoints(assessmentQuestion.max_manual_points ?? 0);
+                          }
+                        }}
+                      />
+                      Apply rubric to manual points (out of {assessmentQuestion.max_manual_points},
+                      keep auto points)
+                    </label>
                   </div>
                 </div>
-                <hr />
-              </>
-            )}
-
-            <div class="row">
-              <div class="col-12 col-lg-6">
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      disabled={!editMode}
-                      checked={startingPoints === 0}
-                      onChange={() => setStartingPoints(0)}
-                    />
-                    Positive grading (start at zero, add points)
-                  </label>
-                </div>
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input
-                      class="form-check-input"
-                      type="radio"
-                      disabled={!editMode}
-                      checked={startingPoints !== 0}
-                      onChange={() =>
-                        setStartingPoints(
-                          replaceAutoPoints
-                            ? (assessmentQuestion.max_points ?? 0)
-                            : (assessmentQuestion.max_manual_points ?? 0),
-                        )
-                      }
-                    />
-                    Negative grading (start at{' '}
-                    {replaceAutoPoints
-                      ? assessmentQuestion.max_points
-                      : assessmentQuestion.max_manual_points}
-                    , subtract penalties)
-                  </label>
+                <div class="col-12 col-lg-6">
+                  <div class="form-check">
+                    <label class="form-check-label">
+                      <input
+                        class="form-check-input"
+                        type="radio"
+                        disabled={!editMode}
+                        checked={replaceAutoPoints}
+                        onChange={() => {
+                          setReplaceAutoPoints(true);
+                          if (startingPoints !== 0) {
+                            setStartingPoints(assessmentQuestion.max_points ?? 0);
+                          }
+                        }}
+                      />
+                      Apply rubric to total points (out of {assessmentQuestion.max_points}, ignore
+                      auto points)
+                    </label>
+                  </div>
                 </div>
               </div>
-
-              <div class="mb-3 col-6 col-lg-3">
-                <label class="form-label">
-                  Minimum rubric score
-                  <input
-                    class="form-control"
-                    type="number"
-                    disabled={!editMode}
-                    value={minPoints}
-                    onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
-                  />
-                </label>
-              </div>
-              <div class="mb-3 col-6 col-lg-3">
-                <label class="form-label">
-                  Maximum extra credit
-                  <input
-                    class="form-control"
-                    type="number"
-                    disabled={!editMode}
-                    value={maxExtraPoints}
-                    onInput={(e: any) => setMaxExtraPoints(Number(e.currentTarget.value))}
-                  />
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Rubric table */}
-          <div class="table-responsive">
-            <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
-              <thead>
-                <tr class="table-light fw-bold">
-                  <td style="width:1px" />
-                  <td>Points</td>
-                  <td>Description</td>
-                  <td>Detailed explanation</td>
-                  <td>Grader note</td>
-                  <td>Show to students</td>
-                  {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
-                </tr>
-              </thead>
-              <tbody>
-                {rubricItems.length > 0 ? (
-                  rubricItems.map((it, idx) => (
-                    <RubricRow
-                      key={it.id ?? `row-${idx}`}
-                      item={it}
-                      editMode={editMode}
-                      showAiGradingStats={showAiGradingStats}
-                      submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
-                      deleteRow={() => deleteRow(idx)}
-                      moveUp={() => moveUp(idx)}
-                      moveDown={() => moveDown(idx)}
-                      rowDragStart={() => rowDragStart(idx)}
-                      rowDragOver={() => rowDragOver(idx)}
-                      updateRubricItem={(patch) => updateRubricItem(idx, patch)}
-                    />
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7}>
-                      <em>
-                        This question does not have any rubric items! Click "Add item" below to add
-                        some
-                        {wasUsingRubric && (
-                          <>
-                            , or select <strong>Disable rubric</strong> below to switch back to
-                            manual grade input
-                          </>
-                        )}
-                        .
-                      </em>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Warnings */}
-          {pointsWarnings.map((warning) => (
-            <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
-              {warning}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
-            </div>
-          ))}
-          <div class="mb-3">
-            <button
-              type="button"
-              class="btn btn-secondary"
-              disabled={!editMode}
-              onClick={addRubricItemRow}
-            >
-              Add item
-            </button>
-          </div>
-          {settingsError && (
-            <div
-              key={settingsError}
-              class="alert alert-danger alert-dismissible fade show"
-              role="alert"
-            >
-              {settingsError}
-              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
-            </div>
+              <hr />
+            </>
           )}
 
-          {/* Footer actions */}
-          <div class="text-end">
-            {wasUsingRubric && (
+          <div class="row">
+            <div class="col-12 col-lg-6">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    disabled={!editMode}
+                    checked={startingPoints === 0}
+                    onChange={() => setStartingPoints(0)}
+                  />
+                  Positive grading (start at zero, add points)
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    disabled={!editMode}
+                    checked={startingPoints !== 0}
+                    onChange={() =>
+                      setStartingPoints(
+                        replaceAutoPoints
+                          ? (assessmentQuestion.max_points ?? 0)
+                          : (assessmentQuestion.max_manual_points ?? 0),
+                      )
+                    }
+                  />
+                  Negative grading (start at{' '}
+                  {replaceAutoPoints
+                    ? assessmentQuestion.max_points
+                    : assessmentQuestion.max_manual_points}
+                  , subtract penalties)
+                </label>
+              </div>
+            </div>
+
+            <div class="mb-3 col-6 col-lg-3">
+              <label class="form-label">
+                Minimum rubric score
+                <input
+                  class="form-control"
+                  type="number"
+                  disabled={!editMode}
+                  value={minPoints}
+                  onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
+                />
+              </label>
+            </div>
+            <div class="mb-3 col-6 col-lg-3">
+              <label class="form-label">
+                Maximum extra credit
+                <input
+                  class="form-control"
+                  type="number"
+                  disabled={!editMode}
+                  value={maxExtraPoints}
+                  onInput={(e: any) => setMaxExtraPoints(Number(e.currentTarget.value))}
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+
+        {/* Rubric table */}
+        <div class="table-responsive">
+          <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
+            <thead>
+              <tr class="table-light fw-bold">
+                <td style="width:1px" />
+                <td>Points</td>
+                <td>Description</td>
+                <td>Detailed explanation</td>
+                <td>Grader note</td>
+                <td>Show to students</td>
+                {showAiGradingStats ? <td>AI agreement</td> : <td>In use</td>}
+              </tr>
+            </thead>
+            <tbody>
+              {rubricItems.length > 0 ? (
+                rubricItems.map((it, idx) => (
+                  <RubricRow
+                    key={it.id ?? `row-${idx}`}
+                    item={it}
+                    editMode={editMode}
+                    showAiGradingStats={showAiGradingStats}
+                    submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
+                    deleteRow={() => deleteRow(idx)}
+                    moveUp={() => moveUp(idx)}
+                    moveDown={() => moveDown(idx)}
+                    rowDragStart={() => rowDragStart(idx)}
+                    rowDragOver={() => rowDragOver(idx)}
+                    updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                  />
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7}>
+                    <em>
+                      This question does not have any rubric items! Click "Add item" below to add
+                      some
+                      {wasUsingRubric && (
+                        <>
+                          , or select <strong>Disable rubric</strong> below to switch back to manual
+                          grade input
+                        </>
+                      )}
+                      .
+                    </em>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Warnings */}
+        {pointsWarnings.map((warning) => (
+          <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
+            {warning}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+          </div>
+        ))}
+        <div class="mb-3">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            disabled={!editMode}
+            onClick={addRubricItemRow}
+          >
+            Add item
+          </button>
+        </div>
+        {settingsError && (
+          <div
+            key={settingsError}
+            class="alert alert-danger alert-dismissible fade show"
+            role="alert"
+          >
+            {settingsError}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+          </div>
+        )}
+
+        {/* Footer actions */}
+        <div class="text-end">
+          {wasUsingRubric && (
+            <button
+              type="button"
+              class="btn btn-link btn-sm me-auto text-danger"
+              onClick={() => submitSettings(false)}
+            >
+              Delete rubric
+            </button>
+          )}
+          {!editMode ? (
+            <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
+              Edit rubric
+            </button>
+          ) : (
+            <>
               <button
                 type="button"
-                class="btn btn-link btn-sm me-auto text-danger"
-                onClick={() => submitSettings(false)}
+                class="btn btn-secondary me-2"
+                onClick={() => {
+                  setRubricItems(rubricItemDataMerged);
+                  setReplaceAutoPoints(
+                    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+                  );
+                  setStartingPoints(rubricData?.starting_points ?? 0);
+                  setMinPoints(rubricData?.min_points ?? 0);
+                  setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
+                  setSettingsError(null);
+                  setEditMode(false);
+                }}
               >
-                Delete rubric
+                Cancel
               </button>
-            )}
-            {!editMode ? (
-              <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
-                Edit rubric
+              <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+                Save
               </button>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  class="btn btn-secondary me-2"
-                  onClick={() => {
-                    setRubricItems(rubricItemDataMerged);
-                    setReplaceAutoPoints(
-                      rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
-                    );
-                    setStartingPoints(rubricData?.starting_points ?? 0);
-                    setMinPoints(rubricData?.min_points ?? 0);
-                    setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
-                    setSettingsError(null);
-                    setEditMode(false);
-                  }}
-                >
-                  Cancel
-                </button>
-                <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
-                  Save
-                </button>
-              </>
-            )}
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
