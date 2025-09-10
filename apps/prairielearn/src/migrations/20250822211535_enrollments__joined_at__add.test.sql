@@ -1,8 +1,8 @@
 -- BLOCK insert_course_instance
 INSERT INTO
-  course_instances (course_id, display_timezone)
+  course_instances (course_id, display_timezone, enrollment_code)
 VALUES
-  ($course_id, $display_timezone)
+  ($course_id, $display_timezone, $enrollment_code)
 RETURNING
   id;
 

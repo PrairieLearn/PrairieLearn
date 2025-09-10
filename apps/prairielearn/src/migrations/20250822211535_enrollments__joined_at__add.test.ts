@@ -13,6 +13,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../lib/db-types.js';
 import { insertCourse } from '../models/course.js';
+import { uniqueEnrollmentCode } from '../sync/fromDisk/courseInstances.js';
 import { testMigration } from '../tests/helperDb.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -37,6 +38,7 @@ test('joined_at migration works correctly', { timeout: 20_000 }, async () => {
         {
           course_id: course.id,
           display_timezone: 'America/Chicago',
+          enrollment_code: await uniqueEnrollmentCode(),
         },
         IdSchema,
       );
