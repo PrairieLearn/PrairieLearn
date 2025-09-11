@@ -9,32 +9,6 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/** Validate ORCID identifier and return normalized (16 chars, no dashes) if valid. */
-function normalizeOrcid(orcid: string): string | null {
-  if (!orcid) return null;
-
-  // Drop any dashes
-  const digits = orcid.replaceAll('-', '');
-
-  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
-  if (!/^\d{15}[\dX]$/.test(digits)) {
-    return null;
-  }
-
-  // Calculate and verify checksum
-  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
-  let total = 0;
-  for (let i = 0; i < 15; i++) {
-    total = (total + Number.parseInt(digits[i])) * 2;
-  }
-
-  const remainder = total % 11;
-  const result = (12 - remainder) % 11;
-  const checkDigit = result === 10 ? 'X' : String(result);
-
-  return digits[15] === checkDigit ? digits : null;
-}
-
 export async function sync(
   courseId: string,
   courseData: CourseData,
@@ -64,62 +38,19 @@ export async function sync(
   const uniqueAuthors = new Map<string, JSONAuthor>();
   // Cache sharing name -> course ID mappings
   const sharingNameCache = new Map<string, string>();
-  const newWarnings: Record<string, string> = {};
 
   for (const qid of Object.keys(courseData.questions)) {
     const question = courseData.questions[qid];
     if (infofile.hasErrors(question)) continue;
     const authors = question.data?.authors ?? [];
     for (const author of authors) {
-      if (!author.email && !author.orcid && !author.originCourse) {
-        infofile.addWarning(
-          question,
-          'An author has been ignored because no email, orcid, or originCourse were provided. Each question author must have at least one of these properties',
-        );
-        newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
-        continue;
-      }
+      const normalizedOrcid = author.orcid?.replaceAll('-', '');
+      const normalizedAuthor: NormalizedAuthor = {
+        name: author.name,
+        email: author.email,
+        orcid: normalizedOrcid,
+      };
 
-      const resolvedAuthor: NormalizedAuthor = {};
-
-      if (author.name) {
-        if (author.name.length < 3 || author.name.length > 255) {
-          infofile.addWarning(
-            question,
-            `The author with name ${author.name} has been ignored because it is invalid. Author names must be 3-255 characters long`,
-          );
-          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
-          continue;
-        }
-        resolvedAuthor.name = author.name;
-      }
-
-      if (author.email) {
-        const parsedEmail = z.string().max(255).email().safeParse(author.email);
-
-        if (!parsedEmail.success) {
-          infofile.addWarning(
-            question,
-            `The author with email address ${author.email} has been ignored because it is invalid. Author email addresses must be valid and at most 255 characters long`,
-          );
-          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
-          continue;
-        }
-        resolvedAuthor.email = parsedEmail.data;
-      }
-
-      if (author.orcid) {
-        const orcidNormalized = normalizeOrcid(author.orcid);
-        if (!orcidNormalized) {
-          infofile.addWarning(
-            question,
-            `The author with ORCID identifier ${author.orcid} has been ignored because it has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
-          );
-          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
-          continue;
-        }
-        resolvedAuthor.orcid = orcidNormalized;
-      }
       if (author.originCourse) {
         let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
         if (originCourseID === null) {
@@ -130,23 +61,15 @@ export async function sync(
           );
         }
         if (originCourseID === null) {
-          infofile.addWarning(
-            question,
-            `The author with sharing name ${author.originCourse} has been ignored because the course sharing name was not found.`,
-          );
-          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
-          continue;
+          // This should never happen in practice since we already verified the existence when validating the question
+          throw Error(`Course with sharing name ${author.originCourse} not found!`);
         }
         sharingNameCache.set(author.originCourse, originCourseID);
-        resolvedAuthor.originCourse = originCourseID;
       }
 
-      uniqueAuthors.set(JSON.stringify(resolvedAuthor), author);
+      uniqueAuthors.set(JSON.stringify(normalizedAuthor), author);
     }
   }
-
-  // If there were warnings, add them to the database
-  await sqldb.execute(sql.insert_author_warnings, { warnings: JSON.stringify(newWarnings) });
 
   const authorsForDB = {
     authors: JSON.stringify(Array.from(uniqueAuthors.keys()).map((a) => JSON.parse(a))),

@@ -400,7 +400,7 @@ describe('Question syncing', () => {
       const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
       const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
       assert.isDefined(syncedQuestion);
-      assert.isNotNull(syncedQuestion.sync_warnings);
+      assert.isNotNull(syncedQuestion.sync_errors);
     }
   });
 

@@ -17,6 +17,8 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import { findCourseBySharingName } from '../models/course.js';
+
 import {
   type AssessmentJson,
   type AssessmentSetJson,
@@ -951,6 +953,29 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
+function validateORCID(orcid: string): boolean {
+  // Drop any dashes
+  const digits = orcid.replaceAll('-', '');
+
+  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
+  if (!/^\d{15}[\dX]$/.test(digits)) {
+    return false;
+  }
+
+  // Calculate and verify checksum
+  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
+  let total = 0;
+  for (let i = 0; i < 15; i++) {
+    total = (total + Number.parseInt(digits[i])) * 2;
+  }
+
+  const remainder = total % 11;
+  const result = (12 - remainder) % 11;
+  const checkDigit = result === 10 ? 'X' : String(result);
+
+  return digits[15] === checkDigit;
+}
+
 function validateQuestion({
   question,
   sharingEnabled,
@@ -993,6 +1018,26 @@ function validateQuestion({
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
+  }
+
+  if (question.authors) {
+    for (const author of question.authors) {
+      if (author.orcid) {
+        if (!validateORCID(author.orcid)) {
+          errors.push(
+            `The author ORCID identifier ${author.orcid} has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
+          );
+        }
+      }
+      if (author.originCourse) {
+        const course = findCourseBySharingName(author.originCourse);
+        if (course === null) {
+          errors.push(
+            `The author origin course with the sharing name ${author.originCourse} does not exist`,
+          );
+        }
+      }
     }
   }
 

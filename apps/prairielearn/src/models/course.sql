@@ -134,3 +134,11 @@ SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK find_course_by_sharing_name
+SELECT
+  *
+FROM
+  pl_courses
+WHERE
+  sharing_name = $sharing_name;

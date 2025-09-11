@@ -1,11 +1,3 @@
--- BLOCK select_sharing_name
-SELECT
-  id
-FROM
-  pl_courses
-WHERE
-  sharing_name = $origin_course;
-
 -- BLOCK insert_authors
 INSERT INTO
   authors (author_name, email, orcid, origin_course)
@@ -22,22 +14,6 @@ FROM
     "originCourse" text
   )
 ON CONFLICT (author_name, email, orcid, origin_course) DO NOTHING;
-
--- BLOCK insert_author_warnings
-WITH
-  warnings AS (
-    SELECT
-      *
-    FROM
-      json_each_text($warnings::json)
-  )
-UPDATE questions q
-SET
-  sync_warnings = concat_ws(E'\n', q.sync_warnings, warnings.value)
-FROM
-  warnings
-WHERE
-  q.id = warnings.key::bigint;
 
 -- BLOCK select_authors
 SELECT
