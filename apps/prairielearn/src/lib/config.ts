@@ -590,10 +590,10 @@ export const ConfigSchema = z.object({
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
   /**
-   * For the GPT-4o model as of 16 June 2025, in US dollars.
+   * For the `gpt-5-2025-08-07` model as of 11 September 2025, in US dollars.
    * Prices obtained from https://openai.com/api/pricing/.
    */
-  costPerMillionPromptTokens: z.number().default(2.5),
+  costPerMillionPromptTokens: z.number().default(1.25),
   costPerMillionCompletionTokens: z.number().default(10),
 });
 

@@ -22,7 +22,7 @@ import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
 
 interface Benchmark {
   prompt: string;

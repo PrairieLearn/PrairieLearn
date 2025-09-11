@@ -30,7 +30,7 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o';
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -363,6 +363,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
       model: MODEL_NAME,
+      reasoning_effort: 'minimal',
       messages: [
         { role: 'system', content: sysPrompt },
         { role: 'user', content: prompt },
