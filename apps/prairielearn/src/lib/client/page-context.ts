@@ -46,7 +46,7 @@ const RawAuthzDataSchema = z.object({
 
   user: StaffUserSchema,
 });
-export const AuthzDataSchema = RawAuthzDataSchema.brand<'AuthzData'>();
+const AuthzDataSchema = RawAuthzDataSchema.brand<'AuthzData'>();
 export type AuthzData = z.infer<typeof AuthzDataSchema>;
 
 export const RawPageContextSchema = z.object({

@@ -1,3 +1,5 @@
+// There is a bug in this ESLint rule that causes it to incorrectly flag.
+
 import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import { z } from 'zod';
@@ -310,7 +312,7 @@ function StudentCoursesCard({
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
               {invited.map((courseInstance: StudentHomePageCourse) => (
-                <tr key={`invite-${courseInstance.id as string}`} class="table-warning">
+                <tr key={`invite-${courseInstance.id}`} class="table-warning">
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                       <div>
@@ -348,7 +350,7 @@ function StudentCoursesCard({
               {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
-                    <a href={`${urlPrefix}/course_instance/${courseInstance.id as string}`}>
+                    <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
                       {courseInstance.course_short_name}: {courseInstance.course_title},
                       {courseInstance.long_name}
                     </a>

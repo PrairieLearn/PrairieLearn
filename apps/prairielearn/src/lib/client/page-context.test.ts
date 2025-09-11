@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { type z } from 'zod';
 
 import {
-  type RawPageContextSchema,
+  type AuthzData,
+  type RawPageContextWithAuthzDataSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
   getCourseInstanceContext,
@@ -79,7 +80,7 @@ describe('getPageContext', () => {
       anotherExtraField: 123,
     };
 
-    const expected: z.infer<typeof RawPageContextSchema> = {
+    const expected: z.infer<typeof RawPageContextWithAuthzDataSchema> = {
       authz_data: {
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
@@ -113,7 +114,7 @@ describe('getPageContext', () => {
           uin: '123456789',
           user_id: '1',
         } as StaffUser,
-      },
+      } as AuthzData,
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',

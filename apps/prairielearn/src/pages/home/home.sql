@@ -208,7 +208,8 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  e.user_id = $user_id OR e.pending_uid = $pending_uid
+  e.user_id = $user_id
+  OR e.pending_uid = $pending_uid
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
