@@ -179,18 +179,20 @@ function StudentsCard({
       columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
-        cell: (info) => info.getValue(),
+        cell: (info) => {
+          return (
+            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+              {info.getValue()}
+            </a>
+          );
+        },
       }),
       columnHelper.accessor((row) => row.user?.name, {
         id: 'user_name',
         header: 'Name',
         cell: (info) => {
           if (info.row.original.user) {
-            return (
-              <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
-                {info.getValue() || '—'}
-              </a>
-            );
+            return info.getValue() || '—';
           }
           return (
             <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>

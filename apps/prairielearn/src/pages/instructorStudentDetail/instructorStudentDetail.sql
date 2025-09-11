@@ -3,7 +3,7 @@ SELECT
   to_jsonb(e.*) AS enrollment,
   to_jsonb(ci.*) AS course_instance,
   to_jsonb(u.*) AS user,
-  users_get_displayed_role (u.user_id, $course_instance_id) AS role
+  users_get_displayed_role (u.user_id, ci.id) AS role
 FROM
   enrollments AS e
   JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
@@ -17,24 +17,20 @@ UPDATE enrollments
 SET
   status = 'blocked'
 WHERE
-  course_instance_id = $course_instance_id
-  AND user_id = $user_id
-  AND status = 'joined'
-  AND NOT lti_managed;
+  id = $enrollment_id
+  AND status = 'joined';
 
 -- BLOCK update_enrollment_unblock
 UPDATE enrollments
 SET
-  status = 'joined',
-  joined_at = COALESCE(joined_at, now())
+  status = 'joined'
 WHERE
-  course_instance_id = $course_instance_id
-  AND user_id = $user_id
+  id = $enrollment_id
   AND status = 'blocked';
 
 -- BLOCK delete_invitation_by_user_id
 DELETE FROM enrollments
 WHERE
-  course_instance_id = $course_instance_id
+  id = $enrollment_id
   AND status = 'invited'
   AND pending_uid = $pending_uid;

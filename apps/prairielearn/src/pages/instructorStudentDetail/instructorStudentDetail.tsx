@@ -47,13 +47,15 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = await getGradebookRows({
-      course_instance_id: res.locals.course_instance.id,
-      user_id: req.params.user_id,
-      authz_data: res.locals.authz_data,
-      req_date: res.locals.req_date,
-      auth: 'instructor',
-    });
+    const gradebookRows = student.user?.user_id
+      ? await getGradebookRows({
+          course_instance_id: res.locals.course_instance.id,
+          user_id: student.user.user_id,
+          authz_data: res.locals.authz_data,
+          req_date: res.locals.req_date,
+          auth: 'instructor',
+        })
+      : [];
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -95,7 +97,7 @@ router.get(
 );
 
 router.post(
-  '/:user_id(\\d+)',
+  '/:enrollment_id(\\d+)',
   asyncHandler(async (req, res) => {
     const pageContext = getPageContext(res.locals);
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
@@ -103,20 +105,19 @@ router.post(
     }
 
     const action = req.body.__action;
-    const course_instance_id = res.locals.course_instance.id;
-    const user_id = req.params.user_id;
+    const enrollment_id = req.params.enrollment_id;
 
     switch (action) {
       case 'block_student': {
-        await execute(sql.update_enrollment_block, { course_instance_id, user_id });
+        await execute(sql.update_enrollment_block, { enrollment_id });
         break;
       }
       case 'unblock_student': {
-        await execute(sql.update_enrollment_unblock, { course_instance_id, user_id });
+        await execute(sql.update_enrollment_unblock, { enrollment_id });
         break;
       }
       case 'cancel_invitation': {
-        await execute(sql.delete_invitation_by_user_id, { course_instance_id, user_id });
+        await execute(sql.delete_invitation_by_user_id, { enrollment_id });
         break;
       }
       default:

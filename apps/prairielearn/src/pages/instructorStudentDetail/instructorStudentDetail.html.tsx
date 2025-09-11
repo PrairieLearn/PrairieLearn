@@ -2,6 +2,7 @@ import { Fragment } from 'preact/jsx-runtime';
 import { z } from 'zod';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.js';
+import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { Scorebar } from '../../components/Scorebar.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
@@ -83,19 +84,71 @@ export function InstructorStudentDetail({
           )}
         </div>
         <div class="card-body">
-          <h2>{user?.name ?? '-'}</h2>
-          <div class="d-flex">
-            <div class="fw-bold me-1">UID:</div>
-            {user?.uid ?? enrollment.pending_uid}
+          <div class="d-flex align-items-center justify-content-between">
+            <h2 class="d-flex align-items-center">
+              {user?.name ?? enrollment.pending_uid}
+              <EnrollmentStatusIcon
+                class="badge badge-secondary ms-2 fs-6"
+                status={enrollment.status}
+              />
+            </h2>
+            {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && enrollment && (
+              <div class="d-flex gap-2 align-items-center">
+                {enrollment.status === 'joined' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="block_student" />
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                      <i class="fas fa-user-slash me-1" aria-hidden="true" /> Block student
+                    </button>
+                  </form>
+                )}
+                {enrollment.status === 'blocked' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="unblock_student" />
+                    <button type="submit" class="btn btn-sm btn-outline-success">
+                      <i class="fas fa-user-check me-1" aria-hidden="true" /> Remove block
+                    </button>
+                  </form>
+                )}
+                {enrollment.status === 'invited' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="cancel_invitation" />
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                      <i class="fas fa-times me-1" aria-hidden="true" /> Cancel invitation
+                    </button>
+                  </form>
+                )}
+              </div>
+            )}
           </div>
-          {user?.uin && (
-            <div class="d-flex">
-              <div class="fw-bold me-1">UIN:</div> {user.uin}
-            </div>
+          {user ? (
+            <>
+              <div class="d-flex">
+                <div class="fw-bold me-1">UID:</div>
+                {user.uid}
+              </div>
+              {user.uin && (
+                <div class="d-flex">
+                  <div class="fw-bold me-1">UIN:</div> {user.uin}
+                </div>
+              )}
+              <div class="d-flex">
+                <div class="fw-bold me-1">Role:</div> {role}
+              </div>
+            </>
+          ) : (
+            <>
+              <div class="d-flex">
+                <div class="me-1">
+                  <i class="bi bi-warning" aria-hidden="true" />
+                  User information not available if the student has not accepted the invitation.
+                </div>
+              </div>
+            </>
           )}
-          <div class="d-flex">
-            <div class="fw-bold me-1">Role:</div> {role}
-          </div>
           {enrollment?.joined_at && (
             <div class="d-flex">
               <div class="fw-bold me-1">Joined:</div>
@@ -103,38 +156,6 @@ export function InstructorStudentDetail({
                 date={enrollment.joined_at}
                 timezone={course_instance.display_timezone}
               />
-            </div>
-          )}
-
-          {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && enrollment && (
-            <div class="mt-3 d-flex gap-2">
-              {enrollment.status === 'joined' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="block_student" />
-                  <button type="submit" class="btn btn-sm btn-outline-danger">
-                    <i class="fas fa-user-slash me-1" aria-hidden="true" /> Block student
-                  </button>
-                </form>
-              )}
-              {enrollment.status === 'blocked' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="unblock_student" />
-                  <button type="submit" class="btn btn-sm btn-outline-success">
-                    <i class="fas fa-user-check me-1" aria-hidden="true" /> Remove block
-                  </button>
-                </form>
-              )}
-              {enrollment.status === 'invited' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="cancel_invitation" />
-                  <button type="submit" class="btn btn-sm btn-outline-secondary">
-                    <i class="fas fa-times me-1" aria-hidden="true" /> Cancel invitation
-                  </button>
-                </form>
-              )}
             </div>
           )}
         </div>
