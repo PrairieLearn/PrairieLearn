@@ -120,13 +120,14 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const {
-      authn_user: { uid },
+      authn_user: { uid, user_id },
     } = getPageContext(res.locals, { withAuthzData: false });
 
     if (body.__action === 'accept_invitation') {
       await execute(sql.accept_invitation, {
         course_instance_id: body.course_instance_id,
         uid,
+        user_id,
       });
     } else if (body.__action === 'reject_invitation') {
       await execute(sql.reject_invitation, {

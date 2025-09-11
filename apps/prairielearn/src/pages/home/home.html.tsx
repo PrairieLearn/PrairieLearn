@@ -1,5 +1,3 @@
-// There is a bug in this ESLint rule that causes it to incorrectly flag.
-
 import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import { z } from 'zod';
