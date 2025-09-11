@@ -82,7 +82,7 @@ SELECT
   gj.id,
   gj.manual_rubric_grading_id,
   agj.prompt,
-  agj.completion AS response
+  agj.completion
 FROM
   grading_jobs AS gj
   LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)

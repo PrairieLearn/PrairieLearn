@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import type { ParsedChatCompletion } from 'openai/resources/chat/completions.mjs';
 import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   selectLastSubmissionId,
@@ -124,7 +124,7 @@ router.get(
           id: GradingJobSchema.shape.id,
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
-          response: AiGradingJobSchema.shape.completion,
+          completion: AiGradingJobSchema.shape.completion,
         }),
       );
 
@@ -166,12 +166,19 @@ router.get(
                 .trimStart()
             : '';
 
-        const responseForGradingJob =
-          ai_grading_job_data.response as ParsedChatCompletion<any> | null;
-        const explanation =
-          responseForGradingJob !== null
-            ? responseForGradingJob.choices[0].message.parsed.explanation
-            : '';
+        // We're dealing with a schemaless JSON blob here. We'll be defensive and
+        // try to avoid errors when extracting the explanation. Note that for some
+        // time, the explanation wasn't included in the completion at all, so it
+        // may legitimately be missing.
+        const explanation = run(() => {
+          const completion = ai_grading_job_data.completion;
+          if (completion == null) return null;
+
+          const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+          if (typeof explanation !== 'string') return null;
+
+          return explanation.trim() || null;
+        });
 
         aiGradingInfo = {
           submissionManuallyGraded,

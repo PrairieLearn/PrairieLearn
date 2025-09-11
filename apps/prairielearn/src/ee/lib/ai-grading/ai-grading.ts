@@ -24,7 +24,6 @@ import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import {
-  GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
   generatePrompt,
@@ -229,7 +228,7 @@ export async function aiGrade({
           );
         }
         const RubricGradingResultSchema = z.object({
-          explanation: z.string(),
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
           rubric_items: RubricGradingItemsSchema,
         });
         const completion = await openai.chat.completions.parse({
@@ -340,6 +339,15 @@ export async function aiGrade({
           return false;
         }
       } else {
+        const GradingResultSchema = z.object({
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
+          feedback: z
+            .string()
+            .describe(
+              'Student-facing feedback on their submission. Address the student as "you". Omit the feedback if the student\'s response is entirely correct.',
+            ),
+          score: z.number().min(0).max(100),
+        });
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
