@@ -3,9 +3,11 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
@@ -27,6 +29,12 @@ router.get(
     const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
     const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext.course_instance.id);
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: courseInstanceContext.institution.id,
+      course_id: courseInstanceContext.course.id,
+      course_instance_id: courseInstanceContext.course_instance.id,
+    });
+
     const student = await queryOptionalRow(
       sql.select_student_info,
       {
@@ -47,10 +55,17 @@ router.get(
       auth: 'instructor',
     });
 
+    const pageTitle = run(() => {
+      if (student.user) {
+        return `${student.user.name} (${student.user.uid})`;
+      }
+      return `${student.enrollment.pending_uid}`;
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
-        pageTitle: `${student.user.name} (${student.user.uid})`,
+        pageTitle,
         navContext: {
           type: 'instructor',
           page: 'instance_admin',
@@ -70,6 +85,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
         ),
