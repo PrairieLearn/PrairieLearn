@@ -36,8 +36,6 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 
 ### Code review guidelines
 
-- **Review lifecycle**
-
 - **Self review**
   - It's almost always very valuable for an author to review their own code before requesting a PR from others. This gives the author a chance to catch any mistakes and clarify their own understanding of the code.
   - Self review is also a good opportunity for the author to add comments to the PR for other reviewers. For example, the author may want to highlight specific changes that are particularly important or may be difficult to understand.
