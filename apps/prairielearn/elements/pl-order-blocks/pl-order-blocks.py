@@ -593,8 +593,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length, depends_graph = grade_dag_list(
                 submission, collapsed_dags, {}
             )
-            true_answer_list = list(filter(lambda x: x["tag"] in depends_graph, true_answer_list))
-            print(len(true_answer_list))
         else:
             # This is so num_initial_correct and true_answer_length is not possibly unbound
             num_initial_correct, true_answer_length = grade_dag(
@@ -628,6 +626,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["distractor_feedback"] = ""
                     block["ordering_feedback"] = ""
 
+
         if order_blocks_options.partial_credit is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -640,8 +639,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             final_score = max(
                 0, float(true_answer_length - edit_distance) / true_answer_length
             )
-
-        print(f"final: {final_score}")
 
         if final_score < 1:
             first_wrong_is_distractor = first_wrong is not None and student_answer[

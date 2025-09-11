@@ -204,22 +204,19 @@ def grade_dag_list(
     submission: list[str],
     depends_graphs: list[Mapping[str, list[str]]],
     group_belonging: Mapping[str, str | None],
-) -> tuple[int, int, dict[str, list[str]]]:
+) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
     #TODO add grouping correctness for block groups grading
     # grouping_correctness = []
     graphs = [dag_to_nx(graph, group_belonging) for graph in depends_graphs]
-    for graph in depends_graphs:
-        print(graph)
-
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
         top_sort_correctness.append(check_topological_sorting(sub, graph))
         # grouping_correctness.append(check_grouping(submission, group_belonging))
 
-    min_index = top_sort_correctness.index(min(top_sort_correctness))
-    print(f"MIN: {depends_graphs[min_index]}")
-    return max(top_sort_correctness), graphs[min_index].number_of_nodes(), depends_graphs[min_index]
+    max_correct = max(top_sort_correctness)
+    max_index = top_sort_correctness.index(max_correct)
+    return max_correct, graphs[max_index].number_of_nodes(), depends_graphs[max_index]
 
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
