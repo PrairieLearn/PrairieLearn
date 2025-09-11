@@ -114,10 +114,10 @@ export function QuestionContainer({
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.response
-        ? AIGradingResponse({
+      aiGradingInfo?.explanation
+        ? AIGradingExplanation({
             variantId: variant.id,
-            response: aiGradingInfo.response,
+            explanation: aiGradingInfo.explanation,
           })
         : ''}
       ${submissions.length > 0
@@ -226,32 +226,38 @@ function AIGradingPrompt({
   `;
 }
 
-function AIGradingResponse({ variantId, response }: { variantId: string; response: string }) {
+function AIGradingExplanation({
+  variantId,
+  explanation,
+}: {
+  variantId: string;
+  explanation: string;
+}) {
   return html`<div class="card mb-3 grading-block">
     <div
       class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
     >
-      <h2>AI Grading Response</h2>
+      <h2>AI Grading Explanation</h2>
       <button
         type="button"
         class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
         data-bs-toggle="collapse"
-        data-bs-target="#ai-grading-response-${variantId}-body"
+        data-bs-target="#ai-grading-explanation-${variantId}-body"
         aria-expanded="true"
-        aria-controls="ai-grading-response-${variantId}-body"
+        aria-controls="ai-grading-explanation-${variantId}-body"
       >
         <i class="fa fa-angle-up ms-1 expand-icon"></i>
       </button>
     </div>
     <div
       class="js-submission-body js-collapsible-card-body show"
-      id="ai-grading-response-${variantId}-body"
+      id="ai-grading-explanation-${variantId}-body"
     >
       <div class="card-body">
         <ul class="list-group list-group-flush">
           <li class="list-group-item my-0">
-            <h5 class="card-title mt-2 mb-3">Raw response</h5>
-            <pre class="mb-0"><code>${response}</code></pre>
+            <h5 class="card-title mt-2 mb-3">Explanation</h5>
+            <pre class="mb-0"><code>${explanation}</code></pre>
           </li>
         </ul>
       </div>

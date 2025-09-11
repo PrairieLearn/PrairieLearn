@@ -168,15 +168,9 @@ router.get(
 
         const responseForGradingJob =
           ai_grading_job_data.response as ParsedChatCompletion<any> | null;
-        const formattedResponse =
+        const explanation =
           responseForGradingJob !== null
-            ? (
-                await formatJsonWithPrettier(
-                  JSON.stringify(responseForGradingJob.choices[0].message, null, 2),
-                )
-              )
-                .replaceAll('\\n', '\n')
-                .trimStart()
+            ? responseForGradingJob.choices[0].message.parsed.explanation
             : '';
 
         aiGradingInfo = {
@@ -184,7 +178,7 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           promptImageUrls,
-          response: formattedResponse,
+          explanation,
         };
       }
     }
