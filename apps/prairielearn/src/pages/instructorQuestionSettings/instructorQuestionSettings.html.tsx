@@ -89,6 +89,25 @@ export function InstructorQuestionSettings({
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
   const hasAuthors = authors.length > 0;
 
+  const authorsData = authors.map((author) => {
+    let parsedORCIDId = '';
+    if (author.orcid != null) {
+      for (let index = 0; index < author.orcid.length; index++) {
+        parsedORCIDId += author.orcid[index];
+        if ((index + 1) % 4 == 0 && index != author.orcid.length - 1) {
+          parsedORCIDId += '-';
+        }
+      }
+    }
+    return {
+      author_name: author.author_name,
+      email: author.email,
+      id: author.id,
+      orcid: parsedORCIDId,
+      origin_course: author.origin_course,
+    };
+  });
+
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -268,7 +287,7 @@ export function InstructorQuestionSettings({
                       </tr>
                     </thead>
                     <tbody>
-                      ${authors.map((author, index) => {
+                      ${authorsData.map((author, index) => {
                         return html`
                           <tr>
                             <td>
@@ -299,7 +318,7 @@ export function InstructorQuestionSettings({
                             <td>
                               ${canEdit
                                 ? html`<input
-                                    type="email"
+                                    type="text"
                                     class="form-control font-monospace"
                                     id="${'author_orcid_' + index}"
                                     name="${'author_orcid_' + index}"
@@ -311,7 +330,7 @@ export function InstructorQuestionSettings({
                             <td>
                               ${canEdit
                                 ? html`<input
-                                    type="email"
+                                    type="text"
                                     class="form-control font-monospace"
                                     id="${'author_reference_course_' + index}"
                                     name="${'author_reference_course_' + index}"
