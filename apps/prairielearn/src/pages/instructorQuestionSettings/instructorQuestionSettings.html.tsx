@@ -87,6 +87,7 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
+  const author = authors[0];
 
   return PageLayout({
     resLocals,
@@ -156,9 +157,6 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h3 class="h4">Author Information</h3>
-              ${authors.map((author) => {
-                return html`
-                <div class="mb-3">
                 <label class="form-label" for="author_name">Name</label>
               <input
                 type="text"
@@ -195,9 +193,6 @@ export function InstructorQuestionSettings({
                 value="${author?.origin_course ?? ''}"
                 ${'disabled'}
               />
-              </div>`;
-              })}
-              
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
