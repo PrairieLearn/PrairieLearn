@@ -15,7 +15,7 @@ const router = Router();
 
 router.get(
   '/*',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req, res, next) => {
     const filename = req.params[0];
     if (!filename) {
       throw new HttpStatusError(400, 'No filename provided within clientFilesAssessment directory');
@@ -29,15 +29,23 @@ router.get(
     };
     await ensureChunksForCourseAsync(res.locals.course.id, chunk);
 
-    const clientFilesDir = path.join(
-      coursePath,
+    const clientFilesAssessmentDir = path.join(
       'courseInstances',
       res.locals.course_instance.short_name,
       'assessments',
       res.locals.assessment.tid,
       'clientFilesAssessment',
     );
-    res.sendFile(filename, { root: clientFilesDir });
+    const clientFilesDir = path.join(coursePath, clientFilesAssessmentDir);
+    res.sendFile(filename, { root: clientFilesDir }, (err) => {
+      if (err && 'code' in err && err.code === 'ENOENT') {
+        const pathInCourse = path.join(clientFilesAssessmentDir, filename);
+        next(new HttpStatusError(404, `File not found: ${pathInCourse}`));
+        return;
+      }
+
+      next(err);
+    });
   }),
 );
 
