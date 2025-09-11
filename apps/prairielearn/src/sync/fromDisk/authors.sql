@@ -33,7 +33,7 @@ WITH
   )
 UPDATE questions q
 SET
-  sync_warnings = warnings.value
+  sync_warnings = concat_ws(E'\n', q.sync_warnings, warnings.value)
 FROM
   warnings
 WHERE
