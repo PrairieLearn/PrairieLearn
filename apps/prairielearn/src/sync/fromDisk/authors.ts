@@ -72,7 +72,7 @@ export async function sync(
       if (!author.email && !author.orcid && !author.originCourse) {
         infofile.addWarning(
           question,
-          'Either email, orcid, or originCourse must be provided for each question author',
+          'An author has been ignored because no email, orcid, or originCourse were provided. Each question author must have at least one of these properties',
         );
         newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
         continue;
@@ -84,7 +84,7 @@ export async function sync(
         if (author.name.length < 3 || author.name.length > 255) {
           infofile.addWarning(
             question,
-            `The provided author name ${author.name} is invalid. Author names must be 3-255 characters long`,
+            `The author with name ${author.name} has been ignored because it is invalid. Author names must be 3-255 characters long`,
           );
           newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
@@ -98,7 +98,7 @@ export async function sync(
         if (!parsedEmail.success) {
           infofile.addWarning(
             question,
-            `The provided author email address ${author.email} is invalid. Author email addresses must be valid and at most 255 characters long`,
+            `The author with email address ${author.email} has been ignored because it is invalid. Author email addresses must be valid and at most 255 characters long`,
           );
           newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
@@ -111,7 +111,7 @@ export async function sync(
         if (!orcidNormalized) {
           infofile.addWarning(
             question,
-            `The provided author ORCID identifier ${author.orcid} has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
+            `The author with ORCID identifier ${author.orcid} has been ignored because it has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
           );
           newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
@@ -127,7 +127,7 @@ export async function sync(
         if (originCourseID == null) {
           infofile.addWarning(
             question,
-            `Unable to find course with sharing name ${author.originCourse}`,
+            `The author with sharing name ${author.originCourse} has been ignored because the course sharing name was not found.`,
           );
           newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
