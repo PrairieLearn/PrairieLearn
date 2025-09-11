@@ -178,7 +178,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   }
 
   let score = 0;
-  if (typeof data.results.score === 'number' || !Number.isNaN(data.results.score)) {
+  if (typeof data.results.score === 'number' && !Number.isNaN(data.results.score)) {
     score = data.results.score;
   } else {
     return makeGradingFailureWithMessage(

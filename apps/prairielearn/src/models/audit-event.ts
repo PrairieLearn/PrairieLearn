@@ -1,8 +1,4 @@
-import { escapeIdentifier } from 'pg';
-import { type ZodSchema, type z } from 'zod';
-
-import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
 import { type EnumAuditEventAction, type TableName } from '../lib/db-types.js';
@@ -68,22 +64,6 @@ export async function selectAuditEvents({
     { agent_authn_user_id, course_instance_id, table_names },
     StaffAuditEventSchema,
   );
-}
-/**
- * Fetches the current row for a given table and row ID
- */
-export async function getCurrentRowData<T extends ZodSchema>(
-  table_name: string,
-  row_id: string,
-  table_schema: T,
-): Promise<z.infer<T> | null> {
-  const query = run(() => {
-    if (table_name === 'users') {
-      return 'SELECT * FROM users WHERE user_id = $row_id';
-    }
-    return `SELECT * FROM ${escapeIdentifier(table_name)} WHERE id = $row_id`;
-  });
-  return await queryOptionalRow(query, { row_id }, table_schema);
 }
 
 interface InsertAuditEventParams {
