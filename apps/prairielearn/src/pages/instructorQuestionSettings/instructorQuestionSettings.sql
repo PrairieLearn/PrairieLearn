@@ -81,13 +81,7 @@ WHERE
 
 
 -- BLOCK author_for_qid
-WITH author_data AS (
-  SELECT
-    *
-  FROM
-    authors
-),
-author_to_qid AS (
+WITH author_to_qid AS (
   SELECT
   author_id
 FROM
@@ -101,5 +95,10 @@ author_data.orcid,
 author_data.origin_course,
 author_data.id
 FROM
-author_data
-JOIN author_to_qid ON author_to_qid.author_id = author_data.id
+author_to_qid
+LEFT JOIN 
+(SELECT
+    *
+  FROM
+    authors) as author_data 
+ON author_to_qid.author_id = author_data.id

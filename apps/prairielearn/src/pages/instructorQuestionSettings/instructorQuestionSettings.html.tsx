@@ -16,8 +16,8 @@ import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
   type Author,
+  IdSchema,
   type Question,
   type Tag,
   type Topic,
@@ -155,72 +155,6 @@ export function InstructorQuestionSettings({
                 separate directories.
               </small>
             </div>
-            ${hasAuthors
-              ? html`<div class="mb-3">
-                  <h3 class="h4">Author Information</h3>
-                  <table
-                    class="table table-sm table-hover tablesorter table-bordered"
-                    aria-label="Author information"
-                  >
-                    <thead>
-                      <tr>
-                        <th class="text-center">Name</th>
-                        <th class="text-center">Email</th>
-                        <th class="text-center">ORCID</th>
-                        <th class="text-center">Reference Course</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      ${authors.map((author, index) => {
-                        return html`
-                          <tr>
-                            <td>
-                              <input
-                                type="text"
-                                class="form-control font-monospace"
-                                id="author_name"
-                                name="${'author_name_' + index}"
-                                value="${author?.author_name ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="email"
-                                class="form-control font-monospace"
-                                id="author_email"
-                                name="${'author_email_' + index}"
-                                value="${author?.email ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="email"
-                                class="form-control font-monospace"
-                                id="author_orcid"
-                                name="${'author_orcid_' + index}"
-                                value="${author?.orcid ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
-                              />
-                            </td>
-                            <td>
-                              <input
-                                type="email"
-                                class="form-control font-monospace"
-                                id="author_reference_course"
-                                name="${'author_reference_course_' + index}"
-                                value="${author?.origin_course ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
-                              />
-                            </td>
-                          </tr>
-                        `;
-                      })}
-                    </tbody>
-                  </table>
-                </div>`
-              : ''}
             <div class="mb-3">
               <h2 class="h4">General</h2>
               <label class="form-label" for="title">Title</label>
@@ -318,6 +252,83 @@ export function InstructorQuestionSettings({
                 </tbody>
               </table>
             </div>
+            ${hasAuthors
+              ? html`<div class="mb-3">
+                  <label id="authors-table-label" for="authors-table">Author Information</label>
+                  <table
+                    class="table table-sm table-hover tablesorter table-bordered"
+                    aria-label="Author information"
+                  >
+                    <thead>
+                      <tr>
+                        <th class="text-center">Name</th>
+                        <th class="text-center">Email</th>
+                        <th class="text-center">ORCID identifier</th>
+                        <th class="text-center">Reference Course</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${authors.map((author, index) => {
+                        return html`
+                          <tr>
+                            <td>
+                              ${canEdit
+                                ? html`<input
+                                    type="text"
+                                    class="form-control font-monospace"
+                                    id="${'author_name_' + index}"
+                                    name="${'author_name_' + index}"
+                                    value="${author?.author_name ?? ''}"
+                                  />`
+                                : html`
+                                    <small class="text-center">${author?.author_name ?? ''}</small>
+                                  `}
+                            </td>
+                            <td>
+                              ${canEdit
+                                ? html`<input
+                                    type="email"
+                                    class="form-control font-monospace"
+                                    id="${'author_email_' + index}"
+                                    name="${'author_email_' + index}"
+                                    value="${author?.email ?? ''}"
+                                    ${canEdit ? '' : 'disabled'}
+                                  />`
+                                : html`<small class="text-center">${author?.email ?? ''}</small>`}
+                            </td>
+                            <td>
+                              ${canEdit
+                                ? html`<input
+                                    type="email"
+                                    class="form-control font-monospace"
+                                    id="${'author_orcid_' + index}"
+                                    name="${'author_orcid_' + index}"
+                                    value="${author?.orcid ?? ''}"
+                                    ${canEdit ? '' : 'disabled'}
+                                  />`
+                                : html`<small class="text-center">${author?.orcid ?? ''}</small>`}
+                            </td>
+                            <td>
+                              ${canEdit
+                                ? html`<input
+                                    type="email"
+                                    class="form-control font-monospace"
+                                    id="${'author_reference_course_' + index}"
+                                    name="${'author_reference_course_' + index}"
+                                    value="${author?.origin_course ?? ''}"
+                                    ${canEdit ? '' : 'disabled'}
+                                  />`
+                                : html`<small class="text-center"
+                                    >${author?.origin_course ?? ''}</small
+                                  >`}
+                            </td>
+                          </tr>
+                        `;
+                      })}
+                    </tbody>
+                  </table>
+                </div>`
+              : ''}
             <div class="mb-3">
               <label class="form-label" for="grading_method">Grading method</label>
               <select
