@@ -45,6 +45,7 @@ router.get(
       {
         // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.user_id,
+        pending_uid: res.locals.authn_user.uid,
         req_date: res.locals.req_date,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course

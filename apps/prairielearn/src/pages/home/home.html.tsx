@@ -252,8 +252,12 @@ function StudentCoursesCard({
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
 
-  const invited = studentCourses.filter((ci) => ci.enrollment.status === 'invited');
-  const joinedOrOther = studentCourses.filter((ci) => ci.enrollment.status !== 'invited');
+  const invited: StudentHomePageCourse[] = studentCourses.filter(
+    (ci) => ci.enrollment.status === 'invited',
+  );
+  const joinedOrOther: StudentHomePageCourse[] = studentCourses.filter(
+    (ci) => ci.enrollment.status !== 'invited',
+  );
 
   return (
     <div class="card mb-4">
@@ -290,8 +294,8 @@ function StudentCoursesCard({
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {invited.map((courseInstance) => (
-                <tr key={`invite-${courseInstance.id}`} class="table-warning">
+              {invited.map((courseInstance: StudentHomePageCourse) => (
+                <tr key={`invite-${courseInstance.id as string}`} class="table-warning">
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                       <div>
@@ -329,7 +333,7 @@ function StudentCoursesCard({
               {joinedOrOther.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
-                    <a href={`${config.urlPrefix}/course_instance/${courseInstance.id}`}>
+                    <a href={`${config.urlPrefix}/course_instance/${courseInstance.id as string}`}>
                       {courseInstance.course_short_name}: {courseInstance.course_title},
                       {courseInstance.long_name}
                     </a>

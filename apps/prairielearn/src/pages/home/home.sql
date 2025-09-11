@@ -182,17 +182,13 @@ SELECT
   ci.id,
   to_jsonb(e) AS enrollment
 FROM
-  users AS u
-  -- UID is guaranteed to be non-null for users, and we want to retrieve enrollments for pending enrollments
-  JOIN enrollments AS e ON (
-    e.user_id = u.user_id
-    OR e.pending_uid = u.uid
-  )
+  enrollments AS e
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
     AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
   )
+  LEFT JOIN users AS u ON (u.user_id = e.user_id)
   JOIN pl_courses AS c ON (
     c.id = ci.course_id
     AND c.deleted_at IS NULL
@@ -200,7 +196,7 @@ FROM
       c.example_course IS FALSE
       OR $include_example_course_enrollments
     )
-    AND users_is_instructor_in_course ($user_id, c.id) IS FALSE
+    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   ),
   LATERAL (
     SELECT
@@ -212,7 +208,7 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  u.user_id = $user_id
+  e.user_id = $user_id OR e.pending_uid = $pending_uid
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
