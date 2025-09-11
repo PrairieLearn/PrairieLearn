@@ -180,7 +180,7 @@ export async function sync(
         return author;
       })
       // Authors that were skipped earlier will not be in the map and should be skipped again
-      .filter((a) => a != undefined);
+      .filter((a) => a !== undefined);
     questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
 
