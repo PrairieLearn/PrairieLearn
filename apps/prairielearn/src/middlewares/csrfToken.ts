@@ -6,10 +6,9 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 import { config } from '../lib/config.js';
 
 export default asyncHandler(async (req, res, next) => {
-  // We don't want to include the query params in the CSRF token checks.
-  const baseUrl = req.originalUrl.split('?')[0];
   const tokenData = {
-    url: baseUrl,
+    // We don't want to include the query params in the CSRF token checks.
+    url: req.originalUrl.split('?')[0],
     authn_user_id: res.locals.authn_user?.user_id,
   };
 
