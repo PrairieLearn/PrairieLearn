@@ -93,10 +93,10 @@ export function RubricSettings({
    * Update current dragged row index
    * @param idx The current index of the row that is being dragged
    */
-  function rowDragStart(idx: number) {
+  function onDragStart(idx: number) {
     setDraggedIdx(idx);
   }
-  function rowDragOver(overIdx: number) {
+  function onDragOver(overIdx: number) {
     if (draggedIdx === null || draggedIdx === overIdx) return;
     setRubricItems((items) => {
       const newItems = [...items];
@@ -106,8 +106,6 @@ export function RubricSettings({
     setDraggedIdx(overIdx);
   }
 
-  // Do we need moving up and down?
-  // These don't seem to exist in the JS for the current rubric edit panel
   const moveUp = (idx: number) => {
     if (idx === 0) return;
     setRubricItems((prev) => {
@@ -138,10 +136,9 @@ export function RubricSettings({
     if (use_rubric) {
       const required =
         document.querySelectorAll<HTMLInputElement>('#rubric-editing input[required]') ?? [];
-      for (const input of Array.from(required)) {
-        if (!input.reportValidity()) {
-          return;
-        }
+      const isValid = Array.from(required).every((input) => input.reportValidity());
+      if (!isValid) {
+        return;
       }
     }
 
@@ -293,7 +290,7 @@ export function RubricSettings({
                   type="number"
                   disabled={!editMode}
                   value={minPoints}
-                  onInput={(e: any) => setMinPoints(Number(e.currentTarget.value))}
+                  onInput={(e: any) => setMinPoints(Number(e.target.value))}
                 />
               </label>
             </div>
@@ -305,7 +302,7 @@ export function RubricSettings({
                   type="number"
                   disabled={!editMode}
                   value={maxExtraPoints}
-                  onInput={(e: any) => setMaxExtraPoints(Number(e.currentTarget.value))}
+                  onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
                 />
               </label>
             </div>
@@ -338,9 +335,9 @@ export function RubricSettings({
                     deleteRow={() => deleteRow(idx)}
                     moveUp={() => moveUp(idx)}
                     moveDown={() => moveDown(idx)}
-                    rowDragStart={() => rowDragStart(idx)}
-                    rowDragOver={() => rowDragOver(idx)}
                     updateRubricItem={(patch) => updateRubricItem(idx, patch)}
+                    onDragStart={() => onDragStart(idx)}
+                    onDragOver={() => onDragOver(idx)}
                   />
                 ))
               ) : (
@@ -446,8 +443,8 @@ export function RubricRow({
   moveUp,
   moveDown,
   updateRubricItem,
-  rowDragStart,
-  rowDragOver,
+  onDragStart,
+  onDragOver,
 }: {
   item: RubricItemData;
   editMode: boolean;
@@ -457,14 +454,14 @@ export function RubricRow({
   moveUp: () => void;
   moveDown: () => void;
   updateRubricItem: (patch: Partial<RubricItem>) => void;
-  rowDragStart: () => void;
-  rowDragOver: () => void;
+  onDragStart: () => void;
+  onDragOver: () => void;
 }) {
   return (
     <tr
       onDragOver={(e) => {
         e.preventDefault();
-        rowDragOver();
+        onDragOver();
       }}
     >
       <td class="text-nowrap align-middle">
@@ -475,7 +472,7 @@ export function RubricRow({
           class={`btn btn-sm btn-ghost ${!editMode ? 'disabled' : ''}`}
           style={{ cursor: 'grab' }}
           draggable={editMode}
-          onDragStart={rowDragStart}
+          onDragStart={onDragStart}
         >
           <i class="fas fa-arrows-up-down" />
         </span>
@@ -518,7 +515,7 @@ export function RubricRow({
           value={item.points}
           aria-label="Points"
           required
-          onInput={(e: any) => updateRubricItem({ points: e.currentTarget.value })}
+          onInput={(e: any) => updateRubricItem({ points: e.target.value })}
         />
       </td>
 
@@ -532,7 +529,7 @@ export function RubricRow({
           value={item.description}
           aria-label="Description"
           required
-          onInput={(e: any) => updateRubricItem({ description: e.currentTarget.value })}
+          onInput={(e: any) => updateRubricItem({ description: e.target.value })}
         />
       </td>
 
@@ -543,7 +540,7 @@ export function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
-          onInput={(e: any) => updateRubricItem({ explanation: e.currentTarget.value })}
+          onInput={(e: any) => updateRubricItem({ explanation: e.target.value })}
         >
           {item.explanation}
         </textarea>
@@ -556,7 +553,7 @@ export function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
-          onInput={(e: any) => updateRubricItem({ grader_note: e.currentTarget.value })}
+          onInput={(e: any) => updateRubricItem({ grader_note: e.target.value })}
         >
           {item.grader_note}
         </textarea>
