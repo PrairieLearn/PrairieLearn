@@ -3220,6 +3220,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_points);
   });
 
   it('stores json points data correctly for exam assessments', async () => {
@@ -3250,6 +3251,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_points, 10);
     assert.deepEqual(syncedData.alternative_groups[1].json_points, [15, 12, 8]);
     assert.deepEqual(syncedData.assessment_questions[1].json_points, [5, 3]);
+    assert.isNull(syncedData.assessment_questions[2].json_points);
   });
 
   it('stores json max points data correctly', async () => {
@@ -3276,6 +3278,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_max_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_max_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_max_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_max_points);
   });
 
   it('stores json auto points data correctly for homework assessments', async () => {
@@ -3301,6 +3304,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_auto_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_auto_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_auto_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_auto_points);
   });
 
   it('stores json auto points data correctly for exam assessments', async () => {
@@ -3326,6 +3330,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_auto_points, 10);
     assert.deepEqual(syncedData.alternative_groups[1].json_auto_points, [15, 12, 8]);
     assert.deepEqual(syncedData.assessment_questions[1].json_auto_points, [5, 3]);
+    assert.isNull(syncedData.assessment_questions[2].json_auto_points);
   });
 
   it('stores json max auto points data correctly', async () => {
@@ -3352,6 +3357,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_max_auto_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_max_auto_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_max_auto_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_max_auto_points);
   });
 
   it('stores json manual points data correctly for homework assessments', async () => {
@@ -3377,6 +3383,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_manual_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_manual_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_manual_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_manual_points);
   });
 
   it('stores json manual points data correctly for exam assessments', async () => {
@@ -3402,6 +3409,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_manual_points, 10);
     assert.equal(syncedData.alternative_groups[1].json_manual_points, 15);
     assert.equal(syncedData.assessment_questions[1].json_manual_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_manual_points);
   });
 
   it('stores json force max points data correctly', async () => {
@@ -3414,7 +3422,10 @@ describe('Assessment syncing', () => {
         {
           points: 10,
           forceMaxPoints: false,
-          alternatives: [{ id: util.ALTERNATIVE_QUESTION_ID, forceMaxPoints: true }],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, forceMaxPoints: true },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
         },
       ],
     });
@@ -3425,6 +3436,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_force_max_points, true);
     assert.equal(syncedData.alternative_groups[1].json_force_max_points, false);
     assert.equal(syncedData.assessment_questions[1].json_force_max_points, true);
+    assert.isNull(syncedData.assessment_questions[2].json_force_max_points);
   });
 
   it('stores json tries per variant data correctly', async () => {
@@ -3451,5 +3463,6 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[0].json_tries_per_variant, 1);
     assert.equal(syncedData.alternative_groups[1].json_tries_per_variant, 2);
     assert.equal(syncedData.assessment_questions[1].json_tries_per_variant, 3);
+    assert.isNull(syncedData.assessment_questions[2].json_tries_per_variant);
   });
 });
