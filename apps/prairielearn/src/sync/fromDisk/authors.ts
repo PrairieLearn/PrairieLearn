@@ -62,6 +62,7 @@ export async function sync(
   // Collect all unique authors from all questions
   // Also setting up reverse lookup of resolved authors from database back to JSON
   const uniqueAuthors = new Map<string, JSONAuthor>();
+  const newWarnings: Record<string, string> = {};
 
   for (const qid of Object.keys(courseData.questions)) {
     const question = courseData.questions[qid];
@@ -69,10 +70,11 @@ export async function sync(
     const authors = question.data?.authors ?? [];
     for (const author of authors) {
       if (!author.email && !author.orcid && !author.originCourse) {
-        infofile.addError(
+        infofile.addWarning(
           question,
           'Either email, orcid, or originCourse must be provided for each question author',
         );
+        newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
         continue;
       }
 
@@ -80,10 +82,11 @@ export async function sync(
 
       if (author.name) {
         if (author.name.length < 3 || author.name.length > 255) {
-          infofile.addError(
+          infofile.addWarning(
             question,
             `The provided author name ${author.name} is invalid. Author names must be 3-255 characters long`,
           );
+          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
         }
         resolvedAuthor.name = author.name;
@@ -93,10 +96,11 @@ export async function sync(
         const parsedEmail = z.string().max(255).email().safeParse(author.email);
 
         if (!parsedEmail.success) {
-          infofile.addError(
+          infofile.addWarning(
             question,
             `The provided author email address ${author.email} is invalid. Author email addresses must be valid and at most 255 characters long`,
           );
+          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
         }
         resolvedAuthor.email = parsedEmail.data;
@@ -105,10 +109,11 @@ export async function sync(
       if (author.orcid) {
         const orcidNormalized = normalizeOrcid(author.orcid);
         if (!orcidNormalized) {
-          infofile.addError(
+          infofile.addWarning(
             question,
             `The provided author ORCID identifier ${author.orcid} has an invalid format or checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
           );
+          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
         }
         resolvedAuthor.orcid = orcidNormalized;
@@ -120,10 +125,11 @@ export async function sync(
           z.string(),
         );
         if (originCourseID == null) {
-          infofile.addError(
+          infofile.addWarning(
             question,
             `Unable to find course with sharing name ${author.originCourse}`,
           );
+          newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
         }
         resolvedAuthor.originCourse = originCourseID;
@@ -132,6 +138,9 @@ export async function sync(
       uniqueAuthors.set(JSON.stringify(resolvedAuthor), author);
     }
   }
+
+  // If there were warnings, add them to the database
+  await sqldb.execute(sql.insert_author_warnings, { warnings: JSON.stringify(newWarnings) });
 
   const authorsForDB = {
     authors: JSON.stringify(Array.from(uniqueAuthors.keys()).map((a) => JSON.parse(a))),
@@ -152,7 +161,8 @@ export async function sync(
     };
     const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
 
-    // This should never happen in practice (an author was inserted, but cannot be looked up in the database)
+    // This should never happen in practice, but this keeps the type checker
+    // happy, and if it does happen, we want it to fail obviously and loudly.
     if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} database lookup failed`);
 
     authorIdMap.set(JSON.stringify(jsonAuthor), author.id);
@@ -164,14 +174,13 @@ export async function sync(
     if (infofile.hasErrors(question)) return;
     const dedupedQuestionAuthors = new Set<string>();
     (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
-    const questionTagIds = [...dedupedQuestionAuthors].map((a) => {
-      const author = authorIdMap.get(a);
-
-      // This should never happen in practice (an author found in a question was not inserted in the previous step)
-      if (!author) throw new Error(`Author ${a} list out of sync with question list`);
-
-      return author;
-    });
+    const questionTagIds = [...dedupedQuestionAuthors]
+      .map((a) => {
+        const author = authorIdMap.get(a);
+        return author;
+      })
+      // Authors that were skipped earlier will not be in the map and should be skipped again
+      .filter((a) => a != undefined);
     questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
 

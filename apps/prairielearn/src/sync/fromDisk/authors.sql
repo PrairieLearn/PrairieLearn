@@ -23,6 +23,16 @@ FROM
   )
 ON CONFLICT (author_name, email, orcid, origin_course) DO NOTHING;
 
+-- BLOCK insert_author_warnings
+WITH warnings AS (
+  SELECT *
+  FROM json_each_text($warnings::json)
+)
+UPDATE questions q
+SET sync_warnings = warnings.value
+FROM warnings
+WHERE q.id = warnings.key::bigint;
+
 -- BLOCK select_authors
 SELECT
   a.*
