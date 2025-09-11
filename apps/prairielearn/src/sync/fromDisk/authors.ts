@@ -62,6 +62,8 @@ export async function sync(
   // Collect all unique authors from all questions
   // Also setting up reverse lookup of resolved authors from database back to JSON
   const uniqueAuthors = new Map<string, JSONAuthor>();
+  // Cache sharing name -> course ID mappings
+  const sharingNameCache = new Map<string, string>();
   const newWarnings: Record<string, string> = {};
 
   for (const qid of Object.keys(courseData.questions)) {
@@ -119,12 +121,14 @@ export async function sync(
         resolvedAuthor.orcid = orcidNormalized;
       }
       if (author.originCourse) {
-        const originCourseID = await sqldb.queryOptionalRow(
+        let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
+        if (originCourseID === null) {
+          originCourseID = await sqldb.queryOptionalRow(
           sql.select_sharing_name,
           { origin_course: author.originCourse },
           z.string(),
         );
-        if (originCourseID == null) {
+        if (originCourseID === null) {
           infofile.addWarning(
             question,
             `The author with sharing name ${author.originCourse} has been ignored because the course sharing name was not found.`,
@@ -132,6 +136,7 @@ export async function sync(
           newWarnings[questionIds[qid]] = infofile.stringifyWarnings(question);
           continue;
         }
+        sharingNameCache.set(author.originCourse, originCourseID);
         resolvedAuthor.originCourse = originCourseID;
       }
 

@@ -1136,9 +1136,9 @@ export const QueryRunSchema = z.object({
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
 export const QuestionAuthorSchema = z.object({
-  author_id: z.string(),
+  author_id: IdSchema,
   id: IdSchema,
-  question_id: z.string(),
+  question_id: IdSchema,
 });
 
 export const QuestionGenerationContextEmbeddingSchema = z.object({
