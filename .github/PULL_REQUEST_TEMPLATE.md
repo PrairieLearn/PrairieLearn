@@ -1,3 +1,10 @@
+<!--
+
+Etiquette and expectations for contributions can be found here:
+https://prairielearn.readthedocs.io/en/latest/contributing
+
+-->
+
 # Description
 
 <!--

@@ -50,8 +50,10 @@ A trusted group of core developers are responsible for maintaining the PrairieLe
 
 - **Addressing code review comments**
   - All code review comments should be addressed before merging.
+    - If you made a change that resolved a comment, you should reply to the comment with the commit that resolves it.
   - Addressing a comment does not always mean making a change. It may involve:
     - Explaining why a change is unnecessary. Ideally, wait for the reviewer to acknowledge this before considering the comment to be addressed.
     - Deferring a fix to a fast-follow PR and explicitly stating that in a comment.
     - For non-critical issues, opening an issue to track the need for a change in the future.
   - Use your best judgment to determine whether a comment has been sufficiently addressed.
+  - Once you have addressed or responded to all review comments, re-request review from the primary reviewer. This signals to the reviewer that you are ready for another review.
