@@ -8,7 +8,6 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { config } from '../../lib/config.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -40,34 +39,42 @@ export function Home({
   instructorCourses,
   studentCourses,
   adminInstitutions,
+  urlPrefix,
+  isDevMode,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
   instructorCourses: InstructorHomePageCourse[];
   studentCourses: StudentHomePageCourse[];
   adminInstitutions: StaffInstitution[];
+  urlPrefix: string;
+  isDevMode: boolean;
 }) {
   return (
     <>
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      <ActionsHeader />
+      <ActionsHeader urlPrefix={urlPrefix} />
 
       <div class="container pt-5">
-        <DevModeCard />
+        <DevModeCard isDevMode={isDevMode} />
         <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-        <InstructorCoursesCard instructorCourses={instructorCourses} />
+        <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
         <StudentCoursesCard
           studentCourses={studentCourses}
           hasInstructorCourses={instructorCourses.length > 0}
           canAddCourses={canAddCourses}
           csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+          isDevMode={isDevMode}
         />
       </div>
     </>
   );
 }
 
-function ActionsHeader() {
+Home.displayName = 'Home';
+
+function ActionsHeader({ urlPrefix }: { urlPrefix: string }) {
   return (
     <div class="container">
       <div class="row">
@@ -79,7 +86,7 @@ function ActionsHeader() {
                 <i class="fas fa-user-graduate fa-stack-1x text-light" />
               </span>
               <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
-              <a href={`${config.urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
+              <a href={`${urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
                 Add or remove courses
               </a>
             </div>
@@ -93,7 +100,7 @@ function ActionsHeader() {
                 <i class="fas fa-user-tie fa-stack-1x text-light" />
               </span>
               <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
-              <a href={`${config.urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
+              <a href={`${urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
                 Request course
               </a>
               <a
@@ -110,8 +117,8 @@ function ActionsHeader() {
   );
 }
 
-function DevModeCard() {
-  if (!config.devMode) return null;
+function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
+  if (!isDevMode) return null;
 
   return (
     <div class="card mb-4">
@@ -166,9 +173,10 @@ function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps
 
 interface InstructorCoursesCardProps {
   instructorCourses: InstructorHomePageCourse[];
+  urlPrefix: string;
 }
 
-function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps) {
+function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCoursesCardProps) {
   if (instructorCourses.length === 0) return null;
 
   return (
@@ -187,7 +195,7 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
               <tr key={course.id}>
                 <td class="w-50 align-middle">
                   {course.can_open_course ? (
-                    <a href={`${config.urlPrefix}/course/${course.id}`}>
+                    <a href={`${urlPrefix}/course/${course.id}`}>
                       {course.short_name}: {course.title}
                     </a>
                   ) : (
@@ -197,12 +205,14 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
                 <td class="js-course-instance-list">
                   <CourseInstanceList
                     courseInstances={course.course_instances.filter((ci) => !ci.expired)}
+                    urlPrefix={urlPrefix}
                   />
                   {course.course_instances.some((ci) => ci.expired) && (
                     <details>
                       <summary class="text-muted small">Older instances</summary>
                       <CourseInstanceList
                         courseInstances={course.course_instances.filter((ci) => ci.expired)}
+                        urlPrefix={urlPrefix}
                       />
                     </details>
                   )}
@@ -218,16 +228,17 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
 
 interface CourseInstanceListProps {
   courseInstances: InstructorHomePageCourse['course_instances'];
+  urlPrefix: string;
 }
 
-function CourseInstanceList({ courseInstances }: CourseInstanceListProps) {
+function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListProps) {
   return (
     <div class="d-flex flex-wrap gap-2 my-1">
       {courseInstances.map((courseInstance) => (
         <a
           key={courseInstance.id}
           class="btn btn-outline-primary btn-sm"
-          href={`${config.urlPrefix}/course_instance/${courseInstance.id}/instructor`}
+          href={`${urlPrefix}/course_instance/${courseInstance.id}/instructor`}
         >
           {courseInstance.long_name}
         </a>
@@ -241,6 +252,8 @@ interface StudentCoursesCardProps {
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
   csrfToken: string;
+  urlPrefix: string;
+  isDevMode: boolean;
 }
 
 function StudentCoursesCard({
@@ -248,6 +261,8 @@ function StudentCoursesCard({
   hasInstructorCourses,
   canAddCourses,
   csrfToken,
+  urlPrefix,
+  isDevMode,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
@@ -255,8 +270,8 @@ function StudentCoursesCard({
   const invited: StudentHomePageCourse[] = studentCourses.filter(
     (ci) => ci.enrollment.status === 'invited',
   );
-  const joinedOrOther: StudentHomePageCourse[] = studentCourses.filter(
-    (ci) => ci.enrollment.status !== 'invited',
+  const joined: StudentHomePageCourse[] = studentCourses.filter(
+    (ci) => ci.enrollment.status === 'joined',
   );
 
   return (
@@ -264,7 +279,7 @@ function StudentCoursesCard({
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
         {canAddCourses && (
-          <a href={`${config.urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
+          <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
             <i class="fa fa-edit" aria-hidden="true" />
             <span class="d-none d-sm-inline">Add or remove courses</span>
           </a>
@@ -279,7 +294,7 @@ function StudentCoursesCard({
             {canAddCourses &&
               ' Use the "Add or remove courses" button to add a course as a student.'}
           </div>
-        ) : config.devMode ? (
+        ) : isDevMode ? (
           <div class="card-body">
             No courses loaded. Click <strong>"Load from disk"</strong> above and then click
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
@@ -330,10 +345,10 @@ function StudentCoursesCard({
                   </td>
                 </tr>
               ))}
-              {joinedOrOther.map((courseInstance) => (
+              {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
-                    <a href={`${config.urlPrefix}/course_instance/${courseInstance.id as string}`}>
+                    <a href={`${urlPrefix}/course_instance/${courseInstance.id as string}`}>
                       {courseInstance.course_short_name}: {courseInstance.course_title},
                       {courseInstance.long_name}
                     </a>

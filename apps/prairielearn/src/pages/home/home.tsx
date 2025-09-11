@@ -11,6 +11,7 @@ import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
+import { Hydrate } from '../../lib/preact.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -64,7 +65,9 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    const { authn_provider_name, __csrf_token } = getPageContext(res.locals);
+    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+      withAuthzData: false,
+    });
 
     res.send(
       PageLayout({
@@ -78,13 +81,17 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <Home
-            canAddCourses={authn_provider_name !== 'LTI'}
-            csrfToken={__csrf_token}
-            instructorCourses={instructorCourses}
-            studentCourses={studentCourses}
-            adminInstitutions={adminInstitutions}
-          />
+          <Hydrate>
+            <Home
+              canAddCourses={authn_provider_name !== 'LTI'}
+              csrfToken={__csrf_token}
+              instructorCourses={instructorCourses}
+              studentCourses={studentCourses}
+              adminInstitutions={adminInstitutions}
+              urlPrefix={urlPrefix}
+              isDevMode={config.devMode}
+            />
+          </Hydrate>
         ),
         postContent:
           config.homepageFooterText && config.homepageFooterTextHref ? (
@@ -112,16 +119,14 @@ router.post(
     });
     const body = BodySchema.parse(req.body);
 
-    // You can't accept invitations on behalf of another user.
-    const { authn_user } = getPageContext(res.locals);
-    const uid = authn_user.uid;
-    const user_id = authn_user.user_id;
+    const {
+      authn_user: { uid },
+    } = getPageContext(res.locals, { withAuthzData: false });
 
     if (body.__action === 'accept_invitation') {
       await execute(sql.accept_invitation, {
         course_instance_id: body.course_instance_id,
         uid,
-        user_id,
       });
     } else if (body.__action === 'reject_invitation') {
       await execute(sql.reject_invitation, {

@@ -183,12 +183,12 @@ SELECT
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
+  LEFT JOIN users AS u ON (u.user_id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
     AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
   )
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
   JOIN pl_courses AS c ON (
     c.id = ci.course_id
     AND c.deleted_at IS NULL
@@ -232,3 +232,24 @@ ORDER BY
   i.short_name,
   i.long_name,
   i.id;
+
+-- BLOCK accept_invitation
+UPDATE enrollments
+SET
+  status = 'joined',
+  user_id = $user_id,
+  joined_at = NOW(),
+  pending_uid = NULL
+WHERE
+  course_instance_id = $course_instance_id
+  AND pending_uid = $uid
+  AND status = 'invited';
+
+-- BLOCK reject_invitation
+UPDATE enrollments
+SET
+  status = 'rejected'
+WHERE
+  course_instance_id = $course_instance_id
+  AND pending_uid = $uid
+  AND status = 'invited';
