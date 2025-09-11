@@ -17,14 +17,14 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
 
   let page, elemList;
 
-  helperExam.startExam(locals);
+  helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
   describe('1. grade incorrect answer to question addNumbers', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 0,
           submission_correct: false,
@@ -33,7 +33,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
           instance_question_auto_points: 0,
           instance_question_manual_points: 0,
           assessment_instance_points: 0,
-          assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -53,7 +53,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
@@ -62,7 +62,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
           instance_question_auto_points: 3,
           instance_question_manual_points: 0,
           assessment_instance_points: 3,
-          assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -82,7 +82,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addVectors;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addVectors;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
@@ -91,7 +91,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
           instance_question_auto_points: 11,
           instance_question_manual_points: 0,
           assessment_instance_points: 14,
-          assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc: (14 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -428,7 +428,10 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
       const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-      assert.equal(totalPoints, (assessmentSetScorePerc / 100) * helperExam.assessmentMaxPoints);
+      assert.equal(
+        totalPoints,
+        (assessmentSetScorePerc / 100) * helperExam.exam1AutomaticTestSuite.maxPoints,
+      );
     });
   });
 

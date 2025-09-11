@@ -32,7 +32,7 @@ describe('Client files endpoints', () => {
 
   // TODO: refactor this to be a function that we can call in a `before` hook.
   // Right now, this actually creates a bunch of `describe()` blocks and tests.
-  helperExam.startExam({});
+  helperExam.startExam({}, 'exam1-automaticTestSuite');
 
   describe('clientFilesCourse', () => {
     it('works for instructor course instance URL', async () => {
