@@ -1,3 +1,10 @@
+<!--
+
+Etiquette for contributions can be found here:
+https://prairielearn.readthedocs.io/en/latest/contributing
+
+-->
+
 # Description
 
 <!--
@@ -26,6 +33,6 @@ Self-reviews with GitHub's review UI are encouraged to point out the following:
 - Particularly important or core changes.
 - Items that may need further discussion.
 
-Thank you for contributing to PrairieLearn! Etiquette for contributions can be found at <https://prairielearn.readthedocs.io/en/latest/contributing>.
+Thank you for contributing to PrairieLearn!
 
 -->
