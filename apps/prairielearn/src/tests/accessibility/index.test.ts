@@ -421,6 +421,12 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const enrollment_id = await sqldb.queryRow(
+      'SELECT id FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+      { user_id, course_instance_id: routeParams.course_instance_id },
+      IdSchema,
+    );
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -429,6 +435,7 @@ describe('accessibility', () => {
       assessment_id,
       question_id,
       user_id,
+      enrollment_id,
     };
 
     await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
