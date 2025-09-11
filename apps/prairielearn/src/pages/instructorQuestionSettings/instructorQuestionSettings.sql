@@ -80,19 +80,31 @@ WHERE
 
 
 
--- BLOCK author_for_author_id
-SELECT
-  *
-FROM
-  authors
-WHERE
-  id = $author_id
-
-
 -- BLOCK author_for_qid
-SELECT
+WITH author_data AS (
+  SELECT
+    *
+  FROM
+    authors
+  WHERE
+    id = $author_id
+),
+author_to_qid AS (
+  SELECT
   author_id
 FROM
   question_authors
 WHERE
-  question_id = $question_id
+  question_id = $question_id)
+SELECT 
+author_data.author_name,
+author_data.email,
+author.orcid,
+author.origin_course,
+author.id
+FROM
+author_data
+INNER JOIN
+author_to_qid
+ON
+author_to_qid.author_id = author_data.id

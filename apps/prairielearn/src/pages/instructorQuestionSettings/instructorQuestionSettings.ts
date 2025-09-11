@@ -427,16 +427,7 @@ router.get(
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
 
-    const author_ids = await sqldb.queryRows(sql.author_for_qid, {question_id: res.locals.question.id}, z.string());
-    let authors: Authors[] = [];
-    for (var i = 0; i < author_ids.length; i++) {
-      const author_for_id = await sqldb.queryRows(sql.author_for_author_id, {author_id: author_ids[i]}, AuthorSchema);
-      if (author_for_id) {
-        authors.push(author_for_id);
-      }
-    }
-    authors = authors.flat();
-
+    const authors = await sqldb.queryRows(sql.author_for_qid, {question_id: res.locals.question.id}, AuthorSchema);
 
     res.send(
       InstructorQuestionSettings({
