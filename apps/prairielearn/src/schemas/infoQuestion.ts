@@ -51,7 +51,7 @@ export const QuestionAuthorJsonSchema = z
     email: z.string().describe('An email address to contact a question author.').optional(),
     orcid: z
       .string()
-      .describe('An ORCiD that uniquely identifies an individual question author.')
+      .describe('An ORCID identifier that uniquely identifies an individual question author.')
       .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
       .optional(),
     originCourse: z

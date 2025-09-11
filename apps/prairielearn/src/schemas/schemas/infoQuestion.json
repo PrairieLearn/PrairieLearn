@@ -53,7 +53,7 @@
             "type": "string"
           },
           "orcid": {
-            "description": "An ORCiD that uniquely identifies an individual question author.",
+            "description": "An ORCID identifier that uniquely identifies an individual question author.",
             "type": "string",
             "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$"
           },
