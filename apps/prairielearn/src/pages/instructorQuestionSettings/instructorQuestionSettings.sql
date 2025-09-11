@@ -86,8 +86,6 @@ WITH author_data AS (
     *
   FROM
     authors
-  WHERE
-    id = $author_id
 ),
 author_to_qid AS (
   SELECT
@@ -99,12 +97,9 @@ WHERE
 SELECT 
 author_data.author_name,
 author_data.email,
-author.orcid,
-author.origin_course,
-author.id
+author_data.orcid,
+author_data.origin_course,
+author_data.id
 FROM
 author_data
-INNER JOIN
-author_to_qid
-ON
-author_to_qid.author_id = author_data.id
+JOIN author_to_qid ON author_to_qid.author_id = author_data.id

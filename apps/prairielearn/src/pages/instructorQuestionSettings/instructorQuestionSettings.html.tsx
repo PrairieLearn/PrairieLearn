@@ -87,7 +87,6 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
-  const author = authors[0];
 
   return PageLayout({
     resLocals,
@@ -157,42 +156,67 @@ export function InstructorQuestionSettings({
             </div>
             <div class="mb-3">
               <h3 class="h4">Author Information</h3>
-                <label class="form-label" for="author_name">Name</label>
-              <input
-                type="text"
-                class="form-control font-monospace"
-                id="author_name"
-                name="author_name"
-                value="${author?.author_name ?? ''}"
-                ${'disabled'}
-              />
-              <label class="form-label" for="author_email">Email</label>
-              <input
-                type="email"
-                class="form-control font-monospace"
-                id="author_email"
-                name="author_email"
-                value="${author?.email ?? ''}"
-                ${'disabled'}
-              />
-              <label class="form-label" for="author_orcid">ORCID</label>
-              <input
-                type="email"
-                class="form-control font-monospace"
-                id="author_orcid"
-                name="author_orcid"
-                value="${author?.orcid ?? ''}"
-                ${'disabled'}
-              />
-              <label class="form-label" for="author_reference_course">Reference Course</label>
-              <input
-                type="email"
-                class="form-control font-monospace"
-                id="author_reference_course"
-                name="author_reference_course"
-                value="${author?.origin_course ?? ''}"
-                ${'disabled'}
-              />
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Author information"
+              >
+                <thead>
+                  <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Email</th>
+                    <th class="text-center">ORCID</th>
+                    <th class="text-center">Reference Course</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${authors.map((author, index) => {
+                    return html`
+                      <tr>
+                        <td>
+                          <input
+                            type="text"
+                            class="form-control font-monospace"
+                            id="author_name"
+                            name="${'author_name_' + index}"
+                            value="${author?.author_name ?? ''}"
+                            ${canEdit ? '' : 'disabled'}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="email"
+                            class="form-control font-monospace"
+                            id="author_email"
+                            name="${'author_email_' + index}"
+                            value="${author?.email ?? ''}"
+                            ${canEdit ? '' : 'disabled'}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="email"
+                            class="form-control font-monospace"
+                            id="author_orcid"
+                            name="${'author_orcid_' + index}"
+                            value="${author?.orcid ?? ''}"
+                            ${canEdit ? '' : 'disabled'}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            type="email"
+                            class="form-control font-monospace"
+                            id="author_reference_course"
+                            name="${'author_reference_course_' + index}"
+                            value="${author?.origin_course ?? ''}"
+                            ${canEdit ? '' : 'disabled'}
+                          />
+                        </td>
+                      </tr>
+                    `;
+                  })}
+                </tbody>
+              </table>
             </div>
             <div class="mb-3">
               <h2 class="h4">General</h2>
