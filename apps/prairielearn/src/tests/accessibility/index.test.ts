@@ -14,6 +14,7 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -421,11 +422,10 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    const enrollment_id = await sqldb.queryRow(
-      'SELECT id FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-      { user_id, course_instance_id: routeParams.course_instance_id },
-      IdSchema,
-    );
+    const enrollment = await ensureEnrollment({
+      course_instance_id: '1',
+      user_id,
+    });
 
     await features.enable('question-sharing');
 
@@ -435,7 +435,7 @@ describe('accessibility', () => {
       assessment_id,
       question_id,
       user_id,
-      enrollment_id,
+      enrollment_id: enrollment!.id,
     };
 
     await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
