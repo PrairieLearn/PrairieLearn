@@ -33,8 +33,8 @@ export function getAssessmentInstanceUrl({
   return `${urlPrefix}/assessment/${assessmentId}`;
 }
 
-export function getStudentDetailUrl(urlPrefix: string, user_id: string): string {
-  return `${urlPrefix}/instance_admin/student/${user_id}`;
+export function getStudentEnrollmentUrl(urlPrefix: string, enrollment_id: string): string {
+  return `${urlPrefix}/instance_admin/enrollment/${enrollment_id}`;
 }
 
 export function getSelfEnrollmentLinkUrl({

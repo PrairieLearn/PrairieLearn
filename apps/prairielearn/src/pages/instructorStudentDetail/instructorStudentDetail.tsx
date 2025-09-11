@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
@@ -16,7 +16,7 @@ const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
-  '/:user_id(\\d+)',
+  '/:enrollment_id(\\d+)',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -30,8 +30,7 @@ router.get(
     const student = await queryOptionalRow(
       sql.select_student_info,
       {
-        user_id: req.params.user_id,
-        course_instance_id: res.locals.course_instance.id,
+        enrollment_id: req.params.enrollment_id,
       },
       UserDetailSchema,
     );
@@ -67,11 +66,48 @@ router.get(
               student={student}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
+              csrfToken={pageContext.__csrf_token}
+              hasCourseInstancePermissionEdit={
+                pageContext.authz_data.has_course_instance_permission_edit
+              }
             />
           </Hydrate>
         ),
       }),
     );
+  }),
+);
+
+router.post(
+  '/:user_id(\\d+)',
+  asyncHandler(async (req, res) => {
+    const pageContext = getPageContext(res.locals);
+    if (!pageContext.authz_data.has_course_instance_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
+    const action = req.body.__action;
+    const course_instance_id = res.locals.course_instance.id;
+    const user_id = req.params.user_id;
+
+    switch (action) {
+      case 'block_student': {
+        await execute(sql.update_enrollment_block, { course_instance_id, user_id });
+        break;
+      }
+      case 'unblock_student': {
+        await execute(sql.update_enrollment_unblock, { course_instance_id, user_id });
+        break;
+      }
+      case 'cancel_invitation': {
+        await execute(sql.delete_invitation_by_user_id, { course_instance_id, user_id });
+        break;
+      }
+      default:
+        throw new HttpStatusError(400, 'Unknown action');
+    }
+
+    res.redirect(req.originalUrl);
   }),
 );
 
