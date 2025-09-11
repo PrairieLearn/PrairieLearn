@@ -15,21 +15,22 @@ describe('API', { timeout: 60_000 }, function () {
 
   afterAll(helperServer.after);
 
-  helperExam.startExam(locals);
+  helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
   describe('grade correct answer to question addNumbers', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
           instance_question_points: assessmentPoints,
           instance_question_score_perc: (assessmentPoints / 5) * 100,
           assessment_instance_points: assessmentPoints,
-          assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc:
+            (assessmentPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -186,7 +187,7 @@ describe('API', { timeout: 60_000 }, function () {
       const assessmentInstance = json[0];
       assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
-      assert.equal(assessmentInstance.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(assessmentInstance.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
 
       // Persist the assessment instance ID for later requests
       locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
@@ -209,7 +210,7 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(json.assessment_id, locals.assessment_id);
       assert.equal(json.user_uid, 'dev@example.com');
       assert.equal(json.points, assessmentPoints);
-      assert.equal(json.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(json.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
     });
 
     test.sequential('GET to API for assessment submissions succeeds', async function () {
@@ -265,7 +266,7 @@ describe('API', { timeout: 60_000 }, function () {
       const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
       assert.exists(assessment);
       assert.equal(assessment.points, assessmentPoints);
-      assert.equal(assessment.max_points, helperExam.assessmentMaxPoints);
+      assert.equal(assessment.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
     });
 
     test.sequential('GET to API for assessment instance questions succeeds', async function () {

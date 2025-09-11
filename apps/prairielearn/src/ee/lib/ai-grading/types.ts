@@ -33,4 +33,6 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Images that were sent in the prompt. */
   promptImageUrls: string[];
+  /** Explanation from the LLM for AI grading */
+  explanation: string | null;
 }
