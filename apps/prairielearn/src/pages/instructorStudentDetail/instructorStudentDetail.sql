@@ -28,9 +28,8 @@ WHERE
   id = $enrollment_id
   AND status = 'blocked';
 
--- BLOCK delete_invitation_by_user_id
+-- BLOCK delete_invitation
 DELETE FROM enrollments
 WHERE
   id = $enrollment_id
-  AND status = 'invited'
-  AND pending_uid = $pending_uid;
+  AND status = 'invited';

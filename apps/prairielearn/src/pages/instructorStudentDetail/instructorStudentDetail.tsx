@@ -110,21 +110,24 @@ router.post(
     switch (action) {
       case 'block_student': {
         await execute(sql.update_enrollment_block, { enrollment_id });
+        res.redirect(req.originalUrl);
         break;
       }
       case 'unblock_student': {
         await execute(sql.update_enrollment_unblock, { enrollment_id });
+        res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        await execute(sql.delete_invitation_by_user_id, { enrollment_id });
+        await execute(sql.delete_invitation, { enrollment_id });
+        res.redirect(
+          `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/students`,
+        );
         break;
       }
       default:
         throw new HttpStatusError(400, 'Unknown action');
     }
-
-    res.redirect(req.originalUrl);
   }),
 );
 
