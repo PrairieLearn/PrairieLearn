@@ -1168,7 +1168,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     const scaledWidth = this.width * this.scaleX;
     const scaledHeight = this.height * this.scaleY;
 
-    const nSpaces = Math.ceil(scaledWidth / this.spacing);
+    const nSpaces = Math.max(1, Math.ceil(scaledWidth / this.spacing));
     const dx = scaledWidth / nSpaces;
 
     // Undo Fabric's scale transformation.
