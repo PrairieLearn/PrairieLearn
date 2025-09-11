@@ -91,10 +91,10 @@ export function InstructorQuestionSettings({
 
   const authorsData = authors.map((author) => {
     let parsedORCIDId = '';
-    if (author.orcid != null) {
+    if (author.orcid !== null) {
       for (let index = 0; index < author.orcid.length; index++) {
         parsedORCIDId += author.orcid[index];
-        if ((index + 1) % 4 == 0 && index != author.orcid.length - 1) {
+        if ((index + 1) % 4 === 0 && index !== author.orcid.length - 1) {
           parsedORCIDId += '-';
         }
       }

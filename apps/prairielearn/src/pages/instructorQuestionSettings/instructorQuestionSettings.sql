@@ -78,27 +78,24 @@ FROM
 WHERE
   ss.course_id = $course_id;
 
-
-
 -- BLOCK author_for_qid
-WITH author_to_qid AS (
-  SELECT
-  author_id
-FROM
-  question_authors
-WHERE
-  question_id = $question_id)
+WITH 
+  author_to_qid AS (
+    SELECT
+    author_id
+  FROM
+    question_authors
+  WHERE
+    question_id = $question_id
+  )
 SELECT 
-author_data.author_name,
-author_data.email,
-author_data.orcid,
-author_data.origin_course,
-author_data.id
+authors.author_name,
+authors.email,
+authors.orcid,
+authors.origin_course,
+authors.id
 FROM
 author_to_qid
 LEFT JOIN 
-(SELECT
-    *
-  FROM
-    authors) as author_data 
-ON author_to_qid.author_id = author_data.id
+authors 
+ON author_to_qid.author_id = authors.id
