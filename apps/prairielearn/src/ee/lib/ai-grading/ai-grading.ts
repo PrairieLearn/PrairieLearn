@@ -368,7 +368,7 @@ export async function aiGrade({
 
             if (instance_question.requires_manual_grading) {
               // Requires grading: update instance question score
-              const feedback = response.parsed.explanation;
+              const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
                 const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                   assessment_question.assessment_id,
