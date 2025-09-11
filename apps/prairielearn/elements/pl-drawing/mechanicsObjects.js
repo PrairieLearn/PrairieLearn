@@ -1163,7 +1163,7 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
     ctx.fill();
   },
   _render(ctx) {
-    // We manually compute these values as `getScaledWidth()` and `getScaledHeight()`
+    // We manually compute these values since `getScaledWidth()` and `getScaledHeight()`
     // include the stroke width, which we don't want.
     const scaledWidth = this.width * this.scaleX;
     const scaledHeight = this.height * this.scaleY;
