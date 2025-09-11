@@ -1192,7 +1192,11 @@ mechanicsObjects.DistTrianLoad = fabric.util.createClass(fabric.Object, {
 
     // Draw the head/base line
     const xoff = this.strokeWidth / 2;
-    this.drawLine(ctx, -cx - xoff, cy - this.w1, cx + xoff, cy - this.w2);
+    if (this.anchor_is_tail) {
+      this.drawLine(ctx, -cx - xoff, -cy, cx + xoff, -cy);
+    } else {
+      this.drawLine(ctx, -cx - xoff, cy - this.w1, cx + xoff, cy - this.w2);
+    }
 
     this.label1obj.left = this.offsetx1 - cx;
     this.label1obj.top = this.w1 + this.offsety1 - cy;
