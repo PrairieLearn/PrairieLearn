@@ -184,7 +184,10 @@ SELECT
 FROM
   users AS u
   -- UID is guaranteed to be non-null for users, and we want to retrieve enrollments for pending enrollments
-  JOIN enrollments AS e ON (e.user_id = u.user_id OR e.pending_uid = u.uid)
+  JOIN enrollments AS e ON (
+    e.user_id = u.user_id
+    OR e.pending_uid = u.uid
+  )
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
