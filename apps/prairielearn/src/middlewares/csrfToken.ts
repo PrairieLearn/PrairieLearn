@@ -6,8 +6,11 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 import { config } from '../lib/config.js';
 
 export default asyncHandler(async (req, res, next) => {
+  // We don't want to include the query params in the token, so we extract the
+  // pathname and origin from the original URL.
+  const { pathname, origin } = new URL(req.originalUrl);
   const tokenData = {
-    url: req.originalUrl,
+    url: origin + pathname,
     authn_user_id: res.locals.authn_user?.user_id,
   };
 
