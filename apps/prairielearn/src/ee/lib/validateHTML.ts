@@ -318,6 +318,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           break;
         // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
+          assertInt('pl-integer-input', key, val, errors);
           if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
@@ -423,6 +424,9 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
       }
     }
+  }
+  if (!answersName) {
+    errors.push('pl-symbolic-input: answers-name is a required attribute.');
   }
   if (usedBlankValue && !allowBlank) {
     errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
