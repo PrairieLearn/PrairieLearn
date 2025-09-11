@@ -190,8 +190,8 @@ function getParamsForAssessment(
             jsonMaxAutoPoints: question.maxAutoPoints ?? null,
             jsonAutoPoints: question.autoPoints ?? null,
             jsonManualPoints: question.manualPoints ?? null,
-            jsonForceMaxPoints: question.forceMaxPoints,
-            jsonTriesPerVariant: question.triesPerVariant,
+            jsonForceMaxPoints: question.forceMaxPoints ?? null,
+            jsonTriesPerVariant: question.triesPerVariant ?? null,
           },
         ];
       }
@@ -215,7 +215,6 @@ function getParamsForAssessment(
               maxPoints,
               initPoints: undefined,
               pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-              jsonMaxPoints: alternative.maxPoints,
             };
           }
           case 'Homework': {
@@ -229,7 +228,6 @@ function getParamsForAssessment(
               maxPoints,
               initPoints,
               pointsList: undefined,
-              jsonMaxPoints: alternative.maxPoints,
             };
           }
           default: {
@@ -255,7 +253,7 @@ function getParamsForAssessment(
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           json_points: alternative.jsonPoints,
-          json_auto_points: alternative.autoPoints,
+          json_auto_points: alternative.jsonAutoPoints,
           json_manual_points: alternative.jsonManualPoints,
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
