@@ -305,6 +305,7 @@
       "dist/*",
       "public/*"
     ],
-    "ext": "js,jsx,ts,tsx,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql",
+    "delay": 100
   }
 }
