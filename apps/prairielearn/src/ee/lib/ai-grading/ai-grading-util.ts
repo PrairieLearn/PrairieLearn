@@ -126,7 +126,7 @@ export async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: explanation and score. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The explanation should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is entirely correct. You should also include an explanation on why you made these choices." +
+        "You are an instructor for a course, and you are grading a student's response to a question. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. Follow any special instructions given by the instructor in the question. Include feedback for the student, but omit the feedback if the student's response is entirely correct. Also include an explanation on why you made these choices." +
         (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
