@@ -124,10 +124,11 @@ export async function sync(
         let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
         if (originCourseID === null) {
           originCourseID = await sqldb.queryOptionalRow(
-          sql.select_sharing_name,
-          { origin_course: author.originCourse },
-          z.string(),
-        );
+            sql.select_sharing_name,
+            { origin_course: author.originCourse },
+            z.string(),
+          );
+        }
         if (originCourseID === null) {
           infofile.addWarning(
             question,
