@@ -325,7 +325,6 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
             );
           }
           break;
-        // string attributes are valid as strings, and these don't affect other tags, so no validation required
         case 'label':
         case 'suffix':
         case 'placeholder':
