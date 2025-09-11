@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { run } from '@prairielearn/run';
 
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
+import { SelectUserSchema } from '../authn.types.js';
 
 import {
   RawStaffAssessmentSchema,
@@ -50,9 +51,17 @@ export const RawPageContextSchema = z.object({
 
   urlPrefix: z.string(),
   plainUrlPrefix: z.string(),
-  access_as_administrator: z.boolean(),
 
+  // authn data
   authn_user: StaffUserSchema,
+  authn_institution: StaffInstitutionSchema,
+  authn_provider_name: z.string(),
+  authn_is_administrator: SelectUserSchema.shape.is_administrator,
+  access_as_administrator: z.boolean(),
+  is_administrator: z.boolean(),
+  is_institution_administrator: z.boolean(),
+  news_item_notification_count: SelectUserSchema.shape.news_item_notification_count,
+
   navPage: NavPageSchema,
   /** You should prefer to set the navbarType instead of using this value. */
   navbarType: NavbarTypeSchema,

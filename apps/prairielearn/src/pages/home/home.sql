@@ -179,10 +179,12 @@ SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
   ci.long_name,
-  ci.id
+  ci.id,
+  to_jsonb(e) AS enrollment
 FROM
   users AS u
-  JOIN enrollments AS e ON (e.user_id = u.user_id)
+  -- UID is guaranteed to be non-null for users, and we want to retrieve enrollments for pending enrollments
+  JOIN enrollments AS e ON (e.user_id = u.user_id OR e.pending_uid = u.uid)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL

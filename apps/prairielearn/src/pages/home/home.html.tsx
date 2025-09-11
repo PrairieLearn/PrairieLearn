@@ -1,9 +1,12 @@
+import { useState } from 'preact/hooks';
+import { Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   type StaffInstitution,
+  StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 
@@ -27,22 +30,23 @@ export const StudentHomePageCourseSchema = z.object({
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   long_name: RawStudentCourseInstanceSchema.shape.long_name,
+  enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export function Home({
-  resLocals,
+  canAddCourses,
+  csrfToken,
   instructorCourses,
   studentCourses,
   adminInstitutions,
 }: {
-  resLocals: Record<string, any>;
+  canAddCourses: boolean;
+  csrfToken: string;
   instructorCourses: InstructorHomePageCourse[];
   studentCourses: StudentHomePageCourse[];
   adminInstitutions: StaffInstitution[];
 }) {
-  const { authn_provider_name } = resLocals;
-
   return (
     <>
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
@@ -55,7 +59,8 @@ export function Home({
         <StudentCoursesCard
           studentCourses={studentCourses}
           hasInstructorCourses={instructorCourses.length > 0}
-          canAddCourses={authn_provider_name !== 'LTI'}
+          canAddCourses={canAddCourses}
+          csrfToken={csrfToken}
         />
       </div>
     </>
@@ -235,14 +240,20 @@ interface StudentCoursesCardProps {
   studentCourses: StudentHomePageCourse[];
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
+  csrfToken: string;
 }
 
 function StudentCoursesCard({
   studentCourses,
   hasInstructorCourses,
   canAddCourses,
+  csrfToken,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
+  const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
+
+  const invited = studentCourses.filter((ci) => ci.enrollment.status === 'invited');
+  const joinedOrOther = studentCourses.filter((ci) => ci.enrollment.status !== 'invited');
 
   return (
     <div class="card mb-4">
@@ -279,7 +290,43 @@ function StudentCoursesCard({
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {studentCourses.map((courseInstance) => (
+              {invited.map((courseInstance) => (
+                <tr key={`invite-${courseInstance.id}`} class="table-warning">
+                  <td class="align-middle">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <div>
+                        <span class="fw-semibold">
+                          {courseInstance.course_short_name}: {courseInstance.course_title},
+                          {courseInstance.long_name}
+                        </span>
+                        <span class="ms-2 badge bg-warning text-dark">Invitation</span>
+                      </div>
+                      <div class="d-flex gap-2">
+                        <form method="POST">
+                          <input type="hidden" name="__action" value="accept_invitation" />
+                          <input type="hidden" name="__csrf_token" value={csrfToken} />
+                          <input
+                            type="hidden"
+                            name="course_instance_id"
+                            value={courseInstance.id}
+                          />
+                          <button type="submit" class="btn btn-primary btn-sm">
+                            Accept
+                          </button>
+                        </form>
+                        <button
+                          type="button"
+                          class="btn btn-danger btn-sm"
+                          onClick={() => setRejectingCourseId(courseInstance.id)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {joinedOrOther.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
                     <a href={`${config.urlPrefix}/course_instance/${courseInstance.id}`}>
@@ -293,6 +340,39 @@ function StudentCoursesCard({
           </table>
         </div>
       )}
+
+      <Modal
+        show={rejectingCourseId !== null}
+        backdrop="static"
+        onHide={() => setRejectingCourseId(null)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Reject invitation?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Are you sure you want to reject this invitation? You will need to be re-invited if you
+            change your mind later.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onClick={() => setRejectingCourseId(null)}
+          >
+            Cancel
+          </button>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <input type="hidden" name="__action" value="reject_invitation" />
+            <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
+            <button type="submit" class="btn btn-danger">
+              Reject invitation
+            </button>
+          </form>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }

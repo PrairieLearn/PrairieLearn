@@ -207,6 +207,19 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 
+export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
+  course_instance_id: true,
+  created_at: true,
+  id: true,
+  joined_at: true,
+  lti_managed: true,
+  pending_uid: true,
+  status: true,
+  user_id: true,
+});
+export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'StudentEnrollment'>();
+export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
+
 /** Institutions */
 export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
   default_authn_provider_id: true,
