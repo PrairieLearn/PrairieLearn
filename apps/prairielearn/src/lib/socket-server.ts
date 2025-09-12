@@ -1,4 +1,5 @@
 import type http from 'http';
+import assert from 'node:assert';
 
 import { createAdapter } from '@socket.io/redis-adapter';
 import debugfn from 'debug';
@@ -41,10 +42,10 @@ function attachEventListeners(client: Redis, type: string) {
   });
 }
 
-export let io: Server;
+export let io: Server | undefined;
 
-let pub: Redis;
-let sub: Redis;
+let pub: Redis | undefined;
+let sub: Redis | undefined;
 
 export function init(server: http.Server) {
   debug('init(): creating socket server');
@@ -64,6 +65,7 @@ export function init(server: http.Server) {
 }
 
 export async function close() {
+  assert(io, 'io is required');
   // Note that we don't use `io.close()` here, as that actually tries to close
   // the underlying HTTP server. In our desired shutdown sequence, we first
   // close the HTTP server and then later disconnect all sockets. There's some

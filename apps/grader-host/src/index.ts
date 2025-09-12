@@ -15,6 +15,7 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
 import * as tmp from 'tmp-promise';
+import z from 'zod';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { contains } from '@prairielearn/path-utils';
@@ -184,11 +185,15 @@ async.series(
 );
 
 async function isJobCanceled(job: GradingJobMessage) {
-  const result = await sqldb.queryOneRowAsync(sql.check_job_cancellation, {
-    grading_job_id: job.jobId,
-  });
+  const canceled = await sqldb.queryRow(
+    sql.check_job_cancellation,
+    {
+      grading_job_id: job.jobId,
+    },
+    z.boolean(),
+  );
 
-  return result.rows[0].canceled;
+  return canceled;
 }
 
 async function handleJob(job: GradingJobMessage) {

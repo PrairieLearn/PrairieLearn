@@ -66,7 +66,7 @@ function stripeProductCacheKey(id: string): string {
  */
 export async function getStripeProduct(id: string): Promise<Stripe.Product> {
   const cacheKey = stripeProductCacheKey(id);
-  let product: Stripe.Product = await cache.get(cacheKey);
+  let product = await cache.get<Stripe.Product>(cacheKey);
   if (!product) {
     const stripe = getStripeClient();
     product = await stripe.products.retrieve(id, { expand: ['default_price'] });

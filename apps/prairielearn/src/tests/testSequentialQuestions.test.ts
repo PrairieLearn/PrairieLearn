@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import { SprocQuestionOrderSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -53,8 +54,12 @@ describe(
      * Updates context.instanceQuestions to the current state of the assessment instance
      */
     async function refreshContextQuestions() {
-      const results = await sqldb.callAsync('question_order', [context.assessmentInstanceId]);
-      context.instanceQuestions = results.rows.map((e) => {
+      const results = await sqldb.callRows(
+        'question_order',
+        [context.assessmentInstanceId],
+        SprocQuestionOrderSchema,
+      );
+      context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
           locked: Boolean(e.sequence_locked),

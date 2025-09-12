@@ -230,7 +230,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     // that must be executed. Typical vanilla JS alternatives don't support
     // this kind of script.
     $(submissionPanelSelector).replaceWith(msg.submissionPanel);
-    void mathjaxTypeset([document.querySelector(submissionPanelSelector) as HTMLElement]);
+    void mathjaxTypeset([document.querySelector(submissionPanelSelector)!]);
   }
 
   if (msg.questionScorePanel) {

@@ -1,6 +1,7 @@
 columns
     advance_score_perc: double precision
     ai_grading_mode: boolean not null default false
+    allow_real_time_grading: boolean
     alternative_group_id: bigint
     assessment_id: bigint not null
     average_average_submission_score: double precision

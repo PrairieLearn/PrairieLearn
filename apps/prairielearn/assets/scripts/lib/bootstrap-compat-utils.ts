@@ -84,7 +84,7 @@ function migrateClass(el: Element, oldClass: string, newClass: string) {
 
 function migrateAttribute(el: Element, oldAttribute: string, newAttribute: string) {
   if (el.hasAttribute(oldAttribute) && !el.hasAttribute(newAttribute)) {
-    el.setAttribute(newAttribute, el.getAttribute(oldAttribute) as string);
+    el.setAttribute(newAttribute, el.getAttribute(oldAttribute)!);
 
     // TODO: customizable message?
     console.warn(

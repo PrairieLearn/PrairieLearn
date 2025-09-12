@@ -20,7 +20,17 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
 
   if (effectiveAccess) {
     return;
-  } else if (authenticatedAccess) {
+  } else if (
+    authenticatedAccess &&
+    // This is a dumb hack to work around the fact that this function is called from
+    // the `authzWorkspace` middleware. That middleware is mounted on the container
+    // proxy paths, but our CSRF middleware intentionally doesn't run there. The
+    // `getPageContext` function requires a CSRF token to be present, so we can't
+    // safely call it without one.
+    //
+    // If a CSRF token is not present, we fall through to the error below.
+    res.locals.__csrf_token
+  ) {
     const pageContext = getPageContext(res.locals);
     return PageLayout({
       resLocals: res.locals,

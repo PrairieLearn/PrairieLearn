@@ -10,7 +10,7 @@ INSERT INTO
   )
 SELECT
   ci.course_id,
-  ci.enrollment_code,
+  $enrollment_code,
   'UNAVAILABLE',
   '9496d805-130b-42f9-9a98-87296425e41d',
   ci.display_timezone,

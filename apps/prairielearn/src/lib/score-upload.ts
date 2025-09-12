@@ -53,7 +53,7 @@ export async function uploadInstanceQuestionScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -174,7 +174,7 @@ export async function uploadAssessmentInstanceScores(
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
-    let output: string | null = null;
+    let output = null as string | null;
     let outputCount = 0;
     let outputThreshold = 100;
 
@@ -212,11 +212,7 @@ export async function uploadAssessmentInstanceScores(
         } catch (err) {
           errorCount++;
           const msg = String(err);
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+          output += '\n' + msg;
         }
         outputCount++;
         if (outputCount >= outputThreshold) {

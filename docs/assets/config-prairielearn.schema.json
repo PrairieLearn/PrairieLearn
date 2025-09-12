@@ -690,10 +690,6 @@
       "type": "number",
       "default": 3600
     },
-    "hasLti": {
-      "type": "boolean",
-      "default": false
-    },
     "ltiRedirectUrl": {
       "type": ["string", "null"],
       "default": null

@@ -211,13 +211,13 @@ export async function saveSubmission(
           submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
 
           if (!('_files' in submission.submitted_answer)) {
-            submission.submitted_answer['_files'] = [];
+            submission.submitted_answer._files = [];
           }
 
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer['_files'].push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents });
           }
           await fs.promises.unlink(zipPath);
         }

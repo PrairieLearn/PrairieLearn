@@ -164,6 +164,7 @@ export async function uploadSubmissions(
               sql.insert_variant,
               {
                 course_id,
+                course_instance_id,
                 instance_question_id,
                 question_id: question.id,
                 authn_user_id: user.user_id,

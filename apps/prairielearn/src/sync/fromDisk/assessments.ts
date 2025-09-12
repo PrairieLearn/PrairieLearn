@@ -4,10 +4,15 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
-import { type AssessmentJson, type CommentJson } from '../../schemas/index.js';
+import {
+  type AssessmentJson,
+  type QuestionAlternativeJson,
+  type QuestionPointsJson,
+  type ZoneQuestionJson,
+} from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
@@ -52,18 +57,12 @@ function getParamsForAssessment(
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
-  const allowIssueReporting = assessment.allowIssueReporting ?? true;
-  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
-  const requireHonorCode =
-    assessment.requireHonorCode == null ? assessment.type === 'Exam' : assessment.requireHonorCode;
-  const allowPersonalNotes = assessment.allowPersonalNotes ?? true;
-
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
   // apply only to students. So, we filter out (and ignore) any access rule with a
   // non-empty role that is not Student.
-  const allowAccess = (assessment.allowAccess ?? [])
-    .filter((accessRule) => !('role' in accessRule) || accessRule.role === 'Student')
+  const allowAccess = assessment.allowAccess
+    .filter((accessRule) => accessRule.role == null || accessRule.role === 'Student')
     .map((accessRule, index) => {
       return {
         number: index + 1,
@@ -79,18 +78,18 @@ function getParamsForAssessment(
         time_limit_min: accessRule.timeLimitMin ?? null,
         password: accessRule.password ?? null,
         exam_uuid: accessRule.examUuid ?? null,
-        show_closed_assessment: accessRule.showClosedAssessment ?? true,
-        show_closed_assessment_score: accessRule.showClosedAssessmentScore ?? true,
-        active: accessRule.active ?? true,
+        show_closed_assessment: accessRule.showClosedAssessment,
+        show_closed_assessment_score: accessRule.showClosedAssessmentScore,
+        active: accessRule.active,
         comment: accessRule.comment,
       };
     });
 
-  const zones = (assessment.zones ?? []).map((zone, index) => {
+  const zones = assessment.zones.map((zone, index) => {
     return {
       number: index + 1,
       title: zone.title,
-      number_choose: zone.numberChoose,
+      number_choose: zone.numberChoose ?? null,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
       advance_score_perc: zone.advanceScorePerc,
@@ -103,33 +102,35 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
-  const assessmentCanView = assessment?.canView ?? allRoleNames;
-  const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
-  const alternativeGroups = (assessment.zones ?? []).map((zone) => {
+  const allRoleNames = assessment.groupRoles.map((role) => role.name);
+  const assessmentCanView = assessment.canView.length > 0 ? assessment.canView : allRoleNames;
+  const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
+  const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
-    const zoneCanView = zone?.canView ?? assessmentCanView;
-    const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
+    const zoneCanView = zone.canView.length > 0 ? zone.canView : assessmentCanView;
+    const zoneCanSubmit = zone.canSubmit.length > 0 ? zone.canSubmit : assessmentCanSubmit;
     return zone.questions.map((question) => {
-      let alternatives: {
-        qid: string;
-        maxPoints: number | null;
-        points: number | number[] | null;
-        maxAutoPoints: number | null;
-        autoPoints: number | number[] | null;
-        manualPoints: number | null;
-        forceMaxPoints: boolean;
-        triesPerVariant: number;
-        gradeRateMinutes: number;
-        jsonGradeRateMinutes: number | undefined;
-        canView: string[] | null;
-        canSubmit: string[] | null;
-        advanceScorePerc: number | undefined;
-        comment?: CommentJson;
-      }[] = [];
+      let alternatives: (Omit<
+        QuestionPointsJson,
+        'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
+      > &
+        Omit<
+          QuestionAlternativeJson,
+          'id' | 'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
+        > & {
+          qid: QuestionAlternativeJson['id'];
+          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
+          canView: ZoneQuestionJson['canView'];
+          canSubmit: ZoneQuestionJson['canSubmit'];
+          maxPoints: number | null;
+          points: number | number[] | null;
+          maxAutoPoints: number | null;
+          autoPoints: number | number[] | null;
+          manualPoints: number | null;
+        })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
-      const questionCanView = question.canView ?? zoneCanView;
-      const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
+      const questionCanView = question.canView.length > 0 ? question.canView : zoneCanView;
+      const questionCanSubmit = question.canSubmit.length > 0 ? question.canSubmit : zoneCanSubmit;
       if (question.alternatives) {
         alternatives = question.alternatives.map((alternative) => {
           return {
@@ -139,8 +140,8 @@ function getParamsForAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
-            forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
-            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
+            forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints,
+            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             jsonGradeRateMinutes: alternative.gradeRateMinutes,
@@ -158,8 +159,8 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
-            forceMaxPoints: question.forceMaxPoints ?? false,
-            triesPerVariant: question.triesPerVariant ?? 1,
+            forceMaxPoints: question.forceMaxPoints,
+            triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
@@ -169,44 +170,48 @@ function getParamsForAssessment(
             // group, since each alternative can have its own comment. If this is
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
-            comment: question.alternatives ? undefined : question.comment,
+            comment: question.comment,
           },
         ];
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
         const hasSplitPoints =
-          alternative.autoPoints !== null ||
-          alternative.maxAutoPoints !== null ||
-          alternative.manualPoints !== null;
+          alternative.autoPoints != null ||
+          alternative.maxAutoPoints != null ||
+          alternative.manualPoints != null;
         const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
-        if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          const maxPoints = Math.max(...pointsList);
+        switch (assessment.type) {
+          case 'Exam': {
+            const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+            const maxPoints = Math.max(...pointsList);
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints: undefined,
-            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-          };
-        } else if (assessment.type === 'Homework') {
-          const initPoints =
-            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
-          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints: undefined,
+              pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
+            };
+          }
+          case 'Homework': {
+            const initPoints =
+              (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+            const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
-        } else {
-          assertNever(assessment.type);
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints,
+              pointsList: undefined,
+            };
+          }
+          default: {
+            assertNever(assessment.type);
+          }
         }
       });
 
@@ -226,6 +231,11 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          // This is the "resolved" setting. Although it's currently unused,
+          // it'll be used at runtime once we add per-question configuration
+          // of real-time grading. Soon we'll add per-zone and per-alternative-group
+          // settings of this as well, and this will take that into account.
+          allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -243,7 +253,7 @@ function getParamsForAssessment(
 
       return {
         number: alternativeGroupNumber,
-        number_choose: question.numberChoose,
+        number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
         json_grade_rate_minutes: question.gradeRateMinutes,
         json_can_view: question.canView,
@@ -257,7 +267,7 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = (assessment.groupRoles ?? []).map((role) => ({
+  const groupRoles = assessment.groupRoles.map((role) => ({
     role_name: role.name,
     minimum: role.minimum,
     maximum: role.maximum,
@@ -268,34 +278,40 @@ function getParamsForAssessment(
     type: assessment.type,
     number: assessment.number,
     title: assessment.title,
-    multiple_instance: assessment.multipleInstance ? true : false,
+    multiple_instance: assessment.multipleInstance,
+    // If shuffleQuestions is not set, it's implicitly false for Homework and true for Exams.
     shuffle_questions:
-      (assessment.type === 'Exam' && assessment.shuffleQuestions === undefined) ||
-      assessment.shuffleQuestions
-        ? true
-        : false,
-    allow_issue_reporting: allowIssueReporting,
-    allow_real_time_grading: allowRealTimeGrading,
-    allow_personal_notes: allowPersonalNotes,
-    require_honor_code: requireHonorCode,
+      assessment.shuffleQuestions == null
+        ? assessment.type === 'Exam'
+        : assessment.shuffleQuestions,
+    allow_issue_reporting: assessment.allowIssueReporting,
+    allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
+    json_allow_real_time_grading: assessment.allowRealTimeGrading,
+    allow_personal_notes: assessment.allowPersonalNotes,
+    // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
+    // NOTE: There are various homeworks with requireHonorCode set to true in the database (see #12675 for more details)
+    require_honor_code:
+      assessment.requireHonorCode == null
+        ? assessment.type === 'Exam'
+        : assessment.requireHonorCode,
     honor_code: assessment.honorCode,
-    auto_close: assessment.autoClose ?? true,
+    auto_close: assessment.autoClose,
     max_points: assessment.maxPoints,
     max_bonus_points: assessment.maxBonusPoints,
     set_name: assessment.set,
     assessment_module_name: assessment.module,
     text: assessment.text,
-    constant_question_value: assessment.constantQuestionValue ?? false,
-    group_work: !!assessment.groupWork,
-    group_max_size: assessment.groupMaxSize || null,
-    group_min_size: assessment.groupMinSize || null,
-    student_group_create: assessment.studentGroupCreate ?? false,
-    student_group_choose_name: assessment.studentGroupChooseName ?? true,
-    student_group_join: assessment.studentGroupJoin ?? false,
-    student_group_leave: assessment.studentGroupLeave ?? false,
+    constant_question_value: assessment.constantQuestionValue,
+    group_work: assessment.groupWork,
+    group_max_size: assessment.groupMaxSize ?? null,
+    group_min_size: assessment.groupMinSize ?? null,
+    student_group_create: assessment.studentGroupCreate,
+    student_group_choose_name: assessment.studentGroupChooseName,
+    student_group_join: assessment.studentGroupJoin,
+    student_group_leave: assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: !!assessment.groupRoles,
+    has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
     allowAccess,
@@ -305,7 +321,7 @@ function getParamsForAssessment(
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
-    share_source_publicly: assessment.shareSourcePublicly ?? false,
+    share_source_publicly: assessment.shareSourcePublicly,
   };
 }
 
@@ -341,7 +357,7 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   if (!courseInstance) return false;
 
   // If there are no access rules, the course instance is not accessible.
-  if (!courseInstance.allowAccess?.length) return false;
+  if (courseInstance.allowAccess.length === 0) return false;
 
   return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
 }
@@ -368,7 +384,7 @@ export async function sync(
     const uuidAssessmentMap = new Map<string, string[]>();
     Object.entries(assessments).forEach(([tid, assessment]) => {
       if (!assessment.data) return;
-      (assessment.data.allowAccess || []).forEach((allowAccess) => {
+      assessment.data.allowAccess.forEach((allowAccess) => {
         const { examUuid } = allowAccess;
         if (examUuid) {
           examUuids.add(examUuid);
@@ -409,12 +425,11 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callAsync('sync_assessments', [
-    assessmentParams,
-    courseId,
-    courseInstanceId,
-    config.checkSharingOnSync,
-  ]);
+  await sqldb.callRow(
+    'sync_assessments',
+    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+    SprocSyncAssessmentsSchema,
+  );
 }
 
 export async function validateAssessmentSharedQuestions(
@@ -430,14 +445,14 @@ export async function validateAssessmentSharedQuestions(
 
   Object.entries(assessments).forEach(([tid, assessment]) => {
     if (!assessment.data) return;
-    (assessment.data.zones || []).forEach((zone) => {
-      (zone.questions || []).forEach((question) => {
+    assessment.data.zones.forEach((zone) => {
+      zone.questions.forEach((question) => {
         const qids = question.alternatives?.map((alternative) => alternative.id) ?? [];
         if (question.id) {
           qids.push(question.id);
         }
         qids.forEach((qid) => {
-          if (qid[0] !== '@') return;
+          if (!qid.startsWith('@')) return;
 
           importedQids.add(qid);
           let qids = assessmentImportedQids.get(tid);

@@ -95,7 +95,7 @@ describe('BatchedMigrationExecutor', () => {
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
       throw err;
     });
-    await init([SCHEMA_MIGRATIONS_PATH], 'prairielearn_migrations');
+    await init({ directories: [SCHEMA_MIGRATIONS_PATH], project: 'prairielearn_migrations' });
   });
 
   beforeEach(async () => {

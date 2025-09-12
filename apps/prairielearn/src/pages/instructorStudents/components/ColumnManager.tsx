@@ -98,7 +98,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const handleTogglePin = (columnId: string) => {
-    const currentLeft = table.getState().columnPinning?.left ?? [];
+    const currentLeft = table.getState().columnPinning.left ?? [];
     const isPinned = currentLeft.includes(columnId);
     let newLeft: string[];
     if (isPinned) {
