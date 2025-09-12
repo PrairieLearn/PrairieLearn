@@ -148,6 +148,7 @@ onDocumentReady(() => {
   }
 
   // Enable chat width resizing via drag handle
+  // TODO: Keyboard support for resizing the chat width.
   const container = document.querySelector<HTMLElement>('.app-container');
   const resizer = document.querySelector<HTMLElement>('.app-chat-resizer');
   const chat = document.querySelector<HTMLElement>('.app-chat');

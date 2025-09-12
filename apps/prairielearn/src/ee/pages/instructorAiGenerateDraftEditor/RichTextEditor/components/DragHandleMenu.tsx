@@ -6,6 +6,10 @@ import { OverlayTrigger, Popover } from 'react-bootstrap';
 
 import { panelMeta } from '../extensions/pl-panel.js';
 
+// TODO: This doesn't actually handle dragging the node around yet.
+// TODO: Improve hover region for the drag handle to make it easier to click.
+// TODO: Make it more obvious that the drag handle is clickable (e.g. change the cursor to a pointer, tooltip)
+
 export function DragHandleMenu({ editor }: { editor: Editor | null }) {
   const [showMenu, setShowMenu] = useState(false);
   const [lastPos, setLastPos] = useState<{ pos: number; offset: number } | null>(null);
@@ -79,6 +83,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                   class="btn btn-sm btn-light d-flex align-items-center gap-2"
                   disabled={!isInsidePanel}
                   onClick={() => {
+                    // TODO: there should be a better way than using .focus() here.
                     setShowMenu(false);
                     editor.chain().focus().togglePanelVisibility('always').run();
                   }}
@@ -98,5 +103,3 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
     </DragHandle>
   );
 }
-
-export default DragHandleMenu;

@@ -24,7 +24,7 @@ import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
 import { Card, Form } from 'react-bootstrap';
 
-import DragHandleMenu from './components/DragHandleMenu.js';
+import { DragHandleMenu } from './components/DragHandleMenu.js';
 import { PlPanel } from './extensions/pl-panel.js';
 import { RawHtml } from './extensions/raw-html.js';
 
@@ -57,6 +57,9 @@ const RichTextEditor = ({
   csrfToken: string;
 }) => {
   const editor = useEditor({
+    parseOptions: {
+      preserveWhitespace: 'full',
+    },
     editorProps: {
       attributes: {
         'aria-label': 'Main content area, start typing to enter text.',
@@ -72,11 +75,15 @@ const RichTextEditor = ({
       throw new Error(event.error.message);
     },
     onCreate: async ({ editor }) => {
-      const formattedHtml = await formatHtmlWithPrettier(editor.getHTML());
+      const rawHtml = editor.getHTML();
+      const formattedHtml = await formatHtmlWithPrettier(rawHtml);
+      setRawHtml(rawHtml);
       setFormattedHtml(formattedHtml);
     },
     onUpdate: async ({ editor }) => {
-      const formattedHtml = await formatHtmlWithPrettier(editor.getHTML());
+      const rawHtml = editor.getHTML();
+      const formattedHtml = await formatHtmlWithPrettier(rawHtml);
+      setRawHtml(rawHtml);
       setFormattedHtml(formattedHtml);
     },
     content: htmlContents,
@@ -110,6 +117,7 @@ const RichTextEditor = ({
     ],
   });
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
+  const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
 
   if (htmlContents === null) {
@@ -140,16 +148,26 @@ const RichTextEditor = ({
           <div class="mb-3" />
           <EditorContent editor={editor} class="border" />
           <DragHandleMenu editor={editor} />
-          {debugMode ? (
-            <Card class="mt-3">
-              <Card.Header>Formatted HTML</Card.Header>
-              <Card.Body>
-                <pre class="mb-0">
-                  <code>{formattedHtml ?? ''}</code>
-                </pre>
-              </Card.Body>
-            </Card>
-          ) : null}
+          {debugMode && (
+            <>
+              <Card class="mt-3">
+                <Card.Header>Formatted HTML</Card.Header>
+                <Card.Body>
+                  <pre class="mb-0">
+                    <code>{formattedHtml ?? ''}</code>
+                  </pre>
+                </Card.Body>
+              </Card>
+              <Card class="mt-3">
+                <Card.Header>Internal HTML</Card.Header>
+                <Card.Body>
+                  <pre class="mb-0">
+                    <code>{rawHtml ?? ''}</code>
+                  </pre>
+                </Card.Body>
+              </Card>
+            </>
+          )}
         </Card.Body>
         {/* <FloatingMenu editor={editor}>This is the floating menu</FloatingMenu> */}
         {/* <BubbleMenu editor={editor}>This is the bubble menu</BubbleMenu> */}

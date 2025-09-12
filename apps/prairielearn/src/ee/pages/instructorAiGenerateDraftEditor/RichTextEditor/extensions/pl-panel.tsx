@@ -1,9 +1,5 @@
-/* */
 /**
- * This is a Tiptap extension for the pl-question-panel element.
- * It allows toggling whether the content is wrapped in a pl-question-panel element.
- * TODO: Get this working.
- *
+ * This is a Tiptap extension for the pl-question-panel, pl-answer-panel, and pl-submission-panel elements.
  */
 import { Node, getNodeType, isNodeActive } from '@tiptap/core';
 import {

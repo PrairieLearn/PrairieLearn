@@ -18,7 +18,7 @@ const RawHtmlComponent = (
   },
 ) => {
   const { node, updateAttributes } = props;
-  const [nodeCount, setNodeCount] = useState(1);
+  const [nodes, setNodes] = useState<string[] | null>(null);
   const textareaRows = Math.min(10, node.attrs.html.split('\n').length);
   return (
     <NodeViewWrapper class="p-0" contentEditable={false}>
@@ -26,10 +26,16 @@ const RawHtmlComponent = (
         <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
           <div class="d-flex gap-2">
             Raw HTML
-            {nodeCount !== 1 ? (
+            {nodes !== null && nodes.length !== 1 ? (
               <OverlayTrigger
                 placement="right"
-                overlay={<Tooltip>You need to wrap your HTML in a single root element.</Tooltip>}
+                overlay={
+                  <Tooltip>
+                    You must have exactly one parent element, but you have {nodes.length} (
+                    {nodes.join(', ')}). Either remove the extra elements, or combine them into a
+                    single element by wrapping both of them in a single div.
+                  </Tooltip>
+                }
               >
                 <i
                   class="bi bi-exclamation-triangle text-danger"
@@ -55,12 +61,17 @@ const RawHtmlComponent = (
           <textarea
             rows={textareaRows}
             value={node.attrs.html}
-            class={clsx('form-control', nodeCount !== 1 && 'border-danger')}
+            class={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
             onChange={(e) => {
               const newHtml = e.currentTarget.value;
               const template = document.createElement('template');
               template.innerHTML = newHtml;
-              setNodeCount(template.content.childNodes.length);
+              const nonWhitespaceNodes = Array.from(template.content.childNodes)
+                .filter(
+                  (node) => node.nodeName !== '#text' || (node.textContent?.trim().length ?? 0) > 0,
+                )
+                .map((node) => node.nodeName.toLowerCase());
+              setNodes(nonWhitespaceNodes);
 
               // If the value is empty, delete the node.
               // TODO: Is this the cleanest way to do this?
@@ -138,10 +149,6 @@ export const RawHtml = Node.create({
     ];
   },
 
-  /**
-   * This node view should render the HTML as a Block that says "Raw HTML" with a border.
-   * On click, it should show the HTML in a modal for editing.
-   */
   addNodeView() {
     return ReactNodeViewRenderer(
       RawHtmlComponent as ComponentType<ReactNodeViewProps<HTMLDivElement>>,
