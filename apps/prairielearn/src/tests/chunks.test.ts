@@ -44,7 +44,7 @@ const COURSE: courseDB.CourseData = {
   },
 };
 
-async function getAllChunksForCourse(course_id) {
+async function getAllChunksForCourse(course_id: string) {
   return await sqldb.queryRows(
     sql.select_all_chunks,
     { course_id },
@@ -109,8 +109,8 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.assessments.has('simple-assessment'),
       );
     });
 
@@ -121,8 +121,8 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.assessments.has('complex/assessment'),
       );
     });
 
@@ -133,8 +133,8 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment'),
+      assert.isTrue(
+        chunks.courseInstances.get('complex/course/instance')?.assessments.has('simple-assessment'),
       );
     });
 
@@ -145,8 +145,10 @@ describe('chunks', () => {
         ],
         COURSE,
       );
-      assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment'),
+      assert.isTrue(
+        chunks.courseInstances
+          .get('complex/course/instance')
+          ?.assessments.has('complex/assessment'),
       );
     });
 
@@ -155,7 +157,9 @@ describe('chunks', () => {
         ['courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['simple-course-instance'].clientFilesCourseInstance);
+      assert.isTrue(
+        chunks.courseInstances.get('simple-course-instance')?.clientFilesCourseInstance,
+      );
     });
 
     it('should identify clientFilesCourseInstance in complex course instance', () => {
@@ -163,7 +167,9 @@ describe('chunks', () => {
         ['courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['complex/course/instance'].clientFilesCourseInstance);
+      assert.isTrue(
+        chunks.courseInstances.get('complex/course/instance')?.clientFilesCourseInstance,
+      );
     });
   });
 
@@ -263,11 +269,11 @@ describe('chunks', () => {
     let tempTestCourseDir: tmp.DirectoryResult;
     let tempChunksDir: tmp.DirectoryResult;
     const originalChunksConsumerDirectory = config.chunksConsumerDirectory;
-    let courseId;
-    let courseInstanceId;
-    let assessmentId;
-    let questionId;
-    let nestedQuestionId;
+    let courseId: string;
+    let courseInstanceId: string;
+    let assessmentId: string;
+    let questionId: string;
+    let nestedQuestionId: string;
 
     beforeEach(async () => {
       // We need to modify the test course - create a copy that we can
