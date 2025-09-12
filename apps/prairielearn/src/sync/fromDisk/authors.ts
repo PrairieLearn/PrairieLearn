@@ -1,5 +1,3 @@
-import { z } from 'zod';
-
 import * as sqldb from '@prairielearn/postgres';
 import { callAsync } from '@prairielearn/postgres';
 
