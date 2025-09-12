@@ -37,7 +37,7 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_feedback: str | None
     ordering_feedback: str | None
     uuid: str
-    final: bool | None # can be none to keep backwards-compatibility
+    final: bool | None
 
 
 FIRST_WRONG_TYPES = frozenset([
