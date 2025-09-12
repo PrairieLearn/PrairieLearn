@@ -110,7 +110,7 @@ describe('chunks', () => {
         COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('simple-assessment'),
+        chunks.courseInstances.get('simple-course-instance')!.assessments.has('simple-assessment'),
       );
     });
 
@@ -122,7 +122,7 @@ describe('chunks', () => {
         COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['simple-course-instance'].assessments.has('complex/assessment'),
+        chunks.courseInstances.get('simple-course-instance')!.assessments.has('complex/assessment'),
       );
     });
 
@@ -134,7 +134,7 @@ describe('chunks', () => {
         COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('simple-assessment'),
+        chunks.courseInstances.get('complex/course/instance')!.assessments.has('simple-assessment'),
       );
     });
 
@@ -146,7 +146,9 @@ describe('chunks', () => {
         COURSE,
       );
       assert.isOk(
-        chunks.courseInstances['complex/course/instance'].assessments.has('complex/assessment'),
+        chunks.courseInstances
+          .get('complex/course/instance')!
+          .assessments.has('complex/assessment'),
       );
     });
 
@@ -155,7 +157,7 @@ describe('chunks', () => {
         ['courseInstances/simple-course-instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['simple-course-instance'].clientFilesCourseInstance);
+      assert.isOk(chunks.courseInstances.get('simple-course-instance')!.clientFilesCourseInstance);
     });
 
     it('should identify clientFilesCourseInstance in complex course instance', () => {
@@ -163,7 +165,7 @@ describe('chunks', () => {
         ['courseInstances/complex/course/instance/clientFilesCourseInstance/file.txt'],
         COURSE,
       );
-      assert.isOk(chunks.courseInstances['complex/course/instance'].clientFilesCourseInstance);
+      assert.isOk(chunks.courseInstances.get('complex/course/instance')!.clientFilesCourseInstance);
     });
   });
 

@@ -203,10 +203,6 @@ interface CourseChunks {
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
-  /**
-   * Map keyed by course instance ID. Uses DefaultMap so callers can mutate entries
-   * without boilerplate existence checks.
-   */
   courseInstances: DefaultMap<string, CourseInstanceChunks>;
 }
 
