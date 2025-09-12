@@ -19,7 +19,6 @@ INSERT INTO
   )
 SELECT
   user_id,
-  user_id,
   'access_tokens',
   new_row.id,
   'insert',
