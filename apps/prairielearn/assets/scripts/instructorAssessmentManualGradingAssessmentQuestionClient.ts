@@ -4,7 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
-import { type RubricData } from '../../src/lib/manualGrading.js';
+import { type RubricData } from '../../src/lib/manualGrading.types.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -243,6 +243,7 @@ onDocumentReady(() => {
           filterControl: 'select',
           sortable: true,
           class: 'text-center',
+          visible: !aiGradingMode,
           formatter: (value: boolean) => (value ? 'Requires grading' : 'Graded'),
         },
         {
@@ -422,15 +423,15 @@ onDocumentReady(() => {
       const order = sortOrder === 'desc' ? -1 : 1;
       if (sortName === 'rubric_difference') {
         data.sort(function (a, b) {
-          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
-          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          const a_diff = a.point_difference === null ? null : Math.abs(a.point_difference);
+          const b_diff = b.point_difference === null ? null : Math.abs(b.point_difference);
           if (a_diff === null && b_diff === null) {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
             // Actually sorting based on accuracy
-            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
-            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            const a_rubric_diff = a.rubric_difference ? a.rubric_difference.length : null;
+            const b_rubric_diff = b.rubric_difference ? b.rubric_difference.length : null;
             if (
               a_rubric_diff !== null &&
               b_rubric_diff !== null &&

@@ -1,7 +1,10 @@
+import assert from 'assert';
+
 import { html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { type Issue, type User } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
   AutoPointsSection,
@@ -27,7 +30,7 @@ export function GradingPanel({
   grading_job,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
@@ -43,6 +46,9 @@ export function GradingPanel({
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
+  assert(submission, 'submission is missing');
+  assert(resLocals.submission, 'resLocals.submission is missing');
+
   const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;

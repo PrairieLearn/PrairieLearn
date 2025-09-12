@@ -1,7 +1,7 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 // Handle when the user expands or collapses the side nav
-onDocumentReady(async () => {
+onDocumentReady(() => {
   // Visible on wider viewports (768px and up)
   const sideNavTogglerButton = document.querySelector<HTMLButtonElement>('#side-nav-toggler');
 
@@ -89,7 +89,7 @@ onDocumentReady(async () => {
     });
   });
 
-  sideNavMobileButton.addEventListener('click', async () => {
+  sideNavMobileButton.addEventListener('click', () => {
     // Animate the side nav
     appContainerDiv.classList.add('animate');
     const sideNavExpanded = !appContainerDiv.classList.contains('mobile-collapsed');
@@ -133,7 +133,7 @@ onDocumentReady(async () => {
     }
   });
 
-  courseNavToggler.addEventListener('click', async () => {
+  courseNavToggler.addEventListener('click', () => {
     const courseNavExpanded = !courseNavDiv.classList.contains('mobile-collapsed');
 
     // Animate the course nav

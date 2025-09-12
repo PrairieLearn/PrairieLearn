@@ -73,6 +73,7 @@ import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
+import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -804,8 +805,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor',
     asyncHandler(async (req, res, next) => {
-      res.locals.lti11_enabled =
-        config.hasLti && (await features.enabledFromLocals('lti11', res.locals));
+      res.locals.lti11_enabled = await features.enabledFromLocals('lti11', res.locals);
       next();
     }),
   );
@@ -1451,6 +1451,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
+  // Perform auth for all student-facing instance question routes.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+    (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
@@ -1458,27 +1465,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
-  );
-
-  if (config.devMode) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    );
-  }
-
-  // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
-    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for questions
@@ -1511,6 +1497,27 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
     (await import('./pages/legacyQuestionText/legacyQuestionText.js')).default,
+  );
+
+  if (config.devMode) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
+      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
+      (await import('./pages/jobSequence/jobSequence.js')).default,
+    );
+  }
+
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1895,10 +1902,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/administrator',
     asyncHandler(async (req, res, next) => {
-      const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
         user_id: res.locals.authn_user.user_id,
       });
-      res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
       next();
     }),
   );
@@ -2042,7 +2049,7 @@ export async function startServer(app: express.Express) {
     server = http.createServer(app);
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
-    throw new Error('unknown serverType: ' + config.serverType);
+    assertNever(config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2138,7 +2145,7 @@ export async function insertDevUser() {
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
     ' ON CONFLICT (user_id) DO NOTHING;';
-  await sqldb.queryAsync(adminSql, { user_id });
+  await sqldb.execute(adminSql, { user_id });
 }
 
 function idleErrorHandler(err: Error) {
@@ -2151,7 +2158,7 @@ function idleErrorHandler(err: Error) {
       last_query: (err as any)?.data?.lastQuery ?? undefined,
     },
   });
-  Sentry.close().finally(() => process.exit(1));
+  void Sentry.close().finally(() => process.exit(1));
 }
 
 const isHMR = DEV_EXECUTION_MODE === 'hmr';
@@ -2178,7 +2185,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // If a config file was specified on the command line, we'll use that
     // instead of the default locations.
     if ('config' in argv) {
-      configPaths = [argv['config']];
+      configPaths = [argv.config];
     }
 
     // Load config immediately so we can use it configure everything else.
@@ -2320,10 +2327,10 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
 
       if (argv['migrate-and-exit']) {
         logger.info('option --migrate-and-exit passed, running DB setup and exiting');
@@ -2462,7 +2469,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (config.initNewsItems) {
       // We initialize news items asynchronously so that servers can boot up
       // in production as quickly as possible.
-      news_items.initInBackground({
+      void news_items.initInBackground({
         // Always notify in production environments.
         notifyIfPreviouslyEmpty: !config.devMode,
       });
@@ -2494,13 +2501,13 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    await socketServer.init(httpServer);
+    socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
 
-    await workspace.init();
+    workspace.init();
     serverJobs.init();
 
     if (config.runningInEc2 && config.nodeMetricsIntervalSec) {
@@ -2596,7 +2603,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  await socketServer.init(httpServer);
+  socketServer.init(httpServer);
 }
 
 /**

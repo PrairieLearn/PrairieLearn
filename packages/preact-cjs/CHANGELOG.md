@@ -1,5 +1,11 @@
 # @prairielearn/preact-cjs
 
+## 1.1.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 1.1.2
 
 ### Patch Changes

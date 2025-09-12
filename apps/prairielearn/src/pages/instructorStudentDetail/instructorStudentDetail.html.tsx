@@ -11,13 +11,14 @@ import {
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
+import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
 import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema,
   course_instance: StaffCourseInstanceSchema,
   enrollment: StaffEnrollmentSchema.nullable(),
-  role: z.string(),
+  role: SprocUsersGetDisplayedRoleSchema,
 });
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
@@ -62,7 +63,7 @@ export function InstructorStudentDetail({
   };
 
   return (
-    <div class="container-fluid">
+    <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1 class="mb-0">Details</h1>
@@ -85,11 +86,11 @@ export function InstructorStudentDetail({
           <div class="d-flex">
             <div class="fw-bold me-1">Role:</div> {role}
           </div>
-          {enrollment?.created_at && (
+          {enrollment?.joined_at && (
             <div class="d-flex">
-              <div class="fw-bold me-1">Enrolled:</div>
+              <div class="fw-bold me-1">Joined:</div>
               <FriendlyDate
-                date={enrollment.created_at}
+                date={enrollment.joined_at}
                 timezone={course_instance.display_timezone}
               />
             </div>
@@ -111,91 +112,93 @@ export function InstructorStudentDetail({
             <div class="text-muted">No gradebook entries found.</div>
           </div>
         ) : (
-          <table class="table table-sm table-hover" aria-label="Student Assessment Performance">
-            <thead>
-              <tr>
-                <th style="width: 1%">
-                  <span class="visually-hidden">Label</span>
-                </th>
-                <th>
-                  <span class="visually-hidden">Assessment</span>
-                </th>
-                <th class="text-center">Score</th>
-                <th class="text-center">Points</th>
-                <th class="text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from(gradebookRowsBySet.entries()).map(([setHeading, setAssessments]) => (
-                <Fragment key={setHeading}>
-                  <tr>
-                    <th colspan={5}>{setHeading}</th>
-                  </tr>
-                  {setAssessments.map((row) => (
-                    <tr key={row.assessment.id}>
-                      <td class="align-middle" style="width: 1%">
-                        <AssessmentBadge
-                          urlPrefix={urlPrefix}
-                          assessment={{
-                            color: row.assessment_set.color,
-                            label: computeLabel(row),
-                            assessment_id: row.assessment.id,
-                          }}
-                          hideLink
-                        />
-                      </td>
-                      <td class="align-middle">
-                        <a
-                          href={getAssessmentInstanceUrl({
-                            urlPrefix,
-                            assessmentId: row.assessment.id,
-                          })}
-                        >
-                          {computeTitle(row)}
-                        </a>
-                        {row.assessment.group_work && (
-                          <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
-                        )}
-                      </td>
-                      <td class="text-center align-middle">
-                        {row.assessment_instance.id && row.show_closed_assessment_score ? (
-                          <Scorebar score={row.assessment_instance.score_perc} class="mx-auto" />
-                        ) : row.assessment_instance.id ? (
-                          'In progress'
-                        ) : (
-                          <span class="text-muted">Not started</span>
-                        )}
-                      </td>
-                      <td class="text-center align-middle">
-                        {row.assessment_instance.id && row.show_closed_assessment_score ? (
-                          `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
-                        ) : row.assessment_instance.id ? (
-                          <span class="text-muted">—</span>
-                        ) : (
-                          <span class="text-muted">—</span>
-                        )}
-                      </td>
-                      <td class="text-center align-middle">
-                        {row.assessment_instance.id ? (
-                          <a
-                            href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
-                            class="btn btn-xs btn-outline-primary"
-                          >
-                            View instance
-                          </a>
-                        ) : (
-                          <span class="text-muted">—</span>
-                        )}
-                      </td>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover" aria-label="Student assessment scores">
+              <thead>
+                <tr>
+                  <th style="width: 1%">
+                    <span class="visually-hidden">Label</span>
+                  </th>
+                  <th>
+                    <span class="visually-hidden">Assessment</span>
+                  </th>
+                  <th class="text-center">Score</th>
+                  <th class="text-center">Points</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from(gradebookRowsBySet.entries()).map(([setHeading, setAssessments]) => (
+                  <Fragment key={setHeading}>
+                    <tr>
+                      <th colspan={5}>{setHeading}</th>
                     </tr>
-                  ))}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
+                    {setAssessments.map((row) => (
+                      <tr key={row.assessment.id}>
+                        <td class="align-middle" style="width: 1%">
+                          <AssessmentBadge
+                            urlPrefix={urlPrefix}
+                            assessment={{
+                              color: row.assessment_set.color,
+                              label: computeLabel(row),
+                              assessment_id: row.assessment.id,
+                            }}
+                            hideLink
+                          />
+                        </td>
+                        <td class="align-middle">
+                          <a
+                            href={getAssessmentInstanceUrl({
+                              urlPrefix,
+                              assessmentId: row.assessment.id,
+                            })}
+                          >
+                            {computeTitle(row)}
+                          </a>
+                          {row.assessment.group_work && (
+                            <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
+                          )}
+                        </td>
+                        <td class="text-center align-middle">
+                          {row.assessment_instance.id && row.show_closed_assessment_score ? (
+                            <Scorebar score={row.assessment_instance.score_perc} class="mx-auto" />
+                          ) : row.assessment_instance.id ? (
+                            'In progress'
+                          ) : (
+                            <span class="text-muted">Not started</span>
+                          )}
+                        </td>
+                        <td class="text-center align-middle">
+                          {row.assessment_instance.id && row.show_closed_assessment_score ? (
+                            `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
+                          ) : row.assessment_instance.id ? (
+                            <span class="text-muted">—</span>
+                          ) : (
+                            <span class="text-muted">—</span>
+                          )}
+                        </td>
+                        <td class="text-center align-middle">
+                          {row.assessment_instance.id ? (
+                            <a
+                              href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
+                              class="btn btn-xs btn-outline-primary"
+                            >
+                              View instance
+                            </a>
+                          ) : (
+                            <span class="text-muted">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
-    </div>
+    </>
   );
 }
 

@@ -35,7 +35,7 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -95,11 +95,12 @@ jobs:
     name: Native (shard ${{ matrix.shardIndex }}/${{ matrix.shardTotal }})
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -190,13 +191,14 @@ jobs:
           path: .vitest-reports/*
           include-hidden-files: true
           retention-days: 1
+
   merge-native-test-reports:
     name: Native (merge test reports)
     if: ${{ !cancelled() }}
     needs: [test-prairielearn-native]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -216,7 +218,7 @@ jobs:
       - name: Merge reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.4.3
+        uses: codecov/codecov-action@v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript

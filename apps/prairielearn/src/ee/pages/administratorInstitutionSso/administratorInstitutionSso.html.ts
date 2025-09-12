@@ -31,6 +31,14 @@ export const AdministratorInstitutionSso = ({
       <form method="POST">
         <div class="mb-3">
           <h2 class="h4">Enabled single sign-on providers</h2>
+          ${institutionAuthenticationProviders.length === 0
+            ? html`
+                <div class="alert alert-warning" role="alert">
+                  No single sign-on providers are currently enabled for this institution. Users will
+                  not be able to log in unless at least one provider is enabled.
+                </div>
+              `
+            : ''}
           ${supportedAuthenticationProviders.map((provider) => {
             const isEnabled = institutionAuthenticationProviders.some((p) => p.id === provider.id);
             return html`

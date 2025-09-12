@@ -21,6 +21,35 @@ WHERE
   user_id = $user_id
   AND token IS NOT NULL;
 
+-- BLOCK insert_access_token
+WITH
+  new_row AS (
+    INSERT INTO
+      access_tokens AS a (name, user_id, token, token_hash)
+    VALUES
+      ($name, $user_id, $token, $token_hash)
+    RETURNING
+      a.*
+  )
+INSERT INTO
+  audit_logs (
+    user_id,
+    authn_user_id,
+    table_name,
+    row_id,
+    action,
+    new_state
+  )
+SELECT
+  user_id,
+  user_id AS authn_user_id,
+  'access_tokens',
+  new_row.id,
+  'insert',
+  to_jsonb(new_row) - 'token'
+FROM
+  new_row;
+
 -- BLOCK delete_access_token
 WITH
   old_row AS (
@@ -41,7 +70,7 @@ INSERT INTO
     old_state
   )
 SELECT
-  $user_id,
+  $user_id AS authn_user_id,
   user_id,
   'access_tokens',
   old_row.id,

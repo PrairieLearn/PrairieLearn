@@ -37,13 +37,13 @@ FROM
   instance_questions_to_grade
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
-  assigned_grader NULLS LAST,
+  assigned_grader ASC NULLS LAST,
   -- Choose question that list after the prior if one exists. Follow the same
   -- default pseudo-random deterministic stable order used in the instance
   -- questions page.
   iq_stable_order > prior_iq_stable_order DESC,
-  iq_stable_order,
-  id
+  iq_stable_order ASC,
+  id ASC
 LIMIT
   1;
 
@@ -260,7 +260,7 @@ WITH
     WHERE
       iq.assessment_question_id = $assessment_question_id
     ORDER BY
-      iq.id,
+      iq.id ASC,
       s.date DESC,
       s.id DESC
   ),
@@ -359,7 +359,7 @@ SELECT
   irg.id
 FROM
   inserted_rubric_grading AS irg
-  LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
+  LEFT JOIN inserted_rubric_grading_items ON (TRUE)
 LIMIT
   1;
 

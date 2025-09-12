@@ -386,7 +386,7 @@ export function identifyChunksFromChangedFiles(
       let questionId: string | null = null;
       for (let i = 1; i < pathComponents.length; i++) {
         const candidateQuestionId = path.join(...pathComponents.slice(0, i));
-        if (courseData.questions[candidateQuestionId]) {
+        if (candidateQuestionId in courseData.questions) {
           questionId = candidateQuestionId;
           break;
         }
@@ -412,8 +412,8 @@ export function identifyChunksFromChangedFiles(
         const courseInstanceId = path.join(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
         );
-        if (courseData.courseInstances[courseInstanceId]) {
-          if (!courseChunks.courseInstances[courseInstanceId]) {
+        if (courseInstanceId in courseData.courseInstances) {
+          if (!(courseInstanceId in courseChunks.courseInstances)) {
             courseChunks.courseInstances[courseInstanceId] = {
               assessments: new Set(),
               clientFilesCourseInstance: true,
@@ -441,12 +441,12 @@ export function identifyChunksFromChangedFiles(
         );
 
         if (
-          courseData.courseInstances[courseInstanceId] &&
-          courseData.courseInstances[courseInstanceId].assessments[assessmentId]
+          courseInstanceId in courseData.courseInstances &&
+          assessmentId in courseData.courseInstances[courseInstanceId].assessments
         ) {
           // This corresponds to something that we need to
           // create/update a chunk for!
-          if (!courseChunks.courseInstances[courseInstanceId]) {
+          if (!(courseInstanceId in courseChunks.courseInstances)) {
             courseChunks.courseInstances[courseInstanceId] = {
               assessments: new Set(),
               clientFilesCourseInstance: false,
@@ -517,13 +517,13 @@ export async function diffChunks({
         existingCourseChunks[courseChunk.type] = true;
         break;
       case 'question':
-        assert(courseChunk.question_name != null, 'question_name is required');
+        assert(courseChunk.question_name != null);
         existingCourseChunks.questions.add(courseChunk.question_name);
         break;
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
-        assert(courseInstanceName != null, 'course_instance_name is required');
-        if (!existingCourseChunks.courseInstances[courseInstanceName]) {
+        assert(courseInstanceName != null);
+        if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
             clientFilesCourseInstance: true,
@@ -535,9 +535,9 @@ export async function diffChunks({
       case 'clientFilesAssessment': {
         const courseInstanceName = courseChunk.course_instance_name;
         const assessmentName = courseChunk.assessment_name;
-        assert(courseInstanceName != null, 'course_instance_name is required');
-        assert(assessmentName != null, 'assessment_name is required');
-        if (!existingCourseChunks.courseInstances[courseInstanceName]) {
+        assert(courseInstanceName != null);
+        assert(assessmentName != null);
+        if (!(courseInstanceName in existingCourseChunks.courseInstances)) {
           existingCourseChunks.courseInstances[courseInstanceName] = {
             assessments: new Set(),
             clientFilesCourseInstance: false,
@@ -582,7 +582,7 @@ export async function diffChunks({
 
   // Check for any deleted questions.
   existingCourseChunks.questions.forEach((qid) => {
-    if (!courseData.questions[qid]) {
+    if (!(qid in courseData.questions)) {
       deletedChunks.push({
         type: 'question',
         questionName: qid,
@@ -597,9 +597,12 @@ export async function diffChunks({
       const hasClientFilesCourseInstanceDirectory = await fs.pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
+
       if (
         hasClientFilesCourseInstanceDirectory &&
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
       ) {
         updatedChunks.push({
@@ -621,7 +624,9 @@ export async function diffChunks({
         );
         if (
           hasClientFilesAssessmentDirectory &&
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           (!existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ||
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
             changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid))
         ) {
           updatedChunks.push({
@@ -637,7 +642,7 @@ export async function diffChunks({
   // Check for any deleted course instances or their assessments.
   await Promise.all(
     Object.entries(existingCourseChunks.courseInstances).map(async ([ciid, courseInstanceInfo]) => {
-      const courseInstanceExists = !!courseData.courseInstances[ciid];
+      const courseInstanceExists = ciid in courseData.courseInstances;
       const clientFilesCourseInstanceExists = await fs.pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
@@ -650,7 +655,8 @@ export async function diffChunks({
 
       await Promise.all(
         [...courseInstanceInfo.assessments].map(async (tid) => {
-          const assessmentExists = !!courseData.courseInstances[ciid]?.assessments[tid];
+          const assessmentExists =
+            courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
           const clientFilesAssessmentExists = await fs.pathExists(
             path.join(
               coursePath,
@@ -661,7 +667,7 @@ export async function diffChunks({
               'clientFilesAssessment',
             ),
           );
-          if (!courseInstanceExists || !assessmentExists || !clientFilesAssessmentExists) {
+          if (!assessmentExists || !clientFilesAssessmentExists) {
             deletedChunks.push({
               type: 'clientFilesAssessment',
               courseInstanceName: ciid,
@@ -720,7 +726,7 @@ export async function createAndUploadChunks(
   });
 
   // Now that the new chunks have been uploaded, update their status in the database
-  await sqldb.queryAsync(sql.insert_chunks, {
+  await sqldb.execute(sql.insert_chunks, {
     course_id: courseId,
     // Force this to a string; otherwise, our code in `sql-db.js` will try to
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.
@@ -738,7 +744,7 @@ export async function deleteChunks(courseId: string, chunksToDelete: ChunkMetada
     return;
   }
 
-  await sqldb.queryAsync(sql.delete_chunks, {
+  await sqldb.execute(sql.delete_chunks, {
     course_id: courseId,
     // Force this to a string; otherwise, our code in `sql-db.js` will try to
     // convert it into a Postgres `ARRAY[...]` type, which we don't want.
