@@ -627,44 +627,42 @@ export async function diffChunks({
 
   // Check for any deleted course instances or their assessments.
   await Promise.all(
-    Array.from(existingCourseChunks.courseInstances.entries()).map(
-      async ([ciid, courseInstanceInfo]) => {
-        const courseInstanceExists = ciid in courseData.courseInstances;
-        const clientFilesCourseInstanceExists = await fs.pathExists(
-          path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
-        );
-        if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
-          deletedChunks.push({
-            type: 'clientFilesCourseInstance',
-            courseInstanceName: ciid,
-          });
-        }
+    existingCourseChunks.courseInstances.map(async (ciid, courseInstanceInfo) => {
+      const courseInstanceExists = ciid in courseData.courseInstances;
+      const clientFilesCourseInstanceExists = await fs.pathExists(
+        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
+      );
+      if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
+        deletedChunks.push({
+          type: 'clientFilesCourseInstance',
+          courseInstanceName: ciid,
+        });
+      }
 
-        await Promise.all(
-          [...courseInstanceInfo.assessments].map(async (tid) => {
-            const assessmentExists =
-              courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
-            const clientFilesAssessmentExists = await fs.pathExists(
-              path.join(
-                coursePath,
-                'courseInstances',
-                ciid,
-                'assessments',
-                tid,
-                'clientFilesAssessment',
-              ),
-            );
-            if (!assessmentExists || !clientFilesAssessmentExists) {
-              deletedChunks.push({
-                type: 'clientFilesAssessment',
-                courseInstanceName: ciid,
-                assessmentName: tid,
-              });
-            }
-          }),
-        );
-      },
-    ),
+      await Promise.all(
+        [...courseInstanceInfo.assessments].map(async (tid) => {
+          const assessmentExists =
+            courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
+          const clientFilesAssessmentExists = await fs.pathExists(
+            path.join(
+              coursePath,
+              'courseInstances',
+              ciid,
+              'assessments',
+              tid,
+              'clientFilesAssessment',
+            ),
+          );
+          if (!assessmentExists || !clientFilesAssessmentExists) {
+            deletedChunks.push({
+              type: 'clientFilesAssessment',
+              courseInstanceName: ciid,
+              assessmentName: tid,
+            });
+          }
+        }),
+      );
+    }),
   );
 
   return { updatedChunks, deletedChunks };
