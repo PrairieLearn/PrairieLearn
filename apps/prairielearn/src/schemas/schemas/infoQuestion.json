@@ -53,8 +53,7 @@
           "email": {
             "description": "An email address to contact a question author.",
             "type": "string",
-            "maxLength": 255,
-            "format": "email"
+            "maxLength": 255
           },
           "orcid": {
             "description": "An ORCID identifier that uniquely identifies an individual question author.",
