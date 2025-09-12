@@ -508,21 +508,20 @@ export async function diffChunks({
     questions: new Set(),
   };
 
-  // Track the foreign key IDs currently referenced by existing chunks, keyed by
+  // Track the entity IDs currently referenced by existing chunks, keyed by their
   // human-readable names. This allows reconciliation to detect when a chunk
   // exists for a name but points at an old (now-deleted) DB row ID.
-  const existingCiIdByName = new Map<string, string | null>();
+  const existingCourseInstanceIdByName = new Map<string, string | null>();
   const existingAssessmentIdByName = new Map<string, string | null>();
 
   rawCourseChunks.forEach((courseChunk) => {
-    // Build auxiliary maps for reconciliation by name -> current chunk FK id
+    // First, populate the auxiliary maps for reconciliation.
     if (courseChunk.type === 'clientFilesCourseInstance' && courseChunk.course_instance_name) {
-      existingCiIdByName.set(
+      existingCourseInstanceIdByName.set(
         courseChunk.course_instance_name,
         courseChunk.course_instance_id ?? null,
       );
-    }
-    if (
+    } else if (
       courseChunk.type === 'clientFilesAssessment' &&
       courseChunk.course_instance_name &&
       courseChunk.assessment_name
@@ -532,6 +531,8 @@ export async function diffChunks({
         courseChunk.assessment_id ?? null,
       );
     }
+
+    // Next, process the chunk by its type.
     switch (courseChunk.type) {
       case 'elements':
       case 'elementExtensions':
@@ -703,7 +704,7 @@ export async function diffChunks({
   );
 
   // Reconciliation pass: ensure that for every on-disk client files directory
-  // that corresponds to a current DB entity ID, we have a chunk scheduled using
+  // that corresponds to a current database entity, we have a chunk scheduled using
   // the current name mapping, even if metadata-only changes didn't trigger it.
   // This addresses cases where an assessment or course instance UUID change
   // creates a new DB row (new id) without touching client files.
@@ -728,7 +729,7 @@ export async function diffChunks({
     const ciClientDir = path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance');
     if (await fs.pathExists(ciClientDir)) {
       const activeId = activeCiIdByName.get(ciid);
-      const existingId = existingCiIdByName.get(ciid) ?? null;
+      const existingId = existingCourseInstanceIdByName.get(ciid) ?? null;
       if (!activeId || activeId !== existingId) {
         addUpdatedChunkIfMissing({ type: 'clientFilesCourseInstance', courseInstanceName: ciid });
       }
@@ -752,7 +753,6 @@ export async function diffChunks({
       r.assessment_id,
     ]),
   );
-  // existingAssessmentIdByName already built from existing chunks above
 
   await async.each(Object.entries(courseData.courseInstances), async ([ciid, ciInfo]) => {
     await async.each(Object.keys(ciInfo.assessments), async (tid) => {

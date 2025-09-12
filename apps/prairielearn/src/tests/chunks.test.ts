@@ -325,204 +325,6 @@ describe('chunks', () => {
       );
     });
 
-    it('creates clientFilesCourseInstance chunk for new course instance id after UUID change', async () => {
-      const courseDir = tempTestCourseDir.path;
-
-      // Generate initial chunks for the test course.
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Verify that an initial chunk exists for this course instance.
-      let databaseChunks = await getAllChunksForCourse(courseId);
-      assert.isOk(
-        databaseChunks.find(
-          (chunk) =>
-            chunk.type === 'clientFilesCourseInstance' &&
-            chunk.course_instance_id === courseInstanceId,
-        ),
-        'expected initial clientFilesCourseInstance chunk to exist',
-      );
-
-      // Change only the UUID in infoCourseInstance.json for Sp15
-      const infoCourseInstancePath = path.join(
-        courseDir,
-        'courseInstances',
-        'Sp15',
-        'infoCourseInstance.json',
-      );
-      const infoCiJson = await fs.readJson(infoCourseInstancePath);
-      infoCiJson.uuid = '22222222-2222-4222-8222-222222222222';
-      await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
-
-      // Sync course to DB so that the course_instance row is replaced (soft-delete old, insert new)
-      const { logger } = makeMockLogger();
-      await syncDiskToSql(courseId, courseDir, logger);
-
-      // Fetch the (new) course instance ID by long_name; this should now differ from the previous id
-      const newCourseInstanceId = await sqldb.queryRow(
-        sql.select_course_instance,
-        { long_name: 'Spring 2015' },
-        IdSchema,
-      );
-      assert.notEqual(
-        newCourseInstanceId,
-        courseInstanceId,
-        'expected course_instance id to change after UUID update',
-      );
-
-      // Regenerate chunks. After the fix, this should create a new chunk for newCourseInstanceId
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Re-read chunks from DB
-      databaseChunks = await getAllChunksForCourse(courseId);
-
-      // A chunk should exist for the new course instance id.
-      assert.isOk(
-        databaseChunks.find(
-          (chunk) =>
-            chunk.type === 'clientFilesCourseInstance' &&
-            chunk.course_instance_id === newCourseInstanceId,
-        ),
-        'expected clientFilesCourseInstance chunk for new course_instance id to exist after UUID change',
-      );
-    });
-
-    it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
-      const courseDir = tempTestCourseDir.path;
-
-      // Generate initial chunks for the test course.
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Capture baseline chunk set and counts
-      const initialChunks = await getAllChunksForCourse(courseId);
-      const initialCount = initialChunks.length;
-      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
-
-      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
-      const initialCiCount = countBy(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      );
-      const initialAssessCount = countBy(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      );
-
-      // Run update again with no changes
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Fetch again and ensure counts are unchanged
-      const afterChunks = await getAllChunksForCourse(courseId);
-      const afterCount = afterChunks.length;
-      assert.equal(afterCount, initialCount, 'expected total chunk count to remain unchanged');
-
-      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
-      const afterCiCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
-      ).length;
-      const afterAssessCount = afterChunks.filter(
-        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
-      ).length;
-
-      assert.equal(
-        afterCourseCount,
-        initialCourseCount,
-        'expected clientFilesCourse chunk count to remain unchanged',
-      );
-      assert.equal(
-        afterCiCount,
-        initialCiCount,
-        'expected clientFilesCourseInstance chunk count to remain unchanged',
-      );
-      assert.equal(
-        afterAssessCount,
-        initialAssessCount,
-        'expected clientFilesAssessment chunk count to remain unchanged',
-      );
-    });
-
-    it('reproduces missing clientFilesAssessment chunk after assessment UUID change (will fail until fixed)', async () => {
-      const courseDir = tempTestCourseDir.path;
-
-      // Generate initial chunks for the test course.
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Verify that an initial chunk exists for this assessment.
-      let databaseChunks = await getAllChunksForCourse(courseId);
-      assert.isOk(
-        databaseChunks.find(
-          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
-        ),
-        'expected initial clientFilesAssessment chunk to exist',
-      );
-
-      // Change only the UUID in infoAssessment.json for exam1-automaticTestSuite
-      const infoAssessmentPath = path.join(
-        courseDir,
-        'courseInstances',
-        'Sp15',
-        'assessments',
-        'exam1-automaticTestSuite',
-        'infoAssessment.json',
-      );
-      const infoJson = await fs.readJson(infoAssessmentPath);
-      // Set a new UUID value to simulate a UUID rotation
-      infoJson.uuid = '11111111-1111-4111-8111-111111111111';
-      await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 2 });
-
-      // Sync course to DB so that the assessment row is replaced (soft-delete old, insert new)
-      const { logger } = makeMockLogger();
-      await syncDiskToSql(courseId, courseDir, logger);
-
-      // Fetch the (new) assessment ID by TID; this should now differ from the previous id
-      const newAssessmentId = await sqldb.queryRow(
-        sql.select_assessment,
-        { tid: 'exam1-automaticTestSuite' },
-        IdSchema,
-      );
-      assert.notEqual(
-        newAssessmentId,
-        assessmentId,
-        'expected assessment id to change after UUID update',
-      );
-
-      // Regenerate chunks. Current buggy behavior: this will NOT create a new chunk for newAssessmentId
-      await chunksLib.updateChunksForCourse({
-        coursePath: courseDir,
-        courseId,
-        courseData: await courseDB.loadFullCourse(courseId, courseDir),
-      });
-
-      // Re-read chunks from DB
-      databaseChunks = await getAllChunksForCourse(courseId);
-
-      // After the fix: a chunk should exist for the new assessment id.
-      // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
-      assert.isOk(
-        databaseChunks.find(
-          (chunk) =>
-            chunk.type === 'clientFilesAssessment' && chunk.assessment_id === newAssessmentId,
-        ),
-        'expected clientFilesAssessment chunk for new assessment id to exist after UUID change',
-      );
-    });
     afterEach(async () => {
       try {
         await tempTestCourseDir.cleanup();
@@ -860,6 +662,183 @@ describe('chunks', () => {
           (chunk) => chunk.type === 'question' && chunk.question_id === questionId,
         ),
       );
+    });
+
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
+    it('creates clientFilesCourseInstance chunk for new course instance id after UUID change', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Verify that an initial chunk exists for this course instance.
+      let databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstanceId,
+        ),
+      );
+
+      // Change only the UUID in infoCourseInstance.json for Sp15
+      const infoCourseInstancePath = path.join(
+        courseDir,
+        'courseInstances',
+        'Sp15',
+        'infoCourseInstance.json',
+      );
+      const infoCiJson = await fs.readJson(infoCourseInstancePath);
+      infoCiJson.uuid = '22222222-2222-4222-8222-222222222222';
+      await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
+
+      // Sync course to DB so that the course_instance row is replaced (soft-delete old, insert new)
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Fetch the (new) course instance ID by long_name; this should now differ from the previous id
+      const newCourseInstanceId = await sqldb.queryRow(
+        sql.select_course_instance,
+        { long_name: 'Spring 2015' },
+        IdSchema,
+      );
+      assert.notEqual(newCourseInstanceId, courseInstanceId);
+
+      // Regenerate chunks. After the fix, this should create a new chunk for newCourseInstanceId
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Re-read chunks from DB
+      databaseChunks = await getAllChunksForCourse(courseId);
+
+      // A chunk should exist for the new course instance id.
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === newCourseInstanceId,
+        ),
+      );
+    });
+
+    // See https://github.com/PrairieLearn/PrairieLearn/issues/12873
+    it('creates clientFilesAssessment chunk for new assessment id after UUID change', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Verify that an initial chunk exists for this assessment.
+      let databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId,
+        ),
+      );
+
+      // Change only the UUID in infoAssessment.json for exam1-automaticTestSuite
+      const infoAssessmentPath = path.join(
+        courseDir,
+        'courseInstances',
+        'Sp15',
+        'assessments',
+        'exam1-automaticTestSuite',
+        'infoAssessment.json',
+      );
+      const infoJson = await fs.readJson(infoAssessmentPath);
+      // Set a new UUID value to simulate a UUID rotation
+      infoJson.uuid = '11111111-1111-4111-8111-111111111111';
+      await fs.writeJson(infoAssessmentPath, infoJson, { spaces: 2 });
+
+      // Sync course to DB so that the assessment row is replaced (soft-delete old, insert new)
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Fetch the (new) assessment ID by TID; this should now differ from the previous id
+      const newAssessmentId = await sqldb.queryRow(
+        sql.select_assessment,
+        { tid: 'exam1-automaticTestSuite' },
+        IdSchema,
+      );
+      assert.notEqual(newAssessmentId, assessmentId);
+
+      // Regenerate chunks. Current buggy behavior: this will NOT create a new chunk for newAssessmentId
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Re-read chunks from DB
+      databaseChunks = await getAllChunksForCourse(courseId);
+
+      // After the fix: a chunk should exist for the new assessment id.
+      // Today (pre-fix): this assertion will fail because we don't regenerate the chunk.
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesAssessment' && chunk.assessment_id === newAssessmentId,
+        ),
+      );
+    });
+
+    it('no-op update does not create duplicate chunks when IDs unchanged', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      // Generate initial chunks for the test course.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Capture baseline chunk set and counts
+      const initialChunks = await getAllChunksForCourse(courseId);
+      const initialCount = initialChunks.length;
+      const countBy = (pred: (c: any) => boolean) => initialChunks.filter(pred).length;
+
+      const initialCourseCount = countBy((c) => c.type === 'clientFilesCourse');
+      const initialCiCount = countBy(
+        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      );
+      const initialAssessCount = countBy(
+        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
+      );
+
+      // Run update again with no changes
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Fetch again and ensure counts are unchanged
+      const afterChunks = await getAllChunksForCourse(courseId);
+      const afterCount = afterChunks.length;
+      assert.equal(afterCount, initialCount);
+
+      const afterCourseCount = afterChunks.filter((c) => c.type === 'clientFilesCourse').length;
+      const afterCiCount = afterChunks.filter(
+        (c) => c.type === 'clientFilesCourseInstance' && c.course_instance_id === courseInstanceId,
+      ).length;
+      const afterAssessCount = afterChunks.filter(
+        (c) => c.type === 'clientFilesAssessment' && c.assessment_id === assessmentId,
+      ).length;
+
+      assert.equal(afterCourseCount, initialCourseCount);
+      assert.equal(afterCiCount, initialCiCount);
+      assert.equal(afterAssessCount, initialAssessCount);
     });
   });
 });
