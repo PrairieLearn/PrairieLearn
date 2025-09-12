@@ -1,11 +1,3 @@
--- BLOCK select_sharing_name
-SELECT
-  id
-FROM
-  pl_courses
-WHERE
-  sharing_name = $origin_course;
-
 -- BLOCK insert_authors
 INSERT INTO
   authors (author_name, email, orcid, origin_course)

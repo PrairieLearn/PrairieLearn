@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.4.0
+
+### Minor Changes
+
+- 2689a13: Introduce `ArrayFromCheckboxSchema` schema
+
 ## 1.3.6
 
 ### Patch Changes

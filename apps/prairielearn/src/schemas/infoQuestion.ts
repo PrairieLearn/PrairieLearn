@@ -47,8 +47,17 @@ export const QuestionDependencyJsonSchema = z
 
 export const QuestionAuthorJsonSchema = z
   .object({
-    name: z.string().describe('A human-readable name of a question author.').optional(),
-    email: z.string().describe('An email address to contact a question author.').optional(),
+    name: z
+      .string()
+      .describe('A human-readable name of a question author.')
+      .min(3)
+      .max(255)
+      .optional(),
+    email: z
+      .string()
+      .describe('An email address to contact a question author.')
+      .max(255)
+      .optional(),
     orcid: z
       .string()
       .describe('An ORCID identifier that uniquely identifies an individual question author.')
@@ -62,7 +71,16 @@ export const QuestionAuthorJsonSchema = z
   .strict()
   .describe(
     'An author (individual person, or staff of a course of origin) credited with creating a question.',
-  );
+  )
+  .superRefine((a, ctx) => {
+    if (!a.email && !a.orcid && !a.originCourse) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one of "email", "orcid", or "originCourse" is required for authors.',
+        path: [],
+      });
+    }
+  });
 
 export const WorkspaceOptionsJsonSchema = z
   .object({

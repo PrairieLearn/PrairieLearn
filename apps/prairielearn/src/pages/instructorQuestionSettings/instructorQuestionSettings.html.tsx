@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
-import { GitHubButton } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -150,7 +150,7 @@ export function InstructorQuestionSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>Question Settings</h1>
-          ${GitHubButton(questionGHLink)}
+          ${GitHubButtonHtml(questionGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">

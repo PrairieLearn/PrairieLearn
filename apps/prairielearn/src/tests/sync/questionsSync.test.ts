@@ -375,11 +375,11 @@ describe('Question syncing', () => {
     assert.ok(questionAuthor2);
   });
 
-  it('records an error if "authors" object is invalid', async () => {
+  it('records a warning if "authors" object is invalid', async () => {
     const courseData = util.getCourseData();
     const invalidAuthors = [
       {
-        orcid: '0000-0000-0000-0010', // Invalid checksum
+        orcid: '1111-1111-1111-1111', // Invalid checksum
       },
       {
         name: 'Example', // Name only authors not allowed
@@ -393,7 +393,8 @@ describe('Question syncing', () => {
     ];
 
     for (const author of invalidAuthors) {
-      courseData.questions[util.QUESTION_ID].authors = [author];
+      courseData.questions[util.QUESTION_ID].authors = [];
+      courseData.questions[util.QUESTION_ID].authors.push(author);
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
       const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);

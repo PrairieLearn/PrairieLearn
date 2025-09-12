@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS authors (
   author_name TEXT,
   orcid VARCHAR(16),
   email VARCHAR(255),
-  origin_course BIGINT REFERENCES pl_courses (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  origin_course BIGINT REFERENCES pl_courses (id) ON UPDATE CASCADE ON DELETE SET NULL,
   UNIQUE NULLS NOT DISTINCT (author_name, orcid, email, origin_course)
 );
 

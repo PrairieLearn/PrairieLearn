@@ -46,11 +46,14 @@
         "properties": {
           "name": {
             "description": "A human-readable name of a question author.",
-            "type": "string"
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255
           },
           "email": {
             "description": "An email address to contact a question author.",
-            "type": "string"
+            "type": "string",
+            "maxLength": 255
           },
           "orcid": {
             "description": "An ORCID identifier that uniquely identifies an individual question author.",
