@@ -61,7 +61,7 @@ def solve_dag(
 
     return sort
 
-def solve_mgraph(
+def solve_multigraph(
     depends_multi_graph: dict[str, list[str] | list[list[str]]],
     final: str,
     path_names: dict[str, str] = {},
@@ -228,8 +228,7 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit(
-    submission: Sequence[str | None],
+def lcs_partial_credit( submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> int:

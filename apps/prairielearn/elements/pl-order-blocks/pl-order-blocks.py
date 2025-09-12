@@ -9,7 +9,7 @@ from typing import TypedDict, no_type_check
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, grade_dag_list, lcs_partial_credit, solve_dag, solve_mgraph, collapse_multigraph
+from dag_checker import grade_dag, grade_dag_list, lcs_partial_credit, solve_dag, solve_multigraph, collapse_multigraph
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
     FeedbackType,
@@ -78,7 +78,7 @@ def extract_dag(
     return depends_graph, group_belonging
 
 
-def extract_mgraph(
+def extract_multigraph(
     answers_list: list[OrderBlocksAnswerData],
 ) -> tuple[dict[str, list[str] | list[list[str]]], str]:
     depends_graph = {}
@@ -109,8 +109,8 @@ def solve_problem(
         solution = solve_dag(depends_graph, group_belonging)
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     elif grading_method is GradingMethodType.DAG and is_multi:
-        depends_graph, final = extract_mgraph(answers_list)
-        solution = solve_mgraph(depends_graph, final)[0]
+        depends_graph, final = extract_multigraph(answers_list)
+        solution = solve_multigraph(depends_graph, final)[0]
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
         assert_never(grading_method)
@@ -595,8 +595,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         # MGRAPH
         elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
-            depends_mgraph, final = extract_mgraph(true_answer_list)
-            collapsed_dags = [graph for graph in collapse_multigraph(depends_mgraph, final, path_names={})]
+            depends_multigraph, final = extract_multigraph(true_answer_list)
+            collapsed_dags = [graph for graph in collapse_multigraph(depends_multigraph, final, path_names={})]
 
             #TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_dag_list(
