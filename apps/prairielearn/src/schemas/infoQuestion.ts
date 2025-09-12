@@ -45,6 +45,43 @@ export const QuestionDependencyJsonSchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
+export const QuestionAuthorJsonSchema = z
+  .object({
+    name: z
+      .string()
+      .describe('A human-readable name of a question author.')
+      .min(3)
+      .max(255)
+      .optional(),
+    email: z
+      .string()
+      .describe('An email address to contact a question author.')
+      .max(255)
+      .optional(),
+    orcid: z
+      .string()
+      .describe('An ORCID identifier that uniquely identifies an individual question author.')
+      .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
+      .optional(),
+    originCourse: z
+      .string()
+      .describe('The sharing name of a course whose staff is a question author.')
+      .optional(),
+  })
+  .strict()
+  .describe(
+    'An author (individual person, or staff of a course of origin) credited with creating a question.',
+  )
+  .superRefine((a, ctx) => {
+    if (!a.email && !a.orcid && !a.originCourse) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one of "email", "orcid", or "originCourse" is required for authors.',
+        path: [],
+      });
+    }
+  });
+
 export const WorkspaceOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -184,6 +221,7 @@ export const QuestionJsonSchema = z
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
       .optional()
       .default([]),
+    authors: z.array(QuestionAuthorJsonSchema).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe('The list of question files accessible by the client.')
