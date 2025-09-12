@@ -1,5 +1,3 @@
-import * as path from 'node:path';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
@@ -23,13 +21,7 @@ import {
 import { selectOptionalUserByUid } from '../../../../models/user.js';
 import { CourseUsersRowSchema } from '../../../../pages/instructorCourseAdminStaff/instructorCourseAdminStaff.html.js';
 
-const sql = sqldb.loadSql(
-  path.join(
-    import.meta.dirname,
-    '../../../..',
-    'pages/instructorCourseAdminStaff/instructorCourseAdminStaff.sql',
-  ),
-);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
@@ -90,7 +82,7 @@ router.get(
       }),
     );
 
-    res.status(200).json({ users });
+    res.status(200).json(users);
   }),
 );
 

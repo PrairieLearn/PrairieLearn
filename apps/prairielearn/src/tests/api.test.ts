@@ -672,13 +672,10 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
-      assert.exists(json.users);
-      assert.equal(json.users[0].user.uid, 'dev@example.com');
-      assert.equal(json.users[0].course_permission.course_role, 'Owner');
-      assert.equal(
-        json.users[0].course_instance_roles[0].course_instance_role,
-        'Student Data Editor',
-      );
+      assert.exists(json);
+      assert.equal(json[0].user.uid, 'dev@example.com');
+      assert.equal(json[0].course_permission.course_role, 'Owner');
+      assert.equal(json[0].course_instance_roles[0].course_instance_role, 'Student Data Editor');
     });
 
     test.sequential('GET to /staff fails with incorrect permissions', async function () {
@@ -748,10 +745,10 @@ describe('API', { timeout: 60_000 }, function () {
         assert.equal(res.status, 200);
 
         const json = (await res.json()) as any;
-        assert.exists(json.users);
-        assert.equal(json.users[0].user.uid, 'dev@example.com');
-        assert.equal(json.users[0].course_permission.course_role, 'Owner');
-        assert.isNull(json.users[0].course_instance_roles);
+        assert.exists(json);
+        assert.equal(json[0].user.uid, 'dev@example.com');
+        assert.equal(json[0].course_permission.course_role, 'Owner');
+        assert.isNull(json[0].course_instance_roles);
       },
     );
 
@@ -789,9 +786,9 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      const json = (await res.json()) as any;
-      assert.exists(json.users);
-      assert.isEmpty(json.users);
+      const output = (await res.json()) as any;
+      assert.exists(output);
+      assert.isEmpty(output);
     });
   });
 });

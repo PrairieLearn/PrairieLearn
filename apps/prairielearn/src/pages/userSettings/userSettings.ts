@@ -106,14 +106,14 @@ router.post(
 
       await insertAccessToken(res.locals.authn_user.user_id, req.body.token_name);
 
-      await sqldb.execute(sql.insert_access_token, {
+      /* await sqldb.execute(sql.insert_access_token, {
         user_id: res.locals.authn_user.user_id,
         name,
         // The token will only be persisted until the next page render.
         // After that, we'll remove it from the database.
         token,
         token_hash,
-      });
+      }); */
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {

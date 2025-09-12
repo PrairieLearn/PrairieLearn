@@ -11,7 +11,7 @@ export async function insertAccessToken(user_id: string, token_name: string) {
   const token = uuidv4();
   const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-  await sqldb.queryAsync(sql.insert_access_token, {
+  await sqldb.execute(sql.insert_access_token, {
     user_id,
     name,
     token,
