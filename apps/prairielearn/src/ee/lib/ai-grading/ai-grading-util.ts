@@ -16,6 +16,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentQuestionSchema,
@@ -198,6 +199,8 @@ function generateSubmissionMessage({
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
 
+  console.log('extracting images from', submission_text, submitted_answer);
+
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
@@ -217,31 +220,38 @@ function generateSubmissionMessage({
           submissionTextSegment = '';
         }
 
-        const options = $submission_html(node).data('options') as Record<string, string>;
-        const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName) {
-          // If no submitted filename is available, no image was captured.
-          message_content.push({
-            type: 'text',
-            text: `Image capture with ${options.file_name} was not captured.`,
-          });
-          return;
-        }
+        const fileName = run(() => {
+          // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+          const submittedFileName = $submission_html(node).data('file-name');
+          if (submittedFileName && typeof submittedFileName === 'string') {
+            return submittedFileName.trim();
+          }
 
-        // submitted_answer contains the base-64 encoded image data for the image capture.
+          // Old style, where we have to pick the filename out of the `data-options` attribute.
+          const options = $submission_html(node).data('options') as Record<string, string>;
 
+          return options?.submitted_file_name;
+        });
+
+        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
 
-        if (!submitted_answer[submittedImageName]) {
-          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        if (!submitted_answer[fileName]) {
+          // If the submitted answer doesn't contain the image, the student likely
+          // didn't capture an image.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${fileName} was not captured.`,
+          });
+          return;
         }
 
         message_content.push({
           type: 'image_url',
           image_url: {
-            url: submitted_answer[submittedImageName],
+            url: submitted_answer[fileName],
           },
         });
       } else {
