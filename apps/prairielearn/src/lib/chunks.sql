@@ -255,7 +255,6 @@ WHERE
       chunks_to_delete
   );
 
-
 -- BLOCK select_active_assessment_ids_by_tid
 SELECT
   ci.short_name AS course_instance_name,
@@ -277,4 +276,3 @@ FROM
 WHERE
   ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
-
