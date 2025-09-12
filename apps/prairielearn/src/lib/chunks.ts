@@ -31,6 +31,7 @@ import {
   IdSchema,
   QuestionSchema,
 } from './db-types.js';
+import { DefaultMap } from './default-map.js';
 import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -202,7 +203,11 @@ interface CourseChunks {
   clientFilesCourse: boolean;
   serverFilesCourse: boolean;
   questions: Set<string>;
-  courseInstances: Map<string, CourseInstanceChunks>;
+  /**
+   * Map keyed by course instance ID. Uses DefaultMap so callers can mutate entries
+   * without boilerplate existence checks.
+   */
+  courseInstances: DefaultMap<string, CourseInstanceChunks>;
 }
 
 /**
@@ -359,7 +364,10 @@ export function identifyChunksFromChangedFiles(
     elementExtensions: false,
     clientFilesCourse: false,
     serverFilesCourse: false,
-    courseInstances: new Map(),
+    courseInstances: new DefaultMap(() => ({
+      assessments: new Set(),
+      clientFilesCourseInstance: false,
+    })),
     questions: new Set(),
   };
 
@@ -413,13 +421,8 @@ export function identifyChunksFromChangedFiles(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
         );
         if (courseInstanceId in courseData.courseInstances) {
-          if (!courseChunks.courseInstances.has(courseInstanceId)) {
-            courseChunks.courseInstances.set(courseInstanceId, {
-              assessments: new Set(),
-              clientFilesCourseInstance: true,
-            });
-          }
-          courseChunks.courseInstances.get(courseInstanceId)!.clientFilesCourseInstance = true;
+          courseChunks.courseInstances.getOrCreate(courseInstanceId).clientFilesCourseInstance =
+            true;
           return;
         }
       }
@@ -444,15 +447,7 @@ export function identifyChunksFromChangedFiles(
           courseInstanceId in courseData.courseInstances &&
           assessmentId in courseData.courseInstances[courseInstanceId].assessments
         ) {
-          // This corresponds to something that we need to
-          // create/update a chunk for!
-          if (!courseChunks.courseInstances.has(courseInstanceId)) {
-            courseChunks.courseInstances.set(courseInstanceId, {
-              assessments: new Set(),
-              clientFilesCourseInstance: false,
-            });
-          }
-          courseChunks.courseInstances.get(courseInstanceId)!.assessments.add(assessmentId);
+          courseChunks.courseInstances.getOrCreate(courseInstanceId).assessments.add(assessmentId);
         }
       }
     }
@@ -504,7 +499,10 @@ export async function diffChunks({
     elementExtensions: false,
     serverFilesCourse: false,
     clientFilesCourse: false,
-    courseInstances: new Map(),
+    courseInstances: new DefaultMap(() => ({
+      assessments: new Set(),
+      clientFilesCourseInstance: false,
+    })),
     questions: new Set(),
   };
 
@@ -523,14 +521,9 @@ export async function diffChunks({
       case 'clientFilesCourseInstance': {
         const courseInstanceName = courseChunk.course_instance_name;
         assert(courseInstanceName != null);
-        if (!existingCourseChunks.courseInstances.has(courseInstanceName)) {
-          existingCourseChunks.courseInstances.set(courseInstanceName, {
-            assessments: new Set(),
-            clientFilesCourseInstance: true,
-          });
-        }
-        existingCourseChunks.courseInstances.get(courseInstanceName)!.clientFilesCourseInstance =
-          true;
+        existingCourseChunks.courseInstances.getOrCreate(
+          courseInstanceName,
+        ).clientFilesCourseInstance = true;
         break;
       }
       case 'clientFilesAssessment': {
@@ -538,14 +531,8 @@ export async function diffChunks({
         const assessmentName = courseChunk.assessment_name;
         assert(courseInstanceName != null);
         assert(assessmentName != null);
-        if (!existingCourseChunks.courseInstances.has(courseInstanceName)) {
-          existingCourseChunks.courseInstances.set(courseInstanceName, {
-            assessments: new Set(),
-            clientFilesCourseInstance: false,
-          });
-        }
         existingCourseChunks.courseInstances
-          .get(courseInstanceName)!
+          .getOrCreate(courseInstanceName)
           .assessments.add(assessmentName);
         break;
       }
