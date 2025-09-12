@@ -114,7 +114,6 @@ export const QuestionIdJsonSchema = z
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
-  .default(false)
   .describe('Whether to force this question to be awarded maximum points on a regrade.');
 
 export const AdvanceScorePercJsonSchema = z
