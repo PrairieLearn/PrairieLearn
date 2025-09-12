@@ -58,7 +58,8 @@ const RichTextEditor = ({
 }) => {
   const editor = useEditor({
     parseOptions: {
-      preserveWhitespace: 'full',
+      // TODO: we basically want the parser to collapse whitespace per HTML's rules, except in Raw HTML blocks
+      preserveWhitespace: true, // 'full',
     },
     editorProps: {
       attributes: {
