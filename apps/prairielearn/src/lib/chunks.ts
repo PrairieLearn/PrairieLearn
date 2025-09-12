@@ -407,7 +407,7 @@ export function identifyChunksFromChangedFiles(
       const clientFilesAssessmentIndex = pathComponents.indexOf('clientFilesAssessment');
 
       if (clientFilesCourseInstanceIndex !== -1) {
-        // Let's validate that the preceeding path components correspond
+        // Let's validate that the preceding path components correspond
         // to an actual course instance
         const courseInstanceId = path.join(
           ...pathComponents.slice(0, clientFilesCourseInstanceIndex),
@@ -509,10 +509,11 @@ export async function diffChunks({
   };
 
   // Track the entity IDs currently referenced by existing chunks, keyed by their
-  // human-readable names. This allows reconciliation to detect when a chunk
-  // exists for a name but points at an old (now-deleted) DB row ID.
+  // human-readable names. This allows us (inline) to detect when a chunk
+  // exists for a name but points at an old (now-deleted) DB row ID after a
+  // UUID rotation.
   const existingCourseInstanceIdByName = new Map<string, string | null>();
-  const existingAssessmentIdByName = new Map<string, string | null>();
+  const existingAssessmentIdByCourseInstance = new Map<string, Map<string, string | null>>();
 
   rawCourseChunks.forEach((courseChunk) => {
     // First, populate the auxiliary maps for reconciliation.
@@ -521,15 +522,17 @@ export async function diffChunks({
         courseChunk.course_instance_name,
         courseChunk.course_instance_id ?? null,
       );
-    } else if (
-      courseChunk.type === 'clientFilesAssessment' &&
-      courseChunk.course_instance_name &&
-      courseChunk.assessment_name
-    ) {
-      existingAssessmentIdByName.set(
-        `${courseChunk.course_instance_name}::${courseChunk.assessment_name}`,
-        courseChunk.assessment_id ?? null,
-      );
+    } else if (courseChunk.type === 'clientFilesAssessment') {
+      const ciName = courseChunk.course_instance_name;
+      const assessName = courseChunk.assessment_name;
+      if (ciName && assessName) {
+        let assessMap = existingAssessmentIdByCourseInstance.get(ciName);
+        if (!assessMap) {
+          assessMap = new Map();
+          existingAssessmentIdByCourseInstance.set(ciName, assessMap);
+        }
+        assessMap.set(assessName, courseChunk.assessment_id ?? null);
+      }
     }
 
     // Next, process the chunk by its type.
@@ -614,7 +617,37 @@ export async function diffChunks({
     }
   });
 
-  // Next: course instances and their assessments
+  // Preload active (current) DB IDs so we can detect mismatches inline while
+  // iterating course instances / assessments (handles UUID rotations without file edits).
+  const activeCourseInstances = await sqldb.queryRows(
+    sql.select_active_course_instance_ids,
+    { course_id: courseId },
+    z.object({ course_instance_name: z.string(), course_instance_id: z.string() }),
+  );
+  const activeCiIdByName = new Map(
+    activeCourseInstances.map((r) => [r.course_instance_name, r.course_instance_id]),
+  );
+
+  const activeAssessments = await sqldb.queryRows(
+    sql.select_active_assessment_ids_by_tid,
+    { course_id: courseId },
+    z.object({
+      course_instance_name: z.string(),
+      assessment_name: z.string(),
+      assessment_id: z.string(),
+    }),
+  );
+  const activeAssessmentIdByCourseInstance = new Map<string, Map<string, string>>();
+  activeAssessments.forEach((r) => {
+    let assessMap = activeAssessmentIdByCourseInstance.get(r.course_instance_name);
+    if (!assessMap) {
+      assessMap = new Map();
+      activeAssessmentIdByCourseInstance.set(r.course_instance_name, assessMap);
+    }
+    assessMap.set(r.assessment_name, r.assessment_id);
+  });
+
+  // Next: course instances and their assessments (includes reconciliation logic)
   await async.each(
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
@@ -622,12 +655,17 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
+      const existingCiId = existingCourseInstanceIdByName.get(ciid) ?? null;
+      const activeCiId = activeCiIdByName.get(ciid) ?? null;
+      const ciIdMismatch = Boolean(activeCiId && activeCiId !== existingCiId);
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const existingCiChunk = existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance;
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const changedCiChunk = changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
+        (!existingCiChunk || changedCiChunk || ciIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -646,12 +684,19 @@ export async function diffChunks({
             'clientFilesAssessment',
           ),
         );
+        const existingAssessMap = existingAssessmentIdByCourseInstance.get(ciid);
+        const existingAssessId = existingAssessMap?.get(tid) ?? null;
+        const activeAssessId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const assessIdMismatch = Boolean(activeAssessId && activeAssessId !== existingAssessId);
+        const hasExistingAssess =
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ?? false;
+        const hasChangedAssess =
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          (!existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ||
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid))
+          (!hasExistingAssess || hasChangedAssess || assessIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -702,84 +747,6 @@ export async function diffChunks({
       );
     }),
   );
-
-  // Reconciliation pass: ensure that for every on-disk client files directory
-  // that corresponds to a current database entity, we have a chunk scheduled using
-  // the current name mapping, even if metadata-only changes didn't trigger it.
-  // This addresses cases where an assessment or course instance UUID change
-  // creates a new DB row (new id) without touching client files.
-  const addUpdatedChunkIfMissing = (cm: ChunkMetadata) => {
-    const key = JSON.stringify(cm);
-    if (!updatedChunks.some((x) => JSON.stringify(x) === key)) {
-      updatedChunks.push(cm);
-    }
-  };
-
-  // Course instance reconciliation (by ID)
-  const activeCourseInstances = await sqldb.queryRows(
-    sql.select_active_course_instance_ids,
-    { course_id: courseId },
-    z.object({ course_instance_name: z.string(), course_instance_id: z.string() }),
-  );
-  const activeCiIdByName = new Map(
-    activeCourseInstances.map((r) => [r.course_instance_name, r.course_instance_id]),
-  );
-
-  await async.each(Object.keys(courseData.courseInstances), async (ciid) => {
-    const ciClientDir = path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance');
-    if (await fs.pathExists(ciClientDir)) {
-      const activeId = activeCiIdByName.get(ciid);
-      const existingId = existingCourseInstanceIdByName.get(ciid) ?? null;
-      if (!activeId || activeId !== existingId) {
-        addUpdatedChunkIfMissing({ type: 'clientFilesCourseInstance', courseInstanceName: ciid });
-      }
-    }
-  });
-
-  // Assessment reconciliation per course instance
-  // Build map of active assessment IDs by (ciName, tid) to ensure we're looking at current DB state
-  const activeAssessments = await sqldb.queryRows(
-    sql.select_active_assessment_ids_by_tid,
-    { course_id: courseId },
-    z.object({
-      course_instance_name: z.string(),
-      assessment_name: z.string(),
-      assessment_id: z.string(),
-    }),
-  );
-  const activeAssessmentIdByName = new Map(
-    activeAssessments.map((r) => [
-      `${r.course_instance_name}::${r.assessment_name}`,
-      r.assessment_id,
-    ]),
-  );
-
-  await async.each(Object.entries(courseData.courseInstances), async ([ciid, ciInfo]) => {
-    await async.each(Object.keys(ciInfo.assessments), async (tid) => {
-      const key = `${ciid}::${tid}`;
-      const activeId = activeAssessmentIdByName.get(key);
-      if (!activeId) return; // Not active in DB; skip
-
-      const assessmentClientDir = path.join(
-        coursePath,
-        'courseInstances',
-        ciid,
-        'assessments',
-        tid,
-        'clientFilesAssessment',
-      );
-      if (await fs.pathExists(assessmentClientDir)) {
-        const existingId = existingAssessmentIdByName.get(key) ?? null;
-        if (existingId !== activeId) {
-          addUpdatedChunkIfMissing({
-            type: 'clientFilesAssessment',
-            courseInstanceName: ciid,
-            assessmentName: tid,
-          });
-        }
-      }
-    });
-  });
 
   return { updatedChunks, deletedChunks };
 }
