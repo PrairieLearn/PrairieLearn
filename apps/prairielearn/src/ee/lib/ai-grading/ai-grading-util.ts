@@ -199,8 +199,6 @@ function generateSubmissionMessage({
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
 
-  console.log('extracting images from', submission_text, submitted_answer);
-
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
