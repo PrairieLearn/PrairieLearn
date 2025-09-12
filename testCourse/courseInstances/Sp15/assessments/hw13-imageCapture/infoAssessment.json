@@ -4,7 +4,7 @@
   "title": "Image Capture",
   "set": "Homework",
   "number": "13",
-  "allowAccess": [],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "questions": [
