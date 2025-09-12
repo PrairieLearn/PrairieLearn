@@ -4,7 +4,7 @@ import math
 import os
 import random
 from copy import deepcopy
-from typing import TypedDict
+from typing import TypedDict, no_type_check
 
 import chevron
 import lxml.html
@@ -59,6 +59,10 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
+# This needs to be added becuase depends graph cannot be of type
+# list[list[str]] becuase this function can only be called if
+# order_block_options.is_multi is false
+@no_type_check
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
 ) -> tuple[dict[str, list[str]], dict[str, str | None]]:
@@ -90,6 +94,7 @@ def extract_mgraph(
 def solve_problem(
     answers_list: list[OrderBlocksAnswerData],
     grading_method: GradingMethodType,
+    is_multi: bool,
 ) -> list[OrderBlocksAnswerData]:
     if (
         grading_method is GradingMethodType.EXTERNAL
@@ -99,9 +104,13 @@ def solve_problem(
         return answers_list
     elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
-    elif grading_method is GradingMethodType.DAG:
+    elif grading_method is GradingMethodType.DAG and not is_multi:
         depends_graph, group_belonging = extract_dag(answers_list)
         solution = solve_dag(depends_graph, group_belonging)
+        return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
+    elif grading_method is GradingMethodType.DAG and is_multi:
+        depends_graph, final = extract_mgraph(answers_list)
+        solution = solve_mgraph(depends_graph, final)[0]
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
         assert_never(grading_method)
@@ -197,7 +206,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     grade(html, data_copy)
     if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi:
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
-            correct_answers, order_blocks_options.grading_method
+            correct_answers, order_blocks_options.grading_method, order_blocks_options.is_multi
         )
 
 

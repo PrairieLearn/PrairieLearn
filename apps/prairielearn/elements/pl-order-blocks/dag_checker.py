@@ -202,7 +202,7 @@ def grade_dag(
 
 def grade_dag_list(
     submission: list[str],
-    depends_graphs: list[Mapping[str, list[str]]],
+    depends_graphs: list[dict[str, list[str]]],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
@@ -360,7 +360,7 @@ def collapse_multigraph(
     depends_multi_graph: dict[str, list[str] | list[list[str]]],
     final: str,
     path_names: dict[str, str] = {},
-) -> Generator:
+) -> Generator[dict[str, list[str]], None, None]:
     """
     :param depends_multi_graph: a dependency graph that contains nodes with multiple colored
     edges or in this our implementation a node which has a list[list[str]].
@@ -396,7 +396,8 @@ def collapse_multigraph(
 
             if path == enc_path or enc_path == "":
                 partially_collapsed = deepcopy(graph)
-                partially_collapsed[reason] = color
+                if isinstance(color, list):
+                    partially_collapsed[reason] = color
 
                 collapsing_graphs.append((partially_collapsed, path))
 
