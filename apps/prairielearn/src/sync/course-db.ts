@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
-import { type ZodSchema, type z } from 'zod';
+import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -16,9 +16,8 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
-import { selectInstitutionForCourse } from '../models/institution.js';
 import { findCourseBySharingName } from '../models/course.js';
-
+import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
   type AssessmentSetJson,
@@ -506,7 +505,7 @@ export async function loadCourseInfo({
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
     zodSchema: schemas.CourseJsonSchema,
-    validate: () => ({ warnings: [], errors: [] }),
+    validate: () => Promise.resolve({ warnings: [], errors: [] }),
   });
 
   if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
@@ -684,7 +683,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -719,7 +718,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 
   loadedJson.data = result.data;
 
-  const validationResult = validate(loadedJson.data);
+  const validationResult = await validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -749,7 +748,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -976,13 +975,13 @@ function validateORCID(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
-function validateQuestion({
+async function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1021,7 +1020,7 @@ function validateQuestion({
     }
   }
 
-  if (question.authors) {
+  if (question.authors.length > 0) {
     for (const author of question.authors) {
       if (author.orcid) {
         if (!validateORCID(author.orcid)) {
@@ -1030,9 +1029,16 @@ function validateQuestion({
           );
         }
       }
+      if (author.email) {
+        const parsedEmail = z.string().email().safeParse(author.email);
+
+        if (!parsedEmail.success) {
+          errors.push(`The author email address ${author.orcid} is invalid`);
+        }
+      }
       if (author.originCourse) {
-        const course = findCourseBySharingName(author.originCourse);
-        if (course === null) {
+        const course = await findCourseBySharingName(author.originCourse);
+        if (!course) {
           errors.push(
             `The author origin course with the sharing name ${author.originCourse} does not exist`,
           );
@@ -1054,7 +1060,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-function validateAssessment({
+async function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1064,7 +1070,7 @@ function validateAssessment({
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1368,13 +1374,13 @@ function validateAssessment({
   return { warnings, errors };
 }
 
-function validateCourseInstance({
+async function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 

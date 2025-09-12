@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { callAsync } from '@prairielearn/postgres';
 
 import { AuthorSchema } from '../../lib/db-types.js';
+import { findCourseBySharingName } from '../../models/course.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -54,16 +55,14 @@ export async function sync(
       if (author.originCourse) {
         let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
         if (originCourseID === null) {
-          originCourseID = await sqldb.queryOptionalRow(
-            sql.select_sharing_name,
-            { origin_course: author.originCourse },
-            z.string(),
-          );
+          const originCourse = await findCourseBySharingName(author.originCourse);
+          originCourseID = originCourse?.id ?? null;
         }
         if (originCourseID === null) {
           // This should never happen in practice since we already verified the existence when validating the question
-          throw Error(`Course with sharing name ${author.originCourse} not found!`);
+          throw new Error(`Course with sharing name ${author.originCourse} not found!`);
         }
+        normalizedAuthor.originCourse = originCourseID;
         sharingNameCache.set(author.originCourse, originCourseID);
       }
 

@@ -57,7 +57,6 @@ export const QuestionAuthorJsonSchema = z
       .string()
       .describe('An email address to contact a question author.')
       .max(255)
-      .email()
       .optional(),
     orcid: z
       .string()
