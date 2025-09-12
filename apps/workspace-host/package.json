@@ -55,6 +55,7 @@
     "vitest": "^3.2.4"
   },
   "nodemonConfig": {
-    "ext": "js,jsx,ts,tsx,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql",
+    "delay": 100
   }
 }

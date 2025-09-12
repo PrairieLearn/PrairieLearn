@@ -158,7 +158,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
       case 'pl-integer-input':
         return checkIntegerInput(ast);
       case 'pl-number-input':
-        return checkNumericalInput(ast);
+        return checkNumberInput(ast);
       case 'pl-string-input':
         return checkStringInput(ast);
       case 'pl-checkbox':
@@ -302,6 +302,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   let answersName: string | null = null;
   let allowBlank = false;
   let usedBlankValue = false;
+  let usedCorrectAnswer = false;
 
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -316,9 +317,9 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
         case 'size':
           assertInt('pl-integer-input', key, val, errors);
           break;
-        // string inputs are valid as strings, and these don't affect other tags, so no validation required
         case 'correct-answer':
           assertInt('pl-integer-input', key, val, errors);
+          usedCorrectAnswer = true;
           if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-integer-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
@@ -360,7 +361,10 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
   }
   return {
     errors,
-    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
   };
 }
 
@@ -374,6 +378,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   let answersName: string | null = null;
   let allowBlank = false;
   let usedBlankValue = false;
+  let usedCorrectAnswer = false;
 
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -388,6 +393,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           assertInt('pl-symbolic-input', key, val, errors);
           break;
         case 'correct-answer':
+          usedCorrectAnswer = true;
           if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-symbolic-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
@@ -433,7 +439,10 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
   }
   return {
     errors,
-    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
   };
 }
 
@@ -442,7 +451,7 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResult {
+function checkNumberInput(ast: DocumentFragment | ChildNode): ValidationResult {
   const errors: string[] = [];
   let answersName: string | null = null;
   let usedRelabs = true;
@@ -451,6 +460,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
   let usedDigits = false;
   let allowBlank = false;
   let usedBlankValue = false;
+  let usedCorrectAnswer = false;
 
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
@@ -466,6 +476,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
           break;
         case 'correct-answer':
           assertFloat('pl-number-input', key, val, errors);
+          usedCorrectAnswer = true;
           if (mustacheTemplateRegex.test(val)) {
             errors.push(
               "pl-number-input: correct-answer attribute value must not be a Mustache template. If the correct answer depends on dynamic parameters, set `data['correct_answers']` accordingly in `server.py` and remove this attribute.",
@@ -532,7 +543,10 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): ValidationResul
   }
   return {
     errors,
-    mandatoryPythonCorrectAnswers: answersName ? new Set([answersName]) : undefined,
+    // If a correct answer was not specified with the `correct-answer` attribute,
+    // then the `answers-name` attribute must be generated in Python.
+    mandatoryPythonCorrectAnswers:
+      !usedCorrectAnswer && answersName ? new Set([answersName]) : undefined,
   };
 }
 
