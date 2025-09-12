@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import TypedDict
+import re
 
 import lxml.html
 import prairielearn as pl
@@ -73,6 +74,16 @@ FEEDBACK_DEFAULT = FeedbackType.NONE
 WEIGHT_DEFAULT = 1
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
+ 
+
+def is_multigraph(element: lxml.html.HtmlElement) -> bool:
+    for html_tag in element:  # iterate through the html tags inside pl-order-blocks
+        if isinstance(html_tag, _Comment):
+            continue
+        has_colors = "|" in pl.get_string_attrib(html_tag, "depends", "")
+        if has_colors:
+            return True
+    return False
 
 
 def get_graph_info(
@@ -82,6 +93,29 @@ def get_graph_info(
     depends = pl.get_string_attrib(html_tag, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
     return tag, depends
+
+
+def get_multigraph_info(
+    html_tag: lxml.html.HtmlElement,
+) -> tuple[str, list | list[list], bool | None, dict[str, str]]:
+    tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
+    depends = pl.get_string_attrib(html_tag, "depends", "")
+    final = pl.get_boolean_attrib(html_tag, "final", None)
+    has_colors = True if "|" in depends else False
+    paths: dict[str, str] = {}
+    for i, name in enumerate(re.findall(r"\w+:", depends)):
+        paths[tag + str(i)] = name
+
+    depends = re.sub(r"\w+:", "", depends)
+
+    if has_colors:
+        depends = [
+            [tag.strip() for tag in color.split(",") if color != ""]
+            for color in depends.split("|")
+        ]
+    else:
+        depends = [tag.strip() for tag in depends.split(",")] if depends else []
+    return tag, depends, final, paths
 
 
 class OrderBlocksOptions:
@@ -133,8 +167,10 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.is_multi = is_multigraph(html_element)
 
-        self.answer_options = collect_answer_options(html_element, self.grading_method)
+        # All necessary properties are initialized for collect_answer_options
+        self.answer_options = collect_answer_options(html_element, self)
         self.correct_answers = [
             options for options in self.answer_options if options.correct
         ]
@@ -148,6 +184,7 @@ class OrderBlocksOptions:
         self.min_incorrect = pl.get_integer_attrib(
             html_element, "min-incorrect", len(self.incorrect_answers)
         )
+
 
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
         if html_element.tag != "pl-order-blocks":
@@ -182,6 +219,7 @@ class OrderBlocksOptions:
     def validate(self) -> None:
         self._validate_order_blocks_options()
         self._validate_answer_options()
+        _validate_order_blocks_options_against_all_answer_options(self, self.answer_options)
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -300,10 +338,15 @@ class AnswerOptions:
         self,
         html_element: lxml.html.HtmlElement,
         group_info: GroupInfo,
-        grading_method: GradingMethodType,
+        order_block_options: OrderBlocksOptions
     ) -> None:
-        self._check_options(html_element, grading_method)
-        self.tag, self.depends = get_graph_info(html_element)
+        self._check_options(html_element, order_block_options.grading_method)
+        if order_block_options.is_multi:
+            self.tag, self.depends, self.final, self.paths = get_multigraph_info(html_element)
+            self.final = pl.get_boolean_attrib(html_element, "final", False)
+        else: 
+            self.tag, self.depends = get_graph_info(html_element)
+            self.final, self.paths = None, None
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )
@@ -372,12 +415,22 @@ class AnswerOptions:
                     "distractor-feedback",
                     "distractor-for",
                     "ordering-feedback",
+                    "final"
                 ],
             )
 
 
+def _validate_order_blocks_options_against_all_answer_options(order_blocks_options: OrderBlocksOptions, answer_options: list[AnswerOptions]):
+    if order_blocks_options.is_multi:
+        for options in answer_options:
+            if options.final: return
+        raise Exception(
+            f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
+        )
+
+
 def collect_answer_options(
-    html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
+    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
 ) -> list[AnswerOptions]:
     answer_options = []
     for inner_element in html_element:
@@ -393,15 +446,14 @@ def collect_answer_options(
                     options = AnswerOptions(
                         answer_element,
                         {"tag": group_tag, "depends": group_depends},
-                        grading_method,
+                        order_blocks_options
                     )
                     answer_options.append(options)
             case "pl-answer":
-                answer_options.append(
-                    AnswerOptions(
-                        inner_element, {"tag": None, "depends": None}, grading_method
+                options = AnswerOptions(
+                        inner_element, {"tag": None, "depends": None}, order_blocks_options
                     )
-                )
+                answer_options.append(options)
             case _:
                 raise ValueError(
                     """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
