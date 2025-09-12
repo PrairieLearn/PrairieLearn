@@ -112,12 +112,15 @@ export async function aiGrade({
       if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
         continue;
       }
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const submission_embedding = await selectEmbeddingForSubmission(submission_id);
+
+      const {submission} = await selectLastVariantAndSubmission(instance_question.id); 
+      const submission_embedding = await selectEmbeddingForSubmission(submission.id);
+      
       if (!submission_embedding) {
         await generateSubmissionEmbedding({
           course,
           question,
+          submitted_answer: submission.submitted_answer,
           instance_question,
           urlPrefix,
           openai,
