@@ -1033,7 +1033,7 @@ async function validateQuestion({
         const parsedEmail = z.string().email().safeParse(author.email);
 
         if (!parsedEmail.success) {
-          errors.push(`The author email address ${author.orcid} is invalid`);
+          errors.push(`The author email address ${author.email} is invalid`);
         }
       }
       if (author.originCourse) {
