@@ -25,7 +25,7 @@ import {
 import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getStudentDetailUrl } from '../../lib/client/url.js';
+import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
@@ -179,18 +179,20 @@ function StudentsCard({
       columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
-        cell: (info) => info.getValue(),
+        cell: (info) => {
+          return (
+            <a href={getStudentEnrollmentUrl(urlPrefix, info.row.original.enrollment.id)}>
+              {info.getValue()}
+            </a>
+          );
+        },
       }),
       columnHelper.accessor((row) => row.user?.name, {
         id: 'user_name',
         header: 'Name',
         cell: (info) => {
           if (info.row.original.user) {
-            return (
-              <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
-                {info.getValue() || '—'}
-              </a>
-            );
+            return info.getValue() || '—';
           }
           return (
             <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>

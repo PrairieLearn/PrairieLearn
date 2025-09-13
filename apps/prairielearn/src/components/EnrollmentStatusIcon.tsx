@@ -4,6 +4,7 @@ import type { EnumEnrollmentStatus } from '../lib/db-types.js';
 
 interface EnrollmentStatusIconProps {
   status: EnumEnrollmentStatus;
+  class?: string;
 }
 
 function getIconClass(status: EnumEnrollmentStatus): string {
@@ -47,10 +48,10 @@ function capitalize(word: string): string {
   return word.charAt(0).toUpperCase() + word.slice(1);
 }
 
-export function EnrollmentStatusIcon({ status }: EnrollmentStatusIconProps) {
+export function EnrollmentStatusIcon({ status, class: className }: EnrollmentStatusIconProps) {
   const iconClass = getIconClass(status);
   return (
-    <span class="d-inline-flex align-items-center gap-1">
+    <span class={clsx('d-inline-flex align-items-center gap-1', className)}>
       <i class={clsx('bi', iconClass)} aria-hidden="true" />
       <span class="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
     </span>
