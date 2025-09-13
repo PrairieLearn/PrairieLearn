@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { type Timezone, formatTimezone } from './timezones.js';
+import { type Timezone, formatTimezone } from './timezone.shared.js';
 
 describe('formatTimezone', () => {
   it('formats positive hour and minute offsets', () => {
