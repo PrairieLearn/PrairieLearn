@@ -330,7 +330,7 @@ router.post(
       }
 
       // TODO: any membership checks needed here?
-      const qid = await saveGeneratedQuestion(
+      const question_id = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
         prompts[prompts.length - 1].python || undefined,
@@ -355,9 +355,9 @@ router.post(
         );
       }
 
-      flash('success', `Your question is ready for use as ${qid}.`);
+      flash('success', `Your question is ready for use as ${req.body.qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
