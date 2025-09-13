@@ -149,7 +149,13 @@ export function InstanceQuestion({
           : ''}
       </div>
       ${conflict_grading_job
-        ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders, lastGrader })
+        ? ConflictGradingJobModal({
+            resLocals,
+            conflict_grading_job,
+            graders,
+            lastGrader,
+            skipGradedSubmissions,
+          })
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
@@ -217,11 +223,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  skipGradedSubmissions: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -259,7 +267,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    skip_graded_submissions: false,
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>
@@ -285,6 +293,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>

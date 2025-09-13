@@ -53,6 +53,8 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
+  const showSkipGradedSubmissionsButton = !disable && context === 'main';
+
   return html`
     <form
       name="manual-grading-form"
@@ -152,23 +154,22 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
-          ${!disable && context === 'main'
-            ? html`
-                <div class="form-check">
-                  <input
-                    id="skip_graded_submissions"
-                    type="checkbox"
-                    class="form-check-input"
-                    name="skip_graded_submissions"
-                    value="true"
-                    ${skip_graded_submissions ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="skip_graded_submissions">
-                    Skip graded submissions
-                  </label>
-                </div>
-              `
-            : ''}
+          <div class="form-check">
+            <input
+              id="skip_graded_submissions"
+              type="${showSkipGradedSubmissionsButton ? 'checkbox' : 'hidden'}"
+              class="form-check-input"
+              name="skip_graded_submissions"
+              value="true"
+              ${skip_graded_submissions ? 'checked' : ''}
+            />
+            <label
+              class="form-check-label ${showSkipGradedSubmissionsButton ? '' : 'd-none'}"
+              for="skip_graded_submissions"
+            >
+              Skip graded submissions
+            </label>
+          </div>
           <span class="ms-auto">
             ${!disable
               ? html`
