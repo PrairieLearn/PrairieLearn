@@ -285,7 +285,6 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    skip_graded_submissions: false,
                   })}
                 </div>
               </div>
