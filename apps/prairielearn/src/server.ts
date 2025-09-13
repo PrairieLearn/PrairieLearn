@@ -537,7 +537,6 @@ export async function initExpress(): Promise<Express> {
         .default,
     ],
   );
-
   app.use(
     '/pl/navbar/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/switcher',
     [
