@@ -8,7 +8,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 
-import type { ResLocalsAuthnUser } from '../lib/authn.js';
+import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
 import {

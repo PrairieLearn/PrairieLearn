@@ -1,11 +1,13 @@
+import { useState } from 'preact/hooks';
+import { Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   type StaffInstitution,
+  StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { config } from '../../lib/config.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -27,42 +29,52 @@ export const StudentHomePageCourseSchema = z.object({
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   long_name: RawStudentCourseInstanceSchema.shape.long_name,
+  enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export function Home({
-  resLocals,
+  canAddCourses,
+  csrfToken,
   instructorCourses,
   studentCourses,
   adminInstitutions,
+  urlPrefix,
+  isDevMode,
 }: {
-  resLocals: Record<string, any>;
+  canAddCourses: boolean;
+  csrfToken: string;
   instructorCourses: InstructorHomePageCourse[];
   studentCourses: StudentHomePageCourse[];
   adminInstitutions: StaffInstitution[];
+  urlPrefix: string;
+  isDevMode: boolean;
 }) {
-  const { authn_provider_name } = resLocals;
-
   return (
     <>
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      <ActionsHeader />
+      <ActionsHeader urlPrefix={urlPrefix} />
 
       <div class="container pt-5">
-        <DevModeCard />
+        <DevModeCard isDevMode={isDevMode} />
         <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-        <InstructorCoursesCard instructorCourses={instructorCourses} />
+        <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
         <StudentCoursesCard
           studentCourses={studentCourses}
           hasInstructorCourses={instructorCourses.length > 0}
-          canAddCourses={authn_provider_name !== 'LTI'}
+          canAddCourses={canAddCourses}
+          csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+          isDevMode={isDevMode}
         />
       </div>
     </>
   );
 }
 
-function ActionsHeader() {
+Home.displayName = 'Home';
+
+function ActionsHeader({ urlPrefix }: { urlPrefix: string }) {
   return (
     <div class="container">
       <div class="row">
@@ -74,7 +86,7 @@ function ActionsHeader() {
                 <i class="fas fa-user-graduate fa-stack-1x text-light" />
               </span>
               <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
-              <a href={`${config.urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
+              <a href={`${urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
                 Add or remove courses
               </a>
             </div>
@@ -88,7 +100,7 @@ function ActionsHeader() {
                 <i class="fas fa-user-tie fa-stack-1x text-light" />
               </span>
               <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
-              <a href={`${config.urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
+              <a href={`${urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
                 Request course
               </a>
               <a
@@ -105,8 +117,8 @@ function ActionsHeader() {
   );
 }
 
-function DevModeCard() {
-  if (!config.devMode) return null;
+function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
+  if (!isDevMode) return null;
 
   return (
     <div class="card mb-4">
@@ -161,9 +173,10 @@ function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps
 
 interface InstructorCoursesCardProps {
   instructorCourses: InstructorHomePageCourse[];
+  urlPrefix: string;
 }
 
-function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps) {
+function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCoursesCardProps) {
   if (instructorCourses.length === 0) return null;
 
   return (
@@ -182,7 +195,7 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
               <tr key={course.id}>
                 <td class="w-50 align-middle">
                   {course.can_open_course ? (
-                    <a href={`${config.urlPrefix}/course/${course.id}`}>
+                    <a href={`${urlPrefix}/course/${course.id}`}>
                       {course.short_name}: {course.title}
                     </a>
                   ) : (
@@ -192,12 +205,14 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
                 <td class="js-course-instance-list">
                   <CourseInstanceList
                     courseInstances={course.course_instances.filter((ci) => !ci.expired)}
+                    urlPrefix={urlPrefix}
                   />
                   {course.course_instances.some((ci) => ci.expired) && (
                     <details>
                       <summary class="text-muted small">Older instances</summary>
                       <CourseInstanceList
                         courseInstances={course.course_instances.filter((ci) => ci.expired)}
+                        urlPrefix={urlPrefix}
                       />
                     </details>
                   )}
@@ -213,16 +228,17 @@ function InstructorCoursesCard({ instructorCourses }: InstructorCoursesCardProps
 
 interface CourseInstanceListProps {
   courseInstances: InstructorHomePageCourse['course_instances'];
+  urlPrefix: string;
 }
 
-function CourseInstanceList({ courseInstances }: CourseInstanceListProps) {
+function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListProps) {
   return (
     <div class="d-flex flex-wrap gap-2 my-1">
       {courseInstances.map((courseInstance) => (
         <a
           key={courseInstance.id}
           class="btn btn-outline-primary btn-sm"
-          href={`${config.urlPrefix}/course_instance/${courseInstance.id}/instructor`}
+          href={`${urlPrefix}/course_instance/${courseInstance.id}/instructor`}
         >
           {courseInstance.long_name}
         </a>
@@ -235,21 +251,35 @@ interface StudentCoursesCardProps {
   studentCourses: StudentHomePageCourse[];
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
+  csrfToken: string;
+  urlPrefix: string;
+  isDevMode: boolean;
 }
 
 function StudentCoursesCard({
   studentCourses,
   hasInstructorCourses,
   canAddCourses,
+  csrfToken,
+  urlPrefix,
+  isDevMode,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
+  const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
+
+  const invited: StudentHomePageCourse[] = studentCourses.filter(
+    (ci) => ci.enrollment.status === 'invited',
+  );
+  const joined: StudentHomePageCourse[] = studentCourses.filter(
+    (ci) => ci.enrollment.status === 'joined',
+  );
 
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
         {canAddCourses && (
-          <a href={`${config.urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
+          <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
             <i class="fa fa-edit" aria-hidden="true" />
             <span class="d-none d-sm-inline">Add or remove courses</span>
           </a>
@@ -264,7 +294,7 @@ function StudentCoursesCard({
             {canAddCourses &&
               ' Use the "Add or remove courses" button to add a course as a student.'}
           </div>
-        ) : config.devMode ? (
+        ) : isDevMode ? (
           <div class="card-body">
             No courses loaded. Click <strong>"Load from disk"</strong> above and then click
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
@@ -279,10 +309,46 @@ function StudentCoursesCard({
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {studentCourses.map((courseInstance) => (
+              {invited.map((courseInstance: StudentHomePageCourse) => (
+                <tr key={`invite-${courseInstance.id}`} class="table-warning">
+                  <td class="align-middle">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <div>
+                        <span class="fw-semibold">
+                          {courseInstance.course_short_name}: {courseInstance.course_title},
+                          {courseInstance.long_name}
+                        </span>
+                        <span class="ms-2 badge bg-warning text-dark">Invitation</span>
+                      </div>
+                      <div class="d-flex gap-2">
+                        <form method="POST">
+                          <input type="hidden" name="__action" value="accept_invitation" />
+                          <input type="hidden" name="__csrf_token" value={csrfToken} />
+                          <input
+                            type="hidden"
+                            name="course_instance_id"
+                            value={courseInstance.id}
+                          />
+                          <button type="submit" class="btn btn-primary btn-sm">
+                            Accept
+                          </button>
+                        </form>
+                        <button
+                          type="button"
+                          class="btn btn-danger btn-sm"
+                          onClick={() => setRejectingCourseId(courseInstance.id)}
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
                   <td>
-                    <a href={`${config.urlPrefix}/course_instance/${courseInstance.id}`}>
+                    <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
                       {courseInstance.course_short_name}: {courseInstance.course_title},
                       {courseInstance.long_name}
                     </a>
@@ -293,6 +359,39 @@ function StudentCoursesCard({
           </table>
         </div>
       )}
+
+      <Modal
+        show={rejectingCourseId !== null}
+        backdrop="static"
+        onHide={() => setRejectingCourseId(null)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Reject invitation?</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            Are you sure you want to reject this invitation? You will need to be re-invited if you
+            change your mind later.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onClick={() => setRejectingCourseId(null)}
+          >
+            Cancel
+          </button>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <input type="hidden" name="__action" value="reject_invitation" />
+            <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
+            <button type="submit" class="btn btn-danger">
+              Reject invitation
+            </button>
+          </form>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
