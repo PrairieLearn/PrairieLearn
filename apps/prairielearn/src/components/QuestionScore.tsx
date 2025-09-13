@@ -246,12 +246,20 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
 export function ExamQuestionStatus({
   instance_question,
   assessment_question,
+  displaySavedAsGradable,
 }: {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
   };
   assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  /**
+   * On exam with mixed real-time grading settings, this flag allows us to
+   * differentiate between questions that are saved and which can be graded by
+   * clicking the "Grade N saved answers" button and those that cannot
+   * (because real-time grading is disabled).
+   */
+  displaySavedAsGradable?: boolean;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -285,7 +293,13 @@ export function ExamQuestionStatus({
   return html`
     <span class="align-middle">
       <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
-        ${instance_question.status}
+        ${run(() => {
+          if (displaySavedAsGradable && instance_question.status === 'saved') {
+            return 'saved (gradable)';
+          }
+
+          return instance_question.status;
+        })}
       </span>
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0

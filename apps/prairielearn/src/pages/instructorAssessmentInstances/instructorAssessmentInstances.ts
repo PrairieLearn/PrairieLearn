@@ -61,6 +61,7 @@ router.post(
       const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
+      const overrideRealTimeGradingDisabled = true;
       await gradeAssessmentInstance(
         assessment_instance_id,
         res.locals.user.user_id,
@@ -68,6 +69,7 @@ router.post(
         requireOpen,
         close,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
         null, // client_fingerprint_id
       );
       res.send(JSON.stringify({}));
@@ -84,12 +86,14 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const close = req.body.__action === 'close_all';
       const overrideGradeRate = true;
+      const overrideRealTimeGradingDisabled = true;
       const job_sequence_id = await gradeAllAssessmentInstances(
         assessment_id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
         close,
         overrideGradeRate,
+        overrideRealTimeGradingDisabled,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
