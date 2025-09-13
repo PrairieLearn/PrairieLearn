@@ -101,7 +101,6 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row);
-
   if (res.locals.assessment.group_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(

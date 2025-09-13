@@ -335,7 +335,6 @@ router.post(
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
-
     const body = PostBodySchema.parse(
       // Parse using qs, which allows deep objects to be created based on parameter names
       // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
@@ -346,7 +345,6 @@ router.post(
       // The order of the items in arrays is never important, so using Object.values is fine.
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
-
     if (body.__action === 'add_manual_grade') {
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
