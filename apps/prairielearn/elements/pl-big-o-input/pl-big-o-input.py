@@ -80,16 +80,24 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
-        try:
-            psu.convert_string_to_sympy(
-                a_true, variables, allow_complex=False, allow_trig_functions=False
-            )
-        except psu.BaseSympyError as exc:
-            raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from exc
+        if len(a_true) > 0:
+            try:
+                psu.convert_string_to_sympy(
+                    a_true, variables, allow_complex=False, allow_trig_functions=False
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
 
         data["correct_answers"][name] = a_true
+
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+    if data["correct_answers"][name] == "" and (not allow_blank or blank_value != ""):
+        raise ValueError(
+            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -135,13 +143,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     a_sub = None
 
     if parse_error is None and name in data["submitted_answers"]:
-        a_sub = sympy.latex(
-            psu.convert_string_to_sympy(
-                data["submitted_answers"][name],
-                variables,
-                allow_complex=False,
-                allow_trig_functions=False,
+        a_sub = data["submitted_answers"][name]
+        a_sub = (
+            sympy.latex(
+                psu.convert_string_to_sympy(
+                    a_sub,
+                    variables,
+                    allow_complex=False,
+                    allow_trig_functions=False,
+                )
             )
+            if a_sub != ""
+            else ""
         )
     elif name not in data["submitted_answers"]:
         missing_input = True
@@ -212,9 +225,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = psu.convert_string_to_sympy(
-            a_tru, variables, allow_complex=False, allow_trig_functions=False
-        )
+        if a_tru != "":
+            a_tru = psu.convert_string_to_sympy(
+                a_tru, variables, allow_complex=False, allow_trig_functions=False
+            )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),
@@ -239,7 +253,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     a_sub = data["submitted_answers"].get(name)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
         a_sub = blank_value
-    if not a_sub:
+        if a_sub.strip() == "":
+            a_sub = ""
+            data["submitted_answers"][name] = a_sub
+            return
+    if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
@@ -301,21 +319,33 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "incorrect":
-        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
-        bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
-
-        if bigo_type is BigOType.THETA:
+        if a_tru == "":
+            data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
             data["partial_scores"][name] = {
-                "score": 0.25,
+                "score": 0,
                 "weight": weight,
-                "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
+                "feedback": bou.INCORRECT_FEEDBACK,
             }
         else:
-            data["partial_scores"][name] = {
-                "score": 0.5,
-                "weight": weight,
-                "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
-            }
+            data["raw_submitted_answers"][name] = (
+                f"{random.randint(4, 100):d} * {a_tru}"
+            )
+            bigo_type = pl.get_enum_attrib(
+                element, "type", BigOType, BIG_O_TYPE_DEFAULT
+            )
+
+            if bigo_type is BigOType.THETA:
+                data["partial_scores"][name] = {
+                    "score": 0.25,
+                    "weight": weight,
+                    "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
+                }
+            else:
+                data["partial_scores"][name] = {
+                    "score": 0.5,
+                    "weight": weight,
+                    "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
+                }
 
     elif result == "invalid":
         invalid_answer = random.choice([
