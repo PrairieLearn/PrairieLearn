@@ -5,8 +5,10 @@ import { z } from 'zod';
 
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import { selectAiSubmissionGroups } from '../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
 
 import {
   type AssessmentQuestion,
@@ -42,23 +44,81 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param assessment_question_id - The assessment question being graded.
  * @param user_id - The user_id of the current grader. Typically the current effective user.
  * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param skip_graded_submissions - If true, the returned next submission must have manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
+ * @param use_ai_submission_groups - Whether or not to use the AI submission groups to determine the next instance question.
  */
-export async function nextUngradedInstanceQuestionUrl(
+export async function nextInstanceQuestionUrl(
   urlPrefix: string,
   assessment_id: string,
   assessment_question_id: string,
   user_id: string,
   prior_instance_question_id: string | null,
+  skip_graded_submissions: boolean,
+  use_ai_submission_groups: boolean,
 ): Promise<string> {
-  const instance_question_id = await sqldb.queryOptionalRow(
-    sql.select_next_ungraded_instance_question,
-    { assessment_id, assessment_question_id, user_id, prior_instance_question_id },
-    IdSchema,
+  const prior_ai_submission_group_id = use_ai_submission_groups
+    ? await run(async () => {
+        if (prior_instance_question_id) {
+          return await sqldb.queryOptionalRow(
+            sql.ai_submission_group_id_for_instance_question,
+            {
+              instance_question_id: prior_instance_question_id,
+            },
+            IdSchema.nullable(),
+          );
+        } else {
+          const submissionGroups = await selectAiSubmissionGroups({
+            assessmentQuestionId: assessment_question_id,
+          });
+          return submissionGroups.length > 0 ? submissionGroups[0].id : null;
+        }
+      })
+    : null;
+
+  let next_instance_question_id = await sqldb.queryOptionalRow(
+    sql.select_next_instance_question,
+    {
+      assessment_id,
+      assessment_question_id,
+      user_id,
+      prior_instance_question_id,
+      prior_ai_submission_group_id,
+      skip_graded_submissions,
+      use_ai_submission_groups,
+    },
+    IdSchema.nullable(),
   );
 
-  if (instance_question_id != null) {
-    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`;
+  if (use_ai_submission_groups && !next_instance_question_id && prior_ai_submission_group_id) {
+    const next_ai_submission_group_id = await sqldb.queryOptionalRow(
+      sql.select_next_ai_submission_group_id,
+      {
+        assessment_question_id,
+        prior_ai_submission_group_id,
+      },
+      IdSchema.nullable(),
+    );
+
+    // Check if there exists another submission in the next AI submission group
+    next_instance_question_id = await sqldb.queryOptionalRow(
+      sql.select_next_instance_question,
+      {
+        assessment_id,
+        assessment_question_id,
+        user_id,
+        prior_instance_question_id: null,
+        prior_ai_submission_group_id: next_ai_submission_group_id,
+        skip_graded_submissions,
+        use_ai_submission_groups,
+      },
+      IdSchema,
+    );
   }
+
+  if (next_instance_question_id !== null) {
+    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${next_instance_question_id}`;
+  }
+
   // If we have no more submissions, then redirect back to main assessment question page
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
