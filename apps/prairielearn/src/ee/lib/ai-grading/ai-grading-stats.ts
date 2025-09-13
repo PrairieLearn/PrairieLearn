@@ -18,7 +18,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import type { WithAIGradingStats } from './types.js';
+import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const GradingJobInfoSchema = z.object({
@@ -31,16 +31,6 @@ const GradingJobInfoSchema = z.object({
   rubric_items: z.array(RubricItemSchema),
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
-
-export interface AiGradingGeneralStats {
-  submission_point_count: number;
-  submission_rubric_count: number;
-  mean_error: number | null;
-  rubric_stats: {
-    rubric_item: RubricItem;
-    disagreement_count: number;
-  }[];
-}
 
 /**
  * Fills in missing columns for manual grading assessment question page.
@@ -171,14 +161,11 @@ export async function calculateAiGradingStats(
             testPointResults.map((item) => item.ai_points),
           )
         : null,
-    rubric_stats: [],
+    rubric_stats: {},
   };
   for (const rubric_item of rubric_items) {
     const disagreement_count = rubricItemDisagreementCount(testRubricResults, rubric_item);
-    stats.rubric_stats.push({
-      rubric_item,
-      disagreement_count,
-    });
+    stats.rubric_stats[rubric_item.id] = disagreement_count;
   }
   return stats;
 }
