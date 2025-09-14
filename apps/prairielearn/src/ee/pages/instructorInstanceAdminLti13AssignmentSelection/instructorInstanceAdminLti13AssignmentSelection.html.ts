@@ -1,0 +1,255 @@
+import { z } from 'zod';
+
+import { html, unsafeHtml } from '@prairielearn/html';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { type Lti13Assessments } from '../../../lib/db-types.js';
+import type { AssessmentRow } from '../../../models/assessment.js';
+
+// https://www.imsglobal.org/spec/lti-dl/v2p0#lti-resource-link
+// https://canvas.instructure.com/doc/api/file.content_item.html
+// Incomplete schema but covers our usage
+export const ContentItemLtiResourceLinkSchema = z.object({
+  type: z.literal('ltiResourceLink'),
+  url: z.string().optional(),
+  title: z.string().optional(),
+  text: z.string().optional(),
+  window: z
+    .object({
+      targetName: z.string().optional(),
+      width: z.number().int().optional(),
+      height: z.number().int().optional(),
+      windowfeatures: z.string().optional(),
+    })
+    .optional(),
+  lineItem: z
+    .object({
+      label: z.string().optional(),
+      scoreMaximum: z.number(),
+      resourceId: z.string().optional(),
+      tag: z.string().optional(),
+      gradesReleased: z.boolean().optional(),
+    })
+    .optional(),
+});
+export type ContentItemLtiResourceLink = z.infer<typeof ContentItemLtiResourceLinkSchema>;
+
+export function InstructorInstanceAdminLti13AssignmentSelection({
+  resLocals,
+  assessments,
+  assessmentsGroupBy,
+  lti13AssessmentsByAssessmentId,
+  courseName,
+  lmsName,
+}: {
+  resLocals: Record<string, any>;
+  assessments: AssessmentRow[];
+  assessmentsGroupBy: 'Set' | 'Module';
+  lti13AssessmentsByAssessmentId: Record<string, Lti13Assessments>;
+  courseName: string;
+  lmsName: string;
+}) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 Assignment Selection' })}
+      </head>
+      <body>
+        ${Navbar({ resLocals })}
+        <main id="content" class="m-3">
+          <h1>Assignment linking (step 1 of 2)</h1>
+
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__action" value="confirm" />
+
+            <h2>Options</h2>
+            <p>Ask ${lmsName} to...</p>
+            <div class="form-check ml-3">
+              <input class="form-check-input" type="checkbox" name="setName" id="setName" />
+              <label class="form-check-label" for="setName">
+                set the name of the assignment to match PrairieLearn.
+              </label>
+            </div>
+
+            <div class="form-check ml-3">
+              <input class="form-check-input" type="checkbox" name="setText" id="setText" />
+              <label class="form-check-label" for="setText">
+                set the description of the assignment to match PrairieLearn.
+              </label>
+            </div>
+
+            <div class="form-check ml-3">
+              <input class="form-check-input" type="checkbox" name="setPoints" id="setPoints" />
+              <label class="form-check-label" for="setPoints">
+                set the points for the assignment to 100.
+              </label>
+            </div>
+
+            <h2 class="mt-3">Select a PrairieLearn assessment to link.</h2>
+
+            <table class="table table-sm">
+              <tr>
+                <th colspan="2">Assessment by group</th>
+                <th>Linked in ${lmsName} ${courseName}</th>
+              </tr>
+              ${assessments.map((row) => {
+                return html`
+                  ${row.start_new_assessment_group
+                    ? html`<tr>
+                        <th colspan="3">
+                          ${assessmentsGroupBy === 'Set'
+                            ? row.assessment_set.heading
+                            : row.assessment_module.heading}
+                        </th>
+                      </tr>`
+                    : ''}
+                  <tr>
+                    <td>
+                      <label for="option-${row.id}">
+                        <input
+                          type="radio"
+                          name="unsafe_assessment_id"
+                          id="option-${row.id}"
+                          value="${row.id}"
+                          required
+                        />
+                        <span class="badge color-${row.assessment_set.color}">${row.label}</span>
+                      </label>
+                    </td>
+                    <td>
+                      <label for="option-${row.id}">
+                        ${row.title}
+                        ${row.group_work
+                          ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                          : ''}
+                      </label>
+                    </td>
+                    <td>
+                      <label for="option-${row.id}">
+                        ${lti13AssessmentsByAssessmentId[row.id]?.lineitem?.label ?? ''}
+                      </label>
+                    </td>
+                  </tr>
+                `;
+              })}
+            </table>
+            <button class="btn btn-primary my-2">Continue</button>
+          </form>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
+
+export function InstructorInstanceAdminLti13AssignmentConfirmation({
+  resLocals,
+  deep_link_return_url,
+  contentItem,
+  signed_jwt,
+  lmsName,
+  assessment,
+}: {
+  resLocals: Record<string, any>;
+  deep_link_return_url: string;
+  contentItem: ContentItemLtiResourceLink;
+  signed_jwt: string;
+  lmsName: string;
+  assessment: AssessmentRow;
+}) {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 Assignment Selection' })}
+      </head>
+      <body>
+        ${Navbar({ resLocals })}
+        <main id="content" class="m-3">
+          <h1>Assignment linking (step 2 of 2)</h1>
+          <h2>Confirm the following configuration:</h2>
+
+          <p>
+            Link PrairieLearn assessment
+            <a href="${contentItem.url}">
+              <span class="badge color-${assessment.assessment_set.color}">
+                ${assessment.label}</span
+              >${assessment.title}</a
+            >.
+          </p>
+
+          ${'title' in contentItem
+            ? html`
+                <p>
+                  Ask ${lmsName} to name the assignment <strong>${contentItem.title}</strong> (You
+                  can update it later.)
+                </p>
+              `
+            : ''}
+          ${'text' in contentItem
+            ? html`
+                <p>
+                  Ask ${lmsName} to add this description to the assignment: (You can update it
+                  later.)
+                </p>
+                <div class="card bg-light mb-2">
+                  <div class="card-body">${unsafeHtml(contentItem.text ?? '')}</div>
+                </div>
+              `
+            : ''}
+          ${'lineItem' in contentItem
+            ? html`
+                <p>
+                  Ask ${lmsName} to set the total points for the assignment to 100. (You can update
+                  it later.)
+                </p>
+              `
+            : ''}
+
+          <script>
+            function sendIt() {
+              if (window.opener) {
+                try {
+                  window.opener.postMessage(
+                    {
+                      JWT: '${signed_jwt}',
+                      return_url: '${deep_link_return_url}',
+                    },
+                    window.location.origin,
+                  );
+                } catch (error) {
+                  console.error('Failed to send message to opener: ', error);
+                  alert('Failed to communicate with the LMS. Please try again.');
+                  return;
+                }
+              } else {
+                console.warn('No opener found to send message to');
+                alert(
+                  'Unabled to communicate with the LMS. Please ensure this window was opened from the LMS.',
+                );
+                return;
+              }
+            }
+          </script>
+
+          <div class="my-2">
+            <button class="btn btn-primary" onClick="sendIt();window.close();">
+              Send this information to ${lmsName}
+            </button>
+            <button class="btn btn-secondary" onClick="history.back();">Go back</button>
+          </div>
+          <p>
+            When you are returned to ${lmsName}, don't forget to finish configuration (click
+            'Select' in Canvas) and save the assignment.
+          </p>
+          <p>
+            Afterwards, visit your PrairieLearn course instance LTI 1.3 configuration page to link
+            the assignment and send grades.
+          </p>
+        </main>
+      </body>
+    </html>
+  `.toString();
+}
