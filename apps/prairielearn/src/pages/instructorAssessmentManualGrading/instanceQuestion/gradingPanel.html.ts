@@ -155,20 +155,28 @@ ${submission.feedback?.manual}</textarea
           : ''}
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
           <div class="form-check">
-            <input
-              id="skip_graded_submissions"
-              type="${showSkipGradedSubmissionsButton ? 'checkbox' : 'hidden'}"
-              class="form-check-input"
-              name="skip_graded_submissions"
-              value="true"
-              ${skip_graded_submissions ? 'checked' : ''}
-            />
-            <label
-              class="form-check-label ${showSkipGradedSubmissionsButton ? '' : 'd-none'}"
-              for="skip_graded_submissions"
-            >
-              Skip graded submissions
-            </label>
+            ${showSkipGradedSubmissionsButton
+              ? html`
+                  <input
+                    id="skip_graded_submissions"
+                    type="checkbox"
+                    class="form-check-input"
+                    name="skip_graded_submissions"
+                    value="true"
+                    ${skip_graded_submissions ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="skip_graded_submissions">
+                    Skip graded submissions
+                  </label>
+                `
+              : html`
+                  <input
+                    id="skip_graded_submissions"
+                    type="hidden"
+                    name="skip_graded_submissions"
+                    value="${skip_graded_submissions ? 'true' : 'false'}"
+                  />
+                `}
           </div>
           <span class="ms-auto">
             ${!disable

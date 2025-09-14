@@ -346,6 +346,9 @@ router.post(
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
+      req.session.skip_graded_submissions =
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
             rubric_id: res.locals.assessment_question.manual_rubric_id,
@@ -384,9 +387,6 @@ router.post(
           authn_user_id: res.locals.authn_user.user_id,
         });
       }
-
-      req.session.skip_graded_submissions =
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
