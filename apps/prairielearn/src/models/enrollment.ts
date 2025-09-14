@@ -1,11 +1,5 @@
 import * as error from '@prairielearn/error';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
