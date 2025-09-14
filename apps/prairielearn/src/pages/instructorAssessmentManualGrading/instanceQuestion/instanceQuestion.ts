@@ -334,7 +334,7 @@ const PostBodySchema = z.union([
       z.literal('add_manual_grade'),
       z.literal('add_manual_grade_for_submission_group'),
       z.literal('add_manual_grade_for_submission_group_ungraded'),
-      z.literal('next_instance_question')
+      z.literal('next_instance_question'),
     ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
@@ -478,7 +478,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups
+          use_ai_submission_groups: useAiSubmissionGroups,
         }),
       );
     } else if (body.__action === 'next_instance_question') {
@@ -500,8 +500,8 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups
-        })
+          use_ai_submission_groups: useAiSubmissionGroups,
+        }),
       );
     } else if (
       body.__action === 'add_manual_grade_for_submission_group_ungraded' ||
@@ -659,7 +659,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups
+          use_ai_submission_groups: useAiSubmissionGroups,
         }),
       );
     } else if (body.__action === 'report_issue') {

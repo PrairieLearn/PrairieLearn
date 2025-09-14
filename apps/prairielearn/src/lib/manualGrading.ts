@@ -55,7 +55,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
-  use_ai_submission_groups
+  use_ai_submission_groups,
 }: {
   urlPrefix: string;
   assessment_id: string;
