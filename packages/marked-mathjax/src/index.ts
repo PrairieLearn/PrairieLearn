@@ -21,12 +21,14 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
       // termination. This is done by masking the content that the em/strong
       // interpreter use to find the termination characters.
       emStrongMask(src) {
+        // Fast-path: no potential math delimiters present
+        if (!startMath.test(src)) return src;
         for (const inputJax of mathjaxInput) {
           for (const foundMath of inputJax.findMath([src])) {
             src =
-              src.slice(0, Math.max(0, foundMath.start.n)) +
+              src.slice(0, foundMath.start.n) +
               'a'.repeat(foundMath.end.n - foundMath.start.n) +
-              src.slice(Math.max(0, foundMath.end.n));
+              src.slice(foundMath.end.n);
           }
         }
         return src;
