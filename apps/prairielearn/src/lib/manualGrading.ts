@@ -39,23 +39,32 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
  *
- * @param urlPrefix - URL prefix for the current course instance.
- * @param assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
- * @param assessment_question_id - The assessment question being graded.
- * @param user_id - The user_id of the current grader. Typically the current effective user.
- * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
- * @param skip_graded_submissions - If true, the returned next submission must have manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
- * @param use_ai_submission_groups - Whether or not to use the AI submission groups to determine the next instance question.
+ * @param options - The options for generating the next instance question URL.
+ * @param options.urlPrefix - URL prefix for the current course instance.
+ * @param options.assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
+ * @param options.assessment_question_id - The assessment question being graded.
+ * @param options.user_id - The user_id of the current grader. Typically the current effective user.
+ * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
+ * @param options.use_ai_submission_groups - Whether or not to use the AI submission groups to determine the next instance question.
  */
-export async function nextInstanceQuestionUrl(
-  urlPrefix: string,
-  assessment_id: string,
-  assessment_question_id: string,
-  user_id: string,
-  prior_instance_question_id: string | null,
-  skip_graded_submissions: boolean,
-  use_ai_submission_groups: boolean,
-): Promise<string> {
+export async function nextInstanceQuestionUrl({
+  urlPrefix,
+  assessment_id,
+  assessment_question_id,
+  user_id,
+  prior_instance_question_id,
+  skip_graded_submissions,
+  use_ai_submission_groups
+}: {
+  urlPrefix: string;
+  assessment_id: string;
+  assessment_question_id: string;
+  user_id: string;
+  prior_instance_question_id: string | null;
+  skip_graded_submissions: boolean;
+  use_ai_submission_groups: boolean;
+}): Promise<string> {
   const prior_ai_submission_group_id = use_ai_submission_groups
     ? await run(async () => {
         if (prior_instance_question_id) {

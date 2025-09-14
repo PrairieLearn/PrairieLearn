@@ -85,7 +85,7 @@ FROM
 WHERE
   (
     -- If skipping graded submissions, the next submission does not necessarily need a higher stable order,
-    -- since the next graded submission might have a lower stable order.
+    -- since the next ungraded submission might have a lower stable order.
     -- Otherwise, the next submission must have a higher stable order. This prevents users from being redirected
     -- to the same submission twice.
     $skip_graded_submissions

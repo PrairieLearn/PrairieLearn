@@ -35,6 +35,7 @@ export function InstanceQuestion({
   aiGradingMode,
   aiGradingInfo,
   aiSubmissionGroups,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
@@ -51,6 +52,7 @@ export function InstanceQuestion({
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
   aiSubmissionGroups?: AiSubmissionGroup[];
+  skipGradedSubmissions: boolean;
 }) {
   const aiSubmissionGroupsExist = aiSubmissionGroups && aiSubmissionGroups.length > 0;
 
@@ -161,7 +163,13 @@ export function InstanceQuestion({
           : ''}
       </div>
       ${conflict_grading_job
-        ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders, lastGrader })
+        ? ConflictGradingJobModal({
+            resLocals,
+            conflict_grading_job,
+            graders,
+            lastGrader,
+            skipGradedSubmissions,
+          })
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
@@ -185,6 +193,7 @@ export function InstanceQuestion({
                 aiGradingInfo,
                 showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
                 aiSubmissionGroups,
+                skip_graded_submissions: skipGradedSubmissions,
               })}
             </div>
           </div>
@@ -231,11 +240,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  skipGradedSubmissions: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -274,6 +285,7 @@ function ConflictGradingJobModal({
                     skip_text: 'Accept existing score',
                     context: 'existing',
                     showAiSubmissionGroup: false,
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>
@@ -300,6 +312,7 @@ function ConflictGradingJobModal({
                     context: 'conflicting',
                     graders,
                     showAiSubmissionGroup: false,
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>

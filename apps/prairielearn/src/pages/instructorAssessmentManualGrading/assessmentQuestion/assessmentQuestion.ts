@@ -96,7 +96,7 @@ router.get(
 );
 
 router.get(
-  '/next',
+  '/next_ungraded',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
@@ -108,25 +108,28 @@ router.get(
       throw new error.HttpStatusError(400, 'prior_instance_question_id must be a single value');
     }
 
+    req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
     const aiGradingMode =
       (await features.enabledFromLocals('ai-grading', res.locals)) &&
       res.locals.assessment_question.ai_grading_mode;
-    const useAiSubmissionGroups =
+
+    const use_ai_submission_groups =
       aiGradingMode &&
       (await selectAssessmentQuestionHasAiSubmissionGroups({
         assessmentQuestionId: res.locals.assessment_question.id,
       }));
-
+      
     res.redirect(
-      await manualGrading.nextInstanceQuestionUrl(
-        res.locals.urlPrefix,
-        res.locals.assessment.id,
-        res.locals.assessment_question.id,
-        res.locals.authz_data.user.user_id,
-        req.query.prior_instance_question_id ?? null,
-        res.locals.skip_graded_submissions,
-        useAiSubmissionGroups,
-      ),
+      await manualGrading.nextInstanceQuestionUrl({
+        urlPrefix: res.locals.urlPrefix,
+        assessment_id: res.locals.assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+        user_id: res.locals.authz_data.user.user_id,
+        prior_instance_question_id: req.query.prior_instance_question_id ?? null,
+        skip_graded_submissions: true,
+        use_ai_submission_groups
+      }),
     );
   }),
 );
