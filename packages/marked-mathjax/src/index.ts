@@ -15,6 +15,23 @@ const startMath = /(\$|\\\(|\\\[)/;
 export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
+    hooks: {
+      // This hook ensures that, if a math token is to be found inside an
+      // em/strong token, no `*` or `_` characters are interpreted as em/strong
+      // termination. This is done by masking the content that the em/strong
+      // interpreter use to find the termination characters.
+      emStrongMask(src) {
+        for (const inputJax of mathjaxInput) {
+          for (const foundMath of inputJax.findMath([src])) {
+            src =
+              src.slice(0, Math.max(0, foundMath.start.n)) +
+              'a'.repeat(foundMath.end.n - foundMath.start.n) +
+              src.slice(Math.max(0, foundMath.end.n));
+          }
+        }
+        return src;
+      },
+    },
     renderer: {
       // Any leaf text token that is not math should be ignored by MathJax.
       // Note:
