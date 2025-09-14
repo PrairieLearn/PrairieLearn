@@ -88,7 +88,7 @@ export function InstructorStudentDetail({
             <h2 class="d-flex align-items-center">
               {user?.name ?? enrollment.pending_uid}
               <EnrollmentStatusIcon
-                class="badge badge-secondary ms-2 fs-6"
+                class="badge bg-secondary ms-2 fs-6"
                 status={enrollment.status}
               />
             </h2>
