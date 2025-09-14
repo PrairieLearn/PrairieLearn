@@ -26,13 +26,17 @@ router.get(
 
     const pageContext = getPageContext(res.locals);
     const { urlPrefix } = pageContext;
-    const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext.course_instance.id);
+    const {
+      course_instance: courseInstance,
+      course,
+      institution,
+    } = getCourseInstanceContext(res.locals, 'instructor');
+    const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
 
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: courseInstanceContext.institution.id,
-      course_id: courseInstanceContext.course.id,
-      course_instance_id: courseInstanceContext.course_instance.id,
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: courseInstance.id,
     });
 
     const student = await queryOptionalRow(
@@ -47,9 +51,14 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
+    // Trying to access a student from a different course instance.
+    if (student.enrollment.course_instance_id !== courseInstance.id) {
+      throw new HttpStatusError(404, 'Student not found');
+    }
+
     const gradebookRows = student.user?.user_id
       ? await getGradebookRows({
-          course_instance_id: res.locals.course_instance.id,
+          course_instance_id: courseInstance.id,
           user_id: student.user.user_id,
           authz_data: res.locals.authz_data,
           req_date: res.locals.req_date,
@@ -104,24 +113,35 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
+    const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
+
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
 
     switch (action) {
       case 'block_student': {
-        await execute(sql.update_enrollment_block, { enrollment_id });
+        await execute(sql.update_enrollment_block, {
+          enrollment_id,
+          course_instance_id: course_instance.id,
+        });
         res.redirect(req.originalUrl);
         break;
       }
       case 'unblock_student': {
-        await execute(sql.update_enrollment_unblock, { enrollment_id });
+        await execute(sql.update_enrollment_unblock, {
+          enrollment_id,
+          course_instance_id: course_instance.id,
+        });
         res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        await execute(sql.delete_invitation, { enrollment_id });
+        await execute(sql.delete_invitation, {
+          enrollment_id,
+          course_instance_id: course_instance.id,
+        });
         res.redirect(
-          `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/students`,
+          `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
         );
         break;
       }

@@ -18,6 +18,7 @@ SET
   status = 'blocked'
 WHERE
   id = $enrollment_id
+  AND course_instance_id = $course_instance_id
   AND status = 'joined';
 
 -- BLOCK update_enrollment_unblock
@@ -26,10 +27,12 @@ SET
   status = 'joined'
 WHERE
   id = $enrollment_id
+  AND course_instance_id = $course_instance_id
   AND status = 'blocked';
 
 -- BLOCK delete_invitation
 DELETE FROM enrollments
 WHERE
   id = $enrollment_id
+  AND course_instance_id = $course_instance_id
   AND status = 'invited';
