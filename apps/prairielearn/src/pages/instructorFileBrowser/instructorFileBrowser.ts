@@ -30,6 +30,11 @@ router.get(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_view',
+          },
           pageTitle: 'Files',
           requiredPermissions: 'Viewer',
         }),
@@ -82,7 +87,7 @@ router.post(
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
-        locals: res.locals as any as any,
+        locals: res.locals as any,
         container,
         deletePath,
       });

@@ -84,6 +84,10 @@ export function ManualGradingAssessment({
               <input type="hidden" name="__action" value="ai_grade_all" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             </form>
+            <form method="POST" id="delete-ai-grading-data">
+              <input type="hidden" name="__action" value="delete_ai_grading_data" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            </form>
             <form method="POST" id="export-ai-grading-statistics">
               <input type="hidden" name="__action" value="export_ai_grading_statistics" />
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -119,6 +123,17 @@ export function ManualGradingAssessment({
                   >
                     <i class="bi bi-stars" aria-hidden="true"></i>
                     AI grade all questions
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light grading-tag-button"
+                    name="delete-ai-grading-data"
+                    onclick="$('#delete-ai-grading-data').submit();"
+                    aria-label="Delete all AI grading data"
+                    data-bs-toggle="tooltip"
+                    data-bs-title="Delete all AI grading results for this assessment's questions"
+                  >
+                    Delete AI grading data
                   </button>
                 </div>
               `

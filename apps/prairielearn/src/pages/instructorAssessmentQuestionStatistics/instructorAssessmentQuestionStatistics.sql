@@ -22,7 +22,7 @@ WHERE
 SELECT
   c.short_name AS course_short_name,
   ci.short_name AS course_instance_short_name,
-  (aset.abbreviation || a.number) as assessment_label,
+  (aset.abbreviation || a.number) AS assessment_label,
   aq.*,
   q.qid,
   q.title AS question_title,
@@ -36,7 +36,7 @@ SELECT
     WHERE
       q.id = qt.question_id
   ) AS question_tags,
-  admin_assessment_question_number (aq.id) as assessment_question_number,
+  admin_assessment_question_number (aq.id) AS assessment_question_number,
   ag.number AS alternative_group_number,
   (
     count(*) OVER (

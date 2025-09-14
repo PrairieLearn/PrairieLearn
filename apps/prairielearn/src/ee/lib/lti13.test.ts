@@ -77,11 +77,11 @@ describe('fetchRetry()', () => {
     next();
   });
 
-  app.get('/403all', async (req, res) => {
+  app.get('/403all', (req, res) => {
     res.status(403).json([]);
   });
 
-  app.get('/403oddAttempt', async (req, res) => {
+  app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
       res.status(403).json([]);
     } else {

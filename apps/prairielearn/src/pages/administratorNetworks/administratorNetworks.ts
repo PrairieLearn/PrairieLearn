@@ -16,7 +16,6 @@ router.get(
   asyncHandler(async (req, res) => {
     const result = await sqldb.queryRow(
       sql.select,
-      [],
       z.array(
         z.object({
           network: ExamModeNetworkSchema.shape.network,

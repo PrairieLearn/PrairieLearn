@@ -24,7 +24,17 @@ go to "Settings" in the left-hand menu, then choose the "Navigation" tab and fin
 PrairieLearn in the list of hidden items. Drag PrairieLearn to the top visible list and
 click Save. When the page reloads, you should see PrairieLearn in your Canvas course left menu.
 
-If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email <support@prairielearn.com> to get it set up.
+!!! note
+
+    If PrairieLearn does not appear under Settings → Navigation in your Canvas course:
+
+    1. Confirm you have a Teacher or Designer role (only these roles can enable navigation items).
+    2. Check with a Canvas administrator that the PrairieLearn LTI 1.3 tool has been configured at your institution.
+      - If it is already installed, the admin may still need to enable or expose the tool for your sub‑account or specifically for your course so it appears in Navigation.
+      - If it has never been installed, a Canvas administrator must coordinate installation with the PrairieLearn team.
+    3. After installation/enabling, revisit Settings → Navigation to move PrairieLearn into the active (visible) list and Save.
+
+    Canvas administrators who need to configure the integration can contact <support@prairielearn.com>.
 
 The next step is to set up a connection between the Canvas course and a PrairieLearn course
 instance. As a Canvas Teacher, click the PrairieLearn left menu link. You will be presented

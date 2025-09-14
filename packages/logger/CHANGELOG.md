@@ -1,5 +1,11 @@
 # @prairielearn/logger
 
+## 2.0.20
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 2.0.19
 
 ### Patch Changes

@@ -32,7 +32,7 @@ WHERE
     OR (
       -- Consider assessment instances that are already closed but that did
       -- not complete the grading process
-      ai.open = false
+      ai.open = FALSE
       AND ai.grading_needed
     )
   )

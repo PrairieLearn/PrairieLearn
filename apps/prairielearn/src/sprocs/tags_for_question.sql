@@ -1,7 +1,7 @@
 -- Returns a JSON array describing the tags for question question_id.
 
 CREATE FUNCTION
-    tags_for_question (question_id bigint) RETURNS JSONB AS $$
+    tags_for_question (question_id bigint) RETURNS jsonb AS $$
 SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(
         'name',tag.name,

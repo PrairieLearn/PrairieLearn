@@ -74,14 +74,14 @@ export async function makeVariant(
 
   if (question.workspace_image !== null) {
     // if workspace, add graded files to params
-    variant.params['_workspace_required_file_names'] = (
-      question.workspace_graded_files || []
-    ).filter((file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions));
+    variant.params._workspace_required_file_names = (question.workspace_graded_files || []).filter(
+      (file) => !fg.isDynamicPattern(file, workspaceFastGlobDefaultOptions),
+    );
     if (!('_required_file_names' in variant.params)) {
-      variant.params['_required_file_names'] = [];
+      variant.params._required_file_names = [];
     }
-    variant.params['_required_file_names'] = variant.params['_required_file_names'].concat(
-      variant.params['_workspace_required_file_names'],
+    variant.params._required_file_names = variant.params._required_file_names.concat(
+      variant.params._workspace_required_file_names,
     );
   }
 
@@ -95,8 +95,8 @@ export async function makeVariant(
     const hasFatalIssue = courseIssues.some((issue) => issue.fatal);
     variant = {
       variant_seed,
-      params: data.params || {},
-      true_answer: data.true_answer || {},
+      params: data.params,
+      true_answer: data.true_answer,
       options: data.options || {},
       broken: hasFatalIssue,
     };
@@ -273,9 +273,6 @@ async function makeAndInsertVariant(
         throw new Error(
           'Attempt to create a variant without a question ID or instance question ID',
         );
-      }
-      if (user_id == null) {
-        throw new Error('Attempt to create a variant without a user ID');
       }
 
       if (course_instance_id != null) {

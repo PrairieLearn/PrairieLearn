@@ -15,7 +15,7 @@ WITH
         )
         ORDER BY
           (aset.number, a.order_by, a.id)
-      ) as assessments
+      ) AS assessments
     FROM
       assessments AS a
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -44,7 +44,7 @@ WITH
         )
         ORDER BY
           (lc.created_at)
-      ) as lti_credentials
+      ) AS lti_credentials
     FROM
       lti_credentials AS lc
       JOIN course_instances AS ci ON (ci.id = lc.course_instance_id)

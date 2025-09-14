@@ -1,8 +1,8 @@
 -- BLOCK ensure_enrollment
 INSERT INTO
-  enrollments (user_id, course_instance_id)
+  enrollments (user_id, course_instance_id, status, joined_at)
 VALUES
-  ($user_id, $course_instance_id)
+  ($user_id, $course_instance_id, 'joined', now())
 ON CONFLICT DO NOTHING;
 
 -- BLOCK select_enrollment_for_user_in_course_instance

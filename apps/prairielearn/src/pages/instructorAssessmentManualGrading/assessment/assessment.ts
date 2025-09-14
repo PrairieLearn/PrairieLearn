@@ -6,14 +6,15 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -106,7 +107,7 @@ router.post(
         // number of instances as the others, and that is expected.
         const numInstancesPerGrader = Math.ceil(numInstancesToGrade / assignedGraderIds.length);
         for (const graderId of assignedGraderIds) {
-          await queryAsync(sql.update_instance_question_graders, {
+          await execute(sql.update_instance_question_graders, {
             assessment_id: res.locals.assessment.id,
             unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
             assigned_grader: graderId,
@@ -183,6 +184,27 @@ router.post(
           'f1score',
         ],
       }).pipe(res);
+    } else if (req.body.__action === 'delete_ai_grading_data') {
+      if (!res.locals.is_administrator) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const assessment = res.locals.assessment as Assessment;
+      const assessmentQuestionRows = await selectAssessmentQuestions({
+        assessment_id: assessment.id,
+      });
+
+      await deleteAiGradingJobs({
+        assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
+        authn_user_id: res.locals.authn_user.user_id,
+      });
+
+      flash('success', 'AI grading data deleted successfully.');
+      res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

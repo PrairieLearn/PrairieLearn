@@ -30,9 +30,9 @@ LIMIT
 -- BLOCK update_assigned_grader
 UPDATE instance_questions AS iq
 SET
-  requires_manual_grading = $requires_manual_grading::BOOLEAN,
+  requires_manual_grading = $requires_manual_grading::boolean,
   assigned_grader = CASE
-    WHEN $requires_manual_grading::BOOLEAN THEN $assigned_grader::BIGINT
+    WHEN $requires_manual_grading::boolean THEN $assigned_grader::bigint
     ELSE assigned_grader
   END
 WHERE
@@ -48,7 +48,7 @@ WITH
       i.instance_question_id = $instance_question_id
       AND i.course_caused
       AND i.open IS TRUE
-      AND i.id = ANY ($issue_ids::BIGINT[])
+      AND i.id = ANY ($issue_ids::bigint[])
     RETURNING
       i.id,
       i.course_id,
@@ -81,10 +81,11 @@ FROM
 SELECT
   gj.id,
   gj.manual_rubric_grading_id,
-  agj.prompt
+  agj.prompt,
+  agj.completion
 FROM
-  grading_jobs as gj
-  LEFT JOIN ai_grading_jobs as agj ON (agj.grading_job_id = gj.id)
+  grading_jobs AS gj
+  LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
 WHERE
   submission_id = $submission_id
   AND grading_method = 'AI'

@@ -246,7 +246,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
   }
   function queueRun() {
     debug('queueDailyJobs(): starting run');
-    jobTimeouts['daily'] = 0;
+    jobTimeouts.daily = 0;
     runJobs(jobsList)
       .catch((err) => {
         logger.error('Error running cron jobs', err);
@@ -254,17 +254,17 @@ function queueDailyJobs(jobsList: CronJob[]) {
       })
       .finally(() => {
         debug('queueDailyJobs(): completed run');
-        if (jobTimeouts['daily'] === -1) {
+        if (jobTimeouts.daily === -1) {
           // someone requested a stop
           debug('queueDailyJobs(): stop requested');
-          delete jobTimeouts['daily'];
+          delete jobTimeouts.daily;
           return;
         }
         debug('queueDailyJobs(): waiting for next run time');
-        jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
+        jobTimeouts.daily = setTimeout(queueRun, timeToNextMS());
       });
   }
-  jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
+  jobTimeouts.daily = setTimeout(queueRun, timeToNextMS());
 }
 
 async function runJobs(jobsList: CronJob[]) {
@@ -364,12 +364,12 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
       throw new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`);
     }
   });
-  const result = await sqldb.queryAsync(sql.select_recent_cron_job, {
+  const rowCount = await sqldb.execute(sql.select_recent_cron_job, {
     name: job.name,
     interval_secs,
   });
 
-  if (result.rowCount != null && result.rowCount > 0) {
+  if (rowCount > 0) {
     debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
     logger.verbose('cron: ' + job.name + ' job was recently run, skipping', { cronUuid });
     return null;
@@ -379,13 +379,12 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
   logger.verbose('cron: ' + job.name + ' job was not recently run', {
     cronUuid,
   });
-  const params = { name: job.name };
-  await sqldb.queryAsync(sql.update_cron_job_time, params);
+  await sqldb.execute(sql.update_cron_job_time, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated run time`);
   logger.verbose('cron: ' + job.name + ' updated date', { cronUuid });
   await runJob(job, cronUuid);
   debug(`tryJobWithTime(): ${job.name}: done`);
-  await sqldb.queryAsync(sql.update_succeeded_at, { name: job.name });
+  await sqldb.execute(sql.update_succeeded_at, { name: job.name });
   debug(`tryJobWithTime(): ${job.name}: updated succeeded_at`);
 }
 

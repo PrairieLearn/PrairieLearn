@@ -25,7 +25,7 @@ router.get(
     const pageContext = getPageContext(res.locals);
     const { urlPrefix } = pageContext;
     const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext);
+    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext.course_instance.id);
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -55,7 +55,10 @@ router.get(
         navContext: {
           type: 'instructor',
           page: 'instance_admin',
-          subPage: 'gradebook',
+          subPage: 'students',
+        },
+        options: {
+          fullWidth: true,
         },
         content: (
           <Hydrate>

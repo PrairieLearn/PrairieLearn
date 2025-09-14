@@ -608,7 +608,7 @@ export function InstructorAssessmentInstance({
                                 class="btn btn-xs color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
-                                id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                id="fingerprintPopover${row.client_fingerprint.id}-${index}"
                                 data-bs-toggle="popover"
                                 data-bs-container="body"
                                 data-bs-html="true"

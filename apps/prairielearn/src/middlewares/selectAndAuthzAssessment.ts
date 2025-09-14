@@ -22,6 +22,8 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment_label: z.string(),
 });
 
+export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
+
 export default asyncHandler(async (req, res, next) => {
   const row = await queryOptionalRow(
     sql.select_and_auth,

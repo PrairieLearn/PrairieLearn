@@ -1,12 +1,12 @@
 CREATE FUNCTION
     assessment_instances_points(
-        assessment_instance_id BIGINT
+        assessment_instance_id bigint
     ) RETURNS TABLE (
-        zid BIGINT,
-        points DOUBLE PRECISION,
-        iq_ids BIGINT[],
-        max_points DOUBLE PRECISION,
-        max_iq_ids BIGINT[]
+        zid bigint,
+        points double precision,
+        iq_ids bigint[],
+        max_points double precision,
+        max_iq_ids bigint[]
     ) AS $$
 DECLARE
     assessment_type enum_assessment_type;

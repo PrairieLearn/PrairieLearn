@@ -74,7 +74,7 @@ FROM
 WITH
   previous_last_access AS (
     SELECT
-      COALESCE(NOW() - last_access, INTERVAL '0 seconds') AS full_delta
+      COALESCE(NOW() - last_access, interval '0 seconds') AS full_delta
     FROM
       last_accesses AS la
     WHERE

@@ -103,7 +103,7 @@ SELECT
     SELECT
       1
     FROM
-      course_instances as ci
+      course_instances AS ci
     WHERE
       ci.course_id = $course_id
       AND ci.deleted_at IS NULL

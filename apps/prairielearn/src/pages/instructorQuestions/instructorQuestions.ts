@@ -56,7 +56,7 @@ async function getTemplateQuestionsExampleCourse() {
   });
 
   const templateQuestions = Object.entries(questions)
-    .map(([qid, question]) => ({ qid, title: question?.data?.title }))
+    .map(([qid, question]) => ({ qid, title: question.data?.title }))
     .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
     qid: string;
     title: string;
@@ -103,6 +103,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -168,6 +173,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',

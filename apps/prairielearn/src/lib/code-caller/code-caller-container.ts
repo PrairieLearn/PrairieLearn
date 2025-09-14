@@ -349,8 +349,8 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.state === CREATED) {
       this.state = EXITED;
     } else if (this.state === WAITING) {
-      this._cleanup();
       this.state = EXITING;
+      void this._cleanup();
     }
     this._checkState();
     this.debug('exit done()');
@@ -480,8 +480,8 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('enter _timeout()');
     this._checkState([IN_CALL]);
     this.timeoutID = null;
-    this._cleanup();
     this.state = EXITING;
+    void this._cleanup();
     this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
   }
@@ -499,7 +499,7 @@ export class CodeCallerContainer implements CodeCaller {
    * @param err An error that occurred while waiting for the container to exit.
    * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err: Error | null | undefined, code?: number) {
+  _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -552,9 +552,9 @@ export class CodeCallerContainer implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputStdout.join(''));
-      if (data && data.error) {
+      if (data?.error) {
         err = new Error(data.error);
-        if (data.errorData && data.errorData.outputBoth) {
+        if (data.errorData?.outputBoth) {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
@@ -674,66 +674,41 @@ export class CodeCallerContainer implements CodeCaller {
       );
     }
 
-    let containerNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
-    if (this.state === CREATED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      containerNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
-      return this._logError(`Invalid CodeCallerContainer state: ${String(this.state)}`);
+    const containerNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = this.state !== IN_CALL;
+    const timeoutIDNull = this.state !== IN_CALL;
+
+    if (containerNull && this.container != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should be null`,
+      );
+    }
+    if (!containerNull && this.container == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should not be null`,
+      );
     }
 
-    if (containerNull != null) {
-      if (containerNull && this.container != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should be null`,
-        );
-      }
-      if (!containerNull && this.container == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should not be null`,
-        );
-      }
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should be null`,
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should be null`,
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
-        );
-      }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
-        );
-      }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
+      );
     }
 
     return true;
@@ -756,7 +731,7 @@ async function cleanupMountDirectories() {
     // Enumerate all directories in the OS tmp directory and remove
     // any old ones
     const dirs = await fs.readdir(tmpDir);
-    const outDirs = dirs.filter((d) => d.indexOf(MOUNT_DIRECTORY_PREFIX) === 0);
+    const outDirs = dirs.filter((d) => d.startsWith(MOUNT_DIRECTORY_PREFIX));
     await Promise.all(
       outDirs.map(async (dir) => {
         const absolutePath = path.join(tmpDir, dir);
