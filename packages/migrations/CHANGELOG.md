@@ -1,5 +1,12 @@
 # @prairielearn/migrations
 
+## 4.0.0
+
+### Major Changes
+
+- d4d5ce6: - `init(...)` now accepts an options object instead of positional arguments.
+  - `init(...)` now supports a `migrationFilters` option to control which migrations to run.
+
 ## 3.0.25
 
 ### Patch Changes

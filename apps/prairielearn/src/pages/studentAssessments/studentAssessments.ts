@@ -10,10 +10,9 @@ import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssess
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-router.use(logPageView('studentAssessments'));
-
 router.get(
   '/',
+  logPageView('studentAssessments'),
   asyncHandler(async (req, res) => {
     const rows = await queryRows(
       sql.select_assessments,

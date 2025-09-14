@@ -170,7 +170,7 @@ function getParamsForAssessment(
             // group, since each alternative can have its own comment. If this is
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
-            comment: question.alternatives ? undefined : question.comment,
+            comment: question.comment,
           },
         ];
       }
@@ -183,31 +183,35 @@ function getParamsForAssessment(
         const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
-        if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          const maxPoints = Math.max(...pointsList);
+        switch (assessment.type) {
+          case 'Exam': {
+            const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+            const maxPoints = Math.max(...pointsList);
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints: undefined,
-            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-          };
-        } else if (assessment.type === 'Homework') {
-          const initPoints =
-            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
-          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints: undefined,
+              pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
+            };
+          }
+          case 'Homework': {
+            const initPoints =
+              (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+            const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
-        } else {
-          assertNever(assessment.type);
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints,
+              pointsList: undefined,
+            };
+          }
+          default: {
+            assertNever(assessment.type);
+          }
         }
       });
 

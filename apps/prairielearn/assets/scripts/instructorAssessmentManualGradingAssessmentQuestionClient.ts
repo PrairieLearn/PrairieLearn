@@ -279,6 +279,7 @@ onDocumentReady(() => {
           filterControl: 'select',
           sortable: true,
           class: 'text-center',
+          visible: !aiGradingMode,
           formatter: (value: boolean) => (value ? 'Requires grading' : 'Graded'),
         },
         {
