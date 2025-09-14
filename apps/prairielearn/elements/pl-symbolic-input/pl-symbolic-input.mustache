@@ -32,8 +32,6 @@
                 custom-functions="{{custom_functions}}"
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                 {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
-                {{#aria_label}}aria-label="{{aria_label}}"{{/aria_label}}
-                {{^aria_label}}{{#label}}aria-labelledby="pl-symbolic-input-{{uuid}}-label"{{/label}}{{/aria_label}}
                 >
                 {{#raw_submitted_answer_l}}{{raw_submitted_answer_l}}{{/raw_submitted_answer_l}}
             </math-field>
