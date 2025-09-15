@@ -251,9 +251,11 @@ export function ExamQuestionStatus({
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
-    allow_real_time_grading: boolean;
   };
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
+  >;
   /**
    * On exam with mixed real-time grading settings, this flag allows us to
    * differentiate between questions that are saved and which can be graded by
@@ -295,7 +297,7 @@ export function ExamQuestionStatus({
     if (
       realTimeGradingPartiallyDisabled &&
       instance_question.status === 'saved' &&
-      !instance_question.allow_real_time_grading
+      !assessment_question.allow_real_time_grading
     ) {
       return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
     }
