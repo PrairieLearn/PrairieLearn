@@ -1,9 +1,9 @@
 pg_version = "16.0"
 assume_in_transaction = true
 excluded_rules = [
-  "prefer-identity",                   # Serial types make schema, dependency, and permission management difficult
-  "prefer-text-field",                 # Changing the size of a `varchar` field requires an `ACCESS EXCLUSIVE` lock, that will prevent all reads and writes to the table
-  "prefer-bigint-over-int",            # Using 32-bit integer fields can result in hitting the max `int` limit
+  "prefer-identity",               # Serial types make schema, dependency, and permission management difficult
+  "prefer-text-field",             # Changing the size of a `varchar` field requires an `ACCESS EXCLUSIVE` lock, that will prevent all reads and writes to the table
+  "prefer-bigint-over-int",        # Using 32-bit integer fields can result in hitting the max `int` limit
   "adding-foreign-key-constraint",
   # False positives (https://github.com/sbdchd/squawk/issues/649)
   "disallowed-unique-constraint",      # Adding a `UNIQUE` constraint requires an `ACCESS EXCLUSIVE` lock which blocks reads and writes to the table while the index is built
