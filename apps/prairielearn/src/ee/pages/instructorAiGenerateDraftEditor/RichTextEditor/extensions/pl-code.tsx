@@ -5,7 +5,7 @@
  * This is a Tiptap extension for the pl-code element with syntax highlighting and customizable options.
  */
 import { mergeAttributes } from '@tiptap/core';
-import CodeBlock, { type CodeBlockOptions } from '@tiptap/extension-code-block';
+import CodeBlock from '@tiptap/extension-code-block';
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -18,51 +18,7 @@ import { Button, Dropdown, Form, Modal, OverlayTrigger, Tooltip } from 'react-bo
 import { HexColorPicker } from 'react-colorful';
 import { z } from 'zod';
 
-// Import a default theme
-
-// Zod schema for pl-code attributes
-
-// Common programming languages supported by highlight.js
-const supportedLanguages = [
-  'text',
-  'javascript',
-  'typescript',
-  'python',
-  'java',
-  'cpp',
-  'c',
-  'csharp',
-  'php',
-  'ruby',
-  'go',
-  'rust',
-  'swift',
-  'kotlin',
-  'scala',
-  'r',
-  'matlab',
-  'sql',
-  'html',
-  'css',
-  'scss',
-  'less',
-  'json',
-  'xml',
-  'yaml',
-  'markdown',
-  'bash',
-  'powershell',
-  'dockerfile',
-  'nginx',
-  'apache',
-  'ini',
-  'toml',
-  'makefile',
-  'cmake',
-  'latex',
-  'diff',
-  'plaintext',
-];
+import { supportedLexers } from './pygment-constants.js';
 
 const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   const [showOptionsModal, setShowOptionsModal] = useState(false);
@@ -71,7 +27,8 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   const codeRef = useRef<HTMLPreElement>(null);
   const [highlightedContent, setHighlightedContent] = useState('');
 
-  const attrs = { ...defaultAttrs, ...props.node.attrs } as PlCodeAttrs;
+  const attrs = props.node.attrs as PlCodeAttrs;
+  console.log('attrs', attrs);
   const updateAttributes = props.updateAttributes as (attrs: Partial<PlCodeAttrs>) => void;
 
   // Get the text content from the node
@@ -97,6 +54,7 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   // Update highlighted content when language or content changes
   const content = getTextContent();
   useEffect(() => {
+    if (!attrs.language) return;
     const highlighted = applySyntaxHighlighting(content, attrs.language);
     setHighlightedContent(highlighted);
   }, [attrs.language, content]);
@@ -167,13 +125,13 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
                 {attrs.language}
               </Dropdown.Toggle>
               <Dropdown.Menu>
-                {supportedLanguages.map((lang) => (
+                {Object.entries(supportedLexers).map(([lang, name]) => (
                   <Dropdown.Item
                     key={lang}
                     active={attrs.language === lang}
                     onClick={() => updateAttributes({ language: lang })}
                   >
-                    {lang}
+                    {name}
                   </Dropdown.Item>
                 ))}
               </Dropdown.Menu>
@@ -388,8 +346,9 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   );
 };
 
-const PlCodeAttrsSchema = z.object({
-  language: z.string().optional(),
+// If there are any unknown attributes, we will drop into the raw-html extension.
+const PlCodeAttrsSchema = z.strictObject({
+  language: z.enum(Object.values(supportedLexers) as [string, ...string[]]).optional(),
   preventSelect: z.boolean().default(false),
   copyCodeButton: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),
@@ -415,6 +374,8 @@ const PlCodeAttrsSchema = z.object({
 
 type PlCodeAttrs = z.infer<typeof PlCodeAttrsSchema>;
 
+const defaultAttrs = PlCodeAttrsSchema.parse({});
+
 export const PlCode = CodeBlock.extend({
   name: 'plCode',
   group: 'block',
@@ -433,28 +394,29 @@ export const PlCode = CodeBlock.extend({
 
           // Use Zod schema to validate and parse attributes
           try {
-            const attrs = PlCodeAttrsSchema.parse(htmlElement.attributes);
-            return attrs;
+            const attrs = PlCodeAttrsSchema.safeParse(htmlElement.attributes);
+            // ProseMirror expects null or undefined if the check is successful.
+            return attrs.success && null;
           } catch {
-            // If parsing fails, mark as invalid element
-            return {
-              ...PlCodeAttrsSchema.parse({}),
-              invalidElement: true,
-            };
+            return false;
           }
         },
       },
     ];
   },
 
-  renderHTML({ HTMLAttributes }: CodeBlockOptions) {
-    return ['pl-code', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+  renderHTML({ HTMLAttributes, node }: { HTMLAttributes: Record<string, any>; node: Node }) {
+    // Only include attributes that are not the default in the rendered HTML.
+    const nonDefaultAttrs = Object.fromEntries(
+      Object.entries(PlCodeAttrsSchema.shape).filter(([key]) => node[key] !== defaultAttrs[key]),
+    );
+    return ['pl-code', mergeAttributes(HTMLAttributes, nonDefaultAttrs), 0];
   },
 
   addAttributes() {
-    const defaults = PlCodeAttrsSchema.parse({});
+    // https://tiptap.dev/docs/editor/extensions/custom-extensions/extend-existing#attributes
     return Object.fromEntries(
-      Object.entries(defaults).map(([key, value]) => [key, { default: value }]),
+      Object.entries(defaultAttrs).map(([key, value]) => [key, { default: value }]),
     );
   },
 
