@@ -40,24 +40,19 @@ CREATE TABLE client_fingerprints (
 );
 
 ALTER TABLE page_view_logs
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE submissions
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE assessment_instances
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN last_client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE assessment_instances
 ADD COLUMN client_fingerprint_id_change_count INT NOT NULL DEFAULT 0;
 
 ALTER TABLE assessment_state_logs
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE variants
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;

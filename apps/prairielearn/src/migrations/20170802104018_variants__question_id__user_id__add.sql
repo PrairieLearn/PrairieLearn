@@ -1,9 +1,7 @@
 ALTER TABLE variants
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN question_id bigint REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN user_id bigint REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants

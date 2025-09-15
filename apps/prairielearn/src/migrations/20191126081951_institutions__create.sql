@@ -11,7 +11,6 @@ VALUES
   (1, 'Default', 'Default');
 
 ALTER TABLE pl_courses
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN institution_id bigint REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 UPDATE pl_courses

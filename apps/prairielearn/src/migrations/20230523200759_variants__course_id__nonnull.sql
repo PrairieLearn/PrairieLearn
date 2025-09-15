@@ -7,10 +7,8 @@ ALTER TABLE variants
 DROP CONSTRAINT IF EXISTS variants_course_id_not_null;
 
 ALTER TABLE variants
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT variants_course_id_not_null CHECK (course_id IS NOT NULL) NOT VALID;
 
--- squawk-ignore constraint-missing-not-valid
 ALTER TABLE variants VALIDATE CONSTRAINT variants_course_id_not_null;
 
 DO $$

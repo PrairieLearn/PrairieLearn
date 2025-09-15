@@ -15,10 +15,8 @@ ALTER TABLE groups
 DROP CONSTRAINT IF EXISTS groups_group_config_id_not_null;
 
 ALTER TABLE groups
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT groups_group_config_id_not_null CHECK (group_config_id IS NOT NULL) NOT VALID;
 
--- squawk-ignore constraint-missing-not-valid
 ALTER TABLE groups VALIDATE CONSTRAINT groups_group_config_id_not_null;
 
 DO $$

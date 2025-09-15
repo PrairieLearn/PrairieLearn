@@ -11,7 +11,6 @@ ALTER INDEX feature_grants_name_user_id_type_idx
 RENAME TO feature_grants_name_user_id_type_idx_old;
 
 ALTER TABLE feature_grants
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT feature_grants_by_name_idx UNIQUE (
   name,
   institution_id,

@@ -13,5 +13,4 @@ ALTER TABLE server_loads
 DROP CONSTRAINT server_loads_instance_id_key;
 
 ALTER TABLE server_loads
--- squawk-ignore constraint-missing-not-valid
 ADD UNIQUE (instance_id, job_type);
