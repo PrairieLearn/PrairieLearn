@@ -1,9 +1,11 @@
 ALTER TABLE pl_courses
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN sync_job_sequence_id bigint REFERENCES job_sequences ON UPDATE CASCADE ON DELETE SET NULL,
 ADD COLUMN sync_errors TEXT,
 ADD COLUMN sync_warnings TEXT;
 
 ALTER TABLE questions
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN sync_job_sequence_id bigint REFERENCES job_sequences ON UPDATE CASCADE ON DELETE SET NULL,
 ADD COLUMN sync_errors TEXT,
 ADD COLUMN sync_warnings TEXT,
@@ -25,6 +27,7 @@ ALTER TABLE questions
 DROP CONSTRAINT questions_course_id_number_key;
 
 ALTER TABLE course_instances
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN sync_job_sequence_id bigint REFERENCES job_sequences ON UPDATE CASCADE ON DELETE SET NULL,
 ADD COLUMN sync_errors TEXT,
 ADD COLUMN sync_warnings TEXT,
@@ -32,6 +35,7 @@ ALTER COLUMN uuid
 DROP NOT NULL;
 
 ALTER TABLE assessments
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN sync_job_sequence_id bigint REFERENCES job_sequences ON UPDATE CASCADE ON DELETE SET NULL,
 ADD COLUMN sync_errors TEXT,
 ADD COLUMN sync_warnings TEXT,

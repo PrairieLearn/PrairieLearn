@@ -44,10 +44,13 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
 );
 
 ALTER TABLE assessment_questions
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics (id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE submissions
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE grading_jobs
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;

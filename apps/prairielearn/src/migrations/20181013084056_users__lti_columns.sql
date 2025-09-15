@@ -1,4 +1,5 @@
 ALTER TABLE users
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS lti_course_instance_id bigint REFERENCES course_instances (id);
 
 ALTER TABLE users

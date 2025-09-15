@@ -86,6 +86,7 @@ ALTER TABLE assessments
 ADD COLUMN group_work boolean DEFAULT FALSE;
 
 ALTER TABLE assessment_instances
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE assessment_instances
@@ -110,9 +111,11 @@ ALTER COLUMN user_id
 DROP NOT NULL;
 
 ALTER TABLE audit_logs
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants
@@ -133,6 +136,7 @@ ALTER COLUMN user_id
 DROP NOT NULL;
 
 ALTER TABLE last_accesses
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE last_accesses

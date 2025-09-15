@@ -1,4 +1,5 @@
 ALTER TABLE users
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN institution_id BIGINT NOT NULL DEFAULT 1 REFERENCES institutions (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 ALTER TABLE users

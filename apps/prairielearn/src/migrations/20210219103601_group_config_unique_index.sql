@@ -2,21 +2,21 @@ ALTER TABLE group_users
 DROP CONSTRAINT IF EXISTS group_users_group_id_fkey;
 
 ALTER TABLE group_users
--- squawk-ignore constraint-missing-not-valid
+-- squawk-ignore constraint-missing-not-valid, adding-foreign-key-constraint
 ADD CONSTRAINT group_users_group_id_fkey FOREIGN KEY (group_id) REFERENCES groups (id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE group_users
 DROP CONSTRAINT IF EXISTS group_users_user_id_fkey;
 
 ALTER TABLE group_users
--- squawk-ignore constraint-missing-not-valid
+-- squawk-ignore constraint-missing-not-valid, adding-foreign-key-constraint
 ADD CONSTRAINT group_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES users (user_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE groups
 DROP CONSTRAINT IF EXISTS groups_group_config_id_fkey;
 
 ALTER TABLE groups
--- squawk-ignore constraint-missing-not-valid
+-- squawk-ignore constraint-missing-not-valid, adding-foreign-key-constraint
 ADD CONSTRAINT groups_group_config_id_fkey FOREIGN KEY (group_config_id) REFERENCES group_configs (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 DELETE FROM group_configs

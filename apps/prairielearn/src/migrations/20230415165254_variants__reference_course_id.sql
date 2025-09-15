@@ -1,2 +1,3 @@
 ALTER TABLE variants
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS course_id bigint REFERENCES pl_courses (id) ON UPDATE CASCADE ON DELETE CASCADE;

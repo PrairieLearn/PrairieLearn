@@ -10,14 +10,17 @@ CREATE TABLE client_fingerprints (
 
 -- add client_fingerprint_id to page_view_logs
 ALTER TABLE page_view_logs
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- add client_fingerprint_id to submissions
 ALTER TABLE submissions
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- add client_fingerprint_id to assessment_instances
 ALTER TABLE assessment_instances
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN last_client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- add fingerprint count to assessment_instances
@@ -26,6 +29,7 @@ ADD COLUMN client_fingerprint_id_change_count INT NOT NULL DEFAULT 0;
 
 -- add client_fingerprint_id to assessment_state_logs
 ALTER TABLE assessment_state_logs
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN client_fingerprint_id BIGINT REFERENCES client_fingerprints (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 -- create index

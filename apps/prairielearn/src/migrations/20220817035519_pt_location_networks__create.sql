@@ -15,4 +15,5 @@ CREATE TABLE IF NOT EXISTS pt_sessions (
 );
 
 ALTER TABLE pt_reservations
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN IF NOT EXISTS session_id BIGINT NOT NULL REFERENCES pt_sessions ON UPDATE CASCADE ON DELETE CASCADE;

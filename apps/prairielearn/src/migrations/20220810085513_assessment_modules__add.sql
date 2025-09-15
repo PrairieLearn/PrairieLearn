@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS assessment_modules (
 );
 
 ALTER TABLE assessments
+-- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN assessment_module_id BIGINT REFERENCES assessment_modules (id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 CREATE TYPE enum_assessment_grouping AS ENUM('Set', 'Module');
