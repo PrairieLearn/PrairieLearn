@@ -8,10 +8,30 @@
   "allowAccess": [{ "credit": 100, "timeLimitMin": 50 }],
   "zones": [
     {
+      "title": "Auto-graded questions with real-time grading disabled",
+      "questions": [{ "id": "partialCredit1", "points": 5, "allowRealTimeGrading": false }]
+    },
+    {
+      "title": "Auto-graded questions with real-time grading enabled",
       "questions": [
-        { "id": "partialCredit1", "points": 5, "allowRealTimeGrading": false },
         { "id": "partialCredit2", "points": 5, "allowRealTimeGrading": true },
         { "id": "partialCredit3", "points": 5, "allowRealTimeGrading": true }
+      ]
+    },
+    {
+      "title": "Manually-graded questions with real-time grading disabled",
+      "questions": [
+        {
+          "id": "manualGrade/shortAnswer",
+          "points": 5,
+          "allowRealTimeGrading": false
+        }
+      ]
+    },
+    {
+      "title": "Questions with mixed manual and auto grading with real-time grading disabled",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": 5, "manualPoints": 5, "allowRealTimeGrading": false }
       ]
     }
   ]

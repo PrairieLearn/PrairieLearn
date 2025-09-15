@@ -348,12 +348,11 @@ export function StudentAssessmentInstance({
                     </td>
                     ${resLocals.assessment.type === 'Exam'
                       ? html`
-                          <td class="text-center">
+                          <td>
                             ${ExamQuestionStatus({
                               instance_question: instance_question_row,
                               assessment_question: instance_question_row, // Required fields are in instance_question
-                              displaySavedAsGradable:
-                                instance_question_row.allow_real_time_grading &&
+                              realTimeGradingPartiallyDisabled:
                                 someQuestionsAllowRealTimeGrading &&
                                 someQuestionsForbidRealTimeGrading,
                             })}
@@ -737,7 +736,7 @@ function InstanceQuestionTableHeader({
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" rowspan="2">Status</th>
+                  <th rowspan="2">Status</th>
                   <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
@@ -749,7 +748,7 @@ function InstanceQuestionTableHeader({
             : html`
                 <tr>
                   <th>Question</th>
-                  <th class="text-center">Status</th>
+                  <th>Status</th>
                   ${trailingColumns}
                 </tr>
               `}

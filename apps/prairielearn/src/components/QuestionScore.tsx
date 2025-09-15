@@ -246,11 +246,12 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
 export function ExamQuestionStatus({
   instance_question,
   assessment_question,
-  displaySavedAsGradable,
+  realTimeGradingPartiallyDisabled,
 }: {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
+    allow_real_time_grading: boolean;
   };
   assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
   /**
@@ -259,7 +260,7 @@ export function ExamQuestionStatus({
    * clicking the "Grade N saved answers" button and those that cannot
    * (because real-time grading is disabled).
    */
-  displaySavedAsGradable?: boolean;
+  realTimeGradingPartiallyDisabled?: boolean;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -290,17 +291,24 @@ export function ExamQuestionStatus({
     incorrect: 'danger',
   };
 
+  const { badgeText, badgeColor } = run(() => {
+    if (
+      realTimeGradingPartiallyDisabled &&
+      instance_question.status === 'saved' &&
+      !instance_question.allow_real_time_grading
+    ) {
+      return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
+    }
+
+    return {
+      badgeText: instance_question.status,
+      badgeColor: badge_color[instance_question.status ?? 'unanswered'],
+    };
+  });
+
   return html`
     <span class="align-middle">
-      <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
-        ${run(() => {
-          if (displaySavedAsGradable && instance_question.status === 'saved') {
-            return 'saved (gradable)';
-          }
-
-          return instance_question.status;
-        })}
-      </span>
+      <span class="badge text-bg-${badgeColor}">${badgeText}</span>
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
