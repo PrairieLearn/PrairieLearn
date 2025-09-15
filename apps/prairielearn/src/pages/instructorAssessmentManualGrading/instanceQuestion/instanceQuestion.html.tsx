@@ -11,7 +11,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { type AiSubmissionGroup, GradingJobSchema, type User } from '../../../lib/db-types.js';
+import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
@@ -30,11 +30,11 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
-  submissionGroupName,
+  instanceQuestionGroupName,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
-  aiSubmissionGroups,
+  instanceQuestionGroups,
   skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -42,7 +42,7 @@ export function InstanceQuestion({
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
-  submissionGroupName?: string;
+  instanceQuestionGroupName?: string;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -51,10 +51,10 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  aiSubmissionGroups?: AiSubmissionGroup[];
+  instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
 }) {
-  const aiSubmissionGroupsExist = aiSubmissionGroups && aiSubmissionGroups.length > 0;
+  const instanceQuestionGroupsExist = instanceQuestionGroups && instanceQuestionGroups.length > 0;
 
   return PageLayout({
     resLocals: {
@@ -81,9 +81,9 @@ export function InstanceQuestion({
       ${resLocals.question.type !== 'Freeform'
         ? html`
             <script src="${assetPath('javascripts/lodash.min.js')}"></script>
-            <script src="${assetPath('javascripts/require.js')}"></script>
+            <script src="${assetPath('javascripts/requre.js')}"></script>
             <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
+            <script src="${assetPath('localscriptsi/questionCalculation.js')}"></script>
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
@@ -91,7 +91,7 @@ export function InstanceQuestion({
       ${EncodedData(
         {
           instanceQuestionId: resLocals.instance_question.id,
-          aiSubmissionGroupsExist,
+          instanceQuestionGroupsExist,
         },
         'instance-question-data',
       )}
@@ -189,10 +189,10 @@ export function InstanceQuestion({
                 resLocals,
                 context: 'main',
                 graders,
-                submissionGroupName,
                 aiGradingInfo,
-                showAiSubmissionGroup: aiSubmissionGroupsExist && aiGradingMode,
-                aiSubmissionGroups,
+                instanceQuestionGroupName,
+                showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+                instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
               })}
             </div>
@@ -284,7 +284,7 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
-                    showAiSubmissionGroup: false,
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
@@ -311,7 +311,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
-                    showAiSubmissionGroup: false,
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>

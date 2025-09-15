@@ -251,14 +251,6 @@ export const AiGradingJobSchema = z.object({
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
-export const AiSubmissionGroupSchema = z.object({
-  assessment_question_id: IdSchema,
-  id: IdSchema,
-  submission_group_description: z.string(),
-  submission_group_name: z.string(),
-});
-export type AiSubmissionGroup = z.infer<typeof AiSubmissionGroupSchema>;
-
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
@@ -859,7 +851,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
-  ai_submission_group_id: IdSchema.nullable(),
+  ai_instance_question_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),
@@ -878,8 +870,8 @@ export const InstanceQuestionSchema = z.object({
   is_ai_graded: z.boolean(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
+  manual_instance_question_group_id: IdSchema.nullable(),
   manual_points: z.number().nullable(),
-  manual_submission_group_id: IdSchema.nullable(),
   max_submission_score: z.number().nullable(),
   modified_at: DateFromISOString,
   number: z.number().nullable(),
@@ -902,6 +894,14 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const InstanceQuestionGroupSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  instance_question_group_description: z.string(),
+  instance_question_group_name: z.string(),
+});
+export type InstanceQuestionGroup = z.infer<typeof InstanceQuestionGroupSchema>;
 
 export const InstitutionAuthnProviderSchema = null;
 

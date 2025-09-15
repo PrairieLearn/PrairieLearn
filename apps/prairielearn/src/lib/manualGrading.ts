@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
-import { selectAiSubmissionGroups } from '../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
+import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {
   type AssessmentQuestion,
@@ -46,7 +46,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param options.user_id - The user_id of the current grader. Typically the current effective user.
  * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
  * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
- * @param options.use_ai_submission_groups - Whether or not to use the AI submission groups to determine the next instance question.
+ * @param options.use_instance_question_groups - Whether or not to use the instance question groups to determine the next instance question.
  */
 export async function nextInstanceQuestionUrl({
   urlPrefix,
@@ -55,7 +55,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
-  use_ai_submission_groups,
+  use_instance_question_groups,
 }: {
   urlPrefix: string;
   assessment_id: string;
@@ -63,23 +63,23 @@ export async function nextInstanceQuestionUrl({
   user_id: string;
   prior_instance_question_id: string | null;
   skip_graded_submissions: boolean;
-  use_ai_submission_groups: boolean;
+  use_instance_question_groups: boolean;
 }): Promise<string> {
-  const prior_ai_submission_group_id = use_ai_submission_groups
+  const prior_instance_question_group_id = use_instance_question_groups
     ? await run(async () => {
         if (prior_instance_question_id) {
           return await sqldb.queryOptionalRow(
-            sql.ai_submission_group_id_for_instance_question,
+            sql.instance_question_group_id_for_instance_question,
             {
               instance_question_id: prior_instance_question_id,
             },
             IdSchema.nullable(),
           );
         } else {
-          const submissionGroups = await selectAiSubmissionGroups({
+          const instanceQuestionGroups = await selectInstanceQuestionGroups({
             assessmentQuestionId: assessment_question_id,
           });
-          return submissionGroups.length > 0 ? submissionGroups[0].id : null;
+          return instanceQuestionGroups.length > 0 ? instanceQuestionGroups[0].id : null;
         }
       })
     : null;
@@ -91,24 +91,28 @@ export async function nextInstanceQuestionUrl({
       assessment_question_id,
       user_id,
       prior_instance_question_id,
-      prior_ai_submission_group_id,
+      prior_instance_question_group_id,
       skip_graded_submissions,
-      use_ai_submission_groups,
+      use_instance_question_groups,
     },
     IdSchema.nullable(),
   );
 
-  if (use_ai_submission_groups && !next_instance_question_id && prior_ai_submission_group_id) {
-    const next_ai_submission_group_id = await sqldb.queryOptionalRow(
-      sql.select_next_ai_submission_group_id,
+  if (
+    use_instance_question_groups &&
+    !next_instance_question_id &&
+    prior_instance_question_group_id
+  ) {
+    const next_instance_question_group_id = await sqldb.queryOptionalRow(
+      sql.select_next_instance_question_group_id,
       {
         assessment_question_id,
-        prior_ai_submission_group_id,
+        prior_instance_question_group_id,
       },
       IdSchema.nullable(),
     );
 
-    // Check if there exists another submission in the next AI submission group
+    // Check if there exists another instance question in the next instance question group
     next_instance_question_id = await sqldb.queryOptionalRow(
       sql.select_next_instance_question,
       {
@@ -116,9 +120,9 @@ export async function nextInstanceQuestionUrl({
         assessment_question_id,
         user_id,
         prior_instance_question_id: null,
-        prior_ai_submission_group_id: next_ai_submission_group_id,
+        prior_instance_question_group_id: next_instance_question_group_id,
         skip_graded_submissions,
-        use_ai_submission_groups,
+        use_instance_question_groups,
       },
       IdSchema,
     );
@@ -128,7 +132,7 @@ export async function nextInstanceQuestionUrl({
     return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${next_instance_question_id}`;
   }
 
-  // If we have no more submissions, then redirect back to main assessment question page
+  // If we have no more instance questions, then redirect back to main assessment question page
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 

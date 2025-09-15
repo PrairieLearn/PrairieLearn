@@ -3,7 +3,7 @@ import assert from 'assert';
 import { html } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
-import { type AiSubmissionGroup, type Issue, type User } from '../../../lib/db-types.js';
+import { type InstanceQuestionGroup, type Issue, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import {
@@ -27,10 +27,10 @@ export function GradingPanel({
   custom_auto_points,
   custom_manual_points,
   grading_job,
-  submissionGroupName,
   aiGradingInfo,
-  showAiSubmissionGroup = false,
-  aiSubmissionGroups,
+  showInstanceQuestionGroup = false,
+  instanceQuestionGroupName,
+  instanceQuestionGroups,
   skip_graded_submissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
@@ -42,10 +42,10 @@ export function GradingPanel({
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
-  submissionGroupName?: string;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
-  showAiSubmissionGroup?: boolean;
-  aiSubmissionGroups?: AiSubmissionGroup[];
+  showInstanceQuestionGroup?: boolean;
+  instanceQuestionGroupName?: string;
+  instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
@@ -101,20 +101,20 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${showAiSubmissionGroup && context === 'main'
+        ${showInstanceQuestionGroup && context === 'main'
           ? html`
               <li class="list-group-item align-items-center">
                 <div class="d-flex align-items-center">
-                  <label for="submission-group-toggle" class="form-label">
+                  <label for="instance-question-group-toggle" class="form-label">
                     Submission Group:
-                    ${aiSubmissionGroups && aiSubmissionGroups.length > 0
+                    ${instanceQuestionGroups && instanceQuestionGroups.length > 0
                       ? html` <i class="fas fa-circle-info"></i>`
                       : ''}
                   </label>
                 </div>
                 <div class="dropdown w-100 mb-2" role="combobox">
                   <button
-                    id="submission-group-toggle"
+                    id="instance-question-group-toggle"
                     type="button"
                     class="btn dropdown-toggle border border-gray bg-white d-flex justify-content-between align-items-center w-100"
                     aria-label="Change selected submission group"
@@ -125,22 +125,22 @@ export function GradingPanel({
                     hx-get="/pl/course_instance/${resLocals.course_instance
                       .id}/instructor/assessment/${resLocals.assessment
                       .id}/manual_grading/instance_question/${resLocals.instance_question
-                      .id}/ai_submission_groups/switcher"
+                      .id}/instance_question_groups/switcher"
                     hx-trigger="mouseover once, focus once, show.bs.dropdown once delay:200ms"
-                    hx-target="#submission-group-selection-dropdown"
+                    hx-target="#instance-question-group-selection-dropdown"
                   >
-                    <span id="submission-group-selection-dropdown-span">
-                      ${submissionGroupName || 'No group'}
+                    <span id="instance-question-group-selection-dropdown-span">
+                      ${instanceQuestionGroupName || 'No group'}
                     </span>
                   </button>
 
                   <div class="dropdown-menu py-0 overflow-hidden">
                     <div
-                      id="submission-group-selection-dropdown"
+                      id="instance-question-group-selection-dropdown"
                       style="max-height: 50vh"
                       class="overflow-auto py-2"
                       role="listbox"
-                      aria-labelledby="submission-group-toggle"
+                      aria-labelledby="instance-question-group-toggle"
                     >
                       <div class="d-flex justify-content-center">
                         <div class="spinner-border spinner-border-sm" role="status">
@@ -245,7 +245,7 @@ ${submission.feedback?.manual}</textarea
                     ? html`
                         <div
                           id="grade-button-with-options"
-                          class="btn-group ${submissionGroupName ? '' : 'd-none'}"
+                          class="btn-group ${instanceQuestionGroupName ? '' : 'd-none'}"
                         >
                           <button
                             type="submit"
@@ -279,7 +279,7 @@ ${submission.feedback?.manual}</textarea
                               type="submit"
                               class="dropdown-item"
                               name="__action"
-                              value="add_manual_grade_for_submission_group_ungraded"
+                              value="add_manual_grade_for_instance_question_group_ungraded"
                             >
                               All ungraded instance questions in submission group
                             </button>
@@ -287,7 +287,7 @@ ${submission.feedback?.manual}</textarea
                               type="submit"
                               class="dropdown-item"
                               name="__action"
-                              value="add_manual_grade_for_submission_group"
+                              value="add_manual_grade_for_instance_question_group"
                             >
                               All instance questions in submission group
                             </button>
@@ -303,7 +303,7 @@ ${submission.feedback?.manual}</textarea
                   <button
                     id="grade-button"
                     type="submit"
-                    class="btn btn-primary ${submissionGroupName ? 'd-none' : ''}"
+                    class="btn btn-primary ${instanceQuestionGroupName ? 'd-none' : ''}"
                     name="__action"
                     value="add_manual_grade"
                   >

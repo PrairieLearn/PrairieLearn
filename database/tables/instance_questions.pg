@@ -1,5 +1,5 @@
 columns
-    ai_submission_group_id: bigint
+    ai_instance_question_group_id: bigint
     assessment_instance_id: bigint not null
     assessment_question_id: bigint not null
     assigned_grader: bigint
@@ -18,8 +18,8 @@ columns
     is_ai_graded: boolean not null default false
     last_grader: bigint
     last_submission_score: double precision
+    manual_instance_question_group_id: bigint
     manual_points: double precision
-    manual_submission_group_id: bigint
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
@@ -46,15 +46,15 @@ indexes
     instance_questions_modified_at_key: USING btree (modified_at)
 
 foreign-key constraints
-    instance_questions_ai_submission_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, ai_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions_ai_submission_group_id_fkey: FOREIGN KEY (ai_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_ai_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, ai_instance_question_group_id) REFERENCES instance_question_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_ai_instance_question_group_id_fkey: FOREIGN KEY (ai_instance_question_group_id) REFERENCES instance_question_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_assigned_grader_fkey: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions_last_grader_fkey: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions_manual_submission_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, manual_submission_group_id) REFERENCES ai_submission_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions_manual_submission_group_id_fkey: FOREIGN KEY (manual_submission_group_id) REFERENCES ai_submission_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_manual_group_has_same_aq_id_fkey: FOREIGN KEY (assessment_question_id, manual_instance_question_group_id) REFERENCES instance_question_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions_manual_instance_question_group_id_fkey: FOREIGN KEY (manual_instance_question_group_id) REFERENCES instance_question_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     files: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL

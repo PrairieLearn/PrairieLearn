@@ -41,8 +41,8 @@ WHERE
   AND (
     NOT $ungrouped_instance_questions_only
     OR (
-      iq.ai_submission_group_id IS NULL
-      AND iq.manual_submission_group_id IS NULL
+      iq.ai_instance_question_group_id IS NULL
+      AND iq.manual_instance_question_group_id IS NULL
     )
   );
 

@@ -24,14 +24,14 @@ import {
 import type { AIGradingLog, AIGradingLogger } from '../ai-grading/types.js';
 
 import {
-  insertDefaultAiSubmissionGroups,
-  selectAiSubmissionGroups,
-  updateAiSubmissionGroup,
-} from './ai-submission-grouping-util.js';
+  insertDefaultInstanceQuestionGroups,
+  selectInstanceQuestionGroups,
+  updateAiInstanceQuestionGroup,
+} from './ai-instance-question-grouping-util.js';
 
-const PARALLEL_SUBMISSION_GROUPING_LIMIT = 20;
+const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const SUBMISSION_GROUPING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5';
 
 async function renderInstanceQuestionAnswerHtml({
   question,
@@ -138,7 +138,7 @@ Return a boolean corresponding to whether or not the student's response is equiv
 
   const completion = await openai.chat.completions.parse({
     messages,
-    model: SUBMISSION_GROUPING_OPENAI_MODEL,
+    model: INSTANCE_QUESTION_GROUPING_OPENAI_MODEL,
     user: `course_${course.id}`,
     response_format: zodResponseFormat(
       z.object({
@@ -158,11 +158,11 @@ Return a boolean corresponding to whether or not the student's response is equiv
 }
 
 /**
- * Groups student submissions into AI submission groups based on exact match to the final answer.
+ * Groups student instance questions into AI instance question groups based on exact match to the final answer.
  * Answers that match go into one group; those that don’t are grouped separately.
  * Grouping checks for exact equivalence to the final answer, considering only the boxed or final answer.
  */
-export async function aiSubmissionGrouping({
+export async function aiInstanceQuestionGrouping({
   course,
   course_instance_id,
   question,
@@ -204,7 +204,7 @@ export async function aiSubmissionGrouping({
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
     userId: user_id,
-    type: 'ai_submission_grouping',
+    type: 'ai_instance_question_grouping',
     description: 'Perform AI submission grouping',
   });
 
@@ -230,19 +230,19 @@ export async function aiSubmissionGrouping({
 
     job.info(`Grouping ${selectedInstanceQuestions.length} instance questions...`);
 
-    await insertDefaultAiSubmissionGroups({
+    await insertDefaultInstanceQuestionGroups({
       assessment_question_id: assessment_question.id,
     });
 
-    const submissionGroups = await selectAiSubmissionGroups({
+    const instanceQuestionGroups = await selectInstanceQuestionGroups({
       assessmentQuestionId: assessment_question.id,
     });
 
-    const likelyCorrectGroup = submissionGroups.find(
-      (g) => g.submission_group_name === 'Likely Correct',
+    const likelyCorrectGroup = instanceQuestionGroups.find(
+      (g) => g.instance_question_group_name === 'Likely Correct',
     );
-    const reviewNeededGroup = submissionGroups.find(
-      (g) => g.submission_group_name === 'Review Needed',
+    const reviewNeededGroup = instanceQuestionGroups.find(
+      (g) => g.instance_question_group_name === 'Review Needed',
     );
 
     if (!likelyCorrectGroup) {
@@ -286,9 +286,9 @@ export async function aiSubmissionGrouping({
         openai,
       });
 
-      await updateAiSubmissionGroup({
+      await updateAiInstanceQuestionGroup({
         instance_question_id: instance_question.id,
-        ai_submission_group_id: submissionIsLikelyCorrect
+        ai_instance_question_group_id: submissionIsLikelyCorrect
           ? likelyCorrectGroup.id
           : reviewNeededGroup.id,
       });
@@ -300,7 +300,7 @@ export async function aiSubmissionGrouping({
 
     const instance_question_grouping_successes = await async.mapLimit(
       selectedInstanceQuestions,
-      PARALLEL_SUBMISSION_GROUPING_LIMIT,
+      PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT,
       async (instanceQuestion) => {
         const logs: AIGradingLog[] = [];
         const logger: AIGradingLogger = {

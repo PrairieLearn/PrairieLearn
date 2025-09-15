@@ -1,21 +1,21 @@
--- BLOCK select_next_ai_submission_group_id
+-- BLOCK select_next_instance_question_group_id
 SELECT
-  asg.id AS ai_submission_group_id
+  iqg.id AS instance_question_group_id
 FROM
-  ai_submission_groups AS asg
+  instance_question_groups AS iqg
 WHERE
-  asg.assessment_question_id = $assessment_question_id
-  AND asg.id > $prior_ai_submission_group_id
+  iqg.assessment_question_id = $assessment_question_id
+  AND iqg.id > $prior_instance_question_group_id
 ORDER BY
-  asg.id
+  iqg.id
 LIMIT
   1;
 
--- BLOCK ai_submission_group_id_for_instance_question
+-- BLOCK instance_question_group_id_for_instance_question
 SELECT
   COALESCE(
-    manual_submission_group_id,
-    ai_submission_group_id
+    manual_instance_question_group_id,
+    ai_instance_question_group_id
   )
 FROM
   instance_questions AS iq
@@ -37,22 +37,22 @@ WITH
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
-        -- When AI submission grouping is enabled:
-        -- If the previous submission belongs to a submission group, the next submission must be in the same group.
-        -- If the previous submission has no submission group, the next must not be in a group as well.
+        -- When using instance question groups:
+        -- If the previous instance question belongs to an instance question group, the next instance question must be in the same group.
+        -- If the previous instance question has no group, the next must not be in a group as well.
         -- Otherwise, this filter has no effect.
-        NOT $use_ai_submission_groups
+        NOT $use_instance_question_groups
         OR (
           COALESCE(
-            iq.manual_submission_group_id,
-            iq.ai_submission_group_id
-          ) = $prior_ai_submission_group_id
+            iq.manual_instance_question_group_id,
+            iq.ai_instance_question_group_id
+          ) = $prior_instance_question_group_id
           OR (
             COALESCE(
-              iq.manual_submission_group_id,
-              iq.ai_submission_group_id
+              iq.manual_instance_question_group_id,
+              iq.ai_instance_question_group_id
             ) IS NULL
-            AND $prior_ai_submission_group_id IS NULL
+            AND $prior_instance_question_group_id IS NULL
           )
         )
       )

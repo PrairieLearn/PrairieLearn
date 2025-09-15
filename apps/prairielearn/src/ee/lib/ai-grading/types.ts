@@ -8,7 +8,7 @@ export const AIGradingStatsSchema = z.object({
   point_difference: z.number().nullable(),
   rubric_difference: z.array(RubricItemSchema.extend({ false_positive: z.boolean() })).nullable(),
   rubric_similarity: z.array(RubricItemSchema.extend({ true_positive: z.boolean() })).nullable(),
-  ai_submission_group_name: z.string().nullable(),
+  instance_question_group_name: z.string().nullable(),
 });
 
 type AIGradingStats = z.infer<typeof AIGradingStatsSchema>;

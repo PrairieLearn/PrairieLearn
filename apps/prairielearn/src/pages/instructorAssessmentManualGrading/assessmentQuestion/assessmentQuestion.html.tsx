@@ -12,7 +12,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import type { AiSubmissionGroup, User } from '../../../lib/db-types.js';
+import type { InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
 
@@ -24,7 +24,7 @@ export function AssessmentQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingStats,
-  aiSubmissionGroups,
+  instanceQuestionGroups,
   rubric_data,
 }: {
   resLocals: Record<string, any>;
@@ -32,7 +32,7 @@ export function AssessmentQuestion({
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   aiGradingStats: AiGradingGeneralStats | null;
-  aiSubmissionGroups: AiSubmissionGroup[];
+  instanceQuestionGroups: InstanceQuestionGroup[];
   rubric_data: RubricData | null;
 }) {
   const {
@@ -85,7 +85,7 @@ export function AssessmentQuestion({
           csrfToken: __csrf_token,
           aiGradingMode,
           rubric_data,
-          aiSubmissionGroups,
+          instanceQuestionGroups,
         },
         'instance-question-table-data',
       )}
@@ -275,7 +275,7 @@ export function AssessmentQuestion({
                         type="button"
                         class="btn btn-sm btn-light dropdown-toggle"
                         data-bs-toggle="dropdown"
-                        name="ai-submission-grouping"
+                        name="ai-instance-question-grouping"
                       >
                         <i class="bi bi-stars" aria-hidden="true"></i> AI submission grouping
                       </button>
@@ -308,7 +308,7 @@ export function AssessmentQuestion({
                           class="dropdown-item"
                           type="button"
                           data-bs-toggle="modal"
-                          data-bs-target="#delete-all-ai-submission-grouping-results-modal"
+                          data-bs-target="#delete-all-ai-instance-question-grouping-results-modal"
                         >
                           Delete all AI groupings
                         </button>
@@ -389,7 +389,7 @@ export function AssessmentQuestion({
     postContent: [
       GradingConflictModal(),
       DeleteAllAIGradingJobsModal({ csrfToken: __csrf_token }),
-      DeleteAllAISubmissionGroupingResultsModal({ csrfToken: __csrf_token }),
+      DeleteAllInstanceQuestionGroupResultsModal({ csrfToken: __csrf_token }),
       GroupInfoModal({
         modalFor: 'all',
         numOpenInstances: num_open_instances,
@@ -433,9 +433,9 @@ function DeleteAllAIGradingJobsModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function DeleteAllAISubmissionGroupingResultsModal({ csrfToken }: { csrfToken: string }) {
+function DeleteAllInstanceQuestionGroupResultsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'delete-all-ai-submission-grouping-results-modal',
+    id: 'delete-all-ai-instance-question-grouping-results-modal',
     title: 'Delete all AI submission groupings',
     body: html`
       Are you sure you want to delete <strong>all AI submission groupings</strong> for this
@@ -443,7 +443,7 @@ function DeleteAllAISubmissionGroupingResultsModal({ csrfToken }: { csrfToken: s
     `,
     footer: html`
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="delete_ai_submission_groupings" />
+      <input type="hidden" name="__action" value="delete_ai_instance_question_groupings" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     `,
@@ -478,8 +478,8 @@ function GroupInfoModal({
               type="hidden"
               name="__action"
               value="${modalFor === 'all'
-                ? 'ai_submission_group_assessment_all'
-                : 'ai_submission_group_assessment_ungrouped'}"
+                ? 'ai_instance_question_group_assessment_all'
+                : 'ai_instance_question_group_assessment_ungrouped'}"
             />
             <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           `
@@ -557,7 +557,7 @@ function GroupInfoModal({
                   class="btn btn-primary"
                   type="submit"
                   name="batch_action"
-                  value="ai_submission_group_selected"
+                  value="ai_instance_question_group_selected"
                 >
                   Group submissions
                 </button>

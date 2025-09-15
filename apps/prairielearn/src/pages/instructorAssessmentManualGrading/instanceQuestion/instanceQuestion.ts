@@ -16,11 +16,11 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import {
-  selectAiSubmissionGroup,
-  selectAiSubmissionGroups,
-  selectAssessmentQuestionHasAiSubmissionGroups,
-  updateManualSubmissionGroup,
-} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
+  selectAssessmentQuestionHasInstanceQuestionGroups,
+  selectInstanceQuestionGroup,
+  selectInstanceQuestionGroups,
+  updateManualInstanceQuestionGroup,
+} from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import {
   AiGradingJobSchema,
   DateFromISOString,
@@ -40,13 +40,13 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
 
-import { AISubmissionGroupSwitcher } from './aiSubmissionGroupSwitcher.html.js';
 import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
+import { InstanceQuestionGroupSwitcher } from './instanceQuestionGroupSwitcher.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
@@ -110,11 +110,13 @@ router.get(
 
     const instance_question = res.locals.instance_question as InstanceQuestion;
 
-    const submissionGroup = await run(async () => {
-      if (instance_question.manual_submission_group_id) {
-        return await selectAiSubmissionGroup(instance_question.manual_submission_group_id);
-      } else if (instance_question.ai_submission_group_id) {
-        return await selectAiSubmissionGroup(instance_question.ai_submission_group_id);
+    const instanceQuestionGroup = await run(async () => {
+      if (instance_question.manual_instance_question_group_id) {
+        return await selectInstanceQuestionGroup(
+          instance_question.manual_instance_question_group_id,
+        );
+      } else if (instance_question.ai_instance_question_group_id) {
+        return await selectInstanceQuestionGroup(instance_question.ai_instance_question_group_id);
       }
       return null;
     });
@@ -125,7 +127,7 @@ router.get(
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
-    const aiSubmissionGroups = await selectAiSubmissionGroups({
+    const instanceQuestionGroups = await selectInstanceQuestionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -219,8 +221,8 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        submissionGroupName: submissionGroup?.submission_group_name,
-        aiSubmissionGroups,
+        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name,
+        instanceQuestionGroups,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
@@ -231,26 +233,26 @@ router.get(
 );
 
 router.get(
-  '/ai_submission_groups/switcher',
+  '/instance_question_groups/switcher',
   asyncHandler(async (req, res) => {
-    const aiSubmissionGroups = await selectAiSubmissionGroups({
+    const instanceQuestionGroups = await selectInstanceQuestionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
     res.send(
-      AISubmissionGroupSwitcher({
-        aiSubmissionGroups: [
-          ...aiSubmissionGroups,
+      InstanceQuestionGroupSwitcher({
+        instanceQuestionGroups: [
+          ...instanceQuestionGroups,
           {
             assessment_question_id: res.locals.assessment_question.id,
-            submission_group_name: 'No group',
-            submission_group_description: 'Group was not assigned.',
+            instance_question_group_name: 'No group',
+            instance_question_group_description: 'Group was not assigned.',
             id: '',
           },
         ],
-        currentSubmissionGroupId:
-          (res.locals.instance_question.manual_submission_group_id ||
-            res.locals.instance_question.ai_submission_group_id) ??
+        currentInstanceQuestionGroupId:
+          (res.locals.instance_question.manual_instance_question_group_id ||
+            res.locals.instance_question.ai_instance_question_group_id) ??
           null,
       }),
     );
@@ -258,18 +260,18 @@ router.get(
 );
 
 router.put(
-  '/manual_submission_group',
+  '/manual_instance_question_group',
   asyncHandler(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     if (!aiGradingEnabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
 
-    const manualSubmissionGroupId = req.body.manualSubmissionGroupId;
+    const manualInstanceQuestionGroupId = req.body.manualInstanceQuestionGroupId;
 
-    await updateManualSubmissionGroup({
+    await updateManualInstanceQuestionGroup({
       instance_question_id: res.locals.instance_question.id,
-      manual_submission_group_id: manualSubmissionGroupId || null,
+      manual_instance_question_group_id: manualInstanceQuestionGroupId || null,
     });
 
     res.sendStatus(204);
@@ -332,8 +334,8 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.union([
       z.literal('add_manual_grade'),
-      z.literal('add_manual_grade_for_submission_group'),
-      z.literal('add_manual_grade_for_submission_group_ungraded'),
+      z.literal('add_manual_grade_for_instance_question_group'),
+      z.literal('add_manual_grade_for_instance_question_group_ungraded'),
       z.literal('next_instance_question'),
     ]),
     submission_id: IdSchema,
@@ -464,9 +466,9 @@ router.post(
       }
 
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      const useAiSubmissionGroups =
+      const use_instance_question_groups =
         aiGradingEnabled &&
-        (await selectAssessmentQuestionHasAiSubmissionGroups({
+        (await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
         }));
 
@@ -478,7 +480,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups,
+          use_instance_question_groups,
         }),
       );
     } else if (body.__action === 'next_instance_question') {
@@ -486,9 +488,9 @@ router.post(
         body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      const useAiSubmissionGroups =
+      const use_instance_question_groups =
         aiGradingEnabled &&
-        (await selectAssessmentQuestionHasAiSubmissionGroups({
+        (await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
         }));
 
@@ -500,12 +502,12 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups,
+          use_instance_question_groups,
         }),
       );
     } else if (
-      body.__action === 'add_manual_grade_for_submission_group_ungraded' ||
-      body.__action === 'add_manual_grade_for_submission_group'
+      body.__action === 'add_manual_grade_for_instance_question_group_ungraded' ||
+      body.__action === 'add_manual_grade_for_instance_question_group'
     ) {
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
@@ -513,32 +515,33 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const useAiSubmissionGroups =
+      const useInstanceQuestionGroups =
         aiGradingEnabled &&
-        (await selectAssessmentQuestionHasAiSubmissionGroups({
+        (await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
         }));
 
-      if (!useAiSubmissionGroups) {
-        // This should not happen, since the UI only lets users grade by submission group if
-        // submission groups were previously generated.
+      if (!useInstanceQuestionGroups) {
+        // This should not happen, since the UI only lets users grade by instance question group if
+        // instance question groups were previously generated.
         throw new error.HttpStatusError(400, 'Submission groups not generated.');
       }
 
-      const selected_submission_group_id =
-        res.locals.instance_question.manual_submission_group_id ||
-        res.locals.instance_question.ai_submission_group_id;
-      if (!selected_submission_group_id) {
-        throw new error.HttpStatusError(404, 'Selected AI submission group not found');
+      const selected_instance_question_group_id =
+        res.locals.instance_question.manual_instance_question_group_id ||
+        res.locals.instance_question.ai_instance_question_group_id;
+
+      if (!selected_instance_question_group_id) {
+        throw new error.HttpStatusError(404, 'Selected AI instance  group not found');
       }
 
       const instanceQuestionsInGroup = await sqldb.queryRows(
-        sql.select_instance_question_ids_in_submission_group,
+        sql.select_instance_question_ids_in_group,
         {
-          submission_group_id: selected_submission_group_id,
+          selected_instance_question_group_id,
           assessment_id: res.locals.assessment.id,
           skip_graded_submissions:
-            body.__action === 'add_manual_grade_for_submission_group_ungraded',
+            body.__action === 'add_manual_grade_for_instance_question_group_ungraded',
         },
         z.object({
           instance_question_id: z.string(),
@@ -549,7 +552,7 @@ router.post(
       if (instanceQuestionsInGroup.length === 0) {
         flash(
           'warning',
-          `No ${body.__action === 'add_manual_grade_for_submission_group_ungraded' ? 'ungraded ' : ''}instance questions in the submission group.`,
+          `No ${body.__action === 'add_manual_grade_for_instance_question_group_ungraded' ? 'ungraded ' : ''}instance questions in the submission group.`,
         );
         return res.redirect(req.baseUrl);
       }
@@ -600,7 +603,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: res.locals.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups,
+          use_instance_question_groups: useInstanceQuestionGroups,
         }),
       );
     } else if (body.__action === 'modify_rubric_settings') {
@@ -643,9 +646,10 @@ router.post(
       const aiGradingMode =
         (await features.enabledFromLocals('ai-grading', res.locals)) &&
         res.locals.assessment_question.ai_grading_mode;
-      const useAiSubmissionGroups =
+
+      const use_instance_question_groups =
         aiGradingMode &&
-        (await selectAssessmentQuestionHasAiSubmissionGroups({
+        (await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
         }));
 
@@ -659,7 +663,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          use_ai_submission_groups: useAiSubmissionGroups,
+          use_instance_question_groups,
         }),
       );
     } else if (body.__action === 'report_issue') {

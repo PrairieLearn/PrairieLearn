@@ -37,7 +37,7 @@ $(() => {
       .modal('show');
   }
 
-  addSubmissionGroupSelectionDropdownListeners();
+  addInstanceQuestionGroupSelectionDropdownListeners();
 });
 
 function resetRubricImportFormListeners() {
@@ -922,17 +922,17 @@ function ensureElementsExist(elements) {
   }
 }
 
-function addSubmissionGroupSelectionDropdownListeners() {
-  const { instanceQuestionId, aiSubmissionGroupsExist } = decodeData('instance-question-data');
+function addInstanceQuestionGroupSelectionDropdownListeners() {
+  const { instanceQuestionId, instanceQuestionGroupsExist } = decodeData('instance-question-data');
 
-  if (!aiSubmissionGroupsExist) {
-    // Submission grouping has not been run yet for the assessment question,
-    // so no submission group dropdown is available.
+  if (!instanceQuestionGroupsExist) {
+    // Instance question grouping has not been run yet for the assessment question,
+    // so no instance question group dropdown is available.
     return;
   }
 
-  const submissionGroupSelectionDropdown = document.querySelector(
-    '#submission-group-selection-dropdown',
+  const instanceQuestionGroupSelectionDropdown = document.querySelector(
+    '#instance-question-group-selection-dropdown',
   );
 
   // Grade button without the dropdown containing the option to grade the entire submission group.
@@ -942,42 +942,42 @@ function addSubmissionGroupSelectionDropdownListeners() {
   const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
 
   ensureElementsExist({
-    submissionGroupSelectionDropdown,
+    instanceQuestionGroupSelectionDropdown,
 
     gradeButton,
     gradeButtonWithDropdown,
   });
 
-  submissionGroupSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedAiSubmissionGroupDropdownItem = e.target.closest('.dropdown-item');
-    const selectedAiSubmissionGroupId = selectedAiSubmissionGroupDropdownItem.getAttribute(
-      'data-submission-group-id',
+  instanceQuestionGroupSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedAiInstanceQuestionDropdownItem = e.target.closest('.dropdown-item');
+    const selectedAiInstanceQuestionGroupId = selectedAiInstanceQuestionDropdownItem.getAttribute(
+      'data-instance-question-group-id',
     );
 
-    await fetch(`${instanceQuestionId}/manual_submission_group`, {
+    await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        manualSubmissionGroupId: selectedAiSubmissionGroupId,
+        manualInstanceQuestionGroupId: selectedAiInstanceQuestionGroupId,
       }),
     });
 
     const activeDropdownItem = document.querySelector('.dropdown-item.active');
     activeDropdownItem.classList.remove('active');
 
-    selectedAiSubmissionGroupDropdownItem.classList.add('active');
+    selectedAiInstanceQuestionDropdownItem.classList.add('active');
 
-    // If a submission group is selected, show the grade button with a dropdown.
+    // If a instance question group is selected, show the grade button with a dropdown.
     // Otherwise, show the grade button without a dropdown.
-    gradeButton.classList.toggle('d-none', selectedAiSubmissionGroupId);
-    gradeButtonWithDropdown.classList.toggle('d-none', !selectedAiSubmissionGroupId);
+    gradeButton.classList.toggle('d-none', selectedAiInstanceQuestionGroupId);
+    gradeButtonWithDropdown.classList.toggle('d-none', !selectedAiInstanceQuestionGroupId);
 
-    const submissionGroupSelectionDropdownSpan = document.querySelector(
-      '#submission-group-selection-dropdown-span',
+    const instanceQuestionGroupSelectionDropdownSpan = document.querySelector(
+      '#instance-question-group-selection-dropdown-span',
     );
-    submissionGroupSelectionDropdownSpan.innerHTML =
-      selectedAiSubmissionGroupDropdownItem.textContent;
+    instanceQuestionGroupSelectionDropdownSpan.innerHTML =
+      selectedAiInstanceQuestionDropdownItem.textContent;
   });
 }

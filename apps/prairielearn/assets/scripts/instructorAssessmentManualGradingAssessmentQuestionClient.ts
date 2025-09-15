@@ -30,13 +30,13 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
-    aiSubmissionGroups,
+    instanceQuestionGroups,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
-  const aiSubmissionGroupsByName = Object.fromEntries(
-    aiSubmissionGroups.map((group) => [
-      group.submission_group_name,
-      group.submission_group_description,
+  const instanceQuestionGroupsByName = Object.fromEntries(
+    instanceQuestionGroups.map((group) => [
+      group.instance_question_group_name,
+      group.instance_question_group_description,
     ]),
   );
 
@@ -230,9 +230,9 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
-        aiGradingMode && aiSubmissionGroups.length > 0
+        aiGradingMode && instanceQuestionGroups.length > 0
           ? {
-              field: 'ai_submission_group_name',
+              field: 'instance_question_group_name',
               title: 'Submission Group',
               visible: aiGradingMode,
               filterControl: 'select',
@@ -247,7 +247,7 @@ onDocumentReady(() => {
                     <div
                       data-bs-toggle="tooltip"
                       data-bs-html="true"
-                      data-bs-title="${aiSubmissionGroupsByName[value]}"
+                      data-bs-title="${instanceQuestionGroupsByName[value]}"
                     >
                       <i class="fas fa-circle-info text-secondary"></i>
                     </div>
@@ -588,7 +588,7 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
 
   const newPageBatchActions = new Set([
     'ai_grade_assessment_selected',
-    'ai_submission_group_selected',
+    'ai_instance_question_group_selected',
   ]);
 
   if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction.toString())) {

@@ -16,11 +16,11 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
-  deleteInstanceQuestionsAiSubmissionGroups,
-  selectAiSubmissionGroups,
-  selectAssessmentQuestionHasAiSubmissionGroups,
-} from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping-util.js';
-import { aiSubmissionGrouping } from '../../../ee/lib/ai-submission-grouping/ai-submission-grouping.js';
+  deleteAiInstanceQuestionGroups,
+  selectAssessmentQuestionHasInstanceQuestionGroups,
+  selectInstanceQuestionGroups,
+} from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -49,7 +49,7 @@ router.get(
       assessment_question: res.locals.assessment_question,
     });
 
-    const aiSubmissionGroups = await selectAiSubmissionGroups({
+    const instanceQuestionGroups = await selectInstanceQuestionGroups({
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
@@ -63,7 +63,7 @@ router.get(
           aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
-        aiSubmissionGroups,
+        instanceQuestionGroups,
         rubric_data,
       }),
     );
@@ -114,9 +114,9 @@ router.get(
       (await features.enabledFromLocals('ai-grading', res.locals)) &&
       res.locals.assessment_question.ai_grading_mode;
 
-    const use_ai_submission_groups =
+    const use_instance_question_groups =
       aiGradingMode &&
-      (await selectAssessmentQuestionHasAiSubmissionGroups({
+      (await selectAssessmentQuestionHasInstanceQuestionGroups({
         assessmentQuestionId: res.locals.assessment_question.id,
       }));
 
@@ -128,7 +128,7 @@ router.get(
         user_id: res.locals.authz_data.user.user_id,
         prior_instance_question_id: req.query.prior_instance_question_id ?? null,
         skip_graded_submissions: true,
-        use_ai_submission_groups,
+        use_instance_question_groups,
       }),
     );
   }),
@@ -164,7 +164,7 @@ router.post(
         });
 
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-      } else if (req.body.batch_action === 'ai_submission_group_selected') {
+      } else if (req.body.batch_action === 'ai_instance_question_group_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
           throw new error.HttpStatusError(403, 'Access denied (feature not available)');
         }
@@ -173,7 +173,7 @@ router.post(
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
 
-        const jobSequenceId = await aiSubmissionGrouping({
+        const jobSequenceId = await aiInstanceQuestionGrouping({
           question: res.locals.question,
           course: res.locals.course,
           course_instance_id: res.locals.course_instance.id,
@@ -263,12 +263,12 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'ai_submission_group_assessment_all') {
+    } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiSubmissionGrouping({
+      const jobSequenceId = await aiInstanceQuestionGrouping({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,
@@ -281,12 +281,12 @@ router.post(
       });
 
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'ai_submission_group_assessment_ungrouped') {
+    } else if (req.body.__action === 'ai_instance_question_group_assessment_ungrouped') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await aiSubmissionGrouping({
+      const jobSequenceId = await aiInstanceQuestionGrouping({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,
@@ -315,12 +315,12 @@ router.post(
       );
 
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_ai_submission_groupings') {
+    } else if (req.body.__action === 'delete_ai_instance_question_groupings') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const numDeleted = await deleteInstanceQuestionsAiSubmissionGroups({
+      const numDeleted = await deleteAiInstanceQuestionGroups({
         assessment_question_id: res.locals.assessment_question.id,
       });
 

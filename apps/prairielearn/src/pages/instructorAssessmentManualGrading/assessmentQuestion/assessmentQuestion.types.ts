@@ -2,9 +2,9 @@ import { z } from 'zod';
 
 import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
-  type AiSubmissionGroup,
   AssessmentQuestionSchema,
   IdSchema,
+  type InstanceQuestionGroup,
   InstanceQuestionSchema,
 } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
@@ -40,5 +40,5 @@ export interface InstanceQuestionTableData {
   aiGradingMode: boolean;
   csrfToken: string;
   rubric_data: RubricData | null;
-  aiSubmissionGroups: AiSubmissionGroup[];
+  instanceQuestionGroups: InstanceQuestionGroup[];
 }

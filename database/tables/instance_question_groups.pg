@@ -1,0 +1,19 @@
+columns
+    assessment_question_id: bigint not null
+    id: bigint not null default nextval('instance_question_groups_id_seq'::regclass)
+    instance_question_group_description: text not null
+    instance_question_group_name: text not null
+
+indexes
+    instance_question_groups_pkey: PRIMARY KEY (id) USING btree (id)
+    instance_question_groups_unique_id_constraint: UNIQUE (assessment_question_id, id) USING btree (assessment_question_id, id)
+    instance_question_groups_unique_name_constraint: UNIQUE (assessment_question_id, instance_question_group_name) USING btree (assessment_question_id, instance_question_group_name)
+
+foreign-key constraints
+    instance_question_groups_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    instance_questions: FOREIGN KEY (assessment_question_id, ai_instance_question_group_id) REFERENCES instance_question_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (ai_instance_question_group_id) REFERENCES instance_question_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (assessment_question_id, manual_instance_question_group_id) REFERENCES instance_question_groups(assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (manual_instance_question_group_id) REFERENCES instance_question_groups(id) ON UPDATE CASCADE ON DELETE SET NULL

@@ -14,7 +14,7 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
-import { selectAiSubmissionGroups } from '../ai-submission-grouping/ai-submission-grouping-util.js';
+import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
@@ -52,8 +52,8 @@ export interface AiGradingGeneralStats {
 export async function fillInstanceQuestionColumns<
   T extends {
     id: string;
-    ai_submission_group_id: string | null;
-    manual_submission_group_id: string | null;
+    ai_instance_question_group_id: string | null;
+    manual_instance_question_group_id: string | null;
   },
 >(
   instance_questions: T[],
@@ -67,12 +67,12 @@ export async function fillInstanceQuestionColumns<
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 
-  const aiSubmissionGroupIdToName = (
-    await selectAiSubmissionGroups({
+  const instanceQuestionIdToGroupName = (
+    await selectInstanceQuestionGroups({
       assessmentQuestionId: assessment_question.id,
     })
   ).reduce((acc, curr) => {
-    acc[curr.id] = curr.submission_group_name;
+    acc[curr.id] = curr.instance_question_group_name;
     return acc;
   }, {});
 
@@ -85,7 +85,7 @@ export async function fillInstanceQuestionColumns<
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
-      ai_submission_group_name: null,
+      instance_question_group_name: null,
       rubric_similarity: null,
     };
     results.push(instance_question);
@@ -139,18 +139,18 @@ export async function fillInstanceQuestionColumns<
 
     // Retrieve the current submission group of the instance question
 
-    const selectedSubmissionGroupId = run(() => {
-      if (instance_question.manual_submission_group_id) {
-        return instance_question.manual_submission_group_id;
+    const selectedInstanceQuestionId = run(() => {
+      if (instance_question.manual_instance_question_group_id) {
+        return instance_question.manual_instance_question_group_id;
       }
-      if (instance_question.ai_submission_group_id) {
-        return instance_question.ai_submission_group_id;
+      if (instance_question.ai_instance_question_group_id) {
+        return instance_question.ai_instance_question_group_id;
       }
       return null;
     });
 
-    instance_question.ai_submission_group_name = selectedSubmissionGroupId
-      ? (aiSubmissionGroupIdToName[selectedSubmissionGroupId] ?? null)
+    instance_question.instance_question_group_name = selectedInstanceQuestionId
+      ? (instanceQuestionIdToGroupName[selectedInstanceQuestionId] ?? null)
       : null;
   }
   return results;
