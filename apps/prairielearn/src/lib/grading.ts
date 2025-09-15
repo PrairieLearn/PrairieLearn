@@ -322,23 +322,32 @@ async function selectSubmissionForGrading(
 /**
  * Grade the most recent submission for a given variant.
  *
- * @param variant - The variant to grade.
- * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
- * @param question - The question for the variant.
- * @param variant_course - The course for the variant.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
- * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param params
+ * @param params.variant - The variant to grade.
+ * @param params.check_submission_id - The submission_id that must be graded (or null to skip this check).
+ * @param params.question - The question for the variant.
+ * @param params.variant_course - The course for the variant.
+ * @param params.user_id - The current effective user.
+ * @param params.authn_user_id - The currently authenticated user.
+ * @param params.overrideGradeRateCheck - Whether to override grade rate limits.
  */
-export async function gradeVariant(
-  variant: Variant,
-  check_submission_id: string | null,
-  question: Question,
-  variant_course: Course,
-  user_id: string | null,
-  authn_user_id: string | null,
-  overrideGradeRateCheck: boolean,
-): Promise<void> {
+export async function gradeVariant({
+  variant,
+  check_submission_id,
+  question,
+  variant_course,
+  user_id,
+  authn_user_id,
+  overrideGradeRateCheck,
+}: {
+  variant: Variant;
+  check_submission_id: string | null;
+  question: Question;
+  variant_course: Course;
+  user_id: string | null;
+  authn_user_id: string | null;
+  overrideGradeRateCheck: boolean;
+}): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
   const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
@@ -453,19 +462,19 @@ export async function saveAndGradeSubmission(
     course,
   );
 
-  await gradeVariant(
+  await gradeVariant({
     // Note that parsing a submission may modify the `params` and `true_answer`
     // of the variant (for v3 questions, this is `data["params"]` and
     // `data["correct_answers"])`. This is why we need to use the variant
     // returned from `saveSubmission` rather than the one passed to this
     // function.
-    updated_variant,
-    submission_id,
+    variant: updated_variant,
+    check_submission_id: submission_id,
     question,
-    course,
-    submissionData.user_id,
-    submissionData.auth_user_id,
+    variant_course: course,
+    user_id: submissionData.user_id,
+    authn_user_id: submissionData.auth_user_id,
     overrideGradeRateCheck,
-  );
+  });
   return submission_id;
 }
