@@ -17,59 +17,6 @@ async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
-function StudentLinkSharing({
-  studentLink,
-  studentLinkMessage,
-}: {
-  studentLink: string;
-  studentLinkMessage: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
-  return (
-    <div class="mb-3">
-      <label class="form-label" for="student_link">
-        Student Link
-      </label>
-      <InputGroup>
-        <Form.Control type="text" id="student_link" value={studentLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy student link"
-            onClick={async () => {
-              await copyToClipboard(studentLink);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i class="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Student Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i class="bi bi-qr-code-scan" />
-          </Button>
-        </OverlayTrigger>
-      </InputGroup>
-      <small class="form-text text-muted">{studentLinkMessage}</small>
-      <QRCodeModal
-        id="studentLinkModal"
-        title="Student Link QR Code"
-        content={studentLink}
-        show={showQR}
-        onHide={() => setShowQR(false)}
-      />
-    </div>
-  );
-}
-
 function PublicLinkSharing({
   publicLink,
   sharingMessage,
@@ -169,11 +116,13 @@ export function InstructorInstanceAdminSettings({
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_requires_secret_link: courseInstance.self_enrollment_requires_secret_link,
     self_enrollment_enabled_before_date:
-      courseInstance.self_enrollment_enabled_before_date?.toISOString() ?? null,
+      courseInstance.self_enrollment_enabled_before_date?.toISOString().slice(0, 16) ?? '',
   };
 
   const {
     register,
+    watch,
+    setValue,
     reset,
     formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
@@ -302,17 +251,16 @@ export function InstructorInstanceAdminSettings({
             </small>
           </div>
 
-          <StudentLinkSharing
-            studentLink={studentLink}
-            studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
-          />
-
           <SelfEnrollmentSettings
             formMeta={{
               enrollmentManagementEnabled,
               register,
+              watch,
+              setValue,
+              errors,
               canEdit,
             }}
+            studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
             csrfToken={csrfToken}
           />

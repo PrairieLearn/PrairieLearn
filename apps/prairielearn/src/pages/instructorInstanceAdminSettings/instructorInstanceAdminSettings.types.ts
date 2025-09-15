@@ -1,12 +1,17 @@
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import z from 'zod';
 
-export interface SettingsFormValues {
-  ciid: string;
-  long_name: string;
-  display_timezone: string;
-  group_assessments_by: StaffCourseInstanceContext['course_instance']['assessments_group_by'];
-  hide_in_enroll_page: boolean;
-  self_enrollment_enabled: boolean;
-  self_enrollment_requires_secret_link: boolean;
-  self_enrollment_enabled_before_date: string | null;
-}
+export const SettingsFormBodySchema = z.object({
+  ciid: z.string(),
+  long_name: z.string(),
+  display_timezone: z.string(),
+  group_assessments_by: z.enum(['Set', 'Module']),
+  hide_in_enroll_page: z.boolean(),
+  self_enrollment_enabled: z.boolean(),
+  self_enrollment_requires_secret_link: z.boolean(),
+  self_enrollment_enabled_before_date: z.string().nullable().default(null),
+});
+
+export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema> & {
+  /** null is represented as an empty string in the form. */
+  self_enrollment_enabled_before_date: string;
+};
