@@ -735,6 +735,9 @@ describe('chunks', () => {
       );
     });
 
+    // This tests a scenario where a new course instance is created with an invalid
+    // JSON file and a client file. We want to assert that we don't lose changes to
+    // client files as the course instance is fixed up.
     it('correctly handles clientFilesCourseInstance chunk when initial course instance is invalid', async () => {
       const courseDir = tempTestCourseDir.path;
 
