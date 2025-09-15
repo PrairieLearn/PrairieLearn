@@ -18,3 +18,12 @@ excluded_rules = [
   "renaming-column",
   "renaming-table",
 ]
+excluded_paths = [
+  "apps/prairielearn/src/migrations/*.test.sql",
+  "apps/prairielearn/src/migrations/201*.sql",
+  "apps/prairielearn/src/migrations/2020*.sql",
+  "apps/prairielearn/src/migrations/2021*.sql",
+  "apps/prairielearn/src/migrations/2022*.sql",
+  "apps/prairielearn/src/migrations/2023*.sql",
+  "apps/prairielearn/src/migrations/2024*.sql",
+]

@@ -126,14 +126,7 @@ lint-shell:
 lint-sql:
 	@sqlfluff lint
 lint-sql-migrations:
-	@squawk apps/prairielearn/src/migrations/*.sql \
-	--exclude-path "apps/prairielearn/src/migrations/*.test.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/201*.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/2020*.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/2021*.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/2022*.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/2023*.sql" \
-	--exclude-path "apps/prairielearn/src/migrations/2024*.sql"
+	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 lint-changeset:
