@@ -289,6 +289,11 @@ export async function gradeAssessmentInstance(
   debug('gradeAssessmentInstance()', 'selected variants', 'count:', variants.length);
   await async.eachSeries(variants, async (row) => {
     debug('gradeAssessmentInstance()', 'loop', 'variant.id:', row.variant.id);
+
+    // Skip grading broken variants, as `gradeVariant` will consider an attempt
+    // to grade a broken variant as an error.
+    if (row.variant.broken_at) return;
+
     const check_submission_id = null;
     await gradeVariant(
       row.variant,
