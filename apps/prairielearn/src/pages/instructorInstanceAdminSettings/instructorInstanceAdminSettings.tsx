@@ -250,31 +250,35 @@ router.post(
         false,
       );
 
-      /*
-      TODO:
-      Are we writing default values to the JSON?
-      For example, do I need to check that all the values are set to the default, 
-      and not set selfEnrollment in the JSON if so? If just one isn't the default, 
-      is that the only key that should be written to the JSON?
-      */
-      if (!courseInstanceInfo.selfEnrollment) {
-        courseInstanceInfo.selfEnrollment = {};
-      }
-      courseInstanceInfo.selfEnrollment.enabled = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment.enabled,
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.enabled,
         req.body.self_enrollment_enabled === 'on',
         true,
       );
-      courseInstanceInfo.selfEnrollment.requiresSecretLink = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment.requiresSecretLink,
+      const selfEnrollmentRequiresSecretLink = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.requiresSecretLink,
         req.body.self_enrollment_requires_secret_link === 'on',
         false,
       );
-      courseInstanceInfo.selfEnrollment.beforeDate = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment.beforeDate,
-        req.body.self_enrollment_enabled_before_date || null,
+      const selfEnrollmentBeforeDate = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.beforeDate,
+        req.body.self_enrollment_enabled_before_date ?? null,
         null,
       );
+
+      const hasSelfEnrollmentSettings =
+        (selfEnrollmentEnabled ?? selfEnrollmentRequiresSecretLink ?? selfEnrollmentBeforeDate) !==
+        undefined;
+      if (hasSelfEnrollmentSettings) {
+        courseInstanceInfo.selfEnrollment = {
+          enabled: selfEnrollmentEnabled,
+          requiresSecretLink: selfEnrollmentRequiresSecretLink,
+          beforeDate: selfEnrollmentBeforeDate,
+        };
+      } else {
+        courseInstanceInfo.selfEnrollment = undefined;
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       let ciid_new;
