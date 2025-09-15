@@ -269,6 +269,8 @@ router.post(
       const hasSelfEnrollmentSettings =
         (selfEnrollmentEnabled ?? selfEnrollmentRequiresSecretLink ?? selfEnrollmentBeforeDate) !==
         undefined;
+
+      // Only write self enrollment settings if they are not the default values.
       if (hasSelfEnrollmentSettings) {
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
