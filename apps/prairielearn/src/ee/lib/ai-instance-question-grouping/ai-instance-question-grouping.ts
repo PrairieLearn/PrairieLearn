@@ -161,6 +161,9 @@ Return a boolean corresponding to whether or not the student's response is equiv
  * Groups student instance questions into AI instance question groups based on exact match to the final answer.
  * Answers that match go into one group; those that don’t are grouped separately.
  * Grouping checks for exact equivalence to the final answer, considering only the boxed or final answer.
+ *
+ * Instance question grouping is referred to as "AI submission grouping" in the user interface for clarity to users,
+ * but as "instance question grouping" in the codebase to align with the database schema.
  */
 export async function aiInstanceQuestionGrouping({
   course,

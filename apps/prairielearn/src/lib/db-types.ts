@@ -1552,6 +1552,7 @@ export const TableNames = [
   'group_users',
   'groups',
   'instance_questions',
+  'instance_question_groups',
   'institution_administrators',
   'institution_authn_providers',
   'institutions',

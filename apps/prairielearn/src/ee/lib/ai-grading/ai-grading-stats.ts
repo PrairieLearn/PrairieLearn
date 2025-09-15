@@ -137,9 +137,8 @@ export async function fillInstanceQuestionColumns<
       instance_question.rubric_difference = fnItems.concat(fpItems);
     }
 
-    // Retrieve the current submission group of the instance question
-
-    const selectedInstanceQuestionId = run(() => {
+    // Retrieve the current group of the instance question
+    const selectedInstanceQuestionGroupId = run(() => {
       if (instance_question.manual_instance_question_group_id) {
         return instance_question.manual_instance_question_group_id;
       }
@@ -149,8 +148,8 @@ export async function fillInstanceQuestionColumns<
       return null;
     });
 
-    instance_question.instance_question_group_name = selectedInstanceQuestionId
-      ? (instanceQuestionIdToGroupName[selectedInstanceQuestionId] ?? null)
+    instance_question.instance_question_group_name = selectedInstanceQuestionGroupId
+      ? (instanceQuestionIdToGroupName[selectedInstanceQuestionGroupId] ?? null)
       : null;
   }
   return results;
