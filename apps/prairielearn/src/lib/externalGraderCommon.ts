@@ -177,7 +177,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     return makeGradingFailureWithMessage(jobId, data, "results did not contain 'results' object.");
   }
 
-  // Scores can be undefined/null or a number.
+  // Scores can be undefined/null (if the submission wasn't gradable) or a number.
   let score = 0;
   if (data.results.score != null) {
     if (typeof data.results.score === 'number' && !Number.isNaN(data.results.score)) {
