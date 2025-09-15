@@ -1,11 +1,11 @@
+/* eslint-disable no-console */
 /* eslint-disable @eslint-react/no-array-index-key */
 // This is fine because we have no mechanism for 'inserting' line numbers.
 
 /**
  * This is a Tiptap extension for the pl-code element with syntax highlighting and customizable options.
  */
-import { mergeAttributes } from '@tiptap/core';
-import CodeBlock from '@tiptap/extension-code-block';
+import { Node } from '@tiptap/core';
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -13,24 +13,33 @@ import {
   ReactNodeViewRenderer,
 } from '@tiptap/react';
 import hljs from 'highlight.js';
-import { useEffect, useRef, useState } from 'preact/compat';
-import { Button, Dropdown, Form, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { type ComponentType, useEffect, useRef, useState } from 'preact/compat';
+import { Button, Dropdown, Form, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
 import { HexColorPicker } from 'react-colorful';
 import { z } from 'zod';
 
 import { supportedLexers } from './pygment-constants.js';
 
-const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
-  const [showOptionsModal, setShowOptionsModal] = useState(false);
+const PlCodeComponent = (
+  props: ReactNodeViewProps<HTMLDivElement> & {
+    updateAttributes: (attrs: Partial<PlCodeAttrs>) => void;
+    node: ReactNodeViewProps<HTMLDivElement>['node'] & {
+      attrs: PlCodeAttrs;
+    };
+  },
+) => {
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [selectedLines, setSelectedLines] = useState<number[]>([]);
   const codeRef = useRef<HTMLPreElement>(null);
   const [highlightedContent, setHighlightedContent] = useState('');
 
-  const attrs = props.node.attrs as PlCodeAttrs;
-  console.log('attrs', attrs);
-  const updateAttributes = props.updateAttributes as (attrs: Partial<PlCodeAttrs>) => void;
+  const attrs = props.node.attrs;
+  const updateAttributes = (attrs: Partial<PlCodeAttrs>) => {
+    console.log('updateAttributes', attrs);
+    props.updateAttributes(attrs);
+  };
 
+  console.log('attrs', attrs);
   // Get the text content from the node
   const getTextContent = () => {
     return props.node.textContent || '';
@@ -38,6 +47,7 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
 
   // Apply syntax highlighting
   const applySyntaxHighlighting = (content: string, language: string) => {
+    console.log('language', content, language);
     if (language === 'text' || !language) {
       return content;
     }
@@ -122,14 +132,23 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
           <div class="d-flex align-items-center gap-2">
             <Dropdown>
               <Dropdown.Toggle variant="outline-secondary" size="sm">
-                {attrs.language}
+                {attrs.language || 'none'}
               </Dropdown.Toggle>
               <Dropdown.Menu>
+                <Dropdown.Item
+                  active={!attrs.language}
+                  onClick={() => updateAttributes({ language: undefined })}
+                >
+                  none
+                </Dropdown.Item>
                 {Object.entries(supportedLexers).map(([lang, name]) => (
                   <Dropdown.Item
                     key={lang}
                     active={attrs.language === lang}
-                    onClick={() => updateAttributes({ language: lang })}
+                    onClick={() => {
+                      console.log('lang', lang);
+                      updateAttributes({ language: lang });
+                    }}
                   >
                     {name}
                   </Dropdown.Item>
@@ -147,12 +166,47 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
               </OverlayTrigger>
             )}
 
-            <OverlayTrigger placement="top" overlay={<Tooltip>Options</Tooltip>}>
-              <Button
-                variant="outline-secondary"
-                size="sm"
-                onClick={() => setShowOptionsModal(true)}
-              >
+            <OverlayTrigger
+              trigger="click"
+              placement="bottom"
+              overlay={
+                <Popover id="options-popover">
+                  <Popover.Header as="h3">Code Block Options</Popover.Header>
+                  <Popover.Body>
+                    <Form>
+                      <Form.Check
+                        type="checkbox"
+                        id="preventSelect"
+                        label="Prevent text selection"
+                        checked={attrs.preventSelect}
+                        onChange={(e) =>
+                          updateAttributes({ preventSelect: e.currentTarget.checked })
+                        }
+                      />
+                      <Form.Check
+                        type="checkbox"
+                        id="copyCodeButton"
+                        label="Show copy button"
+                        checked={attrs.copyCodeButton}
+                        onChange={(e) =>
+                          updateAttributes({ copyCodeButton: e.currentTarget.checked })
+                        }
+                      />
+                      <Form.Check
+                        type="checkbox"
+                        id="showLineNumbers"
+                        label="Show line numbers"
+                        checked={attrs.showLineNumbers}
+                        onChange={(e) =>
+                          updateAttributes({ showLineNumbers: e.currentTarget.checked })
+                        }
+                      />
+                    </Form>
+                  </Popover.Body>
+                </Popover>
+              }
+            >
+              <Button variant="outline-secondary" size="sm">
                 <i class="bi bi-gear" />
               </Button>
             </OverlayTrigger>
@@ -163,16 +217,12 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
         <div class="position-relative">
           <pre
             ref={codeRef}
-            class={`hljs ${attrs.preventSelect ? 'user-select-none' : ''}`}
+            class="hljs border border-primary"
             style={{ margin: 0, padding: '1rem' }}
           >
             <code
               // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
               dangerouslySetInnerHTML={{ __html: highlightedContent }}
-              style={{
-                userSelect: attrs.preventSelect ? 'none' : 'auto',
-                pointerEvents: attrs.preventSelect ? 'none' : 'auto',
-              }}
             />
           </pre>
 
@@ -277,9 +327,27 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
               {selectedLines.length} line{selectedLines.length !== 1 ? 's' : ''} selected
             </span>
             <div class="d-flex gap-2">
-              <Button variant="light" size="sm" onClick={() => setShowColorPicker(true)}>
-                Choose Color
-              </Button>
+              <OverlayTrigger
+                trigger="click"
+                placement="top"
+                show={showColorPicker}
+                overlay={
+                  <Popover id="color-picker-popover">
+                    <Popover.Header as="h3">Choose Highlight Color</Popover.Header>
+                    <Popover.Body class="d-flex justify-content-center">
+                      <HexColorPicker
+                        color={attrs.highlightLinesColor ?? undefined}
+                        onChange={(color) => updateAttributes({ highlightLinesColor: color })}
+                      />
+                    </Popover.Body>
+                  </Popover>
+                }
+                onToggle={setShowColorPicker}
+              >
+                <Button variant="light" size="sm">
+                  Choose Color
+                </Button>
+              </OverlayTrigger>
               <Button variant="light" size="sm" onClick={applyLineHighlighting}>
                 Highlight
               </Button>
@@ -291,56 +359,6 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
         )}
       </div>
 
-      {/* Options Modal */}
-      <Modal show={showOptionsModal} onHide={() => setShowOptionsModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Code Block Options</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form>
-            <Form.Check
-              type="checkbox"
-              id="preventSelect"
-              label="Prevent text selection"
-              checked={attrs.preventSelect}
-              onChange={(e) => updateAttributes({ preventSelect: e.currentTarget.checked })}
-            />
-            <Form.Check
-              type="checkbox"
-              id="copyCodeButton"
-              label="Show copy button"
-              checked={attrs.copyCodeButton}
-              onChange={(e) => updateAttributes({ copyCodeButton: e.currentTarget.checked })}
-            />
-            <Form.Check
-              type="checkbox"
-              id="showLineNumbers"
-              label="Show line numbers"
-              checked={attrs.showLineNumbers}
-              onChange={(e) => updateAttributes({ showLineNumbers: e.currentTarget.checked })}
-            />
-          </Form>
-        </Modal.Body>
-      </Modal>
-
-      {/* Color Picker Modal */}
-      <Modal show={showColorPicker} onHide={() => setShowColorPicker(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Choose Highlight Color</Modal.Title>
-        </Modal.Header>
-        <Modal.Body class="d-flex justify-content-center">
-          <HexColorPicker
-            color={attrs.highlightLinesColor}
-            onChange={(color) => updateAttributes({ highlightLinesColor: color })}
-          />
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowColorPicker(false)}>
-            Close
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
       <NodeViewContent />
     </NodeViewWrapper>
   );
@@ -348,45 +366,57 @@ const PlCodeComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
 
 // If there are any unknown attributes, we will drop into the raw-html extension.
 const PlCodeAttrsSchema = z.strictObject({
-  language: z.enum(Object.values(supportedLexers) as [string, ...string[]]).optional(),
+  language: z.string().nullable().optional().default(null),
   preventSelect: z.boolean().default(false),
   copyCodeButton: z.boolean().default(false),
   showLineNumbers: z.boolean().default(false),
   // Accepts input like 4, 1-3,5-10, and 1,2-5,20.
   highlightLines: z
     .string()
+    .nullable()
     .optional()
+    .default(null)
     .transform((val) => {
       if (!val) return [];
-      return val.split(',').flatMap((part) => {
-        const [start, end] = part.split('-');
-        return Array.from(
-          { length: Number.parseInt(end) - Number.parseInt(start) + 1 },
-          (_, i) => Number.parseInt(start) + i,
-        );
-      });
+      return val
+        .split(',')
+        .flatMap((part) => {
+          const [start, end] = part.split('-');
+          return Array.from(
+            { length: Number.parseInt(end) - Number.parseInt(start) + 1 },
+            (_, i) => Number.parseInt(start) + i,
+          );
+        })
+        .sort((a, b) => a - b);
     }),
   highlightLinesColor: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/)
-    .optional(),
+    .nullable()
+    .optional()
+    .default(null),
 });
 
 type PlCodeAttrs = z.infer<typeof PlCodeAttrsSchema>;
 
+type PlCodeOptions = object;
+
 const defaultAttrs = PlCodeAttrsSchema.parse({});
 
-export const PlCode = CodeBlock.extend({
+export const PlCode = Node.create<PlCodeOptions>({
   name: 'plCode',
   group: 'block',
   content: 'text*',
   marks: '',
+  code: true,
+  defining: true,
 
   parseHTML() {
     return [
       {
         tag: 'pl-code',
         preserveWhitespace: 'full',
+        // attributes: {},
         getAttrs: (element: string | HTMLElement) => {
           if (typeof element === 'string') return false;
 
@@ -394,9 +424,16 @@ export const PlCode = CodeBlock.extend({
 
           // Use Zod schema to validate and parse attributes
           try {
-            const attrs = PlCodeAttrsSchema.safeParse(htmlElement.attributes);
+            const attributes = Object.fromEntries(
+              Array.from(htmlElement.attributes).map((attr) => [attr.name, attr.value]),
+            );
+            const attrs = PlCodeAttrsSchema.safeParse(attributes);
+            console.log('attrs', attrs);
+            if (!attrs.success) return false;
+
+            console.log('attrs.data', attrs.data);
             // ProseMirror expects null or undefined if the check is successful.
-            return attrs.success && null;
+            return attrs.data;
           } catch {
             return false;
           }
@@ -405,12 +442,65 @@ export const PlCode = CodeBlock.extend({
     ];
   },
 
-  renderHTML({ HTMLAttributes, node }: { HTMLAttributes: Record<string, any>; node: Node }) {
+  renderHTML({ node }) {
+    console.log('node', node.attrs);
     // Only include attributes that are not the default in the rendered HTML.
-    const nonDefaultAttrs = Object.fromEntries(
-      Object.entries(PlCodeAttrsSchema.shape).filter(([key]) => node[key] !== defaultAttrs[key]),
+    console.log(
+      'attrs redner',
+      Object.fromEntries(Object.keys(PlCodeAttrsSchema.shape).map((key) => [key, node.attrs[key]])),
     );
-    return ['pl-code', mergeAttributes(HTMLAttributes, nonDefaultAttrs), 0];
+    // console.log('defaults', defaultAttrs);
+    // for (const key of Object.keys(PlCodeAttrsSchema.shape)) {
+    //   if (node.attrs[key] !== defaultAttrs[key]) {
+    //     console.log('key !=', key, node.attrs[key], defaultAttrs[key]);
+    //   } else {
+    //     console.log('key ==', key, node.attrs[key], defaultAttrs[key]);
+    //   }
+    // }
+    console.log(
+      'node.attrs',
+      node.attrs.highlightLines.length,
+      defaultAttrs.highlightLines.length,
+      node.attrs.highlightLines,
+      defaultAttrs.highlightLines,
+      node.attrs.highlightLines.some(
+        (value, index) => value !== defaultAttrs.highlightLines[index],
+      ),
+    );
+    const nonDefaultDefinedAttrs = Object.fromEntries(
+      Object.keys(PlCodeAttrsSchema.shape)
+        .filter((key) =>
+          Array.isArray(node.attrs[key])
+            ? node.attrs[key].length !== defaultAttrs[key].length ||
+              node.attrs[key].some((value, index) => value !== defaultAttrs[key][index])
+            : node.attrs[key] !== defaultAttrs[key],
+        )
+        .map((key) => [key, node.attrs[key]]),
+    );
+
+    // Serialize the highlightLines array as a string.
+    // Collect sequential ranges.
+
+    if (nonDefaultDefinedAttrs.highlightLines) {
+      const highlightLines = nonDefaultDefinedAttrs.highlightLines;
+      const ranges: string[] = [];
+      let start = 0;
+      while (start < highlightLines.length) {
+        let end = start;
+        while (
+          end + 1 < highlightLines.length &&
+          highlightLines[end + 1] === highlightLines[end] + 1
+        ) {
+          end++;
+        }
+        ranges.push(`${highlightLines[start]}-${highlightLines[end]}`);
+        start = end + 1;
+      }
+      nonDefaultDefinedAttrs.highlightLines = ranges.join(',');
+    }
+
+    console.log('nonDefaultAttrs', nonDefaultDefinedAttrs);
+    return ['pl-code', nonDefaultDefinedAttrs, 0];
   },
 
   addAttributes() {
@@ -421,6 +511,11 @@ export const PlCode = CodeBlock.extend({
   },
 
   addNodeView() {
-    return ReactNodeViewRenderer(PlCodeComponent);
+    return ReactNodeViewRenderer(
+      PlCodeComponent as ComponentType<ReactNodeViewProps<HTMLDivElement>>,
+    );
   },
+
+  // TODO: Do we want fancy VSCode paste support?
+  // https://github.com/ueberdosis/tiptap/blob/0226d42150fc501853fe9fc4497a79477560b476/packages/extension-code-block/src/code-block.ts#L381
 });
