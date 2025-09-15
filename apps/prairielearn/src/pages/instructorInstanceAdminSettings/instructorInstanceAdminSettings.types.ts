@@ -12,7 +12,7 @@ export const SettingsFormBodySchema = z.object({
   hide_in_enroll_page: FormCheckboxSchema,
   self_enrollment_enabled: FormCheckboxSchema,
   self_enrollment_requires_secret_link: FormCheckboxSchema,
-  self_enrollment_enabled_before_date: z.string().nullable().default(null),
+  self_enrollment_enabled_before_date: z.string().optional().nullable().default(null),
 });
 
 export type SettingsFormValues = z.infer<typeof SettingsFormBodySchema> & {
