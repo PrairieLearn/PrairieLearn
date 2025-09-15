@@ -65,7 +65,7 @@ router.post(
         requireOpen: true,
         close: true,
         overrideGradeRate: true,
-        client_fingerprint_id: null, // client_fingerprint_id
+        client_fingerprint_id: null,
       });
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'delete') {
