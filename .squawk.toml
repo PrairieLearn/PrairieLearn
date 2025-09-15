@@ -1,7 +1,6 @@
 pg_version = "16.0"
 assume_in_transaction = true
 excluded_rules = [
-  "constraint-missing-not-valid",      # By default new constraints require a table scan and block writes to the table while that scan occurs
   "prefer-identity",                   # Serial types make schema, dependency, and permission management difficult
   "prefer-text-field",                 # Changing the size of a `varchar` field requires an `ACCESS EXCLUSIVE` lock, that will prevent all reads and writes to the table
   "prefer-bigint-over-int",            # Using 32-bit integer fields can result in hitting the max `int` limit

@@ -14,8 +14,10 @@ ALTER TABLE group_users
 DROP CONSTRAINT IF EXISTS group_users_group_config_id_not_null;
 
 ALTER TABLE group_users
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT group_users_group_config_id_not_null CHECK (group_config_id IS NOT NULL) NOT VALID;
 
+-- squawk-ignore constraint-missing-not-valid
 ALTER TABLE group_users VALIDATE CONSTRAINT group_users_group_config_id_not_null;
 
 DO $$

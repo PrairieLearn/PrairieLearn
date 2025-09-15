@@ -1,4 +1,5 @@
 ALTER TABLE group_users
+-- squawk-ignore constraint-missing-not-valid
 ADD UNIQUE (user_id, group_config_id);
 
 -- This index becomes unnecessary with the new unique constraint

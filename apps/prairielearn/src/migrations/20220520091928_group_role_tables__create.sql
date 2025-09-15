@@ -32,4 +32,5 @@ ALTER TABLE group_users
 ADD COLUMN IF NOT EXISTS group_role_id BIGINT;
 
 ALTER TABLE group_users
+-- squawk-ignore constraint-missing-not-valid
 ADD FOREIGN KEY (group_role_id) REFERENCES group_roles (id) ON DELETE CASCADE ON UPDATE CASCADE;

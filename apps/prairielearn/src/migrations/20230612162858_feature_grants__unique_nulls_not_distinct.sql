@@ -14,6 +14,7 @@ RENAME TO feature_grants_by_name_idx_old;
 
 -- Create a new constraint using `NULLS NOT DISTINCT` to prevent duplicates.
 ALTER TABLE feature_grants
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT feature_grants_by_name_idx UNIQUE NULLS NOT DISTINCT (
   name,
   institution_id,

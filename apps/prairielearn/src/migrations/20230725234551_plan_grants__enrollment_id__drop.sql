@@ -16,6 +16,7 @@ WHERE
 -- "entity"; it is not good at telling us every entity that a specific plan has
 -- been granted to.
 ALTER TABLE plan_grants
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT plan_grants_institution_course_instance_user_name_idx UNIQUE NULLS NOT DISTINCT (
   institution_id,
   course_instance_id,

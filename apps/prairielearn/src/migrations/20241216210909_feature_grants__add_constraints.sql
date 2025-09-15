@@ -1,4 +1,5 @@
 ALTER TABLE feature_grants
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT feature_grants_course_id_not_null CHECK (
   NOT (
     institution_id IS NULL
@@ -7,6 +8,7 @@ ADD CONSTRAINT feature_grants_course_id_not_null CHECK (
 );
 
 ALTER TABLE feature_grants
+-- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT feature_grants_course_instance_id_not_null CHECK (
   NOT (
     course_id IS NULL
