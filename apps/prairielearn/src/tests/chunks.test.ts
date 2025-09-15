@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { afterEach, assert, beforeEach, describe, it } from 'vitest';
+import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -11,6 +11,7 @@ import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
 import { CourseSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import * as courseDB from '../sync/course-db.js';
 import { makeInfoFile } from '../sync/infofile.js';
 import { syncDiskToSql } from '../sync/syncFromDisk.js';
@@ -732,6 +733,131 @@ describe('chunks', () => {
             chunk.course_instance_id === newCourseInstanceId,
         ),
       );
+    });
+
+    it('correctly handles clientFilesCourseInstance chunk when initial course instance is invalid', async () => {
+      const courseDir = tempTestCourseDir.path;
+
+      const courseInstancePath = path.join(courseDir, 'courseInstances', 'new');
+
+      // Write an empty (invalid) JSON file for the new course instance.
+      const infoCourseInstancePath = path.join(courseInstancePath, 'infoCourseInstance.json');
+      await fs.outputFile(infoCourseInstancePath, '');
+
+      // Write a new course instance client file with known contents.
+      const clientFilePath = path.join(courseInstancePath, 'clientFilesCourseInstance', 'test.txt');
+      await fs.outputFile(clientFilePath, 'Original contents');
+
+      // Sync course to DB so that the new course instance is inserted.
+      const { logger } = makeMockLogger();
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Get the new course instance.
+      const courseInstance = await selectCourseInstanceByShortName({
+        course_id: courseId,
+        short_name: 'new',
+      });
+
+      // Generate new chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [
+          path.relative(courseDir, infoCourseInstancePath),
+          path.relative(courseDir, clientFilePath),
+        ],
+      });
+
+      // Verify that a chunk exists for this course instance.
+      const databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstance.id,
+        ),
+      );
+
+      // Load the chunk.
+      const chunksToLoad: chunksLib.Chunk[] = [
+        {
+          type: 'clientFilesCourseInstance',
+          courseInstanceId: courseInstance.id,
+        },
+      ];
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
+
+      // Verify that the course instance client file exists and has the expected contents.
+      const runtimeClientFilePath = path.join(
+        courseRuntimeDir,
+        'courseInstances',
+        'new',
+        'clientFilesCourseInstance',
+        'test.txt',
+      );
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      let contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Original contents');
+
+      // Change the contents of the client file.
+      await fs.outputFile(clientFilePath, 'Changed contents');
+
+      // Regenerate chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [path.relative(courseDir, clientFilePath)],
+      });
+
+      // Load the chunk again.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Verify that the course instance client file has the updated contents.
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Changed contents');
+
+      // Now fix up the infoCourseInstance.json file so that it's valid.
+      const infoCiJson = {
+        uuid: '33333333-3333-4333-8333-333333333333',
+        longName: 'New Course Instance',
+      };
+      await fs.writeJson(infoCourseInstancePath, infoCiJson, { spaces: 2 });
+
+      // Sync course to DB so that the course_instance row is updated.
+      await syncDiskToSql(courseId, courseDir, logger);
+
+      // Assert that we produced a course instance without sync errors/warnings.
+      const newCourseInstance = await selectCourseInstanceByShortName({
+        course_id: courseId,
+        short_name: 'new',
+      });
+      assert.equal(newCourseInstance.id, courseInstance.id);
+      expect(newCourseInstance.sync_errors).toBeFalsy();
+      expect(newCourseInstance.sync_warnings).toBeFalsy();
+
+      // Regenerate chunks.
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+        changedFiles: [path.relative(courseDir, infoCourseInstancePath)],
+      });
+
+      // Load the chunk again.
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Verify that the course instance client file still exists and has the expected contents.
+      assert.isOk(await fs.pathExists(runtimeClientFilePath));
+      contents = await fs.readFile(runtimeClientFilePath, 'utf-8');
+      assert.equal(contents, 'Changed contents');
     });
 
     // See https://github.com/PrairieLearn/PrairieLearn/issues/12873

@@ -15,6 +15,7 @@ import z from 'zod';
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
@@ -869,6 +870,7 @@ interface UpdateChunksForCourseOptions {
   courseData: CourseData;
   oldHash?: string | null;
   newHash?: string | null;
+  changedFiles?: string[];
 }
 
 export async function updateChunksForCourse({
@@ -877,17 +879,25 @@ export async function updateChunksForCourse({
   courseData,
   oldHash,
   newHash,
+  changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  let changedFiles: string[] = [];
-  if (oldHash && newHash) {
-    changedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
-  }
+  const resolvedChangedFiles = await run(async () => {
+    if (changedFiles && (oldHash || newHash)) {
+      throw new Error('cannot specify changedFiles with oldHash or newHash');
+    }
+
+    if (changedFiles) return changedFiles;
+
+    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
+
+    return [];
+  });
 
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles,
+    changedFiles: resolvedChangedFiles,
   });
 
   await createAndUploadChunks(coursePath, courseId, updatedChunks);
