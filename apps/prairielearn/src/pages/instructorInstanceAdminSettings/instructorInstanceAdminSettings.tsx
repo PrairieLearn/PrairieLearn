@@ -36,6 +36,7 @@ import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
+import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -233,36 +234,38 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      courseInstanceInfo.longName = req.body.long_name;
+      const parsedBody = SettingsFormBodySchema.parse(req.body);
+
+      courseInstanceInfo.longName = parsedBody.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        req.body.display_timezone,
+        parsedBody.display_timezone,
         res.locals.course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        req.body.group_assessments_by,
+        parsedBody.group_assessments_by,
         'Set',
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
         courseInstanceInfo.hideInEnrollPage,
-        req.body.hide_in_enroll_page === 'on',
+        parsedBody.hide_in_enroll_page,
         false,
       );
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.enabled,
-        req.body.self_enrollment_enabled === 'on',
+        parsedBody.self_enrollment_enabled,
         true,
       );
       const selfEnrollmentRequiresSecretLink = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.requiresSecretLink,
-        req.body.self_enrollment_requires_secret_link === 'on',
+        parsedBody.self_enrollment_requires_secret_link,
         false,
       );
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.beforeDate,
-        req.body.self_enrollment_enabled_before_date ?? null,
+        parsedBody.self_enrollment_enabled_before_date ?? null,
         null,
       );
 
