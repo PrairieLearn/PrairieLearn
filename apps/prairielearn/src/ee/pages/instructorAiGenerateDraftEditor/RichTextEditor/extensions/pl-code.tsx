@@ -14,12 +14,15 @@ import {
 } from '@tiptap/react';
 import hljs from 'highlight.js';
 import { type ComponentType, useEffect, useRef, useState } from 'preact/compat';
-import { Button, Dropdown, Form, OverlayTrigger, Popover, Tooltip } from 'react-bootstrap';
+import { Button, Dropdown, Form, OverlayTrigger, Popover } from 'react-bootstrap';
 import { HexColorPicker } from 'react-colorful';
 import { z } from 'zod';
 
 import { supportedLexers } from './pygment-constants.js';
 
+const CodeNodeViewContent = NodeViewContent<'code'>;
+
+// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/code
 const PlCodeComponent = (
   props: ReactNodeViewProps<HTMLDivElement> & {
     updateAttributes: (attrs: Partial<PlCodeAttrs>) => void;
@@ -112,15 +115,6 @@ const PlCodeComponent = (
     });
   };
 
-  // Copy code to clipboard
-  const copyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(getTextContent());
-    } catch (error) {
-      console.error('Failed to copy code:', error);
-    }
-  };
-
   // Split content into lines for rendering
   const lines = getTextContent().split('\n');
 
@@ -132,14 +126,14 @@ const PlCodeComponent = (
           <div class="d-flex align-items-center gap-2">
             <Dropdown>
               <Dropdown.Toggle variant="outline-secondary" size="sm">
-                {attrs.language || 'none'}
+                {attrs.language || 'None'}
               </Dropdown.Toggle>
               <Dropdown.Menu>
                 <Dropdown.Item
                   active={!attrs.language}
-                  onClick={() => updateAttributes({ language: undefined })}
+                  onClick={() => updateAttributes({ language: null })}
                 >
-                  none
+                  None
                 </Dropdown.Item>
                 {Object.entries(supportedLexers).map(([lang, name]) => (
                   <Dropdown.Item
@@ -158,14 +152,6 @@ const PlCodeComponent = (
           </div>
 
           <div class="d-flex align-items-center gap-1">
-            {attrs.copyCodeButton && (
-              <OverlayTrigger placement="top" overlay={<Tooltip>Copy code</Tooltip>}>
-                <Button variant="outline-secondary" size="sm" onClick={copyCode}>
-                  <i class="bi bi-clipboard" />
-                </Button>
-              </OverlayTrigger>
-            )}
-
             <OverlayTrigger
               trigger="click"
               placement="bottom"
@@ -220,10 +206,11 @@ const PlCodeComponent = (
             class="hljs border border-primary"
             style={{ margin: 0, padding: '1rem' }}
           >
-            <code
+            <CodeNodeViewContent as="code" />
+            {/* <code
               // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
               dangerouslySetInnerHTML={{ __html: highlightedContent }}
-            />
+            /> */}
           </pre>
 
           {/* Line numbers overlay */}
@@ -358,8 +345,6 @@ const PlCodeComponent = (
           </div>
         )}
       </div>
-
-      <NodeViewContent />
     </NodeViewWrapper>
   );
 };
@@ -408,8 +393,10 @@ export const PlCode = Node.create<PlCodeOptions>({
   group: 'block',
   content: 'text*',
   marks: '',
+  whitespace: 'pre',
   code: true,
-  defining: true,
+  defining: false,
+  atom: true,
 
   parseHTML() {
     return [
