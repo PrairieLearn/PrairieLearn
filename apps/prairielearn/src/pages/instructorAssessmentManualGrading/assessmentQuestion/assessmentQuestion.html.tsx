@@ -189,65 +189,6 @@ export function AssessmentQuestion({
           >
             <h1>Student instance questions</h1>
             <div class="d-flex flex-row gap-2">
-              <div class="dropdown">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
-                  data-bs-toggle="dropdown"
-                  name="status"
-                  disabled
-                >
-                  <i class="fas fa-tags"></i> Tag for grading
-                </button>
-                <div class="dropdown-menu dropdown-menu-end">
-                  <div class="dropdown-header">Assign for grading</div>
-                  ${courseStaff.map(
-                    (grader) => html`
-                      <button
-                        class="dropdown-item"
-                        type="submit"
-                        name="batch_action_data"
-                        value="${JSON.stringify({
-                          requires_manual_grading: true,
-                          assigned_grader: grader.user_id,
-                        })}"
-                      >
-                        <i class="fas fa-user-tag"></i>
-                        Assign to: ${grader.name || ''} (${grader.uid})
-                      </button>
-                    `,
-                  )}
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ assigned_grader: null })}"
-                  >
-                    <i class="fas fa-user-slash"></i>
-                    Remove grader assignment
-                  </button>
-                  <div class="dropdown-divider"></div>
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ requires_manual_grading: true })}"
-                  >
-                    <i class="fas fa-tag"></i>
-                    Tag as required grading
-                  </button>
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ requires_manual_grading: false })}"
-                  >
-                    <i class="fas fa-check-square"></i>
-                    Tag as graded
-                  </button>
-                </div>
-              </div>
-
               ${aiGradingEnabled && aiGradingMode
                 ? html`
                     <div class="dropdown">
@@ -296,7 +237,66 @@ export function AssessmentQuestion({
                       </div>
                     </div>
                   `
-                : ''}
+                : html`
+                    <div class="dropdown">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
+                        data-bs-toggle="dropdown"
+                        name="status"
+                        disabled
+                      >
+                        <i class="fas fa-tags"></i> Tag for grading
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        <div class="dropdown-header">Assign for grading</div>
+                        ${courseStaff.map(
+                          (grader) => html`
+                            <button
+                              class="dropdown-item"
+                              type="submit"
+                              name="batch_action_data"
+                              value="${JSON.stringify({
+                                requires_manual_grading: true,
+                                assigned_grader: grader.user_id,
+                              })}"
+                            >
+                              <i class="fas fa-user-tag"></i>
+                              Assign to: ${grader.name || ''} (${grader.uid})
+                            </button>
+                          `,
+                        )}
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ assigned_grader: null })}"
+                        >
+                          <i class="fas fa-user-slash"></i>
+                          Remove grader assignment
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ requires_manual_grading: true })}"
+                        >
+                          <i class="fas fa-tag"></i>
+                          Tag as required grading
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ requires_manual_grading: false })}"
+                        >
+                          <i class="fas fa-check-square"></i>
+                          Tag as graded
+                        </button>
+                      </div>
+                    </div>
+                  `}
             </div>
           </div>
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>

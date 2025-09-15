@@ -1,4 +1,99 @@
 import { Node } from '@tiptap/core';
+import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
+import clsx from 'clsx';
+import { type ComponentType, useState } from 'preact/compat';
+import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
+
+interface RawHtmlAttrs {
+  html: string;
+  tag: string;
+}
+
+const RawHtmlComponent = (
+  props: ReactNodeViewProps<HTMLDivElement> & {
+    updateAttributes: (attrs: Partial<RawHtmlAttrs>) => void;
+    node: ReactNodeViewProps<HTMLDivElement>['node'] & {
+      attrs: RawHtmlAttrs;
+    };
+  },
+) => {
+  const { node, updateAttributes } = props;
+  const [nodes, setNodes] = useState<string[] | null>(null);
+  const textareaRows = Math.min(10, node.attrs.html.split('\n').length);
+  return (
+    <NodeViewWrapper class="p-0" contentEditable={false}>
+      <Card class="border-warning">
+        <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
+          <div class="d-flex gap-2">
+            Raw HTML
+            {nodes !== null && nodes.length !== 1 ? (
+              <OverlayTrigger
+                placement="right"
+                overlay={
+                  <Tooltip>
+                    You must have exactly one parent element, but you have {nodes.length} (
+                    {nodes.join(', ')}). Either remove the extra elements, or combine them into a
+                    single element by wrapping both of them in a single div.
+                  </Tooltip>
+                }
+              >
+                <i
+                  class="bi bi-exclamation-triangle text-danger"
+                  aria-label="Raw HTML warning"
+                  role="img"
+                />
+              </OverlayTrigger>
+            ) : null}
+          </div>
+          <OverlayTrigger
+            placement="left"
+            overlay={
+              <Tooltip>
+                This node type isn't supported by the rich text editor yet. You can edit the
+                underlying HTML here.
+              </Tooltip>
+            }
+          >
+            <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
+          </OverlayTrigger>
+        </Card.Header>
+        <Card.Body>
+          <textarea
+            rows={textareaRows}
+            value={node.attrs.html}
+            class={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
+            onChange={(e) => {
+              const newHtml = e.currentTarget.value;
+              const template = document.createElement('template');
+              template.innerHTML = newHtml;
+              const nonWhitespaceNodes = Array.from(template.content.childNodes)
+                .filter(
+                  (node) => node.nodeName !== '#text' || (node.textContent?.trim().length ?? 0) > 0,
+                )
+                .map((node) => node.nodeName.toLowerCase());
+              setNodes(nonWhitespaceNodes);
+
+              // If the value is empty, delete the node.
+              // TODO: Is this the cleanest way to do this?
+              if (newHtml.length === 0) {
+                const pos = props.getPos();
+                if (pos != null) {
+                  props.editor
+                    .chain()
+                    .focus()
+                    .deleteRange({ from: pos, to: pos + props.node.nodeSize })
+                    .run();
+                }
+              } else {
+                updateAttributes({ html: newHtml });
+              }
+            }}
+          />
+        </Card.Body>
+      </Card>
+    </NodeViewWrapper>
+  );
+};
 
 // https://github.com/ueberdosis/tiptap/discussions/2272
 // https://tiptap.dev/docs/editor/extensions/custom-extensions/create-new/node
@@ -26,20 +121,20 @@ export const RawHtml = Node.create({
   atom: true,
 
   // Match last.
-  priority: 1000,
+  priority: -1000,
+
+  selectable: true,
+
+  isolating: false,
 
   addAttributes() {
     return {
       html: {
-        parseHTML: (element) => element.innerHTML,
+        parseHTML: (element) => element.outerHTML,
         rendered: false,
       },
       tag: {
         parseHTML: (element) => element.tagName.toLowerCase(),
-        rendered: false,
-      },
-      attrs: {
-        parseHTML: (element) => element.attributes,
         rendered: false,
       },
     };
@@ -54,21 +149,15 @@ export const RawHtml = Node.create({
     ];
   },
 
+  addNodeView() {
+    return ReactNodeViewRenderer(
+      RawHtmlComponent as ComponentType<ReactNodeViewProps<HTMLDivElement>>,
+    );
+  },
+
   renderHTML({ node }) {
-    // TODO: Can we use HTMLAttributes here?
-    // https://github.com/ueberdosis/tiptap/blob/e0567acfcad097f65dd76e87804eff1c9d805320/packages/extension-list/src/item/list-item.ts#L30
-
-    // FIXME: This current implementation doesn't properly use a node view to render the HTML as a 'div' element.
-    // This means that even though the underlying representation of the HTML is correct, what is rendered in the DOM
-    // are these non-standard tags. This needs to be fixed.
-    const div = document.createElement(node.attrs.tag);
-    for (const attr of node.attrs.attrs) {
-      div.setAttribute(attr.name, attr.value);
-    }
-    div.innerHTML = node.attrs.html;
-    div.dataset.type = 'raw';
-    div.classList.add('border', 'border-warning');
-
-    return div;
+    const template = document.createElement('template');
+    template.innerHTML = node.attrs.html;
+    return template.content.firstChild!;
   },
 });
