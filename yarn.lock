@@ -4115,6 +4115,7 @@ __metadata:
     quilljs-markdown: "npm:^1.2.0"
     react: "npm:^19.1.1"
     react-bootstrap: "npm:3.0.0-beta.3"
+    react-colorful: "npm:^5.6.1"
     react-dom: "npm:^19.1.1"
     react-hook-form: "npm:^7.62.0"
     remark-gfm: "npm:^4.0.1"
@@ -15814,6 +15815,16 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/e76c13248a333b5744e61ffe3b2d26a7a1fef54091e0e4d33c74ea41fc5d9cd162c79636780b406ca556d104df538c37c823b440446200ed3c94fd9bff60316c
+  languageName: node
+  linkType: hard
+
+"react-colorful@npm:^5.6.1":
+  version: 5.6.1
+  resolution: "react-colorful@npm:5.6.1"
+  peerDependencies:
+    react: ">=16.8.0"
+    react-dom: ">=16.8.0"
+  checksum: 10c0/48eb73cf71e10841c2a61b6b06ab81da9fffa9876134c239bfdebcf348ce2a47e56b146338e35dfb03512c85966bfc9a53844fc56bc50154e71f8daee59ff6f0
   languageName: node
   linkType: hard
 
