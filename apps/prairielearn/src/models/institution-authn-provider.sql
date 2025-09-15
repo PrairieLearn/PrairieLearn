@@ -81,8 +81,8 @@ WITH
       $authn_user_id,
       'institutions',
       'update',
-      udap.id,
-      udap.id,
+      udap.id AS institution_id,
+      udap.id AS row_id,
       jsonb_build_object(
         'default_authn_provider_id',
         udap.default_authn_provider_id,

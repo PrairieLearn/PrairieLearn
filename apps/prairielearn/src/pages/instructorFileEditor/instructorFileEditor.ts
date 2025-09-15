@@ -9,8 +9,8 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -137,7 +137,7 @@ router.get(
       }
 
       if (draftEdit.jobSequence) {
-        if (draftEdit.jobSequence?.status === 'Running') {
+        if (draftEdit.jobSequence.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).
@@ -289,7 +289,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await execute(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({

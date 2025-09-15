@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   selectLastSubmissionId,
@@ -123,6 +124,7 @@ router.get(
           id: GradingJobSchema.shape.id,
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
+          completion: AiGradingJobSchema.shape.completion,
         }),
       );
 
@@ -164,11 +166,26 @@ router.get(
                 .trimStart()
             : '';
 
+        // We're dealing with a schemaless JSON blob here. We'll be defensive and
+        // try to avoid errors when extracting the explanation. Note that for some
+        // time, the explanation wasn't included in the completion at all, so it
+        // may legitimately be missing.
+        const explanation = run(() => {
+          const completion = ai_grading_job_data.completion;
+          if (completion == null) return null;
+
+          const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+          if (typeof explanation !== 'string') return null;
+
+          return explanation.trim() || null;
+        });
+
         aiGradingInfo = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           promptImageUrls,
+          explanation,
         };
       }
     }
@@ -357,7 +374,7 @@ router.post(
       }
       // Only close issues if the submission was successfully graded
       if (body.unsafe_issue_ids_close.length > 0) {
-        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+        await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
           authn_user_id: res.locals.authn_user.user_id,
@@ -403,7 +420,7 @@ router.post(
           );
         }
       }
-      await sqldb.queryAsync(sql.update_assigned_grader, {
+      await sqldb.execute(sql.update_assigned_grader, {
         instance_question_id: res.locals.instance_question.id,
         assigned_grader,
         requires_manual_grading: actionPrompt !== 'graded',

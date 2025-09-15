@@ -1,5 +1,19 @@
 # @prairielearn/config
 
+## 3.1.8
+
+### Patch Changes
+
+- 2f5ce1f: Upgrade all JavaScript dependencies
+
+## 3.1.7
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/aws-imds@2.0.19
+
 ## 3.1.6
 
 ### Patch Changes

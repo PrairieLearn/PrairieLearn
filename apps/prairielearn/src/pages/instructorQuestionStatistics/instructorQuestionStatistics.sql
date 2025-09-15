@@ -45,6 +45,6 @@ ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC,
-  aset.number,
-  a.order_by,
-  a.id;
+  aset.number ASC,
+  a.order_by ASC,
+  a.id ASC;

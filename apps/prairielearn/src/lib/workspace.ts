@@ -94,7 +94,8 @@ export class SubmissionFormatError extends Error {
   }
 }
 
-export async function init(): Promise<void> {
+export function init(): void {
+  assert(socketServer.io);
   workspaceUtils.init(socketServer.io);
   socketServer.io
     .of(workspaceUtils.WORKSPACE_SOCKET_NAMESPACE)
@@ -130,7 +131,7 @@ function connection(socket: Socket) {
   const workspace_id = socket.handshake.auth.workspace_id;
 
   socket.on('joinWorkspace', (callback: (result: any) => void) => {
-    socket.join(`workspace-${workspace_id}`);
+    void socket.join(`workspace-${workspace_id}`);
 
     sqldb.queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema).then(
       (workspace) => callback({ workspace_id, state: workspace.state }),
@@ -255,7 +256,7 @@ async function startup(workspace_id: string): Promise<void> {
   //   stopped -> launching -> stopped -> launching
   // - We don't want multiple hosts trying to assign a host for the same
   //   workspace at the same time.
-  let shouldAssignHost = false;
+  let shouldAssignHost = false as boolean;
   await sqldb.runInTransactionAsync(async () => {
     // First, lock the workspace row.
     const workspace = await sqldb.queryRow(
@@ -493,7 +494,7 @@ export async function generateWorkspaceFiles({
     (params?._workspace_files as DynamicWorkspaceFile[] | null)
       ?.map((file: DynamicWorkspaceFile, i: number): WorkspaceFile | null => {
         // Ignore files without a name
-        if (!file?.name) {
+        if (!file.name) {
           fileGenerationErrors.push({
             file: `Dynamic file ${i}`,
             msg: 'Dynamic workspace file does not include a name. File ignored.',
@@ -669,7 +670,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   }
 
   // Zip files from filesystem to zip file
-  (gradedFiles ?? []).forEach((file) => {
+  gradedFiles.forEach((file) => {
     const remotePath = path.join(remoteDir, file.path);
     debug(`Zipping graded file ${remotePath} into ${zipPath}`);
     archive.file(remotePath, { name: file.path });

@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import fetchCookie from 'fetch-cookie';
+import fetchCookie, { type CookieJar } from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -48,37 +48,37 @@ describe('Access control', { timeout: 20000 }, function () {
 
   function cookiesStudent() {
     const cookies = new fetchCookie.toughCookie.CookieJar();
-    cookies.setCookie('pl_test_user=test_student', siteUrl);
+    cookies.setCookieSync('pl_test_user=test_student', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExam() {
     const cookies = cookiesStudent();
-    cookies.setCookie('pl_test_mode=Exam', siteUrl);
+    cookies.setCookieSync('pl_test_mode=Exam', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamBeforeCourseInstance() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1750-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamBeforeAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=1850-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterAssessment() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=2350-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
   function cookiesStudentExamAfterCourseInstance() {
     const cookies = cookiesStudentExam();
-    cookies.setCookie('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
+    cookies.setCookieSync('pl_test_date=2450-06-13T13:12:00Z', siteUrl);
     return cookies;
   }
 
@@ -89,7 +89,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getPl(cookies, shouldContainQA101) {
+  async function getPl(cookies: CookieJar, shouldContainQA101: boolean) {
     const res = await fetchCookie(fetch, cookies)(siteUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -142,7 +142,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getAssessments(cookies, shouldContainE1) {
+  async function getAssessments(cookies: CookieJar, shouldContainE1: boolean) {
     const res = await fetchCookie(fetch, cookies)(assessmentsUrl);
     assert.equal(res.status, 200);
     const page = await res.text();
@@ -173,7 +173,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getAssessment(cookies, expectedStatusCode) {
+  async function getAssessment(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -206,7 +206,11 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function postAssessment(cookies, includePassword, expectedStatusCode) {
+  async function postAssessment(
+    cookies: CookieJar,
+    includePassword: boolean,
+    expectedStatusCode: number,
+  ) {
     const body = new URLSearchParams({
       __action: 'new_instance',
       __csrf_token,
@@ -238,7 +242,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getAssessmentInstance(cookies, expectedStatusCode) {
+  async function getAssessmentInstance(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(assessmentInstanceUrl);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -282,7 +286,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function getInstanceQuestion(cookies, expectedStatusCode) {
+  async function getInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const res = await fetchCookie(fetch, cookies)(q1Url);
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
@@ -333,7 +337,7 @@ describe('Access control', { timeout: 20000 }, function () {
 
   /**********************************************************************/
 
-  async function postInstanceQuestion(cookies, expectedStatusCode) {
+  async function postInstanceQuestion(cookies: CookieJar, expectedStatusCode: number) {
     const submittedAnswer = {
       wx: 0,
       wy: 0,
