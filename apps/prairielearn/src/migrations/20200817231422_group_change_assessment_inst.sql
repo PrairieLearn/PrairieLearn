@@ -86,15 +86,12 @@ ALTER TABLE assessments
 ADD COLUMN group_work boolean DEFAULT FALSE;
 
 ALTER TABLE assessment_instances
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups (id) ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE assessment_instances
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT assessment_instances_assessment_id_group_id_number_key UNIQUE (assessment_id, group_id, number);
 
 ALTER TABLE assessment_instances
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT user_group_XOR CHECK (
   (
     user_id IS NOT NULL
@@ -111,15 +108,12 @@ ALTER COLUMN user_id
 DROP NOT NULL;
 
 ALTER TABLE audit_logs
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE variants
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT user_group_XOR CHECK (
   (
     user_id IS NOT NULL
@@ -136,11 +130,9 @@ ALTER COLUMN user_id
 DROP NOT NULL;
 
 ALTER TABLE last_accesses
--- squawk-ignore adding-foreign-key-constraint
 ADD COLUMN group_id BIGINT REFERENCES groups ON DELETE CASCADE ON UPDATE CASCADE;
 
 ALTER TABLE last_accesses
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT user_group_XOR CHECK (
   (
     user_id IS NOT NULL
@@ -153,7 +145,6 @@ ADD CONSTRAINT user_group_XOR CHECK (
 );
 
 ALTER TABLE last_accesses
--- squawk-ignore constraint-missing-not-valid
 ADD CONSTRAINT last_accesses_group_id_key UNIQUE (group_id);
 
 ALTER TABLE last_accesses

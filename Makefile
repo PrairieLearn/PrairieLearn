@@ -129,6 +129,7 @@ lint-sql-migrations:
 	@squawk apps/prairielearn/src/migrations/*.sql \
 	--exclude-path "apps/prairielearn/src/migrations/*.test.sql" \
 	--exclude-path "apps/prairielearn/src/migrations/201*.sql" \
+	--exclude-path "apps/prairielearn/src/migrations/2020*.sql" \
 	--exclude-path "apps/prairielearn/src/migrations/2021*.sql" \
 	--exclude-path "apps/prairielearn/src/migrations/2022*.sql" \
 	--exclude-path "apps/prairielearn/src/migrations/2023*.sql" \

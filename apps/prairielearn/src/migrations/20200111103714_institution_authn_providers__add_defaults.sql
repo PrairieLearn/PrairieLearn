@@ -1,5 +1,4 @@
 ALTER TABLE institution_authn_providers
--- squawk-ignore constraint-missing-not-valid
 ADD UNIQUE (institution_id, authn_provider_id);
 
 DROP INDEX institution_authn_providers_institution_id_idx;
