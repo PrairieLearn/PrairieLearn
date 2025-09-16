@@ -318,6 +318,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): ValidationResult 
           assertInt('pl-integer-input', key, val, errors);
           break;
         case 'correct-answer':
+          assertInt('pl-integer-input', key, val, errors);
           usedCorrectAnswer = true;
           if (mustacheTemplateRegex.test(val)) {
             errors.push(
@@ -429,6 +430,9 @@ function checkSymbolicInput(ast: DocumentFragment | ChildNode): ValidationResult
           errors.push(`pl-symbolic-input: ${key} is not a valid attribute.`);
       }
     }
+  }
+  if (!answersName) {
+    errors.push('pl-symbolic-input: answers-name is a required attribute.');
   }
   if (usedBlankValue && !allowBlank) {
     errors.push('pl-symbolic-input: must set `allow-blank` to true if setting `blank-value`');
