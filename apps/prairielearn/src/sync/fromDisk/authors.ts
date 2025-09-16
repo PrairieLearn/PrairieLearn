@@ -25,11 +25,11 @@ export async function sync(
   }
 
   interface NormalizedAuthor {
-    name?: string;
-    email?: string;
-    orcid?: string;
-    originCourse?: string;
-    id?: string;
+    name: string | null;
+    email: string | null;
+    orcid: string | null;
+    originCourse: string | null;
+    id: string | null;
   }
 
   // Collect all unique authors from all questions
@@ -45,18 +45,20 @@ export async function sync(
     for (const author of authors) {
       const normalizedOrcid = author.orcid?.replaceAll('-', '');
       const normalizedAuthor: NormalizedAuthor = {
-        name: author.name,
-        email: author.email,
-        orcid: normalizedOrcid,
+        name: author.name ?? null,
+        email: author.email ?? null,
+        orcid: normalizedOrcid ?? null,
+        originCourse: null,
+        id: null,
       };
 
       if (author.originCourse) {
         let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
-        if (originCourseID === null) {
+        if (originCourseID == null) {
           const originCourse = await findCourseBySharingName(author.originCourse);
           originCourseID = originCourse?.id ?? null;
         }
-        if (originCourseID === null) {
+        if (originCourseID == null) {
           // This should never happen in practice since we already verified the existence when validating the question
           throw new Error(`Course with sharing name ${author.originCourse} not found!`);
         }
@@ -80,10 +82,11 @@ export async function sync(
   for (const author of authors) {
     // Reconstructing normalized author from DB author to then lookup JSON author
     const normalizedAuthor: NormalizedAuthor = {
-      name: author.author_name ?? undefined,
-      email: author.email ?? undefined,
-      orcid: author.orcid ?? undefined,
-      originCourse: author.origin_course ?? undefined,
+      name: author.author_name ?? null,
+      email: author.email ?? null,
+      orcid: author.orcid ?? null,
+      originCourse: author.origin_course ?? null,
+      id: null,
     };
     const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
 
@@ -102,11 +105,11 @@ export async function sync(
     (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
     const questionTagIds = [...dedupedQuestionAuthors]
       .map((a) => {
-        const author = authorIdMap.get(a);
+        const author = authorIdMap.get(a) ?? null;
         return author;
       })
       // Authors that were skipped earlier will not be in the map and should be skipped again
-      .filter((a) => a !== undefined);
+      .filter((a) => a !== null);
     questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
   });
 
