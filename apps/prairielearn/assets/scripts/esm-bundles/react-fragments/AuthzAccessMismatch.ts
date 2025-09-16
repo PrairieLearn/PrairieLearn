@@ -1,4 +1,6 @@
+import '@prairielearn/preact/client-runtime';
+import { registerReactFragment } from '@prairielearn/preact/client';
+
 import { AuthzAccessMismatch } from '../../../../src/middlewares/AuthzAccessMismatch.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
 registerReactFragment(AuthzAccessMismatch);

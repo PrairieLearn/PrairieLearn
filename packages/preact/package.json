@@ -10,13 +10,15 @@
   "main": "dist/index.js",
   "exports": {
     ".": "./dist/index.js",
-    "./client": "./dist/client.js"
+    "./client": "./dist/client.js",
+    "./client-runtime": "./dist/client-runtime.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
+    "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/compiled-assets": "workspace:^",
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
@@ -24,6 +26,7 @@
     "clsx": "^2.1.1",
     "preact": "link:../preact-cjs",
     "preact-render-to-string": "^6.5.17",
+    "selector-observer": "^1.1.1",
     "superjson": "^2.2.2"
   },
   "devDependencies": {

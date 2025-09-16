@@ -1,4 +1,6 @@
+import '@prairielearn/preact/client-runtime';
+import { registerReactFragment } from '@prairielearn/preact/client';
+
 import { DeleteCourseInstanceModal } from '../../../../src/components/DeleteCourseInstanceModal.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
 registerReactFragment(DeleteCourseInstanceModal);

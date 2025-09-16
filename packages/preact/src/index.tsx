@@ -102,8 +102,9 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
           Make sure you create a script at
           <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in
           the registry:
-          <pre><code>import { ${componentName} } from // ...
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+          <pre><code>import '@prairielearn/preact/client-runtime';
+import { ${componentName} } from // ...
+import { registerReactFragment } from '@prairielearn/preact/client';
 
 registerReactFragment(${componentName});</code></pre>
         </div>

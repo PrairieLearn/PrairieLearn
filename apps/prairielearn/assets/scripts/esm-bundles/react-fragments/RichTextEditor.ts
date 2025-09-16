@@ -1,4 +1,6 @@
+import '@prairielearn/preact/client-runtime';
+import { registerReactFragment } from '@prairielearn/preact/client';
+
 import RichTextEditor from '../../../../src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/index.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
 
 registerReactFragment(RichTextEditor);
