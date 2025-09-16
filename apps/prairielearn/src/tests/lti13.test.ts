@@ -5,7 +5,7 @@ import * as jose from 'jose';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { execute, queryOptionalRow } from '@prairielearn/postgres';
 
 import { getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
@@ -68,8 +68,10 @@ async function makeLoginExecutor({
     redirect: 'manual',
   });
   assert.equal(startLoginResponse.status, 302);
+  const location = startLoginResponse.headers.get('location');
+  assert.ok(location);
 
-  const redirectUrl = new URL(startLoginResponse.headers.get('location') as string);
+  const redirectUrl = new URL(location);
   assert.equal(redirectUrl.hostname, 'localhost');
   assert.equal(redirectUrl.pathname, '/auth');
   assert.equal(redirectUrl.searchParams.get('client_id'), CLIENT_ID);
@@ -78,12 +80,14 @@ async function makeLoginExecutor({
   assert.equal(redirectUrl.searchParams.get('response_mode'), 'form_post');
   assert.equal(redirectUrl.searchParams.get('redirect_uri'), callbackUrl);
   assert.equal(redirectUrl.searchParams.get('login_hint'), 'fef15674-ae78-4763-b915-6fe3dbf42c67');
-  assert.ok(redirectUrl.searchParams.get('nonce'));
-  assert.ok(redirectUrl.searchParams.get('state'));
 
-  const redirectUri = redirectUrl.searchParams.get('redirect_uri') as string;
-  const nonce = redirectUrl.searchParams.get('nonce') as string;
-  const state = redirectUrl.searchParams.get('state') as string;
+  const redirectUri = redirectUrl.searchParams.get('redirect_uri');
+  const nonce = redirectUrl.searchParams.get('nonce');
+  const state = redirectUrl.searchParams.get('state');
+
+  assert.ok(redirectUri);
+  assert.ok(nonce);
+  assert.ok(state);
 
   const key = keystore.get('test');
   const joseKey = await jose.importJWK(key.toJSON(true) as any);
@@ -191,12 +195,15 @@ async function createLti13Instance({
   const newInstanceButton = ltiInstancesResponse.$('button:contains(Add a new LTI 1.3 instance)');
   const newInstanceForm = newInstanceButton.closest('form');
 
+  const newInstanceButtonValue = newInstanceButton.attr('value');
+  assert.ok(newInstanceButtonValue);
+
   // Create a new LTI instance.
   const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
     method: 'POST',
     body: new URLSearchParams({
       __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
-      __action: newInstanceButton.attr('value') as string,
+      __action: newInstanceButtonValue,
     }),
   });
   assert.equal(createInstanceResponse.status, 200);
@@ -249,12 +256,15 @@ async function createLti13Instance({
     assert.equal(updateRes.status, 200);
   }
 
+  const addKeyButtonValue = addKeyButton.attr('value');
+  assert.ok(addKeyButtonValue);
+
   // Create a key
   const createKeyResponse = await fetchCheerio(instanceUrl, {
     method: 'POST',
     body: new URLSearchParams({
       __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
-      __action: addKeyButton.attr('value') as string,
+      __action: addKeyButtonValue,
     }),
   });
   assert.equal(createKeyResponse.status, 200);
@@ -270,7 +280,7 @@ describe('LTI 1.3', () => {
     await helperServer.before()();
 
     // We need to give the default institution a `uid_regexp`.
-    await queryAsync("UPDATE institutions SET uid_regexp = '@example\\.com$'", {});
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
@@ -284,7 +294,7 @@ describe('LTI 1.3', () => {
   });
 
   afterAll(async () => {
-    helperServer.after();
+    await helperServer.after();
     config.isEnterprise = false;
     config.features = {};
   });
@@ -305,16 +315,19 @@ describe('LTI 1.3', () => {
     assert.equal(ssoResponse.status, 200);
 
     const saveButton = ssoResponse.$('button:contains(Save)');
+
     const form = saveButton.closest('form');
     const lti13Label = form.find('label:contains(LTI 1.3)');
     const lti13Input = lti13Label.closest('div').find('input');
+    const lti13InputValue = lti13Input.attr('value');
+    assert.ok(lti13InputValue);
 
     const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        __action: saveButton.attr('value') as string,
-        enabled_authn_provider_ids: lti13Input.attr('value') as string,
+        enabled_authn_provider_ids: lti13InputValue,
+        default_authn_provider_id: '',
       }),
     });
     assert.equal(enableLtiResponse.status, 200);
@@ -380,8 +393,8 @@ describe('LTI 1.3', () => {
       Lti13UserSchema,
     );
     assert.ok(ltiUser);
-    assert.equal(ltiUser?.sub, USER_SUB);
-    assert.equal(ltiUser?.lti13_instance_id, '1');
+    assert.equal(ltiUser.sub, USER_SUB);
+    assert.equal(ltiUser.lti13_instance_id, '1');
   });
 
   test.sequential('malformed requests fail', async () => {
@@ -415,12 +428,18 @@ describe('LTI 1.3', () => {
     });
     assert.equal(startLoginResponse.status, 302);
 
-    const redirectUrl = new URL(startLoginResponse.headers.get('location') as string);
+    const location = startLoginResponse.headers.get('location');
+    assert.ok(location);
+
+    const redirectUrl = new URL(location);
 
     assert.ok(redirectUrl.searchParams.get('state'));
 
-    const redirectUri = redirectUrl.searchParams.get('redirect_uri') as string;
-    const nonce = redirectUrl.searchParams.get('nonce') as string;
+    const redirectUri = redirectUrl.searchParams.get('redirect_uri');
+    const nonce = redirectUrl.searchParams.get('nonce');
+
+    assert.ok(redirectUri);
+    assert.ok(nonce);
 
     // Not a real token, not running a JWKS server, so not a full test
     // Just making sure if state is missing that PL errors
@@ -445,7 +464,7 @@ describe('LTI 1.3', () => {
     const app = express();
     app.use(express.urlencoded({ extended: true }));
 
-    app.post('/token', async (req, res) => {
+    app.post('/token', (req, res) => {
       assert.equal(req.body.grant_type, 'client_credentials');
       assert.equal(req.body.client_id, CLIENT_ID);
       assert.equal(
@@ -463,7 +482,7 @@ describe('LTI 1.3', () => {
       res.send(
         JSON.stringify({
           access_token: ACCESS_TOKEN,
-          stenotype: 'bearer',
+          token_type: 'bearer',
           expires_in: 3600,
           scope: req.body.scope,
         }),
@@ -655,7 +674,7 @@ describe('LTI 1.3', () => {
 
         // Add a UIN to the user. This doesn't matter for the login process, but
         // we'll use this later to validate that it's persisted after UID update.
-        await queryAsync('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
+        await execute('UPDATE users SET uin = $uin WHERE user_id = $user_id', {
           user_id: initialUser.user_id,
           uin: testUin,
         });

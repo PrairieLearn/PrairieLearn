@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import * as authnLib from '../lib/authn.js';
-import { type LoadUserAuth } from '../lib/authn.js';
+import { type LoadUserAuth } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 
@@ -22,13 +22,13 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  if (/^\/pl\/webhooks\//.test(req.path)) {
+  if (req.path.startsWith('/pl/webhooks/')) {
     // Webhook callbacks should not be authenticated
     next();
     return;
   }
 
-  if (/^\/pl\/api\//.test(req.path)) {
+  if (req.path.startsWith('/pl/api/')) {
     // API calls will be authenticated outside this normal flow using tokens
     next();
     return;
@@ -40,7 +40,7 @@ export default asyncHandler(async (req, res, next) => {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
-    if (!data || !data.uuid || typeof data.uuid !== 'string' || !UUID_REGEXP.test(data.uuid)) {
+    if (!data?.uuid || typeof data.uuid !== 'string' || !UUID_REGEXP.test(data.uuid)) {
       throw new Error('invalid load_test_token');
     }
 
@@ -58,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
     });
 
     // Enroll the load test user in the example course.
-    await sqldb.queryAsync(sql.enroll_user_in_example_course, {
+    await sqldb.execute(sql.enroll_user_in_example_course, {
       user_id: res.locals.authn_user.user_id,
     });
 

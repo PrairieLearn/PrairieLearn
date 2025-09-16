@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 
 import { logger } from '@prairielearn/logger';
@@ -13,12 +15,13 @@ import * as socketServer from './socket-server.js';
 let namespace: Namespace;
 
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-image-capture');
   namespace.on('connection', connection);
 }
 
 export function connection(socket: Socket) {
-  socket.on('joinExternalImageCapture', async (msg, callback) => {
+  socket.on('joinExternalImageCapture', (msg, callback) => {
     if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
       return callback(null);
     }
@@ -29,7 +32,7 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
+    void socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
     socket.on('externalImageCaptureAck', (msg, callback) => {
       if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {

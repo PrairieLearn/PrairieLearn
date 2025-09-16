@@ -158,53 +158,59 @@ function GroupRoleTable({
         </p>
 
         <form id="role-select-form" name="role-select-form" method="POST">
-          <table
-            class="table table-bordered table-striped table-sm"
-            aria-label="Group users and roles"
-          >
-            <thead>
-              <tr>
-                <th>User</th>
-                <th>Roles</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${groupMembers.map(
-                (user) => html`
-                  <tr>
-                    <td>${user.uid}</td>
-                    <td>
-                      ${rolesInfo.groupRoles.map(
-                        (role) => html`
-                          <label
-                            class="ms-2 ${rolesInfo.disabledRoles.includes(role.role_name)
-                              ? 'text-muted'
-                              : ''}"
-                          >
-                            <input
-                              type="checkbox"
-                              id="user_role_${role.id}-${user.user_id}"
-                              name="user_role_${role.id}-${user.user_id}"
-                              ${rolesInfo.disabledRoles.includes(role.role_name) ||
-                              !userCanAssignRoles
-                                ? 'disabled'
-                                : ''}
-                              ${rolesInfo.roleAssignments[user.uid]?.some((a) =>
-                                idsEqual(a.group_role_id, role.id),
-                              )
-                                ? 'checked'
-                                : ''}
-                            />
-                            ${role.role_name}
-                          </label>
-                        `,
-                      )}
-                    </td>
-                  </tr>
-                `,
-              )}
-            </tbody>
-          </table>
+          <div class="table-responsive mb-3">
+            <table
+              class="table table-bordered table-striped table-sm mb-0"
+              aria-label="Group users and roles"
+            >
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Roles</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${groupMembers.map(
+                  (user) => html`
+                    <tr>
+                      <td>${user.uid}</td>
+                      <td>
+                        <div class="d-flex gap-3">
+                          ${rolesInfo.groupRoles.map(
+                            (role) => html`
+                              <label
+                                class="d-inline-flex gap-1 ${rolesInfo.disabledRoles.includes(
+                                  role.role_name,
+                                )
+                                  ? 'text-muted'
+                                  : ''}"
+                              >
+                                <input
+                                  type="checkbox"
+                                  id="user_role_${role.id}-${user.user_id}"
+                                  name="user_role_${role.id}-${user.user_id}"
+                                  ${rolesInfo.disabledRoles.includes(role.role_name) ||
+                                  !userCanAssignRoles
+                                    ? 'disabled'
+                                    : ''}
+                                  ${rolesInfo.roleAssignments[user.uid]?.some((a) =>
+                                    idsEqual(a.group_role_id, role.id),
+                                  )
+                                    ? 'checked'
+                                    : ''}
+                                />
+                                ${role.role_name}
+                              </label>
+                            `,
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  `,
+                )}
+              </tbody>
+            </table>
+          </div>
           ${userCanAssignRoles
             ? html`
                 <div class="d-flex justify-content-center">
@@ -217,31 +223,33 @@ function GroupRoleTable({
         </form>
       </div>
       <div class="card-footer small">
-        <table
-          class="table table-bordered table-striped table-sm w-auto"
-          aria-label="Role requirements and restrictions"
-        >
-          <thead>
-            <tr>
-              <th>Role</th>
-              <th>Minimum assignments</th>
-              <th>Maximum assignments</th>
-              <th>Can assign roles</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rolesInfo.groupRoles.map(
-              (groupRole) => html`
-                <tr>
-                  <td>${groupRole.role_name}</td>
-                  <td>${groupRole.minimum ?? 0}</td>
-                  <td>${groupRole.maximum ?? 'Unlimited'}</td>
-                  <td>${groupRole.can_assign_roles ? 'Yes' : 'No'}</td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table
+            class="table table-bordered table-striped table-sm w-auto mb-0"
+            aria-label="Role requirements and restrictions"
+          >
+            <thead>
+              <tr>
+                <th>Role</th>
+                <th>Minimum assignments</th>
+                <th>Maximum assignments</th>
+                <th>Can assign roles</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rolesInfo.groupRoles.map(
+                (groupRole) => html`
+                  <tr>
+                    <td>${groupRole.role_name}</td>
+                    <td>${groupRole.minimum ?? 0}</td>
+                    <td>${groupRole.maximum ?? 'Unlimited'}</td>
+                    <td>${groupRole.can_assign_roles ? 'Yes' : 'No'}</td>
+                  </tr>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </details>
   `;

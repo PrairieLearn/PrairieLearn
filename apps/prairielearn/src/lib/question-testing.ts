@@ -235,15 +235,15 @@ async function testVariant(
     question,
     course,
   );
-  await gradeVariant(
-    updated_variant,
-    test_submission_id,
+  await gradeVariant({
+    variant: updated_variant,
+    check_submission_id: test_submission_id,
     question,
-    course,
+    variant_course: course,
     user_id,
     authn_user_id,
-    true,
-  );
+    ignoreGradeRateLimit: true,
+  });
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -294,7 +294,7 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const course_instance_id = (course_instance && course_instance.id) || null;
+  const course_instance_id = course_instance?.id || null;
   const options = {};
   const require_open = true;
   const client_fingerprint_id = null;
@@ -481,9 +481,7 @@ export async function startTestQuestion(
         authn_user_id,
       );
       success = success && result.success;
-      if (result.stats) {
-        stats.push(result.stats);
-      }
+      stats.push(result.stats);
     }
 
     function printStats(label: string, key: keyof TestResultStats) {

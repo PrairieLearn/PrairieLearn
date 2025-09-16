@@ -157,9 +157,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  const usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined,
-  );
+  const usersWithoutRoles = groupMembers.filter((member) => !(member.uid in roleAssignments));
 
   return {
     roleAssignments,
@@ -229,7 +227,7 @@ async function selectUserInCourseInstance({
   const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
-    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
       return user;
     }
   }
@@ -293,7 +291,7 @@ export async function addUserToGroup({
         )
       : null;
 
-    await sqldb.queryAsync(sql.insert_group_user, {
+    await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
@@ -360,6 +358,18 @@ export async function createGroup(
     if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
       throw new GroupOperationError(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
+    if (/^group[0-9]{7,}$/.test(group_name)) {
+      // This test is used to simplify the logic behind system-generated group
+      // names. These are created automatically by adding one to the latest
+      // group name with a number. Allowing a user to specify a group name with
+      // this format could cause an issue if the number is too long, as it would
+      // cause integer overflows in the group calculation. While changing the
+      // process to generate group names that don't take these numbers into
+      // account is possible, this validation is simpler.
+      throw new GroupOperationError(
+        'User-specified group names cannot start with "group" followed by a large number.',
       );
     }
   }
@@ -540,7 +550,7 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-        await sqldb.queryAsync(sql.update_group_roles, {
+        await sqldb.execute(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
           authn_user_id: authnUserId,
@@ -551,7 +561,7 @@ export async function leaveGroup(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
-          await sqldb.queryAsync(sql.delete_non_required_roles, {
+          await sqldb.execute(sql.delete_non_required_roles, {
             group_id: groupId,
             assessment_id: assessmentId,
           });
@@ -560,7 +570,7 @@ export async function leaveGroup(
     }
 
     // Delete user from group and log
-    await sqldb.queryAsync(sql.delete_group_users, {
+    await sqldb.execute(sql.delete_group_users, {
       assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
@@ -633,7 +643,7 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
         userId = groupInfo.groupMembers[0].user_id;
       }
@@ -644,7 +654,7 @@ export async function updateGroupRoles(
       });
     }
 
-    await sqldb.queryAsync(sql.update_group_roles, {
+    await sqldb.execute(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
       authn_user_id: authnUserId,
@@ -667,7 +677,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
  * Delete all groups for the given assessment.
  */
 export async function deleteAllGroups(assessmentId: string, authnUserId: string) {
-  await sqldb.queryAsync(sql.delete_all_groups, {
+  await sqldb.execute(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });

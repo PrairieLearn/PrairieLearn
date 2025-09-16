@@ -151,7 +151,7 @@ export async function insertSubmission({
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
     if (variant.assessment_instance_id != null) {
-      await sqldb.queryAsync(sql.update_instance_question_post_submission, {
+      await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
         delta,
@@ -211,13 +211,13 @@ export async function saveSubmission(
           submission.raw_submitted_answer = structuredClone(submission.raw_submitted_answer);
 
           if (!('_files' in submission.submitted_answer)) {
-            submission.submitted_answer['_files'] = [];
+            submission.submitted_answer._files = [];
           }
 
           for await (const zipEntry of zip) {
             const name = zipEntry.path;
             const contents = (await zipEntry.buffer()).toString('base64');
-            submission.submitted_answer['_files'].push({ name, contents });
+            submission.submitted_answer._files.push({ name, contents });
           }
           await fs.promises.unlink(zipPath);
         }
@@ -322,29 +322,38 @@ async function selectSubmissionForGrading(
 /**
  * Grade the most recent submission for a given variant.
  *
- * @param variant - The variant to grade.
- * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
- * @param question - The question for the variant.
- * @param variant_course - The course for the variant.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
- * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param params
+ * @param params.variant - The variant to grade.
+ * @param params.check_submission_id - The submission_id that must be graded (or null to skip this check).
+ * @param params.question - The question for the variant.
+ * @param params.variant_course - The course for the variant.
+ * @param params.user_id - The current effective user.
+ * @param params.authn_user_id - The currently authenticated user.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  */
-export async function gradeVariant(
-  variant: Variant,
-  check_submission_id: string | null,
-  question: Question,
-  variant_course: Course,
-  user_id: string | null,
-  authn_user_id: string | null,
-  overrideGradeRateCheck: boolean,
-): Promise<void> {
+export async function gradeVariant({
+  variant,
+  check_submission_id,
+  question,
+  variant_course,
+  user_id,
+  authn_user_id,
+  ignoreGradeRateLimit,
+}: {
+  variant: Variant;
+  check_submission_id: string | null;
+  question: Question;
+  variant_course: Course;
+  user_id: string | null;
+  authn_user_id: string | null;
+  ignoreGradeRateLimit: boolean;
+}): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
   const submission = await selectSubmissionForGrading(variant.id, check_submission_id);
   if (submission == null) return;
 
-  if (!overrideGradeRateCheck) {
+  if (!ignoreGradeRateLimit) {
     const resultNextAllowed = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
@@ -436,7 +445,7 @@ export async function gradeVariant(
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
- * @param overrideGradeRateCheck - Whether to override grade rate limits.
+ * @param ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @returns submission_id
  */
 export async function saveAndGradeSubmission(
@@ -444,7 +453,7 @@ export async function saveAndGradeSubmission(
   variant: Variant,
   question: Question,
   course: Course,
-  overrideGradeRateCheck: boolean,
+  ignoreGradeRateLimit: boolean,
 ) {
   const { submission_id, variant: updated_variant } = await saveSubmission(
     submissionData,
@@ -453,19 +462,19 @@ export async function saveAndGradeSubmission(
     course,
   );
 
-  await gradeVariant(
+  await gradeVariant({
     // Note that parsing a submission may modify the `params` and `true_answer`
     // of the variant (for v3 questions, this is `data["params"]` and
     // `data["correct_answers"])`. This is why we need to use the variant
     // returned from `saveSubmission` rather than the one passed to this
     // function.
-    updated_variant,
-    submission_id,
+    variant: updated_variant,
+    check_submission_id: submission_id,
     question,
-    course,
-    submissionData.user_id,
-    submissionData.auth_user_id,
-    overrideGradeRateCheck,
-  );
+    variant_course: course,
+    user_id: submissionData.user_id,
+    authn_user_id: submissionData.auth_user_id,
+    ignoreGradeRateLimit,
+  });
   return submission_id;
 }
