@@ -43,6 +43,19 @@ InteractiveComponent.displayName = 'InteractiveComponent';
 </Hydrate>;
 ```
 
+This should be accompanied by a registration script at `esm-bundles/react-fragments/InteractiveComponent.ts`:
+
+```ts
+import { InteractiveComponent } from '../../../../src/components/InteractiveComponent.js';
+import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+
+registerReactFragment(InteractiveComponent);
+```
+
+- All hydrated values need to be serializable with `superjson`.
+- Only the root component needs to be registered and have a `displayName`.
+- All values passed to a hydrated component are viewable on the client. Ensure that no sensitive data is passed to a hydrated component, e.g. by using stripped down data structures (like those found in `apps/prairielearn/src/lib/client/safe-db-types.ts` and `apps/prairielearn/src/lib/client/page-context.ts`).
+
 ### `hydrateHtml(content: VNode): HtmlSafeString`
 
 Convenience function that combines `Hydrate` and `renderHtml` for adding interactive Preact components to tagged template pages.
