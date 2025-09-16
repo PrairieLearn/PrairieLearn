@@ -34,7 +34,7 @@ export function InstructorInstanceAdminAccess({
     content: html`
       ${renderHtml(
         <CourseInstanceSyncErrorsAndWarnings
-          authz_data={authz_data}
+          authzData={authz_data}
           courseInstance={course_instance}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}

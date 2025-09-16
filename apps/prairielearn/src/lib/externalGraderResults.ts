@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { S3 } from '@aws-sdk/client-s3';
 import {
   DeleteMessageCommand,
@@ -6,6 +8,7 @@ import {
   type ReceiveMessageResult,
   SQSClient,
 } from '@aws-sdk/client-sqs';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
@@ -14,7 +17,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
-import { IdSchema } from './db-types.js';
+import { GradingJobSchema, IdSchema } from './db-types.js';
 import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
@@ -34,7 +37,7 @@ export async function init() {
 
   // Start work in an IIFE so we can keep going asynchronously
   // after we return to the caller.
-  (async () => {
+  void (async () => {
     while (true) {
       // Spin until we can get at least one message from the queue.
       let messages: ReceiveMessageResult['Messages'];
@@ -130,7 +133,7 @@ async function loadQueueUrl(sqs: SQSClient): Promise<string> {
 async function processMessage(data: {
   jobId: string;
   event: string;
-  data: {
+  data?: {
     receivedTime: string;
   };
 }) {
@@ -146,7 +149,8 @@ async function processMessage(data: {
     ...data,
   });
   if (data.event === 'job_received') {
-    await sqldb.queryOneRowAsync(sql.update_grading_received_time, {
+    assert(data.data);
+    await sqldb.execute(sql.update_grading_received_time, {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,
     });
@@ -154,11 +158,21 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const jobDetails = await sqldb.queryOneRowAsync(sql.get_job_details, {
-      grading_job_id: jobId,
-    });
-    const s3Bucket = jobDetails.rows[0].s3_bucket;
-    const s3RootKey = jobDetails.rows[0].s3_root_key;
+    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
+      sql.get_job_details,
+      { grading_job_id: jobId },
+      z.object({
+        s3_bucket: GradingJobSchema.shape.s3_bucket,
+        s3_root_key: GradingJobSchema.shape.s3_root_key,
+      }),
+    );
+
+    if (!s3Bucket || !s3RootKey) {
+      throw new error.HttpStatusError(
+        500,
+        'Grading job details do not contain S3 bucket or root key',
+      );
+    }
 
     // Depending on the size of the results, the grader may have included
     // them in the message body. If so, we'll use them directly. If we

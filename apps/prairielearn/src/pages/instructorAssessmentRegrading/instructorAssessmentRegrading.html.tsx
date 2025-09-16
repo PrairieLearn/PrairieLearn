@@ -37,7 +37,7 @@ export function InstructorAssessmentRegrading({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -97,7 +97,7 @@ export function InstructorAssessmentRegrading({
               </tr>
             </thead>
             <tbody>
-              ${regradingJobSequences && regradingJobSequences.length > 0
+              ${regradingJobSequences.length > 0
                 ? regradingJobSequences.map((jobSequence) => {
                     return html`
                       <tr>

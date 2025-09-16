@@ -1,5 +1,7 @@
 import * as path from 'path';
 
+import z from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -38,29 +40,26 @@ export function getDetailsForFile(filePath: string): FileDetails {
   } else if (
     pathComponents.length >= 3 &&
     pathComponents[0] === 'courseInstances' &&
-    pathComponents[pathComponents.length - 1] === 'infoCourseInstance.json'
+    pathComponents.at(-1) === 'infoCourseInstance.json'
   ) {
-    const ciid = pathComponents.slice(1, pathComponents.length - 1).join(path.posix.sep);
+    const ciid = pathComponents.slice(1, -1).join(path.posix.sep);
     return { type: 'courseInstance', ciid };
   } else if (
     pathComponents.length >= 3 &&
     pathComponents[0] === 'questions' &&
-    pathComponents[pathComponents.length - 1] === 'info.json'
+    pathComponents.at(-1) === 'info.json'
   ) {
-    const qid = pathComponents.slice(1, pathComponents.length - 1).join(path.posix.sep);
+    const qid = pathComponents.slice(1, -1).join(path.posix.sep);
     return { type: 'question', qid };
   } else if (
     pathComponents.length >= 5 &&
     pathComponents[0] === 'courseInstances' &&
-    pathComponents.slice(2, pathComponents.length - 2).some((e) => e === 'assessments') &&
-    pathComponents[pathComponents.length - 1] === 'infoAssessment.json'
+    pathComponents.slice(2, -2).includes('assessments') &&
+    pathComponents.at(-1) === 'infoAssessment.json'
   ) {
-    const assessment_index =
-      pathComponents.slice(2, pathComponents.length - 2).findIndex((e) => e === 'assessments') + 2;
+    const assessment_index = pathComponents.slice(2, -2).indexOf('assessments') + 2;
     const ciid = pathComponents.slice(1, assessment_index).join(path.posix.sep);
-    const aid = pathComponents
-      .slice(assessment_index + 1, pathComponents.length - 1)
-      .join(path.posix.sep);
+    const aid = pathComponents.slice(assessment_index + 1, -1).join(path.posix.sep);
     return { type: 'assessment', ciid, aid };
   } else {
     return { type: 'file' };
@@ -95,12 +94,19 @@ export async function getErrorsAndWarningsForFilePath(
       return { errors: null, warnings: null };
   }
 
-  const res = await sqldb.queryZeroOrOneRowAsync(query, queryParams);
-  if (res.rowCount === 0) {
+  const res = await sqldb.queryOptionalRow(
+    query,
+    queryParams,
+    z.object({
+      sync_errors: z.string().nullable(),
+      sync_warnings: z.string().nullable(),
+    }),
+  );
+  if (res === null) {
     return { errors: null, warnings: null };
   }
   return {
-    errors: res.rows[0].sync_errors,
-    warnings: res.rows[0].sync_warnings,
+    errors: res.sync_errors,
+    warnings: res.sync_warnings,
   };
 }

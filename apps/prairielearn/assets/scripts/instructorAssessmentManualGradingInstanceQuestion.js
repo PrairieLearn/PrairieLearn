@@ -1,3 +1,4 @@
+/* eslint-disable no-alert */
 import ClipboardJS from 'clipboard';
 import qs from 'qs';
 
@@ -55,7 +56,7 @@ function resetRubricImportFormListeners() {
       importRubricSettingsPopoverForm,
     });
 
-    importRubricSettingsPopoverForm.addEventListener('submit', (event) => {
+    importRubricSettingsPopoverForm.addEventListener('submit', async (event) => {
       const { file_upload_max_bytes } = decodeData('rubric-settings-data');
 
       event.preventDefault();
@@ -75,22 +76,8 @@ function resetRubricImportFormListeners() {
         return;
       }
 
-      // Read the rubric JSON file content
-      const reader = new FileReader();
-
-      reader.onerror = () => {
-        alert('Error reading file content.');
-        return;
-      };
-
-      reader.onload = () => {
-        const fileContent = reader.result;
-
-        if (typeof fileContent !== 'string') {
-          alert('Error reading file content.');
-          return;
-        }
-
+      try {
+        const fileContent = await fileData.text();
         if (fileContent.trim() === '') {
           return;
         }
@@ -120,7 +107,7 @@ function resetRubricImportFormListeners() {
         if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
           // If the rubric does not use auto points, or if it replaces auto points,
           // then the scale factor is based on max_points (the total point gs of the rubric)
-          const maxPoints = parseFloat(rubricPointsInfo.max_points) ?? 0;
+          const maxPoints = Number.parseFloat(rubricPointsInfo.max_points) ?? 0;
 
           if (maxPoints > 0 && parsedData.max_points) {
             scaleFactor = maxPoints / parsedData.max_points;
@@ -129,7 +116,7 @@ function resetRubricImportFormListeners() {
           // If the rubric uses auto points and does not replace them, it
           // applies only to the manual points of the assessment question.
           // Therefore, we base the scale factor on max_manual_points.
-          const maxManualPoints = parseFloat(rubricPointsInfo.max_manual_points) ?? 0;
+          const maxManualPoints = Number.parseFloat(rubricPointsInfo.max_manual_points) ?? 0;
 
           if (maxManualPoints > 0 && parsedData.max_manual_points) {
             scaleFactor = maxManualPoints / parsedData.max_manual_points;
@@ -188,9 +175,9 @@ function resetRubricImportFormListeners() {
 
         // Close the popover
         window.bootstrap.Popover.getInstance(importRubricButton).hide();
-      };
-
-      reader.readAsText(fileData);
+      } catch {
+        alert('Error reading file content.');
+      }
     });
 
     importRubricButton.addEventListener(
@@ -221,10 +208,10 @@ function resetRubricExportFormListeners() {
     const { max_points, max_auto_points, max_manual_points } = decodeData('rubric-settings-data');
 
     const rubricData = {
-      max_extra_points: parseFloat(max_extra_points),
-      min_points: parseFloat(min_points),
+      max_extra_points: Number.parseFloat(max_extra_points),
+      min_points: Number.parseFloat(min_points),
       replace_auto_points: replace_auto_points === 'true',
-      starting_points: parseFloat(starting_points),
+      starting_points: Number.parseFloat(starting_points),
       max_points,
       max_manual_points,
       max_auto_points,
@@ -271,8 +258,8 @@ function resetRubricExportFormListeners() {
               .querySelector(`[data-input-name="rubric_item[${key}][grader_note]"]`)
               ?.getAttribute('data-current-value') ??
             '',
-          order: parseInt(value.order),
-          points: parseFloat(value.points),
+          order: Number.parseInt(value.order),
+          points: Number.parseFloat(value.points),
         });
       }
     }
@@ -289,15 +276,15 @@ function resetRubricExportFormListeners() {
       decodeData('rubric-settings-data');
 
     const exportFileName =
-      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replace(
+      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
         '_',
       ) + '.json';
 
     a.download = exportFileName;
-    document.body.appendChild(a);
+    document.body.append(a);
     a.click();
-    document.body.removeChild(a);
+    a.remove();
     URL.revokeObjectURL(url);
   });
 }
@@ -459,7 +446,10 @@ function adjustHeightFromContent(element) {
   if (element.scrollHeight) {
     const style = window.getComputedStyle(element);
     element.style.height =
-      element.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+      element.scrollHeight +
+      Number.parseFloat(style.paddingTop) +
+      Number.parseFloat(style.paddingBottom) +
+      'px';
   }
 }
 
@@ -500,7 +490,7 @@ function checkRubricItemTotals() {
   const maxPointsInput = form.querySelector('[name="max_extra_points"]');
   const jsNegativeGradingInput = form.querySelector('.js-negative-grading');
   if (!minPointsInput || !maxPointsInput || !jsNegativeGradingInput) {
-    throw Error('Missing a required input');
+    throw new Error('Missing a required input');
   }
 
   const minPoints = Number(minPointsInput.value ?? 0);
@@ -623,8 +613,8 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
   closeBtn.classList.add('btn-close');
   closeBtn.dataset.bsDismiss = 'alert';
   closeBtn.setAttribute('aria-label', 'Close');
-  alert.appendChild(closeBtn);
-  placeholder.appendChild(alert);
+  alert.append(closeBtn);
+  placeholder.append(alert);
 }
 
 function resetRubricItemRowsListeners() {
@@ -746,7 +736,7 @@ function enableRubricItemLongTextField(container) {
   input.setAttribute('maxlength', 10000);
   input.textContent = button.dataset.currentValue || '';
 
-  container.insertBefore(input, button);
+  button.before(input);
   label?.remove();
   button.remove();
   input.focus();
@@ -817,7 +807,7 @@ function rowDragOver(event) {
   } else if (row.nextSibling) {
     row.parentNode.insertBefore(window.rubricItemRowDragging, row.nextSibling);
   } else {
-    row.parentNode.appendChild(window.rubricItemRowDragging);
+    row.parentNode.append(window.rubricItemRowDragging);
   }
   updateRubricItemOrderField();
 }
@@ -825,7 +815,7 @@ function rowDragOver(event) {
 /**
  * Create a new rubric item row with default values or based on a provided rubric item.
  *
- * @param {Object|null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
+ * @param {object | null} rubricItem - The rubric item to add. If null, a new row will be created with default values.
  */
 function addRubricItemRow(rubricItem = null) {
   const modal = document.querySelector('#rubric-settings-form');
@@ -840,7 +830,7 @@ function addRubricItemRow(rubricItem = null) {
   const templateRow = modal.querySelector('.js-new-row-rubric-item');
   const row = templateRow?.content.firstElementChild?.cloneNode(true);
   if (!row || !(row instanceof HTMLTableRowElement)) return;
-  table.querySelector('tbody').appendChild(row);
+  table.querySelector('tbody').append(row);
 
   const rubricItemRowOrder = row.querySelector('.js-rubric-item-row-order');
   const rubricItemPoints = row.querySelector('.js-rubric-item-points');
@@ -920,7 +910,7 @@ function addRubricItemRow(rubricItem = null) {
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
  *
- * @param {Object} elements - An object of elements, with keys as element names and values as the elements themselves.
+ * @param {object} elements - An object of elements, with keys as element names and values as the elements themselves.
  */
 function ensureElementsExist(elements) {
   for (const elementName in elements) {

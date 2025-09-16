@@ -3,8 +3,16 @@
   height: 100%;
 }
 
-body:has(div.app-container) {
-  overflow-y: unset !important;
+/**
+ * When the app’s main container exists, delegate all scrolling to it.
+ * Disable body scrolling to avoid overflow when tooltips or popovers are opened.
+ */
+body:has(div.app-main-container) {
+  overflow-y: hidden !important;
+}
+
+:root {
+  --navbar-height: 3.5rem;
 }
 
 /* Styles when the side nav is hidden */
@@ -243,7 +251,6 @@ body:has(div.app-container) {
     display: flex;
     flex-direction: column;
     transition: none;
-    --navbar-height: 3.5rem;
   }
 
   .app-container.side-nav-enabled #side-nav-toggler {
@@ -355,4 +362,9 @@ body:has(div.app-container) {
   .app-container.side-nav-enabled {
     transition: none;
   }
+}
+
+.page-footer-text {
+  /* https://github.com/PrairieLearn/marketing/blob/6dc08c6028c8a45e71fce846b308326469958a16/src/components/Header.module.scss#L4-L6 */
+  color: #052c65;
 }

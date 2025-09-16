@@ -1,27 +1,14 @@
-import AccordionOriginal from 'react-bootstrap/Accordion';
-import AccordionBodyOriginal from 'react-bootstrap/AccordionBody';
-import AccordionHeaderOriginal from 'react-bootstrap/AccordionHeader';
-import AccordionItemOriginal from 'react-bootstrap/AccordionItem';
-import ButtonOriginal from 'react-bootstrap/Button';
-import DropdownOriginal from 'react-bootstrap/Dropdown';
-import DropdownItemOriginal from 'react-bootstrap/DropdownItem';
-import DropdownMenuOriginal from 'react-bootstrap/DropdownMenu';
-import DropdownToggleOriginal from 'react-bootstrap/DropdownToggle';
-import OverlayTriggerOriginal from 'react-bootstrap/OverlayTrigger';
-import TooltipOriginal from 'react-bootstrap/Tooltip';
-
-const Accordion = AccordionOriginal as unknown as typeof AccordionOriginal.default;
-const AccordionItem = AccordionItemOriginal as unknown as typeof AccordionItemOriginal.default;
-const AccordionHeader =
-  AccordionHeaderOriginal as unknown as typeof AccordionHeaderOriginal.default;
-const AccordionBody = AccordionBodyOriginal as unknown as typeof AccordionBodyOriginal.default;
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
-const Dropdown = DropdownOriginal as unknown as typeof DropdownOriginal.default;
-const DropdownToggle = DropdownToggleOriginal as unknown as typeof DropdownToggleOriginal.default;
-const DropdownMenu = DropdownMenuOriginal as unknown as typeof DropdownMenuOriginal.default;
-const DropdownItem = DropdownItemOriginal as unknown as typeof DropdownItemOriginal.default;
-const OverlayTrigger = OverlayTriggerOriginal as unknown as typeof OverlayTriggerOriginal.default;
-const Tooltip = TooltipOriginal as unknown as typeof TooltipOriginal.default;
+import Accordion from 'react-bootstrap/Accordion';
+import AccordionBody from 'react-bootstrap/AccordionBody';
+import AccordionHeader from 'react-bootstrap/AccordionHeader';
+import AccordionItem from 'react-bootstrap/AccordionItem';
+import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownItem from 'react-bootstrap/DropdownItem';
+import DropdownMenu from 'react-bootstrap/DropdownMenu';
+import DropdownToggle from 'react-bootstrap/DropdownToggle';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { render } from '@prairielearn/preact-cjs';
@@ -33,7 +20,7 @@ import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDraf
 import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
-  const sampleQuestions = document.querySelector('#sample-questions') as HTMLElement;
+  const sampleQuestions = document.querySelector('#sample-questions')!;
   render(<SampleQuestion />, sampleQuestions);
 });
 
@@ -133,7 +120,7 @@ function SampleQuestionSelector({
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
-    const promptTextarea = document.querySelector('#user-prompt-llm') as HTMLTextAreaElement;
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm')!;
     promptTextarea.value = prompt;
   };
 

@@ -15,8 +15,8 @@ SELECT
   ) AS shared_with
 FROM
   sharing_sets AS ss
-  LEFT JOIN sharing_set_courses AS css on css.sharing_set_id = ss.id
-  LEFT JOIN pl_courses AS c on c.id = css.course_id
+  LEFT JOIN sharing_set_courses AS css ON css.sharing_set_id = ss.id
+  LEFT JOIN pl_courses AS c ON c.id = css.course_id
 WHERE
   ss.course_id = $course_id
 GROUP BY
@@ -35,8 +35,8 @@ WHERE
 INSERT INTO
   sharing_set_courses (course_id, sharing_set_id)
 SELECT
-  consuming_course.id,
-  ss.id
+  consuming_course.id AS course_id,
+  ss.id AS sharing_set_id
 FROM
   pl_courses AS sharing_course
   JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id

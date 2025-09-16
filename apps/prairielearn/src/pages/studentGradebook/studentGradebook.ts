@@ -2,59 +2,34 @@ import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryRows, queryValidatedCursor } from '@prairielearn/postgres';
 
+import { getGradebookRows, getGradebookRowsCursor } from '../../lib/gradebook.js';
 import {
-  StudentAssessmentInstanceSchema,
-  StudentAssessmentSchema,
-  StudentAssessmentSetSchema,
-} from '../../lib/client/safe-db-types.js';
+  type StudentGradebookRow,
+  computeLabel,
+  computeTitle,
+} from '../../lib/gradebook.shared.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
-import { StudentGradebook, type StudentGradebookRow } from './studentGradebook.html.js';
+import { StudentGradebook, type StudentGradebookTableRow } from './studentGradebook.html.js';
 
-const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 function buildCsvFilename(locals: Record<string, any>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
-/* This page is server-side rendered, so it doesn't matter if this schema uses types from safe-db-types. */
-const StudentGradebookRowSchema = z.object({
-  assessment: StudentAssessmentSchema,
-  assessment_instance: StudentAssessmentInstanceSchema,
-  assessment_set: StudentAssessmentSetSchema,
-  show_closed_assessment_score: z.boolean(),
-});
-
-type StudentGradebookRowRaw = z.infer<typeof StudentGradebookRowSchema>;
-
-function computeTitle({ assessment, assessment_instance }: StudentGradebookRowRaw) {
-  if (assessment.multiple_instance) {
-    return `${assessment.title} instance #${assessment_instance.number}`;
-  }
-  return assessment.title ?? '';
-}
-
-function computeLabel({ assessment, assessment_instance, assessment_set }: StudentGradebookRowRaw) {
-  if (assessment.multiple_instance) {
-    return `${assessment_set.abbreviation}${assessment.number}#${assessment_instance.number}`;
-  }
-  return `${assessment_set.abbreviation}${assessment.number}`;
-}
-
 // TODO: The student gradebook should be refactored to use the new data model, rather than the old SQL data model.
 // This was done to avoid substantial changes to the gradebook code, while still allowing for reuse of the gradebook SQL query.
+
 function mapRow(
-  raw: StudentGradebookRowRaw,
-  prev: StudentGradebookRowRaw | null,
-): StudentGradebookRow {
+  raw: StudentGradebookRow,
+  prev: StudentGradebookRow | null,
+): StudentGradebookTableRow {
   const start_new_set = !prev || raw.assessment_set.id !== prev.assessment_set.id;
   return {
     assessment_id: raw.assessment.id,
@@ -70,21 +45,17 @@ function mapRow(
   };
 }
 
-router.use(logPageView('studentGradebook'));
-
 router.get(
   '/',
+  logPageView('studentGradebook'),
   asyncHandler(async (req, res) => {
-    const rawRows = await queryRows(
-      sql.select_assessment_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        user_id: res.locals.user.user_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-      },
-      StudentGradebookRowSchema,
-    );
+    const rawRows = await getGradebookRows({
+      course_instance_id: res.locals.course_instance.id,
+      user_id: res.locals.user.user_id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+      auth: 'student',
+    });
     const rows = rawRows.map((row, index) => mapRow(row, rawRows[index - 1]));
     res.send(
       StudentGradebook({
@@ -103,18 +74,15 @@ router.get(
       throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
 
-    const cursor = await queryValidatedCursor(
-      sql.select_assessment_instances,
-      {
-        course_instance_id: res.locals.course_instance.id,
-        user_id: res.locals.user.user_id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
-      },
-      StudentGradebookRowSchema,
-    );
+    const cursor = await getGradebookRowsCursor({
+      course_instance_id: res.locals.course_instance.id,
+      user_id: res.locals.user.user_id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+      auth: 'student',
+    });
 
-    const stringifier = stringifyStream<StudentGradebookRowRaw>({
+    const stringifier = stringifyStream<StudentGradebookRow>({
       header: true,
       columns: ['Assessment', 'Set', 'Score'],
       transform(row) {

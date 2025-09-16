@@ -15,7 +15,12 @@ export interface JobSequenceResultsData {
   jobs: Pick<JobWithToken, 'id' | 'status' | 'token'>[];
 }
 
-// If you want live updates, you also need to import lib/jobSequenceResults.js in the page's JavaScript asset.
+/**
+ * Renders the results of a job sequence.
+ *
+ * If you want live updates, you also need to import `lib/jobSequenceResults.js`
+ * in the page's JavaScript asset.
+ */
 export function JobSequenceResults({
   course,
   jobSequence,
@@ -92,7 +97,7 @@ export function JobSequenceResults({
               </p>
               <p class="mb-1">
                 ${JobStatus({ status: job.status })}
-                ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin fa-fw"></i>` : ''}
+                ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin"></i>` : ''}
               </p>
               ${jobSequence.legacy
                 ? html`

@@ -38,7 +38,7 @@ export function InstructorAssessmentUploads({
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -177,7 +177,7 @@ function AssessmentUploadCard({
             </tr>
           </thead>
           <tbody>
-            ${uploadJobSequences && uploadJobSequences.length > 0
+            ${uploadJobSequences.length > 0
               ? uploadJobSequences.map((job_sequence) => {
                   return html`
                     <tr>

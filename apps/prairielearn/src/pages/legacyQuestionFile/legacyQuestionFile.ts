@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -16,11 +17,15 @@ router.get(
     const question = res.locals.question;
     const course = res.locals.course;
     const filename = req.params.filename;
-    const result = await sqldb.queryOneRowAsync(sql.check_client_files, {
-      question_id: question.id,
-      filename,
-    });
-    if (!result.rows[0].access_allowed) {
+    const access_allowed = await sqldb.queryRow(
+      sql.check_client_files,
+      {
+        question_id: question.id,
+        filename,
+      },
+      z.boolean(),
+    );
+    if (!access_allowed) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
 

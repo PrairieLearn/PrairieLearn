@@ -4,6 +4,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.js';
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { formatPoints } from '../../src/lib/format.js';
+import { type RubricData } from '../../src/lib/manualGrading.types.js';
 import {
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
   InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
@@ -28,6 +29,7 @@ onDocumentReady(() => {
     maxAutoPoints,
     aiGradingMode,
     csrfToken,
+    rubric_data,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
@@ -107,11 +109,11 @@ onDocumentReady(() => {
     // is [1, 2, 3], and the user sets [4], the end result is [4, 2, 3].
     //
     // The default for `buttonsOrder` has 5 elements. To avoid an extra button being shown,
-    // we put a dummy element at the end of the array. This won't be rendered, as any button
-    // keys that aren't recognized are silently skipped.
+    // this cannot have fewer than 5 buttons defined. We can optionally put dummy elements
+    // at the end of the array as paddings if we need to have fewer buttons.
     //
     // Another bit of insane behavior from `bootstrap-table`? Who would have thought!
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'not-a-real-button'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'rubricFilter'],
     theadClasses: 'table-light',
     stickyHeader: true,
     filterControl: true,
@@ -132,6 +134,9 @@ onDocumentReady(() => {
           id: 'js-show-student-info-button',
           title: 'Show/hide student identification information',
         },
+      },
+      rubricFilter: {
+        html: rubricFilterHtml(rubric_data),
       },
     },
     onUncheck: updateGradingTagButton,
@@ -238,6 +243,7 @@ onDocumentReady(() => {
           filterControl: 'select',
           sortable: true,
           class: 'text-center',
+          visible: !aiGradingMode,
           formatter: (value: boolean) => (value ? 'Requires grading' : 'Graded'),
         },
         {
@@ -417,15 +423,15 @@ onDocumentReady(() => {
       const order = sortOrder === 'desc' ? -1 : 1;
       if (sortName === 'rubric_difference') {
         data.sort(function (a, b) {
-          const a_diff = a['point_difference'] === null ? null : Math.abs(a['point_difference']);
-          const b_diff = b['point_difference'] === null ? null : Math.abs(b['point_difference']);
+          const a_diff = a.point_difference === null ? null : Math.abs(a.point_difference);
+          const b_diff = b.point_difference === null ? null : Math.abs(b.point_difference);
           if (a_diff === null && b_diff === null) {
             // Can't compare if both are null
             return 0;
           } else if (a_diff !== null && b_diff !== null) {
             // Actually sorting based on accuracy
-            const a_rubric_diff = a['rubric_difference'] ? a['rubric_difference'].length : null;
-            const b_rubric_diff = b['rubric_difference'] ? b['rubric_difference'].length : null;
+            const a_rubric_diff = a.rubric_difference ? a.rubric_difference.length : null;
+            const b_rubric_diff = b.rubric_difference ? b.rubric_difference.length : null;
             if (
               a_rubric_diff !== null &&
               b_rubric_diff !== null &&
@@ -468,7 +474,61 @@ onDocumentReady(() => {
       }
     },
   });
+
+  // Build an internal state of filter selection to avoid reading from the html again on click
+  const rubricFilterState: Record<string, boolean> = Object.fromEntries(
+    (rubric_data?.rubric_items ?? []).map((item) => [item.id, false]),
+  );
+
+  document.querySelectorAll('.js-rubric-item-filter').forEach((checkbox) =>
+    checkbox.addEventListener('change', (e) => {
+      if (!(e.target instanceof HTMLInputElement)) return;
+      rubricFilterState[e.target.value] = e.target.checked;
+      const rubricFilterItems = Object.entries(rubricFilterState)
+        .filter(([_, value]) => value)
+        .map(([key]) => key);
+
+      $('#grading-table').bootstrapTable(
+        'filterBy',
+        { rubricFilterItems },
+        {
+          filterAlgorithm: (row: InstanceQuestionRow, filters: { rubricFilterItems: string[] }) => {
+            return filters.rubricFilterItems.every((item_id) =>
+              row.rubric_grading_item_ids.includes(item_id),
+            );
+          },
+        },
+      );
+    }),
+  );
 });
+
+function rubricFilterHtml(rubric_data: RubricData | null): string {
+  if (!rubric_data) return '';
+  return html`
+    <div class="btn-group">
+      <button
+        type="button"
+        class="btn btn-secondary dropdown-toggle"
+        data-bs-toggle="dropdown"
+        name="rubric-item-filter"
+        data-bs-auto-close="outside"
+      >
+        <i class="fas fa-filter"></i> Filter by rubric items
+      </button>
+      <div class="dropdown-menu dropdown-menu-end" id="rubric-item-filter-container">
+        ${rubric_data.rubric_items.map(
+          (item) => html`
+            <label class="dropdown-item"
+              ><input type="checkbox" class="js-rubric-item-filter" value="${item.id}" />
+              <span>${item.description}</span></label
+            >
+          `,
+        )}
+      </div>
+    </div>
+  `.toString();
+}
 
 function generateAiGraderName(
   ai_grading_status?: 'Graded' | 'OutdatedRubric' | 'LatestRubric',
@@ -536,7 +596,7 @@ function updatePointsPopoverHandlers(this: Element) {
 function updateGradingTagButton() {
   $('.grading-tag-button').prop(
     'disabled',
-    !$('#grading-table').bootstrapTable('getSelections').length,
+    $('#grading-table').bootstrapTable('getSelections').length === 0,
   );
 }
 

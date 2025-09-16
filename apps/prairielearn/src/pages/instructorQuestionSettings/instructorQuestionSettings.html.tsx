@@ -2,13 +2,14 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
-import { TopicBadge } from '../../components/TopicBadge.js';
+import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
@@ -96,7 +97,7 @@ export function InstructorQuestionSettings({
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
+      ${compiledScriptTag('instructorQuestionSettingsClient.tsx')}
       <style>
         .ts-wrapper.multi .ts-control > span {
           cursor: pointer;
@@ -115,15 +116,18 @@ export function InstructorQuestionSettings({
     content: html`
       ${renderHtml(
         <QuestionSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           question={resLocals.question}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>Question Settings</h1>
+          ${GitHubButtonHtml(questionGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -131,9 +135,6 @@ export function InstructorQuestionSettings({
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
               <label class="form-label" for="qid">QID</label>
-              ${questionGHLink
-                ? html`<a target="_blank" href="${questionGHLink}">view on GitHub</a>`
-                : ''}
               <input
                 type="text"
                 class="form-control font-monospace"
@@ -194,14 +195,14 @@ export function InstructorQuestionSettings({
                                     data-name="${topic.name}"
                                     data-description="${topic.implicit
                                       ? ''
-                                      : TopicDescription(topic)}"
+                                      : renderHtml(<TopicDescription topic={topic} />)}"
                                     ${topic.name === resLocals.topic.name ? 'selected' : ''}
                                   ></option>
                                 `;
                               })}
                             </select>
                           `
-                        : TopicBadge(resLocals.topic)}
+                        : TopicBadgeHtml(resLocals.topic)}
                     </td>
                   </tr>
                   <tr>
@@ -235,7 +236,7 @@ export function InstructorQuestionSettings({
                                 : ''}
                             </select>
                           `
-                        : TagBadgeList(resLocals.tags)}
+                        : renderHtml(<TagBadgeList tags={resLocals.tags} />)}
                     </td>
                   </tr>
                   ${shouldShowAssessmentsList
@@ -753,7 +754,7 @@ function DeleteQuestionModal({
         Are you sure you want to delete the question
         <strong>${qid}</strong>?
       </p>
-      ${assessmentsWithQuestion.length
+      ${assessmentsWithQuestion.length > 0
         ? html`
             <p>It is included by these assessments:</p>
             <ul class="list-group my-4">
@@ -762,9 +763,9 @@ function DeleteQuestionModal({
                   <li class="list-group-item">
                     <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
                     ${a_with_q.assessments.map((assessment) =>
-                      AssessmentBadge({
+                      AssessmentBadgeHtml({
                         plainUrlPrefix: config.urlPrefix,
-                        course_instance_id: a_with_q.course_instance_id,
+                        courseInstanceId: a_with_q.course_instance_id,
                         assessment,
                       }),
                     )}

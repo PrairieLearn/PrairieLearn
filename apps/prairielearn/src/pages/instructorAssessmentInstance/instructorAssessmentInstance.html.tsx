@@ -45,7 +45,6 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
   assessment_question: AssessmentQuestionSchema,
-  modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
   question_number: z.string(),
@@ -117,7 +116,7 @@ export function InstructorAssessmentInstance({
       })}
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           assessment={resLocals.assessment}
           courseInstance={resLocals.course_instance}
           course={resLocals.course}
@@ -344,10 +343,10 @@ export function InstructorAssessmentInstance({
                           <th colspan="9">
                             ${instance_question.zone_title}
                             ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)}`
+                              ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}
                             ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)}`
+                              ? html`(best ${instance_question.zone_best_questions} questions)`
                               : ''}
                           </th>
                         </tr>
@@ -609,7 +608,7 @@ export function InstructorAssessmentInstance({
                                 class="btn btn-xs color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
-                                id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                id="fingerprintPopover${row.client_fingerprint.id}-${index}"
                                 data-bs-toggle="popover"
                                 data-bs-container="body"
                                 data-bs-html="true"

@@ -206,9 +206,7 @@ describe(
     test.sequential('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
       );
       assert.equal(context.numberOfVariants, 2);
@@ -339,9 +337,7 @@ describe(
     test.sequential('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
       );
       assert.equal(countVariantsResult, context.numberOfVariants);
@@ -434,9 +430,7 @@ describe(
     test.sequential('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
       );
       assert.equal(context.numberOfVariants, 1);
@@ -486,9 +480,7 @@ describe(
     test.sequential('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
       );
       assert.equal(countVariantsResult, context.numberOfVariants);
@@ -563,9 +555,7 @@ describe(
       async () => {
         const points = await sqldb.queryRow(
           sql.read_assessment_instance_points,
-          {
-            assessment_id: context.hwId,
-          },
+          { assessment_id: context.hwId },
           z.number(),
         );
         assert.equal(points, 0);
@@ -695,9 +685,7 @@ describe(
     test.sequential('check that no files or text were attached', async () => {
       const numberOfFiles = await sqldb.queryRow(
         sql.get_attached_files,
-        {
-          assessment_id: context.hwId,
-        },
+        { assessment_id: context.hwId },
         z.number(),
       );
 

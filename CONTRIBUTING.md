@@ -31,7 +31,7 @@ We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/gi
 - You should work on a distinct branch, not `master`. While this isn't strictly necessary for forks, it's helpful if you want to be working on multiple independent changes at the same time.
 - When committing your changes, use a short but meaningful commit message, e.g. `fix rate limiting` instead of `fix`.
 - Once you're happy with your changes, [open a pull request (PR)](https://docs.github.com/en/articles/creating-a-pull-request).
-  - You should include a reasonable amount of information with your pull request, such as a summary of what changes you made and why they were made.
+  - You should include a reasonable amount of information with your pull request, such as a summary of what changes you made and why they were made. The [pull request template](.github/PULL_REQUEST_TEMPLATE.md) should be used as a guide for what to include.
   - For changes that impact UI, it can be helpful to include screenshots and screen recordings.
   - If applicable, include instructions on how to manually test or verify your change.
   - If you used AI to write a significant portion of your change, you should disclose that in the PR description. Maintainers may review AI-generated code differently, and it may be helpful to other contributors to know that AI was used.
@@ -39,7 +39,7 @@ We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/gi
   - For larger changes (assuming you have already discussed your proposals with the development team, as discussed above), you should break down your changes into smaller, self-contained changes that can be more easily reviewed and tested.
 - Monitor the [GitHub status checks](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/about-status-checks). If they fail, you should check the output to see why. You may need to fix a broken test, adjust the formatting of your code, or fix a lint error.
 - Like many open-source projects, we require you to "sign" a contributor license agreement (CLA) prior to accepting any contributions. When you open your first pull request, a bot will prompt you to leave a comment stating that you accept the terms of [our CLA](https://github.com/PrairieLearn/cla).
-- One or more PrairieLearn maintainers will review your PR. You should be prepared to engage with the maintainers to answer questions, update code, etc. Additional etiquette and expectations for code reviews can be found in the [contributing](https://prairielearn.readthedocs.io/en/latest/contributing/) section of the documentation.
+- One or more PrairieLearn maintainers will review your PR. You should be prepared to engage with the maintainers to answer questions, update code, etc. Additional etiquette, expectations, and information for code reviews can be found in the [contributing](https://prairielearn.readthedocs.io/en/latest/contributing/) section of the documentation.
 
 - Once the PR is in a satisfactory state, a maintainer will approve and merge your change! :tada:
 

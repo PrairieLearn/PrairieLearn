@@ -2,13 +2,32 @@ columns
     course_instance_id: bigint not null
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
-    user_id: bigint not null
+    joined_at: timestamp with time zone
+    lti_managed: boolean not null default false
+    pending_lti13_email: text
+    pending_lti13_instance_id: bigint
+    pending_lti13_name: text
+    pending_lti13_sub: text
+    pending_uid: text
+    status: enum_enrollment_status not null default 'joined'::enum_enrollment_status
+    user_id: bigint
 
 indexes
     enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key: UNIQUE (pending_lti13_instance_id, pending_lti13_sub, course_instance_id) USING btree (pending_lti13_instance_id, pending_lti13_sub, course_instance_id)
+    enrollments_pending_uid_course_instance_id_key: UNIQUE (pending_uid, course_instance_id) USING btree (pending_uid, course_instance_id)
     enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
     enrollments_course_instance_id_idx: USING btree (course_instance_id)
 
+check constraints
+    enrollments_exactly_one_null_user_id_pending_uid_lti13_sub: CHECK (user_id IS NULL AND pending_lti13_sub IS NULL AND pending_uid IS NOT NULL OR user_id IS NOT NULL AND pending_lti13_sub IS NULL AND pending_uid IS NULL OR user_id IS NULL AND pending_lti13_sub IS NOT NULL AND pending_uid IS NULL)
+    enrollments_impossible_lti_managed: CHECK (NOT ((status = ANY (ARRAY['rejected'::enum_enrollment_status, 'blocked'::enum_enrollment_status])) AND lti_managed))
+    enrollments_lti13_keys_only_if_lti13_pending: CHECK (status = 'lti13_pending'::enum_enrollment_status AND pending_lti13_sub IS NOT NULL AND pending_lti13_instance_id IS NOT NULL OR status <> 'lti13_pending'::enum_enrollment_status AND pending_lti13_name IS NULL AND pending_lti13_email IS NULL AND pending_lti13_sub IS NULL AND pending_lti13_instance_id IS NULL)
+    enrollments_lti13_pending_lti_managed_true: CHECK (status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true OR status <> 'lti13_pending'::enum_enrollment_status)
+    enrollments_pending_uid_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (pending_uid IS NOT NULL))
+    enrollments_user_id_null_only_if_invited_rejected_pending: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status])) = (user_id IS NULL))
+
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    enrollments_pending_lti13_instance_id_fkey: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

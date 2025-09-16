@@ -5,8 +5,8 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -31,23 +31,11 @@ const CourseWithPermissionsSchema = CourseSchema.extend({
 export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
 
 export async function selectCourseById(course_id: string): Promise<Course> {
-  return await queryRow(
-    sql.select_course_by_id,
-    {
-      course_id,
-    },
-    CourseSchema,
-  );
+  return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
 }
 
 export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
-  return await queryRow(
-    sql.select_course_by_instance_id,
-    {
-      course_instance_id,
-    },
-    CourseSchema,
-  );
+  return await queryRow(sql.select_course_by_instance_id, { course_instance_id }, CourseSchema);
 }
 
 export function getLockNameForCoursePath(coursePath: string): string {
@@ -80,7 +68,7 @@ export async function updateCourseCommitHash(course: {
   path: string;
 }): Promise<string> {
   const hash = await getCourseCommitHash(course.path);
-  await queryAsync(sql.update_course_commit_hash, {
+  await execute(sql.update_course_commit_hash, {
     course_id: course.id,
     commit_hash: hash,
   });
@@ -227,7 +215,7 @@ export async function updateCourseShowGettingStarted({
   course_id: string;
   show_getting_started: boolean;
 }) {
-  await queryAsync(sql.update_course_show_getting_started, {
+  await execute(sql.update_course_show_getting_started, {
     course_id,
     show_getting_started,
   });
@@ -237,7 +225,7 @@ export async function updateCourseShowGettingStarted({
  * Update the `sharing_name` column for a course.
  */
 export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
-  await queryAsync(sql.update_course_sharing_name, {
+  await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,
   });

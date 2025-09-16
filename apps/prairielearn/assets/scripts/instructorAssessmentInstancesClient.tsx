@@ -574,7 +574,9 @@ onDocumentReady(() => {
               name="time_add"
               aria-label="Time value"
               value={form.time_add}
-              onChange={(e) => updateFormState('time_add', parseFloat(e.currentTarget.value))}
+              onChange={(e) =>
+                updateFormState('time_add', Number.parseFloat(e.currentTarget.value))
+              }
             />
             <span class="input-group-text time-limit-field">minutes</span>
           </div>
@@ -641,12 +643,12 @@ onDocumentReady(() => {
   }
 
   function listFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     return html`<small>${list.join(', ')}</small>`;
   }
 
   function uniqueListFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+    if (!list?.[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
     return html`<small>${uniq.join(', ')}</small>`;
   }
@@ -699,7 +701,7 @@ onDocumentReady(() => {
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
-    if (!compare) compare = (parseInt(idA) ?? 0) - (parseInt(idB) ?? 0);
+    if (!compare) compare = (Number.parseInt(idA) ?? 0) - (Number.parseInt(idB) ?? 0);
     if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
     if (!compare) compare = valueA - valueB;
     return compare;
@@ -717,7 +719,7 @@ onDocumentReady(() => {
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
-    const ai_id = parseInt(row.assessment_instance_id);
+    const ai_id = Number.parseInt(row.assessment_instance_id);
     if (!csrfToken) {
       throw new Error('CSRF token not found');
     }
@@ -793,7 +795,7 @@ onDocumentReady(() => {
   }
 
   function updateTotals(data: AssessmentInstanceRow[]) {
-    let time_limit_list: Record<string, any> = new Object();
+    let time_limit_list: Record<string, any> = {};
     let remaining_time_min = 0;
     let remaining_time_max = 0;
     let has_open_instance = false;

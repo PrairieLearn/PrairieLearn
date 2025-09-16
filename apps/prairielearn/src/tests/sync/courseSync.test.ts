@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { config } from '../../lib/config.js';
+import { CourseSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectOrInsertCourseByPath } from '../../models/course.js';
 import * as helperDb from '../helperDb.js';
@@ -27,10 +28,10 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
-    assert.isNotOk(syncedCourse?.sync_warnings);
-    assert.isNotOk(syncedCourse?.sync_errors);
+    assert.isNotOk(syncedCourse.sync_warnings);
+    assert.isNotOk(syncedCourse.sync_errors);
   });
 
   it('syncs for known features as array', async () => {
@@ -42,10 +43,10 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
-    assert.isNotOk(syncedCourse?.sync_warnings);
-    assert.isNotOk(syncedCourse?.sync_errors);
+    assert.isNotOk(syncedCourse.sync_warnings);
+    assert.isNotOk(syncedCourse.sync_errors);
   });
 
   it('adds a warning for an unknown feature', async () => {
@@ -57,13 +58,14 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
+    assert.isNotNull(syncedCourse.sync_warnings);
     assert.match(
-      syncedCourse?.sync_warnings,
+      syncedCourse.sync_warnings,
       new RegExp(`Feature "${invalidFeature}" does not exist.`),
     );
-    assert.isNotOk(syncedCourse?.sync_errors);
+    assert.isNotOk(syncedCourse.sync_errors);
   });
 
   it('adds a warning for a feature that is not enabled in non-dev environments', async () => {
@@ -91,16 +93,17 @@ describe('Course syncing', () => {
 
       await util.syncCourseData(courseDir);
 
-      const syncedCourses = await util.dumpTable('pl_courses');
+      const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
       const syncedCourse = syncedCourses[0];
+      assert.isNotNull(syncedCourse.sync_warnings);
       assert.match(
-        syncedCourse?.sync_warnings,
+        syncedCourse.sync_warnings,
         new RegExp(
           `Feature "${sampleFeature2}" is enabled in devModeFeatures, but is actually disabled.`,
         ),
       );
-      assert.notMatch(syncedCourse?.sync_warnings, new RegExp(sampleFeature1));
-      assert.isNotOk(syncedCourse?.sync_errors);
+      assert.notMatch(syncedCourse.sync_warnings, new RegExp(sampleFeature1));
+      assert.isNotOk(syncedCourse.sync_errors);
     } finally {
       config.devMode = originalDevMode;
     }
@@ -111,7 +114,7 @@ describe('Course syncing', () => {
     courseData.course.comment = 'Course comment';
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.equal(syncedCourses[0].json_comment, 'Course comment');
   });
@@ -121,7 +124,7 @@ describe('Course syncing', () => {
     courseData.course.comment = ['Course comment 1', 'Course comment 2'];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.deepEqual(syncedCourses[0].json_comment, ['Course comment 1', 'Course comment 2']);
   });
@@ -131,7 +134,7 @@ describe('Course syncing', () => {
     courseData.course.comment = { comment: 'Course comment', comment2: 'Course comment 2' };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.deepEqual(syncedCourses[0].json_comment, {
       comment: 'Course comment',
@@ -148,8 +151,11 @@ describe('Course syncing', () => {
       await util.syncCourseData(courseDir);
     });
 
-    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+
     assert.lengthOf(syncedCourses, 1);
-    assert.match(syncedCourses[0].sync_errors, /"sharingSets" cannot be used/);
+    const syncedCourse = syncedCourses[0];
+    assert.isNotNull(syncedCourse.sync_errors);
+    assert.match(syncedCourse.sync_errors, /"sharingSets" cannot be used/);
   });
 });

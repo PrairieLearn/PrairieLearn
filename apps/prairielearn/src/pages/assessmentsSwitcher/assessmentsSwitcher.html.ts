@@ -2,9 +2,9 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
-import { IssueBadge } from '../../components/IssueBadge.js';
+import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.js';
+import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { idsEqual } from '../../lib/id.js';
 import type { AssessmentRow } from '../../models/assessment.js';
 
@@ -21,7 +21,7 @@ export function AssessmentSwitcher({
   currentAssessmentId: string;
   courseInstanceId: string;
   plainUrlPrefix: string;
-  /* The subPage that assessment links should redirect to. */
+  /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
@@ -58,12 +58,12 @@ export function AssessmentSwitcher({
             </div>
             <div class="title">
               ${row.sync_errors
-                ? SyncProblemButton({
+                ? SyncProblemButtonHtml({
                     type: 'error',
                     output: row.sync_errors,
                   })
                 : row.sync_warnings
-                  ? SyncProblemButton({
+                  ? SyncProblemButtonHtml({
                       type: 'warning',
                       output: row.sync_warnings,
                     })
@@ -72,9 +72,9 @@ export function AssessmentSwitcher({
                 ${row.title}
                 ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
               </a>
-              ${IssueBadge({
+              ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                urlPrefix: plainUrlPrefix,
+                urlPrefix: `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor`,
                 issueAid: row.tid,
               })}
             </div>

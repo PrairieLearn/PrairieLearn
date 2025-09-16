@@ -4,9 +4,9 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { config } from '../../../lib/config.js';
-import { type RubricData } from '../../../lib/manualGrading.js';
+import { type RubricData } from '../../../lib/manualGrading.types.js';
 
-// Popover for users to import rubric settings from a JSON file.
+/** Popover for users to import rubric settings from a JSON file. */
 function ImportRubricSettingsPopover() {
   return html`
     <form
@@ -58,7 +58,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
         >
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
           <input type="hidden" name="__action" value="modify_rubric_settings" />
-          <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
+          <input
+            type="hidden"
+            name="modified_at"
+            value="${rubric_data?.modified_at.toISOString()}"
+          />
           <input type="hidden" name="use_rubric" value="true" />
 
           ${EncodedData<{
@@ -267,11 +271,11 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       </tr>
                     </thead>
                     <tbody>
-                      ${rubric_data?.rubric_items?.map((item, index) =>
+                      ${rubric_data?.rubric_items.map((item, index) =>
                         RubricItemRow({ item, index }),
                       )}
                       <tr
-                        class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
+                        class="js-no-rubric-item-note ${rubric_data?.rubric_items.length
                           ? 'd-none'
                           : ''}"
                       >
@@ -321,7 +325,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   <i class="fas fa-circle-info"></i>
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow({ item: null, index: rubric_data?.rubric_items?.length ?? 0 })}
+                  ${RubricItemRow({ item: null, index: rubric_data?.rubric_items.length ?? 0 })}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -445,7 +449,7 @@ function RubricItemRow({
           ? html` <label
               for="rubric-item-explanation-button-${item.id}"
               style="white-space: pre-wrap;"
-              >${item?.explanation}</label
+              >${item.explanation}</label
             >`
           : ''}
         <button
@@ -463,7 +467,7 @@ function RubricItemRow({
           ? html`<label
               for="rubric-item-grader-note-button-${item.id}"
               style="white-space: pre-wrap;"
-              >${item?.grader_note}</label
+              >${item.grader_note}</label
             > `
           : ''}
         <button

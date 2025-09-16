@@ -6,6 +6,7 @@ import * as prettier from 'prettier/standalone';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import { configureAceBasePaths } from './lib/ace.js';
+import './lib/verboseToggle.js';
 
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
@@ -130,7 +131,7 @@ class InstructorFileEditor {
     // then we convert the percent encodings into raw bytes which
     // can be fed into btoa.
     return btoa(
-      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (_match, p1) => {
+      encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
         return String.fromCharCode(Number(`0x${p1}`));
       }),
     );

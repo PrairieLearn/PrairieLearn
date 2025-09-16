@@ -65,7 +65,7 @@ plugins:
         - scripts/**
         - overrides/**
         - mkdocstrings/**
-        - requirements.txt
+        - pyproject.toml
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -110,7 +110,7 @@ plugins:
 
             show_symbol_type_toc: true
             show_root_full_path: true # prairielearn.core
-            show_root_toc_entry: true
+            show_root_toc_entry: false
             heading_level: 2
             group_by_category: false # e.g. 'classes', 'functions'
             members_order: alphabetical # source, alphabetical
@@ -224,6 +224,7 @@ nav:
       - 'UUIDs in JSON files': 'uuid.md'
       - 'Regrading assessments': 'regrading.md'
       - 'Element for drawing': 'pl-drawing/index.md'
+      - 'Docker images': 'dockerImages.md'
       - 'External grading': 'externalGrading.md'
       - 'Python autograder':
           - 'python-grader/index.md'
@@ -287,7 +288,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  schemas/adminQuery.md
   schemas/infoNewsItem.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md

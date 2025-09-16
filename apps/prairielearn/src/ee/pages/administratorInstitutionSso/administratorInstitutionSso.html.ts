@@ -31,6 +31,14 @@ export const AdministratorInstitutionSso = ({
       <form method="POST">
         <div class="mb-3">
           <h2 class="h4">Enabled single sign-on providers</h2>
+          ${institutionAuthenticationProviders.length === 0
+            ? html`
+                <div class="alert alert-warning" role="alert">
+                  No single sign-on providers are currently enabled for this institution. Users will
+                  not be able to log in unless at least one provider is enabled.
+                </div>
+              `
+            : ''}
           ${supportedAuthenticationProviders.map((provider) => {
             const isEnabled = institutionAuthenticationProviders.some((p) => p.id === provider.id);
             return html`
@@ -66,7 +74,7 @@ export const AdministratorInstitutionSso = ({
           <small class="form-text text-muted mt-0 mb-2">
             When a default single sign-on provider is configured, users can click on your
             institution's name on the login screen and be taken directly to the appropriate
-            provider. Note that LTI cannot be set as the default provider.
+            provider. Note that LTI and LTI 1.3 cannot be set as the default provider.
           </small>
           <select
             class="form-select js-default-authentication-provider"
@@ -78,7 +86,7 @@ export const AdministratorInstitutionSso = ({
               None
             </option>
             ${supportedAuthenticationProviders.map((provider) => {
-              if (provider.name === 'LTI') return '';
+              if (provider.name === 'LTI' || provider.name === 'LTI 1.3') return '';
 
               const isEnabled = institutionAuthenticationProviders.some(
                 (p) => p.id === provider.id,

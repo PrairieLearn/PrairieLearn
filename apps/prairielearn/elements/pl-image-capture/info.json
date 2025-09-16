@@ -4,7 +4,8 @@
     "nodeModulesScripts": [
       "cropperjs/dist/cropper.min.js",
       "qrcode-svg/dist/qrcode.min.js",
-      "socket.io-client/dist/socket.io.min.js"
+      "socket.io-client/dist/socket.io.min.js",
+      "@panzoom/panzoom/dist/panzoom.js"
     ],
     "elementScripts": ["pl-image-capture.js"],
     "elementStyles": ["pl-image-capture.css"]

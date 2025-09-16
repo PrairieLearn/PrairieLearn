@@ -13,8 +13,10 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await selectAssessmentQuestions(res.locals.assessment.id);
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
+    const questionRows = await selectAssessmentQuestions({
+      assessment_id: res.locals.assessment.id,
+    });
+    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }));
   }),
 );
 

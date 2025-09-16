@@ -101,7 +101,7 @@ export async function buildDirectory(
       partial_scores: submission.partial_scores ?? {},
       score: submission.score ?? 0,
       feedback: submission.feedback ?? {},
-      variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
       options: variant.options || {},
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
@@ -121,6 +121,7 @@ export async function buildDirectory(
  * string or buffer to attempt to parse it and mark the grading job as failed when
  * parsing fails.
  *
+ * @param jobId - The job ID.
  * @param rawData - The grading results
  */
 export function makeGradingResult(jobId: string, rawData: Record<string, any> | string | Buffer) {
@@ -135,7 +136,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   let data: Record<string, any>;
   try {
     // replace NULL with unicode replacement character
-    data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
+    data = JSON.parse(dataStr.replaceAll('\0', '\ufffd'));
   } catch {
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
@@ -143,7 +144,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   function replaceNull(d: any) {
     if (typeof d === 'string') {
       // replace NULL with unicode replacement character
-      return d.replace(/\0/g, '\ufffd');
+      return d.replaceAll('\0', '\ufffd');
     } else if (Array.isArray(d)) {
       return d.map((x) => replaceNull(x));
     } else if (d != null && typeof d === 'object') {
@@ -176,15 +177,18 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     return makeGradingFailureWithMessage(jobId, data, "results did not contain 'results' object.");
   }
 
-  let score = 0.0;
-  if (typeof data.results.score === 'number' || !Number.isNaN(data.results.score)) {
-    score = data.results.score;
-  } else {
-    return makeGradingFailureWithMessage(
-      jobId,
-      data,
-      `score "${data.results.score}" was not a number.`,
-    );
+  // Scores can be undefined/null (if the submission wasn't gradable) or a number.
+  let score = 0;
+  if (data.results.score != null) {
+    if (typeof data.results.score === 'number' && !Number.isNaN(data.results.score)) {
+      score = data.results.score;
+    } else {
+      return makeGradingFailureWithMessage(
+        jobId,
+        data,
+        `score "${data.results.score}" was not a number.`,
+      );
+    }
   }
 
   let format_errors: string[] = [];
@@ -211,9 +215,9 @@ function makeGradingFailureWithMessage(jobId: string, data: any, message: string
   return {
     gradingId: jobId,
     grading: {
-      receivedTime: (data && data.received_time) || null,
-      startTime: (data && data.start_time) || null,
-      endTime: (data && data.end_time) || null,
+      receivedTime: data?.received_time || null,
+      startTime: data?.start_time || null,
+      endTime: data?.end_time || null,
       score: 0,
       feedback: {
         succeeded: false,

@@ -7,7 +7,7 @@ WHERE
   id = $workspace_id;
 
 -- BLOCK update_workspace_disk_usage_bytes
-UPDATE workspaces as w
+UPDATE workspaces AS w
 SET
   disk_usage_bytes = $disk_usage_bytes
 WHERE
@@ -37,7 +37,7 @@ WITH
       old_workspace
   ),
   updated_workspace AS (
-    UPDATE workspaces as w
+    UPDATE workspaces AS w
     SET
       state = $state::enum_workspace_state,
       state_updated_at = now(),
@@ -102,7 +102,7 @@ RETURNING
 -- BLOCK update_workspace_message
 WITH
   workspace AS (
-    UPDATE workspaces as w
+    UPDATE workspaces AS w
     SET
       message = $message,
       message_updated_at = now()
@@ -140,15 +140,15 @@ INSERT INTO
   )
 SELECT
   'Workspace',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', w.state_updated_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
   -- many users updating simultaneously.
   v.authn_user_id,
-  coalesce(ai.include_in_statistics, false),
+  coalesce(ai.include_in_statistics, FALSE),
   make_interval(
     secs => $duration_milliseconds::double precision / 1000.0
   )

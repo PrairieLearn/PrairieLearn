@@ -1,5 +1,5 @@
-import { TopicBadgeJsx } from '../../../components/TopicBadge.js';
-import { TopicDescriptionJsx } from '../../../components/TopicDescription.js';
+import { TopicBadge } from '../../../components/TopicBadge.js';
+import { TopicDescription } from '../../../components/TopicDescription.js';
 import { type Topic } from '../../../lib/db-types.js';
 
 export function InstructorCourseAdminTopicsTable({ topics }: { topics: Topic[] }) {
@@ -24,11 +24,11 @@ export function InstructorCourseAdminTopicsTable({ topics }: { topics: Topic[] }
                 <tr key={topic.id}>
                   <td class="align-middle">{topic.number}</td>
                   <td class="align-middle">
-                    <TopicBadgeJsx topic={topic} />
+                    <TopicBadge topic={topic} />
                   </td>
                   <td class="align-middle">{topic.color}</td>
                   <td class="align-middle">
-                    <TopicDescriptionJsx topic={topic} />
+                    <TopicDescription topic={topic} />
                   </td>
                 </tr>
               );

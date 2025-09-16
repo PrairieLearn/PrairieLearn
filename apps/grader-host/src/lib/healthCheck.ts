@@ -11,7 +11,7 @@ import globalLogger from './logger.js';
  * no going back. We'll be killed eventually.
  */
 let healthy = true;
-let unhealthyReason = null;
+let unhealthyReason: string | null = null;
 
 /**
  * We have two levels of health checks here:
@@ -63,7 +63,7 @@ export async function init() {
   });
 }
 
-export function flagUnhealthy(reason) {
+export function flagUnhealthy(reason: string) {
   globalLogger.error(`A health check failed: ${reason}`);
   healthy = false;
   unhealthyReason = reason;

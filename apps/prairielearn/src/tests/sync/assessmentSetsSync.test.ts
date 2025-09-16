@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
@@ -105,8 +106,7 @@ describe('Assessment set syncing', () => {
       heading: 'a new assessment set 2 to sync',
       color: 'red2',
     } satisfies AssessmentSetJsonInput;
-    courseData.course.assessmentSets.push(newAssessmentSet1);
-    courseData.course.assessmentSets.push(newAssessmentSet2);
+    courseData.course.assessmentSets.push(newAssessmentSet1, newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTableWithSchema(
       'assessment_sets',

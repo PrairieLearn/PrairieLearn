@@ -3,8 +3,9 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
+import { assertNever } from '../lib/types.js';
 
-import { IssueBadge } from './IssueBadge.js';
+import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { ProgressCircle } from './ProgressCircle.js';
@@ -134,7 +135,7 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
       ? html`
           <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
             ${unsafeHtml(course.announcement_html)}
@@ -187,7 +188,7 @@ function NavbarByType({
       } else if (navbarType === 'institution') {
         return NavbarInstitution({ resLocals });
       } else {
-        throw new Error(`Unknown navbarType: ${navbarType}`);
+        assertNever(navbarType);
       }
     }
   }
@@ -215,11 +216,13 @@ function UserDropdownMenu({
 
   let displayedName: HtmlValue;
   if (authz_data) {
-    displayedName = authz_data.user.name || authz_data.user.uid;
-
-    if (authz_data.mode != null && authz_data.mode !== 'Public') {
-      displayedName += ` (${authz_data.mode})`;
-    }
+    displayedName = run(() => {
+      const name = authz_data.user.name || authz_data.user.uid;
+      if (authz_data.mode != null && authz_data.mode !== 'Public') {
+        return `${name} (${authz_data.mode})`;
+      }
+      return name;
+    });
   } else if (authn_user) {
     displayedName = authn_user.name || authn_user.uid;
   } else {
@@ -367,8 +370,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the user is an administrator.
-  if (course?.example_course && !authz_data?.is_administrator) {
+  // user if the authenticated user is an administrator.
+  if (course?.example_course && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -403,6 +406,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       instructorLink = `${urlPrefix}/instructor/question/${question.id}`;
     } else if (assessment_instance?.assessment_id) {
       instructorLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+    } else if (assessment?.id) {
+      instructorLink = `${urlPrefix}/instructor/assessment/${assessment.id}`;
     } else {
       instructorLink = `${urlPrefix}/instructor/instance_admin`;
     }
@@ -559,8 +564,8 @@ function AuthnOverrides({
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the user is an administrator.
-  if (course?.example_course && !config.devMode && !authz_data?.is_administrator) {
+  // user if the authenticated user is an administrator.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -887,7 +892,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                className: 'mx-1',
+                class: 'mx-1',
               })}
             </a>
           </li>
@@ -896,7 +901,7 @@ function NavbarInstructor({
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}
+        Issues ${IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true })}
       </a>
     </li>
     ${authz_data.has_course_permission_preview

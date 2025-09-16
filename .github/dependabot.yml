@@ -46,6 +46,7 @@ updates:
       - dependency-name: '@opentelemetry/*'
       # We use Yarn `resolutions` to point these to our Preact compat packages.
       # We don't ever care about which version is actually listed in `package.json` files.
+      - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
       - dependency-name: 'react'
       - dependency-name: 'react-dom'
 
@@ -81,9 +82,6 @@ updates:
       # We're not ready to jump to the latest version of `numpy` yet.
       - dependency-name: 'numpy'
         versions: ['>=2']
-      # The most recent versions no longer support Python 3.10.
-      - dependency-name: 'sphinx'
-        versions: ['>=8.2.0']
     groups:
       all-patch-minor:
         update-types:

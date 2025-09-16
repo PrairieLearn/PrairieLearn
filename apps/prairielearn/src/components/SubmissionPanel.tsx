@@ -15,7 +15,7 @@ import {
   type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -103,7 +103,7 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex align-items-center submission-header ${!expanded
+                class="card-header bg-info text-white d-flex align-items-center collapsible-card-header ${!expanded
                   ? ' collapsed'
                   : ''}"
               >
@@ -123,7 +123,7 @@ export function SubmissionPanel({
                   aria-expanded="${expanded ? 'true' : 'false'}"
                   aria-controls="submission-feedback-${submission.id}-body"
                 >
-                  <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+                  <i class="fa fa-angle-up ms-1 expand-icon"></i>
                 </button>
               </div>
               <div
@@ -179,7 +179,9 @@ export function SubmissionPanel({
         : ''}
 
       <div class="card mb-4" data-testid="submission-block">
-        <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
+        <div
+          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+        >
           <div class="me-2">
             <div>
               <span class="me-2 d-flex align-items-center">
@@ -212,7 +214,7 @@ export function SubmissionPanel({
               data-bs-target="#submissionInfoModal-${submission.id}"
               aria-label="Submission info"
             >
-              <i class="fa fa-info-circle fa-fw"></i>
+              <i class="fa fa-info-circle"></i>
             </button>
             <button
               type="button"
@@ -224,16 +226,15 @@ export function SubmissionPanel({
               aria-expanded="${expanded ? 'true' : 'false'}"
               aria-controls="submission-${submission.id}-body"
             >
-              <i class="fa fa-angle-up fa-fw ms-1 expand-icon"></i>
+              <i class="fa fa-angle-up ms-1 expand-icon"></i>
             </button>
           </div>
         </div>
 
         <div
-          class="collapse js-submission-body ${expanded ? 'show' : ''} ${submissionHtml == null &&
-          question.type === 'Freeform'
-            ? 'render-pending'
-            : ''}"
+          class="collapse js-submission-body js-collapsible-card-body ${expanded
+            ? 'show'
+            : ''} ${submissionHtml == null && question.type === 'Freeform' ? 'render-pending' : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
           ${question.type === 'Freeform' ? html`data-dynamic-render-url="${renderUrl}" ` : ''}

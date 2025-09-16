@@ -13,7 +13,7 @@ WITH
       iq.assessment_question_id = $assessment_question_id
       AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
       AND (
-        $prior_instance_question_id::BIGINT IS NULL
+        $prior_instance_question_id::bigint IS NULL
         OR iq.id != $prior_instance_question_id
       )
       AND iq.requires_manual_grading
@@ -37,13 +37,13 @@ FROM
   instance_questions_to_grade
 ORDER BY
   -- Choose one assigned to current user if one exists, unassigned if not
-  assigned_grader NULLS LAST,
+  assigned_grader ASC NULLS LAST,
   -- Choose question that list after the prior if one exists. Follow the same
   -- default pseudo-random deterministic stable order used in the instance
   -- questions page.
   iq_stable_order > prior_iq_stable_order DESC,
-  iq_stable_order,
-  id
+  iq_stable_order ASC,
+  id ASC
 LIMIT
   1;
 
@@ -123,12 +123,12 @@ WITH
       rubric_items AS ri
     WHERE
       ri.rubric_id = $rubric_id
-      AND ri.id = ANY ($rubric_items::BIGINT[])
+      AND ri.id = ANY ($rubric_items::bigint[])
       AND ri.deleted_at IS NULL
   )
 SELECT
   TO_JSONB(r) AS rubric_data,
-  COALESCE(rid.items, '[]'::JSONB) AS rubric_item_data
+  COALESCE(rid.items, '[]'::jsonb) AS rubric_item_data
 FROM
   rubrics r
   LEFT JOIN rubric_items_data rid ON (TRUE)
@@ -188,7 +188,7 @@ SET
 WHERE
   rubric_id = $rubric_id
   AND deleted_at IS NULL
-  AND NOT (id = ANY ($active_rubric_items::BIGINT[]));
+  AND NOT (id = ANY ($active_rubric_items::bigint[]));
 
 -- BLOCK update_rubric_item
 UPDATE rubric_items
@@ -260,7 +260,7 @@ WITH
     WHERE
       iq.assessment_question_id = $assessment_question_id
     ORDER BY
-      iq.id,
+      iq.id ASC,
       s.date DESC,
       s.id DESC
   ),
@@ -347,7 +347,7 @@ WITH
       ri.description
     FROM
       inserted_rubric_grading AS irg
-      JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari (rubric_item_id BIGINT, score DOUBLE PRECISION) ON (TRUE)
+      JOIN JSONB_TO_RECORDSET($rubric_items::jsonb) AS ari (rubric_item_id bigint, score double precision) ON (TRUE)
       JOIN rubric_items AS ri ON (
         ri.id = ari.rubric_item_id
         AND ri.rubric_id = $rubric_id
@@ -359,7 +359,7 @@ SELECT
   irg.id
 FROM
   inserted_rubric_grading AS irg
-  LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
+  LEFT JOIN inserted_rubric_grading_items ON (TRUE)
 LIMIT
   1;
 
@@ -376,12 +376,15 @@ SELECT
   iq.auto_points,
   iq.manual_points,
   s.manual_rubric_grading_id,
-  $check_modified_at::TIMESTAMPTZ IS NOT NULL
-  AND $check_modified_at != iq.modified_at AS modified_at_conflict
+  $check_modified_at::timestamptz IS NOT NULL
+  -- We are comparing a database timestamp (microseconds precision) to a time
+  -- that comes from the client (milliseconds precision). This avoids a precision
+  -- mismatch that would cause the comparison to fail.
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-  JOIN questions AS q on (q.id = aq.question_id)
+  JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
@@ -441,13 +444,13 @@ RETURNING
 UPDATE submissions AS s
 SET
   feedback = CASE
-    WHEN feedback IS NULL THEN $feedback::JSONB
-    WHEN $feedback::JSONB IS NULL THEN feedback
+    WHEN feedback IS NULL THEN $feedback::jsonb
+    WHEN $feedback::jsonb IS NULL THEN feedback
     WHEN jsonb_typeof(feedback) = 'object'
-    AND jsonb_typeof($feedback::JSONB) = 'object' THEN feedback || $feedback::JSONB
-    ELSE $feedback::JSONB
+    AND jsonb_typeof($feedback::jsonb) = 'object' THEN feedback || $feedback::jsonb
+    ELSE $feedback::jsonb
   END,
-  partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
+  partial_scores = COALESCE($partial_scores::jsonb, partial_scores),
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
   modified_at = now(),

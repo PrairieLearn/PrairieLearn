@@ -20,18 +20,18 @@ $$ s(t) = - {{params.a}} t^2 + {{params.b}} t + 30 $$
 
 </pl-question-panel>
 
-<pl-overlay width="550" height="450"  clip="false">
+<pl-overlay width="550" height="450" clip="false">
     <pl-background>
       <pl-figure file-name="figure1.png" type="dynamic"></pl-figure>
     </pl-background>
 
     <pl-location left="20" top="0" valign="top" halign="left">
-        <pl-drawing  answers-name="lines" gradable=true width="500" height="400" grid-size=0 show-tolerance-hint="false" hide-answer-panel="false">
+        <pl-drawing answers-name="lines" gradable="true" width="500" height="400" grid-size="0" show-tolerance-hint="false" hide-answer-panel="false">
             <pl-drawing-answer draw-error-box="true">
                 <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.line}}" offset-tol-x="5" offset-tol-y="5"></pl-graph-line>
             </pl-drawing-answer>
             <pl-controls>
-                <pl-controls-group label="Add line:" >
+                <pl-controls-group label="Add line:">
                     <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
                 </pl-controls-group>
                 <pl-controls-group label="Delete:">
@@ -82,7 +82,7 @@ The <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name=
 <p> For what values of time $t$ will $s'(t)$ be {{params.sign}}?</p>
 
 
-<pl-checkbox answers-name="ts" number-answers=7 fixed-order="true" partial-credit="true">
+<pl-checkbox answers-name="ts" number-answers="7" fixed-order="true" partial-credit="true">
     {{#params.t_options}}
         <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
     {{/params.t_options}}
@@ -92,7 +92,7 @@ The <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name=
 <pl-question-panel>
   <!-- This is not part of the question, and is included for documentation purposes -->
   <div class="alert alert-info p-2" role="alert">
-      <small>Note: this example summarizes the concepts introduced in the previous questions. Read more  <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md" target="_blank">here</a>.</small>
+      <small>Note: this example summarizes the concepts introduced in the previous questions. Read more  <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md" target="_blank" rel="noreferrer">here</a>.</small>
         <pl-github-link></pl-github-link>
   </div>
 </pl-question-panel>

@@ -2,12 +2,12 @@
 <p>
 Consider the I-beam cross-section:
 </p>
-<pl-drawing grid-size="0"  width=260 height=260>
+<pl-drawing grid-size="0" width="260" height="260">
     <pl-drawing-initial>
       <pl-polygon plist="{{params.polygon}}"></pl-polygon>
-      <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x2}} y2={{params.y2}} dim-offset="-20" label="w" ></pl-dimensions>
-      <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x3}} y2={{params.y3}} dim-offset="20" label="h" ></pl-dimensions>
-      <pl-coordinates x1={{params.ox}} y1={{params.oy}}></pl-coordinates>
+      <pl-dimensions x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x2}}" y2="{{params.y2}}" dim-offset="-20" label="w"></pl-dimensions>
+      <pl-dimensions x1="{{params.x1}}" y1="{{params.y1}}" x2="{{params.x3}}" y2="{{params.y3}}" dim-offset="20" label="h"></pl-dimensions>
+      <pl-coordinates x1="{{params.ox}}" y1="{{params.oy}}"></pl-coordinates>
     </pl-drawing-initial>
 </pl-drawing>
 
@@ -35,19 +35,19 @@ For the beam designations indicated below, determine the maximum normal stress $
   <tbody>
   <tr>
   <td style="text-align: center;">{{params.name1}}</td>
-  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma1" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma1" display="inline" size="16" show-help-text="false"></pl-number-input></td>
   </tr>
   <tr>
   <td style="text-align: center;">{{params.name2}}</td>
-  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma2" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma2" display="inline" size="16" show-help-text="false"></pl-number-input></td>
   </tr>
   <tr>
   <td style="text-align: center;">{{params.name3}}</td>
-  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma3" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma3" display="inline" size="16" show-help-text="false"></pl-number-input></td>
   </tr>
   <tr>
   <td style="text-align: center;">{{params.name4}}</td>
-  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma4" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  <td style="text-align: center;"><pl-number-input aria-label="Maximum normal stress" answers-name="sigma4" display="inline" size="16" show-help-text="false"></pl-number-input></td>
   </tr>
   </tbody>
 </table>
@@ -57,7 +57,7 @@ For the beam designations indicated below, determine the maximum normal stress $
   <!-- This is not part of the question, and is included for documentation purposes -->
   <div class="alert alert-info p-2" role="alert">
       <small>Note: this is an example of <i>repeated variant</i> question.
-        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">here</a>.</small>
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank" rel="noreferrer">here</a>.</small>
         <pl-github-link></pl-github-link>
   </div>
 </pl-question-panel>

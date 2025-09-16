@@ -145,7 +145,7 @@ export function InstructorCourseAdminSharing({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
@@ -154,135 +154,139 @@ export function InstructorCourseAdminSharing({
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>
         </div>
-        <table
-          class="table table-sm table-hover two-column-description"
-          aria-label="Course sharing details"
-        >
-          <tbody>
-            <tr>
-              <th>Sharing name</th>
-              <td data-testid="sharing-name">
-                ${sharingName !== null ? sharingName : ''}
-                ${isCourseOwner
-                  ? html`
-                      <button
-                        type="button"
-                        class="btn btn-xs btn-secondary mx-2"
-                        aria-label="Choose Sharing Name"
-                        data-bs-toggle="modal"
-                        data-bs-target="#chooseSharingNameModal"
-                      >
-                        <i class="fas fa-share-nodes" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Choose Sharing Name</span>
-                      </button>
-                      ${ChooseSharingNameModal({
-                        canChooseSharingName,
-                        csrfToken: resLocals.__csrf_token,
-                      })}
-                    `
-                  : ''}
-              </td>
-            </tr>
-            <tr>
-              <th>Sharing Token</th>
-              <td>
-                ${sharingToken}
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary mx-2"
-                  onclick="navigator.clipboard.writeText('${sharingToken}');"
-                >
-                  <i class="fa fa-copy"></i>
-                  <span>Copy</span>
-                </button>
-                ${isCourseOwner
-                  ? html`
-                      <form name="sharing-id-regenerate" method="POST" class="d-inline">
-                        <input type="hidden" name="__action" value="sharing_token_regenerate" />
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button type="submit" class="btn btn-xs btn-secondary">
-                          <i class="fa fa-rotate"></i>
-                          <span>Regenerate</span>
+        <div class="table-responsive">
+          <table
+            class="table table-sm table-hover two-column-description"
+            aria-label="Course sharing details"
+          >
+            <tbody>
+              <tr>
+                <th>Sharing name</th>
+                <td data-testid="sharing-name">
+                  ${sharingName !== null ? sharingName : ''}
+                  ${isCourseOwner
+                    ? html`
+                        <button
+                          type="button"
+                          class="btn btn-xs btn-secondary mx-2"
+                          aria-label="Choose Sharing Name"
+                          data-bs-toggle="modal"
+                          data-bs-target="#chooseSharingNameModal"
+                        >
+                          <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Choose Sharing Name</span>
                         </button>
-                      </form>
-                    `
-                  : ''}
-              </td>
-            </tr>
-            <tr>
-              <th>Public Questions Page</th>
-              <td class="align-middle">
-                <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary mx-2"
-                  onclick="navigator.clipboard.writeText('${publicSharingLink}');"
-                >
-                  <i class="fa fa-copy"></i>
-                  <span>Copy</span>
-                </button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                        ${ChooseSharingNameModal({
+                          canChooseSharingName,
+                          csrfToken: resLocals.__csrf_token,
+                        })}
+                      `
+                    : ''}
+                </td>
+              </tr>
+              <tr>
+                <th>Sharing Token</th>
+                <td>
+                  ${sharingToken}
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-secondary mx-2"
+                    onclick="navigator.clipboard.writeText('${sharingToken}');"
+                  >
+                    <i class="fa fa-copy"></i>
+                    <span>Copy</span>
+                  </button>
+                  ${isCourseOwner
+                    ? html`
+                        <form name="sharing-id-regenerate" method="POST" class="d-inline">
+                          <input type="hidden" name="__action" value="sharing_token_regenerate" />
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <button type="submit" class="btn btn-xs btn-secondary">
+                            <i class="fa fa-rotate"></i>
+                            <span>Regenerate</span>
+                          </button>
+                        </form>
+                      `
+                    : ''}
+                </td>
+              </tr>
+              <tr>
+                <th>Public Questions Page</th>
+                <td class="align-middle">
+                  <a href="${publicSharingLink}" target="_blank">${publicSharingLink}</a>
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-secondary mx-2"
+                    onclick="navigator.clipboard.writeText('${publicSharingLink}');"
+                  >
+                    <i class="fa fa-copy"></i>
+                    <span>Copy</span>
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h2>Sharing Sets</h2>
         </div>
-        <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
-          <thead>
-            <tr>
-              <th>Sharing Set Name</th>
-              <th>Shared With</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${sharingSets.map(
-              (sharing_set) => html`
-                <tr>
-                  <td class="align-middle">${sharing_set.name}</td>
-                  <td class="align-middle" data-testid="shared-with">
-                    ${sharing_set.shared_with.map(
-                      (course_shared_with) => html`
-                        <span class="badge color-gray1"> ${course_shared_with} </span>
-                      `,
-                    )}${isCourseOwner
-                      ? html`
-                          <div class="btn-group btn-group-sm" role="group">
-                            <button
-                              type="button"
-                              class="btn btn-sm btn-outline-dark"
-                              aria-label="Add course to sharing set"
-                              data-bs-toggle="popover"
-                              data-bs-container="body"
-                              data-bs-html="true"
-                              data-bs-placement="auto"
-                              data-bs-title="Add Course to Sharing Set"
-                              data-bs-content="${escapeHtml(
-                                AddCourseToSharingSetPopover({
-                                  resLocals,
-                                  sharing_set,
-                                }),
-                              )}"
-                            >
-                              Add...
-                              <i class="fas fa-plus" aria-hidden="true"></i>
-                            </button>
-                          </div>
-                        `
-                      : ''}
-                  </td>
-                </tr>
-              `,
-            )}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
+            <thead>
+              <tr>
+                <th>Sharing Set Name</th>
+                <th>Shared With</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sharingSets.map(
+                (sharing_set) => html`
+                  <tr>
+                    <td class="align-middle">${sharing_set.name}</td>
+                    <td class="align-middle" data-testid="shared-with">
+                      ${sharing_set.shared_with.map(
+                        (course_shared_with) => html`
+                          <span class="badge color-gray1"> ${course_shared_with} </span>
+                        `,
+                      )}${isCourseOwner
+                        ? html`
+                            <div class="btn-group btn-group-sm" role="group">
+                              <button
+                                type="button"
+                                class="btn btn-sm btn-outline-dark"
+                                aria-label="Add course to sharing set"
+                                data-bs-toggle="popover"
+                                data-bs-container="body"
+                                data-bs-html="true"
+                                data-bs-placement="auto"
+                                data-bs-title="Add Course to Sharing Set"
+                                data-bs-content="${escapeHtml(
+                                  AddCourseToSharingSetPopover({
+                                    resLocals,
+                                    sharing_set,
+                                  }),
+                                )}"
+                              >
+                                Add...
+                                <i class="fas fa-plus" aria-hidden="true"></i>
+                              </button>
+                            </div>
+                          `
+                        : ''}
+                    </td>
+                  </tr>
+                `,
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     `,
   });

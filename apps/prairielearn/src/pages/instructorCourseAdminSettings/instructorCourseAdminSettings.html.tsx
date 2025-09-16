@@ -1,10 +1,11 @@
 import { html } from '@prairielearn/html';
 
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { renderHtml } from '../../lib/preact-html.js';
-import { type Timezone, formatTimezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
   resLocals,
@@ -14,6 +15,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists,
   availableTimezones,
   origHash,
+  courseGHLink,
 }: {
   resLocals: Record<string, any>;
   aiQuestionGenerationEnabled: boolean;
@@ -22,6 +24,7 @@ export function InstructorCourseAdminSettings({
   courseInfoExists: boolean;
   availableTimezones: Timezone[];
   origHash: string;
+  courseGHLink: string | null;
 }) {
   return PageLayout({
     resLocals,
@@ -35,17 +38,20 @@ export function InstructorCourseAdminSettings({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
 
       <div class="card  mb-4">
-        <div class="card-header bg-primary text-white d-flex">
+        <div
+          class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+        >
           <h1>
             ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
           </h1>
+          ${GitHubButtonHtml(courseGHLink)}
         </div>
         <div class="card-body">
           ${!courseInfoExists || !coursePathExists

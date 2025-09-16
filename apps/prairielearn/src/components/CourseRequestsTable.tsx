@@ -131,7 +131,7 @@ export function CourseRequestsTable({
                             aria-expanded="false"
                             aria-controls="course-requests-job-list-${row.id}"
                           >
-                            <i class="fa fa-angle-up fa-fw expand-icon"></i>
+                            <i class="fa fa-angle-up expand-icon"></i>
                             Show Jobs
                           </button>
                         `
@@ -155,28 +155,25 @@ export function CourseRequestsTable({
                                 <th>Status</th>
                                 <th></th>
                               </thead>
-                              ${row.jobs
-                                .slice()
-                                .reverse()
-                                .map((job) => {
-                                  return html`
-                                    <tr>
-                                      <td>${job.number}</td>
-                                      <td>${job.start_date.toISOString()}</td>
-                                      <td>${job.finish_date?.toISOString()}</td>
-                                      <td>${job.authn_user_name}</td>
-                                      <td>${JobStatus({ status: job.status })}</td>
-                                      <td>
-                                        <a
-                                          href="${urlPrefix}/administrator/jobSequence/${job.id}"
-                                          class="btn btn-xs btn-info float-end"
-                                        >
-                                          Details
-                                        </a>
-                                      </td>
-                                    </tr>
-                                  `;
-                                })}
+                              ${row.jobs.toReversed().map((job) => {
+                                return html`
+                                  <tr>
+                                    <td>${job.number}</td>
+                                    <td>${job.start_date.toISOString()}</td>
+                                    <td>${job.finish_date?.toISOString()}</td>
+                                    <td>${job.authn_user_name}</td>
+                                    <td>${JobStatus({ status: job.status })}</td>
+                                    <td>
+                                      <a
+                                        href="${urlPrefix}/administrator/jobSequence/${job.id}"
+                                        class="btn btn-xs btn-info float-end"
+                                      >
+                                        Details
+                                      </a>
+                                    </td>
+                                  </tr>
+                                `;
+                              })}
                             </table>
                           </div>
                         </td>

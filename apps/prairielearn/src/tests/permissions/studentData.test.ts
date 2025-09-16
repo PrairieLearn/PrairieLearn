@@ -3,6 +3,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
+import {
+  InstanceQuestionSchema,
+  SprocUsersSelectOrInsertSchema,
+  VariantSchema,
+} from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -40,20 +45,16 @@ describe('student data access', { timeout: 60_000 }, function () {
   });
 
   beforeAll(async function () {
-    await sqldb.callAsync('users_select_or_insert', [
-      'instructor@example.com',
-      'Instructor User',
-      '100000000',
-      'instructor@example.com',
-      'dev',
-    ]);
-    await sqldb.callAsync('users_select_or_insert', [
-      'student@example.com',
-      'Student User',
-      '000000001',
-      'student@example.com',
-      'dev',
-    ]);
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
+    await sqldb.callRow(
+      'users_select_or_insert',
+      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
+    );
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -85,10 +86,11 @@ describe('student data access', { timeout: 60_000 }, function () {
       headers,
     });
     assert.isTrue(response.ok);
-    const result = await sqldb.queryOneRowAsync(sql.select_variant, {
-      assessment_id: context.homeworkAssessmentId,
-    });
-    context.homeworkQuestionVariant = result.rows[0];
+    context.homeworkQuestionVariant = await sqldb.queryRow(
+      sql.select_variant,
+      { assessment_id: context.homeworkAssessmentId },
+      VariantSchema,
+    );
   });
 
   test.sequential('student can access E1 in exam mode', async () => {
@@ -113,21 +115,26 @@ describe('student data access', { timeout: 60_000 }, function () {
     const assessmentInstanceUrl = response.url;
     assert.include(assessmentInstanceUrl, '/assessment_instance/');
     context.examAssessmentInstanceUrl = assessmentInstanceUrl;
-    const result = await sqldb.queryOneRowAsync(sql.select_instance_question, {
-      qid: 'addNumbers',
-      assessment_id: context.examAssessmentId,
-    });
-    context.examQuestionInstanceUrl = `${context.courseInstanceBaseUrl}/instance_question/${result.rows[0].id}`;
+    const instanceQuestion = await sqldb.queryRow(
+      sql.select_instance_question,
+      {
+        qid: 'addNumbers',
+        assessment_id: context.examAssessmentId,
+      },
+      InstanceQuestionSchema,
+    );
+    context.examQuestionInstanceUrl = `${context.courseInstanceBaseUrl}/instance_question/${instanceQuestion.id}`;
   });
 
   test.sequential('student can access E1/Q* in exam mode', async () => {
     const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
     const response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
     assert.isTrue(response.ok);
-    const result = await sqldb.queryOneRowAsync(sql.select_variant, {
-      assessment_id: context.examAssessmentId,
-    });
-    context.examQuestionVariant = result.rows[0];
+    context.examQuestionVariant = await sqldb.queryRow(
+      sql.select_variant,
+      { assessment_id: context.examAssessmentId },
+      VariantSchema,
+    );
   });
 
   test.sequential('instructor (no role) can view HW1', async () => {

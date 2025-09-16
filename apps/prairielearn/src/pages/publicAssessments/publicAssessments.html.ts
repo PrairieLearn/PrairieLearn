@@ -139,7 +139,7 @@ export function PublicAssessments({
                 data-bs-toggle="modal"
                 data-bs-target="#copyCourseInstanceModal"
               >
-                <i class="fa fa-fw fa-clone"></i>
+                <i class="fa fa-clone"></i>
                 <span class="d-none d-sm-inline">Copy course instance</span>
               </button>
             </div>

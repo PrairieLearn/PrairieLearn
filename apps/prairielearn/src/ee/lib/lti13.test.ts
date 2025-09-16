@@ -36,8 +36,8 @@ const PRODUCTS = [
 ];
 
 function productApi(req: Request, res: Response) {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
 
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
@@ -55,8 +55,10 @@ function productApi(req: Request, res: Response) {
   if (page > 1) {
     links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
   }
-  links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
-  links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+  links.push(
+    `<${baseUrl}?page=1&limit=${limit}>; rel="first"`,
+    `<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`,
+  );
 
   res.set('Link', links.join(', '));
 
@@ -75,11 +77,11 @@ describe('fetchRetry()', () => {
     next();
   });
 
-  app.get('/403all', async (req, res) => {
+  app.get('/403all', (req, res) => {
     res.status(403).json([]);
   });
 
-  app.get('/403oddAttempt', async (req, res) => {
+  app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
       res.status(403).json([]);
     } else {

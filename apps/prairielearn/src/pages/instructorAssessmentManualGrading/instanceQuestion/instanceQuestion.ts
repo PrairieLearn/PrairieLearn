@@ -1,16 +1,34 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
 import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
-import { IdSchema } from '../../../lib/db-types.js';
+import {
+  selectLastSubmissionId,
+  selectRubricGradingItems,
+  toggleAiGradingMode,
+} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import {
+  AiGradingJobSchema,
+  DateFromISOString,
+  GradingJobSchema,
+  IdSchema,
+  type InstanceQuestion,
+} from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { formatJsonWithPrettier } from '../../../lib/prettier.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../../lib/res-locals.js';
+import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 import { selectUserById } from '../../../models/user.js';
 import { selectAndAuthzVariant } from '../../../models/variant.js';
@@ -19,14 +37,17 @@ import { GradingPanel } from './gradingPanel.html.js';
 import {
   type GradingJobData,
   GradingJobDataSchema,
-  InstanceQuestion,
+  InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function prepareLocalsForRender(query: Record<string, any>, resLocals: Record<string, any>) {
+async function prepareLocalsForRender(
+  query: Record<string, any>,
+  resLocals: ResLocalsForPage['instructor-instance-question'],
+) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
   // submissions or even create a new one. We don't want that behaviour, so we select the last
@@ -42,7 +63,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.questionRenderContext = 'manual_grading';
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -67,22 +88,116 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
-
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     const assignedGrader = res.locals.instance_question.assigned_grader
       ? await selectUserById(res.locals.instance_question.assigned_grader)
       : null;
     const lastGrader = res.locals.instance_question.last_grader
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
+
+    const instance_question = res.locals.instance_question as InstanceQuestion;
+    if (instance_question == null) {
+      throw new error.HttpStatusError(404, 'Instance question not found');
+    }
+
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+
+    /**
+     * Contains the prompt and selected rubric items of the AI grader.
+     * If the submission was not graded by AI, this will be undefined.
+     */
+    let aiGradingInfo: InstanceQuestionAIGradingInfo | undefined = undefined;
+
+    if (aiGradingEnabled) {
+      const submission_id = await selectLastSubmissionId(instance_question.id);
+      const ai_grading_job_data = await sqldb.queryOptionalRow(
+        sql.select_ai_grading_job_data_for_submission,
+        {
+          submission_id,
+        },
+        z.object({
+          id: GradingJobSchema.shape.id,
+          manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
+          prompt: AiGradingJobSchema.shape.prompt,
+          completion: AiGradingJobSchema.shape.completion,
+        }),
+      );
+
+      if (ai_grading_job_data) {
+        const promptForGradingJob = ai_grading_job_data.prompt as
+          | ChatCompletionMessageParam[]
+          | null;
+        const selectedRubricItems = await selectRubricGradingItems(
+          ai_grading_job_data.manual_rubric_grading_id,
+        );
+
+        /** The submission was also manually graded if a manual grading job exists for it.*/
+        const submissionManuallyGraded =
+          (await sqldb.queryOptionalRow(
+            sql.select_exists_manual_grading_job_for_submission,
+            { submission_id },
+            z.boolean(),
+          )) ?? false;
+
+        /** Images sent in the AI grading prompt */
+        const promptImageUrls: string[] = [];
+
+        if (promptForGradingJob) {
+          for (const message of promptForGradingJob) {
+            if (message.content && typeof message.content === 'object') {
+              for (const part of message.content) {
+                if (part.type === 'image_url') {
+                  promptImageUrls.push(part.image_url.url);
+                }
+              }
+            }
+          }
+        }
+
+        const formattedPrompt =
+          promptForGradingJob !== null
+            ? (await formatJsonWithPrettier(JSON.stringify(promptForGradingJob, null, 2)))
+                .replaceAll('\\n', '\n')
+                .trimStart()
+            : '';
+
+        // We're dealing with a schemaless JSON blob here. We'll be defensive and
+        // try to avoid errors when extracting the explanation. Note that for some
+        // time, the explanation wasn't included in the completion at all, so it
+        // may legitimately be missing.
+        const explanation = run(() => {
+          const completion = ai_grading_job_data.completion;
+          if (completion == null) return null;
+
+          const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+          if (typeof explanation !== 'string') return null;
+
+          return explanation.trim() || null;
+        });
+
+        aiGradingInfo = {
+          submissionManuallyGraded,
+          prompt: formattedPrompt,
+          selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
+          promptImageUrls,
+          explanation,
+        };
+      }
+    }
+
     res.send(
-      InstanceQuestion({
+      InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
+        aiGradingEnabled,
+        aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
+        aiGradingInfo,
       }),
     );
   }),
@@ -90,7 +205,7 @@ router.get(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
@@ -125,10 +240,13 @@ router.get(
 
 router.get(
   '/grading_rubric_panels',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
-      const gradingPanel = GradingPanel({ ...locals, context: 'main' }).toString();
+      const gradingPanel = GradingPanel({
+        ...locals,
+        context: 'main',
+      }).toString();
       const rubricSettings = RubricSettingsModal(locals).toString();
       res.send({ gradingPanel, rubricSettings });
     } catch (err) {
@@ -141,7 +259,7 @@ const PostBodySchema = z.union([
   z.object({
     __action: z.literal('add_manual_grade'),
     submission_id: IdSchema,
-    modified_at: z.string(),
+    modified_at: DateFromISOString,
     rubric_item_selected_manual: IdSchema.or(z.record(z.string(), IdSchema))
       .nullish()
       .transform((val) =>
@@ -202,6 +320,9 @@ const PostBodySchema = z.union([
     __variant_id: IdSchema,
     description: z.string(),
   }),
+  z.object({
+    __action: z.literal('toggle_ai_grading_mode'),
+  }),
 ]);
 
 router.post(
@@ -236,7 +357,7 @@ router.post(
           res.locals.assessment.id,
           res.locals.instance_question.id,
           body.submission_id,
-          body.modified_at,
+          body.modified_at, // check_modified_at
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
@@ -253,7 +374,7 @@ router.post(
       }
       // Only close issues if the submission was successfully graded
       if (body.unsafe_issue_ids_close.length > 0) {
-        await sqldb.queryAsync(sql.close_issues_for_instance_question, {
+        await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
           authn_user_id: res.locals.authn_user.user_id,
@@ -286,7 +407,7 @@ router.post(
         res.status(500).send({ err: String(err) });
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
-      const actionPrompt = body.__action.substring(9);
+      const actionPrompt = body.__action.slice(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
@@ -299,7 +420,7 @@ router.post(
           );
         }
       }
-      await sqldb.queryAsync(sql.update_assigned_grader, {
+      await sqldb.execute(sql.update_assigned_grader, {
         instance_question_id: res.locals.instance_question.id,
         assigned_grader,
         requires_manual_grading: actionPrompt !== 'graded',
@@ -316,6 +437,9 @@ router.post(
       );
     } else if (body.__action === 'report_issue') {
       await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
+    } else if (body.__action === 'toggle_ai_grading_mode') {
+      await toggleAiGradingMode(res.locals.assessment_question.id);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

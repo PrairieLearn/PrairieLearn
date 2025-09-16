@@ -15,9 +15,11 @@ const featureNames = [
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',
   // Should only be applied globally.
-  'enhanced-navigation-user-toggle',
+  'legacy-navigation-user-toggle',
   // Can be applied to any context.
-  'enhanced-navigation',
+  'enrollment-management',
+  'rich-text-editor',
+  'legacy-navigation',
 ] as const;
 
 const features = new FeatureManager(featureNames);

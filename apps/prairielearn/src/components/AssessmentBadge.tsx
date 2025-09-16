@@ -1,40 +1,115 @@
-import { html } from '@prairielearn/html';
+import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
+import { renderHtml } from '../lib/preact-html.js';
 
 export function AssessmentBadge({
   assessment,
   hideLink = false,
   urlPrefix,
   plainUrlPrefix,
-  course_instance_id,
+  courseInstanceId,
   publicURL = false,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-} & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
+} & AssessmentInstanceUrlParts) {
+  if (hideLink) {
+    return <span class={`badge color-${assessment.color}`}>{assessment.label}</span>;
+  }
+
+  const link = getAssessmentInstanceUrl(
+    // TypeScript is not smart enough to infer the correct type here
+    urlPrefix !== undefined
+      ? {
+          urlPrefix,
+          assessmentId: assessment.assessment_id,
+          publicURL,
+        }
+      : {
+          plainUrlPrefix,
+          courseInstanceId,
+          assessmentId: assessment.assessment_id,
+          publicURL,
+        },
+  );
+
+  return (
+    <a href={link} class={`btn btn-badge color-${assessment.color}`}>
+      {assessment.label}
+    </a>
+  );
+}
+
+export function AssessmentBadgeHtml({
+  assessment,
+  hideLink = false,
+  urlPrefix,
+  plainUrlPrefix,
+  courseInstanceId,
+  publicURL = false,
+}: {
+  assessment: { assessment_id: string; color: string; label: string };
+  hideLink?: boolean;
+  publicURL?: boolean;
+} & AssessmentInstanceUrlParts) {
+  if (urlPrefix === undefined) {
+    return renderHtml(
+      <AssessmentBadge
+        assessment={assessment}
+        hideLink={hideLink}
+        plainUrlPrefix={plainUrlPrefix}
+        courseInstanceId={courseInstanceId}
+        publicURL={publicURL}
+      />,
+    );
+  }
+  return renderHtml(
+    <AssessmentBadge
+      assessment={assessment}
+      hideLink={hideLink}
+      urlPrefix={urlPrefix}
+      publicURL={publicURL}
+    />,
+  );
+}
+
+export function AssessmentBadgeList({
+  assessments,
+  hideLink = false,
+  urlPrefix,
+  plainUrlPrefix,
+  courseInstanceId,
+  publicURL = false,
+}: {
+  assessments: { assessment_id: string; color: string; label: string }[];
+  hideLink?: boolean;
+  publicURL?: boolean;
+} & (
   | {
       urlPrefix: string;
       plainUrlPrefix?: undefined;
-      course_instance_id?: undefined;
+      courseInstanceId?: undefined;
     }
-  | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
+  | { urlPrefix?: undefined; plainUrlPrefix: string; courseInstanceId: string }
 )) {
-  if (hideLink) {
-    return html`<span class="badge color-${assessment.color}">${assessment.label}</span>`;
-  }
-
-  if (publicURL) {
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}`;
-  } else if (urlPrefix === undefined) {
-    // Construct the URL prefix with the appropriate course instance
-    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
-  }
-  return html`
-    <a
-      href="${urlPrefix}/assessment/${assessment.assessment_id}"
-      class="btn btn-badge color-${assessment.color}"
-    >
-      ${assessment.label}
-    </a>
-  `;
+  return assessments.map((assessment) => (
+    <div key={assessment.assessment_id} class="d-inline-block me-1">
+      {urlPrefix === undefined ? (
+        <AssessmentBadge
+          assessment={assessment}
+          hideLink={hideLink}
+          plainUrlPrefix={plainUrlPrefix}
+          courseInstanceId={courseInstanceId}
+          publicURL={publicURL}
+        />
+      ) : (
+        <AssessmentBadge
+          assessment={assessment}
+          hideLink={hideLink}
+          urlPrefix={urlPrefix}
+          publicURL={publicURL}
+        />
+      )}
+    </div>
+  ));
 }

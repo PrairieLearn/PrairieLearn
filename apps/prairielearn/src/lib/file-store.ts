@@ -11,6 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 import { type File, FileSchema, IdSchema } from './db-types.js';
+import { assertNever } from './types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -45,7 +46,16 @@ interface UploadFileOptions {
  * Upload a file into the file store.
  *
  * @param options - The options for the file upload.
- * @return The file_id of the newly created file.
+ * @param options.display_filename - The display_filename of the file.
+ * @param options.contents - The file contents.
+ * @param options.type - The file type.
+ * @param options.assessment_id - The assessment for the file.
+ * @param options.assessment_instance_id - The assessment instance for the file.
+ * @param options.instance_question_id - The instance question for the file.
+ * @param options.user_id - The current user performing the update.
+ * @param options.authn_user_id - The current authenticated user.
+ * @param options.storage_type - The storage type.
+ * @returns The file_id of the newly created file.
  */
 export async function uploadFile({
   display_filename,
@@ -65,9 +75,6 @@ export async function uploadFile({
   if (storage_type === StorageTypes.S3) {
     // use a UUIDv4 as the filename for S3
     storage_filename = uuidv4();
-    if (config.fileStoreS3Bucket == null) {
-      throw new Error('config.fileStoreS3Bucket is null, which does not allow uploads');
-    }
 
     const res = await uploadToS3(config.fileStoreS3Bucket, storage_filename, null, false, contents);
     debug('upload() : uploaded to ' + res.Location);
@@ -82,9 +89,6 @@ export async function uploadFile({
     const filename = path.join(config.filesRoot, storage_filename);
 
     debug('upload()');
-    if (config.filesRoot == null) {
-      throw new Error('config.filesRoot is null, which does not allow uploads');
-    }
 
     debug(`upload() : mkdir ${dir}`);
     await fsPromises.mkdir(dir, { recursive: true, mode: 0o700 });
@@ -124,7 +128,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
-  await sqldb.queryAsync(sql.delete_file, { file_id, authn_user_id });
+  await sqldb.execute(sql.delete_file, { file_id, authn_user_id });
   debug('delete(): soft-deleted row in DB');
 }
 
@@ -132,7 +136,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
  * Option of returning a stream instead of a file
  *
  * @param file_id - The file to get.
- * @return Requested file stream.
+ * @returns Requested file stream.
  */
 export async function getStream(file_id: number | string): Promise<Stream> {
   debug(`getStream(): file_id=${file_id}`);
@@ -159,7 +163,7 @@ export async function getFile(
  * Get a file from the file store.
  *
  * @param file_id - The file to get.
- * @return An object with a buffer (of the file contents) and a file object.
+ * @returns An object with a buffer (of the file contents) and a file object.
  */
 export async function getFile(
   file_id: number | string,
@@ -174,39 +178,33 @@ export async function getFile(
     throw new Error(`No file with file_id ${file_id}`);
   }
 
-  if (file.storage_type === StorageTypes.FileSystem) {
-    if (config.filesRoot == null) {
-      throw new Error(
-        `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
-      );
+  switch (file.storage_type) {
+    case StorageTypes.FileSystem: {
+      const filename = path.join(config.filesRoot, file.storage_filename);
+
+      const contents =
+        data_type === 'buffer'
+          ? await fsPromises.readFile(filename)
+          : fs.createReadStream(filename);
+
+      return {
+        contents,
+        file,
+      };
     }
+    case StorageTypes.S3: {
+      const contents =
+        data_type === 'buffer'
+          ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
+          : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
 
-    const filename = path.join(config.filesRoot, file.storage_filename);
-
-    const contents =
-      data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
-
-    return {
-      contents,
-      file,
-    };
-  } else if (file.storage_type === StorageTypes.S3) {
-    if (config.fileStoreS3Bucket == null) {
-      throw new Error(
-        `config.fileStoreS3Bucket must be non-null to get file_id ${file_id} from file store`,
-      );
+      return {
+        contents,
+        file,
+      };
     }
-
-    const contents =
-      data_type === 'buffer'
-        ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
-        : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
-
-    return {
-      contents,
-      file,
-    };
-  } else {
-    throw new Error(`Unknown storage type: ${file.storage_type}`);
+    default: {
+      assertNever(file.storage_type);
+    }
   }
 }

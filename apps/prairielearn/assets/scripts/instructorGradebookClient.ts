@@ -1,7 +1,8 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { AssessmentBadge } from '../../src/components/AssessmentBadge.js';
+import { AssessmentBadgeHtml } from '../../src/components/AssessmentBadge.js';
+import { getStudentDetailUrl } from '../../src/lib/client/url.js';
 import {
   type AssessmentInstanceScoreResult,
   type GradebookRow,
@@ -110,7 +111,12 @@ onDocumentReady(() => {
         title: 'Name',
         sortable: true,
         class: 'text-nowrap',
-        formatter: (name: string | null) => html`${name ?? ''}`.toString(),
+        formatter: (name: string | null, row: GradebookRow) => {
+          if (!name) return '';
+          return html`
+            <a href="${getStudentDetailUrl(urlPrefix, row.user_id)}"> ${name} </a>
+          `.toString();
+        },
       },
       {
         field: 'role',
@@ -129,7 +135,7 @@ onDocumentReady(() => {
       },
       ...courseAssessments.map((assessment) => ({
         field: `scores.${assessment.assessment_id}.score_perc`,
-        title: AssessmentBadge({ urlPrefix, assessment }).toString(),
+        title: AssessmentBadgeHtml({ urlPrefix, assessment }).toString(),
         class: 'text-nowrap',
         searchable: false,
         sortable: true,
@@ -243,9 +249,9 @@ function setupEditScorePopovers(csrfToken: string) {
           $(popoverButton).popover('hide');
         });
 
-        form.addEventListener('submit', function (event) {
+        form.addEventListener('submit', async function (event) {
           event.preventDefault();
-          fetch(form.action, {
+          await fetch(form.action, {
             method: 'POST',
             body: new URLSearchParams(new FormData(form, event.submitter) as any),
           }).then(async (response) => {

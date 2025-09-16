@@ -2,11 +2,11 @@
 
 ## Overview
 
-The PrairieLearn database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in this `migrations/` directory. Each migration is uniquely identified and oredered by a timestamp in the filename of the form `YYYYMMDDHHMMSS`. This timestamp must be unique.
+The PrairieLearn database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in this `migrations/` directory. Each migration is uniquely identified and ordered by a timestamp in the filename of the form `YYYYMMDDHHMMSS`. This timestamp must be unique.
 
 The database has a special `migrations` table that tracks with migrations have already been applied. This ensures that migrations are always applied exactly once.
 
-The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations.
+The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations (with `make update-database-description`) and the updates should be committed to git along with the migrations.
 
 ## Creating a migration
 
@@ -24,14 +24,15 @@ node -e "console.log(new Date().toISOString().replace(/\D/g,'').slice(0,14))"
 Each migration file should contain one or more SQL statements to make the appropriate modifications to the database. It's fine to put multiple logically-related migration statements in the same file. Some potentially useful migration statements follow:
 
 ```sql
--- add a column to a table
+-- add a column to a table with a default value
 ALTER TABLE assessments
 ADD COLUMN auto_close boolean DEFAULT true;
 
--- add a foreign key to a table
+-- add a column to a table
 ALTER TABLE variants
 ADD COLUMN authn_user_id bigint;
 
+-- add a foreign key to a table
 ALTER TABLE variants
 ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 

@@ -57,7 +57,7 @@ WITH
       w.*
   ),
   updated_workspace_host AS (
-    UPDATE workspace_hosts as wh
+    UPDATE workspace_hosts AS wh
     SET
       load_count = (
         SELECT
