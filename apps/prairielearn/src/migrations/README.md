@@ -8,6 +8,8 @@ The database has a special `migrations` table that tracks with migrations have a
 
 The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations (with `make update-database-description`) and the updates should be committed to git along with the migrations.
 
+We aim for zero-downtime deploys, so we need to be careful about how we modify the database schema. You should run `make lint-sql-migrations` to check that your migrations aren't holding unneeded locks on tables.
+
 ## Creating a migration
 
 Each migration should have a filename of the form `{TIMESTAMP}_{DESCRIPTION}.sql`, where timestamp has the form `YYYYMMDDHHMMSS`. Such a timestamp can be generated with the following command:
