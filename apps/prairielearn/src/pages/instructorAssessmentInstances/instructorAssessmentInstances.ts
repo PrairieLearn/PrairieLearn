@@ -58,18 +58,15 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
       await checkBelongs(assessment_instance_id, assessment_id);
-      const requireOpen = true;
-      const close = true;
-      const overrideGradeRate = true;
-      await gradeAssessmentInstance(
+      await gradeAssessmentInstance({
         assessment_instance_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        close,
-        overrideGradeRate,
-        null, // client_fingerprint_id
-      );
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: true,
+        overrideGradeRate: true,
+        client_fingerprint_id: null,
+      });
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
@@ -82,15 +79,13 @@ router.post(
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
-      const close = req.body.__action === 'close_all';
-      const overrideGradeRate = true;
-      const job_sequence_id = await gradeAllAssessmentInstances(
+      const job_sequence_id = await gradeAllAssessmentInstances({
         assessment_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        close,
-        overrideGradeRate,
-      );
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        close: req.body.__action === 'close_all',
+        overrideGradeRate: true,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
       await deleteAllAssessmentInstancesForAssessment(
