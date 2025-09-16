@@ -11,7 +11,6 @@ import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
-import { Hydrate } from '../../lib/preact.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -81,17 +80,15 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <Hydrate>
-            <Home
-              canAddCourses={authn_provider_name !== 'LTI'}
-              csrfToken={__csrf_token}
-              instructorCourses={instructorCourses}
-              studentCourses={studentCourses}
-              adminInstitutions={adminInstitutions}
-              urlPrefix={urlPrefix}
-              isDevMode={config.devMode}
-            />
-          </Hydrate>
+          <Home
+            canAddCourses={authn_provider_name !== 'LTI'}
+            csrfToken={__csrf_token}
+            instructorCourses={instructorCourses}
+            studentCourses={studentCourses}
+            adminInstitutions={adminInstitutions}
+            urlPrefix={urlPrefix}
+            isDevMode={config.devMode}
+          />
         ),
         postContent:
           config.homepageFooterText && config.homepageFooterTextHref ? (
