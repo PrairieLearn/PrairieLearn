@@ -45,6 +45,34 @@ ALTER TABLE alternative_groups
 ADD UNIQUE (assessment_id, number);
 ```
 
-!!! note
+## Sample migration patterns
 
-    Migrations were previously identified by indexes, but this caused problems with merge conflicts. See <https://github.com/PrairieLearn/PrairieLearn/pull/6129> or the PR that added support for timestamps.
+This is a collection of how to sequence some common migrations. Bullet points are ordered in sequential time order -- e.g. the first bullet point should have a timestamp before the second bullet point.
+
+### Add column with default value
+
+- Use a **single migration**
+
+### Add column with backfill and no constraints
+
+**PR 1: Add column and enqueue backfill**
+
+- Add the column
+- Enqueue a batched migration to backfill the column with appropriate values
+
+**PR 2: Finalize**
+
+- Finalize the batched migration
+
+### Add column with backfill and constraints
+
+**PR 1: Add column and enqueue backfill**
+
+- Add the column without the constraints
+- Enqueue a batched migration to backfill the column with appropriate values
+
+**PR 2: Finalize and add constraints**
+
+- Finalize the batched migration
+- Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
+- Validate the constraint (this validates all existing data against the constraint)
