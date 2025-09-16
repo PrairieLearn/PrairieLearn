@@ -56,7 +56,7 @@ export function Home({
   );
 
   const hasInstructorCourses = instructorCourses.length > 0;
-  const hasCourses = listedStudentCourses.length > 0 || hasInstructorCourses;
+  const hasCourses = (listedStudentCourses.length > 0 || hasInstructorCourses) && false;
 
   return (
     <>
@@ -271,7 +271,7 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
               <i class="bi bi-person-badge text-primary" style="font-size: 3rem;" />
             </div>
             <h3 class="card-title mb-3">Students</h3>
-            <p class="card-text mb-4">Join a course and start learning.</p>
+            <p class="card-text mb-4">Add a course and start learning.</p>
             <div class="mt-auto">
               <a href={`${urlPrefix}/enroll`} class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle me-2" />
