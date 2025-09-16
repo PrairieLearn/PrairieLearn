@@ -57,14 +57,10 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 ### Add column with backfill and no constraints
 
-#### PR 1: Add column and enqueue backfill
-
-- Add the column
-- Enqueue a batched migration to backfill the column with appropriate values
-
-#### PR 2: Finalize
-
-- Finalize the batched migration
+- First PR: add column and backfill
+  - Add the new column
+  - Enqueue a batched migration to backfill the column with appropriate values
+- Second PR: finalize the batched migration
 
 ### Add column with backfill and constraints
 
