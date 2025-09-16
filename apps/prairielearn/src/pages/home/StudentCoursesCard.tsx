@@ -141,7 +141,7 @@ export function StudentCoursesCard({
         <Modal.Body>
           <p>
             Are you sure you want to reject this invitation? You will need to be re-invited if you
-            change your mind later.
+            want to join this class again later.
           </p>
         </Modal.Body>
         <Modal.Footer>
