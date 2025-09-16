@@ -11,13 +11,14 @@ import {
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
+import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
 import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema,
   course_instance: StaffCourseInstanceSchema,
   enrollment: StaffEnrollmentSchema.nullable(),
-  role: z.string(),
+  role: SprocUsersGetDisplayedRoleSchema,
 });
 
 type UserDetail = z.infer<typeof UserDetailSchema>;

@@ -18,6 +18,7 @@ import {
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
+  SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import {
@@ -55,7 +56,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema.nullable(),
-  instance_role: z.string(),
+  instance_role: SprocUsersGetDisplayedRoleSchema,
   instance_group: GroupSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
   instance_question: z.object({

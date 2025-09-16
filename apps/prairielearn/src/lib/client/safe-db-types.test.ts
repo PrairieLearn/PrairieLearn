@@ -5,6 +5,7 @@ import type z from 'zod';
 
 import {
   RawStaffEnrollmentSchema,
+  RawStudentEnrollmentSchema,
   StaffAlternativeGroupSchema,
   StaffAssessmentInstanceSchema,
   StaffAssessmentQuestionSchema,
@@ -73,12 +74,15 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   course_id: '1',
   deleted_at: null,
   display_timezone: 'UTC',
-  enrollment_code: 'aaaaaaaaaaa',
+  enrollment_code: 'AAABBBCCCC',
   enrollment_limit: null,
   hide_in_enroll_page: null,
   id: '3',
   json_comment: null,
   long_name: null,
+  self_enrollment_enabled: true,
+  self_enrollment_enabled_before_date: null,
+  self_enrollment_requires_secret_link: false,
   share_source_publicly: false,
   short_name: null,
   sync_errors: null,
@@ -139,6 +143,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   group_work: null,
   honor_code: null,
   id: '2',
+  json_allow_real_time_grading: null,
   json_can_submit: null,
   json_can_view: null,
   json_comment: null,
@@ -286,6 +291,17 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   user_id: '1',
 };
 
+const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
+  course_instance_id: '10',
+  created_at: new Date(),
+  id: '1',
+  joined_at: new Date(),
+  lti_managed: false,
+  pending_uid: null,
+  status: 'joined',
+  user_id: null,
+};
+
 const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   action: 'insert',
   action_detail: null,
@@ -325,6 +341,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
 const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSchema> = {
   advance_score_perc: null,
   ai_grading_mode: false,
+  allow_real_time_grading: null,
   alternative_group_id: null,
   assessment_id: '2',
   average_average_submission_score: null,
@@ -524,6 +541,12 @@ describe('safe-db-types schemas', () => {
     const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
+  });
+
+  it('parses valid RawStudentEnrollment and drops extra fields', () => {
+    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 
   it('rejects invalid RawStaffEnrollment status', () => {

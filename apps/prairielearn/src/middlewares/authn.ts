@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import * as authnLib from '../lib/authn.js';
-import { type LoadUserAuth } from '../lib/authn.js';
+import { type LoadUserAuth } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 

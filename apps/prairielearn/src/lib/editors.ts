@@ -27,7 +27,6 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import type { AssessmentJson } from '../schemas/index.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -1439,8 +1438,7 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
-      const oldNamesLong = questionMetadata.filter((title) => title !== null);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1785,14 +1783,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: AssessmentJson = await fs.readJson(infoPath);
+      const infoJson: any = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones?.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative: any) => {
+            question.alternatives?.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;

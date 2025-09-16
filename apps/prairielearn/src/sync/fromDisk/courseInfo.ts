@@ -45,6 +45,5 @@ export async function sync(courseData: CourseData, courseId: string) {
     },
     CourseSchema,
   );
-  if (course == null) throw new Error(`Unable to find course with ID ${courseId}`);
   courseInfo.timezone = course.display_timezone;
 }

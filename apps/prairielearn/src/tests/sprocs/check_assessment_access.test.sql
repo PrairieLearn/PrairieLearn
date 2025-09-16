@@ -56,7 +56,7 @@ WITH
         'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
         1,
         'UTC',
-        '40d98cdbf3c9'
+        'XXXYYY1111'
       )
   ),
   setup_assessment_sets AS (

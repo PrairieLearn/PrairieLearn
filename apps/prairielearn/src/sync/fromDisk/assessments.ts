@@ -4,7 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -170,7 +170,7 @@ function getParamsForAssessment(
             // group, since each alternative can have its own comment. If this is
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
-            comment: question.alternatives ? undefined : question.comment,
+            comment: question.comment,
           },
         ];
       }
@@ -183,31 +183,35 @@ function getParamsForAssessment(
         const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
         const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
-        if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          const maxPoints = Math.max(...pointsList);
+        switch (assessment.type) {
+          case 'Exam': {
+            const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+            const maxPoints = Math.max(...pointsList);
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints: undefined,
-            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-          };
-        } else if (assessment.type === 'Homework') {
-          const initPoints =
-            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
-          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints: undefined,
+              pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
+            };
+          }
+          case 'Homework': {
+            const initPoints =
+              (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+            const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
-        } else {
-          assertNever(assessment.type);
+            return {
+              ...alternative,
+              hasSplitPoints,
+              maxPoints,
+              initPoints,
+              pointsList: undefined,
+            };
+          }
+          default: {
+            assertNever(assessment.type);
+          }
         }
       });
 
@@ -227,6 +231,11 @@ function getParamsForAssessment(
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          // This is the "resolved" setting. Although it's currently unused,
+          // it'll be used at runtime once we add per-question configuration
+          // of real-time grading. Soon we'll add per-zone and per-alternative-group
+          // settings of this as well, and this will take that into account.
+          allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -276,7 +285,8 @@ function getParamsForAssessment(
         ? assessment.type === 'Exam'
         : assessment.shuffleQuestions,
     allow_issue_reporting: assessment.allowIssueReporting,
-    allow_real_time_grading: assessment.allowRealTimeGrading,
+    allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
+    json_allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
     // NOTE: There are various homeworks with requireHonorCode set to true in the database (see #12675 for more details)
@@ -415,12 +425,11 @@ export async function sync(
     ]);
   });
 
-  await sqldb.callAsync('sync_assessments', [
-    assessmentParams,
-    courseId,
-    courseInstanceId,
-    config.checkSharingOnSync,
-  ]);
+  await sqldb.callRow(
+    'sync_assessments',
+    [assessmentParams, courseId, courseInstanceId, config.checkSharingOnSync],
+    SprocSyncAssessmentsSchema,
+  );
 }
 
 export async function validateAssessmentSharedQuestions(

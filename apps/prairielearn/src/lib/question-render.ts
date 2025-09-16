@@ -23,7 +23,7 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -381,7 +381,7 @@ function buildLocals({
   if (
     assessment_question
       ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question?.grading_method === 'Manual'
+      : question.grading_method === 'Manual'
   ) {
     locals.showGradeButton = false;
   }
@@ -397,7 +397,7 @@ function buildLocals({
   }
 
   // Manually disable correct answer panel
-  if (!question?.show_correct_answer) {
+  if (!question.show_correct_answer) {
     locals.showTrueAnswer = false;
   }
 
@@ -566,7 +566,7 @@ export async function getAndRenderVariant(
   if (
     (locals.questionRenderContext === 'manual_grading' ||
       locals.questionRenderContext === 'ai_grading') &&
-    question?.show_correct_answer
+    question.show_correct_answer
   ) {
     newLocals.showTrueAnswer = true;
   }
@@ -614,7 +614,7 @@ export async function getAndRenderVariant(
     })) satisfies SubmissionForRender[];
   });
 
-  const submission = submissions[0] ?? null;
+  const submission = submissions.at(0) ?? null;
   locals.submissions = submissions;
   locals.submission = submission;
 
@@ -870,7 +870,7 @@ export async function renderPanelsForSubmission({
       const group_info = await run(async () => {
         if (!assessment_instance?.group_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance?.group_id, group_config);
+        return await getGroupInfo(assessment_instance.group_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({

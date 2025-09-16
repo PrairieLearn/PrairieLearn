@@ -12,16 +12,22 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import { renderHtml } from '../../../lib/preact-html.js';
+import { Hydrate } from '../../../lib/preact.js';
+
+import RichTextEditor from './RichTextEditor/index.js';
 
 export function InstructorAiGenerateDraftEditor({
   resLocals,
   prompts,
   question,
+  richTextEditorEnabled,
   variantId,
 }: {
   resLocals: Record<string, any>;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
+  richTextEditorEnabled: boolean;
   variantId?: string | undefined;
 }) {
   // This page has a very custom layout, so we don't use the usual `PageLayout`
@@ -45,7 +51,7 @@ export function InstructorAiGenerateDraftEditor({
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">
-        <div class="app-container">
+        <div class="app-container" style="--chat-width: 400px;">
           <div class="app-grid">
             <div class="app-navbar">
               ${Navbar({
@@ -107,6 +113,7 @@ export function InstructorAiGenerateDraftEditor({
                     </div>
                   </form>
                 </div>
+                <div class="app-chat-resizer" aria-label="Resize chat" role="separator"></div>
               </div>
 
               <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs">
@@ -124,6 +131,19 @@ export function InstructorAiGenerateDraftEditor({
                   <li class="nav-item">
                     <a a class="nav-link" data-bs-toggle="tab" href="#question-code">Files</a>
                   </li>
+                  ${richTextEditorEnabled
+                    ? html`
+                        <li class="nav-item">
+                          <a
+                            class="nav-link"
+                            data-bs-toggle="tab"
+                            href="#question-rich-text-editor"
+                          >
+                            Rich Text Editor
+                          </a>
+                        </li>
+                      `
+                    : ''}
                 </ul>
                 <div
                   class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2"
@@ -147,11 +167,6 @@ export function InstructorAiGenerateDraftEditor({
         </div>
         ${FinalizeModal({ csrfToken: resLocals.__csrf_token })}
       </body>
-      <script>
-        // TODO: something different on narrow viewports?
-        const chatHistory = document.querySelector('.app-chat-history');
-        chatHistory.scrollTop = chatHistory.scrollHeight;
-      </script>
     </html>
   `.toString();
 }
@@ -266,6 +281,16 @@ function QuestionAndFilePreview({
           pythonContents: prompts[prompts.length - 1].python,
           csrfToken: resLocals.__csrf_token,
         })}
+      </div>
+      <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
+        ${renderHtml(
+          <Hydrate>
+            <RichTextEditor
+              htmlContents={prompts[prompts.length - 1].html}
+              csrfToken={resLocals.__csrf_token}
+            />
+          </Hydrate>,
+        )}
       </div>
     </div>
   `;

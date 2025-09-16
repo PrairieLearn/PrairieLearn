@@ -140,4 +140,44 @@ onDocumentReady(() => {
       }
     }
   });
+
+  // Scroll chat to bottom on load
+  const chatHistory = document.querySelector<HTMLElement>('.app-chat-history');
+  if (chatHistory) {
+    chatHistory.scrollTop = chatHistory.scrollHeight;
+  }
+
+  // Enable chat width resizing via drag handle
+  // TODO: Keyboard support for resizing the chat width.
+  const container = document.querySelector<HTMLElement>('.app-container');
+  const resizer = document.querySelector<HTMLElement>('.app-chat-resizer');
+  const chat = document.querySelector<HTMLElement>('.app-chat');
+  if (container && resizer && chat) {
+    let startX = 0;
+    let startWidth = 0;
+    const minWidth = 260;
+    const maxWidth = 800;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const dx = e.clientX - startX;
+      const newWidth = Math.min(maxWidth, Math.max(minWidth, startWidth + dx));
+      container.style.setProperty('--chat-width', `${newWidth}px`);
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.classList.remove('user-select-none');
+    };
+
+    resizer.addEventListener('mousedown', (e) => {
+      startX = e.clientX;
+      const styles = getComputedStyle(container);
+      const current = styles.getPropertyValue('--chat-width').trim() || '400px';
+      startWidth = Number.parseInt(current) || chat.getBoundingClientRect().width;
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+      document.body.classList.add('user-select-none');
+    });
+  }
 });

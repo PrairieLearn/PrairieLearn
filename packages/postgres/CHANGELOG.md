@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 4.3.0
+
+### Minor Changes
+
+- 4bb97ac: Throw an error when the database pool gets reinitialized
+
+## 4.2.0
+
+### Minor Changes
+
+- c6f661c: Make parameters optional, support single-columns schema for queryCursor
+
 ## 4.1.1
 
 ### Patch Changes

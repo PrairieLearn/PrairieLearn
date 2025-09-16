@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "4.0.3",
+  "version": "4.0.4",
   "type": "module",
   "repository": {
     "type": "git",
@@ -13,8 +13,8 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@sentry/core": "^10.8.0",
-    "@sentry/node-core": "^10.8.0",
+    "@sentry/core": "^10.9.0",
+    "@sentry/node-core": "^10.9.0",
     "execa": "^9.6.0"
   },
   "devDependencies": {

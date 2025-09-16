@@ -1,10 +1,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -40,7 +43,9 @@ router.get(
     const studentCourses = await queryRows(
       sql.select_student_courses,
       {
+        // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.user_id,
+        pending_uid: res.locals.authn_user.uid,
         req_date: res.locals.req_date,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course
@@ -59,6 +64,10 @@ router.get(
       StaffInstitutionSchema,
     );
 
+    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+      withAuthzData: false,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -72,10 +81,13 @@ router.get(
         },
         content: (
           <Home
-            resLocals={res.locals}
+            canAddCourses={authn_provider_name !== 'LTI'}
+            csrfToken={__csrf_token}
             instructorCourses={instructorCourses}
             studentCourses={studentCourses}
             adminInstitutions={adminInstitutions}
+            urlPrefix={urlPrefix}
+            isDevMode={config.devMode}
           />
         ),
         postContent:
@@ -87,9 +99,41 @@ router.get(
                 </a>
               </div>
             </footer>
-          ) : undefined,
+          ) : (
+            <PageFooter />
+          ),
       }),
     );
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const BodySchema = z.object({
+      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      course_instance_id: z.string().min(1),
+    });
+    const body = BodySchema.parse(req.body);
+
+    const {
+      authn_user: { uid, user_id },
+    } = getPageContext(res.locals, { withAuthzData: false });
+
+    if (body.__action === 'accept_invitation') {
+      await execute(sql.accept_invitation, {
+        course_instance_id: body.course_instance_id,
+        uid,
+        user_id,
+      });
+    } else if (body.__action === 'reject_invitation') {
+      await execute(sql.reject_invitation, {
+        course_instance_id: body.course_instance_id,
+        uid,
+      });
+    }
+
+    res.redirect(req.originalUrl);
   }),
 );
 

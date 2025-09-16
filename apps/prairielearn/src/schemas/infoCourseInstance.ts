@@ -46,6 +46,31 @@ export const CourseInstanceJsonSchema = z
       )
       .optional(),
     allowIssueReporting: z.boolean().describe('DEPRECATED -- do not use.').optional(),
+    selfEnrollment: z
+      .object({
+        enabled: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment access is controlled by the beforeDate and requiresSecretLink properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+          )
+          .optional()
+          .default(true),
+        beforeDate: z
+          .string()
+          .describe(
+            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+          )
+          .optional(),
+        requiresSecretLink: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
+          )
+          .optional()
+          .default(false),
+      })
+      .optional()
+      .default({}),
     hideInEnrollPage: z
       .boolean()
       .describe(

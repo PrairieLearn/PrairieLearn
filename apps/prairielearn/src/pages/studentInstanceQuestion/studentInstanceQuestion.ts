@@ -19,8 +19,6 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
-import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -30,10 +28,23 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
-router.use(selectAndAuthzInstanceQuestion);
-router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
+router.use((req, res, next) => {
+  // Because this router is mounted a general path, its middleware will also
+  // be run for sub-routes like `submissions/:submission_id/file/:filename`
+  // and `clientFilesQuestion/:filename`.
+  //
+  // We only want to run this middleware for requests to the main page itself,
+  // as that's the only page that will record log entries with fingerprints. It
+  // would be confusing if the fingerprint change count was incremented without
+  // a corresponding log entry.
+  if (req.url !== '/') {
+    next();
+    return;
+  }
+
+  clientFingerprint(req, res, next);
+});
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
@@ -207,18 +218,15 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      const requireOpen = true;
-      const closeExam = true;
-      const overrideGradeRate = false;
-      await gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
       );

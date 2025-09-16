@@ -240,7 +240,7 @@ export async function loadFullCourse(
     // an `endDate` that is in the past.
     const allowAccessRules = courseInstance.data?.allowAccess ?? [];
     const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
       return endDate && isPast(endDate);
     });
 
@@ -254,7 +254,7 @@ export async function loadFullCourse(
 
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
-        assessmentSetsInUse.add(assessment.data?.set);
+        assessmentSetsInUse.add(assessment.data.set);
       }
     }
 
@@ -512,13 +512,13 @@ export async function loadCourseInfo({
     return maybeNullLoadedData;
   }
 
-  if (!maybeNullLoadedData?.data) {
+  const info = maybeNullLoadedData?.data;
+  if (!info) {
     throw new Error('Could not load infoCourse.json');
   }
 
   // Reassign to a non-null type.
   const loadedData = maybeNullLoadedData;
-  const info = maybeNullLoadedData.data;
 
   if (config.checkSharingOnSync && !sharingEnabled && info.sharingSets) {
     infofile.addError(
@@ -540,7 +540,7 @@ export async function loadCourseInfo({
     const known = new Map();
     const duplicateEntryIds = new Set<string>();
 
-    (info[fieldName] || []).forEach((entry) => {
+    (info![fieldName] ?? []).forEach((entry) => {
       const entryId = entry[entryIdentifier];
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
@@ -595,7 +595,7 @@ export async function loadCourseInfo({
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures = run(() => {
-    const features = info?.options?.devModeFeatures ?? {};
+    const features = info.options.devModeFeatures ?? {};
 
     // Support for legacy values, where features were an array of strings instead
     // of an object mapping feature names to booleans.
@@ -746,6 +746,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   infoFilename: string;
   schema: any;
   zodSchema: T;
+  /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
   validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
@@ -762,7 +763,8 @@ async function loadInfoForDirectory<T extends ZodSchema>({
     // and attempt to access `info.json`. If we can successfully read it,
     // hooray, we're done.
     await async.each(files, async (dir: string) => {
-      const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
+      const infoFileDir = path.join(directory, relativeDir, dir);
+      const infoFilePath = path.join(infoFileDir, infoFilename);
       const info = await loadAndValidateJson({
         coursePath,
         filePath: infoFilePath,
@@ -780,7 +782,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
           const subInfoFiles = await walk(path.join(relativeDir, dir));
           if (_.isEmpty(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
-              `Missing JSON file: ${infoFilePath}`,
+              `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
             );
           }
           Object.assign(infoFiles, subInfoFiles);
@@ -868,7 +870,7 @@ function checkAllowAccessRoles(rule: { role?: string }): string[] {
  * parse into a JavaScript `Date` object. If the supplied date is considered
  * invalid, `null` is returned.
  */
-function parseAllowAccessDate(date: string): Date | null {
+function parseJsonDate(date: string): Date | null {
   // This ensures we don't accept strings like "2024-04", which `parseISO`
   // would happily accept. We want folks to always be explicit about days/times.
   //
@@ -901,13 +903,13 @@ function checkAllowAccessDates(rule: { startDate?: string | null; endDate?: stri
   // See the `input_date` sproc for where these strings are ultimately parsed for
   // storage in the database. That sproc actually has stricter validation
   if (rule.startDate) {
-    startDate = parseAllowAccessDate(rule.startDate);
+    startDate = parseJsonDate(rule.startDate);
     if (!startDate) {
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
   if (rule.endDate) {
-    endDate = parseAllowAccessDate(rule.endDate);
+    endDate = parseJsonDate(rule.endDate);
     if (!endDate) {
       errors.push(`Invalid allowAccess rule: endDate (${rule.endDate}) is not valid`);
     }
@@ -975,7 +977,7 @@ function validateQuestion({
     }
   }
 
-  if (question.type && question.options) {
+  if (question.options) {
     try {
       const schema = schemas[`questionOptions${question.type}`];
       const options = question.options;
@@ -1027,7 +1029,7 @@ function validateAssessment({
     );
   }
 
-  const allowRealTimeGrading = assessment.allowRealTimeGrading;
+  const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
@@ -1248,19 +1250,19 @@ function validateAssessment({
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (assessment.groupMinSize && role.minimum > assessment.groupMinSize) {
+      if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (assessment.groupMaxSize && role.minimum > assessment.groupMaxSize) {
+      if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
       if (
         role.maximum != null &&
-        assessment.groupMaxSize &&
+        assessment.groupMaxSize != null &&
         role.maximum > assessment.groupMaxSize
       ) {
         errors.push(
@@ -1347,15 +1349,35 @@ function validateCourseInstance({
     }
   }
 
+  // TODO: Remove these warnings once we've implemented support for the properties.
+  // These are warnings (and not errors) so that we can test syncing with the new schema.
+
+  if (courseInstance.selfEnrollment.enabled !== true) {
+    warnings.push('"selfEnrollment.enabled" is not configurable yet.');
+  }
+
+  if (courseInstance.selfEnrollment.beforeDate != null) {
+    warnings.push('"selfEnrollment.beforeDate" is not configurable yet.');
+
+    const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
+    if (date == null) {
+      errors.push('"selfEnrollment.beforeDate" is not a valid date.');
+    }
+  }
+
+  if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
+    warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
+  }
+
   let accessibleInFuture = false;
-  courseInstance.allowAccess.forEach((rule) => {
+  for (const rule of courseInstance.allowAccess) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
-  });
+  }
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.

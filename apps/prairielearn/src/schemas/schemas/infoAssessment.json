@@ -90,9 +90,8 @@
       "default": false
     },
     "allowRealTimeGrading": {
-      "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken.",
-      "type": "boolean",
-      "default": true
+      "description": "Removes the student \"Grade\" buttons to prevent real-time grading while the assessment is being taken. Real-time grading is allowed by default.",
+      "type": "boolean"
     },
     "requireHonorCode": {
       "description": "Requires the student to accept an honor code before starting the assessment. Set to true for Exam assessments by default. Only configurable for Exam assessments.",
@@ -462,7 +461,7 @@
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
           "type": "number",
-          "default": 1
+          "minimum": 1
         },
         "advanceScorePerc": {
           "description": "Minimum score percentage to unlock access to subsequent questions.",

@@ -1,5 +1,7 @@
 import asyncHandler from 'express-async-handler';
 
+import { HttpStatusError } from '@prairielearn/error';
+
 import { checkPlanGrantsForQuestion } from '../lib/billing/plan-grants.js';
 
 export default asyncHandler(async (req, res, next) => {
@@ -8,7 +10,7 @@ export default asyncHandler(async (req, res, next) => {
   if (!hasPlanGrants) {
     // TODO: Show a fancier error page explaining what happened and prompting
     // the user to contact their instructor.
-    throw new Error('Access denied');
+    throw new HttpStatusError(403, 'Access denied (plan grants missing)');
   }
 
   next();

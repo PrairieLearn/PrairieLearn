@@ -674,66 +674,41 @@ export class CodeCallerContainer implements CodeCaller {
       );
     }
 
-    let containerNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
-    if (this.state === CREATED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      containerNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      containerNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      containerNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
-      return this._logError(`Invalid CodeCallerContainer state: ${String(this.state)}`);
+    const containerNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = this.state !== IN_CALL;
+    const timeoutIDNull = this.state !== IN_CALL;
+
+    if (containerNull && this.container != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should be null`,
+      );
+    }
+    if (!containerNull && this.container == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: container should not be null`,
+      );
     }
 
-    if (containerNull != null) {
-      if (containerNull && this.container != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should be null`,
-        );
-      }
-      if (!containerNull && this.container == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: container should not be null`,
-        );
-      }
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should be null`,
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should be null`,
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
-        );
-      }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: callback should not be null`,
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
-        );
-      }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should be null`,
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        `CodeCallerContainer state ${String(this.state)}: timeoutID should not be null`,
+      );
     }
 
     return true;

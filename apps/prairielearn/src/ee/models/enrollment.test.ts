@@ -4,7 +4,7 @@ import { queryRow } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
+import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperDb from '../../tests/helperDb.js';
 import { getOrCreateUser } from '../../tests/utils/auth.js';
@@ -44,7 +44,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       {
         course_id: 1,
         display_timezone: 'UTC',
-        enrollment_code: generateEnrollmentCode(),
+        enrollment_code: await uniqueEnrollmentCode(),
       },
       CourseInstanceSchema,
     );

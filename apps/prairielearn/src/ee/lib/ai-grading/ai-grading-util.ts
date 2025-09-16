@@ -8,7 +8,7 @@ import type {
 import { z } from 'zod';
 
 import {
-  callAsync,
+  callRow,
   execute,
   loadSqlEquiv,
   queryOptionalRow,
@@ -16,6 +16,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentQuestionSchema,
@@ -27,6 +28,7 @@ import {
   type Question,
   type RubricItem,
   RubricItemSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
   type SubmissionGradingContextEmbedding,
   SubmissionGradingContextEmbeddingSchema,
@@ -48,7 +50,6 @@ export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-export const GradingResultSchema = z.object({ score: z.number(), feedback: z.string() });
 export const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -112,7 +113,7 @@ export async function generatePrompt({
       {
         role: 'system',
         content:
-          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any. You should also include an explanation on why you make these choices." +
           (example_submissions.length > 0
             ? ' I will provide some example student responses and their corresponding selected rubric items.'
             : ''),
@@ -126,7 +127,7 @@ export async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is correct." +
+        "You are an instructor for a course, and you are grading a student's response to a question. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. Follow any special instructions given by the instructor in the question. Include feedback for the student, but omit the feedback if the student's response is entirely correct. Also include an explanation on why you made these choices." +
         (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
@@ -179,6 +180,13 @@ export async function generatePrompt({
 }
 
 /**
+ * Returns true if the text contains any element with a `data-image-capture-uuid` attribute.
+ */
+export function containsImageCapture(submission_text: string): boolean {
+  return cheerio.load(submission_text)('[data-image-capture-uuid]').length > 0;
+}
+
+/**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({
@@ -217,31 +225,38 @@ function generateSubmissionMessage({
           submissionTextSegment = '';
         }
 
-        const options = $submission_html(node).data('options') as Record<string, string>;
-        const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName) {
-          // If no submitted filename is available, no image was captured.
-          message_content.push({
-            type: 'text',
-            text: `Image capture with ${options.file_name} was not captured.`,
-          });
-          return;
-        }
+        const fileName = run(() => {
+          // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+          const submittedFileName = $submission_html(node).data('file-name');
+          if (submittedFileName && typeof submittedFileName === 'string') {
+            return submittedFileName.trim();
+          }
 
-        // submitted_answer contains the base-64 encoded image data for the image capture.
+          // Old style, where we have to pick the filename out of the `data-options` attribute.
+          const options = $submission_html(node).data('options') as Record<string, string>;
 
+          return options?.submitted_file_name;
+        });
+
+        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
 
-        if (!submitted_answer[submittedImageName]) {
-          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        if (!submitted_answer[fileName]) {
+          // If the submitted answer doesn't contain the image, the student likely
+          // didn't capture an image.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${fileName} was not captured.`,
+          });
+          return;
         }
 
         message_content.push({
           type: 'image_url',
           image_url: {
-            url: submitted_answer[submittedImageName],
+            url: submitted_answer[fileName],
           },
         });
       } else {
@@ -491,14 +506,18 @@ export async function deleteAiGradingJobs({
     );
 
     for (const iq of iqs) {
-      await callAsync('assessment_instances_grade', [
-        iq.assessment_instance_id,
-        // We use the user who is performing the deletion.
-        authn_user_id,
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ]);
+      await callRow(
+        'assessment_instances_grade',
+        [
+          iq.assessment_instance_id,
+          // We use the user who is performing the deletion.
+          authn_user_id,
+          100, // credit
+          false, // only_log_if_score_updated
+          true, // allow_decrease
+        ],
+        SprocAssessmentInstancesGradeSchema,
+      );
     }
 
     return iqs;

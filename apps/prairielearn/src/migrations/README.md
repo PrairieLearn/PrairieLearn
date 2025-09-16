@@ -2,7 +2,7 @@
 
 ## Overview
 
-The PrairieLearn database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in this `migrations/` directory. Each migration is uniquely identified and oredered by a timestamp in the filename of the form `YYYYMMDDHHMMSS`. This timestamp must be unique.
+The PrairieLearn database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in this `migrations/` directory. Each migration is uniquely identified and ordered by a timestamp in the filename of the form `YYYYMMDDHHMMSS`. This timestamp must be unique.
 
 The database has a special `migrations` table that tracks with migrations have already been applied. This ensures that migrations are always applied exactly once.
 

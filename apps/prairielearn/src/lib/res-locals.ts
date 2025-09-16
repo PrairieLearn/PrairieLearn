@@ -16,7 +16,7 @@ import type {
 } from '../middlewares/selectAndAuthzInstructorQuestion.js';
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
-import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsAuthnUser } from './authn.types.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
