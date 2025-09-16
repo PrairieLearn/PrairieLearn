@@ -64,8 +64,8 @@ export async function ensureEnrollment({
   user_id: string;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
-}): Promise<Enrollment | null> {
-  return await runInTransactionAsync(async () => {
+}): Promise<StaffEnrollment | null> {
+  const result = await runInTransactionAsync(async () => {
     const user = await selectUserById(user_id);
     const enrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
       course_instance_id,
@@ -110,6 +110,10 @@ export async function ensureEnrollment({
     }
     return inserted;
   });
+  if (result) {
+    return StaffEnrollmentSchema.parse(result);
+  }
+  return null;
 }
 
 /**
@@ -226,7 +230,7 @@ export async function selectEnrollmentByUid({
   course_instance_id: string;
   uid: string;
 }) {
-  return await queryRow(
+  return await queryOptionalRow(
     sql.select_enrollment_by_uid,
     { course_instance_id, uid },
     StaffEnrollmentSchema,

@@ -57,6 +57,10 @@ router.get(
       course_instance_id: courseInstance.id,
       uid,
     });
+    if (!staffEnrollment) {
+      res.status(404).json({ error: 'Enrollment not found' });
+      return;
+    }
     res.json(staffEnrollment);
   }),
 );
