@@ -45,4 +45,6 @@ ALTER TABLE alternative_groups
 ADD UNIQUE (assessment_id, number);
 ```
 
-> Note: migrations were previously identified by indexes, but this caused problems with merge conflicts. See <https://github.com/PrairieLearn/PrairieLearn/pull/6129> or the PR that added support for timestamps.
+!!! note
+
+    Migrations were previously identified by indexes, but this caused problems with merge conflicts. See <https://github.com/PrairieLearn/PrairieLearn/pull/6129> or the PR that added support for timestamps.

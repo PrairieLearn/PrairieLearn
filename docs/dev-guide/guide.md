@@ -288,6 +288,12 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 See the [migrations documentation](./migrations/README.md).
 
+We aim for zero-downtime deploys, so we need to be careful about how we modify the database schema. You should run `make lint-sql-migrations` to check that your migrations aren't holding unneeded locks on tables.
+
+When adding a new column, you can follow this decision tree to help determine the appropriate migration approach:
+
+![Diagram showing migration decision flow](./migration-flowchart.d2){layout="dagre" pad="0" }
+
 ## Database access
 
 - Database access is via the `@prairielearn/postgres` package. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.

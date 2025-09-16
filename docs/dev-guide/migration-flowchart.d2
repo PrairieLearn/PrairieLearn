@@ -1,0 +1,69 @@
+direction: down
+vars: {
+  d2-config: {
+    layout-engine: elk
+  }
+}
+
+with_default: "Column with default value?" {
+  shape: diamond
+  style.fill: "#e8f5e8"
+}
+
+with_constraint: "Do you need to enforce constraints\n (e.g. NOT NULL, CHECK)?" {
+  shape: diamond
+  style.fill: "#fff3e0"
+}
+
+simple_migration: "Single migration" {
+  style.fill: "#c8e6c9"
+}
+
+pr1: "PR 1" {
+  style.fill: "#e3f2fd"
+  explanation: |md
+
+    Two migrations:
+
+    - add column
+    - enqueue backfill using a batched migration
+
+    .
+  |
+}
+
+pr2_no_constraint: "PR 2 (No constraint)" {
+  explanation: |md
+
+    One migration:
+
+    - finalize backfill
+
+    .
+  |
+  style.fill: "#e3f2fd"
+}
+
+pr2_with_constraint: "PR 2 (With constraint)" {
+  style.fill: "#e3f2fd"
+  explanation: |md
+
+    Three migrations:
+
+    - finalize backfill
+    - add constraint `NOT VALID`
+    - validate constraint
+
+    .
+  |
+}
+
+with_default -> simple_migration: "Yes"
+with_default -> pr1: "No"
+pr1 -> with_constraint
+with_constraint -> pr2_no_constraint: "No"
+with_constraint -> pr2_with_constraint: "Yes"
+
+simple_migration -> "Done"
+pr2_no_constraint -> "Done"
+pr2_with_constraint -> "Done"
