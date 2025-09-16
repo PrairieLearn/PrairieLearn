@@ -270,12 +270,12 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
             <div class="mb-3">
               <i class="bi bi-person-badge text-primary" style="font-size: 3rem;" />
             </div>
-            <h3 class="card-title text-secondary mb-3">Students</h3>
-            <p class="card-text text-muted mb-4">Join a course and start learning.</p>
+            <h3 class="card-title mb-3">Students</h3>
+            <p class="card-text mb-4">Join a course and start learning.</p>
             <div class="mt-auto">
               <a href={`${urlPrefix}/enroll`} class="btn btn-primary btn-lg">
                 <i class="bi bi-plus-circle me-2" />
-                Add or remove courses
+                Add course
               </a>
             </div>
           </div>
@@ -287,8 +287,8 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
             <div class="mb-3">
               <i class="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
             </div>
-            <h3 class="card-title text-secondary mb-3">Instructors</h3>
-            <p class="card-text text-muted mb-4">Create and manage courses for your students.</p>
+            <h3 class="card-title mb-3">Instructors</h3>
+            <p class="card-text mb-4">Create and manage courses for your students.</p>
             <div class="mt-auto">
               <div class="d-flex gap-2">
                 <a
