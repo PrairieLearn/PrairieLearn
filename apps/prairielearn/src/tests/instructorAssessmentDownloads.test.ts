@@ -41,7 +41,7 @@ const locals = {} as {
   getSubmittedAnswer: (variant: any) => object;
 };
 
-const assessmentPoints = 5;
+const assessmentPoints = helperExam.exams['exam1-automaticTestSuite'].maxPoints;
 
 describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
@@ -292,12 +292,118 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     it('should attempt to download every file in getFilenames', async () => {
       const assessment = await selectAssessmentById(locals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);
-
-      // TODO: A future PR should also test the group work downloads
-      // This suite currently uses helperExam, which uses 'exam1-automaticTestSuite', which does
-      // not have group work enabled.
-
       assert.isFalse(assessment.group_work);
+
+      const filenames: string[] = Object.values(
+        getFilenames({
+          assessment,
+          assessment_set: await selectAssessmentSetById(assessment.assessment_set_id),
+          course_instance: await selectCourseInstanceById(locals.variant.course_instance_id),
+          course: await selectCourseById(locals.variant.course_id),
+        }),
+      );
+
+      await Promise.all(
+        filenames.map(async (filename) => {
+          const downloadUrl =
+            locals.courseInstanceBaseUrl +
+            '/instructor/assessment/' +
+            locals.assessment_id +
+            '/downloads/' +
+            filename;
+          const res = await fetch(downloadUrl);
+          assert.equal(res.status, 200, `Failed to download ${filename}`);
+          if (filename.endsWith('.csv')) {
+            const csvContent = await res.text();
+            const data = csvParse<any>(csvContent, { columns: true, cast: true });
+            assert.isAtLeast(data.length, 1);
+          } else if (filename.endsWith('.zip')) {
+            const zipContent = Buffer.from(await res.arrayBuffer());
+            const zip = await unzipper.Open.buffer(zipContent);
+            assert.isAtLeast(zip.files.length, 1);
+          } else {
+            assert.fail(`Unknown file type: ${filename}`);
+          }
+        }),
+      );
+    });
+  });
+});
+
+describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, function () {
+  beforeAll(helperServer.before());
+
+  afterAll(helperServer.after);
+
+  const groupWorkAssessmentPoints = helperExam.exams['exam14-groupWork'].maxPoints;
+  const firstQuestionPoints = helperExam.exams['exam14-groupWork'].questions[0].maxPoints;
+
+  helperExam.startExam(locals, 'exam14-groupWork');
+
+  describe('1. grade correct answer to question addNumbers', function () {
+    describe('setting up the submission data', function () {
+      it('should succeed', function () {
+        locals.shouldHaveButtons = ['grade', 'save'];
+        locals.postAction = 'grade';
+        locals.question = helperExam.exams['exam14-groupWork'].keyedQuestions.addNumbers;
+        locals.expectedResult = {
+          submission_score: 1,
+          submission_correct: true,
+          instance_question_points: groupWorkAssessmentPoints,
+          instance_question_score_perc: (groupWorkAssessmentPoints / firstQuestionPoints) * 100,
+          assessment_instance_points: groupWorkAssessmentPoints,
+          assessment_instance_score_perc:
+            (groupWorkAssessmentPoints / helperExam.exams['exam14-groupWork'].maxPoints) * 100,
+        };
+        locals.getSubmittedAnswer = function (variant) {
+          console.log(variant);
+          return {
+            wx: variant.true_answer.wx,
+            wy: variant.true_answer.wy,
+          };
+        };
+      });
+    });
+    helperQuestion.getInstanceQuestion(locals);
+    helperQuestion.postInstanceQuestion(locals);
+    helperQuestion.checkQuestionScore(locals);
+    helperQuestion.checkAssessmentScore(locals);
+  });
+
+  describe('2. grade correct answer to question positionTimeGraph', function () {
+    describe('setting up the submission data', function () {
+      it('should succeed', function () {
+        locals.shouldHaveButtons = ['grade', 'save'];
+        locals.postAction = 'grade';
+        locals.question = helperExam.exams['exam14-groupWork'].keyedQuestions.positionTimeGraph;
+        locals.expectedResult = {
+          submission_score: 1,
+          submission_correct: true,
+          instance_question_points: groupWorkAssessmentPoints,
+          instance_question_score_perc: (groupWorkAssessmentPoints / firstQuestionPoints) * 100,
+          assessment_instance_points: groupWorkAssessmentPoints,
+          assessment_instance_score_perc:
+            (groupWorkAssessmentPoints / helperExam.exams['exam14-groupWork'].maxPoints) * 100,
+        };
+        locals.getSubmittedAnswer = function (variant) {
+          return {
+            x: variant.true_answer.x,
+            y: variant.true_answer.y,
+          };
+        };
+      });
+    });
+    helperQuestion.getInstanceQuestion(locals);
+    helperQuestion.postInstanceQuestion(locals);
+    helperQuestion.checkQuestionScore(locals);
+    helperQuestion.checkAssessmentScore(locals);
+  });
+
+  describe('3. Comprehensive test of all downloads', function () {
+    it('should attempt to download every file in getFilenames', async () => {
+      const assessment = await selectAssessmentById(locals.assessment_id);
+      assert.isNotNull(assessment.assessment_set_id);
+      assert.isTrue(assessment.group_work);
 
       const filenames: string[] = Object.values(
         getFilenames({

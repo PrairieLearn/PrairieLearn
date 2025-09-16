@@ -18,7 +18,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export interface TestExamQuestion {
   qid: string;
-  type: 'Freeform' | 'Calculation';
+  type: 'Freeform' | 'Calculation' | 'External';
   maxPoints: number;
   points?: number;
   id?: string;
@@ -28,6 +28,7 @@ export interface TestExamQuestion {
 interface TestExam {
   maxPoints: number;
   tid: string;
+  number: string;
   title: string;
   questions: TestExamQuestion[];
   keyedQuestions: Record<string, TestExamQuestion>;
@@ -43,13 +44,35 @@ const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 13 },
 ];
 
+const exam14GroupWorkQuestions: TestExamQuestion[] = [
+  {
+    qid: 'addVectors',
+    type: 'Freeform',
+    maxPoints: 10,
+  },
+  {
+    qid: 'positionTimeGraph',
+    type: 'Freeform',
+    maxPoints: 10,
+  },
+];
+
 export const exams: Record<string, TestExam> = {
   'exam1-automaticTestSuite': {
     maxPoints: 94,
     tid: 'exam1-automaticTestSuite',
+    number: '1',
     title: 'Exam for automatic test suite',
     questions: exam1AutomaticTestSuiteQuestions,
     keyedQuestions: _.keyBy(exam1AutomaticTestSuiteQuestions, 'qid'),
+  },
+  'exam14-groupWork': {
+    maxPoints: 20,
+    tid: 'exam14-groupWork',
+    number: '14',
+    title: 'Group Activity Exam Example',
+    questions: exam14GroupWorkQuestions,
+    keyedQuestions: _.keyBy(exam14GroupWorkQuestions, 'qid'),
   },
 };
 
@@ -97,7 +120,7 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
     it('should contain E1', async function () {
       const { id: assessmentId } = await selectAssessmentByTid({
         course_instance_id: '1',
-        tid: 'exam1-automaticTestSuite',
+        tid: examTid,
       });
       locals.assessment_id = assessmentId;
     });
@@ -111,9 +134,10 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should contain E1 and have the correct link', function () {
+    it(`should contain title: "${exam.title}" with the correct link`, function () {
       assert(locals.$);
-      const elemList = locals.$('td a:contains("Exam for automatic test suite")');
+      const selector = `td a:contains("${exam.title}")`;
+      const elemList = locals.$(selector);
       assert.lengthOf(elemList, 1);
       locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
       assert.equal(
@@ -131,9 +155,10 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should contain "Exam 1"', function () {
+    it(`should contain "Exam ${exam.number}"`, function () {
       assert(locals.$);
-      const elemList = locals.$('p.lead strong:contains("Exam 1")');
+      const selector = `p.lead strong:contains("Exam ${exam.number}")`;
+      const elemList = locals.$(selector);
       assert.lengthOf(elemList, 1);
     });
     it('should contain "QA 101"', function () {
