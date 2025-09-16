@@ -346,13 +346,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             a_sub = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
             if a_sub.strip() == "":
                 a_sub = ""
-            data["submitted_answers"][name] = a_sub
+                data["submitted_answers"][name] = a_sub
+                return
         else:
             data["format_errors"][name] = (
                 "Invalid format. The submitted answer was left blank."
             )
             data["submitted_answers"][name] = None
-        return
+            return
 
     ureg = pl.get_unit_registry()
 
