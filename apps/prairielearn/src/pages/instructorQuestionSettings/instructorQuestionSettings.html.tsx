@@ -84,7 +84,6 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
-
   return PageLayout({
     resLocals,
     pageTitle: 'Settings',
@@ -404,10 +403,11 @@ export function InstructorQuestionSettings({
                   name="workspace_environment"
                   ${canEdit ? '' : 'disabled'}
                 >
-${Object.keys(resLocals.question.workspace_environment).length > 0 &&
+                ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                   typeof resLocals.question.workspace_environment === 'object'
                     ? JSON.stringify(resLocals.question.workspace_environment, null, 2)
-                    : '{}'}</textarea
+                    : '{}'}
+                </textarea
                 >
                 <small class="form-text text-muted">
                   Environment variables to set inside the workspace container. Variables must be
@@ -469,11 +469,12 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                     id="external_grading_enabled"
                     name="external_grading_enabled"
                     ${canEdit ? '' : 'disabled'}
-                    ${resLocals.question.external_grading_enabled ? 'checked' : ''}
+                    ${resLocals.question.external_grading_enabled === true ? 'checked' : ''}
                   />
                   <label class="form-check-label" for="external_grading_enabled">Enabled</label>
                   <div class="small text-muted">
-                    Whether the external grader is currently enabled. Useful for troubleshooting external grader failures, for instance.
+                    Whether the external grader is currently enabled. Useful for troubleshooting
+                    external grader failures, for instance.
                   </div>
                 </div>
                 <div class="mb-3">
@@ -529,6 +530,7 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                     class="form-control"
                     id="external_grading_timeout"
                     name="external_grading_timeout"
+                    min="0"
                     value="${resLocals.question.external_grading_timeout}"
                     ${canEdit ? '' : 'disabled'}
                   />
@@ -547,8 +549,8 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
 ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                     typeof resLocals.question.external_grading_environment === 'object'
                       ? JSON.stringify(resLocals.question.external_grading_environment, null, 2)
-                      : '{}'}
-                  </textarea>
+                      : '{}'}</textarea
+                  >
                   <small class="form-text text-muted">
                     Environment variables to set inside the grading container. Variables must be
                     specified as a JSON object (e.g. <code>{"key":"value"}</code>).
@@ -564,7 +566,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                     ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
                   />
                   <label class="form-check-label" for="external_grading_enable_networking">
-                    Enable networking</label
+                    Enable networking
                   </label>
                   <div class="small text-muted">
                     Whether the grading containers should have network access. Access is disabled by

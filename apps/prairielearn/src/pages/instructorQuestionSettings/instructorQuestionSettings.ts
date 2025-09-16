@@ -275,7 +275,7 @@ router.post(
         enabled: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.enabled,
           body.external_grading_enabled,
-          body.external_grading_image ? true : false,
+          false,
         ),
         image: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.image,
