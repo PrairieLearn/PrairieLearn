@@ -355,16 +355,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             data["raw_submitted_answers"][name] = f"{a_tru_parsed:#x}"
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        if isinstance(a_tru_parsed, str):
-            data["raw_submitted_answers"][name] = np.base_repr(
-                (random.randint(1, 11) * random.choice([-1, 1])),
-                base if base > 0 else 10,
-            )
-        else:
-            data["raw_submitted_answers"][name] = np.base_repr(
-                a_tru_parsed + (random.randint(1, 11) * random.choice([-1, 1])),
-                base if base > 0 else 10,
-            )
+        correct_answer = 0 if isinstance(a_tru_parsed, str) else a_tru_parsed
+
+        data["raw_submitted_answers"][name] = np.base_repr(
+            correct_answer + (random.randint(1, 11) * random.choice([-1, 1])),
+            base if base > 0 else 10,
+        )
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         invalid_chr = chr(ord("a") + (base - BASE_DEFAULT) + 1)
