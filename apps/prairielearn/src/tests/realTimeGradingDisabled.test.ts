@@ -140,8 +140,9 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.isTrue(assessmentResponse.ok);
       const questionLinks = assessmentResponse.$('a[href*="/instance_question/"]');
 
-      // Ensure we have the expected number of questions.
-      assert.lengthOf(questionLinks, 3);
+      // Ensure we have the expected number of questions. There are 5 questions total, but we only
+      // actually care about the first three for this test.
+      assert.lengthOf(questionLinks, 5);
 
       // The first question has real-time grading disabled.
       const disabledQuestionHref = questionLinks.eq(0).attr('href');

@@ -577,7 +577,7 @@ export function QuestionFooterContent({
                 `
               : ''}
           </span>
-          <span class="d-flex">
+          <div class="d-flex">
             ${question.type === 'Freeform'
               ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
               : html`
@@ -629,7 +629,7 @@ export function QuestionFooterContent({
                     </small>
                   `}
             </div>
-          </span>
+          </div>
         </div>
       </div>
       ${SubmitRateFooter({
