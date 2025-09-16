@@ -25,8 +25,8 @@
     "@prairielearn/preact-cjs": "workspace:^",
     "clsx": "^2.1.1",
     "preact": "link:../preact-cjs",
-    "preact-render-to-string": "^6.5.17",
-    "selector-observer": "^1.1.1",
+    "preact-render-to-string": "^6.6.1",
+    "selector-observer": "^2.1.6",
     "superjson": "^2.2.2"
   },
   "devDependencies": {
