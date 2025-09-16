@@ -438,7 +438,7 @@ interface QuestionFooterResLocals {
   instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
-  authz_result: Record<string, any>;
+  authz_result: Record<string, any> | null;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -511,7 +511,6 @@ export function QuestionFooterContent({
       return 'This question is complete and cannot be answered again.';
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (authz_result?.authorized_edit === false) {
       return html`<div class="alert alert-warning mt-2" role="alert">
         You are viewing the question instance of a different user and so are not authorized to save
@@ -918,7 +917,7 @@ function CopyQuestionModal({
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
-    formAction: questionCopyTargets[0]?.copy_url ?? '',
+    formAction: questionCopyTargets.at(0)?.copy_url ?? '',
     formClass: 'js-copy-question-form',
     body:
       questionCopyTargets.length === 0
