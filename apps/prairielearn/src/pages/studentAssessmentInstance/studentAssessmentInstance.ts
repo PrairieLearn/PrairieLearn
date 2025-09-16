@@ -173,7 +173,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: closeExam,
-        overrideGradeRate: false,
+        ignoreGradeRateLimit: false,
         client_fingerprint_id: res.locals.client_fingerprint_id,
       });
       if (req.body.__action === 'timeLimitFinish') {

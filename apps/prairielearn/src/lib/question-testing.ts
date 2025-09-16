@@ -242,7 +242,7 @@ async function testVariant(
     variant_course: course,
     user_id,
     authn_user_id,
-    overrideGradeRateCheck: true,
+    ignoreGradeRateLimit: true,
   });
   const test_submission = await selectSubmission(test_submission_id);
 

@@ -3,7 +3,7 @@ columns
     course_id: bigint not null
     deleted_at: timestamp with time zone
     display_timezone: text not null
-    enrollment_code: character varying(255)
+    enrollment_code: character varying(255) not null
     enrollment_limit: integer
     hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
