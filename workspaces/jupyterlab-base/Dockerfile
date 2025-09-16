@@ -1,4 +1,4 @@
-FROM quay.io/jupyter/minimal-notebook:2025-08-04
+FROM quay.io/jupyter/minimal-notebook:2025-09-15
 ARG CACHEBUST=2025-08-15-14-16-03
 
 ENV XDG_DATA_HOME=/tmp/local/share
