@@ -19,6 +19,15 @@ WHERE
   AND course_instance_id = $course_instance_id
   AND status = 'invited';
 
+-- BLOCK select_enrollment_for_user_in_course_instance_by_pending_uid
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  pending_uid = $pending_uid
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT
   *

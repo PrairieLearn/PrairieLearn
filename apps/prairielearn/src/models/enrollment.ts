@@ -78,6 +78,8 @@ export async function ensureEnrollment({
       await insertAuditEvent({
         table_name: 'enrollments',
         action: 'update',
+        // The user implicitly joined to the course instance, probably by clicking a link.
+        action_detail: 'implicit_joined',
         row_id: updated.id,
         old_row: enrollment,
         new_row: updated,
