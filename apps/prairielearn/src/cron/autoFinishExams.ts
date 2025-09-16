@@ -39,7 +39,7 @@ export async function run() {
         requireOpen: false,
         // Only mark this assessment as needing to be closed if it's still open.
         close: !!assessment_instance.open,
-        // Override any submission or grading rate limits.
+        // Ignore any submission or grading rate limits.
         ignoreGradeRateLimit: true,
         // We don't have a client fingerprint ID, so pass null.
         client_fingerprint_id: null,
