@@ -343,10 +343,10 @@ export function InstructorAssessmentInstance({
                           <th colspan="9">
                             ${instance_question.zone_title}
                             ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)}`
+                              ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}
                             ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)}`
+                              ? html`(best ${instance_question.zone_best_questions} questions)`
                               : ''}
                           </th>
                         </tr>
