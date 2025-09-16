@@ -1,18 +1,23 @@
+import z from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(group_id) as max from group_users;', {});
+    const max = await queryRow(
+      'SELECT MAX(group_id) as max from group_users;',
+      z.bigint({ coerce: true }).nullable(),
+    );
     return {
       min: 1n,
-      max: result.rows[0].max,
+      max,
       batchSize: 1000,
     };
   },
   async execute(min: bigint, max: bigint): Promise<void> {
-    await queryAsync(sql.update_group_users_group_config_id, { min, max });
+    await execute(sql.update_group_users_group_config_id, { min, max });
   },
 });

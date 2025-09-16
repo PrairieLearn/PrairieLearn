@@ -1,5 +1,6 @@
 import asyncHandler from 'express-async-handler';
 
+import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment } from '../models/enrollment.js';
 
@@ -9,12 +10,25 @@ export default asyncHandler(async (req, res, next) => {
   // attempt to enroll them if they are an instructor (that is, if they have
   // a specific role in the course or course instance) or if they are
   // impersonating another user.
+
+  // TODO: check if self-enrollment requires a secret link.
+
+  const courseInstance: CourseInstance = res.locals.course_instance;
+
+  // If we have self-enrollment enabled, and it is before the enabled before date,
+  // then we can enroll the user.
+  const selfEnrollmentAllowed =
+    courseInstance.self_enrollment_enabled &&
+    (courseInstance.self_enrollment_enabled_before_date == null ||
+      new Date() < courseInstance.self_enrollment_enabled_before_date);
+
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
-    !res.locals.authz_data.authn_has_student_access_with_enrollment
+    !res.locals.authz_data.authn_has_student_access_with_enrollment &&
+    selfEnrollmentAllowed
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,

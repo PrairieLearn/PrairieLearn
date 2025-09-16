@@ -39,6 +39,18 @@ describe('Markdown processing', () => {
     await testMarkdown(question, expected);
   });
 
+  it('handles math inside em tags', async () => {
+    const question = '_before $a_ 1 = b _2$ after_';
+    const expected = '<p><em>before $a_ 1 = b _2$ after</em></p>';
+    await testMarkdown(question, expected);
+  });
+
+  it('handles math inside strong tags', async () => {
+    const question = '**before $a** 1 **2$ after**';
+    const expected = '<p><strong>before $a** 1 **2$ after</strong></p>';
+    await testMarkdown(question, expected);
+  });
+
   it('handles inline latex', async () => {
     const question = '$a_1 + a_2 = a_3$';
     const expected = '<p>$a_1 + a_2 = a_3$</p>';

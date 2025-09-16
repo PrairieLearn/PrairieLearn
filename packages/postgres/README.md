@@ -199,14 +199,14 @@ for await (const users of cursor.iterate(100)) {
 You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
 
 ```ts
-const cursor = await queryCursor(sql.select_all_users, {}, UserSchema);
+const cursor = await queryCursor(sql.select_all_users, UserSchema);
 cursor.stream(100).pipe(makeStreamSomehow());
 ```
 
 If you don't need to parse and validate each row with Zod, you can use `z.unknown()` as the schema:
 
 ```ts
-const cursor = await queryCursor(sql.select_all_users, {}, z.unknown());
+const cursor = await queryCursor(sql.select_all_users, z.unknown());
 ```
 
 ### Callback-style functions
