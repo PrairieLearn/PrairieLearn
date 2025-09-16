@@ -82,21 +82,13 @@ const htmlDoc = renderHtmlDocument(
 For interactive components, you must:
 
 1. Add a `displayName` to your component
-2. Create a registration script at `esm-bundles/react-fragments/ComponentName.ts`:
+2. Create a registration script that is loaded on the client. `apps/prairielearn` uses the path `esm-bundles/react-fragments/ComponentName.ts` for this:
+3. Import `@prairielearn/preact/client-runtime` on the client-side. This will register a selector observer that will hydrate the component when it is added to the DOM.
 
 ```ts
+import '@prairielearn/preact/client-runtime';
 import { MyComponent } from '../../../../src/components/MyComponent.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+import { registerReactFragment } from '@prairielearn/preact/client';
 
 registerReactFragment(MyComponent);
 ```
-
-## Dependencies
-
-- `@prairielearn/preact-cjs` - Preact runtime
-- `@prairielearn/html` - HTML utilities
-- `@prairielearn/compiled-assets` - Asset compilation
-- `@prairielearn/error` - Error handling
-- `preact-render-to-string` - Server-side rendering
-- `clsx` - CSS class utilities
-- `superjson` - JSON serialization
