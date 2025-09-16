@@ -181,19 +181,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
 
-        if isinstance(a_sub, str):
-            if a_sub.strip() == "":
-                a_sub_parsed = ""
-            else:
-                # this is for backward-compatibility
-                a_sub_parsed = psu.convert_string_to_sympy(
-                    a_sub,
-                    variables,
-                    allow_complex=allow_complex,
-                    custom_functions=custom_functions,
-                    allow_trig_functions=allow_trig,
-                    simplify_expression=simplify_expression,
-                ).subs(sympy.I, sympy.Symbol(imaginary_unit))
+        if isinstance(a_sub, str) and a_sub.strip() == "":
+            a_sub_parsed = ""
+        elif isinstance(a_sub, str):
+            # this is for backward-compatibility
+            a_sub_parsed = psu.convert_string_to_sympy(
+                a_sub,
+                variables,
+                allow_complex=allow_complex,
+                custom_functions=custom_functions,
+                allow_trig_functions=allow_trig,
+                simplify_expression=simplify_expression,
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_sub_parsed = psu.json_to_sympy(
                 a_sub,
@@ -421,12 +420,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
         # Special case: submitted answer or correct answer is the empty string
-        if str(a_tru) == "":
-            if str(a_sub) == "":
+        if isinstance(a_tru, str) and a_tru == "":
+            if isinstance(a_sub, str) and a_sub == "":
                 return True, None
             else:
                 return False, None
-        elif str(a_sub) == "":
+        elif isinstance(a_sub, str) and a_sub == "":
             return False, None
 
         # Parse true answer
