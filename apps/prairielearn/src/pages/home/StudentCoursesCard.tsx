@@ -136,7 +136,7 @@ export function StudentCoursesCard({
         onHide={() => setRejectingCourseId(null)}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Reject invitation?</Modal.Title>
+          <Modal.Title>Reject invitation</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>
