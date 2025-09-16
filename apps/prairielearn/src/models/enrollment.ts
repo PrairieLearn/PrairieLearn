@@ -266,6 +266,7 @@ export async function inviteStudentByUid({
     await insertAuditEvent({
       table_name: 'enrollments',
       action: existing_enrollment_id ? 'update' : 'insert',
+      action_detail: existing_enrollment_id ? 'invited' : null,
       row_id: enrollment.id,
       subject_user_id: null,
       new_row: enrollment,
