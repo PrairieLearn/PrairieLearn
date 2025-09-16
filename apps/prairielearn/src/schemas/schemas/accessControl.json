@@ -1,0 +1,210 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Access rule",
+  "description": "Access control configuration for assessments",
+  "type": "object",
+  "properties": {
+    "targets": {
+      "description": "Array of target identifiers (e.g., section names) that this rule applies to",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "enabled": {
+      "description": "Whether this access rule should be considered",
+      "type": "boolean",
+      "default": true
+    },
+    "blockAccess": {
+      "description": "Short circuit - deny access if this rule applies",
+      "type": "boolean",
+      "default": false
+    },
+    "listBeforeRelease": {
+      "description": "Whether students can see the title and click into the assessment before release",
+      "type": "boolean"
+    },
+    "dateControl": {
+      "description": "Date and time control configuration for the assessment",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Whether date control is enabled",
+          "type": "boolean"
+        },
+        "releaseDateEnabled": {
+          "description": "Whether release date is enabled",
+          "type": "boolean",
+          "default": false
+        },
+        "releaseDate": {
+          "description": "The release date in ISO 8601 format (e.g., \"2024-03-14T00:01\")",
+          "type": "string"
+        },
+        "dueDateEnabled": {
+          "description": "Whether due date is enabled",
+          "type": "boolean"
+        },
+        "dueDate": {
+          "description": "The due date in ISO 8601 format (e.g., \"2024-03-21T23:59\")",
+          "type": "string"
+        },
+        "earlyDeadlinesEnabled": {
+          "description": "Whether early deadlines are enabled",
+          "type": "boolean"
+        },
+        "earlyDeadlines": {
+          "description": "Array of early deadline entries with credit percentages",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeadlineEntryJsonSchema"
+          }
+        },
+        "lateDeadlinesEnabled": {
+          "description": "Whether late deadlines are enabled",
+          "type": "boolean"
+        },
+        "lateDeadlines": {
+          "description": "Array of late deadline entries with credit percentages",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/DeadlineEntryJsonSchema"
+          }
+        },
+        "afterLastDeadline": {
+          "description": "Configuration for behavior after the last deadline",
+          "type": "object",
+          "properties": {
+            "allowSubmissions": {
+              "description": "Whether submissions are allowed after the last deadline",
+              "type": "boolean"
+            },
+            "creditEnabled": {
+              "description": "Whether credit text box value is enabled and considered",
+              "type": "boolean"
+            },
+            "credit": {
+              "description": "The credit percentage after the last deadline",
+              "type": "number"
+            }
+          }
+        },
+        "durationMinutesEnabled": {
+          "description": "Whether duration limit is enabled",
+          "type": "boolean"
+        },
+        "durationMinutes": {
+          "description": "The duration limit in minutes",
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "passwordEnabled": {
+          "description": "Whether password protection is enabled",
+          "type": "boolean"
+        },
+        "password": {
+          "description": "The password for accessing the assessment",
+          "type": "string"
+        }
+      }
+    },
+    "prairieTestControl": {
+      "description": "PrairieTest integration control configuration",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "Whether PrairieTest control is enabled",
+          "type": "boolean"
+        },
+        "exams": {
+          "description": "Array of PrairieTest exam configurations",
+          "type": "array",
+          "items": {
+            "description": "A PrairieTest exam configuration",
+            "type": "object",
+            "required": ["examUuid"],
+            "properties": {
+              "examUuid": {
+                "description": "The PrairieTest exam UUID",
+                "type": "string",
+                "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+              },
+              "readOnly": {
+                "description": "Whether this exam is read-only",
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "afterComplete": {
+      "description": "Configuration for behavior after assessment completion",
+      "type": "object",
+      "properties": {
+        "hideQuestions": {
+          "description": "Whether to hide questions after completion",
+          "type": "boolean"
+        },
+        "hideQuestionsDateControl": {
+          "description": "Date control for hiding/showing questions after completion",
+          "type": "object",
+          "properties": {
+            "showAgainDateEnabled": {
+              "description": "Whether show again date is enabled",
+              "type": "boolean"
+            },
+            "showAgainDate": {
+              "description": "The date when content should be shown again in ISO 8601 format",
+              "type": "string"
+            },
+            "hideAgainDateEnabled": {
+              "description": "Whether hide again date is enabled (only for hideQuestionsDateControl)",
+              "type": "boolean"
+            },
+            "hideAgainDate": {
+              "description": "The date when content should be hidden again in ISO 8601 format (only for hideQuestionsDateControl)",
+              "type": "string"
+            }
+          }
+        },
+        "hideScore": {
+          "description": "Whether to hide score after completion",
+          "type": "boolean"
+        },
+        "hideScoreDateControl": {
+          "description": "Date control for hiding/showing scores after completion",
+          "type": "object",
+          "properties": {
+            "showAgainDateEnabled": {
+              "description": "Whether show again date is enabled for scores",
+              "type": "boolean"
+            },
+            "showAgainDate": {
+              "description": "The date when scores should be shown again in ISO 8601 format",
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "DeadlineEntryJsonSchema": {
+      "description": "A deadline entry with date and credit percentage",
+      "type": "object",
+      "required": ["date", "credit"],
+      "properties": {
+        "date": {
+          "description": "The deadline date in ISO 8601 format (e.g., \"2024-03-17T23:59\")",
+          "type": "string"
+        },
+        "credit": {
+          "description": "The credit percentage for this deadline (e.g., 120 for 120%)",
+          "type": "number"
+        }
+      }
+    }
+  }
+}
