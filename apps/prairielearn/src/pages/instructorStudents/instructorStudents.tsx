@@ -4,14 +4,13 @@ import z from 'zod';
 
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { EnrollmentSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
@@ -80,14 +79,10 @@ router.post(
       });
       const body = BodySchema.parse(req.body);
 
-      const existingEnrollment = await queryOptionalRow(
-        sql.select_enrollment_by_uid,
-        {
-          course_instance_id: courseInstance.id,
-          uid: body.uid,
-        },
-        EnrollmentSchema,
-      );
+      const existingEnrollment = await selectEnrollmentByUid({
+        course_instance_id: courseInstance.id,
+        uid: body.uid,
+      });
 
       if (!existingEnrollment) {
         const enrollment = await inviteStudentByUid({
@@ -178,7 +173,7 @@ router.get(
       })) && authz_data.is_administrator;
 
     const students = await queryRows(
-      sql.select_students,
+      sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
       StudentRowSchema,
     );
