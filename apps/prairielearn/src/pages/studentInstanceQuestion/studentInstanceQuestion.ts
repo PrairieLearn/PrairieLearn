@@ -218,18 +218,15 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      const requireOpen = true;
-      const closeExam = true;
-      const overrideGradeRate = false;
-      await gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: true,
+        overrideGradeRate: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
       );
