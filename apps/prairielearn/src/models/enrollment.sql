@@ -5,6 +5,16 @@ VALUES
   ($user_id, $course_instance_id, 'joined', now())
 ON CONFLICT DO NOTHING;
 
+-- BLOCK enroll_invited_user_in_course_instance
+UPDATE enrollments
+SET
+  status = 'joined',
+  joined_at = now()
+WHERE
+  user_id = $user_id
+  AND course_instance_id = $course_instance_id
+  AND status = 'invited';
+
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT
   *

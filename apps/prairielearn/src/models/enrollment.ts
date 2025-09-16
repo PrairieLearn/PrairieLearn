@@ -25,6 +25,23 @@ import { generateUsers } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+export async function enrollInvitedUserInCourseInstance({
+  course_instance_id,
+  user_id,
+}: {
+  course_instance_id: string;
+  user_id: string;
+}): Promise<void> {
+  await execute(sql.enroll_invited_user_in_course_instance, { course_instance_id, user_id });
+}
+
+/**
+ * Ensures that the user is enrolled in the given course instance. If the
+ * enrollment already exists, this is a no-op.
+ *
+ * If the user was invited to the course instance, this will set the
+ * enrollment status to 'joined'.
+ */
 export async function ensureEnrollment({
   course_instance_id,
   user_id,
@@ -32,6 +49,16 @@ export async function ensureEnrollment({
   course_instance_id: string;
   user_id: string;
 }): Promise<void> {
+  const enrollment = await getEnrollmentForUserInCourseInstance({
+    course_instance_id,
+    user_id,
+  });
+
+  if (enrollment && enrollment.status === 'invited') {
+    await enrollInvitedUserInCourseInstance({ course_instance_id, user_id });
+    return;
+  }
+
   await execute(sql.ensure_enrollment, { course_instance_id, user_id });
 }
 
