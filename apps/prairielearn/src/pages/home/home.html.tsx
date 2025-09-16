@@ -51,25 +51,38 @@ export function Home({
   urlPrefix: string;
   isDevMode: boolean;
 }) {
+  const listedStudentCourses = studentCourses.filter(
+    (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
+  );
+
+  const hasInstructorCourses = instructorCourses.length > 0;
+  const hasCourses = (listedStudentCourses.length > 0 || hasInstructorCourses) && false;
+
   return (
     <>
       <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      <ActionsHeader urlPrefix={urlPrefix} />
+      {hasCourses && <ActionsHeader urlPrefix={urlPrefix} />}
 
       <div class="container pt-5">
         <DevModeCard isDevMode={isDevMode} />
         <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-        <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
-        <Hydrate>
-          <StudentCoursesCard
-            studentCourses={studentCourses}
-            hasInstructorCourses={instructorCourses.length > 0}
-            canAddCourses={canAddCourses}
-            csrfToken={csrfToken}
-            urlPrefix={urlPrefix}
-            isDevMode={isDevMode}
-          />
-        </Hydrate>
+        {hasCourses ? (
+          <>
+            <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
+            <Hydrate>
+              <StudentCoursesCard
+                studentCourses={listedStudentCourses}
+                hasInstructorCourses={instructorCourses.length > 0}
+                canAddCourses={canAddCourses}
+                csrfToken={csrfToken}
+                urlPrefix={urlPrefix}
+                isDevMode={isDevMode}
+              />
+            </Hydrate>
+          </>
+        ) : (
+          <EmptyStateCards urlPrefix={urlPrefix} />
+        )}
       </div>
     </>
   );
@@ -244,6 +257,58 @@ function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListPr
           {courseInstance.long_name}
         </a>
       ))}
+    </div>
+  );
+}
+
+function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
+  return (
+    <div class="row">
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center d-flex flex-column">
+            <div class="mb-3">
+              <i class="bi bi-person-badge text-primary" style="font-size: 3rem;" />
+            </div>
+            <h3 class="card-title text-secondary mb-3">Students</h3>
+            <p class="card-text text-muted mb-4">Join a course and start learning.</p>
+            <div class="mt-auto">
+              <a href={`${urlPrefix}/enroll`} class="btn btn-primary btn-lg">
+                <i class="bi bi-plus-circle me-2" />
+                Add or remove courses
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+          <div class="card-body text-center d-flex flex-column">
+            <div class="mb-3">
+              <i class="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
+            </div>
+            <h3 class="card-title text-secondary mb-3">Instructors</h3>
+            <p class="card-text text-muted mb-4">Create and manage courses for your students.</p>
+            <div class="mt-auto">
+              <div class="d-flex gap-2">
+                <a
+                  href="https://prairielearn.readthedocs.io/en/latest"
+                  class="btn btn-outline-primary btn-lg flex-fill"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <i class="bi bi-journal-text me-2" />
+                  View docs
+                </a>
+                <a href={`${urlPrefix}/request_course`} class="btn btn-primary btn-lg flex-fill">
+                  <i class="bi bi-book me-2" />
+                  Request course
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
