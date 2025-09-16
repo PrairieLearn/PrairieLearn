@@ -36,6 +36,7 @@ import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
+import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -232,22 +233,57 @@ router.post(
       const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
-      courseInstanceInfo.longName = req.body.long_name;
+
+      const parsedBody = SettingsFormBodySchema.parse(req.body);
+
+      courseInstanceInfo.longName = parsedBody.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        req.body.display_timezone,
+        parsedBody.display_timezone,
         res.locals.course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        req.body.group_assessments_by,
+        parsedBody.group_assessments_by,
         'Set',
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
         courseInstanceInfo.hideInEnrollPage,
-        req.body.hide_in_enroll_page === 'on',
+        !parsedBody.show_in_enroll_page,
         false,
       );
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.enabled,
+        parsedBody.self_enrollment_enabled,
+        true,
+      );
+      const selfEnrollmentRequiresSecretLink = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.requiresSecretLink,
+        parsedBody.self_enrollment_requires_secret_link,
+        false,
+      );
+      const selfEnrollmentBeforeDate = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.beforeDate,
+        parsedBody.self_enrollment_enabled_before_date ?? null,
+        null,
+      );
+
+      const hasSelfEnrollmentSettings =
+        (selfEnrollmentEnabled ?? selfEnrollmentRequiresSecretLink ?? selfEnrollmentBeforeDate) !==
+        undefined;
+
+      // Only write self enrollment settings if they are not the default values.
+      if (hasSelfEnrollmentSettings) {
+        courseInstanceInfo.selfEnrollment = {
+          enabled: selfEnrollmentEnabled,
+          requiresSecretLink: selfEnrollmentRequiresSecretLink,
+          beforeDate: selfEnrollmentBeforeDate,
+        };
+      } else {
+        courseInstanceInfo.selfEnrollment = undefined;
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       let ciid_new;

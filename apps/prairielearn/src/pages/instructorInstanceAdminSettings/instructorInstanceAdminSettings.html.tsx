@@ -11,70 +11,10 @@ import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
-
-interface SettingsFormValues {
-  ciid: string;
-  long_name: string;
-  display_timezone: string;
-  group_assessments_by: StaffCourseInstanceContext['course_instance']['assessments_group_by'];
-  hide_in_enroll_page: boolean;
-}
+import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
-}
-
-function StudentLinkSharing({
-  studentLink,
-  studentLinkMessage,
-}: {
-  studentLink: string;
-  studentLinkMessage: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
-  return (
-    <div class="mb-3">
-      <label class="form-label" for="student_link">
-        Student Link
-      </label>
-      <InputGroup>
-        <Form.Control type="text" id="student_link" value={studentLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy student link"
-            onClick={async () => {
-              await copyToClipboard(studentLink);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i class="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Student Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i class="bi bi-qr-code-scan" />
-          </Button>
-        </OverlayTrigger>
-      </InputGroup>
-      <small class="form-text text-muted">{studentLinkMessage}</small>
-      <QRCodeModal
-        id="studentLinkModal"
-        title="Student Link QR Code"
-        content={studentLink}
-        show={showQR}
-        onHide={() => setShowQR(false)}
-      />
-    </div>
-  );
 }
 
 function PublicLinkSharing({
@@ -172,11 +112,18 @@ export function InstructorInstanceAdminSettings({
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
-    hide_in_enroll_page: courseInstance.hide_in_enroll_page ?? false,
+    show_in_enroll_page:
+      courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
+    self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+    self_enrollment_requires_secret_link: courseInstance.self_enrollment_requires_secret_link,
+    self_enrollment_enabled_before_date:
+      courseInstance.self_enrollment_enabled_before_date?.toISOString().slice(0, 16) ?? '',
   };
 
   const {
     register,
+    watch,
+    setValue,
     reset,
     formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
@@ -193,7 +140,6 @@ export function InstructorInstanceAdminSettings({
         <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
-        {/* Any javascript submit will not contain the value of the submit button. */}
         <form method="POST" name="edit-course-instance-settings-form">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
@@ -304,32 +250,20 @@ export function InstructorInstanceAdminSettings({
               Determines how assessments will be grouped on the student assessments page.
             </small>
           </div>
-          <div class="mb-3 form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="hide_in_enroll_page"
-              disabled={!canEdit}
-              {...register('hide_in_enroll_page')}
-              name="hide_in_enroll_page"
-            />
-            <label class="form-check-label" for="hide_in_enroll_page">
-              Hide in enrollment page
-            </label>
-            <div class="small text-muted">
-              If enabled, hides the course instance in the enrollment page, so that only direct
-              links to the course can be used for enrollment.
-            </div>
-          </div>
 
-          <StudentLinkSharing
+          <SelfEnrollmentSettings
+            formMeta={{
+              enrollmentManagementEnabled,
+              register,
+              watch,
+              setValue,
+              errors,
+              canEdit,
+            }}
             studentLink={studentLink}
-            studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
+            selfEnrollLink={selfEnrollLink}
+            csrfToken={csrfToken}
           />
-
-          {enrollmentManagementEnabled && (
-            <SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
-          )}
 
           <h2 class="h4">Sharing</h2>
           {courseInstance.share_source_publicly ? (
