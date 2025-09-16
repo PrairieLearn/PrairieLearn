@@ -53,6 +53,10 @@ def get_with_units_atol(
 
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer = data["correct_answers"].get(name)
+    if correct_answer == "":
+        raise ValueError(
+            'In "with-units" grading with a blank "correct-answer", "atol" units cannot be inferred and must be set for display in the question panel.'
+        )
     correct_answer_units = str(ureg.Quantity(correct_answer).units)
 
     return f"{ATOL_DEFAULT} {correct_answer_units}"
