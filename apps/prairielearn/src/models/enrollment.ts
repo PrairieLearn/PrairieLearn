@@ -23,13 +23,36 @@ import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
 import { insertAuditEvent } from './audit-event.js';
-import { generateUsers } from './user.js';
+import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+export async function enrollInvitedUserInCourseInstance({
+  course_instance_id,
+  user_id,
+  pending_uid,
+}: {
+  course_instance_id: string;
+  user_id: string;
+  pending_uid: string;
+}): Promise<Enrollment> {
+  return await queryRow(
+    sql.enroll_invited_user_in_course_instance,
+    {
+      course_instance_id,
+      pending_uid,
+      user_id,
+    },
+    EnrollmentSchema,
+  );
+}
 
 /**
  * Ensures that the user is enrolled in the given course instance. If the
  * enrollment already exists, this is a no-op.
+ *
+ * If the user was invited to the course instance, this will set the
+ * enrollment status to 'joined'.
  */
 export async function ensureEnrollment({
   course_instance_id,
@@ -37,8 +60,34 @@ export async function ensureEnrollment({
 }: {
   course_instance_id: string;
   user_id: string;
-}): Promise<void> {
+}): Promise<Enrollment | null> {
   return await runInTransactionAsync(async () => {
+    const user = await selectUserById(user_id);
+    const enrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
+      course_instance_id,
+      pending_uid: user.uid,
+    });
+
+    if (enrollment && enrollment.status === 'invited') {
+      const updated = await enrollInvitedUserInCourseInstance({
+        course_instance_id,
+        user_id,
+        pending_uid: user.uid,
+      });
+
+      await insertAuditEvent({
+        table_name: 'enrollments',
+        action: 'update',
+        row_id: updated.id,
+        old_row: enrollment,
+        new_row: updated,
+        // This is done by the system
+        agent_user_id: null,
+        agent_authn_user_id: null,
+      });
+      return updated;
+    }
+
     const inserted = await queryOptionalRow(
       sql.ensure_enrollment,
       { course_instance_id, user_id },
@@ -55,6 +104,7 @@ export async function ensureEnrollment({
         agent_authn_user_id: null,
       });
     }
+    return inserted;
   });
 }
 
@@ -122,6 +172,17 @@ export async function getEnrollmentForUserInCourseInstance({
   return await queryOptionalRow(
     sql.select_enrollment_for_user_in_course_instance,
     { user_id, course_instance_id },
+    EnrollmentSchema,
+  );
+}
+
+export async function getEnrollmentForUserInCourseInstanceByPendingUid({
+  pending_uid,
+  course_instance_id,
+}): Promise<Enrollment | null> {
+  return await queryOptionalRow(
+    sql.select_enrollment_for_user_in_course_instance_by_pending_uid,
+    { pending_uid, course_instance_id },
     EnrollmentSchema,
   );
 }
