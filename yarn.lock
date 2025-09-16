@@ -2107,7 +2107,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@floating-ui/dom@npm:^1.0.0":
+"@floating-ui/dom@npm:^1.0.0, @floating-ui/dom@npm:^1.6.13":
   version: 1.7.4
   resolution: "@floating-ui/dom@npm:1.7.4"
   dependencies:
@@ -3702,7 +3702,7 @@ __metadata:
     "@types/node": "npm:^22.18.0"
     "@vitest/coverage-v8": "npm:^3.2.4"
     isomorphic-dompurify: "npm:^2.26.0"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.5"
     typescript: "npm:^5.9.2"
@@ -3716,7 +3716,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.5"
     typescript: "npm:^5.9.2"
@@ -3931,12 +3931,16 @@ __metadata:
     "@tiptap/extension-bullet-list": "npm:^3.4.1"
     "@tiptap/extension-code": "npm:^3.4.1"
     "@tiptap/extension-code-block": "npm:^3.4.1"
+    "@tiptap/extension-collaboration": "npm:^3.4.2"
     "@tiptap/extension-document": "npm:^3.4.1"
+    "@tiptap/extension-drag-handle": "npm:^3.4.2"
+    "@tiptap/extension-drag-handle-react": "npm:^3.4.2"
     "@tiptap/extension-dropcursor": "npm:^3.4.1"
     "@tiptap/extension-gapcursor": "npm:^3.4.1"
     "@tiptap/extension-heading": "npm:^3.4.1"
     "@tiptap/extension-italic": "npm:^3.4.1"
     "@tiptap/extension-list": "npm:^3.4.1"
+    "@tiptap/extension-node-range": "npm:^3.4.2"
     "@tiptap/extension-paragraph": "npm:^3.4.1"
     "@tiptap/extension-strike": "npm:^3.4.1"
     "@tiptap/extension-subscript": "npm:^3.4.1"
@@ -3946,6 +3950,7 @@ __metadata:
     "@tiptap/extensions": "npm:^3.4.1"
     "@tiptap/pm": "npm:^3.4.1"
     "@tiptap/react": "npm:^3.4.1"
+    "@tiptap/y-tiptap": "npm:^3.0.0"
     "@trpc/client": "npm:^11.5.0"
     "@trpc/server": "npm:^11.5.0"
     "@types/archiver": "npm:^6.0.3"
@@ -4073,7 +4078,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.2.0"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
@@ -4143,11 +4148,13 @@ __metadata:
     unified: "npm:^11.0.5"
     unzipper: "npm:^0.12.3"
     uuid: "npm:^11.1.0"
-    vite: "npm:^7.1.3"
+    vite: "npm:^7.1.5"
     vitest: "npm:^3.2.4"
     winston: "npm:^3.17.0"
     xml-formatter: "npm:^3.6.6"
     xml2js: "npm:^0.6.2"
+    y-protocols: "npm:^1.0.6"
+    yjs: "npm:^13.6.27"
     zod: "npm:^3.25.76"
     zod-to-json-schema: "npm:^3.24.6"
   languageName: unknown
@@ -4287,7 +4294,7 @@ __metadata:
     picomatch: "npm:^4.0.2"
     strip-ansi: "npm:^7.1.0"
     typescript: "npm:^5.9.2"
-    vite: "npm:^7.1.3"
+    vite: "npm:^7.1.5"
   languageName: unknown
   linkType: soft
 
@@ -5573,12 +5580,52 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tiptap/extension-collaboration@npm:^3.4.2":
+  version: 3.4.2
+  resolution: "@tiptap/extension-collaboration@npm:3.4.2"
+  peerDependencies:
+    "@tiptap/core": ^3.4.2
+    "@tiptap/pm": ^3.4.2
+    "@tiptap/y-tiptap": ^3.0.0-beta.3
+    yjs: ^13
+  checksum: 10c0/bf7631c40f1fa094c69e452b73cbc6ca1ebe4d78cebac50e8dc98152ad564495f8c1299f1b6e69c5f44d9abec7732b1089be2d9d524717068683337fcbf74d76
+  languageName: node
+  linkType: hard
+
 "@tiptap/extension-document@npm:^3.4.1":
   version: 3.4.1
   resolution: "@tiptap/extension-document@npm:3.4.1"
   peerDependencies:
     "@tiptap/core": ^3.4.1
   checksum: 10c0/91634b6fb90260e12d08729b0bd0831c699a12f131ee8fbf2ca6e5b7b539b4cefcae2fd303571f27a41d5893a93ed95cba5a547b400a348b34283732422ed30c
+  languageName: node
+  linkType: hard
+
+"@tiptap/extension-drag-handle-react@npm:^3.4.2":
+  version: 3.4.2
+  resolution: "@tiptap/extension-drag-handle-react@npm:3.4.2"
+  peerDependencies:
+    "@tiptap/extension-drag-handle": ^3.4.2
+    "@tiptap/pm": ^3.4.2
+    "@tiptap/react": ^3.4.2
+    react: ^16.8 || ^17 || ^18 || ^19
+    react-dom: ^16.8 || ^17 || ^18 || ^19
+  checksum: 10c0/539033695b7c38261ad5c045007410f4526fb9174a6cead8525433ff0e47b3b2994e001aec632d517ab12d9407ff49ce6b14a9f4bdf898295f34be6407a9fc6b
+  languageName: node
+  linkType: hard
+
+"@tiptap/extension-drag-handle@npm:^3.4.2":
+  version: 3.4.2
+  resolution: "@tiptap/extension-drag-handle@npm:3.4.2"
+  dependencies:
+    "@floating-ui/dom": "npm:^1.6.13"
+  peerDependencies:
+    "@tiptap/core": ^3.4.2
+    "@tiptap/extension-collaboration": ^3.4.2
+    "@tiptap/extension-node-range": ^3.4.2
+    "@tiptap/pm": ^3.4.2
+    "@tiptap/y-tiptap": ^3.0.0-beta.3
+  checksum: 10c0/114ff9422603de989d17378d3cbd1566f3b13bdeebb8a42f28aafc22fe99ec9ab1683a7d5dc808560789457acf8b2f0abcd8d7df74164859bdec9c6c307be605
   languageName: node
   linkType: hard
 
@@ -5636,6 +5683,16 @@ __metadata:
     "@tiptap/core": ^3.4.1
     "@tiptap/pm": ^3.4.1
   checksum: 10c0/74917532d37b14664cb2271e8d8e4b225741a111a5de9d3f1bf71c3645560f15dc41d1b54b4e45935871393a8a28eefe5b2740afb5fa626cf569c109315597c4
+  languageName: node
+  linkType: hard
+
+"@tiptap/extension-node-range@npm:^3.4.2":
+  version: 3.4.2
+  resolution: "@tiptap/extension-node-range@npm:3.4.2"
+  peerDependencies:
+    "@tiptap/core": ^3.4.2
+    "@tiptap/pm": ^3.4.2
+  checksum: 10c0/b8816dfac4e96fcf7fcb37b247d674af0f866afc5eb834fd0e25e000479d4e9b87557beb2aec27f320326383c0612ce010ff3e8c61cac2e9368a4f19d6c6877d
   languageName: node
   linkType: hard
 
@@ -5753,6 +5810,21 @@ __metadata:
     "@tiptap/extension-floating-menu":
       optional: true
   checksum: 10c0/0fe6b7e3aeaec6bfc2619f858acf17620ea57bc784badebf77e7d0530f4478f5f72022d9442477c03598e9c95143215e78b094167fab2637504de45b5021910f
+  languageName: node
+  linkType: hard
+
+"@tiptap/y-tiptap@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "@tiptap/y-tiptap@npm:3.0.0"
+  dependencies:
+    lib0: "npm:^0.2.100"
+  peerDependencies:
+    prosemirror-model: ^1.7.1
+    prosemirror-state: ^1.2.3
+    prosemirror-view: ^1.9.10
+    y-protocols: ^1.0.1
+    yjs: ^13.5.38
+  checksum: 10c0/bf9a9ee5121f8266fde09b4c7cc81747f8e215288406c8c403512ff4a612a1f2f23b0ea7d55878c0e4eddb7e203a318634f6b58d4a59c1c41ae1a807e8d0458d
   languageName: node
   linkType: hard
 
@@ -10788,7 +10860,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fdir@npm:^6.4.4, fdir@npm:^6.5.0":
+"fdir@npm:^6.5.0":
   version: 6.5.0
   resolution: "fdir@npm:6.5.0"
   peerDependencies:
@@ -12158,6 +12230,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"isomorphic.js@npm:^0.2.4":
+  version: 0.2.5
+  resolution: "isomorphic.js@npm:0.2.5"
+  checksum: 10c0/7cd268c8e58146a8160c8cd16596291fd1fbf3e8799a325f269accda9dc1238806e371ccef0b66fe2ad957209230c55997248d8b6d02cf2d7c575ffeb759c789
+  languageName: node
+  linkType: hard
+
 "istanbul-lib-coverage@npm:^3.0.0, istanbul-lib-coverage@npm:^3.2.2":
   version: 3.2.2
   resolution: "istanbul-lib-coverage@npm:3.2.2"
@@ -12741,6 +12820,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"lib0@npm:^0.2.100, lib0@npm:^0.2.85, lib0@npm:^0.2.99":
+  version: 0.2.114
+  resolution: "lib0@npm:0.2.114"
+  dependencies:
+    isomorphic.js: "npm:^0.2.4"
+  bin:
+    0ecdsa-generate-keypair: bin/0ecdsa-generate-keypair.js
+    0gentesthtml: bin/gentesthtml.js
+    0serve: bin/0serve.js
+  checksum: 10c0/3edaebb4ac80da164dfc097720a610bba4d08f44dc60ecb186aa42924d8e67679c12a6b7415eaffc07c47f1fbddccb15fd925bee7745c7aef16ab1a1e0a3cdc0
+  languageName: node
+  linkType: hard
+
 "lines-and-columns@npm:^1.1.6":
   version: 1.2.4
   resolution: "lines-and-columns@npm:1.2.4"
@@ -13052,12 +13144,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^16.2.1":
-  version: 16.2.1
-  resolution: "marked@npm:16.2.1"
+"marked@npm:^16.3.0":
+  version: 16.3.0
+  resolution: "marked@npm:16.3.0"
   bin:
     marked: bin/marked.js
-  checksum: 10c0/0f4a259c8a7884a14830f06b4b44c0e5fab27924102f2713606e0627c8473d130ab9070900a40c18b0e8d39ba2f31194ce6931999ba4c7bd3b6240f6cfe9cbb3
+  checksum: 10c0/5a3d7da93d7692014c8764c31dc741fa6ee16d8573788a3b28d041c440e79177c46d786ad7c1fc2b3f5e301d6db32e22da45efd4c00ddbc31caf87bd8e9a673b
   languageName: node
   linkType: hard
 
@@ -17184,13 +17276,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tinyglobby@npm:^0.2.12, tinyglobby@npm:^0.2.14":
-  version: 0.2.14
-  resolution: "tinyglobby@npm:0.2.14"
+"tinyglobby@npm:^0.2.12, tinyglobby@npm:^0.2.14, tinyglobby@npm:^0.2.15":
+  version: 0.2.15
+  resolution: "tinyglobby@npm:0.2.15"
   dependencies:
-    fdir: "npm:^6.4.4"
-    picomatch: "npm:^4.0.2"
-  checksum: 10c0/f789ed6c924287a9b7d3612056ed0cda67306cd2c80c249fd280cf1504742b12583a2089b61f4abbd24605f390809017240e250241f09938054c9b363e51c0a6
+    fdir: "npm:^6.5.0"
+    picomatch: "npm:^4.0.3"
+  checksum: 10c0/869c31490d0d88eedb8305d178d4c75e7463e820df5a9b9d388291daf93e8b1eb5de1dad1c1e139767e4269fe75f3b10d5009b2cc14db96ff98986920a186844
   languageName: node
   linkType: hard
 
@@ -18009,9 +18101,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0, vite@npm:^7.1.3":
-  version: 7.1.4
-  resolution: "vite@npm:7.1.4"
+"vite@npm:^5.0.0 || ^6.0.0 || ^7.0.0-0, vite@npm:^7.1.5":
+  version: 7.1.5
+  resolution: "vite@npm:7.1.5"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.5.0"
@@ -18019,7 +18111,7 @@ __metadata:
     picomatch: "npm:^4.0.3"
     postcss: "npm:^8.5.6"
     rollup: "npm:^4.43.0"
-    tinyglobby: "npm:^0.2.14"
+    tinyglobby: "npm:^0.2.15"
   peerDependencies:
     "@types/node": ^20.19.0 || >=22.12.0
     jiti: ">=1.21.0"
@@ -18060,7 +18152,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/dbe2ba29926ffe8985c93d1b3718dcc9040080b7fa10a74c82a52aad7449136a391ba17b265288ff03b864e6f1033b9b537247521a96d5491a9d4af90ac04702
+  checksum: 10c0/782d2f20c25541b26d1fb39bef5f194149caff39dc25b7836e25f049ca919f2e2ce186bddb21f3f20f6195354b3579ec637a8ca08d65b117f8b6f81e3e730a9c
   languageName: node
   linkType: hard
 
@@ -18446,6 +18538,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"y-protocols@npm:^1.0.6":
+  version: 1.0.6
+  resolution: "y-protocols@npm:1.0.6"
+  dependencies:
+    lib0: "npm:^0.2.85"
+  peerDependencies:
+    yjs: ^13.0.0
+  checksum: 10c0/fae7d63d4609e75eac8114320aa3581311993cd0c1b7ac03d13dc30c9a95d7b1680e4500786bb417c1fb3d11a69e1bed3e50d08e15febde9b8abf70f133eb917
+  languageName: node
+  linkType: hard
+
 "y18n@npm:^5.0.5":
   version: 5.0.8
   resolution: "y18n@npm:5.0.8"
@@ -18486,6 +18589,15 @@ __metadata:
     y18n: "npm:^5.0.5"
     yargs-parser: "npm:^21.1.1"
   checksum: 10c0/ccd7e723e61ad5965fffbb791366db689572b80cca80e0f96aad968dfff4156cd7cd1ad18607afe1046d8241e6fb2d6c08bf7fa7bfb5eaec818735d8feac8f05
+  languageName: node
+  linkType: hard
+
+"yjs@npm:^13.6.27":
+  version: 13.6.27
+  resolution: "yjs@npm:13.6.27"
+  dependencies:
+    lib0: "npm:^0.2.99"
+  checksum: 10c0/f89520fed12816f9e56db0626189e39c9b913e51d24233c3190ceadee9913fc013f438b7cd0a945f2c151ab76e7474eca9d95631e32fdbe581b151ad14afeaae
   languageName: node
   linkType: hard
 

@@ -264,7 +264,7 @@ const intervalLengthMs = 3600 * 1000;
  */
 export async function getIntervalUsage({ userId }: { userId: number }) {
   const cache = await getAiQuestionGenerationCache();
-  return (await cache.get(getIntervalUsageKey(userId))) ?? 0;
+  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
 }
 
 /**

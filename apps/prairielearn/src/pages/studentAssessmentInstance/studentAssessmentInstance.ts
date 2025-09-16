@@ -32,8 +32,6 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
-router.use(logPageView('studentAssessmentInstance'));
 
 async function ensureUpToDate(locals: Record<string, any>) {
   const updated = await assessment.updateAssessmentInstance(
@@ -152,7 +150,6 @@ router.post(
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-      const overrideGradeRate = false;
       let closeExam: boolean;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
@@ -170,16 +167,15 @@ router.post(
       } else {
         throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
-      const requireOpen = true;
-      await assessment.gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await assessment.gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: closeExam,
+        ignoreGradeRateLimit: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
       if (req.body.__action === 'timeLimitFinish') {
         res.redirect(req.originalUrl + '?timeLimitExpired=true');
       } else {
@@ -218,6 +214,11 @@ router.post(
 
 router.get(
   '/',
+  // We only handle fingerprints on the GET handler. The POST handler won't log
+  // page views, and we only want to track fingerprint changes when we'll also
+  // have a corresponding page view event to show in the logs.
+  clientFingerprint,
+  logPageView('studentAssessmentInstance'),
   asyncHandler(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);

@@ -1,5 +1,11 @@
 # @prairielearn/cache
 
+## 2.1.0
+
+### Minor Changes
+
+- e1c7f75: Add support for an optional type parameter to `cache.get(...)`
+
 ## 2.0.24
 
 ### Patch Changes

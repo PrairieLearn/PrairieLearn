@@ -72,12 +72,16 @@
     "@tiptap/extension-bullet-list": "^3.4.1",
     "@tiptap/extension-code": "^3.4.1",
     "@tiptap/extension-code-block": "^3.4.1",
+    "@tiptap/extension-collaboration": "^3.4.2",
     "@tiptap/extension-document": "^3.4.1",
+    "@tiptap/extension-drag-handle": "^3.4.2",
+    "@tiptap/extension-drag-handle-react": "^3.4.2",
     "@tiptap/extension-dropcursor": "^3.4.1",
     "@tiptap/extension-gapcursor": "^3.4.1",
     "@tiptap/extension-heading": "^3.4.1",
     "@tiptap/extension-italic": "^3.4.1",
     "@tiptap/extension-list": "^3.4.1",
+    "@tiptap/extension-node-range": "^3.4.2",
     "@tiptap/extension-paragraph": "^3.4.1",
     "@tiptap/extension-strike": "^3.4.1",
     "@tiptap/extension-subscript": "^3.4.1",
@@ -87,6 +91,7 @@
     "@tiptap/extensions": "^3.4.1",
     "@tiptap/pm": "^3.4.1",
     "@tiptap/react": "^3.4.1",
+    "@tiptap/y-tiptap": "^3.0.0",
     "@trpc/client": "^11.5.0",
     "@trpc/server": "^11.5.0",
     "@types/d3": "^7.4.3",
@@ -164,7 +169,7 @@
     "lodash": "^4.17.21",
     "loopbench": "^2.0.0",
     "lru-cache": "^11.2.0",
-    "marked": "^16.2.1",
+    "marked": "^16.3.0",
     "mathjax": "^3.2.2",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
@@ -230,10 +235,12 @@
     "unified": "^11.0.5",
     "unzipper": "^0.12.3",
     "uuid": "^11.1.0",
-    "vite": "^7.1.3",
+    "vite": "^7.1.5",
     "winston": "^3.17.0",
     "xml-formatter": "^3.6.6",
     "xml2js": "^0.6.2",
+    "y-protocols": "^1.0.6",
+    "yjs": "^13.6.27",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
   },
@@ -305,6 +312,7 @@
       "dist/*",
       "public/*"
     ],
-    "ext": "js,jsx,ts,tsx,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql",
+    "delay": 100
   }
 }
