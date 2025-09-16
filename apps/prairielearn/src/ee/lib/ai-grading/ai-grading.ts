@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../../lib/config.js';
 import {
@@ -25,9 +26,9 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
+  containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -161,7 +162,7 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
-      const shoudUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
+      const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
       );
 
@@ -201,12 +202,29 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await selectClosestSubmissionInfo({
-        submission_id: submission.id,
-        assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
-        limit: 5,
+      const example_submissions = await run(async () => {
+        // We're currently disabling RAG for submissions that deal with images.
+        // It won't make sense to pull graded examples for such questions until we
+        // have a strategy for finding similar example submissions based on the
+        // contents of the images.
+        //
+        // Note that this means we're still computing and storing the submission
+        // text and embeddings for such submissions, even though they won't be used
+        // for RAG. While this means we're unnecessarily spending money on actually
+        // generating the embeddings, it does mean that we don't have to special-case
+        // image-based questions in the embedding generation code, which keeps things
+        // simpler overall.
+        if (containsImageCapture(submission_text)) return [];
+
+        return await selectClosestSubmissionInfo({
+          submission_id: submission.id,
+          assessment_question_id: assessment_question.id,
+          embedding: submission_embedding.embedding,
+          limit: 5,
+        });
       });
+
+      // Log things for visibility and auditing.
       let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length > 0 ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
@@ -233,9 +251,14 @@ export async function aiGrade({
             }),
           );
         }
+
+        // OpenAI will take the property descriptions into account. See the
+        // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
           rubric_items: RubricGradingItemsSchema,
         });
+
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -257,7 +280,7 @@ export async function aiGrade({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            if (shoudUpdateScore) {
+            if (shouldUpdateScore) {
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -344,6 +367,18 @@ export async function aiGrade({
           return false;
         }
       } else {
+        // OpenAI will take the property descriptions into account. See the
+        // examples here: https://platform.openai.com/docs/guides/structured-outputs
+        const GradingResultSchema = z.object({
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
+          feedback: z
+            .string()
+            .describe(
+              'Student-facing feedback on their submission. Address the student as "you". Use an empty string if the student\'s response is entirely correct.',
+            ),
+          score: z.number().min(0).max(100),
+        });
+
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -362,7 +397,7 @@ export async function aiGrade({
           if (response.parsed) {
             const score = response.parsed.score;
 
-            if (shoudUpdateScore) {
+            if (shouldUpdateScore) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
