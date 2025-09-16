@@ -2,7 +2,7 @@
 
 This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
 
-- Use `yarn` to manage dependencies and run scripts.
+- Use `yarn` (v4) to manage dependencies and run scripts.
 - The `Makefile` at the root of the repository contains commands for common tasks.
 
 ## Applications
@@ -17,7 +17,7 @@ Migrations are stored in `apps/prairielearn/src/migrations`. See the `README.md`
 
 ## Building and type checking
 
-When possible, use a dedicated tool call to check for type errors/issues/problems during iteration.
+When possible, use a dedicated tool call to check for type errors/issues/problems in individual files during iteration, as this is faster than checking every file.
 
 Run `make build` from the root directory to build all TypeScript code and check types.
 
@@ -25,7 +25,7 @@ Run `make typecheck-python` from the root directory to type check all Python cod
 
 ## Linting and formatting
 
-When possible, use a dedicated tool call to check for linting and formatting issues during iteration, as this is faster than checking every file.
+When possible, use a dedicated tool call to check for linting and formatting issues in individual files during iteration, as this is faster than checking every file.
 
 If you don't have a suitable tool available, you can still format and lint individual files: use `yarn eslint ...`/`yarn prettier ...` for TypeScript files and `ruff ...` for Python files.
 
@@ -48,3 +48,5 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 
 - To run all TypeScript tests, use `yarn test` from the root directory
 - To run all Python tests, use `make test-python` from the root directory.
+
+Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
