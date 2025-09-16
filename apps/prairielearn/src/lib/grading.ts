@@ -348,6 +348,7 @@ async function selectSubmissionForGrading(
  * @param params.user_id - The current effective user.
  * @param params.authn_user_id - The currently authenticated user.
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
+ * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
  */
 export async function gradeVariant({
   variant,
