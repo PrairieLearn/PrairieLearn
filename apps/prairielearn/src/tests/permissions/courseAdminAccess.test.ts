@@ -7,6 +7,7 @@ import { config } from '../../lib/config.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
+  SprocUsersSelectOrInsertSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
@@ -104,13 +105,11 @@ function runTest(context) {
   beforeAll(async function () {
     // Insert necessary users.
     for (const user of users) {
-      await sqldb.callAsync('users_select_or_insert', [
-        user.uid,
-        user.name,
-        user.uin,
-        user.email,
-        'Shibboleth',
-      ]);
+      await sqldb.callRow(
+        'users_select_or_insert',
+        [user.uid, user.name, user.uin, user.email, 'Shibboleth'],
+        SprocUsersSelectOrInsertSchema,
+      );
     }
 
     // Make the instructor a course owner.

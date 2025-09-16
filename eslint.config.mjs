@@ -8,6 +8,7 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -110,6 +111,7 @@ export default tseslint.config([
       '@html-eslint': html,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
+      '@tanstack/query': pluginQuery,
       perfectionist,
       unicorn: eslintPluginUnicorn,
     },
@@ -466,6 +468,10 @@ export default tseslint.config([
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
 
+      // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
+      ...pluginQuery.configs['flat/recommended'][0].rules,
+      '@tanstack/query/no-rest-destructuring': 'error',
+
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
     },
@@ -605,6 +611,10 @@ export default tseslint.config([
           },
         },
       ],
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
       '@typescript-eslint/only-throw-error': [
         'error',
         {
@@ -637,12 +647,18 @@ export default tseslint.config([
   },
   {
     // TODO: enable this rule for all files.
-    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    files: [
+      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
+      'apps/prairielearn/src/components/**/*.{ts,tsx}',
+      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
+      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
+      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
+      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
+      'apps/prairielearn/src/server.ts',
+      'apps/prairielearn/*.config.ts',
+    ],
     rules: {
-      '@typescript-eslint/no-unnecessary-condition': [
-        'error',
-        { allowConstantLoopConditions: 'only-allowed-literals' },
-      ],
+      '@typescript-eslint/no-unnecessary-condition': 'off',
     },
   },
   {

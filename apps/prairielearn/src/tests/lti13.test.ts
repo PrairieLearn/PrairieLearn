@@ -327,6 +327,7 @@ describe('LTI 1.3', () => {
       body: new URLSearchParams({
         __csrf_token: form.find('input[name=__csrf_token]').val() as string,
         enabled_authn_provider_ids: lti13InputValue,
+        default_authn_provider_id: '',
       }),
     });
     assert.equal(enableLtiResponse.status, 200);
