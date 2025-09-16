@@ -123,12 +123,12 @@ ADD CONSTRAINT enrollments_lti13_pending_lti_managed_true CHECK (
 
 -- pending_uid + course_instance_id must be unique.
 ALTER TABLE enrollments
--- squawk-ignore constraint-missing-not-valid
+-- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
 ADD CONSTRAINT enrollments_pending_uid_course_instance_id_key UNIQUE (pending_uid, course_instance_id);
 
 -- pending_lti13_instance_id + pending_lti13_sub + course_instance_id must be unique.
 ALTER TABLE enrollments
--- squawk-ignore constraint-missing-not-valid
+-- squawk-ignore constraint-missing-not-valid, disallowed-unique-constraint
 ADD CONSTRAINT enrollments_pending_lti13_iid_pending_lti13_sub_ciid_key UNIQUE (
   -- lti13_course_instances can be hard deleted, which cascades to deleting associated enrollments.
   -- We index this column first to speed up the deletion of those enrollments and avoid a table scan.

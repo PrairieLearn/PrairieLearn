@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
-import type { PageContext } from '../lib/client/page-context.js';
+import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
 import type { StaffUser } from '../lib/client/safe-db-types.js';
 
 // These keys can be used as part of permission checks.
@@ -15,13 +15,13 @@ export type CheckablePermissionKeys = Extract<
   | 'has_course_instance_permission_edit'
   | 'has_student_access'
   | 'has_student_access_with_enrollment',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 // These keys are used to show users diagnostic information about their permissions.
 type DiagnosticPermissionKeys = Extract<
   CheckablePermissionKeys | 'course_role' | 'course_instance_role',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 interface PermissionMeta {
@@ -158,7 +158,7 @@ export function AuthzAccessMismatch({
    */
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
-  authzData: PageContext['authz_data'];
+  authzData: PageContextWithAuthzData['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
