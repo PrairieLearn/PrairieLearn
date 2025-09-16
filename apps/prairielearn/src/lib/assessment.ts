@@ -241,7 +241,7 @@ export async function updateAssessmentInstance(
  * @param params.authn_user_id - The current authenticated user.
  * @param params.requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param params.close - Whether to close the assessment instance after grading.
- * @param params.ignoreGradeRateLimit - Whether to override grade rate limits.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @param params.client_fingerprint_id - The client fingerprint ID.
  */
 export async function gradeAssessmentInstance({
@@ -348,7 +348,7 @@ const InstancesToGradeSchema = z.object({
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
- * @param params.ignoreGradeRateLimit - Whether to override grade rate limits.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @returns The ID of the new job sequence.
  */
 export async function gradeAllAssessmentInstances({

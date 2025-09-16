@@ -329,7 +329,7 @@ async function selectSubmissionForGrading(
  * @param params.variant_course - The course for the variant.
  * @param params.user_id - The current effective user.
  * @param params.authn_user_id - The currently authenticated user.
- * @param params.ignoreGradeRateLimit - Whether to override grade rate limits.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  */
 export async function gradeVariant({
   variant,
@@ -445,7 +445,7 @@ export async function gradeVariant({
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
- * @param ignoreGradeRateLimit - Whether to override grade rate limits.
+ * @param ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @returns submission_id
  */
 export async function saveAndGradeSubmission(
