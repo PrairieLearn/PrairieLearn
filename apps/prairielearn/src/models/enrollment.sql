@@ -9,10 +9,11 @@ ON CONFLICT DO NOTHING;
 UPDATE enrollments
 SET
   status = 'joined',
+  user_id = $user_id,
   pending_uid = NULL,
   joined_at = now()
 WHERE
-  user_id = $user_id
+  pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id
   AND status = 'invited';
 
@@ -23,4 +24,13 @@ FROM
   enrollments
 WHERE
   user_id = $user_id
+  AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_enrollment_for_user_in_course_instance_by_pending_uid
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id;

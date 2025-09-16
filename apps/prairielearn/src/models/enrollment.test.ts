@@ -8,7 +8,11 @@ import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
-import { ensureEnrollment, getEnrollmentForUserInCourseInstance } from './enrollment.js';
+import {
+  ensureEnrollment,
+  getEnrollmentForUserInCourseInstance,
+  getEnrollmentForUserInCourseInstanceByPendingUid,
+} from './enrollment.js';
 
 describe('ensureEnrollment', () => {
   beforeEach(async function () {
@@ -39,14 +43,11 @@ describe('ensureEnrollment', () => {
       EnrollmentSchema,
     );
 
-    const initialEnrollment = await queryRow(
-      'SELECT * FROM enrollments WHERE course_instance_id = $course_instance_id AND pending_uid = $pending_uid',
-      {
-        course_instance_id: '1',
-        pending_uid: 'invited@example.com',
-      },
-      EnrollmentSchema,
-    );
+    const initialEnrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
+      pending_uid: user.uid,
+      course_instance_id: '1',
+    });
+    assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
     assert.isNull(initialEnrollment.joined_at);
     assert.isNull(initialEnrollment.user_id);
@@ -57,14 +58,20 @@ describe('ensureEnrollment', () => {
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
-      user_id: user.user_id,
       course_instance_id: '1',
+      user_id: user.user_id,
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.joined_at);
     assert.isNull(finalEnrollment.pending_uid);
     assert.equal(finalEnrollment.user_id, user.user_id);
+
+    const invitedEnrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
+      pending_uid: user.uid,
+      course_instance_id: '1',
+    });
+    assert.isNull(invitedEnrollment);
   });
 
   it('does not transition blocked user to enrolled status', async () => {

@@ -21,18 +21,24 @@ import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
-import { generateUsers } from './user.js';
+import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function enrollInvitedUserInCourseInstance({
   course_instance_id,
   user_id,
+  pending_uid,
 }: {
   course_instance_id: string;
   user_id: string;
+  pending_uid: string;
 }): Promise<void> {
-  await execute(sql.enroll_invited_user_in_course_instance, { course_instance_id, user_id });
+  await execute(sql.enroll_invited_user_in_course_instance, {
+    course_instance_id,
+    pending_uid,
+    user_id,
+  });
 }
 
 /**
@@ -49,13 +55,14 @@ export async function ensureEnrollment({
   course_instance_id: string;
   user_id: string;
 }): Promise<void> {
-  const enrollment = await getEnrollmentForUserInCourseInstance({
+  const user = await selectUserById(user_id);
+  const enrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
     course_instance_id,
-    user_id,
+    pending_uid: user.uid,
   });
 
   if (enrollment && enrollment.status === 'invited') {
-    await enrollInvitedUserInCourseInstance({ course_instance_id, user_id });
+    await enrollInvitedUserInCourseInstance({ course_instance_id, user_id, pending_uid: user.uid });
     return;
   }
 
@@ -126,6 +133,17 @@ export async function getEnrollmentForUserInCourseInstance({
   return await queryOptionalRow(
     sql.select_enrollment_for_user_in_course_instance,
     { user_id, course_instance_id },
+    EnrollmentSchema,
+  );
+}
+
+export async function getEnrollmentForUserInCourseInstanceByPendingUid({
+  pending_uid,
+  course_instance_id,
+}): Promise<Enrollment | null> {
+  return await queryOptionalRow(
+    sql.select_enrollment_for_user_in_course_instance_by_pending_uid,
+    { pending_uid, course_instance_id },
     EnrollmentSchema,
   );
 }
