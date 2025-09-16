@@ -10,6 +10,9 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
@@ -24,6 +27,7 @@ import {
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { Hydrate } from '../../lib/preact.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -43,6 +47,7 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
+      has_enhanced_navigation,
     } = getCourseInstanceContext(res.locals, 'instructor');
     const pageContext = getPageContext(res.locals);
     const { plainUrlPrefix } = pageContext;
@@ -100,19 +105,53 @@ router.get(
     });
 
     res.send(
-      InstructorInstanceAdminSettings({
+      PageLayout({
         resLocals: res.locals,
-        shortNames,
-        selfEnrollLink,
-        studentLink,
-        publicLink,
-        infoCourseInstancePath,
-        availableTimezones,
-        origHash,
-        instanceGHLink,
-        canEdit,
-        enrollmentCount,
-        enrollmentManagementEnabled,
+        pageTitle: 'Settings',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'settings',
+        },
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={{
+                has_course_instance_permission_edit:
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false,
+              }}
+              courseInstance={courseInstance}
+              course={course}
+              urlPrefix={pageContext.urlPrefix}
+            />
+            <Hydrate>
+              <InstructorInstanceAdminSettings
+                csrfToken={pageContext.__csrf_token}
+                urlPrefix={pageContext.urlPrefix}
+                navPage={pageContext.navPage}
+                hasEnhancedNavigation={has_enhanced_navigation}
+                canEdit={canEdit}
+                courseInstance={courseInstance}
+                shortNames={shortNames}
+                availableTimezones={availableTimezones}
+                origHash={origHash}
+                instanceGHLink={instanceGHLink}
+                studentLink={studentLink}
+                publicLink={publicLink}
+                selfEnrollLink={selfEnrollLink}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
+                infoCourseInstancePath={infoCourseInstancePath}
+              />
+            </Hydrate>
+            <Hydrate>
+              <DeleteCourseInstanceModal
+                shortName={courseInstance.short_name ?? ''}
+                enrolledCount={enrollmentCount}
+                csrfToken={pageContext.__csrf_token}
+              />
+            </Hydrate>
+          </>
+        ),
       }),
     );
   }),
