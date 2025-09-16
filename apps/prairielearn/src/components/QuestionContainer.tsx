@@ -459,7 +459,12 @@ function QuestionFooter({
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input
+          type="hidden"
+          name="__csrf_token"
+          value="${resLocals.__csrf_token}"
+          data-skip-unload-check="true"
+        />
         ${QuestionFooterContent({ resLocals, questionContext })}
       </div>
     `;
@@ -467,7 +472,12 @@ function QuestionFooter({
     return html`
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+          <input
+            type="hidden"
+            name="__csrf_token"
+            value="${resLocals.__csrf_token}"
+            data-skip-unload-check="true"
+          />
           ${QuestionFooterContent({ resLocals, questionContext })}
         </form>
       </div>
@@ -579,7 +589,14 @@ export function QuestionFooterContent({
           </span>
           <span class="d-flex">
             ${question.type === 'Freeform'
-              ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
+              ? html`
+                  <input
+                    type="hidden"
+                    name="__variant_id"
+                    value="${variant.id}"
+                    data-skip-unload-check="true"
+                  />
+                `
               : html`
                   <input type="hidden" name="postData" class="postData" />
                   <input type="hidden" name="__action" class="__action" />
