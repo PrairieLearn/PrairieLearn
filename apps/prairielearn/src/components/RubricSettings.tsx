@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useMemo, useState } from 'preact/hooks';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
@@ -168,7 +169,12 @@ export function RubricSettings({
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      const data = (await res.json().catch(() => ({ err: `Error: ${res.statusText}` }))) ?? {};
+      let data: { err: any };
+      try {
+        data = (await res.json()) ?? {};
+      } catch {
+        data = { err: `Error: ${res.statusText}` };
+      }
       if (data.err) {
         return setSettingsError(data.err);
       }
@@ -196,7 +202,7 @@ export function RubricSettings({
       <div id="rubric-setting" class="js-collapsible-card-body show p-2">
         {/* Settings */}
         <div>
-          {!!assessmentQuestion.max_auto_points && (
+          {assessmentQuestion.max_auto_points !== null && (
             <>
               <div class="row">
                 <div class="col-12 col-lg-6">
@@ -469,7 +475,7 @@ export function RubricRow({
           role="button"
           tabIndex={editMode ? 0 : -1}
           aria-disabled={!editMode}
-          class={`btn btn-sm btn-ghost ${!editMode ? 'disabled' : ''}`}
+          class={`btn btn-sm btn-ghost ${clsx({ disabled: !editMode })}`}
           style={{ cursor: 'grab' }}
           draggable={editMode}
           onDragStart={onDragStart}
@@ -590,7 +596,7 @@ export function RubricRow({
         <td class="align-middle">
           {submissionCount === 0 ? (
             <span>&mdash;</span>
-          ) : item.disagreement_count === undefined || item.disagreement_count === null ? (
+          ) : item.disagreement_count == null ? (
             <span>New</span>
           ) : item.disagreement_count ? (
             <>
@@ -607,7 +613,7 @@ export function RubricRow({
         <td class="text-nowrap align-middle">
           {item.num_submissions === undefined
             ? 'New'
-            : !item.num_submissions
+            : item.num_submissions === 0
               ? 'No'
               : item.num_submissions === 1
                 ? '1 submission'
