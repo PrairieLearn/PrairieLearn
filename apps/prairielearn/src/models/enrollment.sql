@@ -9,6 +9,7 @@ ON CONFLICT DO NOTHING;
 UPDATE enrollments
 SET
   status = 'joined',
+  pending_uid = NULL,
   joined_at = now()
 WHERE
   user_id = $user_id
