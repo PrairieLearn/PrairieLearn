@@ -224,7 +224,7 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: true,
-        overrideGradeRate: false,
+        ignoreGradeRateLimit: false,
         client_fingerprint_id: res.locals.client_fingerprint_id,
       });
       res.redirect(

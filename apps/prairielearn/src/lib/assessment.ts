@@ -241,7 +241,7 @@ export async function updateAssessmentInstance(
  * @param params.authn_user_id - The current authenticated user.
  * @param params.requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param params.close - Whether to close the assessment instance after grading.
- * @param params.overrideGradeRate - Whether to override grade rate limits.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @param params.client_fingerprint_id - The client fingerprint ID.
  */
 export async function gradeAssessmentInstance({
@@ -250,7 +250,7 @@ export async function gradeAssessmentInstance({
   authn_user_id,
   requireOpen,
   close,
-  overrideGradeRate,
+  ignoreGradeRateLimit,
   client_fingerprint_id,
 }: {
   assessment_instance_id: string;
@@ -258,11 +258,11 @@ export async function gradeAssessmentInstance({
   authn_user_id: string | null;
   requireOpen: boolean;
   close: boolean;
-  overrideGradeRate: boolean;
+  ignoreGradeRateLimit: boolean;
   client_fingerprint_id: string | null;
 }): Promise<void> {
   debug('gradeAssessmentInstance()');
-  overrideGradeRate = close || overrideGradeRate;
+  ignoreGradeRateLimit = close || ignoreGradeRateLimit;
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
@@ -312,7 +312,7 @@ export async function gradeAssessmentInstance({
       variant_course: row.variant_course,
       user_id,
       authn_user_id,
-      overrideGradeRateCheck: overrideGradeRate,
+      ignoreGradeRateLimit,
     });
   });
   // The `grading_needed` flag was set by the closing query above. Once we've
@@ -348,7 +348,7 @@ const InstancesToGradeSchema = z.object({
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
- * @param params.overrideGradeRate - Whether to override grade rate limits.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  * @returns The ID of the new job sequence.
  */
 export async function gradeAllAssessmentInstances({
@@ -356,13 +356,13 @@ export async function gradeAllAssessmentInstances({
   user_id,
   authn_user_id,
   close,
-  overrideGradeRate,
+  ignoreGradeRateLimit,
 }: {
   assessment_id: string;
   user_id: string;
   authn_user_id: string;
   close: boolean;
-  overrideGradeRate: boolean;
+  ignoreGradeRateLimit: boolean;
 }): Promise<string> {
   debug('gradeAllAssessmentInstances()');
   const { assessment_label, course_instance_id, course_id } =
@@ -395,7 +395,7 @@ export async function gradeAllAssessmentInstances({
         authn_user_id,
         requireOpen: true,
         close,
-        overrideGradeRate,
+        ignoreGradeRateLimit,
         client_fingerprint_id: null,
       });
     });
