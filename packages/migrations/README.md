@@ -158,3 +158,35 @@ import { stopBatchedMigrations } from '@prairielearn/migrations';
 
 await stopBatchedMigrations();
 ```
+
+## Sample migration patterns
+
+Here is a collection of common migration patterns, and how to sequence them. Bullet points are ordered in sequential time order -- e.g. the first bullet point should have a timestamp before the second bullet point.
+
+### Add column with default value
+
+- Use a **single migration**
+
+### Add column with backfill and no constraints
+
+**PR 1: Add column and enqueue backfill**
+
+- Add the column
+- Enqueue a batched migration to backfill the column with appropriate values
+
+**PR 2: Finalize**
+
+- Finalize the batched migration
+
+### Add column with backfill and constraints
+
+**PR 1: Add column and enqueue backfill**
+
+- Add the column without the constraints
+- Enqueue a batched migration to backfill the column with appropriate values
+
+**PR 2: Finalize and add constraints**
+
+- Finalize the batched migration
+- Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
+- Validate the constraint (this validates all existing data against the constraint)
