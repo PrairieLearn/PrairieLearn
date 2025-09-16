@@ -112,7 +112,8 @@ export function InstructorInstanceAdminSettings({
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
-    hide_in_enroll_page: courseInstance.hide_in_enroll_page ?? false,
+    show_in_enroll_page:
+      courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_requires_secret_link: courseInstance.self_enrollment_requires_secret_link,
     self_enrollment_enabled_before_date:
@@ -139,7 +140,6 @@ export function InstructorInstanceAdminSettings({
         <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
-        {/* Any javascript submit will not contain the value of the submit button. */}
         <form method="POST" name="edit-course-instance-settings-form">
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />

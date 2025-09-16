@@ -249,7 +249,7 @@ router.post(
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
         courseInstanceInfo.hideInEnrollPage,
-        parsedBody.hide_in_enroll_page,
+        !parsedBody.show_in_enroll_page,
         false,
       );
 

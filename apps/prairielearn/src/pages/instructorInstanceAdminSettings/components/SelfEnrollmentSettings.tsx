@@ -207,17 +207,17 @@ export function SelfEnrollmentSettings({
         <input
           class="form-check-input"
           type="checkbox"
-          id="hide_in_enroll_page"
+          id="show_in_enroll_page"
           disabled={!canEdit || !selfEnrollmentEnabled || selfEnrollmentRequiresSecretLink}
-          {...register('hide_in_enroll_page')}
-          name="hide_in_enroll_page"
+          {...register('show_in_enroll_page')}
+          name="show_in_enroll_page"
         />
-        <label class="form-check-label" for="hide_in_enroll_page">
-          Hide in enrollment page
+        <label class="form-check-label" for="show_in_enroll_page">
+          Show on enrollment page
         </label>
         <div class="small text-muted">
-          If enabled, hides the course instance in the enrollment page, so that only direct links to
-          the course can be used for enrollment.
+          If enabled, students can discover the course instance on the enrollment page. If disabled,
+          they will need a direct link to the course instance to enroll.
         </div>
       </div>
 
@@ -257,7 +257,7 @@ export function SelfEnrollmentSettings({
           }}
         />
         <label class="form-check-label" for="disable_self_enrollment_after_date">
-          Disable self-enrollment after specified date
+          Forbid self-enrollment after specified date
         </label>
         <div class="small text-muted">
           If enabled, self-enrollment will be disabled after the specified date.
