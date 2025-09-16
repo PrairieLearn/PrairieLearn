@@ -183,9 +183,15 @@ export async function calculateAiGradingStats(
   return stats;
 }
 
-async function selectGradingJobsInfo<T extends { id: string }>(
+/**
+ * Select the latest human grading job and AI grading job
+ * information, including rubric grading information for each input instance question.
+ * @param instance_questions the array of instance questions (including their ids)
+ * @returns a record mapping each id to its grading jobs
+ */
+export async function selectGradingJobsInfo<T extends { id: string }>(
   instance_questions: T[],
-): Promise<Record<string, GradingJobInfo[]>> {
+): Promise<Partial<Record<string, GradingJobInfo[]>>> {
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },

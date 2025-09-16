@@ -408,6 +408,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       instructorLink = `${urlPrefix}/instructor/question/${question.id}`;
     } else if (assessment_instance?.assessment_id) {
       instructorLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+    } else if (assessment?.id) {
+      instructorLink = `${urlPrefix}/instructor/assessment/${assessment.id}`;
     } else {
       instructorLink = `${urlPrefix}/instructor/instance_admin`;
     }

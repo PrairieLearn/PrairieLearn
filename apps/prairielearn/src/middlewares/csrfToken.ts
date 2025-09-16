@@ -7,7 +7,8 @@ import { config } from '../lib/config.js';
 
 export default asyncHandler(async (req, res, next) => {
   const tokenData = {
-    url: req.originalUrl,
+    // We don't want to include the query params in the CSRF token checks.
+    url: req.originalUrl.split('?')[0],
     authn_user_id: res.locals.authn_user?.user_id,
   };
 
