@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '../lib/preact-html.js';
+import { renderHtml } from '@prairielearn/preact/client';
 
 export function IssueBadge({
   count,

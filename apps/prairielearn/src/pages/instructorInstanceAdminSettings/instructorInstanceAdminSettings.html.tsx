@@ -1,4 +1,6 @@
 import { type HtmlSafeString, html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/preact/client';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
@@ -8,8 +10,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
-import { hydrateHtml } from '../../lib/preact.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 import { encodePath } from '../../lib/uri-util.js';
 

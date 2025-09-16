@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact/client';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type Timezone, formatTimezone } from '../../lib/timezones.js';
 
 export function InstructorCourseAdminSettings({

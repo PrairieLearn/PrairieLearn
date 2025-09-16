@@ -1,5 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact/client';
 import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
@@ -14,7 +15,6 @@ import {
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
