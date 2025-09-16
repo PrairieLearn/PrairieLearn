@@ -57,9 +57,13 @@ export async function enrollInvitedUserInCourseInstance({
 export async function ensureEnrollment({
   course_instance_id,
   user_id,
+  agent_user_id,
+  agent_authn_user_id,
 }: {
   course_instance_id: string;
   user_id: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
 }): Promise<Enrollment | null> {
   return await runInTransactionAsync(async () => {
     const user = await selectUserById(user_id);
@@ -83,9 +87,8 @@ export async function ensureEnrollment({
         row_id: updated.id,
         old_row: enrollment,
         new_row: updated,
-        // This is done by the system
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        agent_user_id,
+        agent_authn_user_id,
       });
       return updated;
     }
@@ -101,9 +104,8 @@ export async function ensureEnrollment({
         action: 'insert',
         row_id: inserted.id,
         new_row: inserted,
-        // This is done by the system
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        agent_user_id,
+        agent_authn_user_id,
       });
     }
     return inserted;
@@ -164,6 +166,8 @@ export async function ensureCheckedEnrollment({
   await ensureEnrollment({
     course_instance_id: course_instance.id,
     user_id: authz_data.authn_user.user_id,
+    agent_user_id: authz_data.authn_user.user_id,
+    agent_authn_user_id: authz_data.user.id,
   });
 }
 
@@ -199,7 +203,13 @@ export async function generateAndEnrollUsers({
   return await runInTransactionAsync(async () => {
     const users = await generateUsers(count);
     for (const user of users) {
-      await ensureEnrollment({ course_instance_id, user_id: user.user_id });
+      await ensureEnrollment({
+        course_instance_id,
+        user_id: user.user_id,
+        // This is done by the system
+        agent_user_id: null,
+        agent_authn_user_id: null,
+      });
     }
     return users;
   });

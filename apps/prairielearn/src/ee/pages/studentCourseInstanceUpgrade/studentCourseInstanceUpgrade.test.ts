@@ -80,7 +80,12 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    await ensureEnrollment({
+      user_id: user.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
     const res = await fetch(assessmentsUrl, {
@@ -96,7 +101,12 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    await ensureEnrollment({
+      user_id: user.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
 
     // Simulates the dev user (an instructor) using "Student view" for an
     // actual enrolled student user.
