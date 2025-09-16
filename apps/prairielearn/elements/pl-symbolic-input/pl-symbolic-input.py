@@ -270,7 +270,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return ""
 
         elif isinstance(a_tru, str):
-            # blank case
             if a_tru != "":
                 # this is so instructors can specify the true answer simply as a string
                 a_tru = psu.convert_string_to_sympy(

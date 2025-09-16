@@ -345,6 +345,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             raise ValueError(f"Could not parse correct answer: {a_tru}")
     if result == "correct":
         if isinstance(a_tru_parsed, str):
+            assert a_tru_parsed.strip() == ""
             data["raw_submitted_answers"][name] = ""
         elif base > 0:
             data["raw_submitted_answers"][name] = np.base_repr(a_tru_parsed, base)

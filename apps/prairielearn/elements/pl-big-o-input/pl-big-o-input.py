@@ -318,34 +318,29 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
         }
 
+    elif result == "incorrect" and a_tru == "":
+        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
+        data["partial_scores"][name] = {
+            "score": 0,
+            "weight": weight,
+            "feedback": bou.INCORRECT_FEEDBACK,
+        }
     elif result == "incorrect":
-        if a_tru == "":
-            data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
+        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
+        bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
+
+        if bigo_type is BigOType.THETA:
             data["partial_scores"][name] = {
-                "score": 0,
+                "score": 0.25,
                 "weight": weight,
-                "feedback": bou.INCORRECT_FEEDBACK,
+                "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
             }
         else:
-            data["raw_submitted_answers"][name] = (
-                f"{random.randint(4, 100):d} * {a_tru}"
-            )
-            bigo_type = pl.get_enum_attrib(
-                element, "type", BigOType, BIG_O_TYPE_DEFAULT
-            )
-
-            if bigo_type is BigOType.THETA:
-                data["partial_scores"][name] = {
-                    "score": 0.25,
-                    "weight": weight,
-                    "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
-                }
-            else:
-                data["partial_scores"][name] = {
-                    "score": 0.5,
-                    "weight": weight,
-                    "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
-                }
+            data["partial_scores"][name] = {
+                "score": 0.5,
+                "weight": weight,
+                "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
+            }
 
     elif result == "invalid":
         invalid_answer = random.choice([

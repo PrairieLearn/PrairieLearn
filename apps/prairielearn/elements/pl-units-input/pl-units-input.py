@@ -465,14 +465,18 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     )
     ureg = pl.get_unit_registry()
     if result == "correct":
-        if str(a_tru).strip() != "" and grading_mode is GradingMode.ONLY_UNITS:
+        if (
+            isinstance(a_tru, str)
+            and a_tru.strip() != ""
+            and grading_mode is GradingMode.ONLY_UNITS
+        ):
             data["raw_submitted_answers"][name] = str(ureg.Quantity(a_tru).units)
         else:
             data["raw_submitted_answers"][name] = a_tru
 
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        if str(a_tru).strip() == "":
+        if isinstance(a_tru, str) and a_tru.strip() == "":
             a_tru = "1 meter"
         if grading_mode is GradingMode.ONLY_UNITS:
             answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
