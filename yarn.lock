@@ -4185,6 +4185,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/preact@workspace:packages/preact"
   dependencies:
+    "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/compiled-assets": "workspace:^"
     "@prairielearn/error": "workspace:^"
     "@prairielearn/html": "workspace:^"
@@ -4194,6 +4195,7 @@ __metadata:
     clsx: "npm:^2.1.1"
     preact: "link:../preact-cjs"
     preact-render-to-string: "npm:^6.5.17"
+    selector-observer: "npm:^1.1.1"
     superjson: "npm:^2.2.2"
     typescript: "npm:^5.9.2"
   languageName: unknown
@@ -16404,6 +16406,13 @@ __metadata:
   version: 1.1.2
   resolution: "select@npm:1.1.2"
   checksum: 10c0/5dbd871c03a52aa70ce29ab46e9115d26cb34404717e7e705e678b3b4d535bacfa0a4c4c2d32262acec7b6fdfb6827e8980ea4ef969a8681f8a0b752331a0a02
+  languageName: node
+  linkType: hard
+
+"selector-observer@npm:^1.1.1":
+  version: 1.2.0
+  resolution: "selector-observer@npm:1.2.0"
+  checksum: 10c0/6cff25557ceca8d00aa9f755a5fff3e13fe19ce2d6df0d721b10ae06e6ecdd276df1adefb909701e29febb24aa708a6ac96dc72b8270e3b973faf871b076c727
   languageName: node
   linkType: hard
 
