@@ -269,7 +269,7 @@ export async function saveSubmission(
 async function selectSubmissionForGrading(
   variant_id: string,
   check_submission_id: string | null,
-  overrideRealTimeGradingDisabled: boolean,
+  ignoreRealTimeGradingDisabled: boolean,
 ): Promise<Submission | null> {
   return sqldb.runInTransactionAsync(async () => {
     await lockVariant({ variant_id });
@@ -300,7 +300,7 @@ async function selectSubmissionForGrading(
     if (
       variantData.instance_question_id != null &&
       variantData.allow_real_time_grading === false &&
-      !overrideRealTimeGradingDisabled
+      !ignoreRealTimeGradingDisabled
     ) {
       return null;
     }
@@ -340,35 +340,44 @@ async function selectSubmissionForGrading(
 /**
  * Grade the most recent submission for a given variant.
  *
- * @param variant - The variant to grade.
- * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
- * @param question - The question for the variant.
- * @param variant_course - The course for the variant.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
- * @param overrideGradeRateCheck - Whether to override grade rate limits.
- * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
+ * @param params
+ * @param params.variant - The variant to grade.
+ * @param params.check_submission_id - The submission_id that must be graded (or null to skip this check).
+ * @param params.question - The question for the variant.
+ * @param params.variant_course - The course for the variant.
+ * @param params.user_id - The current effective user.
+ * @param params.authn_user_id - The currently authenticated user.
+ * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
  */
-export async function gradeVariant(
-  variant: Variant,
-  check_submission_id: string | null,
-  question: Question,
-  variant_course: Course,
-  user_id: string | null,
-  authn_user_id: string | null,
-  overrideGradeRateCheck: boolean,
-  overrideRealTimeGradingDisabled: boolean,
-): Promise<void> {
+export async function gradeVariant({
+  variant,
+  check_submission_id,
+  question,
+  variant_course,
+  user_id,
+  authn_user_id,
+  ignoreGradeRateLimit,
+  ignoreRealTimeGradingDisabled,
+}: {
+  variant: Variant;
+  check_submission_id: string | null;
+  question: Question;
+  variant_course: Course;
+  user_id: string | null;
+  authn_user_id: string | null;
+  ignoreGradeRateLimit: boolean;
+  ignoreRealTimeGradingDisabled: boolean;
+}): Promise<void> {
   const question_course = await getQuestionCourse(question, variant_course);
 
   const submission = await selectSubmissionForGrading(
     variant.id,
     check_submission_id,
-    overrideRealTimeGradingDisabled,
+    ignoreRealTimeGradingDisabled,
   );
   if (submission == null) return;
 
-  if (!overrideGradeRateCheck) {
+  if (!ignoreGradeRateLimit) {
     const resultNextAllowed = await sqldb.callRow(
       'instance_questions_next_allowed_grade',
       [variant.instance_question_id],
@@ -460,8 +469,8 @@ export async function gradeVariant(
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
- * @param overrideGradeRateCheck - Whether to override grade rate limits.
- * @param overrideRealTimeGradingDisabled - Whether to override real-time grading disabled checks.
+ * @param ignoreGradeRateLimit - Whether to ignore grade rate limits.
+ * @param ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
  * @returns submission_id
  */
 export async function saveAndGradeSubmission(
@@ -469,8 +478,8 @@ export async function saveAndGradeSubmission(
   variant: Variant,
   question: Question,
   course: Course,
-  overrideGradeRateCheck: boolean,
-  overrideRealTimeGradingDisabled: boolean,
+  ignoreGradeRateLimit: boolean,
+  ignoreRealTimeGradingDisabled: boolean,
 ) {
   const { submission_id, variant: updated_variant } = await saveSubmission(
     submissionData,
@@ -479,20 +488,20 @@ export async function saveAndGradeSubmission(
     course,
   );
 
-  await gradeVariant(
+  await gradeVariant({
     // Note that parsing a submission may modify the `params` and `true_answer`
     // of the variant (for v3 questions, this is `data["params"]` and
     // `data["correct_answers"])`. This is why we need to use the variant
     // returned from `saveSubmission` rather than the one passed to this
     // function.
-    updated_variant,
-    submission_id,
+    variant: updated_variant,
+    check_submission_id: submission_id,
     question,
-    course,
-    submissionData.user_id,
-    submissionData.auth_user_id,
-    overrideGradeRateCheck,
-    overrideRealTimeGradingDisabled,
-  );
+    variant_course: course,
+    user_id: submissionData.user_id,
+    authn_user_id: submissionData.auth_user_id,
+    ignoreGradeRateLimit,
+    ignoreRealTimeGradingDisabled,
+  });
   return submission_id;
 }

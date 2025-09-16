@@ -49,7 +49,7 @@ dev = [
   "pytest-github-actions-annotate-failures==0.3.0",
   "pytest==8.4.1",
   "ruff==0.12.11",
-  "squawk-cli==2.25.0",
+  "squawk-cli==2.26.0",
   "sqlfluff==3.4.2",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.8.25",
@@ -72,7 +72,6 @@ docs = [
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
   "ruff==0.12.11",
-  "mkdocstrings-python==1.18.2",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
