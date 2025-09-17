@@ -5,9 +5,6 @@
     "rootDir": "./src",
     "types": ["node"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@prairielearn/preact-cjs",
-    // Use native ESM.
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext"
+    "jsxImportSource": "@prairielearn/preact-cjs"
   }
 }
