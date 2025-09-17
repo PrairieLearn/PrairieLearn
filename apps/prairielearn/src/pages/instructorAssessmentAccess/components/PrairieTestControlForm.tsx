@@ -6,7 +6,7 @@ import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
   control: Control<AccessControlFormData>;
-  namePrefix: 'mainRule.prairieTestControl' | `overrides.${number}.prairieTestControl`;
+  namePrefix: 'mainRule' | `overrides.${number}`;
   ruleEnabled?: boolean;
 }
 
@@ -21,12 +21,12 @@ export function PrairieTestControlForm({
     remove: removeExam,
   } = useFieldArray({
     control,
-    name: `${namePrefix}.exams` as const,
+    name: `${namePrefix}.prairieTestControl.exams`,
   });
 
   const enabled = useWatch({
     control,
-    name: `${namePrefix}.enabled` as const,
+    name: `${namePrefix}.prairieTestControl.enabled`,
   });
 
   const addExam = () => {
@@ -39,13 +39,16 @@ export function PrairieTestControlForm({
         <div class="d-flex align-items-center">
           <TriStateCheckbox
             control={control}
-            name={`${namePrefix}.enabled`}
+            name={`${namePrefix}.prairieTestControl.enabled`}
             disabled={!ruleEnabled}
             disabledReason={!ruleEnabled ? 'Enable this access rule first' : undefined}
             class="me-2"
           />
-          <span>PrairieTest Control</span>
+          <span>PrairieTest Integration</span>
         </div>
+        <Form.Text class="text-muted">
+          Control access and credit to your exam through PrairieTest
+        </Form.Text>
       </Card.Header>
       <Card.Body>
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -72,7 +75,9 @@ export function PrairieTestControlForm({
                       type="text"
                       placeholder="Enter PrairieTest exam UUID (e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c)"
                       disabled={!enabled}
-                      {...control.register(`${namePrefix}.exams.${index}.examUuid`)}
+                      {...control.register(
+                        `${namePrefix}.prairieTestControl.exams.${index}.examUuid`,
+                      )}
                     />
                     <Form.Text class="text-muted">
                       The UUID of the PrairieTest exam to integrate with this assessment.
@@ -86,7 +91,9 @@ export function PrairieTestControlForm({
                       type="checkbox"
                       label="Read Only"
                       disabled={!enabled}
-                      {...control.register(`${namePrefix}.exams.${index}.readOnly`)}
+                      {...control.register(
+                        `${namePrefix}.prairieTestControl.exams.${index}.readOnly`,
+                      )}
                     />
                   </Form.Group>
                 </Col>

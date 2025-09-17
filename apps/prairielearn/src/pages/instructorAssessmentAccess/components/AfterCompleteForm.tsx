@@ -6,7 +6,7 @@ import type { AccessControlFormData } from './types.js';
 
 interface AfterCompleteFormProps {
   control: Control<AccessControlFormData>;
-  namePrefix: 'mainRule.afterComplete' | `overrides.${number}.afterComplete`;
+  namePrefix: 'mainRule' | `overrides.${number}`;
   ruleEnabled?: boolean;
 }
 
@@ -15,103 +15,110 @@ export function AfterCompleteForm({
   namePrefix,
   ruleEnabled = true,
 }: AfterCompleteFormProps) {
-  // Get the base path for accessing date control and prairie test control
-  const basePath = namePrefix.replace('.afterComplete', '');
-
   const hideQuestions = useWatch({
     control,
-    name: `${namePrefix}.hideQuestions`,
+    name: `${namePrefix}.afterComplete.hideQuestions`,
   });
 
   const hideScore = useWatch({
     control,
-    name: `${namePrefix}.hideScore`,
+    name: `${namePrefix}.afterComplete.hideScore`,
   });
 
   const showAgainDateEnabledQuestions = useWatch({
     control,
-    name: `${namePrefix}.hideQuestionsDateControl.showAgainDateEnabled`,
+    name: `${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDateEnabled`,
   });
 
   const hideAgainDateEnabledQuestions = useWatch({
     control,
-    name: `${namePrefix}.hideQuestionsDateControl.hideAgainDateEnabled`,
+    name: `${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDateEnabled`,
   });
 
   const showAgainDateEnabledScore = useWatch({
     control,
-    name: `${namePrefix}.hideScoreDateControl.showAgainDateEnabled`,
+    name: `${namePrefix}.afterComplete.hideScoreDateControl.showAgainDateEnabled`,
   });
 
   // Watch date values for validation
   const showAgainDate = useWatch({
     control,
-    name: `${namePrefix}.hideQuestionsDateControl.showAgainDate`,
+    name: `${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDate`,
   });
 
   const hideAgainDate = useWatch({
     control,
-    name: `${namePrefix}.hideQuestionsDateControl.hideAgainDate`,
+    name: `${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDate`,
   });
 
   // Watch completion criteria
+  const dateControlEnabled = useWatch({
+    control,
+    name: `${namePrefix}.dateControl.enabled`,
+  });
+
   const durationMinutesEnabled = useWatch({
     control,
-    name: `${basePath}.dateControl.durationMinutesEnabled` as any,
+    name: `${namePrefix}.dateControl.durationMinutesEnabled`,
   });
 
   const durationMinutes = useWatch({
     control,
-    name: `${basePath}.dateControl.durationMinutes` as any,
+    name: `${namePrefix}.dateControl.durationMinutes`,
   });
 
   const dueDate = useWatch({
     control,
-    name: `${basePath}.dateControl.dueDate` as any,
+    name: `${namePrefix}.dateControl.dueDate`,
   });
 
   const dueDateEnabled = useWatch({
     control,
-    name: `${basePath}.dateControl.dueDateEnabled` as any,
+    name: `${namePrefix}.dateControl.dueDateEnabled`,
   });
 
   const lateDeadlines = useWatch({
     control,
-    name: `${basePath}.dateControl.lateDeadlines` as any,
-    defaultValue: [],
-  }) as { date?: string; credit?: number }[];
+    name: `${namePrefix}.dateControl.lateDeadlines`,
+  });
 
   const lateDeadlinesEnabled = useWatch({
     control,
-    name: `${basePath}.dateControl.lateDeadlinesEnabled` as any,
+    name: `${namePrefix}.dateControl.lateDeadlinesEnabled`,
   });
 
   const prairieTestEnabled = useWatch({
     control,
-    name: `${basePath}.prairieTestControl.enabled` as any,
+    name: `${namePrefix}.prairieTestControl.enabled`,
   });
 
   const prairieTestExams = useWatch({
     control,
-    name: `${basePath}.prairieTestControl.exams` as any,
-    defaultValue: [],
-  }) as { examUuid?: string; readOnly?: boolean }[];
+    name: `${namePrefix}.prairieTestControl.exams`,
+  });
 
   // Generate completion explanation
-  const getCompletionExplanation = () => {
+  const getCompletionCriteria = () => {
     const criteria: (string | string[])[] = [];
 
-    // Time limit
-    if (durationMinutesEnabled && durationMinutes) {
+    // Time limit (only if Date Control is enabled)
+    if (dateControlEnabled && durationMinutesEnabled && durationMinutes) {
       criteria.push(`${durationMinutes} minutes after starting`);
     }
 
-    // Deadlines
-    if (lateDeadlinesEnabled && dueDateEnabled && dueDate && lateDeadlines?.length > 0) {
+    // Deadlines (only if Date Control is enabled)
+    if (
+      dateControlEnabled &&
+      lateDeadlinesEnabled &&
+      dueDateEnabled &&
+      dueDate &&
+      lateDeadlines?.length &&
+      lateDeadlines.length > 0
+    ) {
       const validLateDeadlines = lateDeadlines.filter((deadline) => deadline?.date);
       if (validLateDeadlines.length > 0) {
         const sortedLateDeadlines = validLateDeadlines.sort(
-          (a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
         const latestLateDeadline = sortedLateDeadlines[0];
         if (latestLateDeadline.date) {
@@ -119,53 +126,61 @@ export function AfterCompleteForm({
           criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
         }
       }
-    } else if (dueDateEnabled && dueDate) {
+    } else if (dateControlEnabled && dueDateEnabled && dueDate) {
       const date = new Date(dueDate);
       criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
     }
 
     // PrairieTest Control
-    if (prairieTestEnabled && prairieTestExams?.length > 0) {
+    if (prairieTestEnabled && prairieTestExams && prairieTestExams.length > 0) {
       const validExams = prairieTestExams.filter((exam) => exam?.examUuid);
-      const subList = validExams.map((exam) => exam.examUuid!);
+      const subList = validExams.map((exam) => exam.examUuid);
       criteria.push('When any of these exams ends:', subList);
     }
 
-    if (criteria.length === 0) {
-      return 'No specific completion criteria configured. The assessment may complete based on other factors.';
-    }
-
-    return (
-      <ul>
-        {criteria.map((criterion) =>
-          Array.isArray(criterion) ? (
-            <ul key={criterion[0]}>
-              {criterion.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          ) : (
-            <li key={criterion}>{criterion}</li>
-          ),
-        )}
-      </ul>
-    );
+    return criteria;
   };
 
   // Check if there are completion criteria by getting the explanation and checking if it has criteria
-  const completionExplanation = getCompletionExplanation();
-  const hasCompletion =
-    completionExplanation !==
-    'No specific completion criteria configured. The assessment may complete based on other factors.';
-
+  const criteria = getCompletionCriteria();
+  const defaultCriteria = [
+    "When the student's time limit is reached",
+    'After the due date/last deadline',
+    'When a PrairieTest exam ends',
+  ];
+  const completionExplanation = (
+    <ul>
+      {(criteria.length > 0 ? criteria : defaultCriteria).map((criterion) =>
+        Array.isArray(criterion) ? (
+          <ul key={criterion[0]}>
+            {criterion.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : (
+          <li key={criterion}>{criterion}</li>
+        ),
+      )}
+    </ul>
+  );
+  const hasCompletion = criteria.length > 0;
   // Helper function to get the last deadline for validation
   const getLastDeadlineDate = (): string | null => {
+    // Only consider dates if Date Control is enabled
+    if (!dateControlEnabled) return null;
+
     // Check late deadlines first
-    if (lateDeadlinesEnabled && dueDateEnabled && dueDate && lateDeadlines?.length > 0) {
+    if (
+      lateDeadlinesEnabled &&
+      dueDateEnabled &&
+      dueDate &&
+      lateDeadlines &&
+      lateDeadlines.length > 0
+    ) {
       const validLateDeadlines = lateDeadlines.filter((deadline) => deadline?.date);
       if (validLateDeadlines.length > 0) {
         const sortedLateDeadlines = validLateDeadlines.sort(
-          (a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
         return sortedLateDeadlines[0].date || null;
       }
@@ -202,6 +217,12 @@ export function AfterCompleteForm({
           <h6 class="mb-0">After Completion Behavior</h6>
           <small class="text-muted">
             An assessment is complete when a student can no longer make attempts on it.{' '}
+            {!hasCompletion && (
+              <>
+                <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
+                <strong>No completion criteria configured.</strong>
+              </>
+            )}{' '}
             <OverlayTrigger
               trigger="click"
               placement="bottom"
@@ -227,13 +248,6 @@ export function AfterCompleteForm({
           </small>
         </div>
       </Card.Header>
-      {!hasCompletion && (
-        <div class="alert alert-warning mb-0 border-start-0 border-end-0 border-top-0 rounded-0">
-          <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
-          <strong>No completion criteria configured.</strong> Students will not be able to complete
-          this assessment because no time limit, deadlines, or PrairieTest exams are configured.
-        </div>
-      )}
       <Card.Body>
         {/* Hide Questions */}
         <Card class="mb-3">
@@ -242,7 +256,7 @@ export function AfterCompleteForm({
               type="checkbox"
               label="Hide Questions After Completion"
               disabled={!ruleEnabled || !hasCompletion}
-              {...control.register(`${namePrefix}.hideQuestions`)}
+              {...control.register(`${namePrefix}.afterComplete.hideQuestions`)}
             />
             {getHideQuestionsText() && (
               <Form.Text class="text-muted d-block mt-1">{getHideQuestionsText()}</Form.Text>
@@ -255,7 +269,7 @@ export function AfterCompleteForm({
                   <div class="d-flex align-items-center mb-2">
                     <TriStateCheckbox
                       control={control}
-                      name={`${namePrefix}.hideQuestionsDateControl.showAgainDateEnabled`}
+                      name={`${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDateEnabled`}
                       disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
                       disabledReason={
                         !ruleEnabled
@@ -279,20 +293,24 @@ export function AfterCompleteForm({
                       !hideQuestions ||
                       !showAgainDateEnabledQuestions
                     }
-                    {...control.register(`${namePrefix}.hideQuestionsDateControl.showAgainDate`, {
-                      validate: (value) => {
-                        if (!value) return true;
-                        const lastDeadline = getLastDeadlineDate();
-                        if (lastDeadline) {
-                          const showDate = new Date(value);
-                          const lastDate = new Date(lastDeadline);
-                          return (
-                            showDate > lastDate || 'Show Again Date must be after the last deadline'
-                          );
-                        }
-                        return true;
+                    {...control.register(
+                      `${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDate`,
+                      {
+                        validate: (value) => {
+                          if (!value) return true;
+                          const lastDeadline = getLastDeadlineDate();
+                          if (lastDeadline) {
+                            const showDate = new Date(value);
+                            const lastDate = new Date(lastDeadline);
+                            return (
+                              showDate > lastDate ||
+                              'Show Again Date must be after the last deadline'
+                            );
+                          }
+                          return true;
+                        },
                       },
-                    })}
+                    )}
                   />
                 </Form.Group>
               </Col>
@@ -302,7 +320,7 @@ export function AfterCompleteForm({
                     <div class="d-flex align-items-center mb-2">
                       <TriStateCheckbox
                         control={control}
-                        name={`${namePrefix}.hideQuestionsDateControl.hideAgainDateEnabled`}
+                        name={`${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDateEnabled`}
                         disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
                         disabledReason={
                           !ruleEnabled
@@ -326,17 +344,20 @@ export function AfterCompleteForm({
                         !hideQuestions ||
                         !hideAgainDateEnabledQuestions
                       }
-                      {...control.register(`${namePrefix}.hideQuestionsDateControl.hideAgainDate`, {
-                        validate: (value) => {
-                          if (!value || !showAgainDate) return true;
-                          const hideDate = new Date(value);
-                          const showDate = new Date(showAgainDate);
-                          return (
-                            hideDate > showDate ||
-                            'Hide Again Date must be after the Show Again Date'
-                          );
+                      {...control.register(
+                        `${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDate`,
+                        {
+                          validate: (value) => {
+                            if (!value || !showAgainDate) return true;
+                            const hideDate = new Date(value);
+                            const showDate = new Date(showAgainDate);
+                            return (
+                              hideDate > showDate ||
+                              'Hide Again Date must be after the Show Again Date'
+                            );
+                          },
                         },
-                      })}
+                      )}
                     />
                   </Form.Group>
                 </Col>
@@ -352,7 +373,7 @@ export function AfterCompleteForm({
               type="checkbox"
               label="Hide Score After Completion"
               disabled={!ruleEnabled || !hasCompletion}
-              {...control.register(`${namePrefix}.hideScore`)}
+              {...control.register(`${namePrefix}.afterComplete.hideScore`)}
             />
           </Card.Header>
           <Card.Body>
@@ -362,7 +383,7 @@ export function AfterCompleteForm({
                   <div class="d-flex align-items-center mb-2">
                     <TriStateCheckbox
                       control={control}
-                      name={`${namePrefix}.hideScoreDateControl.showAgainDateEnabled`}
+                      name={`${namePrefix}.afterComplete.hideScoreDateControl.showAgainDateEnabled`}
                       disabled={!ruleEnabled || !hasCompletion || !hideScore}
                       disabledReason={
                         !ruleEnabled
@@ -383,7 +404,9 @@ export function AfterCompleteForm({
                     disabled={
                       !ruleEnabled || !hasCompletion || !hideScore || !showAgainDateEnabledScore
                     }
-                    {...control.register(`${namePrefix}.hideScoreDateControl.showAgainDate`)}
+                    {...control.register(
+                      `${namePrefix}.afterComplete.hideScoreDateControl.showAgainDate`,
+                    )}
                   />
                 </Form.Group>
               </Col>

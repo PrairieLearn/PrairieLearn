@@ -2,7 +2,6 @@ import { useState } from 'preact/compat';
 import { Accordion, Button, Card, Form } from 'react-bootstrap';
 import {
   type Control,
-  type UseFormGetFieldState,
   type UseFormTrigger,
   useFieldArray,
   useForm,
@@ -41,7 +40,6 @@ export function AccessControlForm({
     handleSubmit,
     watch,
     trigger,
-    getFieldState,
     formState: { isDirty },
   } = useForm<AccessControlFormData>({
     mode: 'onChange',
@@ -90,7 +88,7 @@ export function AccessControlForm({
               </span>
             </Accordion.Header>
             <Accordion.Body>
-              <MainRuleForm control={control} trigger={trigger} getFieldState={getFieldState} />
+              <MainRuleForm control={control} trigger={trigger} />
             </Accordion.Body>
           </Accordion.Item>
 
@@ -145,16 +143,20 @@ export function AccessControlForm({
 function MainRuleForm({
   control,
   trigger,
-  getFieldState,
 }: {
   control: Control<AccessControlFormData>;
   trigger: UseFormTrigger<AccessControlFormData>;
-  getFieldState: UseFormGetFieldState<AccessControlFormData>;
 }) {
   // Watch the main rule enabled state
   const ruleEnabled = useWatch({
     control,
     name: 'mainRule.enabled',
+  });
+
+  // Watch block access state
+  const blockAccess = useWatch({
+    control,
+    name: 'mainRule.blockAccess',
   });
 
   // Watch Date Control enabled state
@@ -211,45 +213,39 @@ function MainRuleForm({
         <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
       </Form.Group>
 
-      <Form.Group class="mb-3">
-        <div class="d-flex align-items-center mb-2">
-          <TriStateCheckbox
-            control={control}
-            name="mainRule.listBeforeRelease"
-            disabled={!ruleEnabled || isListBeforeReleaseDisabled}
-            disabledReason={
-              !ruleEnabled
-                ? 'Enable this access rule first'
-                : isListBeforeReleaseDisabled
-                  ? 'Enable Date Control with Release Date or enable PrairieTest Control with exams'
-                  : undefined
-            }
-            class="me-2"
-          />
-          <span>List before release</span>
-        </div>
-        <Form.Text class="text-muted">
-          Students can see the title and click into assessment before release
-        </Form.Text>
-      </Form.Group>
+      {!blockAccess && (
+        <>
+          <Form.Group class="mb-3">
+            <div class="d-flex align-items-center mb-2">
+              <TriStateCheckbox
+                control={control}
+                name="mainRule.listBeforeRelease"
+                disabled={!ruleEnabled || isListBeforeReleaseDisabled}
+                disabledReason={
+                  !ruleEnabled
+                    ? 'Enable this access rule first'
+                    : isListBeforeReleaseDisabled
+                      ? 'Enable Date Control with Release Date or enable PrairieTest Control with exams'
+                      : undefined
+                }
+                class="me-2"
+              />
+              <span>List before release</span>
+            </div>
+            <Form.Text class="text-muted">
+              Students can see the title and click into assessment before release
+            </Form.Text>
+          </Form.Group>
 
-      <DateControlForm
-        control={control}
-        namePrefix="mainRule.dateControl"
-        trigger={trigger}
-        getFieldState={getFieldState}
-        ruleEnabled={ruleEnabled}
-      />
-      <PrairieTestControlForm
-        control={control}
-        namePrefix="mainRule.prairieTestControl"
-        ruleEnabled={ruleEnabled}
-      />
-      <AfterCompleteForm
-        control={control}
-        namePrefix="mainRule.afterComplete"
-        ruleEnabled={ruleEnabled}
-      />
+          <DateControlForm control={control} trigger={trigger} ruleEnabled={ruleEnabled} />
+          <PrairieTestControlForm
+            control={control}
+            namePrefix="mainRule"
+            ruleEnabled={ruleEnabled}
+          />
+          <AfterCompleteForm control={control} namePrefix="mainRule" ruleEnabled={ruleEnabled} />
+        </>
+      )}
     </div>
   );
 }
