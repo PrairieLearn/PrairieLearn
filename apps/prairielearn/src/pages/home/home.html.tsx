@@ -273,8 +273,11 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
             <h3 class="card-title mb-3">Students</h3>
             <p class="card-text mb-4">Add a course and start learning.</p>
             <div class="mt-auto">
-              <a href={`${urlPrefix}/enroll`} class="btn btn-primary btn-lg">
-                <i class="bi bi-plus-circle me-2" />
+              <a
+                href={`${urlPrefix}/enroll`}
+                class="btn btn-primary d-flex gap-2 justify-content-center"
+              >
+                <i class="bi bi-plus-circle" />
                 Add course
               </a>
             </div>
@@ -293,15 +296,18 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
               <div class="d-flex gap-2">
                 <a
                   href="https://prairielearn.readthedocs.io/en/latest"
-                  class="btn btn-outline-primary btn-lg flex-fill"
+                  class="btn btn-outline-primary flex-fill d-flex gap-2 justify-content-center"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <i class="bi bi-journal-text me-2" />
+                  <i class="bi bi-journal-text" />
                   View docs
                 </a>
-                <a href={`${urlPrefix}/request_course`} class="btn btn-primary btn-lg flex-fill">
-                  <i class="bi bi-book me-2" />
+                <a
+                  href={`${urlPrefix}/request_course`}
+                  class="btn btn-primary flex-fill d-flex gap-2 justify-content-center"
+                >
+                  <i class="bi bi-book" />
                   Request course
                 </a>
               </div>
