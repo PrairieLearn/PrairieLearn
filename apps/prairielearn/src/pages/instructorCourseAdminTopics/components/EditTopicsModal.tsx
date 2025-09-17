@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
@@ -44,7 +45,7 @@ export function EditTopicsModal({
               </label>
               <input
                 type="text"
-                class={`form-control ${invalidName ? 'is-invalid' : ''}`}
+                class={clsx('form-control', invalidName && 'is-invalid')}
                 id="topicName"
                 value={selectedTopic.name}
                 onChange={(e) =>
@@ -61,7 +62,7 @@ export function EditTopicsModal({
                 Color
               </label>
               <select
-                class={`form-select ${invalidColor ? 'is-invalid' : ''}`}
+                class={clsx('form-select', invalidColor && 'is-invalid')}
                 id="topicColor"
                 value={selectedTopic.color ?? 'Select a color'}
                 onChange={(e) =>
@@ -99,8 +100,8 @@ export function EditTopicsModal({
         ) : null}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" class="btn btn-primary" onClick={handleSubmit}>
-          {addTopic ? 'Add topic' : 'Update topic'}{' '}
+        <button type="button" class="btn btn-primary mr-2" onClick={handleSubmit}>
+          {addTopic ? 'Add topic' : 'Update topic'}
         </button>
         <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>
           Close
