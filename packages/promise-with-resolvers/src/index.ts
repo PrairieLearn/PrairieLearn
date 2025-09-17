@@ -23,6 +23,5 @@ export function withResolvers<T>(): PromiseWithResolvers<T> {
     resolve = res;
     reject = rej;
   });
-  // TypeScript will ensure resolve/reject are assigned
   return { promise, resolve: resolve!, reject: reject! };
 }
