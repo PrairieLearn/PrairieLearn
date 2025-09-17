@@ -1,0 +1,5 @@
+ALTER TABLE course_instances
+DROP COLUMN self_enrollment_requires_secret_link;
+
+ALTER TABLE course_instances
+ADD COLUMN self_enrollment_use_enrollment_code BOOLEAN DEFAULT FALSE;
