@@ -127,6 +127,13 @@ function getParamsForAssessment(
           maxAutoPoints: number | null;
           autoPoints: number | number[] | null;
           manualPoints: number | null;
+          jsonPoints: number | number[] | null;
+          jsonMaxPoints: number | null;
+          jsonMaxAutoPoints: number | null;
+          jsonAutoPoints: number | number[] | null;
+          jsonManualPoints: number | null;
+          jsonForceMaxPoints: boolean | null;
+          jsonTriesPerVariant: number | null;
         })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView.length > 0 ? question.canView : zoneCanView;
@@ -148,6 +155,13 @@ function getParamsForAssessment(
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            jsonPoints: alternative.points ?? null,
+            jsonMaxPoints: alternative.maxPoints ?? null,
+            jsonMaxAutoPoints: alternative.maxAutoPoints ?? null,
+            jsonAutoPoints: alternative.autoPoints ?? null,
+            jsonManualPoints: alternative.manualPoints ?? null,
+            jsonForceMaxPoints: alternative.forceMaxPoints ?? null,
+            jsonTriesPerVariant: alternative.triesPerVariant ?? null,
           };
         });
       } else if (question.id) {
@@ -160,7 +174,7 @@ function getParamsForAssessment(
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints,
-            triesPerVariant: question.triesPerVariant,
+            triesPerVariant: question.triesPerVariant ?? 1,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             jsonGradeRateMinutes: question.gradeRateMinutes,
@@ -171,6 +185,13 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.comment,
+            jsonPoints: question.points ?? null,
+            jsonMaxPoints: question.maxPoints ?? null,
+            jsonMaxAutoPoints: question.maxAutoPoints ?? null,
+            jsonAutoPoints: question.autoPoints ?? null,
+            jsonManualPoints: question.manualPoints ?? null,
+            jsonForceMaxPoints: question.forceMaxPoints ?? null,
+            jsonTriesPerVariant: question.triesPerVariant ?? null,
           },
         ];
       }
@@ -227,10 +248,17 @@ function getParamsForAssessment(
           init_points: alternative.initPoints,
           max_points: alternative.maxPoints,
           manual_points: alternative.manualPoints,
-          force_max_points: alternative.forceMaxPoints,
-          tries_per_variant: alternative.triesPerVariant,
+          force_max_points: alternative.forceMaxPoints ?? false,
+          tries_per_variant: alternative.triesPerVariant ?? 1,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          json_points: alternative.jsonPoints,
+          json_auto_points: alternative.jsonAutoPoints,
+          json_manual_points: alternative.jsonManualPoints,
+          json_max_points: alternative.jsonMaxPoints,
+          json_max_auto_points: alternative.jsonMaxAutoPoints,
+          json_force_max_points: alternative.jsonForceMaxPoints,
+          json_tries_per_variant: alternative.jsonTriesPerVariant,
           // This is the "resolved" setting. Although it's currently unused,
           // it'll be used at runtime once we add per-question configuration
           // of real-time grading. Soon we'll add per-zone and per-alternative-group
@@ -259,6 +287,13 @@ function getParamsForAssessment(
         json_can_view: question.canView,
         json_can_submit: question.canSubmit,
         json_has_alternatives: !!question.alternatives,
+        json_points: question.points,
+        json_auto_points: question.autoPoints,
+        json_manual_points: question.manualPoints,
+        json_max_points: question.maxPoints,
+        json_max_auto_points: question.maxAutoPoints,
+        json_force_max_points: question.forceMaxPoints,
+        json_tries_per_variant: question.triesPerVariant,
         questions,
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
