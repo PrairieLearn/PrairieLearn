@@ -293,7 +293,7 @@ function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
             <h3 class="card-title mb-3">Instructors</h3>
             <p class="card-text mb-4">Create and manage courses for your students.</p>
             <div class="mt-auto">
-              <div class="d-flex gap-2">
+              <div class="d-flex flex-wrap gap-2">
                 <a
                   href="https://prairielearn.readthedocs.io/en/latest"
                   class="btn btn-outline-primary flex-fill d-flex gap-2 justify-content-center"
