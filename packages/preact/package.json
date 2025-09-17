@@ -10,7 +10,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./client": "./dist/client.js",
-    "./client-runtime": "./dist/client-runtime.js"
+    "./hydrated-component": "./dist/hydrated-component/index.js"
   },
   "scripts": {
     "build": "tsc",

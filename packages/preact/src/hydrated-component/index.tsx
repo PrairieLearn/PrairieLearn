@@ -1,26 +1,28 @@
+import '../debug.js';
+
 import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { hydrate } from '@prairielearn/preact-cjs';
 
-import { ReactFragmentsRegistry } from './registry.js';
-
-export const registry = new ReactFragmentsRegistry();
+import { HydratedComponentsRegistry } from './registry.js';
 
 // This file, if imported, will register a selector observer that will hydrate
-// React fragments on the client.
+// registered components on the client.
+
+export const registry = new HydratedComponentsRegistry();
 
 onDocumentReady(() => {
-  observe('.js-react-fragment', {
+  observe('.js-hydrated-component', {
     async add(el) {
       const componentName = el.getAttribute('data-component');
       if (!componentName) {
-        throw new Error('js-react-fragment element must have a data-component attribute');
+        throw new Error('js-hydrated-component element must have a data-component attribute');
       }
 
-      // If you forget to register a component with `registerReactFragment`, this is going to hang.
-      const Component = await registry.getReactFragment(componentName);
+      // If you forget to register a component with `registerHydratedComponent`, this is going to hang.
+      const Component = await registry.getComponent(componentName);
 
       const dataElement = el.querySelector('script[data-component-props]');
       if (!dataElement) throw new Error('No data element found');

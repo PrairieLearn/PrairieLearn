@@ -73,11 +73,11 @@ This will render the component to HTML, serialize the component's props using `s
 
 **Important**: all serialized props will be visible on the client, so avoid passing sensitive data. The main PrairieLearn application includes Zod schemas to strip down data structures before passing them to hydrated components (e.g. `apps/prairielearn/src/lib/client/safe-db-types.ts` and `apps/prairielearn/src/lib/client/page-context.ts`).
 
-Hydration relies on `@prairielearn/compiled-assets` to produce the necessary client-side bundles, and there are conventions that must be followed. Specifically, you must create a file in `assets/scripts/esm-bundles/react-fragments`, and the file's name must match the `displayName` of the component to be hydrated. For the above example, the file would be `assets/scripts/esm-bundles/react-fragments/InteractiveComponent.ts`. It must contain a call to `registerReactFragment` with the component that will be hydrated:
+Hydration relies on `@prairielearn/compiled-assets` to produce the necessary client-side bundles, and there are conventions that must be followed. Specifically, you must create a file in `assets/scripts/esm-bundles/hydrated-components`, and the file's name must match the `displayName` of the component to be hydrated. For the above example, the file would be `assets/scripts/esm-bundles/hydrated-components/InteractiveComponent.ts`. It must contain a call to `registerHydratedComponent` with the component that will be hydrated:
 
 ```ts
 import { MyComponent } from '../../../../src/components/Inter.js';
-import { registerReactFragment } from '@prairielearn/preact/client';
+import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerReactFragment(MyComponent);
+registerHydratedComponent(MyComponent);
 ```

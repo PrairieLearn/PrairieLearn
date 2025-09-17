@@ -91,7 +91,7 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
     );
   }
 
-  const scriptPath = `esm-bundles/react-fragments/${componentName}.ts`;
+  const scriptPath = `esm-bundles/hydrated-components/${componentName}.ts`;
   let compiledScriptSrc = '';
   try {
     compiledScriptSrc = compiledScriptPath(scriptPath);
@@ -100,13 +100,13 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
       info: html`
         <div>
           Make sure you create a script at
-          <code>esm-bundles/react-fragments/${componentName}.ts</code> registering the fragment in
-          the registry:
-          <pre><code>import '@prairielearn/preact/client-runtime';
-import { ${componentName} } from // ...
-import { registerReactFragment } from '@prairielearn/preact/client';
+          <code>esm-bundles/hydrated-components/${componentName}.ts</code> registering the component
+          in the registry:
+          <pre><code>import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerReactFragment(${componentName});</code></pre>
+import { ${componentName} } from './path/to/component.js';
+
+registerHydratedComponent(${componentName});</code></pre>
         </div>
       `,
       cause: error,
@@ -121,7 +121,7 @@ registerReactFragment(${componentName});</code></pre>
       ))}
       <div
         data-component={componentName}
-        class={clsx('js-react-fragment', { 'h-100': fullHeight })}
+        class={clsx('js-hydrated-component', { 'h-100': fullHeight })}
       >
         <script
           type="application/json"
