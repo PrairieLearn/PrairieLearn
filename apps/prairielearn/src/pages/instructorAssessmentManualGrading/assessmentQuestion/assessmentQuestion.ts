@@ -232,6 +232,23 @@ router.post(
       );
 
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'modify_rubric_settings') {
+      try {
+        await manualGrading.updateAssessmentQuestionRubric(
+          res.locals.assessment_question.id,
+          req.body.use_rubric,
+          req.body.replace_auto_points,
+          req.body.starting_points,
+          req.body.min_points,
+          req.body.max_extra_points,
+          req.body.rubric_items,
+          false, // tag_for_manual_grading
+          res.locals.authn_user.user_id,
+        );
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        res.status(500).send({ err: String(err) });
+      }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
