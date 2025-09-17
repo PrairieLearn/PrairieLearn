@@ -393,7 +393,7 @@
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number",
+          "type": "integer",
           "default": 1
         },
         "advanceScorePerc": {
@@ -460,7 +460,7 @@
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number",
+          "type": "integer",
           "minimum": 1
         },
         "advanceScorePerc": {
