@@ -3,7 +3,9 @@ INSERT INTO
   enrollments (user_id, course_instance_id, status, joined_at)
 VALUES
   ($user_id, $course_instance_id, 'joined', now())
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING
+  *;
 
 -- BLOCK enroll_invited_user_in_course_instance
 UPDATE enrollments
@@ -15,7 +17,9 @@ SET
 WHERE
   pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id
-  AND status = 'invited';
+  AND status = 'invited'
+RETURNING
+  *;
 
 -- BLOCK select_enrollment_for_user_in_course_instance
 SELECT

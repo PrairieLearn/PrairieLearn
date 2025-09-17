@@ -1,10 +1,5 @@
 import * as error from '@prairielearn/error';
-import {
-  execute,
-  loadSqlEquiv,
-  queryOptionalRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -33,12 +28,16 @@ export async function enrollInvitedUserInCourseInstance({
   course_instance_id: string;
   user_id: string;
   pending_uid: string;
-}): Promise<void> {
-  await execute(sql.enroll_invited_user_in_course_instance, {
-    course_instance_id,
-    pending_uid,
-    user_id,
-  });
+}): Promise<Enrollment | null> {
+  return await queryOptionalRow(
+    sql.enroll_invited_user_in_course_instance,
+    {
+      course_instance_id,
+      pending_uid,
+      user_id,
+    },
+    EnrollmentSchema,
+  );
 }
 
 /**
@@ -54,7 +53,7 @@ export async function ensureEnrollment({
 }: {
   course_instance_id: string;
   user_id: string;
-}): Promise<void> {
+}): Promise<Enrollment | null> {
   const user = await selectUserById(user_id);
   const enrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
     course_instance_id,
@@ -62,11 +61,18 @@ export async function ensureEnrollment({
   });
 
   if (enrollment && enrollment.status === 'invited') {
-    await enrollInvitedUserInCourseInstance({ course_instance_id, user_id, pending_uid: user.uid });
-    return;
+    return await enrollInvitedUserInCourseInstance({
+      course_instance_id,
+      user_id,
+      pending_uid: user.uid,
+    });
   }
 
-  await execute(sql.ensure_enrollment, { course_instance_id, user_id });
+  return await queryOptionalRow(
+    sql.ensure_enrollment,
+    { course_instance_id, user_id },
+    EnrollmentSchema,
+  );
 }
 
 /**
