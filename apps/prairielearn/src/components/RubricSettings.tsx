@@ -200,16 +200,16 @@ export function RubricSettings({
         <h2>Rubric Settings</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto"
+          class="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto collapsed"
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
-          aria-expanded="true"
+          aria-expanded="false"
           aria-controls="#rubric-setting"
         >
           <i class="fa fa-angle-up ms-1 expand-icon" />
         </button>
       </div>
-      <div id="rubric-setting" class="js-collapsible-card-body show p-2">
+      <div id="rubric-setting" class="js-collapsible-card-body p-2 collapse">
         {/* Settings */}
         <div>
           {!!assessmentQuestion.max_auto_points && (
