@@ -7,9 +7,14 @@ import type { AccessControlFormData } from './types.js';
 interface AfterCompleteFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: 'mainRule.afterComplete' | `overrides.${number}.afterComplete`;
+  ruleEnabled?: boolean;
 }
 
-export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProps) {
+export function AfterCompleteForm({
+  control,
+  namePrefix,
+  ruleEnabled = true,
+}: AfterCompleteFormProps) {
   // Get the base path for accessing date control and prairie test control
   const basePath = namePrefix.replace('.afterComplete', '');
 
@@ -38,6 +43,17 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
     name: `${namePrefix}.hideScoreDateControl.showAgainDateEnabled`,
   });
 
+  // Watch date values for validation
+  const showAgainDate = useWatch({
+    control,
+    name: `${namePrefix}.hideQuestionsDateControl.showAgainDate`,
+  });
+
+  const hideAgainDate = useWatch({
+    control,
+    name: `${namePrefix}.hideQuestionsDateControl.hideAgainDate`,
+  });
+
   // Watch completion criteria
   const durationMinutesEnabled = useWatch({
     control,
@@ -52,6 +68,11 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
   const dueDate = useWatch({
     control,
     name: `${basePath}.dateControl.dueDate` as any,
+  });
+
+  const dueDateEnabled = useWatch({
+    control,
+    name: `${basePath}.dateControl.dueDateEnabled` as any,
   });
 
   const lateDeadlines = useWatch({
@@ -78,15 +99,15 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
 
   // Generate completion explanation
   const getCompletionExplanation = () => {
-    const criteria: string[] = [];
+    const criteria: (string | string[])[] = [];
 
     // Time limit
     if (durationMinutesEnabled && durationMinutes) {
-      criteria.push(`• Time limit: ${durationMinutes} minutes after starting`);
+      criteria.push(`${durationMinutes} minutes after starting`);
     }
 
     // Deadlines
-    if (lateDeadlinesEnabled && lateDeadlines?.length > 0) {
+    if (lateDeadlinesEnabled && dueDateEnabled && dueDate && lateDeadlines?.length > 0) {
       const validLateDeadlines = lateDeadlines.filter((deadline) => deadline?.date);
       if (validLateDeadlines.length > 0) {
         const sortedLateDeadlines = validLateDeadlines.sort(
@@ -95,32 +116,83 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
         const latestLateDeadline = sortedLateDeadlines[0];
         if (latestLateDeadline.date) {
           const date = new Date(latestLateDeadline.date);
-          criteria.push(
-            `• Late deadline: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`,
-          );
+          criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
         }
       }
-    } else if (dueDate) {
+    } else if (dueDateEnabled && dueDate) {
       const date = new Date(dueDate);
-      criteria.push(`• Due date: ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
+      criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
     }
 
     // PrairieTest Control
     if (prairieTestEnabled && prairieTestExams?.length > 0) {
       const validExams = prairieTestExams.filter((exam) => exam?.examUuid);
-      if (validExams.length > 0) {
-        criteria.push('• PrairieTest: When any of these exams ends:');
-        validExams.forEach((exam) => {
-          criteria.push(`  • ${exam.examUuid}`);
-        });
-      }
+      const subList = validExams.map((exam) => exam.examUuid!);
+      criteria.push('When any of these exams ends:', subList);
     }
 
     if (criteria.length === 0) {
       return 'No specific completion criteria configured. The assessment may complete based on other factors.';
     }
 
-    return criteria.join('\n');
+    return (
+      <ul>
+        {criteria.map((criterion) =>
+          Array.isArray(criterion) ? (
+            <ul key={criterion[0]}>
+              {criterion.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <li key={criterion}>{criterion}</li>
+          ),
+        )}
+      </ul>
+    );
+  };
+
+  // Check if there are completion criteria by getting the explanation and checking if it has criteria
+  const completionExplanation = getCompletionExplanation();
+  const hasCompletion =
+    completionExplanation !==
+    'No specific completion criteria configured. The assessment may complete based on other factors.';
+
+  // Helper function to get the last deadline for validation
+  const getLastDeadlineDate = (): string | null => {
+    // Check late deadlines first
+    if (lateDeadlinesEnabled && dueDateEnabled && dueDate && lateDeadlines?.length > 0) {
+      const validLateDeadlines = lateDeadlines.filter((deadline) => deadline?.date);
+      if (validLateDeadlines.length > 0) {
+        const sortedLateDeadlines = validLateDeadlines.sort(
+          (a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime(),
+        );
+        return sortedLateDeadlines[0].date || null;
+      }
+    } else if (dueDateEnabled && dueDate) {
+      return dueDate;
+    }
+
+    return null;
+  };
+
+  // Helper function to generate hide questions explanation text
+  const getHideQuestionsText = () => {
+    if (!hideQuestions) return null;
+
+    const showEnabled = showAgainDateEnabledQuestions && showAgainDate;
+    const hideEnabled = hideAgainDateEnabledQuestions && hideAgainDate;
+
+    if (showEnabled && hideEnabled) {
+      const showDate = new Date(showAgainDate);
+      const hideDate = new Date(hideAgainDate);
+      return `Questions will be hidden after completion and only shown between ${showDate.toLocaleDateString()} at ${showDate.toLocaleTimeString()} — ${hideDate.toLocaleDateString()} at ${hideDate.toLocaleTimeString()}.`;
+    } else if (showEnabled) {
+      const showDate = new Date(showAgainDate);
+      return `Questions will be hidden after completion until ${showDate.toLocaleDateString()} at ${showDate.toLocaleTimeString()}.`;
+    } else {
+      return 'Questions will be hidden after completion.';
+    }
   };
 
   return (
@@ -137,7 +209,7 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
                 <Popover>
                   <Popover.Header as="h3">Completion Criteria</Popover.Header>
                   <Popover.Body>
-                    <div style={{ whiteSpace: 'pre-line' }}>{getCompletionExplanation()}</div>
+                    <div style={{ whiteSpace: 'pre-line' }}>{completionExplanation}</div>
                   </Popover.Body>
                 </Popover>
               }
@@ -155,6 +227,13 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
           </small>
         </div>
       </Card.Header>
+      {!hasCompletion && (
+        <div class="alert alert-warning mb-0 border-start-0 border-end-0 border-top-0 rounded-0">
+          <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
+          <strong>No completion criteria configured.</strong> Students will not be able to complete
+          this assessment because no time limit, deadlines, or PrairieTest exams are configured.
+        </div>
+      )}
       <Card.Body>
         {/* Hide Questions */}
         <Card class="mb-3">
@@ -162,8 +241,12 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
             <Form.Check
               type="checkbox"
               label="Hide Questions After Completion"
+              disabled={!ruleEnabled || !hasCompletion}
               {...control.register(`${namePrefix}.hideQuestions`)}
             />
+            {getHideQuestionsText() && (
+              <Form.Text class="text-muted d-block mt-1">{getHideQuestionsText()}</Form.Text>
+            )}
           </Card.Header>
           <Card.Body>
             <Row class="mb-3">
@@ -173,8 +256,16 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
                     <TriStateCheckbox
                       control={control}
                       name={`${namePrefix}.hideQuestionsDateControl.showAgainDateEnabled`}
-                      disabled={!hideQuestions}
-                      disabledReason={!hideQuestions ? 'Enable Hide Questions first' : undefined}
+                      disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
+                      disabledReason={
+                        !ruleEnabled
+                          ? 'Enable this access rule first'
+                          : !hasCompletion
+                            ? 'Configure completion criteria first'
+                            : !hideQuestions
+                              ? 'Enable Hide Questions first'
+                              : undefined
+                      }
                       class="me-2"
                     />
                     <Form.Label class="mb-0">Show Again Date</Form.Label>
@@ -182,31 +273,74 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
                   <Form.Control
                     type="datetime-local"
                     placeholder="Show Again Date"
-                    disabled={!hideQuestions || !showAgainDateEnabledQuestions}
-                    {...control.register(`${namePrefix}.hideQuestionsDateControl.showAgainDate`)}
+                    disabled={
+                      !ruleEnabled ||
+                      !hasCompletion ||
+                      !hideQuestions ||
+                      !showAgainDateEnabledQuestions
+                    }
+                    {...control.register(`${namePrefix}.hideQuestionsDateControl.showAgainDate`, {
+                      validate: (value) => {
+                        if (!value) return true;
+                        const lastDeadline = getLastDeadlineDate();
+                        if (lastDeadline) {
+                          const showDate = new Date(value);
+                          const lastDate = new Date(lastDeadline);
+                          return (
+                            showDate > lastDate || 'Show Again Date must be after the last deadline'
+                          );
+                        }
+                        return true;
+                      },
+                    })}
                   />
                 </Form.Group>
               </Col>
-              <Col md={6}>
-                <Form.Group>
-                  <div class="d-flex align-items-center mb-2">
-                    <TriStateCheckbox
-                      control={control}
-                      name={`${namePrefix}.hideQuestionsDateControl.hideAgainDateEnabled`}
-                      disabled={!hideQuestions}
-                      disabledReason={!hideQuestions ? 'Enable Hide Questions first' : undefined}
-                      class="me-2"
+              {showAgainDateEnabledQuestions && showAgainDate && (
+                <Col md={6}>
+                  <Form.Group>
+                    <div class="d-flex align-items-center mb-2">
+                      <TriStateCheckbox
+                        control={control}
+                        name={`${namePrefix}.hideQuestionsDateControl.hideAgainDateEnabled`}
+                        disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
+                        disabledReason={
+                          !ruleEnabled
+                            ? 'Enable this access rule first'
+                            : !hasCompletion
+                              ? 'Configure completion criteria first'
+                              : !hideQuestions
+                                ? 'Enable Hide Questions first'
+                                : undefined
+                        }
+                        class="me-2"
+                      />
+                      <Form.Label class="mb-0">Hide Again Date</Form.Label>
+                    </div>
+                    <Form.Control
+                      type="datetime-local"
+                      placeholder="Hide Again Date"
+                      disabled={
+                        !ruleEnabled ||
+                        !hasCompletion ||
+                        !hideQuestions ||
+                        !hideAgainDateEnabledQuestions
+                      }
+                      {...control.register(`${namePrefix}.hideQuestionsDateControl.hideAgainDate`, {
+                        validate: (value) => {
+                          if (!value || !showAgainDate) return true;
+                          const hideDate = new Date(value);
+                          const showDate = new Date(showAgainDate);
+                          return (
+                            hideDate > showDate ||
+                            'Hide Again Date must be after the Show Again Date'
+                          );
+                        },
+                      })}
                     />
-                    <Form.Label class="mb-0">Hide Again Date</Form.Label>
-                  </div>
-                  <Form.Control
-                    type="datetime-local"
-                    placeholder="Hide Again Date"
-                    disabled={!hideQuestions || !hideAgainDateEnabledQuestions}
-                    {...control.register(`${namePrefix}.hideQuestionsDateControl.hideAgainDate`)}
-                  />
-                </Form.Group>
-              </Col>
+                  </Form.Group>
+                </Col>
+              )}
             </Row>
           </Card.Body>
         </Card>
@@ -217,6 +351,7 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
             <Form.Check
               type="checkbox"
               label="Hide Score After Completion"
+              disabled={!ruleEnabled || !hasCompletion}
               {...control.register(`${namePrefix}.hideScore`)}
             />
           </Card.Header>
@@ -228,8 +363,16 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
                     <TriStateCheckbox
                       control={control}
                       name={`${namePrefix}.hideScoreDateControl.showAgainDateEnabled`}
-                      disabled={!hideScore}
-                      disabledReason={!hideScore ? 'Enable Hide Score first' : undefined}
+                      disabled={!ruleEnabled || !hasCompletion || !hideScore}
+                      disabledReason={
+                        !ruleEnabled
+                          ? 'Enable this access rule first'
+                          : !hasCompletion
+                            ? 'Configure completion criteria first'
+                            : !hideScore
+                              ? 'Enable Hide Score first'
+                              : undefined
+                      }
                       class="me-2"
                     />
                     <Form.Label class="mb-0">Show Again Date</Form.Label>
@@ -237,7 +380,9 @@ export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProp
                   <Form.Control
                     type="datetime-local"
                     placeholder="Show Again Date"
-                    disabled={!hideScore || !showAgainDateEnabledScore}
+                    disabled={
+                      !ruleEnabled || !hasCompletion || !hideScore || !showAgainDateEnabledScore
+                    }
                     {...control.register(`${namePrefix}.hideScoreDateControl.showAgainDate`)}
                   />
                 </Form.Group>

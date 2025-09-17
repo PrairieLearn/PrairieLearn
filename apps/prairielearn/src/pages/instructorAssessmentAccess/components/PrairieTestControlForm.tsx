@@ -7,9 +7,14 @@ import type { AccessControlFormData } from './types.js';
 interface PrairieTestControlFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: 'mainRule.prairieTestControl' | `overrides.${number}.prairieTestControl`;
+  ruleEnabled?: boolean;
 }
 
-export function PrairieTestControlForm({ control, namePrefix }: PrairieTestControlFormProps) {
+export function PrairieTestControlForm({
+  control,
+  namePrefix,
+  ruleEnabled = true,
+}: PrairieTestControlFormProps) {
   const {
     fields: examFields,
     append: appendExam,
@@ -32,7 +37,13 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <TriStateCheckbox control={control} name={`${namePrefix}.enabled`} class="me-2" />
+          <TriStateCheckbox
+            control={control}
+            name={`${namePrefix}.enabled`}
+            disabled={!ruleEnabled}
+            disabledReason={!ruleEnabled ? 'Enable this access rule first' : undefined}
+            class="me-2"
+          />
           <span>PrairieTest Control</span>
         </div>
       </Card.Header>

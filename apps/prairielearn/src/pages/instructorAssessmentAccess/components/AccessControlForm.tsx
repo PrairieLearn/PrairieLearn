@@ -151,6 +151,12 @@ function MainRuleForm({
   trigger: UseFormTrigger<AccessControlFormData>;
   getFieldState: UseFormGetFieldState<AccessControlFormData>;
 }) {
+  // Watch the main rule enabled state
+  const ruleEnabled = useWatch({
+    control,
+    name: 'mainRule.enabled',
+  });
+
   // Watch Date Control enabled state
   const dateControlEnabled = useWatch({
     control,
@@ -199,6 +205,7 @@ function MainRuleForm({
         <Form.Check
           type="checkbox"
           label="Block access"
+          disabled={!ruleEnabled}
           {...control.register('mainRule.blockAccess')}
         />
         <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
@@ -209,11 +216,13 @@ function MainRuleForm({
           <TriStateCheckbox
             control={control}
             name="mainRule.listBeforeRelease"
-            disabled={isListBeforeReleaseDisabled}
+            disabled={!ruleEnabled || isListBeforeReleaseDisabled}
             disabledReason={
-              isListBeforeReleaseDisabled
-                ? 'Enable Date Control with Release Date or enable PrairieTest Control with exams'
-                : undefined
+              !ruleEnabled
+                ? 'Enable this access rule first'
+                : isListBeforeReleaseDisabled
+                  ? 'Enable Date Control with Release Date or enable PrairieTest Control with exams'
+                  : undefined
             }
             class="me-2"
           />
@@ -229,9 +238,18 @@ function MainRuleForm({
         namePrefix="mainRule.dateControl"
         trigger={trigger}
         getFieldState={getFieldState}
+        ruleEnabled={ruleEnabled}
       />
-      <PrairieTestControlForm control={control} namePrefix="mainRule.prairieTestControl" />
-      <AfterCompleteForm control={control} namePrefix="mainRule.afterComplete" />
+      <PrairieTestControlForm
+        control={control}
+        namePrefix="mainRule.prairieTestControl"
+        ruleEnabled={ruleEnabled}
+      />
+      <AfterCompleteForm
+        control={control}
+        namePrefix="mainRule.afterComplete"
+        ruleEnabled={ruleEnabled}
+      />
     </div>
   );
 }

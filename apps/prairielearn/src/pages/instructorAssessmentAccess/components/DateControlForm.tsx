@@ -16,6 +16,7 @@ interface DateControlFormProps {
   namePrefix: 'mainRule.dateControl' | `overrides.${number}.dateControl`;
   trigger: UseFormTrigger<AccessControlFormData>;
   getFieldState: UseFormGetFieldState<AccessControlFormData>;
+  ruleEnabled?: boolean;
 }
 
 export function DateControlForm({
@@ -23,6 +24,7 @@ export function DateControlForm({
   namePrefix,
   trigger,
   getFieldState,
+  ruleEnabled = true,
 }: DateControlFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -220,7 +222,13 @@ export function DateControlForm({
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <TriStateCheckbox control={control} name={`${namePrefix}.enabled`} class="me-2" />
+          <TriStateCheckbox
+            control={control}
+            name={`${namePrefix}.enabled`}
+            disabled={!ruleEnabled}
+            disabledReason={!ruleEnabled ? 'Enable this access rule first' : undefined}
+            class="me-2"
+          />
           <span>Date Control</span>
         </div>
       </Card.Header>
@@ -233,15 +241,21 @@ export function DateControlForm({
                 <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.releaseDateEnabled`}
-                  disabled={!dateControlEnabled}
-                  disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  disabled={!ruleEnabled || !dateControlEnabled}
+                  disabledReason={
+                    !ruleEnabled
+                      ? 'Enable this access rule first'
+                      : !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : undefined
+                  }
                   class="me-2"
                 />
                 <Form.Label class="mb-0">Release Date</Form.Label>
               </div>
               <Form.Control
                 type="datetime-local"
-                disabled={!dateControlEnabled || !releaseDateEnabled}
+                disabled={!ruleEnabled || !dateControlEnabled || !releaseDateEnabled}
                 {...control.register(`${namePrefix}.releaseDate`)}
               />
             </Form.Group>
@@ -252,15 +266,21 @@ export function DateControlForm({
                 <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.dueDateEnabled`}
-                  disabled={!dateControlEnabled}
-                  disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  disabled={!ruleEnabled || !dateControlEnabled}
+                  disabledReason={
+                    !ruleEnabled
+                      ? 'Enable this access rule first'
+                      : !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : undefined
+                  }
                   class="me-2"
                 />
                 <Form.Label class="mb-0">Due Date</Form.Label>
               </div>
               <Form.Control
                 type="datetime-local"
-                disabled={!dateControlEnabled || !dueDateEnabled}
+                disabled={!ruleEnabled || !dateControlEnabled || !dueDateEnabled}
                 {...control.register(`${namePrefix}.dueDate`)}
               />
             </Form.Group>
@@ -277,15 +297,19 @@ export function DateControlForm({
                   <TriStateCheckbox
                     control={control}
                     name={`${namePrefix}.earlyDeadlinesEnabled`}
-                    disabled={!dateControlEnabled || !releaseDateEnabled || !releaseDate}
+                    disabled={
+                      !ruleEnabled || !dateControlEnabled || !releaseDateEnabled || !releaseDate
+                    }
                     disabledReason={
-                      !dateControlEnabled
-                        ? 'Enable Date Control first'
-                        : !releaseDateEnabled
-                          ? 'Enable Release Date first'
-                          : !releaseDate
-                            ? 'Set a Release Date first'
-                            : undefined
+                      !ruleEnabled
+                        ? 'Enable this access rule first'
+                        : !dateControlEnabled
+                          ? 'Enable Date Control first'
+                          : !releaseDateEnabled
+                            ? 'Enable Release Date first'
+                            : !releaseDate
+                              ? 'Set a Release Date first'
+                              : undefined
                     }
                     class="me-2"
                   />
@@ -295,6 +319,7 @@ export function DateControlForm({
                   size="sm"
                   variant="outline-primary"
                   disabled={
+                    !ruleEnabled ||
                     !dateControlEnabled ||
                     !releaseDateEnabled ||
                     !releaseDate ||
@@ -314,6 +339,7 @@ export function DateControlForm({
                         type="datetime-local"
                         placeholder="Deadline Date"
                         disabled={
+                          !ruleEnabled ||
                           !dateControlEnabled ||
                           !releaseDateEnabled ||
                           !releaseDate ||
@@ -347,6 +373,7 @@ export function DateControlForm({
                           min="0"
                           max="200"
                           disabled={
+                            !ruleEnabled ||
                             !dateControlEnabled ||
                             !releaseDateEnabled ||
                             !releaseDate ||
@@ -355,9 +382,18 @@ export function DateControlForm({
                           {...control.register(`${namePrefix}.earlyDeadlines.${index}.credit`, {
                             valueAsNumber: true,
                             validate: (value) => {
-                              if (value == null || Number.isNaN(value)) return true;
+                              // Handle both string and number inputs during typing
+                              const numValue =
+                                typeof value === 'string' ? Number.parseFloat(value) : value;
+                              if (
+                                numValue == null ||
+                                Number.isNaN(numValue) ||
+                                (typeof value === 'string' && value === '')
+                              ) {
+                                return true;
+                              }
                               return (
-                                value > 100 || 'Early deadline credit must be greater than 100%'
+                                numValue > 100 || 'Early deadline credit must be greater than 100%'
                               );
                             },
                           })}
@@ -371,6 +407,7 @@ export function DateControlForm({
                         size="sm"
                         variant="outline-danger"
                         disabled={
+                          !ruleEnabled ||
                           !dateControlEnabled ||
                           !releaseDateEnabled ||
                           !releaseDate ||
@@ -391,7 +428,7 @@ export function DateControlForm({
                       </Col>
                     </Row>
                   )}
-                  {getEarlyDeadlineTimeRange(index) && (
+                  {getEarlyDeadlineTimeRange(index) && releaseDateEnabled && releaseDate && (
                     <Row>
                       <Col md={10}>
                         <Form.Text class="text-muted">{getEarlyDeadlineTimeRange(index)}</Form.Text>
@@ -410,15 +447,17 @@ export function DateControlForm({
                   <TriStateCheckbox
                     control={control}
                     name={`${namePrefix}.lateDeadlinesEnabled`}
-                    disabled={!dateControlEnabled || !dueDateEnabled || !dueDate}
+                    disabled={!ruleEnabled || !dateControlEnabled || !dueDateEnabled || !dueDate}
                     disabledReason={
-                      !dateControlEnabled
-                        ? 'Enable Date Control first'
-                        : !dueDateEnabled
-                          ? 'Enable Due Date first'
-                          : !dueDate
-                            ? 'Set a Due Date first'
-                            : undefined
+                      !ruleEnabled
+                        ? 'Enable this access rule first'
+                        : !dateControlEnabled
+                          ? 'Enable Date Control first'
+                          : !dueDateEnabled
+                            ? 'Enable Due Date first'
+                            : !dueDate
+                              ? 'Set a Due Date first'
+                              : undefined
                     }
                     class="me-2"
                   />
@@ -428,7 +467,11 @@ export function DateControlForm({
                   size="sm"
                   variant="outline-primary"
                   disabled={
-                    !dateControlEnabled || !dueDateEnabled || !dueDate || !lateDeadlinesEnabled
+                    !ruleEnabled ||
+                    !dateControlEnabled ||
+                    !dueDateEnabled ||
+                    !dueDate ||
+                    !lateDeadlinesEnabled
                   }
                   onClick={addLateDeadline}
                 >
@@ -444,6 +487,7 @@ export function DateControlForm({
                         type="datetime-local"
                         placeholder="Deadline Date"
                         disabled={
+                          !ruleEnabled ||
                           !dateControlEnabled ||
                           !dueDateEnabled ||
                           !dueDate ||
@@ -471,6 +515,7 @@ export function DateControlForm({
                           min="0"
                           max="200"
                           disabled={
+                            !ruleEnabled ||
                             !dateControlEnabled ||
                             !dueDateEnabled ||
                             !dueDate ||
@@ -479,8 +524,19 @@ export function DateControlForm({
                           {...control.register(`${namePrefix}.lateDeadlines.${index}.credit`, {
                             valueAsNumber: true,
                             validate: (value) => {
-                              if (value == null || Number.isNaN(value)) return true;
-                              return value < 100 || 'Late deadline credit must be less than 100%';
+                              // Handle both string and number inputs during typing
+                              const numValue =
+                                typeof value === 'string' ? Number.parseFloat(value) : value;
+                              if (
+                                numValue == null ||
+                                Number.isNaN(numValue) ||
+                                (typeof value === 'string' && value === '')
+                              ) {
+                                return true;
+                              }
+                              return (
+                                numValue < 100 || 'Late deadline credit must be less than 100%'
+                              );
                             },
                           })}
                           isInvalid={!!getLateDeadlineCreditError(index)}
@@ -493,6 +549,7 @@ export function DateControlForm({
                         size="sm"
                         variant="outline-danger"
                         disabled={
+                          !ruleEnabled ||
                           !dateControlEnabled ||
                           !dueDateEnabled ||
                           !dueDate ||
@@ -513,7 +570,7 @@ export function DateControlForm({
                       </Col>
                     </Row>
                   )}
-                  {getLateDeadlineTimeRange(index) && (
+                  {getLateDeadlineTimeRange(index) && dueDateEnabled && dueDate && (
                     <Row>
                       <Col md={10}>
                         <Form.Text class="text-muted">{getLateDeadlineTimeRange(index)}</Form.Text>
@@ -541,7 +598,7 @@ export function DateControlForm({
                 <Form.Check
                   type="checkbox"
                   label="Allow Submissions"
-                  disabled={!dateControlEnabled}
+                  disabled={!ruleEnabled || !dateControlEnabled}
                   {...control.register(`${namePrefix}.afterLastDeadline.allowSubmissions`)}
                 />
               </Col>
@@ -551,13 +608,15 @@ export function DateControlForm({
                     <TriStateCheckbox
                       control={control}
                       name={`${namePrefix}.afterLastDeadline.creditEnabled`}
-                      disabled={!dateControlEnabled || !allowSubmissions}
+                      disabled={!ruleEnabled || !dateControlEnabled || !allowSubmissions}
                       disabledReason={
-                        !dateControlEnabled
-                          ? 'Enable Date Control first'
-                          : !allowSubmissions
-                            ? 'Enable Allow Submissions first'
-                            : undefined
+                        !ruleEnabled
+                          ? 'Enable this access rule first'
+                          : !dateControlEnabled
+                            ? 'Enable Date Control first'
+                            : !allowSubmissions
+                              ? 'Enable Allow Submissions first'
+                              : undefined
                       }
                       class="me-2"
                     />
@@ -569,7 +628,10 @@ export function DateControlForm({
                       min="0"
                       max="200"
                       disabled={
-                        !dateControlEnabled || !allowSubmissions || !afterLastDeadlineCreditEnabled
+                        !ruleEnabled ||
+                        !dateControlEnabled ||
+                        !allowSubmissions ||
+                        !afterLastDeadlineCreditEnabled
                       }
                       {...control.register(`${namePrefix}.afterLastDeadline.credit`, {
                         valueAsNumber: true,
@@ -591,8 +653,14 @@ export function DateControlForm({
                 <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.durationMinutesEnabled`}
-                  disabled={!dateControlEnabled}
-                  disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  disabled={!ruleEnabled || !dateControlEnabled}
+                  disabledReason={
+                    !ruleEnabled
+                      ? 'Enable this access rule first'
+                      : !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : undefined
+                  }
                   class="me-2"
                 />
                 <Form.Label class="mb-0">Time limit</Form.Label>
@@ -602,7 +670,7 @@ export function DateControlForm({
                   type="number"
                   placeholder="Duration in minutes"
                   min="1"
-                  disabled={!dateControlEnabled || !durationMinutesEnabled}
+                  disabled={!ruleEnabled || !dateControlEnabled || !durationMinutesEnabled}
                   {...control.register(`${namePrefix}.durationMinutes`, { valueAsNumber: true })}
                 />
                 <InputGroup.Text>minutes</InputGroup.Text>
@@ -619,8 +687,14 @@ export function DateControlForm({
                 <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.passwordEnabled`}
-                  disabled={!dateControlEnabled}
-                  disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  disabled={!ruleEnabled || !dateControlEnabled}
+                  disabledReason={
+                    !ruleEnabled
+                      ? 'Enable this access rule first'
+                      : !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : undefined
+                  }
                   class="me-2"
                 />
                 <Form.Label class="mb-0">Password</Form.Label>
@@ -629,12 +703,12 @@ export function DateControlForm({
                 <Form.Control
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
-                  disabled={!dateControlEnabled || !passwordEnabled}
+                  disabled={!ruleEnabled || !dateControlEnabled || !passwordEnabled}
                   {...control.register(`${namePrefix}.password`)}
                 />
                 <Button
                   variant="outline-secondary"
-                  disabled={!dateControlEnabled || !passwordEnabled}
+                  disabled={!ruleEnabled || !dateControlEnabled || !passwordEnabled}
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   <i class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
