@@ -55,8 +55,7 @@ export function Home({
     (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
   );
 
-  const hasInstructorCourses = instructorCourses.length > 0;
-  const hasCourses = listedStudentCourses.length > 0 || hasInstructorCourses;
+  const hasCourses = listedStudentCourses.length > 0 || instructorCourses.length > 0;
 
   return (
     <>
