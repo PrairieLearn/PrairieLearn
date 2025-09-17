@@ -5,6 +5,7 @@ import type z from 'zod';
 
 import {
   RawStaffEnrollmentSchema,
+  RawStudentEnrollmentSchema,
   StaffAlternativeGroupSchema,
   StaffAssessmentInstanceSchema,
   StaffAssessmentQuestionSchema,
@@ -290,6 +291,17 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   user_id: '1',
 };
 
+const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
+  course_instance_id: '10',
+  created_at: new Date(),
+  id: '1',
+  joined_at: new Date(),
+  lti_managed: false,
+  pending_uid: null,
+  status: 'joined',
+  user_id: null,
+};
+
 const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   action: 'insert',
   action_detail: null,
@@ -529,6 +541,12 @@ describe('safe-db-types schemas', () => {
     const parsed = RawStaffEnrollmentSchema.parse({ ...minimalRawStaffEnrollment, extra: 123 });
     expect(parsed).not.toHaveProperty('extra');
     expect(parsed).toMatchObject(minimalRawStaffEnrollment);
+  });
+
+  it('parses valid RawStudentEnrollment and drops extra fields', () => {
+    const parsed = RawStudentEnrollmentSchema.parse({ ...minimalStudentEnrollment, extra: 123 });
+    expect(parsed).not.toHaveProperty('extra');
+    expect(parsed).toMatchObject(minimalStudentEnrollment);
   });
 
   it('rejects invalid RawStaffEnrollment status', () => {
