@@ -37,7 +37,6 @@ function escapeJsonForHtml(value: any): string {
  * @returns An HTML string containing the rendered content.
  */
 export function renderHtmlDocument(content: VNode) {
-  // If you want to
   return `<!doctype html>\n${render(content, {}, { pretty: true, jsx: false })}`;
 }
 
