@@ -74,10 +74,17 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 ### Rename column with a default value, no data preservation
 
-- First PR: Rename column
-  - Drop + add the column again
-  - Mark the old column in the zod schema as `z.any()`
-  - Add the new column to the zod schema
+If you have no meaningful reads/writes to the old column, you can combie the first and second PRs into a single PR.
 
-- Second PR: Finalize
+- First PR: Add new column
+  - Add new column with default value
+  - Change all writes to write to the new column and the old column
+
+- Second PR: Remove old column
+  - Update all reads to read from the new column
+  - Update all code to not write the old column
+  - Mark the old column in the zod schema as `z.any()`
+
+- Third PR: Finalize
+  - Remove the old column from the database
   - Remove the old column from the zod schema
