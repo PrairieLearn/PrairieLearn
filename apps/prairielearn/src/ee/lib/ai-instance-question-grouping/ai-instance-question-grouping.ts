@@ -218,6 +218,7 @@ export async function aiInstanceQuestionGrouping({
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
+      return;
     }
 
     const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
@@ -249,15 +250,17 @@ export async function aiInstanceQuestionGrouping({
     );
 
     if (!likelyCorrectGroup) {
-      throw new Error(
+      job.fail(
         `Missing 'Likely Correct' submission group for assessment question ${assessment_question.id}`,
       );
+      return;
     }
 
     if (!reviewNeededGroup) {
-      throw new Error(
+      job.fail(
         `Missing 'Review Needed' submission group for assessment question ${assessment_question.id}`,
       );
+      return;
     }
 
     let index = 1;
