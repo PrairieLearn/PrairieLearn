@@ -1365,7 +1365,7 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.selfEnrollment.beforeDateEnabled !== true) {
+  if (courseInstance.selfEnrollment.beforeDateEnabled !== false) {
     warnings.push('"selfEnrollment.beforeDateEnabled" is not configurable yet.');
   }
 

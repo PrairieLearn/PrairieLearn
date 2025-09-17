@@ -48,7 +48,7 @@
         "beforeDateEnabled": {
           "description": "If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.",
           "type": "boolean",
-          "default": true
+          "default": false
         },
         "requiresSecretLink": {
           "description": "If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.",
