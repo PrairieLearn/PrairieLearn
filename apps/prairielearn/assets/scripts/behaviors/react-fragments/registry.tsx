@@ -1,5 +1,5 @@
 import { type ComponentType } from '@prairielearn/preact-cjs';
-import { type PromiseWithResolvers, withResolvers } from '@prairielearn/promise-with-resolvers';
+import { type PromiseWithResolvers, withResolvers } from '@prairielearn/utils';
 
 type AugmentedPromiseWithResolvers<T> = PromiseWithResolvers<T> & {
   resolved: boolean;

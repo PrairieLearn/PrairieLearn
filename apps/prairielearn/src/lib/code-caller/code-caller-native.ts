@@ -8,8 +8,8 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
-import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import { run } from '@prairielearn/run';
+import { withResolvers } from '@prairielearn/utils';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 import { assertNever } from '../types.js';

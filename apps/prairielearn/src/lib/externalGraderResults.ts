@@ -13,8 +13,8 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import * as Sentry from '@prairielearn/sentry';
+import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';

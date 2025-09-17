@@ -14,7 +14,7 @@ import * as bindMount from '@prairielearn/bind-mount';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import { instrumented } from '@prairielearn/opentelemetry';
-import { withResolvers } from '@prairielearn/promise-with-resolvers';
+import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';

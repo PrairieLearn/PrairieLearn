@@ -20,10 +20,10 @@ import z from 'zod';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
-import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
+import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
