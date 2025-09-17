@@ -6,6 +6,19 @@ Utilities for rendering Preact components within PrairieLearn's HTML templating 
 
 ### Rendering static HTML
 
+To render a non-interactive Preact component to an HTML-safe string, use `renderHtml`:
+
+```tsx
+import { renderHtml } from '@prairielearn/preact';
+import { html } from '@prairielearn/html';
+
+function MyComponent() {
+  return <div>Hello, world!</div>;
+}
+
+const template = html`<div class="container">${renderHtml(<MyComponent />)}</div>`;
+```
+
 To render a complete document with a DOCTYPE declaration, use `renderHtmlDocument`:
 
 ```tsx
@@ -19,19 +32,6 @@ const htmlDoc = renderHtmlDocument(
     <body>Content</body>
   </html>,
 );
-```
-
-To render a non-interactive Preact component to an HTML-safe string, use `renderHtml`:
-
-```tsx
-import { renderHtml } from '@prairielearn/preact';
-import { html } from '@prairielearn/html';
-
-function MyComponent() {
-  return <div>Hello, world!</div>;
-}
-
-const template = html`<div class="container">${renderHtml(<MyComponent />)}</div>`;
 ```
 
 ### Rendering components for client-side hydration
@@ -76,8 +76,9 @@ This will render the component to HTML, serialize the component's props using `s
 Hydration relies on `@prairielearn/compiled-assets` to produce the necessary client-side bundles, and there are conventions that must be followed. Specifically, you must create a file in `assets/scripts/esm-bundles/hydrated-components`, and the file's name must match the `displayName` of the component to be hydrated. For the above example, the file would be `assets/scripts/esm-bundles/hydrated-components/InteractiveComponent.ts`. It must contain a call to `registerHydratedComponent` with the component that will be hydrated:
 
 ```ts
-import { MyComponent } from '../../../../src/components/Inter.js';
 import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerHydratedComponent(MyComponent);
+import { InteractiveComponent } from '../../../../src/components/InteractiveComponent.js';
+
+registerHydratedComponent(InteractiveComponent);
 ```
