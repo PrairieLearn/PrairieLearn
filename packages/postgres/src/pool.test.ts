@@ -250,12 +250,26 @@ describe('@prairielearn/postgres', function () {
   });
 
   describe('queryCursor', () => {
+    it('handles single column', async () => {
+      const cursor = await queryCursor('SELECT id FROM workspaces WHERE id = 1;', z.string());
+      const allRows: string[] = [];
+      for await (const rows of cursor.iterate(10)) {
+        allRows.push(...rows);
+      }
+      assert.equal(allRows[0], '1');
+    });
+
+    it('handles multiple columns', async () => {
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 1;', WorkspaceSchema);
+      const allRows: z.infer<typeof WorkspaceSchema>[] = [];
+      for await (const rows of cursor.iterate(10)) {
+        allRows.push(...rows);
+      }
+      assert.equal(allRows[0].id, '1');
+      assert.isNotNull(allRows[0].created_at);
+    });
     it('returns zero rows', async () => {
-      const cursor = await queryCursor(
-        'SELECT * FROM workspaces WHERE id = 10000;',
-        {},
-        z.unknown(),
-      );
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', z.unknown());
       const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
         rowBatches.push(rows);
@@ -264,7 +278,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns one row at a time', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id <= 2;', {}, z.unknown());
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id <= 2;', z.unknown());
       const rowBatches = [];
       for await (const rows of cursor.iterate(1)) {
         rowBatches.push(rows);
@@ -275,7 +289,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns all rows at once', async () => {
-      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', {}, z.unknown());
+      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', z.unknown());
       const rowBatches = [];
       for await (const rows of (await cursor).iterate(10)) {
         rowBatches.push(rows);
@@ -285,7 +299,7 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', {}, z.unknown());
+      const cursor = await queryCursor('NOT VALID SQL', z.unknown());
 
       async function readAllRows() {
         const allRows = [];
@@ -319,7 +333,6 @@ describe('@prairielearn/postgres', function () {
       it('validates with provided schema', async () => {
         const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           WorkspaceSchema,
         );
         const allRows = [];
@@ -335,7 +348,6 @@ describe('@prairielearn/postgres', function () {
       it('throws error when validation fails', async () => {
         const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           BadWorkspaceSchema,
         );
 
@@ -357,7 +369,6 @@ describe('@prairielearn/postgres', function () {
       it('validates with provided schema', async () => {
         const cursor = await queryCursor(
           'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-          {},
           WorkspaceSchema,
         );
         const stream = cursor.stream(1);
@@ -372,7 +383,6 @@ describe('@prairielearn/postgres', function () {
       it('emits an error when validation fails', async () => {
         const cursor = await queryCursor(
           'SELECT * FROM workspaces ORDER BY id ASC;',
-          {},
           BadWorkspaceSchema,
         );
         const stream = cursor.stream(1);
@@ -391,7 +401,7 @@ describe('@prairielearn/postgres', function () {
       });
 
       it('closes the cursor when the stream is closed', async () => {
-        const cursor = await queryCursor('SELECT * FROM workspaces;', {}, WorkspaceSchema);
+        const cursor = await queryCursor('SELECT * FROM workspaces;', WorkspaceSchema);
         const stream = cursor.stream(1);
 
         const rows: any[] = [];

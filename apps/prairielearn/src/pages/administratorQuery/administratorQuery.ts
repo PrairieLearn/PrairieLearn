@@ -44,9 +44,9 @@ router.get(
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       if (query_run?.result != null) {
-        stringify(query_run.result?.rows, {
+        stringify(query_run.result.rows, {
           header: true,
-          columns: query_run.result?.columns,
+          columns: query_run.result.columns,
         }).pipe(res);
       } else {
         res.send('');

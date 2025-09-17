@@ -141,13 +141,33 @@ export const IntegerFromStringOrEmptySchema = z.preprocess(
 );
 
 /**
- * A Zod schema for an arrray of string values from either a string or an array of
+ * A Zod schema for an array of string values from either a string or an array of
  * strings.
  */
 export const ArrayFromStringOrArraySchema = z
   .union([z.string(), z.array(z.string())])
   .transform((s) => {
     if (s === null) {
+      return [];
+    } else if (Array.isArray(s)) {
+      return s;
+    } else {
+      return [s];
+    }
+  });
+
+/**
+ * A Zod schema for an array of string values from a set of checkboxes in the
+ * body parameters from a form. The form should have checkboxes with the same
+ * name attribute, and the value of the checkboxes should be the string values
+ * to include in the array. If no checkboxes are checked, this will return an
+ * empty array. This behavior relies on the ExpressJS `bodyParser.urlencoded()`
+ * middleware that parses the submitted data into a string or array.
+ */
+export const ArrayFromCheckboxSchema = z
+  .union([z.undefined(), z.string(), z.array(z.string())])
+  .transform((s) => {
+    if (s == null) {
       return [];
     } else if (Array.isArray(s)) {
       return s;

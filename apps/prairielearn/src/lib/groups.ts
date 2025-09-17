@@ -157,9 +157,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  const usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined,
-  );
+  const usersWithoutRoles = groupMembers.filter((member) => !(member.uid in roleAssignments));
 
   return {
     roleAssignments,
@@ -229,7 +227,7 @@ async function selectUserInCourseInstance({
   const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
-    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
       return user;
     }
   }
@@ -360,6 +358,18 @@ export async function createGroup(
     if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
       throw new GroupOperationError(
         'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
+    if (/^group[0-9]{7,}$/.test(group_name)) {
+      // This test is used to simplify the logic behind system-generated group
+      // names. These are created automatically by adding one to the latest
+      // group name with a number. Allowing a user to specify a group name with
+      // this format could cause an issue if the number is too long, as it would
+      // cause integer overflows in the group calculation. While changing the
+      // process to generate group names that don't take these numbers into
+      // account is possible, this validation is simpler.
+      throw new GroupOperationError(
+        'User-specified group names cannot start with "group" followed by a large number.',
       );
     }
   }
@@ -633,7 +643,7 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
         userId = groupInfo.groupMembers[0].user_id;
       }

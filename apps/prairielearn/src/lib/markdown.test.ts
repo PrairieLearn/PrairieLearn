@@ -4,7 +4,7 @@ import * as markdown from './markdown.js';
 
 function testMarkdownQuestion(question: string, expected: string) {
   const actual = markdown.processQuestion(question);
-  assert.equal(actual?.trim(), expected);
+  assert.equal(actual.trim(), expected);
 }
 
 describe('Markdown processing', () => {

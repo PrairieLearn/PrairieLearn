@@ -72,7 +72,7 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantIdInputValue = questionResponse.$('input[name=__variant_id]')?.val();
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
       assert.isDefined(variantIdInputValue);
 
       partialCredit1VariantId = variantIdInputValue.toString();
@@ -99,7 +99,7 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantIdInputValue = questionResponse.$('input[name=__variant_id]')?.val();
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
       assert.isDefined(variantIdInputValue);
       partialCredit2VariantId = variantIdInputValue.toString();
 

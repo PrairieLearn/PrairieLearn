@@ -76,32 +76,33 @@ describe('studentCourseInstanceUpgrade', () => {
     });
   });
 
-  it('respects user overrides without access overrides', async () => {
+  it('ignores instructor access overrides', async () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
 
+    // Simulates the dev user (an instructor) using "Student view" for themselves.
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie:
-          'pl2_requested_uid=student@example.com; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
+        cookie: 'pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
       },
     });
     assert.isOk(res.ok);
-    assert.equal(res.url, upgradeUrl);
+    assert.equal(res.url, assessmentsUrl);
   });
 
-  it('respects user overrides with access overrides', async () => {
+  it('ignores instructor user overrides', async () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
     await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
 
+    // Simulates the dev user (an instructor) using "Student view" for an
+    // actual enrolled student user.
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie:
-          'pl2_requested_uid=student@example.com; pl2_requested_course_role=Owner; pl2_requested_course_instance_role=Student Data Editor',
+        cookie: 'pl2_requested_user=student@example.com',
       },
     });
     assert.isOk(res.ok);

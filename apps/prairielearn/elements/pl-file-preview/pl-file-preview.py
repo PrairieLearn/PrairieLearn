@@ -15,6 +15,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "submission":
         return ""
 
+    if data["ai_grading"]:
+        # In theory, we may want to support AI grading of arbitrary file uploads,
+        # but for now, we'll just avoid rendering anything at all.
+        return ""
+
     # Fetch any submitted files
     submitted_files = data["submitted_answers"].get("_files", [])
 

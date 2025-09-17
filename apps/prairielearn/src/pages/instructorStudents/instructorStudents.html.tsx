@@ -1,5 +1,5 @@
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
   type SortingState,
@@ -9,9 +9,12 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import { parseAsString, useQueryState } from 'nuqs';
+import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import z from 'zod';
 
+import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import {
   NuqsAdapter,
@@ -19,13 +22,20 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import type {
+  PageContextWithAuthzData,
+  StaffCourseInstanceContext,
+} from '../../lib/client/page-context.js';
+import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentDetailUrl } from '../../lib/client/url.js';
+import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
+import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { StudentsTable } from './components/StudentsTable.js';
-import { type StudentRow } from './instructorStudents.shared.js';
+import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -33,23 +43,33 @@ const DEFAULT_SORT: SortingState = [];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 
+const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
+
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
+  authzData: PageContextWithAuthzData['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  csrfToken: string;
+  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
   urlPrefix: string;
 }
 
 function StudentsCard({
+  authzData,
   course,
   courseInstance,
-  students,
+  enrollmentManagementEnabled,
+  students: initialStudents,
   timezone,
+  csrfToken,
   urlPrefix,
 }: StudentsCardProps) {
+  const queryClient = useQueryClient();
+
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -59,12 +79,24 @@ function StudentsCard({
     'frozen',
     parseAsColumnPinningState.withDefault(DEFAULT_PINNING),
   );
+  const [enrollmentStatusFilter, setEnrollmentStatusFilter] = useQueryState(
+    'status',
+    parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(
+      DEFAULT_ENROLLMENT_STATUS_FILTER,
+    ),
+  );
+  const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Track screen size for aria-hidden
   const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(mediaQuery?.matches ?? true);
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+
+  useEffect(() => {
+    // TODO: This is a workaround to avoid a hydration mismatch.
+    setIsMediumOrLarger(mediaQuery?.matches ?? true);
+  }, [mediaQuery]);
 
   useEffect(() => {
     const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
@@ -86,33 +118,118 @@ function StudentsCard({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, []);
 
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  // The individual column filters are the source of truth, and this is derived from them.
+  const columnFilters = useMemo(() => {
+    return [
+      {
+        id: 'enrollment_status',
+        value: enrollmentStatusFilter,
+      },
+    ];
+  }, [enrollmentStatusFilter]);
+
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
+
+  const { data: students } = useQuery<StudentRow[]>({
+    queryKey: ['enrollments', 'students'],
+    queryFn: async () => {
+      const res = await fetch(window.location.pathname + '/data.json');
+      if (!res.ok) throw new Error('Failed to fetch students');
+      const data = await res.json();
+      const parsedData = z.array(StudentRowSchema).safeParse(data);
+      if (!parsedData.success) throw new Error('Failed to parse students');
+      return parsedData.data;
+    },
+    staleTime: Infinity,
+    initialData: initialStudents,
+  });
+
+  const [showInvite, setShowInvite] = useState(false);
+
+  const inviteMutation = useMutation({
+    mutationKey: ['invite-uid'],
+    mutationFn: async (uid: string): Promise<StaffEnrollment> => {
+      const body = new URLSearchParams({
+        __action: 'invite_by_uid',
+        __csrf_token: csrfToken,
+        uid,
+      });
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body,
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        let message = 'Failed to invite';
+        try {
+          if (typeof json?.error === 'string') message = json.error;
+        } catch {
+          // ignore parse errors, and just use the default message
+        }
+        throw new Error(message);
+      }
+      return StaffEnrollmentSchema.parse(json.data);
+    },
+    onSuccess: async () => {
+      // Force a refetch of the enrollments query to ensure the new student is included
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      setShowInvite(false);
+    },
+  });
 
   const columns = useMemo(
     () => [
-      columnHelper.accessor((row) => row.user.uid, {
+      columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
         cell: (info) => info.getValue(),
       }),
-      columnHelper.accessor((row) => row.user.name, {
+      columnHelper.accessor((row) => row.user?.name, {
         id: 'user_name',
         header: 'Name',
-        cell: (info) => (
-          <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
-            {info.getValue() || '—'}
-          </a>
-        ),
+        cell: (info) => {
+          if (info.row.original.user) {
+            return (
+              <a href={getStudentDetailUrl(urlPrefix, info.row.original.user.user_id)}>
+                {info.getValue() || '—'}
+              </a>
+            );
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
-      columnHelper.accessor((row) => row.user.email, {
+      columnHelper.accessor((row) => row.enrollment.status, {
+        id: 'enrollment_status',
+        header: 'Status',
+        cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const current = row.getValue(columnId);
+          if (typeof current !== 'string') return false;
+          return filterValues.includes(current);
+        },
+      }),
+      columnHelper.accessor((row) => row.user?.email, {
         id: 'user_email',
         header: 'Email',
-        cell: (info) => info.getValue() || '—',
+        cell: (info) => {
+          if (info.row.original.user) {
+            return info.getValue() || '—';
+          }
+          return (
+            <OverlayTrigger overlay={<Tooltip>Student information is not yet available.</Tooltip>}>
+              <i class="bi bi-question-circle" />
+            </OverlayTrigger>
+          );
+        },
       }),
-      columnHelper.accessor((row) => row.enrollment.created_at, {
-        id: 'enrollment_created_at',
-        header: 'Enrolled on',
+      columnHelper.accessor((row) => row.enrollment.joined_at, {
+        id: 'enrollment_joined_at',
+        header: 'Joined',
         cell: (info) => {
           const date = info.getValue();
           if (date == null) return '—';
@@ -136,7 +253,7 @@ function StudentsCard({
     data: students,
     columns,
     columnResizeMode: 'onChange',
-    getRowId: (row) => row.user.user_id,
+    getRowId: (row) => row.enrollment.id,
     state: {
       sorting,
       columnFilters,
@@ -150,7 +267,6 @@ function StudentsCard({
       columnVisibility: defaultColumnVisibility,
     },
     onSortingChange: setSorting,
-    onColumnFiltersChange: setColumnFilters,
     onGlobalFilterChange: setGlobalFilter,
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
@@ -169,90 +285,132 @@ function StudentsCard({
   });
 
   return (
-    <div class="card d-flex flex-column h-100">
-      <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center justify-content-between gap-2">
-          <div>Students</div>
-          <div>
-            <DownloadButton
-              course={course}
-              courseInstance={courseInstance}
-              students={students}
+    <>
+      {lastInvitation && (
+        <Alert variant="success" dismissible onClose={() => setLastInvitation(null)}>
+          {lastInvitation.pending_uid} was invited successfully.
+        </Alert>
+      )}
+      <div class="card d-flex flex-column h-100">
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex align-items-center justify-content-between gap-2">
+            <div>Students</div>
+            <div class="d-flex gap-2">
+              <DownloadButton
+                course={course}
+                courseInstance={courseInstance}
+                students={students}
+                table={table}
+              />
+              {enrollmentManagementEnabled && (
+                <Button
+                  variant="light"
+                  disabled={!authzData.has_course_instance_permission_edit}
+                  onClick={() => setShowInvite(true)}
+                >
+                  <i class="bi bi-person-plus me-2" />
+                  Invite student
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+        <div class="card-body d-flex flex-column">
+          <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
+            <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
+              <div class="input-group">
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  class="form-control"
+                  aria-label="Search by UID, name or email."
+                  placeholder="Search by UID, name, email..."
+                  value={globalFilter}
+                  onInput={(e) => {
+                    if (!(e.target instanceof HTMLInputElement)) return;
+                    void setGlobalFilter(e.target.value);
+                  }}
+                />
+                <button
+                  type="button"
+                  class="btn btn-outline-secondary"
+                  aria-label="Clear search"
+                  title="Clear search"
+                  data-bs-toggle="tooltip"
+                  onClick={() => setGlobalFilter('')}
+                >
+                  <i class="bi bi-x-circle" aria-hidden="true" />
+                </button>
+              </div>
+              {/* We do this instead of CSS properties for the accessibility checker */}
+              {isMediumOrLarger && <ColumnManager table={table} />}
+            </div>
+            {/* We do this instead of CSS properties for the accessibility checker */}
+            {!isMediumOrLarger && <ColumnManager table={table} />}
+            <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
+              <div class="text-muted text-nowrap">
+                Showing {table.getRowModel().rows.length} of {students.length} students
+              </div>
+            </div>
+          </div>
+          <div class="flex-grow-1">
+            <StudentsTable
               table={table}
+              enrollmentStatusFilter={enrollmentStatusFilter}
+              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
             />
           </div>
         </div>
+        <InviteStudentModal
+          show={showInvite}
+          onHide={() => setShowInvite(false)}
+          onSubmit={async ({ uid }) => {
+            const enrollment = await inviteMutation.mutateAsync(uid);
+            setLastInvitation(enrollment);
+          }}
+        />
       </div>
-      <div class="card-body d-flex flex-column">
-        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-            <div class="input-group">
-              <input
-                ref={searchInputRef}
-                type="text"
-                class="form-control"
-                aria-label="Search by UID, name or email."
-                placeholder="Search by UID, name, email..."
-                value={globalFilter}
-                onInput={(e) => {
-                  if (!(e.target instanceof HTMLInputElement)) return;
-                  void setGlobalFilter(e.target.value);
-                }}
-              />
-              <button
-                type="button"
-                class="btn btn-outline-secondary"
-                aria-label="Clear search"
-                title="Clear search"
-                data-bs-toggle="tooltip"
-                onClick={() => setGlobalFilter('')}
-              >
-                <i class="bi bi-x-circle" aria-hidden="true" />
-              </button>
-            </div>
-            {/* We do this instead of CSS properties for the accessibility checker */}
-            {isMediumOrLarger && <ColumnManager table={table} />}
-          </div>
-          {/* We do this instead of CSS properties for the accessibility checker */}
-          {!isMediumOrLarger && <ColumnManager table={table} />}
-          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
-            <div class="text-muted text-nowrap">
-              Showing {table.getRowModel().rows.length} of {students.length} students
-            </div>
-          </div>
-        </div>
-        <div class="flex-grow-1">
-          <StudentsTable table={table} />
-        </div>
-      </div>
-    </div>
+    </>
   );
 }
 
 /**
  * This needs to be a wrapper component because we need to use the `NuqsAdapter`.
  */
+
 export const InstructorStudents = ({
+  authzData,
   search,
   students,
   timezone,
   courseInstance,
   course,
+  enrollmentManagementEnabled,
+  csrfToken,
+  isDevMode,
   urlPrefix,
 }: {
+  authzData: PageContextWithAuthzData['authz_data'];
   search: string;
+  isDevMode: boolean;
 } & StudentsCardProps) => {
+  const queryClient = new QueryClient();
+
   return (
     <NuqsAdapter search={search}>
-      <StudentsCard
-        course={course}
-        courseInstance={courseInstance}
-        students={students}
-        timezone={timezone}
-        urlPrefix={urlPrefix}
-      />
+      <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+        <StudentsCard
+          authzData={authzData}
+          course={course}
+          courseInstance={courseInstance}
+          enrollmentManagementEnabled={enrollmentManagementEnabled}
+          students={students}
+          timezone={timezone}
+          csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+        />
+      </QueryClientProviderDebug>
     </NuqsAdapter>
   );
 };
-
 InstructorStudents.displayName = 'InstructorStudents';
