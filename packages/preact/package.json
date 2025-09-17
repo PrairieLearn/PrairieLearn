@@ -23,7 +23,7 @@
     "@prairielearn/html": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
     "clsx": "^2.1.1",
-    "preact": "link:../preact-cjs",
+    "preact": "^10.27.0",
     "preact-render-to-string": "^6.6.1",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.2"

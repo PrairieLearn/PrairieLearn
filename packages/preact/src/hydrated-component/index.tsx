@@ -13,6 +13,11 @@ import { HydratedComponentsRegistry } from './registry.js';
 
 const registry = new HydratedComponentsRegistry();
 
+/**
+ * Registers a Preact component for client-side hydration. The component should have a
+ * `displayName` property. If it's missing, or the name of the component bundle differs,
+ * you can provide a `nameOverride`.
+ */
 export function registerHydratedComponent(component: ComponentType<any>, nameOverride?: string) {
   // Each React component that will be hydrated on the page must be registered.
   // Note that we don't try to use `component.name` since it can be minified or mangled.
