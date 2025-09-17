@@ -4,6 +4,7 @@ import math
 import os
 import random
 from copy import deepcopy
+from itertools import takewhile
 from typing import TypedDict
 
 import chevron
@@ -73,42 +74,18 @@ def extract_dag(
     return depends_graph, group_belonging
 
 
-def randomize_distractors_in_ordered_blocks(all_blocks: list[OrderBlocksAnswerData]) -> None:
-    """
-    Randomizes distractors within their groups while preserving the overall order.
-    For each correct answer block that has consecutive distractors following it,
-    shuffles the group (correct block + its distractors) in place.
-    """
-    processed_indices = set()
-
-    for block_index, block in enumerate(all_blocks):
-        # Skip blocks we've already processed as part of a group
-        if block_index in processed_indices:
+def shuffle_distractor_groups(all_blocks: list[OrderBlocksAnswerData]) -> None:
+    """Shuffle each correct block with its consecutive distractors (same tag), in place."""
+    skip_to = 0
+    for i, block in enumerate(all_blocks):
+        if i < skip_to or block.get("distractor_for"):
             continue
-
-        # Skip distractor blocks - they'll be handled when we process their correct answer
-        if block.get("distractor_for"):
-            continue
-
-        # Collect consecutive distractors for this correct answer
         tag = block["tag"]
-        group_blocks = [block]
-        group_start_index = block_index
-
-        # Find all consecutive distractors following this correct answer
-        for next_index in range(block_index + 1, len(all_blocks)):
-            next_block = all_blocks[next_index]
-            if next_block.get("distractor_for") == tag:
-                group_blocks.append(next_block)
-                processed_indices.add(next_index)
-            else:
-                break
-
-        # Shuffle the group if it has more than one block
-        if len(group_blocks) > 1:
-            random.shuffle(group_blocks)
-            all_blocks[group_start_index:group_start_index + len(group_blocks)] = group_blocks
-
+        group = [block, *takewhile(lambda b, t=tag: b.get("distractor_for") == t, all_blocks[i+1:])]
+        if len(group) > 1:
+            random.shuffle(group)
+            all_blocks[i:i+len(group)] = group
+        skip_to = i + len(group)
 
 def solve_problem(
     answers_list: list[OrderBlocksAnswerData], grading_method: GradingMethodType
@@ -172,8 +149,8 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ORDERED:
         all_blocks.sort(key=lambda a: a["index"])
 
-        if order_blocks_options.randomize_distractors_when_ordered:
-            randomize_distractors_in_ordered_blocks(all_blocks)
+        if order_blocks_options.randomize_distractors:
+            shuffle_distractor_groups(all_blocks)
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
