@@ -43,10 +43,10 @@ export function InstructorCourseAdminTopicsTable({
 
   const handleModalUpdate = () => {
     if (addTopic) {
-      setTopicsState((prevTopics) => [...prevTopics, selectedTopic as Topic]);
+      setTopicsState((prevTopics) => [...prevTopics, selectedTopic!]);
     } else {
       setTopicsState((prevTopics) =>
-        prevTopics.map((topic, index) =>
+        prevTopics.map((topic) =>
           topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
         ),
       );
