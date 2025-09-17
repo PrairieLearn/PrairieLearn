@@ -180,6 +180,13 @@ export async function generatePrompt({
 }
 
 /**
+ * Returns true if the text contains any element with a `data-image-capture-uuid` attribute.
+ */
+export function containsImageCapture(submission_text: string): boolean {
+  return cheerio.load(submission_text)('[data-image-capture-uuid]').length > 0;
+}
+
+/**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
  */
 function generateSubmissionMessage({

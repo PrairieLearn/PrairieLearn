@@ -126,7 +126,7 @@ lint-shell:
 lint-sql:
 	@sqlfluff lint
 lint-sql-migrations:
-	@squawk apps/prairielearn/src/migrations/*.sql --exclude-path "apps/prairielearn/src/migrations/*.test.sql"
+	@squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 lint-changeset:

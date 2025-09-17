@@ -150,7 +150,6 @@ router.post(
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-      const overrideGradeRate = false;
       let closeExam: boolean;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
@@ -168,16 +167,15 @@ router.post(
       } else {
         throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
       }
-      const requireOpen = true;
-      await assessment.gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await assessment.gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: closeExam,
+        ignoreGradeRateLimit: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
       if (req.body.__action === 'timeLimitFinish') {
         res.redirect(req.originalUrl + '?timeLimitExpired=true');
       } else {
