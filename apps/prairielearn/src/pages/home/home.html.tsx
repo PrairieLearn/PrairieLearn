@@ -56,7 +56,7 @@ export function Home({
   );
 
   const hasInstructorCourses = instructorCourses.length > 0;
-  const hasCourses = (listedStudentCourses.length > 0 || hasInstructorCourses) && false;
+  const hasCourses = listedStudentCourses.length > 0 || hasInstructorCourses;
 
   return (
     <>
