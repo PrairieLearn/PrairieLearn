@@ -565,7 +565,7 @@ describe('Course instance syncing', () => {
       {
         json: {
           enabled: true,
-          requiresSecretLink: true,
+          useEnrollmentCode: true,
         },
         db: {
           self_enrollment_enabled: true,
@@ -578,7 +578,7 @@ describe('Course instance syncing', () => {
         json: {
           enabled: false,
           beforeDate: jsonDate,
-          requiresSecretLink: true,
+          useEnrollmentCode: true,
         },
         db: {
           self_enrollment_enabled: false,
@@ -590,7 +590,7 @@ describe('Course instance syncing', () => {
       {
         json: {
           beforeDate: jsonDate,
-          requiresSecretLink: true,
+          useEnrollmentCode: true,
         },
         db: {
           self_enrollment_enabled: true,
