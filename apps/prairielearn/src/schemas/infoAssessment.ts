@@ -140,6 +140,7 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
+    .int()
     .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
@@ -177,6 +178,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   triesPerVariant: z
     .number()
+    .int()
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional()
     .default(1),
