@@ -4,7 +4,7 @@ import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { hydrate } from '@prairielearn/preact-cjs';
+import { type ComponentType, hydrate } from '@prairielearn/preact-cjs';
 
 import { HydratedComponentsRegistry } from './registry.js';
 
@@ -12,6 +12,16 @@ import { HydratedComponentsRegistry } from './registry.js';
 // registered components on the client.
 
 export const registry = new HydratedComponentsRegistry();
+
+export function registerHydratedComponent(component: ComponentType<any>, nameOverride?: string) {
+  // Each React component that will be hydrated on the page must be registered.
+  // Note that we don't try to use `component.name` since it can be minified or mangled.
+  const id = nameOverride ?? component.displayName;
+  if (!id) {
+    throw new Error('React fragment must have a displayName or nameOverride');
+  }
+  registry.setComponent(id, component);
+}
 
 onDocumentReady(() => {
   observe('.js-hydrated-component', {

@@ -1,9 +1,7 @@
 import { render } from 'preact-render-to-string/jsx';
 
 import { HtmlSafeString, escapeHtml, unsafeHtml } from '@prairielearn/html';
-import { type ComponentType, type VNode } from '@prairielearn/preact-cjs';
-
-import { registry } from './hydrated-component/index.js';
+import { type VNode } from '@prairielearn/preact-cjs';
 
 // These functions are separated from the other utilities so that they can be imported
 // on the client. `index.tsx` imports `@prairielearn/compiled-assets`, which
@@ -31,14 +29,4 @@ export function renderHtml(vnode: VNode | string): HtmlSafeString {
   }
 
   return unsafeHtml(render(vnode, {}, { pretty, jsx: false }));
-}
-
-export function registerHydratedComponent(component: ComponentType<any>, nameOverride?: string) {
-  // Each React component that will be hydrated on the page must be registered.
-  // Note that we don't try to use `component.name` since it can be minified or mangled.
-  const id = nameOverride ?? component.displayName;
-  if (!id) {
-    throw new Error('React fragment must have a displayName or nameOverride');
-  }
-  registry.setComponent(id, component);
 }
