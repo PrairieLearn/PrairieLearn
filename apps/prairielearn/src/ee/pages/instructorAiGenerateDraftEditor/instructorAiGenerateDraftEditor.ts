@@ -46,7 +46,7 @@ async function saveGeneratedQuestion(
   pythonFileContents: string | undefined,
   title?: string,
   qid?: string,
-): Promise<string> {
+): Promise<{ question_id: string; qid: string }> {
   const files = {};
 
   if (htmlFileContents) {
@@ -73,7 +73,7 @@ async function saveGeneratedQuestion(
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  return result.question_id;
+  return { question_id: result.question_id, qid: result.question_qid };
 }
 
 async function saveRevisedQuestion({
@@ -330,7 +330,7 @@ router.post(
       }
 
       // TODO: any membership checks needed here?
-      const qid = await saveGeneratedQuestion(
+      const { question_id, qid } = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
         prompts[prompts.length - 1].python || undefined,
@@ -357,7 +357,7 @@ router.post(
 
       flash('success', `Your question is ready for use as ${qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
