@@ -1,4 +1,5 @@
 import { useState } from 'preact/compat';
+import { v4 as uuidv4 } from 'uuid';
 
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
@@ -10,7 +11,7 @@ const emptyTopic: Topic = {
   color: '',
   course_id: '',
   description: '',
-  id: '',
+  id: uuidv4(),
   implicit: false,
   json_comment: '',
   name: '',
@@ -30,14 +31,12 @@ export function InstructorCourseAdminTopicsTable({
 }) {
   const [editMode, setEditMode] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState<Topic | null>(emptyTopic);
-  const [selectedTopicIndex, setSelectedTopicIndex] = useState<number | null>(null);
   const [topicsState, setTopicsState] = useState<Topic[]>(topics);
   const [addTopic, setAddTopic] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
   const handleOpenEditModal = (topicIndex: number) => {
     setAddTopic(false);
-    setSelectedTopicIndex(topicIndex);
     setSelectedTopic({ ...topicsState[topicIndex], implicit: false });
     setShowModal(true);
   };
@@ -48,20 +47,19 @@ export function InstructorCourseAdminTopicsTable({
     } else {
       setTopicsState((prevTopics) =>
         prevTopics.map((topic, index) =>
-          index === selectedTopicIndex ? { ...topic, ...selectedTopic } : topic,
+          topic.id === selectedTopic?.id ? { ...topic, ...selectedTopic } : topic,
         ),
       );
     }
     setShowModal(false);
   };
 
-  const handleDeleteTopic = (topicIndex: number) => {
-    setTopicsState((prevTopics) => prevTopics.filter((_, index) => index !== topicIndex));
+  const handleDeleteTopic = (deleteTopicId: string) => {
+    setTopicsState((prevTopics) => prevTopics.filter((topic) => topic.id !== deleteTopicId));
   };
 
   const handleNewTopic = () => {
     setAddTopic(true);
-    setSelectedTopicIndex(topicsState.length);
     setSelectedTopic(emptyTopic);
     setShowModal(true);
   };
@@ -112,11 +110,8 @@ export function InstructorCourseAdminTopicsTable({
               <tr>
                 {editMode && allowEdit ? (
                   <>
-                    <th>
-                      <span class="visually-hidden">Edit</span>
-                    </th>
-                    <th>
-                      <span class="visually-hidden">Delete</span>
+                    <th style="width: 1%">
+                      <span class="visually-hidden">Edit and Delete</span>
                     </th>
                   </>
                 ) : (
@@ -133,28 +128,24 @@ export function InstructorCourseAdminTopicsTable({
                 return (
                   <tr key={topic.name}>
                     {editMode && allowEdit ? (
-                      <>
-                        <td class="align-middle">
-                          <button
-                            class="btn btn-sm btn-ghost"
-                            type="button"
-                            aria-label={`Edit topic ${topic.name}`}
-                            onClick={() => handleOpenEditModal(index)}
-                          >
-                            <i class="fa fa-edit" aria-hidden="true" />
-                          </button>
-                        </td>
-                        <td class="align-middle">
-                          <button
-                            class="btn btn-sm btn-ghost"
-                            type="button"
-                            aria-label={`Delete topic ${topic.name}`}
-                            onClick={() => handleDeleteTopic(index)}
-                          >
-                            <i class="fa fa-trash text-danger" aria-hidden="true" />
-                          </button>
-                        </td>
-                      </>
+                      <td class="d-flex align-items-center px-3">
+                        <button
+                          class="btn btn-sm btn-ghost"
+                          type="button"
+                          aria-label={`Edit topic ${topic.name}`}
+                          onClick={() => handleOpenEditModal(index)}
+                        >
+                          <i class="fa fa-edit" aria-hidden="true" />
+                        </button>
+                        <button
+                          class="btn btn-sm btn-ghost"
+                          type="button"
+                          aria-label={`Delete topic ${topic.name}`}
+                          onClick={() => handleDeleteTopic(topic.id)}
+                        >
+                          <i class="fa fa-trash text-danger" aria-hidden="true" />
+                        </button>
+                      </td>
                     ) : (
                       ''
                     )}
