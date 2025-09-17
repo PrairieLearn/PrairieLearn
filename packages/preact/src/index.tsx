@@ -99,8 +99,8 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
       info: html`
         <div>
           Make sure you create a script at
-          <code>esm-bundles/hydrated-components/${componentName}.ts</code> registering the component
-          in the registry:
+          <code>esm-bundles/hydrated-components/${componentName}.ts</code> registering the
+          component:
           <pre><code>import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
 import { ${componentName} } from './path/to/component.js';
