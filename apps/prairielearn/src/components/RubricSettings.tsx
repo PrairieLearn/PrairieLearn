@@ -197,7 +197,7 @@ export function RubricSettings({
   return (
     <div id="rubric-editing" class="card overflow-hidden mb-3">
       <div class="card-header collapsible-card-header d-flex align-items-center">
-        <h2>Rubric Settings</h2>
+        <h2>Rubric settings</h2>
         <button
           type="button"
           class="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto collapsed"
