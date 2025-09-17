@@ -1,15 +1,31 @@
+import { useEffect, useState } from 'preact/compat';
 import { Button, Card, Col, Form, InputGroup, Row } from 'react-bootstrap';
-import { type Control, useFieldArray, useWatch } from 'react-hook-form';
+import {
+  type Control,
+  type UseFormGetFieldState,
+  type UseFormTrigger,
+  useFieldArray,
+  useWatch,
+} from 'react-hook-form';
 
-import { TogglePill } from './TogglePill.js';
+import { TriStateCheckbox } from './TriStateCheckbox.js';
 import type { AccessControlFormData } from './types.js';
 
 interface DateControlFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: 'mainRule.dateControl' | `overrides.${number}.dateControl`;
+  trigger: UseFormTrigger<AccessControlFormData>;
+  getFieldState: UseFormGetFieldState<AccessControlFormData>;
 }
 
-export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
+export function DateControlForm({
+  control,
+  namePrefix,
+  trigger,
+  getFieldState,
+}: DateControlFormProps) {
+  const [showPassword, setShowPassword] = useState(false);
+
   const {
     fields: earlyDeadlineFields,
     append: appendEarlyDeadline,
@@ -73,6 +89,66 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
     name: `${namePrefix}.enabled`,
   });
 
+  const dueDate = useWatch({
+    control,
+    name: `${namePrefix}.dueDate`,
+  });
+
+  const releaseDate = useWatch({
+    control,
+    name: `${namePrefix}.releaseDate`,
+  });
+
+  const earlyDeadlines = useWatch({
+    control,
+    name: `${namePrefix}.earlyDeadlines`,
+    defaultValue: [],
+  });
+
+  const lateDeadlines = useWatch({
+    control,
+    name: `${namePrefix}.lateDeadlines`,
+    defaultValue: [],
+  });
+
+  // Re-validate all deadlines when due date changes
+  useEffect(() => {
+    if (dueDate) {
+      // Trigger validation for all early deadline dates
+      earlyDeadlineFields.forEach(async (_, index) => {
+        await trigger(`${namePrefix}.earlyDeadlines.${index}.date`);
+      });
+      // Trigger validation for all late deadline dates
+      lateDeadlineFields.forEach(async (_, index) => {
+        await trigger(`${namePrefix}.lateDeadlines.${index}.date`);
+      });
+    }
+  }, [dueDate, namePrefix, trigger, earlyDeadlineFields, lateDeadlineFields]);
+
+  // Helper function to get field error for early deadline date
+  const getEarlyDeadlineError = (index: number) => {
+    const fieldState = getFieldState(`${namePrefix}.earlyDeadlines.${index}.date`);
+    return fieldState.error?.message;
+  };
+
+  // Helper function to get field error for early deadline credit
+  const getEarlyDeadlineCreditError = (index: number) => {
+    const fieldState = getFieldState(`${namePrefix}.earlyDeadlines.${index}.credit`);
+    return fieldState.error?.message;
+  };
+
+  // Helper function to get field error for late deadline date
+  const getLateDeadlineError = (index: number) => {
+    const fieldState = getFieldState(`${namePrefix}.lateDeadlines.${index}.date`);
+    return fieldState.error?.message;
+  };
+
+  // Helper function to get field error for late deadline credit
+  const getLateDeadlineCreditError = (index: number) => {
+    const fieldState = getFieldState(`${namePrefix}.lateDeadlines.${index}.credit`);
+    return fieldState.error?.message;
+  };
+
   const addEarlyDeadline = () => {
     appendEarlyDeadline({ date: '', credit: 100 });
   };
@@ -81,12 +157,71 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
     appendLateDeadline({ date: '', credit: 100 });
   };
 
+  // Helper function to get the active time range for early deadlines
+  const getEarlyDeadlineTimeRange = (index: number) => {
+    const currentDeadline = earlyDeadlines?.[index];
+    if (!currentDeadline?.date) return null;
+
+    const startDate = releaseDate && releaseDateEnabled ? new Date(releaseDate) : null;
+    const endDate = new Date(currentDeadline.date);
+
+    if (!startDate) {
+      return `Until ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}`;
+    }
+
+    return `${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()} — ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}`;
+  };
+
+  // Helper function to get the active time range for late deadlines
+  const getLateDeadlineTimeRange = (index: number) => {
+    const currentDeadline = lateDeadlines?.[index];
+    if (!currentDeadline?.date) return null;
+
+    const startDate = dueDate && dueDateEnabled ? new Date(dueDate) : null;
+    const endDate = new Date(currentDeadline.date);
+
+    if (!startDate) {
+      return `Until ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}`;
+    }
+
+    return `${startDate.toLocaleDateString()} at ${startDate.toLocaleTimeString()} — ${endDate.toLocaleDateString()} at ${endDate.toLocaleTimeString()}`;
+  };
+
+  // Determine the last effective deadline for "After Last Deadline" text
+  const getLastDeadlineText = () => {
+    // Only consider late deadlines if Late Deadlines is enabled
+    if (lateDeadlinesEnabled) {
+      // Get all late deadlines that have dates
+      const validLateDeadlines = (lateDeadlines || []).filter((deadline) => deadline?.date);
+
+      if (validLateDeadlines.length > 0) {
+        // Find the latest late deadline
+        const sortedLateDeadlines = validLateDeadlines.sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        );
+        const latestLateDeadline = sortedLateDeadlines[0];
+        if (latestLateDeadline.date) {
+          const date = new Date(latestLateDeadline.date);
+          return `This will take effect after ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+        }
+      }
+    }
+
+    // Fall back to due date if Late Deadlines is disabled or no late deadlines exist
+    if (dueDate) {
+      const date = new Date(dueDate);
+      return `This will take effect after ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`;
+    }
+
+    return 'This will take effect after the last deadline';
+  };
+
   return (
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <span class="me-2">Date Control</span>
-          <TogglePill control={control} name={`${namePrefix}.enabled`} />
+          <TriStateCheckbox control={control} name={`${namePrefix}.enabled`} class="me-2" />
+          <span>Date Control</span>
         </div>
       </Card.Header>
       <Card.Body>
@@ -95,13 +230,14 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
           <Col md={6}>
             <Form.Group>
               <div class="d-flex align-items-center mb-2">
-                <Form.Label class="mb-0 me-2">Release Date</Form.Label>
-                <TogglePill
+                <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.releaseDateEnabled`}
                   disabled={!dateControlEnabled}
                   disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  class="me-2"
                 />
+                <Form.Label class="mb-0">Release Date</Form.Label>
               </div>
               <Form.Control
                 type="datetime-local"
@@ -113,13 +249,14 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
           <Col md={6}>
             <Form.Group>
               <div class="d-flex align-items-center mb-2">
-                <Form.Label class="mb-0 me-2">Due Date</Form.Label>
-                <TogglePill
+                <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.dueDateEnabled`}
                   disabled={!dateControlEnabled}
                   disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  class="me-2"
                 />
+                <Form.Label class="mb-0">Due Date</Form.Label>
               </div>
               <Form.Control
                 type="datetime-local"
@@ -137,18 +274,32 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
             <div class="mb-4">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="d-flex align-items-center">
-                  <span class="me-2">Early Deadlines</span>
-                  <TogglePill
+                  <TriStateCheckbox
                     control={control}
                     name={`${namePrefix}.earlyDeadlinesEnabled`}
-                    disabled={!dateControlEnabled}
-                    disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                    disabled={!dateControlEnabled || !releaseDateEnabled || !releaseDate}
+                    disabledReason={
+                      !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : !releaseDateEnabled
+                          ? 'Enable Release Date first'
+                          : !releaseDate
+                            ? 'Set a Release Date first'
+                            : undefined
+                    }
+                    class="me-2"
                   />
+                  <span>Early Deadlines</span>
                 </div>
                 <Button
                   size="sm"
                   variant="outline-primary"
-                  disabled={!dateControlEnabled || !earlyDeadlinesEnabled}
+                  disabled={
+                    !dateControlEnabled ||
+                    !releaseDateEnabled ||
+                    !releaseDate ||
+                    !earlyDeadlinesEnabled
+                  }
                   onClick={addEarlyDeadline}
                 >
                   Add Early
@@ -156,41 +307,98 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
               </div>
 
               {earlyDeadlineFields.map((field, index) => (
-                <Row key={field.id} class="mb-2">
-                  <Col md={6}>
-                    <Form.Control
-                      type="datetime-local"
-                      placeholder="Deadline Date"
-                      disabled={!dateControlEnabled || !earlyDeadlinesEnabled}
-                      {...control.register(`${namePrefix}.earlyDeadlines.${index}.date`)}
-                    />
-                  </Col>
-                  <Col md={4}>
-                    <InputGroup>
+                <div key={field.id} class="mb-3">
+                  <Row class="mb-1">
+                    <Col md={6}>
                       <Form.Control
-                        type="number"
-                        placeholder="Credit"
-                        min="0"
-                        max="200"
-                        disabled={!dateControlEnabled || !earlyDeadlinesEnabled}
-                        {...control.register(`${namePrefix}.earlyDeadlines.${index}.credit`, {
-                          valueAsNumber: true,
+                        type="datetime-local"
+                        placeholder="Deadline Date"
+                        disabled={
+                          !dateControlEnabled ||
+                          !releaseDateEnabled ||
+                          !releaseDate ||
+                          !earlyDeadlinesEnabled
+                        }
+                        {...control.register(`${namePrefix}.earlyDeadlines.${index}.date`, {
+                          validate: (value) => {
+                            if (!value) return true;
+
+                            // If due date is set, validate against it
+                            if (dueDate) {
+                              const deadlineDate = new Date(value);
+                              const dueDateObj = new Date(dueDate);
+                              return (
+                                deadlineDate < dueDateObj ||
+                                'Early deadline must be before the due date'
+                              );
+                            }
+
+                            return true;
+                          },
                         })}
+                        isInvalid={!!getEarlyDeadlineError(index)}
                       />
-                      <InputGroup.Text>%</InputGroup.Text>
-                    </InputGroup>
-                  </Col>
-                  <Col md={2}>
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      disabled={!dateControlEnabled || !earlyDeadlinesEnabled}
-                      onClick={() => removeEarlyDeadline(index)}
-                    >
-                      ×
-                    </Button>
-                  </Col>
-                </Row>
+                    </Col>
+                    <Col md={4}>
+                      <InputGroup>
+                        <Form.Control
+                          type="number"
+                          placeholder="Credit"
+                          min="0"
+                          max="200"
+                          disabled={
+                            !dateControlEnabled ||
+                            !releaseDateEnabled ||
+                            !releaseDate ||
+                            !earlyDeadlinesEnabled
+                          }
+                          {...control.register(`${namePrefix}.earlyDeadlines.${index}.credit`, {
+                            valueAsNumber: true,
+                            validate: (value) => {
+                              if (value == null || Number.isNaN(value)) return true;
+                              return (
+                                value > 100 || 'Early deadline credit must be greater than 100%'
+                              );
+                            },
+                          })}
+                          isInvalid={!!getEarlyDeadlineCreditError(index)}
+                        />
+                        <InputGroup.Text>%</InputGroup.Text>
+                      </InputGroup>
+                    </Col>
+                    <Col md={2}>
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        disabled={
+                          !dateControlEnabled ||
+                          !releaseDateEnabled ||
+                          !releaseDate ||
+                          !earlyDeadlinesEnabled
+                        }
+                        onClick={() => removeEarlyDeadline(index)}
+                      >
+                        <i class="bi bi-x" aria-hidden="true" />
+                      </Button>
+                    </Col>
+                  </Row>
+                  {(getEarlyDeadlineError(index) || getEarlyDeadlineCreditError(index)) && (
+                    <Row>
+                      <Col md={10}>
+                        <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
+                          {getEarlyDeadlineError(index) || getEarlyDeadlineCreditError(index)}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                  )}
+                  {getEarlyDeadlineTimeRange(index) && (
+                    <Row>
+                      <Col md={10}>
+                        <Form.Text class="text-muted">{getEarlyDeadlineTimeRange(index)}</Form.Text>
+                      </Col>
+                    </Row>
+                  )}
+                </div>
               ))}
             </div>
           </Col>
@@ -199,18 +407,29 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
             <div class="mb-4">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="d-flex align-items-center">
-                  <span class="me-2">Late Deadlines</span>
-                  <TogglePill
+                  <TriStateCheckbox
                     control={control}
                     name={`${namePrefix}.lateDeadlinesEnabled`}
-                    disabled={!dateControlEnabled}
-                    disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                    disabled={!dateControlEnabled || !dueDateEnabled || !dueDate}
+                    disabledReason={
+                      !dateControlEnabled
+                        ? 'Enable Date Control first'
+                        : !dueDateEnabled
+                          ? 'Enable Due Date first'
+                          : !dueDate
+                            ? 'Set a Due Date first'
+                            : undefined
+                    }
+                    class="me-2"
                   />
+                  <span>Late Deadlines</span>
                 </div>
                 <Button
                   size="sm"
                   variant="outline-primary"
-                  disabled={!dateControlEnabled || !lateDeadlinesEnabled}
+                  disabled={
+                    !dateControlEnabled || !dueDateEnabled || !dueDate || !lateDeadlinesEnabled
+                  }
                   onClick={addLateDeadline}
                 >
                   Add Late
@@ -218,41 +437,90 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
               </div>
 
               {lateDeadlineFields.map((field, index) => (
-                <Row key={field.id} class="mb-2">
-                  <Col md={6}>
-                    <Form.Control
-                      type="datetime-local"
-                      placeholder="Deadline Date"
-                      disabled={!dateControlEnabled || !lateDeadlinesEnabled}
-                      {...control.register(`${namePrefix}.lateDeadlines.${index}.date`)}
-                    />
-                  </Col>
-                  <Col md={4}>
-                    <InputGroup>
+                <div key={field.id} class="mb-3">
+                  <Row class="mb-1">
+                    <Col md={6}>
                       <Form.Control
-                        type="number"
-                        placeholder="Credit"
-                        min="0"
-                        max="200"
-                        disabled={!dateControlEnabled || !lateDeadlinesEnabled}
-                        {...control.register(`${namePrefix}.lateDeadlines.${index}.credit`, {
-                          valueAsNumber: true,
+                        type="datetime-local"
+                        placeholder="Deadline Date"
+                        disabled={
+                          !dateControlEnabled ||
+                          !dueDateEnabled ||
+                          !dueDate ||
+                          !lateDeadlinesEnabled
+                        }
+                        {...control.register(`${namePrefix}.lateDeadlines.${index}.date`, {
+                          validate: (value) => {
+                            if (!value || !dueDate) return true;
+                            const deadlineDate = new Date(value);
+                            const dueDateObj = new Date(dueDate);
+                            return (
+                              deadlineDate > dueDateObj ||
+                              'Late deadline must be after the due date'
+                            );
+                          },
                         })}
+                        isInvalid={!!getLateDeadlineError(index)}
                       />
-                      <InputGroup.Text>%</InputGroup.Text>
-                    </InputGroup>
-                  </Col>
-                  <Col md={2}>
-                    <Button
-                      size="sm"
-                      variant="outline-danger"
-                      disabled={!dateControlEnabled || !lateDeadlinesEnabled}
-                      onClick={() => removeLateDeadline(index)}
-                    >
-                      ×
-                    </Button>
-                  </Col>
-                </Row>
+                    </Col>
+                    <Col md={4}>
+                      <InputGroup>
+                        <Form.Control
+                          type="number"
+                          placeholder="Credit"
+                          min="0"
+                          max="200"
+                          disabled={
+                            !dateControlEnabled ||
+                            !dueDateEnabled ||
+                            !dueDate ||
+                            !lateDeadlinesEnabled
+                          }
+                          {...control.register(`${namePrefix}.lateDeadlines.${index}.credit`, {
+                            valueAsNumber: true,
+                            validate: (value) => {
+                              if (value == null || Number.isNaN(value)) return true;
+                              return value < 100 || 'Late deadline credit must be less than 100%';
+                            },
+                          })}
+                          isInvalid={!!getLateDeadlineCreditError(index)}
+                        />
+                        <InputGroup.Text>%</InputGroup.Text>
+                      </InputGroup>
+                    </Col>
+                    <Col md={2}>
+                      <Button
+                        size="sm"
+                        variant="outline-danger"
+                        disabled={
+                          !dateControlEnabled ||
+                          !dueDateEnabled ||
+                          !dueDate ||
+                          !lateDeadlinesEnabled
+                        }
+                        onClick={() => removeLateDeadline(index)}
+                      >
+                        <i class="bi bi-x" aria-hidden="true" />
+                      </Button>
+                    </Col>
+                  </Row>
+                  {(getLateDeadlineError(index) || getLateDeadlineCreditError(index)) && (
+                    <Row>
+                      <Col md={10}>
+                        <Form.Control.Feedback type="invalid" style={{ display: 'block' }}>
+                          {getLateDeadlineError(index) || getLateDeadlineCreditError(index)}
+                        </Form.Control.Feedback>
+                      </Col>
+                    </Row>
+                  )}
+                  {getLateDeadlineTimeRange(index) && (
+                    <Row>
+                      <Col md={10}>
+                        <Form.Text class="text-muted">{getLateDeadlineTimeRange(index)}</Form.Text>
+                      </Col>
+                    </Row>
+                  )}
+                </div>
               ))}
             </div>
           </Col>
@@ -260,7 +528,13 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
 
         {/* After Last Deadline */}
         <Card class="mb-3">
-          <Card.Header>After Last Deadline</Card.Header>
+          <Card.Header>
+            <div>
+              After Last Deadline
+              <br />
+              <small class="text-muted">{getLastDeadlineText()}</small>
+            </div>
+          </Card.Header>
           <Card.Body>
             <Row class="mb-3">
               <Col md={6}>
@@ -274,8 +548,7 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
               <Col md={6}>
                 <Form.Group>
                   <div class="d-flex align-items-center mb-2">
-                    <Form.Label class="mb-0 me-2">Credit</Form.Label>
-                    <TogglePill
+                    <TriStateCheckbox
                       control={control}
                       name={`${namePrefix}.afterLastDeadline.creditEnabled`}
                       disabled={!dateControlEnabled || !allowSubmissions}
@@ -286,7 +559,9 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
                             ? 'Enable Allow Submissions first'
                             : undefined
                       }
+                      class="me-2"
                     />
+                    <Form.Label class="mb-0">Credit</Form.Label>
                   </div>
                   <InputGroup>
                     <Form.Control
@@ -313,40 +588,58 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
           <Col md={6}>
             <Form.Group>
               <div class="d-flex align-items-center mb-2">
-                <Form.Label class="mb-0 me-2">Duration in minutes</Form.Label>
-                <TogglePill
+                <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.durationMinutesEnabled`}
                   disabled={!dateControlEnabled}
                   disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  class="me-2"
                 />
+                <Form.Label class="mb-0">Time limit</Form.Label>
               </div>
-              <Form.Control
-                type="number"
-                placeholder="Duration in minutes"
-                min="1"
-                disabled={!dateControlEnabled || !durationMinutesEnabled}
-                {...control.register(`${namePrefix}.durationMinutes`, { valueAsNumber: true })}
-              />
+              <InputGroup>
+                <Form.Control
+                  type="number"
+                  placeholder="Duration in minutes"
+                  min="1"
+                  disabled={!dateControlEnabled || !durationMinutesEnabled}
+                  {...control.register(`${namePrefix}.durationMinutes`, { valueAsNumber: true })}
+                />
+                <InputGroup.Text>minutes</InputGroup.Text>
+              </InputGroup>
+              <Form.Text class="text-muted">
+                If this is a timed assessment, once students start it, they have this long to finish
+                it.
+              </Form.Text>
             </Form.Group>
           </Col>
           <Col md={6}>
             <Form.Group>
               <div class="d-flex align-items-center mb-2">
-                <Form.Label class="mb-0 me-2">Password</Form.Label>
-                <TogglePill
+                <TriStateCheckbox
                   control={control}
                   name={`${namePrefix}.passwordEnabled`}
                   disabled={!dateControlEnabled}
                   disabledReason={!dateControlEnabled ? 'Enable Date Control first' : undefined}
+                  class="me-2"
                 />
+                <Form.Label class="mb-0">Password</Form.Label>
               </div>
-              <Form.Control
-                type="password"
-                placeholder="Password"
-                disabled={!dateControlEnabled || !passwordEnabled}
-                {...control.register(`${namePrefix}.password`)}
-              />
+              <InputGroup>
+                <Form.Control
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Password"
+                  disabled={!dateControlEnabled || !passwordEnabled}
+                  {...control.register(`${namePrefix}.password`)}
+                />
+                <Button
+                  variant="outline-secondary"
+                  disabled={!dateControlEnabled || !passwordEnabled}
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <i class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+                </Button>
+              </InputGroup>
             </Form.Group>
           </Col>
         </Row>

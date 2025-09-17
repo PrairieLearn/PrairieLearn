@@ -1,7 +1,7 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
 import { type Control, useFieldArray, useWatch } from 'react-hook-form';
 
-import { TogglePill } from './TogglePill.js';
+import { TriStateCheckbox } from './TriStateCheckbox.js';
 import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
@@ -32,8 +32,8 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <span class="me-2">PrairieTest Control</span>
-          <TogglePill control={control} name={`${namePrefix}.enabled`} />
+          <TriStateCheckbox control={control} name={`${namePrefix}.enabled`} class="me-2" />
+          <span>PrairieTest Control</span>
         </div>
       </Card.Header>
       <Card.Body>
@@ -85,9 +85,10 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
                     variant="outline-danger"
                     class="w-100"
                     disabled={!enabled}
+                    title="Remove exam"
                     onClick={() => removeExam(index)}
                   >
-                    Remove
+                    ✕
                   </Button>
                 </Col>
               </Row>
