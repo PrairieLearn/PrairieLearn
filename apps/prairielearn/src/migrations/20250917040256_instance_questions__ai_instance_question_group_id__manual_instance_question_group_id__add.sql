@@ -8,10 +8,10 @@ ALTER TABLE instance_questions
 ADD CONSTRAINT instance_questions_ai_group_has_same_aq_id_fkey FOREIGN KEY (
   assessment_question_id,
   ai_instance_question_group_id
-) REFERENCES instance_question_groups (assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL;
+) REFERENCES instance_question_groups (assessment_question_id, id) ON UPDATE NO ACTION ON DELETE NO ACTION;
 
 ALTER TABLE instance_questions
 ADD CONSTRAINT instance_questions_manual_group_has_same_aq_id_fkey FOREIGN KEY (
   assessment_question_id,
   manual_instance_question_group_id
-) REFERENCES instance_question_groups (assessment_question_id, id) ON UPDATE CASCADE ON DELETE SET NULL;
+) REFERENCES instance_question_groups (assessment_question_id, id) ON UPDATE NO ACTION ON DELETE NO ACTION;
