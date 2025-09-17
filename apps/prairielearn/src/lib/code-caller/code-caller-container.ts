@@ -14,10 +14,10 @@ import * as bindMount from '@prairielearn/bind-mount';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import { instrumented } from '@prairielearn/opentelemetry';
+import { withResolvers } from '@prairielearn/promise-with-resolvers';
 
 import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
-import { deferredPromise } from '../deferred.js';
 
 import {
   type CallType,
@@ -277,12 +277,12 @@ export class CodeCallerContainer implements CodeCaller {
     this.outputStderr = [];
     this.outputBoth = '';
 
-    const deferred = deferredPromise<CodeCallerResult>();
+    const promise = withResolvers<CodeCallerResult>();
     this.callback = (err, result, output) => {
       if (err) {
-        deferred.reject(err);
+        promise.reject(err);
       } else {
-        deferred.resolve({ result, output: output ?? '' });
+        promise.resolve({ result, output: output ?? '' });
       }
     };
 
@@ -306,7 +306,7 @@ export class CodeCallerContainer implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise;
+    return promise.promise;
   }
 
   async restart() {

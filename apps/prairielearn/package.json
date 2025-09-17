@@ -53,6 +53,7 @@
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/postgres-tools": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
+    "@prairielearn/promise-with-resolvers": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
     "@prairielearn/session": "workspace:^",

@@ -8,9 +8,9 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
+import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import { run } from '@prairielearn/run';
 
-import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 import { assertNever } from '../types.js';
 
@@ -241,12 +241,12 @@ export class CodeCallerNative implements CodeCaller {
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
-    const deferred = deferredPromise<CodeCallerResult>();
+    const promise = withResolvers<CodeCallerResult>();
     this.callback = (err, data, output) => {
       if (err) {
-        deferred.reject(err);
+        promise.reject(err);
       } else {
-        deferred.resolve({ result: data, output: output ?? '' });
+        promise.resolve({ result: data, output: output ?? '' });
       }
     };
 
@@ -272,7 +272,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise;
+    return promise.promise;
   }
 
   /**

@@ -13,12 +13,12 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
-import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
 import { gradingJobStatusUpdated } from './externalGradingSocket.js';
@@ -26,7 +26,7 @@ import { gradingJobStatusUpdated } from './externalGradingSocket.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const abortController = new AbortController();
-const processingFinished = deferredPromise();
+const processingFinished = withResolvers();
 
 export async function init() {
   // If we're not configured to use AWS, don't try to do anything here

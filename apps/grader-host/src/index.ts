@@ -20,13 +20,13 @@ import z from 'zod';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { withResolvers } from '@prairielearn/promise-with-resolvers';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './lib/aws.js';
 import { config, loadConfig } from './lib/config.js';
-import { deferredPromise } from './lib/deferred.js';
 import * as healthCheck from './lib/healthCheck.js';
 import { type WinstonBufferedLogger, makeJobLogger } from './lib/jobLogger.js';
 import * as lifecycle from './lib/lifecycle.js';
@@ -466,10 +466,10 @@ async function runJob(
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
 
-  const timeoutDeferredPromise = deferredPromise<never>();
+  const timeoutPromise = withResolvers<never>();
   const jobTimeoutId = setTimeout(() => {
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-    timeoutDeferredPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
+    timeoutPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
   }, jobTimeout * 1000);
 
   const task = (async () => {
@@ -602,7 +602,7 @@ async function runJob(
       return results;
     });
 
-  return await Promise.race([task, timeoutDeferredPromise.promise]);
+  return await Promise.race([task, timeoutPromise.promise]);
 }
 
 async function uploadResults(context: Context, results: GradingResults) {
