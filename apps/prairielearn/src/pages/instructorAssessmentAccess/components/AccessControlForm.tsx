@@ -1,6 +1,6 @@
 import { useState } from 'preact/compat';
 import { Accordion, Button, Card, Form } from 'react-bootstrap';
-import { useFieldArray, useForm } from 'react-hook-form';
+import { type Control, useFieldArray, useForm } from 'react-hook-form';
 
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
@@ -8,11 +8,7 @@ import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
 import { OverrideRulesForm } from './OverrideRulesForm.js';
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
-
-interface AccessControlFormData {
-  mainRule: AccessControlJson;
-  overrides: AccessControlJson[];
-}
+import type { AccessControlFormData } from './types.js';
 
 interface AccessControlFormProps {
   initialData?: AccessControlJson[];
@@ -28,28 +24,7 @@ export function AccessControlForm({
   const [activeKey, setActiveKey] = useState<string>('main-rule');
 
   // Separate main rule from overrides
-  const mainRule = initialData[0] || {
-    enabled: true,
-    blockAccess: false,
-    listBeforeRelease: true,
-    dateControl: {
-      enabled: true,
-      releaseDateEnabled: false,
-      dueDateEnabled: false,
-      earlyDeadlinesEnabled: false,
-      lateDeadlinesEnabled: false,
-      durationMinutesEnabled: false,
-      passwordEnabled: false,
-    },
-    prairieTestControl: {
-      enabled: false,
-      exams: [],
-    },
-    afterComplete: {
-      hideQuestions: false,
-      hideScore: false,
-    },
-  };
+  const mainRule = initialData[0];
 
   const overrides = initialData.slice(1);
 
@@ -156,7 +131,7 @@ export function AccessControlForm({
   );
 }
 
-function MainRuleForm({ control }: { control: any }) {
+function MainRuleForm({ control }: { control: Control<AccessControlFormData> }) {
   return (
     <div>
       <Form.Group class="mb-3">

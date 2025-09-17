@@ -1,9 +1,11 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { useFieldArray } from 'react-hook-form';
+import { type Control, useFieldArray, useWatch } from 'react-hook-form';
+
+import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
-  control: any;
-  namePrefix: string;
+  control: Control<AccessControlFormData>;
+  namePrefix: 'mainRule.prairieTestControl' | `overrides.${number}.prairieTestControl`;
 }
 
 export function PrairieTestControlForm({ control, namePrefix }: PrairieTestControlFormProps) {
@@ -13,7 +15,12 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
     remove: removeExam,
   } = useFieldArray({
     control,
-    name: `${namePrefix}.exams`,
+    name: `${namePrefix}.exams` as const,
+  });
+
+  const enabled = useWatch({
+    control,
+    name: `${namePrefix}.enabled` as const,
   });
 
   const addExam = () => {
@@ -32,17 +39,12 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
       <Card.Body>
         <div class="d-flex justify-content-between align-items-center mb-3">
           <h6 class="mb-0">PrairieTest Exams</h6>
-          <Button
-            size="sm"
-            variant="outline-primary"
-            disabled={!control.watch(`${namePrefix}.enabled`)}
-            onClick={addExam}
-          >
+          <Button size="sm" variant="outline-primary" disabled={!enabled} onClick={addExam}>
             Add Exam
           </Button>
         </div>
 
-        {examFields.length === 0 && control.watch(`${namePrefix}.enabled`) && (
+        {examFields.length === 0 && enabled && (
           <div class="text-muted text-center py-3">
             No exams configured. Click "Add Exam" to get started.
           </div>
@@ -90,7 +92,7 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
           </Card>
         ))}
 
-        {!control.watch(`${namePrefix}.enabled`) && (
+        {!enabled && (
           <div class="text-muted text-center py-3">
             Enable PrairieTest Control to configure exam integrations.
           </div>

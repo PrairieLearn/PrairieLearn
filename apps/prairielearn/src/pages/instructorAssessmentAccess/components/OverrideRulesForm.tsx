@@ -1,8 +1,11 @@
 import { Badge, Button, Card, Col, Form, Row } from 'react-bootstrap';
+import { type Control, type FieldArrayWithId, useWatch } from 'react-hook-form';
+
+import type { AccessControlFormData } from './types.js';
 
 interface OverrideRulesFormProps {
-  control: any;
-  fields: any[];
+  control: Control<AccessControlFormData>;
+  fields: FieldArrayWithId<AccessControlFormData, 'overrides', 'id'>[];
   onAdd: () => void;
   onRemove: (index: number) => void;
 }
@@ -10,6 +13,13 @@ interface OverrideRulesFormProps {
 export function OverrideRulesForm({ control, fields, onAdd, onRemove }: OverrideRulesFormProps) {
   // Note: Target management is simplified for this implementation
   // In a full implementation, you'd need to manage targets per override rule
+
+  // Watch the entire overrides array to get current values for display
+  const watchedOverrides = useWatch({
+    control,
+    name: 'overrides',
+    defaultValue: [],
+  });
 
   return (
     <div>
@@ -36,12 +46,12 @@ export function OverrideRulesForm({ control, fields, onAdd, onRemove }: Override
             <div>
               <strong>Override Rule {index + 1}</strong>
               <div class="mt-1">
-                {control.watch(`overrides.${index}.enabled`) ? (
+                {watchedOverrides[index]?.enabled ? (
                   <Badge bg="success">Enabled</Badge>
                 ) : (
                   <Badge bg="secondary">Disabled</Badge>
                 )}
-                {control.watch(`overrides.${index}.blockAccess`) && (
+                {watchedOverrides[index]?.blockAccess && (
                   <Badge bg="danger" class="ms-1">
                     Blocks Access
                   </Badge>

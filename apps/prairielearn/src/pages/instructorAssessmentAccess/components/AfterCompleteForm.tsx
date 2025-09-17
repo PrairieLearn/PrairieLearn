@@ -1,8 +1,11 @@
 import { Card, Col, Form, Row } from 'react-bootstrap';
+import { type Control } from 'react-hook-form';
+
+import type { AccessControlFormData } from './types.js';
 
 interface AfterCompleteFormProps {
-  control: any;
-  namePrefix: string;
+  control: Control<AccessControlFormData>;
+  namePrefix: 'mainRule.afterComplete' | `overrides.${number}.afterComplete`;
 }
 
 export function AfterCompleteForm({ control, namePrefix }: AfterCompleteFormProps) {

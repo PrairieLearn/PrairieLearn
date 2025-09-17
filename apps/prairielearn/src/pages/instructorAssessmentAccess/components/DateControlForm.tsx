@@ -1,9 +1,11 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { useFieldArray } from 'react-hook-form';
+import { type Control, useFieldArray, useWatch } from 'react-hook-form';
+
+import type { AccessControlFormData } from './types.js';
 
 interface DateControlFormProps {
-  control: any;
-  namePrefix: string;
+  control: Control<AccessControlFormData>;
+  namePrefix: 'mainRule.dateControl' | `overrides.${number}.dateControl`;
 }
 
 export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
@@ -23,6 +25,16 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
   } = useFieldArray({
     control,
     name: `${namePrefix}.lateDeadlines`,
+  });
+
+  const earlyDeadlinesEnabled = useWatch({
+    control,
+    name: `${namePrefix}.earlyDeadlinesEnabled`,
+  });
+
+  const lateDeadlinesEnabled = useWatch({
+    control,
+    name: `${namePrefix}.lateDeadlinesEnabled`,
   });
 
   const addEarlyDeadline = () => {
@@ -95,7 +107,7 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
             <Button
               size="sm"
               variant="outline-primary"
-              disabled={!control.watch(`${namePrefix}.earlyDeadlinesEnabled`)}
+              disabled={!earlyDeadlinesEnabled}
               onClick={addEarlyDeadline}
             >
               Add Early Deadline
@@ -146,7 +158,7 @@ export function DateControlForm({ control, namePrefix }: DateControlFormProps) {
             <Button
               size="sm"
               variant="outline-primary"
-              disabled={!control.watch(`${namePrefix}.lateDeadlinesEnabled`)}
+              disabled={!lateDeadlinesEnabled}
               onClick={addLateDeadline}
             >
               Add Late Deadline
