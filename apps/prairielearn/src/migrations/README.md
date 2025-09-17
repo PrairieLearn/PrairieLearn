@@ -83,7 +83,8 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 - Second PR: Remove old column
   - Update all reads to read from the new column
   - Update all code to not write the old column
-  - Remove the old column from the zod schema
+  - Mark the old column in the zod schema as `z.any()`
 
 - Third PR: Finalize
   - Remove the old column from the database
+  - Remove the old column from the zod schema
