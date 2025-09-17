@@ -71,16 +71,7 @@ export const QuestionAuthorJsonSchema = z
   .strict()
   .describe(
     'An author (individual person, or staff of a course of origin) credited with creating a question.',
-  )
-  .superRefine((a, ctx) => {
-    if (!a.email && !a.orcid && !a.originCourse) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'At least one of "email", "orcid", or "originCourse" is required for authors.',
-        path: [],
-      });
-    }
-  });
+  );
 
 export const WorkspaceOptionsJsonSchema = z
   .object({
