@@ -52,6 +52,7 @@ export async function sync(
         id: null,
       };
 
+      // TODO: Batch lookup
       if (author.originCourse) {
         let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
         if (originCourseID == null) {
@@ -73,7 +74,9 @@ export async function sync(
   const authorsForDB = {
     authors: JSON.stringify(Array.from(uniqueAuthors.keys()).map((a) => JSON.parse(a))),
   };
+
   // Insert all unique authors
+  // In the SQL, we ensure that only non-existing authors are actually, so keeping the entire list is fine here
   await sqldb.execute(sql.insert_authors, authorsForDB);
 
   // Re-load authors from DB (including IDs) and build new map directly from JSONAuthor to ID
