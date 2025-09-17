@@ -1,13 +1,13 @@
 import type { ComponentType } from 'preact';
 
-import { type DeferredPromise, deferredPromise } from './deferred-promise.js';
+import { type PromiseWithResolvers, withResolvers } from '@prairielearn/utils';
 
-type AugmentedDeferredPromise<T> = DeferredPromise<T> & {
+type AugmentedPromiseWithResolvers<T> = PromiseWithResolvers<T> & {
   resolved: boolean;
 };
 
 export class HydratedComponentsRegistry {
-  private components: Record<string, AugmentedDeferredPromise<ComponentType<any>>> = {};
+  private components: Record<string, AugmentedPromiseWithResolvers<ComponentType<any>>> = {};
 
   setComponent(id: string, component: ComponentType<any>) {
     if (this.components[id]?.resolved) {
@@ -15,7 +15,7 @@ export class HydratedComponentsRegistry {
     }
 
     if (!this.components[id]) {
-      this.components[id] = { ...deferredPromise(), resolved: false };
+      this.components[id] = { ...withResolvers<ComponentType<any>>(), resolved: false };
     }
     this.components[id].resolve(component);
     this.components[id].resolved = true;
@@ -24,10 +24,7 @@ export class HydratedComponentsRegistry {
   getComponent(id: string): Promise<ComponentType<any>> {
     if (!this.components[id]) {
       // This promise will be resolved later when the component is registered via `setFragment`.
-      this.components[id] = {
-        ...deferredPromise(),
-        resolved: false,
-      };
+      this.components[id] = { ...withResolvers<ComponentType<any>>(), resolved: false };
     }
 
     return this.components[id].promise;
