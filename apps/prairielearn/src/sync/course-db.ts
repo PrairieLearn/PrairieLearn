@@ -1365,6 +1365,10 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.beforeDateEnabled !== true) {
+    warnings.push('"selfEnrollment.beforeDateEnabled" is not configurable yet.');
+  }
+
   if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
     warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
   }

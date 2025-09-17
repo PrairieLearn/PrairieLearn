@@ -196,6 +196,7 @@ describe('getCourseInstanceContext', () => {
       self_enrollment_enabled: true,
       self_enrollment_requires_secret_link: false,
       self_enrollment_enabled_before_date: null,
+      self_enrollment_enabled_before_date_enabled: false,
       sync_errors: null,
       sync_job_sequence_id: null,
       sync_warnings: null,

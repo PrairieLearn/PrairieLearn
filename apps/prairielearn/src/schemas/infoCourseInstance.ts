@@ -58,9 +58,16 @@ export const CourseInstanceJsonSchema = z
         beforeDate: z
           .string()
           .describe(
-            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on beforeDateEnabled property.',
           )
           .optional(),
+        beforeDateEnabled: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.',
+          )
+          .optional()
+          .default(false),
         requiresSecretLink: z
           .boolean()
           .describe(

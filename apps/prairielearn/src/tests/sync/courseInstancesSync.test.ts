@@ -558,6 +558,7 @@ describe('Course instance syncing', () => {
       db: {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: Date | null;
+        self_enrollment_enabled_before_date_enabled: boolean;
         self_enrollment_requires_secret_link: boolean;
       } | null;
       errors: string[];
@@ -570,6 +571,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -583,6 +585,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -591,10 +594,12 @@ describe('Course instance syncing', () => {
         json: {
           beforeDate: jsonDate,
           requiresSecretLink: true,
+          beforeDateEnabled: true,
         },
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_enabled_before_date_enabled: true,
           self_enrollment_requires_secret_link: true,
         },
         errors: [],
@@ -604,6 +609,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_requires_secret_link: false,
         },
         errors: [],
@@ -615,6 +621,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_requires_secret_link: false,
         },
         errors: [],
@@ -626,6 +633,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_requires_secret_link: false,
         },
         errors: [],
@@ -672,6 +680,8 @@ describe('Course instance syncing', () => {
             syncedCourseInstance.self_enrollment_enabled_before_date,
           self_enrollment_requires_secret_link:
             syncedCourseInstance.self_enrollment_requires_secret_link,
+          self_enrollment_enabled_before_date_enabled:
+            syncedCourseInstance.self_enrollment_enabled_before_date_enabled,
         };
 
         assert.deepEqual(result, db);

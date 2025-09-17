@@ -63,6 +63,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     access_rules: accessRules,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
+    self_enrollment_enabled_before_date_enabled: courseInstance.selfEnrollment.beforeDateEnabled,
     self_enrollment_requires_secret_link: courseInstance.selfEnrollment.requiresSecretLink,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     comment: JSON.stringify(courseInstance.comment),
