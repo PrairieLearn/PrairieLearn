@@ -133,6 +133,9 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.randomize_distractors_when_ordered = pl.get_boolean_attrib(
+            html_element, "randomize-distractors-when-ordered", False
+        )
 
         self.answer_options = collect_answer_options(html_element, self.grading_method)
         self.correct_answers = [
@@ -172,6 +175,7 @@ class OrderBlocksOptions:
             "format",
             "code-language",
             "allow-blank",
+            "randomize-distractors-when-ordered",
         ]
         pl.check_attribs(
             html_element,

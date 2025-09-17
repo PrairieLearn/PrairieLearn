@@ -134,6 +134,36 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         random.shuffle(all_blocks)
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ORDERED:
         all_blocks.sort(key=lambda a: a["index"])
+
+        if order_blocks_options.randomize_distractors_when_ordered:
+            # Find groups where a correct answer has distractors and shuffle each group
+            i = 0
+            while i < len(all_blocks):
+                current_block = all_blocks[i]
+
+                # Check if this correct answer has distractors
+                if not current_block.get("distractor_for"):
+                    # Look ahead to see if the next blocks are distractors for this correct answer
+                    tag = current_block["tag"]
+                    group_blocks = [current_block]
+                    j = i + 1
+
+                    # Collect all consecutive distractors for this tag
+                    while j < len(all_blocks) and all_blocks[j].get("distractor_for") == tag:
+                        group_blocks.append(all_blocks[j])
+                        j += 1
+
+                    # If we found distractors, shuffle the entire group (correct + distractors)
+                    if len(group_blocks) > 1:
+                        random.shuffle(group_blocks)
+                        # Put the shuffled group back
+                        for k, block in enumerate(group_blocks):
+                            all_blocks[i + k] = block
+
+                    # Move to the next block after this group
+                    i = j
+                else:
+                    i += 1
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
