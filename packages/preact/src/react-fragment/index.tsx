@@ -1,22 +1,15 @@
-/**
- * This file, if imported, will register a selector observer that will hydrate
- * React fragments on the client.
- */
-if (process.env.NODE_ENV !== 'production') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require('preact/debug');
-} else {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require('preact/devtools');
-}
-
 import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { hydrate } from '@prairielearn/preact-cjs';
 
-import { registry } from './client.js';
+import { ReactFragmentsRegistry } from './registry.js';
+
+export const registry = new ReactFragmentsRegistry();
+
+// This file, if imported, will register a selector observer that will hydrate
+// React fragments on the client.
 
 onDocumentReady(() => {
   observe('.js-react-fragment', {
