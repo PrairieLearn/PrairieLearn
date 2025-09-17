@@ -212,7 +212,7 @@ export function RubricSettings({
       <div id="rubric-setting" class="js-collapsible-card-body p-2 collapse">
         {/* Settings */}
         <div>
-          {!!assessmentQuestion.max_auto_points && (
+          {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (
             <>
               <div class="row">
                 <div class="col-12 col-lg-6">
