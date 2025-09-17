@@ -14,7 +14,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
