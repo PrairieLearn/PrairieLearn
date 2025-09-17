@@ -11,7 +11,7 @@ import { HydratedComponentsRegistry } from './registry.js';
 // This file, if imported, will register a selector observer that will hydrate
 // registered components on the client.
 
-export const registry = new HydratedComponentsRegistry();
+const registry = new HydratedComponentsRegistry();
 
 export function registerHydratedComponent(component: ComponentType<any>, nameOverride?: string) {
   // Each React component that will be hydrated on the page must be registered.
