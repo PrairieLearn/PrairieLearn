@@ -280,7 +280,7 @@ export async function aiInstanceQuestionGrouping({
         return false;
       }
 
-      const submissionIsLikelyCorrect = await aiEvaluateStudentResponse({
+      const responseIsLikelyCorrect = await aiEvaluateStudentResponse({
         question,
         question_answer: answerHtml,
         instance_question,
@@ -291,7 +291,7 @@ export async function aiInstanceQuestionGrouping({
 
       await updateAiInstanceQuestionGroup({
         instance_question_id: instance_question.id,
-        ai_instance_question_group_id: submissionIsLikelyCorrect
+        ai_instance_question_group_id: responseIsLikelyCorrect
           ? likelyCorrectGroup.id
           : reviewNeededGroup.id,
       });
