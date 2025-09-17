@@ -132,6 +132,16 @@ export function RubricSettings({
     });
   };
 
+  const onCancel = () => {
+    setRubricItems(rubricItemDataMerged);
+    setReplaceAutoPoints(rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points);
+    setStartingPoints(rubricData?.starting_points ?? 0);
+    setMinPoints(rubricData?.min_points ?? 0);
+    setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
+    setSettingsError(null);
+    setEditMode(false);
+  };
+
   const submitSettings = async (use_rubric: boolean) => {
     // Performs validation on the required inputs
     if (use_rubric) {
@@ -202,7 +212,7 @@ export function RubricSettings({
       <div id="rubric-setting" class="js-collapsible-card-body show p-2">
         {/* Settings */}
         <div>
-          {assessmentQuestion.max_auto_points !== null && (
+          {!!assessmentQuestion.max_auto_points && (
             <>
               <div class="row">
                 <div class="col-12 col-lg-6">
@@ -412,21 +422,7 @@ export function RubricSettings({
             </button>
           ) : (
             <>
-              <button
-                type="button"
-                class="btn btn-secondary me-2"
-                onClick={() => {
-                  setRubricItems(rubricItemDataMerged);
-                  setReplaceAutoPoints(
-                    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
-                  );
-                  setStartingPoints(rubricData?.starting_points ?? 0);
-                  setMinPoints(rubricData?.min_points ?? 0);
-                  setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
-                  setSettingsError(null);
-                  setEditMode(false);
-                }}
-              >
+              <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
                 Cancel
               </button>
               <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
@@ -611,7 +607,7 @@ export function RubricRow({
         </td>
       ) : (
         <td class="text-nowrap align-middle">
-          {item.num_submissions === undefined
+          {item.num_submissions == null
             ? 'New'
             : item.num_submissions === 0
               ? 'No'
