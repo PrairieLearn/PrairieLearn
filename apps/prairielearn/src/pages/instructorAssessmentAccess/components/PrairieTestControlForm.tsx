@@ -1,6 +1,7 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
 import { type Control, useFieldArray, useWatch } from 'react-hook-form';
 
+import { TogglePill } from './TogglePill.js';
 import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
@@ -30,11 +31,10 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
   return (
     <Card class="mb-4">
       <Card.Header>
-        <Form.Check
-          type="checkbox"
-          label="Enable PrairieTest Control"
-          {...control.register(`${namePrefix}.enabled`)}
-        />
+        <div class="d-flex align-items-center">
+          <span class="me-2">PrairieTest Control</span>
+          <TogglePill control={control} name={`${namePrefix}.enabled`} />
+        </div>
       </Card.Header>
       <Card.Body>
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -60,6 +60,7 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
                     <Form.Control
                       type="text"
                       placeholder="Enter PrairieTest exam UUID (e.g., 11e89892-3eff-4d7f-90a2-221372f14e5c)"
+                      disabled={!enabled}
                       {...control.register(`${namePrefix}.exams.${index}.examUuid`)}
                     />
                     <Form.Text class="text-muted">
@@ -73,6 +74,7 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
                     <Form.Check
                       type="checkbox"
                       label="Read Only"
+                      disabled={!enabled}
                       {...control.register(`${namePrefix}.exams.${index}.readOnly`)}
                     />
                   </Form.Group>
@@ -82,6 +84,7 @@ export function PrairieTestControlForm({ control, namePrefix }: PrairieTestContr
                     size="sm"
                     variant="outline-danger"
                     class="w-100"
+                    disabled={!enabled}
                     onClick={() => removeExam(index)}
                   >
                     Remove

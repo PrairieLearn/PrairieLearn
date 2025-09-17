@@ -74,9 +74,10 @@ export function OverrideRulesForm({ control, fields, onAdd, onRemove }: Override
               <Col md={6}>
                 <Form.Check
                   type="checkbox"
-                  label="Block access (deny access if this rule applies)"
+                  label="Block access"
                   {...control.register(`overrides.${index}.blockAccess`)}
                 />
+                <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
               </Col>
             </Row>
 
@@ -98,9 +99,10 @@ export function OverrideRulesForm({ control, fields, onAdd, onRemove }: Override
             <div class="mb-3">
               <Form.Check
                 type="checkbox"
-                label="List before release (inherited from main rule)"
+                label="List before release"
                 {...control.register(`overrides.${index}.listBeforeRelease`)}
               />
+              <Form.Text class="text-muted">Inherited from main rule</Form.Text>
             </div>
 
             {/* Note about inheritance */}

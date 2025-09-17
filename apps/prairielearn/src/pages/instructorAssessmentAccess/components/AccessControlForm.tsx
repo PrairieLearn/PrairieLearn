@@ -145,17 +145,21 @@ function MainRuleForm({ control }: { control: Control<AccessControlFormData> }) 
       <Form.Group class="mb-3">
         <Form.Check
           type="checkbox"
-          label="Block access (deny access if this rule applies)"
+          label="Block access"
           {...control.register('mainRule.blockAccess')}
         />
+        <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
       </Form.Group>
 
       <Form.Group class="mb-3">
         <Form.Check
           type="checkbox"
-          label="List before release (students can see title and click into assessment before release)"
+          label="List before release"
           {...control.register('mainRule.listBeforeRelease')}
         />
+        <Form.Text class="text-muted">
+          Students can see the title and click into assessment before release
+        </Form.Text>
       </Form.Group>
 
       <DateControlForm control={control} namePrefix="mainRule.dateControl" />
