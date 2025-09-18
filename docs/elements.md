@@ -970,11 +970,12 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `correct`             | boolean            | true    | Specifies whether the answer block is a correct answer to the question (and should be moved to the solution area).                                                                                                                                                                                                                                                     |
 | `ranking`             | positive integer   | —       | This attribute is used when `grading-method="ranking"` and specifies the correct ranking of the answer block. For example, a block with ranking `2` should be placed below a block with ranking `1`. The same ranking can be used when the order of certain blocks is not relevant. Blocks that can be placed at any position should not have the `ranking` attribute. |
 | `indent`              | integer in [-1, 4] | -1      | Specifies the correct indentation level of the block. For example, a value of `2` means the block should be indented twice. A value of `-1` means the indention of the block does not matter. This attribute can only be used when `indentation="true"`.                                                                                                               |
-| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"`.                                           |
+| `depends`\*           | string             | —       | Optional attribute when `grading-method="dag"`. Used to specify the directed acyclic graph relation among the blocks, with blocks being referred to by their `tag`. For example, if `depends="1,3"` for a particular block, it must appear later in the solution than the block with `tag="1"` and the block with `tag="3"` See [Advanced DAG Grading Method Usage](#Advanced DAG Grading Method Usage).                                           |
 | `tag`\*               | string             | —       | Optional attribute. Used to identify the block when declaring which other blocks depend on it or are a distractor for it.                                                                                                                                                                                                                                              |
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                        |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                  |
 | `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                               |
+| `final`\*           | boolean             |  —      | Required attribute when `grading-method="dag"` and either the XOR, or Exclusive Path operator are used in a depends attribtute. Only one tag is allowed to be the final tag in a solution. For example, if a tag contains `final = true` it must be the final block in a correct ordering
 
 > **_NOTE_:** Above attributes indicated with a \* can be applied to `pl-block-group` as well.
 
@@ -995,9 +996,63 @@ Different ordering of the blocks in the source area defined via the attribute `s
 - `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
+
+### Advanced DAG Grading Method Usage
+---
+`pl-order-blocks` offers a more advanced selection of operators to the DAG grading method sepcifally within the depends attribute to write questions that manipulate the DAG structure used for grading. This can allow for multiple correct solutions taken from the same bank of `pl-answer` tags. This can be useful for concepts that don't have a one correct solution model e.g. math proofs, programming, shell commands, etc.
+
+
+#### Depends Attribute Operators
+| Notation              | Name            | Use |
+| --------------------- | ------------------ | --- |
+| `,`                   | AND                |  Allows for an AND relationship to exist between two dependencies where BOTH must be before the block that depends on them but order doesn't matter   | 
+| `\|`                  | XOR                | Allows for an XOR relationship to exist between two block dependencies where either one dependency must come before the dependent block or the other. This will generate two seperate DAGS to be graded against. This means that if another XOR operator is used in a prior dependency it will exponentially increase the amount of orderings created.     |
+| `\w+:`                | Named Path     | This   |
+
+---
+
+#### XOR Example Usage
+
+```html title="sum-question.html"
+Construct a python function that computes the sum of two numbers using the plus equals operator. There are
+multiple correct solutions and not every correct solution requires every block to be used.
+<pl-order-blocks answers-name="python-plus-equals" grading-method="dag" indentation="true" max-indent="2" format="code"
+  code-language="python" feedback="first-wrong-verbose" partial-credit="lcs">
+  <pl-answer correct="true" tag="1" depends="" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" tag="3" depends="2" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" tag="4" depends="2" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" tag="5" depends="2" indent="1">sum += first + second</pl-answer>
+  <pl-answer correct="true" tag="6" depends="3,4|5" indent="1" final="true">return sum</pl-answer>
+</pl-order-blocks>
+
+```
+> Orderings:  **[1,2,(3,4),6]**, **[1,2,5,6]**
+
+In the above example we can read tag 6's depends attribute`3,4|5` as `6 DEPENDS ON 3 AND 4 XOR 5` This notation allows for correct tags to be left out of a correct solution. This can be utilized to dictate same foundational blocks each answer depends on by, in the previous example, keeping the relative order of function definition, variable defination, and finally a return statement the same across mulitple solutions while letting the user alter the logic used in-between. 
+
+When the splitting algorithm encounters a XOR operator it generates `n+1` more orderings where `n` is the amount of XOR operators present on the depends attribute. The splitting happens from the bottom up until it reaches a block with no dependencies. 
+
+#### Named Path Example Usage
+```html title="git-question.html"
+<pl-order-blocks answers-name="git-commands" grading-method="dag" indentation="false"
+    feedback="first-wrong-verbose" format="code" code-language="bash">
+    <pl-answer correct="true" tag="1" depends="">git remote remove origin</pl-answer>
+    <pl-answer correct="true" tag="2" depends="">git remote rename origin old-origin</pl-answer>
+    <pl-answer correct="true" tag="3" depends="">git remote add old-origin &lt;url2&gt;</pl-answer>
+    <pl-answer correct="true" tag="4" depends="path1: 2|path2: 1">git remote add origin &lt;url1&gt;</pl-answer>
+    <pl-answer correct="true" tag="5" depends="path1: 4|path2: 3,4" final="true">git push -u origin
+        --all</pl-answer>
+</pl-order-blocks>
+```
+> Orderings: **[2,4,5]**, **[1,(3,4),5]**
+
+In this example we need to discard parsed orderings that would be invalid solutions to the question. The algorithm is unable to distinguish that the splits on tag 4 and tag 5 are related and they shouldn't be intermixed with the other possible orderings. By naming a path the algorithm can "throw away" any orderings where nodes have unmatching path names. The above question is impossible to write without using path names becuase it will generate invalid orderings, without them **[1,4,5]**, and **[2,(3,4)]** would be parsed as correct orderings, however, this would be incorrect in the context of the question.
+
 #### Example implementations
 
 - [element/orderBlocks]
+- [element/orderBlocksOptional]
 - [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
 - [demo/autograder/python/orderBlocksAddNumpy]
