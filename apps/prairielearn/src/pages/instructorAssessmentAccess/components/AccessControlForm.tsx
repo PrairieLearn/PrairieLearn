@@ -8,6 +8,7 @@ import {
   useWatch,
 } from 'react-hook-form';
 
+import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import type { AccessControlJson } from '../../../schemas/accessControl.js';
 
 import { AfterCompleteForm } from './AfterCompleteForm.js';
@@ -20,6 +21,8 @@ import type { AccessControlFormData } from './types.js';
 interface AccessControlFormProps {
   initialData?: AccessControlJson[];
   onSubmit: (data: AccessControlJson[]) => void;
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+  assessmentType?: 'Exam' | 'Homework';
 }
 
 const defaultInitialData: AccessControlJson[] = [];
@@ -27,6 +30,7 @@ const defaultInitialData: AccessControlJson[] = [];
 export function AccessControlForm({
   initialData = defaultInitialData,
   onSubmit,
+  courseInstance,
 }: AccessControlFormProps) {
   const [activeKey, setActiveKey] = useState<string>('main-rule');
 
@@ -88,7 +92,7 @@ export function AccessControlForm({
               </span>
             </Accordion.Header>
             <Accordion.Body>
-              <MainRuleForm control={control} trigger={trigger} />
+              <MainRuleForm control={control} trigger={trigger} courseInstance={courseInstance} />
             </Accordion.Body>
           </Accordion.Item>
 
@@ -143,9 +147,11 @@ export function AccessControlForm({
 function MainRuleForm({
   control,
   trigger,
+  courseInstance,
 }: {
   control: Control<AccessControlFormData>;
   trigger: UseFormTrigger<AccessControlFormData>;
+  courseInstance: StaffCourseInstanceContext['course_instance'];
 }) {
   // Watch the main rule enabled state
   const ruleEnabled = useWatch({
@@ -190,9 +196,6 @@ function MainRuleForm({
   // Check if PrairieTest-based release is available
   const hasPrairieTestRelease = prairieTestControlEnabled && (prairieTestExams?.length ?? 0) > 0;
 
-  // Determine if "List before release" should be disabled
-  const isListBeforeReleaseDisabled = !hasDateRelease && !hasPrairieTestRelease;
-
   return (
     <div>
       <Form.Group class="mb-3">
@@ -203,47 +206,52 @@ function MainRuleForm({
         />
       </Form.Group>
 
-      <Form.Group class="mb-3">
-        <Form.Check
-          type="checkbox"
-          label="Block access"
-          disabled={!ruleEnabled}
-          {...control.register('mainRule.blockAccess')}
-        />
-        <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
-      </Form.Group>
-
-      {!blockAccess && (
+      {ruleEnabled && (
         <>
           <Form.Group class="mb-3">
-            <div class="d-flex align-items-center mb-2">
-              <TriStateCheckbox
-                control={control}
-                name="mainRule.listBeforeRelease"
-                disabled={!ruleEnabled || isListBeforeReleaseDisabled}
-                disabledReason={
-                  !ruleEnabled
-                    ? 'Enable this access rule first'
-                    : isListBeforeReleaseDisabled
-                      ? 'Enable Date Control with Release Date or enable PrairieTest Control with exams'
-                      : undefined
-                }
-                class="me-2"
-              />
-              <span>List before release</span>
-            </div>
-            <Form.Text class="text-muted">
-              Students can see the title and click into assessment before release
-            </Form.Text>
+            <Form.Check
+              type="checkbox"
+              label="Block access"
+              {...control.register('mainRule.blockAccess')}
+            />
+            <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
           </Form.Group>
 
-          <DateControlForm control={control} trigger={trigger} ruleEnabled={ruleEnabled} />
-          <PrairieTestControlForm
-            control={control}
-            namePrefix="mainRule"
-            ruleEnabled={ruleEnabled}
-          />
-          <AfterCompleteForm control={control} namePrefix="mainRule" ruleEnabled={ruleEnabled} />
+          {!blockAccess && (
+            <>
+              {(hasDateRelease || hasPrairieTestRelease) && (
+                <Form.Group class="mb-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <TriStateCheckbox
+                      control={control}
+                      name="mainRule.listBeforeRelease"
+                      class="me-2"
+                    />
+                    <span>List before release</span>
+                  </div>
+                  <Form.Text class="text-muted">
+                    Students can see the title and click into assessment before release
+                  </Form.Text>
+                </Form.Group>
+              )}
+
+              <DateControlForm
+                control={control}
+                trigger={trigger}
+                courseInstance={courseInstance}
+              />
+              <PrairieTestControlForm
+                control={control}
+                namePrefix="mainRule"
+                ruleEnabled={ruleEnabled}
+              />
+              <AfterCompleteForm
+                control={control}
+                namePrefix="mainRule"
+                ruleEnabled={ruleEnabled}
+              />
+            </>
+          )}
         </>
       )}
     </div>

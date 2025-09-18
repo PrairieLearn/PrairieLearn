@@ -8,12 +8,14 @@ interface AfterCompleteFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: 'mainRule' | `overrides.${number}`;
   ruleEnabled?: boolean;
+  assessmentType?: 'Exam' | 'Homework';
 }
 
 export function AfterCompleteForm({
   control,
   namePrefix,
   ruleEnabled = true,
+  assessmentType,
 }: AfterCompleteFormProps) {
   const hideQuestions = useWatch({
     control,
@@ -101,6 +103,14 @@ export function AfterCompleteForm({
   const getCompletionCriteria = () => {
     const criteria: (string | string[])[] = [];
 
+    // Permanent criteria - always included
+    criteria.push('Assessment is manually closed by an instructor');
+
+    // Exam-specific permanent criteria
+    if (assessmentType === 'Exam') {
+      criteria.push('Exam assessments are auto-closed after 6 hours of inactivity');
+    }
+
     // Time limit (only if Date Control is enabled)
     if (dateControlEnabled && durationMinutesEnabled && durationMinutes) {
       criteria.push(`${durationMinutes} minutes after starting`);
@@ -141,16 +151,11 @@ export function AfterCompleteForm({
     return criteria;
   };
 
-  // Check if there are completion criteria by getting the explanation and checking if it has criteria
+  // Get completion criteria (always has permanent criteria)
   const criteria = getCompletionCriteria();
-  const defaultCriteria = [
-    "When the student's time limit is reached",
-    'After the due date/last deadline',
-    'When a PrairieTest exam ends',
-  ];
   const completionExplanation = (
     <ul>
-      {(criteria.length > 0 ? criteria : defaultCriteria).map((criterion) =>
+      {criteria.map((criterion) =>
         Array.isArray(criterion) ? (
           <ul key={criterion[0]}>
             {criterion.map((item) => (
@@ -163,7 +168,6 @@ export function AfterCompleteForm({
       )}
     </ul>
   );
-  const hasCompletion = criteria.length > 0;
   // Helper function to get the last deadline for validation
   const getLastDeadlineDate = (): string | null => {
     // Only consider dates if Date Control is enabled
@@ -210,6 +214,20 @@ export function AfterCompleteForm({
     }
   };
 
+  // Helper function to generate hide score explanation text
+  const getHideScoreText = () => {
+    if (!hideScore) return null;
+
+    const showEnabled = showAgainDateEnabledScore && showAgainDate;
+
+    if (showEnabled) {
+      const showDate = new Date(showAgainDate);
+      return `Score will be hidden after completion until ${showDate.toLocaleDateString()} at ${showDate.toLocaleTimeString()}.`;
+    } else {
+      return 'Score will be hidden after completion.';
+    }
+  };
+
   return (
     <Card class="mb-4">
       <Card.Header>
@@ -217,12 +235,6 @@ export function AfterCompleteForm({
           <h6 class="mb-0">After Completion Behavior</h6>
           <small class="text-muted">
             An assessment is complete when a student can no longer make attempts on it.{' '}
-            {!hasCompletion && (
-              <>
-                <i class="bi bi-exclamation-triangle-fill me-2" aria-hidden="true" />
-                <strong>No completion criteria configured.</strong>
-              </>
-            )}{' '}
             <OverlayTrigger
               trigger="click"
               placement="bottom"
@@ -242,7 +254,7 @@ export function AfterCompleteForm({
                   color: '#0d6efd',
                 }}
               >
-                What counts as completion?
+                How can this assessment be marked complete?
               </span>
             </OverlayTrigger>
           </small>
@@ -255,115 +267,109 @@ export function AfterCompleteForm({
             <Form.Check
               type="checkbox"
               label="Hide Questions After Completion"
-              disabled={!ruleEnabled || !hasCompletion}
+              disabled={!ruleEnabled}
               {...control.register(`${namePrefix}.afterComplete.hideQuestions`)}
             />
-            {getHideQuestionsText() && (
-              <Form.Text class="text-muted d-block mt-1">{getHideQuestionsText()}</Form.Text>
+            {hideQuestions ? (
+              getHideQuestionsText() && (
+                <Form.Text class="text-muted d-block mt-1">{getHideQuestionsText()}</Form.Text>
+              )
+            ) : (
+              <Form.Text class="text-muted d-block mt-1">
+                Questions will be visible after completion
+              </Form.Text>
             )}
           </Card.Header>
-          <Card.Body>
-            <Row class="mb-3">
-              <Col md={6}>
-                <Form.Group>
-                  <div class="d-flex align-items-center mb-2">
-                    <TriStateCheckbox
-                      control={control}
-                      name={`${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDateEnabled`}
-                      disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
-                      disabledReason={
-                        !ruleEnabled
-                          ? 'Enable this access rule first'
-                          : !hasCompletion
-                            ? 'Configure completion criteria first'
-                            : !hideQuestions
-                              ? 'Enable Hide Questions first'
-                              : undefined
-                      }
-                      class="me-2"
-                    />
-                    <Form.Label class="mb-0">Show Again Date</Form.Label>
-                  </div>
-                  <Form.Control
-                    type="datetime-local"
-                    placeholder="Show Again Date"
-                    disabled={
-                      !ruleEnabled ||
-                      !hasCompletion ||
-                      !hideQuestions ||
-                      !showAgainDateEnabledQuestions
-                    }
-                    {...control.register(
-                      `${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDate`,
-                      {
-                        validate: (value) => {
-                          if (!value) return true;
-                          const lastDeadline = getLastDeadlineDate();
-                          if (lastDeadline) {
-                            const showDate = new Date(value);
-                            const lastDate = new Date(lastDeadline);
-                            return (
-                              showDate > lastDate ||
-                              'Show Again Date must be after the last deadline'
-                            );
-                          }
-                          return true;
-                        },
-                      },
-                    )}
-                  />
-                </Form.Group>
-              </Col>
-              {showAgainDateEnabledQuestions && showAgainDate && (
+          {hideQuestions && (
+            <Card.Body>
+              <Row class="mb-3">
                 <Col md={6}>
                   <Form.Group>
                     <div class="d-flex align-items-center mb-2">
                       <TriStateCheckbox
                         control={control}
-                        name={`${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDateEnabled`}
-                        disabled={!ruleEnabled || !hasCompletion || !hideQuestions}
+                        name={`${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDateEnabled`}
+                        disabled={!ruleEnabled || !hideQuestions}
                         disabledReason={
                           !ruleEnabled
                             ? 'Enable this access rule first'
-                            : !hasCompletion
-                              ? 'Configure completion criteria first'
-                              : !hideQuestions
-                                ? 'Enable Hide Questions first'
-                                : undefined
+                            : !hideQuestions
+                              ? 'Enable Hide Questions first'
+                              : undefined
                         }
                         class="me-2"
                       />
-                      <Form.Label class="mb-0">Hide Again Date</Form.Label>
+                      <Form.Label class="mb-0">Show Again Date</Form.Label>
                     </div>
                     <Form.Control
                       type="datetime-local"
-                      placeholder="Hide Again Date"
-                      disabled={
-                        !ruleEnabled ||
-                        !hasCompletion ||
-                        !hideQuestions ||
-                        !hideAgainDateEnabledQuestions
-                      }
+                      placeholder="Show Again Date"
+                      disabled={!ruleEnabled || !hideQuestions || !showAgainDateEnabledQuestions}
                       {...control.register(
-                        `${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDate`,
+                        `${namePrefix}.afterComplete.hideQuestionsDateControl.showAgainDate`,
                         {
                           validate: (value) => {
-                            if (!value || !showAgainDate) return true;
-                            const hideDate = new Date(value);
-                            const showDate = new Date(showAgainDate);
-                            return (
-                              hideDate > showDate ||
-                              'Hide Again Date must be after the Show Again Date'
-                            );
+                            if (!value) return true;
+                            const lastDeadline = getLastDeadlineDate();
+                            if (lastDeadline) {
+                              const showDate = new Date(value);
+                              const lastDate = new Date(lastDeadline);
+                              return (
+                                showDate > lastDate ||
+                                'Show Again Date must be after the last deadline'
+                              );
+                            }
+                            return true;
                           },
                         },
                       )}
                     />
                   </Form.Group>
                 </Col>
-              )}
-            </Row>
-          </Card.Body>
+                {showAgainDateEnabledQuestions && showAgainDate && (
+                  <Col md={6}>
+                    <Form.Group>
+                      <div class="d-flex align-items-center mb-2">
+                        <TriStateCheckbox
+                          control={control}
+                          name={`${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDateEnabled`}
+                          disabled={!ruleEnabled || !hideQuestions}
+                          disabledReason={
+                            !ruleEnabled
+                              ? 'Enable this access rule first'
+                              : !hideQuestions
+                                ? 'Enable Hide Questions first'
+                                : undefined
+                          }
+                          class="me-2"
+                        />
+                        <Form.Label class="mb-0">Hide Again Date</Form.Label>
+                      </div>
+                      <Form.Control
+                        type="datetime-local"
+                        placeholder="Hide Again Date"
+                        disabled={!ruleEnabled || !hideQuestions || !hideAgainDateEnabledQuestions}
+                        {...control.register(
+                          `${namePrefix}.afterComplete.hideQuestionsDateControl.hideAgainDate`,
+                          {
+                            validate: (value) => {
+                              if (!value || !showAgainDate) return true;
+                              const hideDate = new Date(value);
+                              const showDate = new Date(showAgainDate);
+                              return (
+                                hideDate > showDate ||
+                                'Hide Again Date must be after the Show Again Date'
+                              );
+                            },
+                          },
+                        )}
+                      />
+                    </Form.Group>
+                  </Col>
+                )}
+              </Row>
+            </Card.Body>
+          )}
         </Card>
 
         {/* Hide Score */}
@@ -372,46 +378,53 @@ export function AfterCompleteForm({
             <Form.Check
               type="checkbox"
               label="Hide Score After Completion"
-              disabled={!ruleEnabled || !hasCompletion}
+              disabled={!ruleEnabled}
               {...control.register(`${namePrefix}.afterComplete.hideScore`)}
             />
+            {hideScore ? (
+              getHideScoreText() && (
+                <Form.Text class="text-muted d-block mt-1">{getHideScoreText()}</Form.Text>
+              )
+            ) : (
+              <Form.Text class="text-muted d-block mt-1">
+                Score will be visible after completion
+              </Form.Text>
+            )}
           </Card.Header>
-          <Card.Body>
-            <Row>
-              <Col md={6}>
-                <Form.Group>
-                  <div class="d-flex align-items-center mb-2">
-                    <TriStateCheckbox
-                      control={control}
-                      name={`${namePrefix}.afterComplete.hideScoreDateControl.showAgainDateEnabled`}
-                      disabled={!ruleEnabled || !hasCompletion || !hideScore}
-                      disabledReason={
-                        !ruleEnabled
-                          ? 'Enable this access rule first'
-                          : !hasCompletion
-                            ? 'Configure completion criteria first'
+          {hideScore && (
+            <Card.Body>
+              <Row>
+                <Col md={6}>
+                  <Form.Group>
+                    <div class="d-flex align-items-center mb-2">
+                      <TriStateCheckbox
+                        control={control}
+                        name={`${namePrefix}.afterComplete.hideScoreDateControl.showAgainDateEnabled`}
+                        disabled={!ruleEnabled || !hideScore}
+                        disabledReason={
+                          !ruleEnabled
+                            ? 'Enable this access rule first'
                             : !hideScore
                               ? 'Enable Hide Score first'
                               : undefined
-                      }
-                      class="me-2"
+                        }
+                        class="me-2"
+                      />
+                      <Form.Label class="mb-0">Show Again Date</Form.Label>
+                    </div>
+                    <Form.Control
+                      type="datetime-local"
+                      placeholder="Show Again Date"
+                      disabled={!ruleEnabled || !hideScore || !showAgainDateEnabledScore}
+                      {...control.register(
+                        `${namePrefix}.afterComplete.hideScoreDateControl.showAgainDate`,
+                      )}
                     />
-                    <Form.Label class="mb-0">Show Again Date</Form.Label>
-                  </div>
-                  <Form.Control
-                    type="datetime-local"
-                    placeholder="Show Again Date"
-                    disabled={
-                      !ruleEnabled || !hasCompletion || !hideScore || !showAgainDateEnabledScore
-                    }
-                    {...control.register(
-                      `${namePrefix}.afterComplete.hideScoreDateControl.showAgainDate`,
-                    )}
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Card.Body>
+                  </Form.Group>
+                </Col>
+              </Row>
+            </Card.Body>
+          )}
         </Card>
       </Card.Body>
     </Card>

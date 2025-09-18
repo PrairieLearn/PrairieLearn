@@ -5,7 +5,7 @@ import { html } from '@prairielearn/html';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getAssessmentContext } from '../../lib/client/page-context.js';
+import { getAssessmentContext, getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
@@ -43,6 +43,7 @@ export function InstructorAssessmentAccess({
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
   const { assessment, assessment_set: assessmentSet } = getAssessmentContext(resLocals);
+  const { course_instance: courseInstance } = getCourseInstanceContext(resLocals, 'instructor');
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
@@ -65,7 +66,13 @@ export function InstructorAssessmentAccess({
         />,
       )}
       ${enhancedAccessControl
-        ? hydrateHtml(<AccessControl assessment={assessment} assessmentSet={assessmentSet} />)
+        ? hydrateHtml(
+            <AccessControl
+              assessment={assessment}
+              assessmentSet={assessmentSet}
+              courseInstance={courseInstance}
+            />,
+          )
         : ''}
 
       <div class="card mb-4">
