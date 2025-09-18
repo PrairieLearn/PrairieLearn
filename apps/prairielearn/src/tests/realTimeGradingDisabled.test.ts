@@ -279,13 +279,17 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
 
       // The first question (real-time grading disabled) should still be in the "Saved" state,
       // and its score should be pending.
+      //
+      // The question is actually in the second row of the table; the first row is the
+      // zone header.
       const tableRow = otherEnabledGradeResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(1)',
+        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
       );
       const badge = tableRow.find('span.badge');
-      assert.lengthOf(badge, 2);
-      assert.equal(badge.eq(0).text().trim(), 'saved');
+      assert.lengthOf(badge, 3);
+      assert.equal(badge.eq(0).text().trim(), 'saved for grading after finish');
       assert.equal(badge.eq(1).text().trim(), 'pending');
+      assert.equal(badge.eq(2).text().trim(), 'pending');
 
       // We should now be able to finish the entire assessment.
       //
@@ -307,7 +311,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
       assert.isTrue(finishResponse.ok);
 
       const gradedTableRow = finishResponse.$(
-        'table[data-testid="assessment-questions"] tbody tr:nth-child(1)',
+        'table[data-testid="assessment-questions"] tbody tr:nth-child(2)',
       );
       const gradedBadge = gradedTableRow.find('span.badge');
       assert.lengthOf(gradedBadge, 1);
