@@ -71,3 +71,20 @@ This is a collection of how to sequence some common migrations. Bullet points ar
   - Finalize the batched migration
   - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
   - In a separate transaction, validate the constraint (this validates all existing data against the constraint)
+
+### Rename column with a default value, no data preservation
+
+If you have no meaningful reads/writes to the old column, you can combie the first and second PRs into a single PR.
+
+- First PR: Add new column
+  - Add new column with default value
+  - Change all writes to write to the new column and the old column
+
+- Second PR: Remove old column
+  - Update all reads to read from the new column
+  - Update all code to not write the old column
+  - Mark the old column in the zod schema as `z.any()`
+
+- Third PR: Finalize
+  - Remove the old column from the database
+  - Remove the old column from the zod schema

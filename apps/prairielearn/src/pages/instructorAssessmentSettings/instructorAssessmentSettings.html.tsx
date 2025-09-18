@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact/client';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
@@ -301,13 +301,13 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            ${StudentLinkSharing({
+            ${StudentLinkSharingHtml({
               studentLink,
               studentLinkMessage: 'The link that students will use to access this assessment.',
             })}
             <h2 class="h4">Sharing</h2>
             ${resLocals.assessment.share_source_publicly
-              ? PublicLinkSharing({
+              ? PublicLinkSharingHtml({
                   publicLink,
                   sharingMessage: "This assessment's source is publicly shared.",
                   publicLinkMessage:
