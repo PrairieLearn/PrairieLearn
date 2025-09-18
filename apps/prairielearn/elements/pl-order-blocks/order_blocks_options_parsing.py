@@ -184,7 +184,7 @@ class OrderBlocksOptions:
             "format",
             "code-language",
             "allow-blank",
-            "randomize-distractors",
+            "distractor-order",
         ]
         pl.check_attribs(
             html_element,
