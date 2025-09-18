@@ -219,7 +219,13 @@ class OrderBlocksOptions:
     def validate(self) -> None:
         self._validate_order_blocks_options()
         self._validate_answer_options()
-        _validate_order_blocks_options_against_all_answer_options(self, self.answer_options)
+
+        if self.is_multi:
+            for options in self.answer_options:
+                if options.final: return
+            raise ValueError(
+            f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
+        )
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -418,15 +424,6 @@ class AnswerOptions:
                     "final"
                 ],
             )
-
-
-def _validate_order_blocks_options_against_all_answer_options(order_blocks_options: OrderBlocksOptions, answer_options: list[AnswerOptions]):
-    if order_blocks_options.is_multi:
-        for options in answer_options:
-            if options.final: return
-        raise Exception(
-            f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
-        )
 
 
 def collect_answer_options(
