@@ -396,7 +396,8 @@
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number"
+          "type": "integer",
+          "minimum": 1
         },
         "advanceScorePerc": {
           "description": "Minimum score percentage to unlock access to subsequent questions.",
@@ -466,7 +467,7 @@
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number",
+          "type": "integer",
           "minimum": 1
         },
         "advanceScorePerc": {
