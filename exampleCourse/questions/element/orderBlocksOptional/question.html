@@ -10,12 +10,12 @@ multiple correct solutions and not every correct solution requires every block t
   <pl-answer correct="true" tag="6" depends="3,4|5" indent="1" final="true">return sum</pl-answer>
 </pl-order-blocks>
 
-<!-- <pl-order-blocks answers-name="git-commands" grading-method="dag" indentation="false" feedback="first-wrong-verbose" -->
-<!--   format="code" code-language="bash"> -->
-<!--   <pl-answer correct="true" tag="1" depends="">git remote remove origin</pl-answer> -->
-<!--   <pl-answer correct="true" tag="2" depends="">git remote rename origin old-origin</pl-answer> -->
-<!--   <pl-answer correct="true" tag="3" depends="">git remote add old-origin &lt;url2&gt;</pl-answer> -->
-<!--   <pl-answer correct="true" tag="4" depends="path1: 2|path2: 1">git remote add origin &lt;url1&gt;</pl-answer> -->
-<!--   <pl-answer correct="true" tag="5" depends="path1: 4|path2: 3,4" final="true">git push -u origin -->
-<!--     --all</pl-answer> -->
-<!-- </pl-order-blocks> -->
+<pl-order-blocks answers-name="git-commands" grading-method="dag" indentation="false" feedback="first-wrong-verbose"
+  format="code" code-language="bash">
+  <pl-answer correct="true" tag="1" depends="">git remote remove origin</pl-answer>
+  <pl-answer correct="true" tag="2" depends="">git remote rename origin old-origin</pl-answer>
+  <pl-answer correct="true" tag="3" depends="">git remote add old-origin &lt;url2&gt;</pl-answer>
+  <pl-answer correct="true" tag="4" depends="path1: 2|path2: 1">git remote add origin &lt;url1&gt;</pl-answer>
+  <pl-answer correct="true" tag="5" depends="path1: 4|path2: 3,4" final="true">git push -u origin
+    --all</pl-answer>
+</pl-order-blocks>
