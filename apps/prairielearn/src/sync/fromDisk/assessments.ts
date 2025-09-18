@@ -238,8 +238,8 @@ function getParamsForAssessment(
           init_points: alternative.initPoints,
           max_points: alternative.maxPoints,
           manual_points: alternative.manualPoints,
-          force_max_points: alternative.forceMaxPoints,
-          tries_per_variant: alternative.triesPerVariant,
+          force_max_points: alternative.forceMaxPoints ?? false,
+          tries_per_variant: alternative.triesPerVariant ?? 1,
           grade_rate_minutes: alternative.gradeRateMinutes,
           json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           // This is the "resolved" setting that takes into account configuration at

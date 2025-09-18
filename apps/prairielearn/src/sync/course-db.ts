@@ -1382,8 +1382,8 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
-    warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
+  if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
+    warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

@@ -379,8 +379,7 @@
         },
         "forceMaxPoints": {
           "description": "Whether to force this question to be awarded maximum points on a regrade.",
-          "$ref": "#/definitions/ForceMaxPointsJsonSchema",
-          "default": false
+          "$ref": "#/definitions/ForceMaxPointsJsonSchema"
         },
         "alternatives": {
           "description": "Array of question alternatives to choose from.",
@@ -397,8 +396,7 @@
         },
         "triesPerVariant": {
           "description": "The maximum number of graded submissions allowed for each question instance.",
-          "type": "number",
-          "default": 1
+          "type": "number"
         },
         "advanceScorePerc": {
           "description": "Minimum score percentage to unlock access to subsequent questions.",
@@ -516,8 +514,7 @@
     },
     "ForceMaxPointsJsonSchema": {
       "description": "Whether to force this question to be awarded maximum points on a regrade.",
-      "type": "boolean",
-      "default": false
+      "type": "boolean"
     },
     "AdvanceScorePercJsonSchema": {
       "description": "Minimum score percentage to unlock access to subsequent questions.",

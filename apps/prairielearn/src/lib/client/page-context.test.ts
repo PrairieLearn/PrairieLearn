@@ -1,14 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import type z from 'zod';
+import { type z } from 'zod';
 
 import {
-  type RawPageContextSchema,
+  type AuthzData,
+  type RawPageContextWithAuthzDataSchema,
   type StaffCourseInstanceContextSchema,
   type StudentCourseInstanceContextSchema,
   getCourseInstanceContext,
   getPageContext,
 } from './page-context.js';
-import type { StaffUser } from './safe-db-types.js';
+import type { StaffInstitution, StaffUser } from './safe-db-types.js';
 
 describe('getPageContext', () => {
   it('strips extra fields from the data', () => {
@@ -51,6 +52,19 @@ describe('getPageContext', () => {
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
+      authn_institution: {
+        id: '1',
+        display_timezone: 'America/Chicago',
+        default_authn_provider_id: null,
+        long_name: 'Example Institution',
+        short_name: 'EI',
+      },
+      authn_provider_name: 'local',
+      authn_is_administrator: false,
+      is_administrator: false,
+      is_institution_administrator: false,
+      news_item_notification_count: 0,
+      navPage: 'home',
       access_as_administrator: false,
       authn_user: {
         name: 'Test User',
@@ -66,7 +80,7 @@ describe('getPageContext', () => {
       anotherExtraField: 123,
     };
 
-    const expected: z.infer<typeof RawPageContextSchema> = {
+    const expected: z.infer<typeof RawPageContextWithAuthzDataSchema> = {
       authz_data: {
         authn_is_administrator: false,
         authn_has_course_permission_preview: true,
@@ -100,11 +114,24 @@ describe('getPageContext', () => {
           uin: '123456789',
           user_id: '1',
         } as StaffUser,
-      },
+      } as AuthzData,
       __csrf_token: '123',
       plainUrlPrefix: '/pl',
       urlPrefix: '/pl/course/1/course_instance/1',
+      authn_institution: {
+        id: '1',
+        display_timezone: 'America/Chicago',
+        default_authn_provider_id: null,
+        long_name: 'Example Institution',
+        short_name: 'EI',
+      } as StaffInstitution,
+      authn_provider_name: 'local',
+      authn_is_administrator: false,
       access_as_administrator: false,
+      is_administrator: false,
+      is_institution_administrator: false,
+      news_item_notification_count: 0,
+      navPage: 'home',
       authn_user: {
         name: 'Test User',
         uid: 'test@illinois.edu',
@@ -167,7 +194,7 @@ describe('getCourseInstanceContext', () => {
       json_comment: 'foo',
       share_source_publicly: true,
       self_enrollment_enabled: true,
-      self_enrollment_requires_secret_link: false,
+      self_enrollment_use_enrollment_code: false,
       self_enrollment_enabled_before_date: null,
       sync_errors: null,
       sync_job_sequence_id: null,

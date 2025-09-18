@@ -114,7 +114,6 @@ export const QuestionIdJsonSchema = z
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
-  .default(false)
   .describe('Whether to force this question to be awarded maximum points on a regrade.');
 
 export const AdvanceScorePercJsonSchema = z
@@ -169,7 +168,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   maxAutoPoints: PointsSingleJsonSchema.optional(),
   manualPoints: PointsSingleJsonSchema.optional(),
   id: QuestionIdJsonSchema.optional(),
-  forceMaxPoints: ForceMaxPointsJsonSchema.optional().default(false),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   alternatives: z
     .array(QuestionAlternativeJsonSchema)
     .min(1)
@@ -184,8 +183,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
-    .optional()
-    .default(1),
+    .optional(),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()

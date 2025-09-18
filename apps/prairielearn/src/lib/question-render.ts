@@ -23,7 +23,7 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
 import {
   type Assessment,
