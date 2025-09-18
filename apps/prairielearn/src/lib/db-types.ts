@@ -204,16 +204,6 @@ export const SprocAuthzCourseInstanceSchema = z.object({
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
-// Result of tags_for_question sproc
-export const SprocTagsForQuestionSchema = z.array(
-  z.object({
-    color: z.string(),
-    description: z.string(),
-    id: IdSchema,
-    name: z.string(),
-  }),
-);
-
 // Result of instance_questions_next_allowed_grade sproc
 export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
