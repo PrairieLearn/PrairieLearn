@@ -197,8 +197,11 @@ router.post(
             'Time limit is expired, please go back and finish your assessment',
           );
         }
-        if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
+        if (
+          req.body.__action === 'grade' &&
+          !res.locals.assessment_question.allow_real_time_grading
+        ) {
+          throw new HttpStatusError(403, 'Real-time grading is not allowed for this question');
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -225,8 +228,10 @@ router.post(
         requireOpen: true,
         close: true,
         ignoreGradeRateLimit: false,
+        ignoreRealTimeGradingDisabled: false,
         client_fingerprint_id: res.locals.client_fingerprint_id,
       });
+
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
       );

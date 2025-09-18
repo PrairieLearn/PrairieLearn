@@ -1,7 +1,7 @@
 columns
     advance_score_perc: double precision
     ai_grading_mode: boolean not null default false
-    allow_real_time_grading: boolean
+    allow_real_time_grading: boolean not null
     alternative_group_id: bigint
     assessment_id: bigint not null
     average_average_submission_score: double precision
@@ -24,6 +24,7 @@ columns
     incremental_submission_score_array_averages: double precision[]
     incremental_submission_score_array_variances: double precision[]
     init_points: double precision
+    json_allow_real_time_grading: boolean
     json_comment: jsonb
     json_grade_rate_minutes: double precision
     last_submission_score_hist: double precision[]
