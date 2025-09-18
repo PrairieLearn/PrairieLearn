@@ -587,7 +587,7 @@ export function QuestionFooterContent({
                 `
               : ''}
           </span>
-          <span class="d-flex">
+          <div class="d-flex">
             ${question.type === 'Freeform'
               ? html`
                   <input
@@ -636,8 +636,17 @@ export function QuestionFooterContent({
                       </button>
                     `
                   : ''}
-            ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
-          </span>
+            <div class="d-flex flex-column">
+              ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
+              ${assessment_question?.allow_real_time_grading
+                ? ''
+                : html`
+                    <small class="fst-italic text-end">
+                      This question will be graded after the assessment is finished
+                    </small>
+                  `}
+            </div>
+          </div>
         </div>
       </div>
       ${SubmitRateFooter({
@@ -760,11 +769,13 @@ function AvailablePointsNotes({
   const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
   const additional = instance_question.points === 0 ? '' : 'additional';
+  const attemptSuffix = assessment_question?.allow_real_time_grading ? 'for this attempt' : '';
+
   return html`
-    <small class="fst-italic align-self-center text-end">
+    <small class="fst-italic text-end">
       ${roundedPoints[0] === 1
-        ? `1 ${additional} point available for this attempt`
-        : `${roundedPoints[0]} ${additional} points available for this attempt`}
+        ? `1 ${additional} point available ${attemptSuffix}`
+        : `${roundedPoints[0]} ${additional} points available ${attemptSuffix}`}
       ${maxManualPoints > 0
         ? roundedPoints[0] > maxManualPoints
           ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}

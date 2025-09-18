@@ -139,6 +139,7 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
+    .int()
     .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
@@ -148,6 +149,12 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
     )
     .optional(),
 });
@@ -176,6 +183,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   triesPerVariant: z
     .number()
+    .int()
+    .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
@@ -184,6 +193,12 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question. If not specified, inherits from the zone level.',
     )
     .optional(),
   canSubmit: uniqueArray(z.string())
@@ -237,6 +252,12 @@ export const ZoneAssessmentJsonSchema = z.object({
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for questions in this zone. If not specified, inherits from the assessment level.',
     )
     .optional(),
   canSubmit: uniqueArray(z.string())
