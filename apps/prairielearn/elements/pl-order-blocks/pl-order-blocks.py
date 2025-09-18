@@ -4,7 +4,6 @@ import math
 import os
 import random
 from copy import deepcopy
-from itertools import takewhile
 from typing import TypedDict
 
 import chevron
@@ -13,6 +12,7 @@ import prairielearn as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
+    DistractorOrderType,
     FeedbackType,
     FormatType,
     GradingMethodType,
@@ -74,18 +74,23 @@ def extract_dag(
     return depends_graph, group_belonging
 
 
-def shuffle_distractor_groups(all_blocks: list[OrderBlocksAnswerData]) -> None:
-    """Shuffle each correct block with its consecutive distractors (same tag), in place."""
-    skip_to = 0
-    for i, block in enumerate(all_blocks):
-        if i < skip_to or block.get("distractor_for"):
+def shuffle_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle each correct block with its related distractors"""
+    new_block_ordering = []
+    for block in all_blocks:
+        if block.get("distractor_for"):
             continue
         tag = block["tag"]
-        group = [block, *takewhile(lambda b, t=tag: b.get("distractor_for") == t, all_blocks[i+1:])]
-        if len(group) > 1:
-            random.shuffle(group)
-            all_blocks[i:i+len(group)] = group
-        skip_to = i + len(group)
+        group = [
+            block,
+            *(block for block in all_blocks if block.get("distractor_for") == tag),
+        ]
+        random.shuffle(group)
+        new_block_ordering += group
+    return new_block_ordering
+
 
 def solve_problem(
     answers_list: list[OrderBlocksAnswerData], grading_method: GradingMethodType
@@ -148,13 +153,16 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         random.shuffle(all_blocks)
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ORDERED:
         all_blocks.sort(key=lambda a: a["index"])
-
-        if order_blocks_options.randomize_distractors:
-            shuffle_distractor_groups(all_blocks)
     elif order_blocks_options.source_blocks_order == SourceBlocksOrderType.ALPHABETIZED:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
         assert_never(order_blocks_options.source_blocks_order)
+
+    if (
+        order_blocks_options.source_blocks_order != SourceBlocksOrderType.RANDOM
+        and order_blocks_options.distractor_order == DistractorOrderType.RANDOM
+    ):
+        all_blocks = shuffle_distractor_groups(all_blocks)
 
     # prep for visual pairing
     correct_tags = {block["tag"] for block in all_blocks}
