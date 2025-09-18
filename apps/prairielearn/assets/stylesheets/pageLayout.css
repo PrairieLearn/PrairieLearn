@@ -44,9 +44,12 @@ body:has(div.app-main-container) {
 
 .app-side-nav {
   grid-area: side-nav;
+  overflow-y: auto;
+}
+
+.app-side-nav-scroll {
   padding: 0.5rem;
   padding-top: 0.3rem;
-  overflow-y: auto;
 }
 
 .app-main {
@@ -268,16 +271,20 @@ body:has(div.app-main-container) {
   .app-container.side-nav-enabled .app-side-nav {
     display: block;
     position: absolute;
-    padding-top: 1rem;
     top: var(--navbar-height);
     left: 0;
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    min-height: calc(
-      100vh - var(--navbar-height)
-    ); /* Subtract from 100vh to account for the navbar */
+    height: calc(100% - var(--navbar-height)); /* Subtract from 100vh to account for the navbar */
     will-change: transform; /* Performance optimization */
+  }
+
+  .app-container.side-nav-enabled .app-side-nav-scroll {
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding-top: 1rem;
   }
 
   .app-container.side-nav-enabled.animate .app-side-nav {
