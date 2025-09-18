@@ -31,13 +31,13 @@ export function DownloadButton({
         student.user.name,
         student.user.email,
         student.enrollment.status,
-        student.enrollment.joined_at
-          ? formatDate(student.enrollment.joined_at, course.display_timezone, {
+        student.enrollment.first_joined_at
+          ? formatDate(student.enrollment.first_joined_at, course.display_timezone, {
               includeTz: false,
             })
           : '',
       ]);
-    downloadAsCSV(['UID', 'name', 'email', 'status', 'joined_at'], rows, filename);
+    downloadAsCSV(['UID', 'name', 'email', 'status', 'first_joined_at'], rows, filename);
   }
 
   function downloadStudentsJSON(students: StudentRow[], filename: string): void {
@@ -48,8 +48,7 @@ export function DownloadButton({
         name: student.user.name,
         email: student.user.email,
         status: student.enrollment.status,
-        // TODO: switch to first_joined_at
-        joined_at: student.enrollment.joined_at,
+        first_joined_at: student.enrollment.first_joined_at,
       }));
     downloadAsJSON(rows, filename);
   }
