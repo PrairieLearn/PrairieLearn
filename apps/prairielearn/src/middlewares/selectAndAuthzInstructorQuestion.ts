@@ -8,7 +8,6 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   QuestionSchema,
   SprocAssessmentsFormatForQuestionSchema,
-  TagSchema,
   TopicSchema,
 } from '../lib/db-types.js';
 
@@ -17,14 +16,12 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const SelectAndAuthSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: TagSchema.array().nullable(),
   open_issue_count: z.coerce.number(),
 });
 
 const SelectAndAuthWithCourseInstanceSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: TagSchema.array().nullable(),
   assessments: SprocAssessmentsFormatForQuestionSchema.nullable(),
   open_issue_count: z.coerce.number(),
 });
