@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+import { DateFromISOString } from '@prairielearn/zod';
+
+export { DateFromISOString }
+
 const createEnabledFieldValidator = (pairs: Array<[string, string]>) => {
   return (data: any) => {
     for (const [enabledField, valueField] of pairs) {
@@ -11,8 +15,37 @@ const createEnabledFieldValidator = (pairs: Array<[string, string]>) => {
   };
 };
 
+// Assignment-Level access control cannot inherit as there is nothing to inherit from. Thus, *enabled fields cannot be NULL.
+const createAssignmentLevelValidator = (enabledFields: string[]) => {
+  return (data: any, ctx: any) => {
+    const isAssignmentLevel = !data.targets || data.targets.length === 0;
+    
+    if (isAssignmentLevel) {
+      const checkForNullEnabled = (obj: any, path: string[] = []) => {
+        if (!obj || typeof obj !== 'object') return; // If we are not an object, stop.
+        
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = [...path, key];
+          
+          if (key.endsWith('Enabled') && value === null) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `Assignment-level permissions cannot have null *Enabled fields (found null ${key})`,
+              path: currentPath,
+            });
+          } else if (typeof value === 'object' && value !== null) {
+            checkForNullEnabled(value, currentPath);
+          }
+        }
+      };
+      
+      checkForNullEnabled(data);
+    }
+  };
+};
+
 const DeadlineSchema = z.object({
-  date: z.string(),
+  date: DateFromISOString,
   credit: z.number(),
 }).optional();
 
@@ -28,9 +61,9 @@ const AfterLastDeadlineSchema = z.object({
 const DateControlSchema = z.object({
   enabled: z.boolean().nullable().optional(),
   releaseDateEnabled: z.boolean().nullable().optional(),
-  releaseDate: z.string().optional(),
+  releaseDate: DateFromISOString.optional(),
   dueDateEnabled: z.boolean().nullable().optional(),
-  dueDate: z.string().optional(),
+  dueDate: DateFromISOString.optional(),
   earlyDeadlinesEnabled: z.boolean().nullable().optional(),
   earlyDeadlines: z.array(DeadlineSchema).optional(),
   lateDeadlinesEnabled: z.boolean().nullable().optional(),
@@ -64,9 +97,9 @@ const PrairieTestControlSchema = z.object({
 
 const HideQuestionsDateControlSchema = z.object({
   showAgainDateEnabled: z.boolean().nullable().optional(),
-  showAgainDate: z.string().optional(),
+  showAgainDate: DateFromISOString.optional(),
   hideAgainDateEnabled: z.boolean().nullable().optional(),
-  hideAgainDate: z.string().optional(),
+  hideAgainDate: DateFromISOString.optional(),
 }).refine(
   createEnabledFieldValidator([
     ['showAgainDateEnabled', 'showAgainDate'],
@@ -77,7 +110,7 @@ const HideQuestionsDateControlSchema = z.object({
 
 const HideScoreDateControlSchema = z.object({
   showAgainDateEnabled: z.boolean().nullable().optional(),
-  showAgainDate: z.string().optional(),
+  showAgainDate: DateFromISOString.optional(),
 }).refine(
   createEnabledFieldValidator([['showAgainDateEnabled', 'showAgainDate']]),
   { message: "When showAgainDateEnabled is null, showAgainDate cannot be populated" }
@@ -99,7 +132,7 @@ const AccessControlSchema = z.object({
   dateControl: DateControlSchema,
   prairieTestControl: PrairieTestControlSchema,
   afterComplete: AfterCompleteSchema,
-}).optional();
+}).superRefine(createAssignmentLevelValidator([])).optional();
 
 type AccessControl = z.infer<typeof AccessControlSchema>;
 
