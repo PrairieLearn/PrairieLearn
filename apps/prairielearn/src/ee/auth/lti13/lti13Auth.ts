@@ -140,17 +140,32 @@ async function launchFlow(req: Request, res: Response) {
   res.redirect(redirectTo.href);
 }
 
-const OIDCAuthResponseSchema = z.object({
-  state: z.string(),
-  id_token: z.string(),
-  // also has utf8, authenticity_token, lti_storage_target
-});
+const OIDCAuthResponseSchema = z.union([
+  z.object({
+    state: z.string(),
+    id_token: z.string(),
+    // also has utf8, authenticity_token, lti_storage_target
+  }),
+  z.object({
+    state: z.string(),
+    error: z.string(),
+    error_description: z.string(),
+  }),
+]);
 
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
     // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
     const authResponse = OIDCAuthResponseSchema.parse(req.body);
+
+    if ('error' in authResponse) {
+      // e.g. launch_no_longer_valid
+      throw new HttpStatusError(
+        400,
+        `Error code: ${authResponse.error}, description: ${authResponse.error_description}`,
+      );
+    }
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
