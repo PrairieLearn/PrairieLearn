@@ -1,8 +1,13 @@
 -- BLOCK ensure_enrollment
 INSERT INTO
-  enrollments (user_id, course_instance_id, status, joined_at, first_joined_at)
+  enrollments (
+    user_id,
+    course_instance_id,
+    status,
+    first_joined_at
+  )
 VALUES
-  ($user_id, $course_instance_id, 'joined', now(), now())
+  ($user_id, $course_instance_id, 'joined', now())
 ON CONFLICT DO NOTHING;
 
 -- BLOCK enroll_invited_user_in_course_instance
@@ -11,7 +16,6 @@ SET
   status = 'joined',
   user_id = $user_id,
   pending_uid = NULL,
-  joined_at = now(),
   first_joined_at = now()
 WHERE
   pending_uid = $pending_uid
