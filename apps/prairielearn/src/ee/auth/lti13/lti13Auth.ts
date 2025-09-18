@@ -141,29 +141,31 @@ async function launchFlow(req: Request, res: Response) {
 }
 
 const OIDCAuthResponseSchema = z.union([
+  // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
   z.object({
     state: z.string(),
     id_token: z.string(),
     // also has utf8, authenticity_token, lti_storage_target
   }),
+  // https://openid.net/specs/openid-connect-core-1_0.html#AuthError
   z.object({
     state: z.string(),
     error: z.string(),
-    error_description: z.string(),
+    error_description: z.string().optional(),
+    error_uri: z.string().optional(),
   }),
 ]);
 
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
-    // https://www.imsglobal.org/spec/security/v1p0/#step-3-authentication-response
     const authResponse = OIDCAuthResponseSchema.parse(req.body);
 
     if ('error' in authResponse) {
       // e.g. launch_no_longer_valid
       throw new HttpStatusError(
         400,
-        `Error code: ${authResponse.error}, description: ${authResponse.error_description}`,
+        `Error code: ${authResponse.error} ${authResponse?.error_description}`,
       );
     }
 
