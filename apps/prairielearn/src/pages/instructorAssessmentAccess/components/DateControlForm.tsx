@@ -153,11 +153,11 @@ export function DateControlForm({
   };
 
   const addEarlyDeadline = () => {
-    appendEarlyDeadline({ date: '', credit: 100 });
+    appendEarlyDeadline({ date: '', credit: 101 });
   };
 
   const addLateDeadline = () => {
-    appendLateDeadline({ date: '', credit: 100 });
+    appendLateDeadline({ date: '', credit: 99 });
   };
 
   // Helper function to get the active time range for early deadlines
