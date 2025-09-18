@@ -295,7 +295,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
-                # We intentionally don't include distractor_feedback and ordering_feedback here.
+                # We intentionally don't include distractor_feedback and ordering_feedback here when
+                # the submission was not graded.
                 "distractor_feedback": attempt.get("distractor_feedback", "")
                 if submission_was_graded
                 else "",
