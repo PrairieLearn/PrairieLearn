@@ -670,6 +670,7 @@ export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
+  first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
   joined_at: DateFromISOString.nullable(),
   lti_managed: z.boolean(),

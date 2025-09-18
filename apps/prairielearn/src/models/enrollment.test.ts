@@ -153,13 +153,14 @@ describe('ensureEnrollment', () => {
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
     await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, joined_at)
-       VALUES ($user_id, $course_instance_id, 'joined', $joined_at)
+      `INSERT INTO enrollments (user_id, course_instance_id, status, joined_at, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'joined', $joined_at, $first_joined_at)
        RETURNING *`,
       {
         user_id: user.user_id,
         course_instance_id: '1',
         joined_at: originalJoinedAt,
+        first_joined_at: originalJoinedAt,
       },
       EnrollmentSchema,
     );

@@ -48,6 +48,7 @@ export function DownloadButton({
         name: student.user.name,
         email: student.user.email,
         status: student.enrollment.status,
+        // TODO: switch to first_joined_at
         joined_at: student.enrollment.joined_at,
       }));
     downloadAsJSON(rows, filename);

@@ -279,6 +279,7 @@ const minimalStudentAssessmentSet: z.input<typeof StudentAssessmentSetSchema> = 
 const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
+  first_joined_at: new Date(),
   id: '1',
   joined_at: new Date(),
   lti_managed: false,
@@ -294,6 +295,7 @@ const minimalRawStaffEnrollment: z.input<typeof RawStaffEnrollmentSchema> = {
 const minimalStudentEnrollment: z.input<typeof RawStudentEnrollmentSchema> = {
   course_instance_id: '10',
   created_at: new Date(),
+  first_joined_at: new Date(),
   id: '1',
   joined_at: new Date(),
   lti_managed: false,
@@ -397,6 +399,7 @@ const minimalStaffAssessmentQuestion: z.input<typeof StaffAssessmentQuestionSche
 const minimalStaffEnrollment: z.input<typeof StaffEnrollmentSchema> = {
   course_instance_id: '3',
   created_at: null,
+  first_joined_at: null,
   id: '9',
   joined_at: null,
   lti_managed: false,
