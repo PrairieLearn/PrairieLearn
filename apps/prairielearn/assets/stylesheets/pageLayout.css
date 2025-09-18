@@ -276,7 +276,7 @@ body:has(div.app-main-container) {
     width: 100%;
     z-index: 999;
     transform: translateX(-100%); /* Start off-screen to the left */
-    height: calc(100% - var(--navbar-height)); /* Subtract from 100vh to account for the navbar */
+    height: calc(100% - var(--navbar-height));
     will-change: transform; /* Performance optimization */
   }
 
