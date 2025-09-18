@@ -9,7 +9,7 @@ from typing import TypedDict, no_type_check
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, grade_dag_list, lcs_partial_credit, solve_dag, solve_multigraph, collapse_multigraph
+from dag_checker import grade_dag, grade_multigraph, lcs_partial_credit, solve_dag, solve_multigraph, collapse_multigraph
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
     FeedbackType,
@@ -596,11 +596,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         # MGRAPH
         elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
             depends_multigraph, final = extract_multigraph(true_answer_list)
-            collapsed_dags = [graph for graph in collapse_multigraph(depends_multigraph, final, path_names={})]
 
             #TODO: add group belonging support for group blocks
-            num_initial_correct, true_answer_length, depends_graph = grade_dag_list(
-                submission, collapsed_dags, {}
+            num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
+                submission, depends_multigraph, final, {}
             )
         else:
             # This is so num_initial_correct and true_answer_length is not possibly unbound
