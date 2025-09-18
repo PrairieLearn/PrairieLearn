@@ -29,17 +29,32 @@ WITH
       JOIN course ON ssc.course_id = course.id
     WHERE
       ssq.question_id = $question_id
+  ),
+  tags_for_question AS (
+    SELECT
+      JSONB_AGG(
+        tag
+        ORDER BY
+          tag.number,
+          tag.id
+      ) AS tags
+    FROM
+      question_tags AS qt
+      JOIN tags AS tag ON (qt.tag_id = tag.id)
+    WHERE
+      qt.question_id = $question_id
   )
 SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
-  tags_for_question (q.id) AS tags,
+  tq.tags,
   issue_count.open_issue_count
 FROM
   questions AS q
   JOIN topics AS top ON (top.id = q.topic_id),
   issue_count,
   sharing_info
+  LEFT JOIN tags_for_question AS tq
 WHERE
   q.id = $question_id
   AND (
@@ -80,11 +95,25 @@ WITH
       JOIN course ON ssc.course_id = course.id
     WHERE
       ssq.question_id = $question_id
+  ),
+  tags_for_question AS (
+    SELECT
+      JSONB_AGG(
+        tag
+        ORDER BY
+          tag.number,
+          tag.id
+      ) AS tags
+    FROM
+      question_tags AS qt
+      JOIN tags AS tag ON (qt.tag_id = tag.id)
+    WHERE
+      qt.question_id = $question_id
   )
 SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
-  tags_for_question (q.id) AS tags,
+  tq.tags,
   assessments_format_for_question (q.id, ci.id) AS assessments,
   issue_count.open_issue_count
 FROM
@@ -93,6 +122,7 @@ FROM
   course_instances AS ci,
   issue_count,
   sharing_info
+  LEFT JOIN tags_for_question AS tq
 WHERE
   q.id = $question_id
   AND ci.id = $course_instance_id

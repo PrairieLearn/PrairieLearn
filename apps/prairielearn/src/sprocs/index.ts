@@ -33,7 +33,6 @@ export async function init() {
       'check_assessment_access.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
-      'tags_for_question.sql',
       'random_unique.sql',
       'question_order.sql',
       'authz_assessment.sql',
