@@ -11,7 +11,7 @@ const redirects = [
           resLocals?.authz_data?.has_course_permission_preview)
       );
     },
-    redirect: (resLocals: Record<string, any>) =>
+    buildRedirect: (resLocals: Record<string, any>) =>
       `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}/instructor`,
   },
   {
@@ -19,7 +19,7 @@ const redirects = [
     canRedirect: (resLocals: Record<string, any>) => {
       return resLocals?.course?.id && resLocals?.authz_data?.has_course_permission_preview;
     },
-    redirect: (resLocals: Record<string, any>) =>
+    buildRedirect: (resLocals: Record<string, any>) =>
       `${resLocals.plainUrlPrefix}/course/${resLocals.course.id}`,
   },
   {
@@ -27,15 +27,15 @@ const redirects = [
     canRedirect: (resLocals: Record<string, any>) => {
       return resLocals?.course_instance?.id && resLocals?.authz_data?.has_student_access;
     },
-    redirect: (resLocals: Record<string, any>) =>
+    buildRedirect: (resLocals: Record<string, any>) =>
       `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}`,
   },
 ];
 
 /**
- * Returns true if it was redirected. Returns false if we couldn't find a redirect.
+ * Returns the redirect url if it was redirected. Returns null if we couldn't find a redirect.
  */
-export function redirectEffectiveAccessDenied(req: Request, res: Response): boolean {
+export function getRedirectForEffectiveAccessDenied(res: Response): string | null {
   // This middleware tries to handle the case where an instructor
   // starts emulating another effective user, but they are currently
   // on a page to which the effective user doesn't have
@@ -43,27 +43,26 @@ export function redirectEffectiveAccessDenied(req: Request, res: Response): bool
   // we try and detect this case and redirect to an accessible page.
 
   // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.js)
-  if (!res.locals.pl_requested_data_changed) return false;
+  if (!res.locals.pl_requested_data_changed) return null;
 
   // skip if we don't have user data
-  if (res.locals?.authn_user?.user_id == null) return false;
-  if (res.locals?.user?.user_id == null) return false;
+  if (res.locals?.authn_user?.user_id == null) return null;
+  if (res.locals?.user?.user_id == null) return null;
 
   // we are only interested in cases where we are emulating a different user
-  if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return false;
+  if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return null;
 
   // check that we have a plainUrlPrefix
-  if (res.locals.plainUrlPrefix == null) return false;
+  if (res.locals.plainUrlPrefix == null) return null;
 
   for (const redirect of redirects) {
     if (redirect.canRedirect(res.locals)) {
-      res.redirect(redirect.redirect(res.locals));
-      return true;
+      return redirect.buildRedirect(res.locals);
     }
   }
 
   // give up, we couldn't figure out a useful redirect
-  return false;
+  return null;
 }
 
 /**
@@ -72,7 +71,7 @@ export function redirectEffectiveAccessDenied(req: Request, res: Response): bool
  */
 export const redirectEffectiveAccessDeniedErrorHandler: ErrorRequestHandler = (
   err,
-  req: Request,
+  _req: Request,
   res: Response,
   next: NextFunction,
 ) => {
@@ -80,8 +79,9 @@ export const redirectEffectiveAccessDeniedErrorHandler: ErrorRequestHandler = (
     return next(err);
   }
 
-  const redirected = redirectEffectiveAccessDenied(req, res);
-  if (redirected) {
+  const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+  if (redirectUrl) {
+    res.redirect(redirectUrl);
     return;
   }
   next(err);

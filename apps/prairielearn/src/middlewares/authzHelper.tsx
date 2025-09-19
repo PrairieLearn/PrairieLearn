@@ -17,7 +17,7 @@ import {
   type CheckablePermissionKeys,
   PERMISSIONS_META,
 } from './AuthzAccessMismatch.js';
-import { redirectEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
+import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
 
 function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
   const descriptions = permissionKeys.map((key) => {
@@ -71,8 +71,9 @@ export const createAuthzMiddleware =
       const pageContext = getPageContext(res.locals);
 
       // Try to redirect to an accessible page. If we can't, then show the error page.
-      const redirected = redirectEffectiveAccessDenied(req, res);
-      if (redirected) {
+      const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+      if (redirectUrl) {
+        res.redirect(redirectUrl);
         return;
       }
 
@@ -106,8 +107,9 @@ export const createAuthzMiddleware =
     }
 
     // Try to redirect to an accessible page. If we can't, then show the error page.
-    const redirected = redirectEffectiveAccessDenied(req, res);
-    if (redirected) {
+    const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+    if (redirectUrl) {
+      res.redirect(redirectUrl);
       return;
     }
 
