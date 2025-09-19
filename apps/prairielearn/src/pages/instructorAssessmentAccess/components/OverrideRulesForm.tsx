@@ -153,14 +153,16 @@ export function OverrideRulesForm({
                   {...control.register(`overrides.${index}.enabled`)}
                 />
               </Col>
-              <Col md={6}>
-                <Form.Check
-                  type="checkbox"
-                  label="Block access"
-                  {...control.register(`overrides.${index}.blockAccess`)}
-                />
-                <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
-              </Col>
+              {watchedOverrides[index]?.enabled && (
+                <Col md={6}>
+                  <Form.Check
+                    type="checkbox"
+                    label="Block access"
+                    {...control.register(`overrides.${index}.blockAccess`)}
+                  />
+                  <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
+                </Col>
+              )}
             </Row>
 
             {/* Targets */}
@@ -178,71 +180,76 @@ export function OverrideRulesForm({
             </div>
 
             {/* Effects Section */}
-            <div class="mb-3">
-              <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0">Effects</h6>
-                <div class="d-flex gap-2">
-                  <Form.Select
-                    size="sm"
-                    value={selectedEffects[index] || 'dateControlEnabled'}
-                    onChange={(e) =>
-                      setSelectedEffects({
-                        ...selectedEffects,
-                        [index]: (e.target as HTMLSelectElement).value as EffectType,
-                      })
-                    }
-                    style={{ width: '200px' }}
-                  >
-                    {getAvailableEffects(index).map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </Form.Select>
-                  <Button
-                    size="sm"
-                    variant="outline-primary"
-                    onClick={() => addEffectToOverride(index)}
-                    disabled={getAvailableEffects(index).length === 0}
-                  >
-                    Add Effect
-                  </Button>
+            {/* Only show effects if rule is enabled and doesn't block access */}
+            {watchedOverrides[index]?.enabled && !watchedOverrides[index]?.blockAccess && (
+              <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="mb-0">Effects</h6>
+                  <div class="d-flex gap-2">
+                    <Form.Select
+                      size="sm"
+                      value={selectedEffects[index] || 'dateControlEnabled'}
+                      onChange={(e) =>
+                        setSelectedEffects({
+                          ...selectedEffects,
+                          [index]: (e.target as HTMLSelectElement).value as EffectType,
+                        })
+                      }
+                      style={{ width: '200px' }}
+                    >
+                      {getAvailableEffects(index).map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </Form.Select>
+                    <Button
+                      size="sm"
+                      variant="outline-primary"
+                      onClick={() => addEffectToOverride(index)}
+                      disabled={getAvailableEffects(index).length === 0}
+                    >
+                      Add Effect
+                    </Button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Render active effects */}
-              {overrideEffects[index]?.length ? (
-                <>
-                  {overrideEffects[index].map((effectType) => (
-                    <Card key={effectType} class="mb-3">
-                      <Card.Header class="d-flex justify-content-between align-items-center py-2">
-                        <span>{EFFECT_OPTIONS.find((opt) => opt.value === effectType)?.label}</span>
-                        <Button
-                          size="sm"
-                          variant="outline-danger"
-                          onClick={() => removeEffectFromOverride(index, effectType)}
-                        >
-                          Remove
-                        </Button>
-                      </Card.Header>
-                      <Card.Body>
-                        {renderEffect(effectType, {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: !watchedOverrides[index]?.enabled,
-                        })}
-                      </Card.Body>
-                    </Card>
-                  ))}
-                </>
-              ) : (
-                <div class="text-muted text-center py-3 border rounded">
-                  <p class="mb-0">No effects configured.</p>
-                  <small>Add effects to override specific settings from the main rule.</small>
-                </div>
-              )}
-            </div>
+                {/* Render active effects */}
+                {overrideEffects[index]?.length ? (
+                  <>
+                    {overrideEffects[index].map((effectType) => (
+                      <Card key={effectType} class="mb-3">
+                        <Card.Header class="d-flex justify-content-between align-items-center py-2">
+                          <span>
+                            {EFFECT_OPTIONS.find((opt) => opt.value === effectType)?.label}
+                          </span>
+                          <Button
+                            size="sm"
+                            variant="outline-danger"
+                            onClick={() => removeEffectFromOverride(index, effectType)}
+                          >
+                            Remove
+                          </Button>
+                        </Card.Header>
+                        <Card.Body>
+                          {renderEffect(effectType, {
+                            control,
+                            namePrefix: `overrides.${index}`,
+                            setValue,
+                            disabled: false,
+                          })}
+                        </Card.Body>
+                      </Card>
+                    ))}
+                  </>
+                ) : (
+                  <div class="text-muted text-center py-3 border rounded">
+                    <p class="mb-0">No effects configured.</p>
+                    <small>Add effects to override specific settings from the main rule.</small>
+                  </div>
+                )}
+              </div>
+            )}
           </Card.Body>
         </Card>
       ))}
