@@ -194,7 +194,7 @@ describe('getCourseInstanceContext', () => {
       json_comment: 'foo',
       share_source_publicly: true,
       self_enrollment_enabled: true,
-      self_enrollment_requires_secret_link: false,
+      self_enrollment_use_enrollment_code: false,
       self_enrollment_enabled_before_date: null,
       self_enrollment_enabled_before_date_enabled: false,
       sync_errors: null,

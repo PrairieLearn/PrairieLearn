@@ -37,7 +37,7 @@
       "type": "object",
       "properties": {
         "enabled": {
-          "description": "If true, self-enrollment access is controlled by the beforeDate and requiresSecretLink properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
+          "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
           "type": "boolean",
           "default": true
         },
@@ -50,8 +50,8 @@
           "type": "boolean",
           "default": false
         },
-        "requiresSecretLink": {
-          "description": "If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.",
+        "useEnrollmentCode": {
+          "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.",
           "type": "boolean",
           "default": false
         }

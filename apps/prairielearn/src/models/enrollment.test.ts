@@ -49,7 +49,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'invited');
-    assert.isNull(initialEnrollment.joined_at);
+    assert.isNull(initialEnrollment.first_joined_at);
     assert.isNull(initialEnrollment.user_id);
 
     await ensureEnrollment({
@@ -63,7 +63,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
-    assert.isNotNull(finalEnrollment.joined_at);
+    assert.isNotNull(finalEnrollment.first_joined_at);
     assert.isNull(finalEnrollment.pending_uid);
     assert.equal(finalEnrollment.user_id, user.user_id);
 
@@ -99,7 +99,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
-    assert.isNull(initialEnrollment.joined_at);
+    assert.isNull(initialEnrollment.first_joined_at);
 
     await ensureEnrollment({
       course_instance_id: '1',
@@ -112,7 +112,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
-    assert.isNull(finalEnrollment.joined_at);
+    assert.isNull(finalEnrollment.first_joined_at);
   });
 
   it('creates new enrollment for user with no existing enrollment', async () => {
@@ -140,7 +140,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
-    assert.isNotNull(finalEnrollment.joined_at);
+    assert.isNotNull(finalEnrollment.first_joined_at);
   });
 
   it('does not modify already enrolled user', async () => {
@@ -153,13 +153,13 @@ describe('ensureEnrollment', () => {
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
     await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, joined_at)
-       VALUES ($user_id, $course_instance_id, 'joined', $joined_at)
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
        RETURNING *`,
       {
         user_id: user.user_id,
         course_instance_id: '1',
-        joined_at: originalJoinedAt,
+        first_joined_at: originalJoinedAt,
       },
       EnrollmentSchema,
     );
@@ -170,7 +170,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'joined');
-    assert.equal(initialEnrollment.joined_at?.getTime(), originalJoinedAt.getTime());
+    assert.equal(initialEnrollment.first_joined_at?.getTime(), originalJoinedAt.getTime());
 
     await ensureEnrollment({
       course_instance_id: '1',
@@ -183,6 +183,6 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'joined');
-    assert.equal(finalEnrollment.joined_at?.getTime(), originalJoinedAt.getTime());
+    assert.equal(finalEnrollment.first_joined_at?.getTime(), originalJoinedAt.getTime());
   });
 });
