@@ -218,7 +218,7 @@ function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Remove all student data access</button>
+        <button type="submit" class="btn btn-danger">Remove all student data access</button>
       </div>
     </form>
   `;
@@ -239,7 +239,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string 
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete users with no access</button>
+        <button type="submit" class="btn btn-danger">Delete users with no access</button>
       </div>
     </form>
   `;
@@ -354,7 +354,7 @@ function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string
 
       <div class="text-end">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Delete non-owners</button>
+        <button type="submit" class="btn btn-danger">Delete non-owners</button>
       </div>
     </form>
   `;
@@ -689,7 +689,7 @@ function StaffTable({
                           <input type="hidden" name="__action" value="course_permissions_delete" />
                           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                           <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                          <button type="submit" class="btn btn-sm btn-outline-dark">
+                          <button type="submit" class="btn btn-sm btn-outline-danger">
                             <i class="fa fa-times"></i> Delete user
                           </button>
                         </form>
