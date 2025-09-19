@@ -5,10 +5,14 @@ import { html } from '@prairielearn/html';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { getAssessmentContext, getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import { renderHtml } from '../../lib/preact-html.js';
+import { hydrateHtml } from '../../lib/preact.js';
+
+import { AccessControl } from './components/AccessControl.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -31,11 +35,15 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
+  enhancedAccessControl,
 }: {
   resLocals: Record<string, any>;
   accessRules: AssessmentAccessRules[];
+  enhancedAccessControl: boolean;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
+  const { assessment, assessment_set: assessmentSet } = getAssessmentContext(resLocals);
+  const { course_instance: courseInstance } = getCourseInstanceContext(resLocals, 'instructor');
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
@@ -57,10 +65,19 @@ export function InstructorAssessmentAccess({
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
+      ${enhancedAccessControl
+        ? hydrateHtml(
+            <AccessControl
+              assessment={assessment}
+              assessmentSet={assessmentSet}
+              courseInstance={courseInstance}
+            />,
+          )
+        : ''}
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
+          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access rules</h1>
         </div>
 
         <div class="table-responsive">
