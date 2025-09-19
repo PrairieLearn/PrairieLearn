@@ -249,9 +249,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
-        if a_sub.strip() == "":
-            a_sub = ""
+        a_sub = blank_value.strip()
+        if a_sub == "":
             data["submitted_answers"][name] = a_sub
             return
     if a_sub is None:

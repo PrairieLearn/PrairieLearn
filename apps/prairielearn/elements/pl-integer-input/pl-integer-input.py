@@ -267,6 +267,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if a_sub.strip() == "":
         data["submitted_answers"][name] = ""
         return
+
     # Convert to integer
     a_sub_parsed = pl.string_to_integer(a_sub, base)
     if a_sub_parsed is None:
