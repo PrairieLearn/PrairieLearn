@@ -1,6 +1,10 @@
 import numpy as np
 import numpy.linalg as la
-from code_feedback import Feedback
+
+
+def not_allowed(*args, **kwargs):
+    raise RuntimeError("Usage of this function is not allowed in this question.")
+
 
 # set up parameters
 n = np.random.randint(4, 16)
@@ -12,5 +16,5 @@ A = X.T @ D @ X
 
 b = np.random.random(n)
 
-la.inv = Feedback.not_allowed
-la.pinv = Feedback.not_allowed
+la.inv = not_allowed
+la.pinv = not_allowed
