@@ -76,6 +76,11 @@ export function AccessControlForm({
       enabled: true,
       blockAccess: false,
       targets: [],
+      dateControl: {
+        releaseDateEnabled: false,
+      },
+      prairieTestControl: {},
+      afterComplete: {},
     });
   };
 
@@ -117,6 +122,7 @@ export function AccessControlForm({
                 fields={overrideFields}
                 onAdd={addOverride}
                 onRemove={removeOverride}
+                setValue={setValue}
               />
             </Accordion.Body>
           </Accordion.Item>
