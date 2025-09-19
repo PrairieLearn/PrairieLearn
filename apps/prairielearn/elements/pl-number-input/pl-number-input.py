@@ -434,8 +434,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     True,
                     "The correct answer used for grading was blank",
                 )
-            else:
-                return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
+            return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
         elif isinstance(submitted_answer, str) and submitted_answer.strip() == "":
             correct_answer_converted = np.float64(correct_answer)
             return (

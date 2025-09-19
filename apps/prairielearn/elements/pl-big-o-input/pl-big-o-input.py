@@ -144,8 +144,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
-        a_sub = (
-            sympy.latex(
+        if a_sub != "":
+            a_sub = sympy.latex(
                 psu.convert_string_to_sympy(
                     a_sub,
                     variables,
@@ -153,9 +153,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_trig_functions=False,
                 )
             )
-            if a_sub != ""
-            else ""
-        )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
