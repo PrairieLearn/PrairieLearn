@@ -1,4 +1,5 @@
 import fs from 'fs-extra';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -541,6 +542,61 @@ describe('effective user', { timeout: 60_000 }, function () {
         headers,
       });
       assert.equal(res.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is denied access to when emulating student, and no redirect is available',
+    async () => {
+      const headers = {
+        cookie: 'pl2_requested_uid=student@example.com; pl2_requested_data_changed=true',
+      };
+      // Test that instructor is denied access to instructor pages when emulating student
+      const instructorPageUrl = `${context.baseUrl}/course_instance/1/instructor/instance_admin/assessments`;
+      const response = await fetch(instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+      // This should result in a 403 error, which would trigger the redirect middleware
+      // if the redirect functionality is working correctly
+      // check for 'div data-component="AuthzAccessMismatch'
+      assert.equal(response.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is allowed access when emulating student, and a redirect is available',
+    async () => {
+      const courseInstanceId = '1';
+      const studentUid = 'student@example.com';
+      const user = await getOrCreateUser({
+        uid: studentUid,
+        name: 'Example Student',
+        uin: 'student',
+        email: 'student@example.com',
+      });
+      await ensureEnrollment({ course_instance_id: courseInstanceId, user_id: user.user_id });
+
+      const headers = {
+        cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
+      };
+      // Test that instructor is denied access to instructor pages when emulating student
+      const instructorPageUrl = `${context.baseUrl}/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
+      const response = await fetch(instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+
+      console.log(response.status);
+      const body = await response.text();
+      console.log(body);
+      // This should result in a 403 error, which would trigger the redirect middleware
+      // if the redirect functionality is working correctly
+      // assert.equal(response.status, 302);
+      // assert.equal(
+      //   response.headers.get('Location'),
+      //   `$/pl/course_instance/1/instructor/instance_admin/assessments`,
+      // );
     },
   );
 });

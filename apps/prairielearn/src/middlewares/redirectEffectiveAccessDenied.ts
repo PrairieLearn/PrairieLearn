@@ -1,5 +1,6 @@
 import { type ErrorRequestHandler, type NextFunction, type Request, type Response } from 'express';
 import { idsEqual } from '../lib/id.js';
+import fs from 'fs';
 
 const redirects = [
   {
@@ -42,7 +43,7 @@ export function getRedirectForEffectiveAccessDenied(res: Response): string | nul
   // permission. This results in a 403 (Access Denied) error. Here
   // we try and detect this case and redirect to an accessible page.
 
-  // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.js)
+  // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.ts)
   if (!res.locals.pl_requested_data_changed) return null;
 
   // skip if we don't have user data
@@ -79,7 +80,13 @@ export const redirectEffectiveAccessDeniedErrorHandler: ErrorRequestHandler = (
     return next(err);
   }
 
+  // write to a file
+  fs.writeFileSync(
+    'redirectEffectiveAccessDeniedErrorHandler.txt',
+    JSON.stringify(res.locals, null, 2),
+  );
   const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+  console.log('redirectEffectiveAccessDeniedErrorHandler', redirectUrl);
   if (redirectUrl) {
     res.redirect(redirectUrl);
     return;
