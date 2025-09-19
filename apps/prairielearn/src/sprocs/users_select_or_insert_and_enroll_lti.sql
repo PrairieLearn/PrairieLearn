@@ -79,8 +79,8 @@ BEGIN
 
     -- if user has access, then ensure enrollment
     IF has_access THEN
-        INSERT INTO enrollments (course_instance_id, user_id, status, joined_at)
-        VALUES (lti_course_instance_id, u.user_id, 'joined', now())
+        INSERT INTO enrollments (course_instance_id, user_id, status, joined_at, first_joined_at)
+        VALUES (lti_course_instance_id, u.user_id, 'joined', now(), now())
         ON CONFLICT DO NOTHING;
     END IF;
 END;

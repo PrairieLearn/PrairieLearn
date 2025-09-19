@@ -67,18 +67,19 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
         };
 
         const codeCaller = await run(async () => {
-          if (workersExecutionMode === 'container') {
-            return await CodeCallerContainer.create(codeCallerOptions);
-          } else if (workersExecutionMode === 'native') {
-            return await CodeCallerNative.create({
-              ...codeCallerOptions,
-              pythonVenvSearchPaths: config.pythonVenvSearchPaths,
-              errorLogger: logger.error.bind(logger),
-              // We can only drop privileges if this code caller is running in a container.
-              dropPrivileges: false,
-            });
-          } else {
-            assertNever(workersExecutionMode);
+          switch (workersExecutionMode) {
+            case 'container':
+              return await CodeCallerContainer.create(codeCallerOptions);
+            case 'native':
+              return await CodeCallerNative.create({
+                ...codeCallerOptions,
+                pythonVenvSearchPaths: config.pythonVenvSearchPaths,
+                errorLogger: logger.error.bind(logger),
+                // We can only drop privileges if this code caller is running in a container.
+                dropPrivileges: false,
+              });
+            default:
+              assertNever(workersExecutionMode);
           }
         });
 

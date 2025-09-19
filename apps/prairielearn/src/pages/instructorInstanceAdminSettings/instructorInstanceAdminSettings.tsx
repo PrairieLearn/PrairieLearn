@@ -10,7 +10,11 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import {
   CourseInstanceCopyEditor,
@@ -20,14 +24,16 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { Hydrate } from '../../lib/preact.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
-import { generateEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
+import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 
@@ -37,43 +43,45 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const shortNames = await sqldb.queryRows(
-      sql.short_names,
-      { course_id: res.locals.course.id },
-      z.string(),
-    );
+    const {
+      course_instance: courseInstance,
+      course,
+      institution,
+      has_enhanced_navigation,
+    } = getCourseInstanceContext(res.locals, 'instructor');
+    const pageContext = getPageContext(res.locals);
+    const { plainUrlPrefix } = pageContext;
+
+    const shortNames = await sqldb.queryRows(sql.short_names, { course_id: course.id }, z.string());
     const enrollmentCount = await sqldb.queryRow(
       sql.select_enrollment_count,
-      { course_instance_id: res.locals.course_instance.id },
+      { course_instance_id: courseInstance.id },
       z.number(),
     );
     const host = getCanonicalHost(req);
-    const studentLink = new URL(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}`,
-      host,
-    ).href;
+    const studentLink = new URL(`${plainUrlPrefix}/course_instance/${courseInstance.id}`, host)
+      .href;
     const publicLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessments`,
+      `${plainUrlPrefix}/public/course_instance/${courseInstance.id}/assessments`,
       host,
     ).href;
 
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
-        courseInstanceId: res.locals.course_instance.id,
-        enrollmentCode: res.locals.course_instance.enrollment_code,
+        courseInstanceId: courseInstance.id,
+        // TODO: after the enrollment code backfill, this should be non-nullable
+        enrollmentCode: courseInstance.enrollment_code ?? '',
       }),
       host,
     ).href;
-    const availableTimezones = await getCanonicalTimezones([
-      res.locals.course_instance.display_timezone,
-    ]);
+    const availableTimezones = await getCanonicalTimezones([courseInstance.display_timezone]);
 
     const infoCourseInstancePath = path.join(
       'courseInstances',
-      res.locals.course_instance.short_name,
+      courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const fullInfoCourseInstancePath = path.join(res.locals.course.path, infoCourseInstancePath);
+    const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
     const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
     let origHash = '';
     if (infoCourseInfoPathExists) {
@@ -84,25 +92,66 @@ router.get(
 
     const instanceGHLink = courseRepoContentUrl(
       res.locals.course,
-      `courseInstances/${res.locals.course_instance.short_name}`,
+      `courseInstances/${courseInstance.short_name}`,
     );
 
-    const canEdit =
-      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const { authz_data } = pageContext;
+    const canEdit = authz_data.has_course_permission_edit && !course.example_course;
+
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: courseInstance.id,
+    });
 
     res.send(
-      InstructorInstanceAdminSettings({
+      PageLayout({
         resLocals: res.locals,
-        shortNames,
-        selfEnrollLink,
-        studentLink,
-        publicLink,
-        infoCourseInstancePath,
-        availableTimezones,
-        origHash,
-        instanceGHLink,
-        canEdit,
-        enrollmentCount,
+        pageTitle: 'Settings',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'settings',
+        },
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={{
+                has_course_instance_permission_edit:
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false,
+              }}
+              courseInstance={courseInstance}
+              course={course}
+              urlPrefix={pageContext.urlPrefix}
+            />
+            <Hydrate>
+              <InstructorInstanceAdminSettings
+                csrfToken={pageContext.__csrf_token}
+                urlPrefix={pageContext.urlPrefix}
+                navPage={pageContext.navPage}
+                hasEnhancedNavigation={has_enhanced_navigation}
+                canEdit={canEdit}
+                courseInstance={courseInstance}
+                shortNames={shortNames}
+                availableTimezones={availableTimezones}
+                origHash={origHash}
+                instanceGHLink={instanceGHLink}
+                studentLink={studentLink}
+                publicLink={publicLink}
+                selfEnrollLink={selfEnrollLink}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
+                infoCourseInstancePath={infoCourseInstancePath}
+              />
+            </Hydrate>
+            <Hydrate>
+              <DeleteCourseInstanceModal
+                shortName={courseInstance.short_name ?? ''}
+                enrolledCount={enrollmentCount}
+                csrfToken={pageContext.__csrf_token}
+              />
+            </Hydrate>
+          </>
+        ),
       }),
     );
   }),
@@ -244,7 +293,7 @@ router.post(
     } else if (req.body.__action === 'generate_enrollment_code') {
       await sqldb.execute(sql.update_enrollment_code, {
         course_instance_id: res.locals.course_instance.id,
-        enrollment_code: generateEnrollmentCode(),
+        enrollment_code: await uniqueEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');
       res.redirect(req.originalUrl);
