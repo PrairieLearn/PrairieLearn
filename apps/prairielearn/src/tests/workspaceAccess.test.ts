@@ -45,10 +45,20 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
 
   beforeAll(async function () {
     const studentOneUser = await getOrCreateUser(studentOne);
-    await ensureEnrollment({ user_id: studentOneUser.user_id, course_instance_id: '1' });
+    await ensureEnrollment({
+      user_id: studentOneUser.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
-    await ensureEnrollment({ user_id: studentTwoUser.user_id, course_instance_id: '1' });
+    await ensureEnrollment({
+      user_id: studentTwoUser.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
 
     await getOrCreateUser(studentNotEnrolled);
   });

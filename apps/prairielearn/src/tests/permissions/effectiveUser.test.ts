@@ -102,6 +102,8 @@ describe('effective user', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       user_id: studentId,
       course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
     });
   });
 

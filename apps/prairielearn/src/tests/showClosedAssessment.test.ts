@@ -50,7 +50,12 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   test.sequential('enroll the test student user in the course', async () => {
     const user = await selectUserByUid('student@example.com');
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    await ensureEnrollment({
+      user_id: user.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+    });
   });
 
   test.sequential('visit start exam page', async () => {

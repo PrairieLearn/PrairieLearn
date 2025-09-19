@@ -55,6 +55,8 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       course_instance_id: '1',
       user_id: user.user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -104,6 +106,8 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       course_instance_id: '1',
       user_id: user.user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -132,6 +136,8 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       course_instance_id: '1',
       user_id: user.user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -175,6 +181,8 @@ describe('ensureEnrollment', () => {
     await ensureEnrollment({
       course_instance_id: '1',
       user_id: user.user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
