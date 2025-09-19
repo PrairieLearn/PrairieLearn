@@ -39,7 +39,7 @@ WITH
   )
 SELECT
   *
-from
+FROM
   deleted_row;
 
 -- BLOCK insert_admin_by_user_uid
