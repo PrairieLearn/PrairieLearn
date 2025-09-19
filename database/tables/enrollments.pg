@@ -3,7 +3,6 @@ columns
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     first_joined_at: timestamp with time zone
     id: bigint not null default nextval('enrollments_id_seq'::regclass)
-    joined_at: timestamp with time zone
     lti_managed: boolean not null default false
     pending_lti13_email: text
     pending_lti13_instance_id: bigint
