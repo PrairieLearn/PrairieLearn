@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'preact/compat';
+import { useState } from 'preact/compat';
 import { Accordion, Button, Card, Form } from 'react-bootstrap';
 import {
   type Control,
@@ -16,7 +16,6 @@ import { AfterCompleteForm } from './AfterCompleteForm.js';
 import { DateControlForm } from './DateControlForm.js';
 import { OverrideRulesForm } from './OverrideRulesForm.js';
 import { PrairieTestControlForm } from './PrairieTestControlForm.js';
-import { TriStateCheckbox } from './TriStateCheckbox.js';
 import type { AccessControlFormData } from './types.js';
 
 interface AccessControlFormProps {
@@ -46,9 +45,7 @@ export function AccessControlForm({
     watch,
     trigger,
     setValue,
-    setError,
-    clearErrors,
-    formState: { isDirty, errors },
+    formState: { isDirty, errors, isValid },
   } = useForm<AccessControlFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -68,42 +65,7 @@ export function AccessControlForm({
 
   const watchedData = watch();
 
-  // Watch for changes in Date Control and PrairieTest Control to clear validation errors
-  const dateControlEnabled = useWatch({
-    control,
-    name: 'mainRule.dateControl.enabled',
-  });
-
-  const prairieTestControlEnabled = useWatch({
-    control,
-    name: 'mainRule.prairieTestControl.enabled',
-  });
-
-  // Clear validation error when either control is enabled
-  useEffect(() => {
-    if (dateControlEnabled || prairieTestControlEnabled) {
-      clearErrors('mainRule.dateControl.enabled');
-    }
-  }, [dateControlEnabled, prairieTestControlEnabled, clearErrors]);
-
   const handleFormSubmit = (data: AccessControlFormData) => {
-    // Clear any existing validation errors
-    clearErrors('mainRule.dateControl.enabled');
-
-    // Validate that either Date Control or PrairieTest Control is enabled
-    if (data.mainRule?.enabled && !data.mainRule?.blockAccess) {
-      const dateControlEnabled = data.mainRule?.dateControl?.enabled;
-      const prairieTestControlEnabled = data.mainRule?.prairieTestControl?.enabled;
-
-      if (!dateControlEnabled && !prairieTestControlEnabled) {
-        setError('mainRule.dateControl.enabled', {
-          type: 'manual',
-          message: 'Either Date Control or PrairieTest Control must be enabled',
-        });
-        return;
-      }
-    }
-
     // Combine main rule and overrides into a single array
     const allRules = [data.mainRule, ...data.overrides];
     onSubmit(allRules);
@@ -161,7 +123,7 @@ export function AccessControlForm({
         </Accordion>
 
         <div class="mt-4 d-flex gap-2">
-          <Button type="submit" variant="primary" disabled={!isDirty}>
+          <Button type="submit" variant="primary" disabled={!isDirty || !isValid}>
             Save Changes
           </Button>
           <Button
@@ -269,22 +231,21 @@ function MainRuleForm({
 
           {!blockAccess && (
             <>
-              {(hasDateRelease || hasPrairieTestRelease) &&
-                !(dateControlEnabled && !releaseDateEnabled) && (
-                  <Form.Group class="mb-3">
-                    <div class="d-flex align-items-center mb-2">
-                      <TriStateCheckbox
-                        control={control}
-                        name="mainRule.listBeforeRelease"
-                        class="me-2"
-                      />
-                      <span>List before release</span>
-                    </div>
-                    <Form.Text class="text-muted">
-                      Students can see the title and click into assessment before release
-                    </Form.Text>
-                  </Form.Group>
-                )}
+              {(hasDateRelease || hasPrairieTestRelease) && (
+                <Form.Group class="mb-3">
+                  <div class="d-flex align-items-center mb-2">
+                    <Form.Check
+                      type="checkbox"
+                      class="me-2"
+                      {...control.register('mainRule.listBeforeRelease')}
+                    />
+                    <span>List before release</span>
+                  </div>
+                  <Form.Text class="text-muted">
+                    Students can see the title and click into assessment before release
+                  </Form.Text>
+                </Form.Group>
+              )}
 
               <DateControlForm
                 control={control}
@@ -298,12 +259,6 @@ function MainRuleForm({
                 ruleEnabled={ruleEnabled}
               />
 
-              {/* Display validation error if neither Date Control nor PrairieTest Control is enabled */}
-              {errors?.mainRule?.dateControl?.enabled?.message && (
-                <div class="alert alert-danger" role="alert">
-                  {errors.mainRule.dateControl.enabled.message}
-                </div>
-              )}
               <AfterCompleteForm
                 control={control}
                 namePrefix="mainRule"

@@ -12,7 +12,6 @@ import {
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 
-import { TriStateCheckbox } from './TriStateCheckbox.js';
 import type { AccessControlFormData } from './types.js';
 
 interface DateControlFormProps {
@@ -29,6 +28,7 @@ export function DateControlForm({
   setValue,
 }: DateControlFormProps) {
   const [showPassword, setShowPassword] = useState(false);
+  const { errors: formErrors } = useFormState({ control });
 
   // Get the user's local browser timezone
   const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -299,12 +299,31 @@ export function DateControlForm({
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <TriStateCheckbox control={control} name="mainRule.dateControl.enabled" class="me-2" />
+          <Form.Check
+            type="checkbox"
+            class="me-2"
+            {...control.register('mainRule.dateControl.enabled', {
+              validate: (value, formData) => {
+                const prairieTestControlEnabled = formData.mainRule.prairieTestControl?.enabled;
+                const controlEnabled = value || prairieTestControlEnabled;
+                if (!controlEnabled) {
+                  return 'Either Date Control or PrairieTest Integration must be enabled';
+                }
+                return true;
+              },
+              deps: ['mainRule.prairieTestControl.enabled'],
+            })}
+          />
           <span>Date Control</span>
         </div>
         <Form.Text class="text-muted">
           Control access and credit to your exam based on a schedule
         </Form.Text>
+        {formErrors.mainRule?.dateControl?.enabled && (
+          <Form.Text class="text-danger d-block mt-1">
+            {formErrors.mainRule.dateControl.enabled.message}
+          </Form.Text>
+        )}
       </Card.Header>
       {dateControlEnabled && (
         <Card.Body>
@@ -454,10 +473,10 @@ export function DateControlForm({
                 <div class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <div class="d-flex align-items-center">
-                      <TriStateCheckbox
-                        control={control}
-                        name="mainRule.dateControl.earlyDeadlinesEnabled"
+                      <Form.Check
+                        type="checkbox"
                         class="me-2"
+                        {...control.register('mainRule.dateControl.earlyDeadlinesEnabled')}
                       />
                       <span>Early Deadlines</span>
                     </div>
@@ -626,10 +645,10 @@ export function DateControlForm({
                 <div class="mb-4">
                   <div class="d-flex justify-content-between align-items-center mb-2">
                     <div class="d-flex align-items-center">
-                      <TriStateCheckbox
-                        control={control}
-                        name="mainRule.dateControl.lateDeadlinesEnabled"
+                      <Form.Check
+                        type="checkbox"
                         class="me-2"
+                        {...control.register('mainRule.dateControl.lateDeadlinesEnabled')}
                       />
                       <span>Late Deadlines</span>
                     </div>
@@ -874,10 +893,10 @@ export function DateControlForm({
             <Col md={6}>
               <Form.Group>
                 <div class="d-flex align-items-center mb-2">
-                  <TriStateCheckbox
-                    control={control}
-                    name="mainRule.dateControl.durationMinutesEnabled"
+                  <Form.Check
+                    type="checkbox"
                     class="me-2"
+                    {...control.register('mainRule.dateControl.durationMinutesEnabled')}
                   />
                   <Form.Label class="mb-0">Time limit</Form.Label>
                 </div>
@@ -904,10 +923,10 @@ export function DateControlForm({
             <Col md={6}>
               <Form.Group>
                 <div class="d-flex align-items-center mb-2">
-                  <TriStateCheckbox
-                    control={control}
-                    name="mainRule.dateControl.passwordEnabled"
+                  <Form.Check
+                    type="checkbox"
                     class="me-2"
+                    {...control.register('mainRule.dateControl.passwordEnabled')}
                   />
                   <Form.Label class="mb-0">Password</Form.Label>
                 </div>

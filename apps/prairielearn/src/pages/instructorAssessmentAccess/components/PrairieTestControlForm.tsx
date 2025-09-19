@@ -1,7 +1,6 @@
 import { Button, Card, Col, Form, Row } from 'react-bootstrap';
-import { type Control, useFieldArray, useWatch } from 'react-hook-form';
+import { type Control, useFieldArray, useFormState, useWatch } from 'react-hook-form';
 
-import { TriStateCheckbox } from './TriStateCheckbox.js';
 import type { AccessControlFormData } from './types.js';
 
 interface PrairieTestControlFormProps {
@@ -15,6 +14,7 @@ export function PrairieTestControlForm({
   namePrefix,
   ruleEnabled = true,
 }: PrairieTestControlFormProps) {
+  const { errors: formErrors } = useFormState({ control });
   const {
     fields: examFields,
     append: appendExam,
@@ -37,16 +37,31 @@ export function PrairieTestControlForm({
     <Card class="mb-4">
       <Card.Header>
         <div class="d-flex align-items-center">
-          <TriStateCheckbox
-            control={control}
-            name={`${namePrefix}.prairieTestControl.enabled`}
+          <Form.Check
+            type="checkbox"
             class="me-2"
+            {...control.register(`${namePrefix}.prairieTestControl.enabled`, {
+              validate: (value, formData) => {
+                const dateControlEnabled = formData.mainRule.dateControl?.enabled;
+                const controlEnabled = value || dateControlEnabled;
+                if (!controlEnabled) {
+                  return 'Either Date Control or PrairieTest Integration must be enabled';
+                }
+                return true;
+              },
+              deps: ['mainRule.dateControl.enabled'],
+            })}
           />
           <span>PrairieTest Integration</span>
         </div>
         <Form.Text class="text-muted">
           Control access and credit to your exam through PrairieTest
         </Form.Text>
+        {(formErrors as any)[namePrefix]?.prairieTestControl?.enabled && (
+          <Form.Text class="text-danger d-block mt-1">
+            {(formErrors as any)[namePrefix].prairieTestControl.enabled.message}
+          </Form.Text>
+        )}
       </Card.Header>
       {enabled && (
         <Card.Body>
