@@ -15,6 +15,7 @@ import z from 'zod';
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
@@ -502,7 +503,34 @@ export async function diffChunks({
     questions: new Set(),
   };
 
+  // Track the entity IDs currently referenced by existing chunks, keyed by their
+  // human-readable names. This allows us (inline) to detect when a chunk
+  // exists for a name but points at an old (now-deleted) DB row ID after a
+  // UUID rotation.
+  const existingCourseInstanceIdByName = new Map<string, string | null>();
+  const existingAssessmentIdByCourseInstance = new Map<string, Map<string, string | null>>();
+
   rawCourseChunks.forEach((courseChunk) => {
+    // First, populate the auxiliary maps for reconciliation.
+    if (courseChunk.type === 'clientFilesCourseInstance' && courseChunk.course_instance_name) {
+      existingCourseInstanceIdByName.set(
+        courseChunk.course_instance_name,
+        courseChunk.course_instance_id ?? null,
+      );
+    } else if (courseChunk.type === 'clientFilesAssessment') {
+      const ciName = courseChunk.course_instance_name;
+      const assessName = courseChunk.assessment_name;
+      if (ciName && assessName) {
+        let assessMap = existingAssessmentIdByCourseInstance.get(ciName);
+        if (!assessMap) {
+          assessMap = new Map();
+          existingAssessmentIdByCourseInstance.set(ciName, assessMap);
+        }
+        assessMap.set(assessName, courseChunk.assessment_id ?? null);
+      }
+    }
+
+    // Next, process the chunk by its type.
     switch (courseChunk.type) {
       case 'elements':
       case 'elementExtensions':
@@ -576,7 +604,37 @@ export async function diffChunks({
     }
   });
 
-  // Next: course instances and their assessments
+  // Preload active (current) DB IDs so we can detect mismatches inline while
+  // iterating course instances / assessments (handles UUID rotations without file edits).
+  const activeCourseInstances = await sqldb.queryRows(
+    sql.select_active_course_instance_ids,
+    { course_id: courseId },
+    z.object({ course_instance_name: z.string(), course_instance_id: z.string() }),
+  );
+  const activeCiIdByName = new Map(
+    activeCourseInstances.map((r) => [r.course_instance_name, r.course_instance_id]),
+  );
+
+  const activeAssessments = await sqldb.queryRows(
+    sql.select_active_assessment_ids_by_tid,
+    { course_id: courseId },
+    z.object({
+      course_instance_name: z.string(),
+      assessment_name: z.string(),
+      assessment_id: z.string(),
+    }),
+  );
+  const activeAssessmentIdByCourseInstance = new Map<string, Map<string, string>>();
+  activeAssessments.forEach((r) => {
+    let assessMap = activeAssessmentIdByCourseInstance.get(r.course_instance_name);
+    if (!assessMap) {
+      assessMap = new Map();
+      activeAssessmentIdByCourseInstance.set(r.course_instance_name, assessMap);
+    }
+    assessMap.set(r.assessment_name, r.assessment_id);
+  });
+
+  // Next: course instances and their assessments (includes reconciliation logic)
   await async.each(
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
@@ -584,10 +642,18 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
+      const existingCiId = existingCourseInstanceIdByName.get(ciid) ?? null;
+      const activeCiId = activeCiIdByName.get(ciid) ?? null;
+      const ciIdMismatch = Boolean(activeCiId && activeCiId !== existingCiId);
+
+      const existingCiChunk =
+        existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
+
+      const changedCiChunk =
+        changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance ||
-          changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance)
+        (!existingCiChunk || changedCiChunk || ciIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -606,10 +672,17 @@ export async function diffChunks({
             'clientFilesAssessment',
           ),
         );
+        const existingAssessMap = existingAssessmentIdByCourseInstance.get(ciid);
+        const existingAssessId = existingAssessMap?.get(tid) ?? null;
+        const activeAssessId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const assessIdMismatch = Boolean(activeAssessId && activeAssessId !== existingAssessId);
+        const hasExistingAssess =
+          existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
+        const hasChangedAssess =
+          changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ||
-            changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid))
+          (!hasExistingAssess || hasChangedAssess || assessIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -797,6 +870,7 @@ interface UpdateChunksForCourseOptions {
   courseData: CourseData;
   oldHash?: string | null;
   newHash?: string | null;
+  changedFiles?: string[];
 }
 
 export async function updateChunksForCourse({
@@ -805,17 +879,25 @@ export async function updateChunksForCourse({
   courseData,
   oldHash,
   newHash,
+  changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  let changedFiles: string[] = [];
-  if (oldHash && newHash) {
-    changedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
-  }
+  const resolvedChangedFiles = await run(async () => {
+    if (changedFiles && (oldHash || newHash)) {
+      throw new Error('cannot specify changedFiles with oldHash or newHash');
+    }
+
+    if (changedFiles) return changedFiles;
+
+    if (oldHash && newHash) return await identifyChangedFiles(coursePath, oldHash, newHash);
+
+    return [];
+  });
 
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles,
+    changedFiles: resolvedChangedFiles,
   });
 
   await createAndUploadChunks(coursePath, courseId, updatedChunks);
