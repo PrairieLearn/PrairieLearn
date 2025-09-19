@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
@@ -18,7 +19,6 @@ import { ensureEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 import { getOrCreateUser } from '../utils/auth.js';
-import * as cheerio from 'cheerio';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
