@@ -32,6 +32,7 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
     // If a CSRF token is not present, we fall through to the error below.
     res.locals.__csrf_token
   ) {
+    // Try to redirect to an accessible page. If we can't, then show the error page.
     const redirectUrl = getRedirectForEffectiveAccessDenied(res);
     if (redirectUrl) {
       res.redirect(redirectUrl);
