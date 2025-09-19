@@ -967,6 +967,40 @@ export class PostgresPool {
     return schema;
   }
 
+  /**
+   * Deletes all schemas starting with the given prefix.
+   *
+   * @param prefix The prefix of the schemas to delete.
+   */
+  async clearSchemasStartingWith(prefix: string): Promise<void> {
+    // Sanity check against deleting public, pg_, information_schema, etc.
+    if (prefix === 'public' || prefix.startsWith('pg_') || prefix === 'information_schema') {
+      throw new Error(`Cannot clear schema starting with ${prefix}`);
+    }
+    // Sanity check against a bad prefix.
+    if (prefix.length < 4) {
+      throw new Error(`Prefix is too short: ${prefix}`);
+    }
+
+    await this.queryAsync(
+      `DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname LIKE '${prefix}' || '%'
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;`,
+      {},
+    );
+  }
+
   /** The number of established connections. */
   get totalCount() {
     return this.pool?.totalCount ?? 0;

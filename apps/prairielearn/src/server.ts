@@ -2428,6 +2428,10 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (schemaPrefix.length > 28) {
       throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
     }
+    if (config.devMode) {
+      await sqldb.clearSchemasStartingWith(schemaPrefix);
+    }
+
     await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
     await sprocs.init();
 
