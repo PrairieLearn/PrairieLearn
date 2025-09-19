@@ -18,6 +18,7 @@ import { ensureEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 import { getOrCreateUser } from '../utils/auth.js';
+import * as cheerio from 'cheerio';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -546,20 +547,22 @@ describe('effective user', { timeout: 60_000 }, function () {
   );
 
   test.sequential(
-    'instructor is denied access to when emulating student, and no redirect is available',
+    'instructor is denied access when emulating student, and no redirect is available',
     async () => {
       const headers = {
         cookie: 'pl2_requested_uid=student@example.com; pl2_requested_data_changed=true',
       };
       // Test that instructor is denied access to instructor pages when emulating student
-      const instructorPageUrl = `${context.baseUrl}/course_instance/1/instructor/instance_admin/assessments`;
+      const instructorPageUrl = `${context.baseUrl}/course/1/course_admin/instance_admin`;
       const response = await fetch(instructorPageUrl, {
         headers,
         redirect: 'manual',
       });
-      // This should result in a 403 error, which would trigger the redirect middleware
-      // if the redirect functionality is working correctly
-      // check for 'div data-component="AuthzAccessMismatch'
+      // This should result in a fancy 403 error page
+      const body = await response.text();
+      const $ = cheerio.load(body);
+      const authzAccessMismatch = $('div[data-component="AuthzAccessMismatch"]');
+      assert.equal(authzAccessMismatch.length, 1);
       assert.equal(response.status, 403);
     },
   );
@@ -581,39 +584,15 @@ describe('effective user', { timeout: 60_000 }, function () {
         // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
         cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
       };
-
-      // Access http://localhost:3000/pl/course_instance/2/instructor/instance_admin/assessments
-      // Should redirect
-
-      /**
-       * This should fire:
-       {
-          // try to redirect to the student course instance
-          canRedirect: (resLocals: Record<string, any>) => {
-            return resLocals?.course_instance?.id && resLocals?.authz_data?.has_student_access;
-          },
-          buildRedirect: (resLocals: Record<string, any>) =>
-            `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}`,
-        },
-       */
-
-      // Test that instructor is denied access to instructor pages when emulating student
-      const instructorPageUrl = `${context.baseUrl}/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
-      const response = await fetch(instructorPageUrl, {
+      const instructorPageUrl = `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
+      const studentPageUrl = `/pl/course_instance/${courseInstanceId}`;
+      const response = await fetch(context.siteUrl + instructorPageUrl, {
         headers,
-        // redirect: 'manual',
+        redirect: 'manual',
       });
 
-      console.log(response.status);
-      const body = await response.text();
-      console.log(body);
-      // This should result in a 403 error, which would trigger the redirect middleware
-      // if the redirect functionality is working correctly
-      // assert.equal(response.status, 302);
-      // assert.equal(
-      //   response.headers.get('Location'),
-      //   `$/pl/course_instance/1/instructor/instance_admin/assessments`,
-      // );
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('Location'), studentPageUrl);
     },
   );
 });
