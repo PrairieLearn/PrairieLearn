@@ -74,5 +74,6 @@
     "files.insertFinalNewline": true
   },
   "vitest.maximumConfigs": 100,
-  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff"
+  "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "dafny.version": "3.3.0"
 }
