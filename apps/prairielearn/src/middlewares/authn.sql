@@ -4,14 +4,12 @@ INSERT INTO
     user_id,
     course_instance_id,
     status,
-    joined_at,
     first_joined_at
   ) (
     SELECT
       u.user_id,
       ci.id,
       'joined',
-      now(),
       now()
     FROM
       users AS u,
