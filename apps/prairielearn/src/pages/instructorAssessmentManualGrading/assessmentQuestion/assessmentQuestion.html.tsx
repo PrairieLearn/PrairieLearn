@@ -176,6 +176,7 @@ export function AssessmentQuestion({
             rubricData={rubric_data}
             csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}
+            resLocals={resLocals}
           />,
         )}
       </div>
