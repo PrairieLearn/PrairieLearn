@@ -18,7 +18,6 @@ import {
   PERMISSIONS_META,
 } from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
-import fs from 'fs';
 
 function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
   const descriptions = permissionKeys.map((key) => {
@@ -104,13 +103,6 @@ export const createAuthzMiddleware =
 
     if (unauthorizedUsers === 'passthrough') {
       next();
-      return;
-    }
-
-    // Try to redirect to an accessible page. If we can't, then show the error page.
-    const redirectUrl = getRedirectForEffectiveAccessDenied(res);
-    if (redirectUrl) {
-      res.redirect(redirectUrl);
       return;
     }
 

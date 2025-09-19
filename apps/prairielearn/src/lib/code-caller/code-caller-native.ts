@@ -119,7 +119,7 @@ export class CodeCallerNative implements CodeCaller {
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
     const pythonExecutable = await run(async () => {
       for (const p of options.pythonVenvSearchPaths) {
-        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
+        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.13'));
         if (await fs.pathExists(venvPython)) return venvPython;
       }
 
