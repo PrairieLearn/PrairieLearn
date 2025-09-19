@@ -41,8 +41,6 @@ export async function init() {
       'admin_assessment_question_number.sql',
       'authz_course.sql',
       'authz_course_instance.sql',
-      'administrators_insert_by_user_uid.sql',
-      'administrators_delete_by_user_id.sql',
       'courses_update_column.sql',
       'assessment_instances_grade.sql',
       'instance_questions_points_homework.sql',
