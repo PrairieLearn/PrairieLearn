@@ -334,21 +334,26 @@ export function DateControlForm({
                 <div class="mb-2">
                   <Form.Check
                     type="radio"
+                    name="releaseMode"
                     id="release-immediately"
                     label="Released immediately"
                     checked={!releaseDateEnabled}
-                    onChange={() => {
-                      setValue('mainRule.dateControl.releaseDateEnabled', false);
-                      setValue('mainRule.dateControl.releaseDate', '');
+                    onChange={(e) => {
+                      if ((e.target as HTMLInputElement).checked) {
+                        setValue('mainRule.dateControl.releaseDateEnabled', false);
+                      }
                     }}
                   />
                   <Form.Check
                     type="radio"
+                    name="releaseMode"
                     id="release-after-date"
                     label="Released after date"
                     checked={releaseDateEnabled}
-                    onChange={() => {
-                      setValue('mainRule.dateControl.releaseDateEnabled', true);
+                    onChange={(e) => {
+                      if ((e.target as HTMLInputElement).checked) {
+                        setValue('mainRule.dateControl.releaseDateEnabled', true);
+                      }
                     }}
                   />
                 </div>
@@ -365,21 +370,26 @@ export function DateControlForm({
                 <div class="mb-2">
                   <Form.Check
                     type="radio"
+                    name="dueMode"
                     id="due-never"
                     label="No due date"
                     checked={!dueDateEnabled}
-                    onChange={() => {
-                      setValue('mainRule.dateControl.dueDateEnabled', false);
-                      setValue('mainRule.dateControl.dueDate', '');
+                    onChange={(e) => {
+                      if ((e.target as HTMLInputElement).checked) {
+                        setValue('mainRule.dateControl.dueDateEnabled', false);
+                      }
                     }}
                   />
                   <Form.Check
                     type="radio"
+                    name="dueMode"
                     id="due-on-date"
                     label="Due on date"
                     checked={dueDateEnabled}
-                    onChange={() => {
-                      setValue('mainRule.dateControl.dueDateEnabled', true);
+                    onChange={(e) => {
+                      if ((e.target as HTMLInputElement).checked) {
+                        setValue('mainRule.dateControl.dueDateEnabled', true);
+                      }
                     }}
                   />
                 </div>
@@ -828,24 +838,33 @@ export function DateControlForm({
                   <div class="mb-2">
                     <Form.Check
                       type="radio"
+                      name="afterLastDeadlineMode"
                       id="after-deadline-no-submissions"
                       label="No submissions allowed"
                       checked={afterLastDeadlineMode === 'no_submissions'}
-                      onChange={() => {
-                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', false);
-                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
-                        setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                      onChange={(e) => {
+                        if ((e.target as HTMLInputElement).checked) {
+                          setValue(
+                            'mainRule.dateControl.afterLastDeadline.allowSubmissions',
+                            false,
+                          );
+                          setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
+                          setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                        }
                       }}
                     />
                     <Form.Check
                       type="radio"
+                      name="afterLastDeadlineMode"
                       id="after-deadline-practice-submissions"
                       label="Allow practice submissions"
                       checked={afterLastDeadlineMode === 'practice_submissions'}
-                      onChange={() => {
-                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
-                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
-                        setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                      onChange={(e) => {
+                        if ((e.target as HTMLInputElement).checked) {
+                          setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
+                          setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
+                          setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                        }
                       }}
                     />
                     <Form.Text class="text-muted ms-4">
@@ -853,12 +872,15 @@ export function DateControlForm({
                     </Form.Text>
                     <Form.Check
                       type="radio"
+                      name="afterLastDeadlineMode"
                       id="after-deadline-partial-credit"
                       label="Allow submissions for partial credit"
                       checked={afterLastDeadlineMode === 'partial_credit'}
-                      onChange={() => {
-                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
-                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', true);
+                      onChange={(e) => {
+                        if ((e.target as HTMLInputElement).checked) {
+                          setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
+                          setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', true);
+                        }
                       }}
                     />
                   </div>
