@@ -3,6 +3,7 @@ import { Button, Card, Col, Form, InputGroup, Row } from 'react-bootstrap';
 import {
   type Control,
   type UseFormTrigger,
+  type UseFormSetValue,
   useFieldArray,
   useFormState,
   useWatch,
@@ -18,12 +19,14 @@ interface DateControlFormProps {
   control: Control<AccessControlFormData>;
   trigger: UseFormTrigger<AccessControlFormData>;
   courseInstance: StaffCourseInstanceContext['course_instance'];
+  setValue: UseFormSetValue<AccessControlFormData>;
 }
 
 export function DateControlForm({
   control,
   trigger,
   courseInstance: _courseInstance,
+  setValue,
 }: DateControlFormProps) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -63,17 +66,24 @@ export function DateControlForm({
 
   const releaseDateEnabled = useWatch({
     control,
-    name: 'mainRule.dateControl.releaseDateEnabled',
+    name: 'mainRule.dateControl.releaseDateEnabled' as const,
+    defaultValue: false,
   });
 
   const dueDateEnabled = useWatch({
     control,
-    name: 'mainRule.dateControl.dueDateEnabled',
+    name: 'mainRule.dateControl.dueDateEnabled' as const,
+    defaultValue: false,
   });
 
   const durationMinutesEnabled = useWatch({
     control,
     name: 'mainRule.dateControl.durationMinutesEnabled',
+  });
+
+  const durationMinutes = useWatch({
+    control,
+    name: 'mainRule.dateControl.durationMinutes',
   });
 
   const passwordEnabled = useWatch({
@@ -90,6 +100,16 @@ export function DateControlForm({
     control,
     name: 'mainRule.dateControl.afterLastDeadline.allowSubmissions',
   });
+
+  // Determine the current radio selection based on existing fields
+  const getAfterLastDeadlineMode = () => {
+    if (!allowSubmissions) return 'no_submissions';
+    if (allowSubmissions && !afterLastDeadlineCreditEnabled) return 'practice_submissions';
+    if (allowSubmissions && afterLastDeadlineCreditEnabled) return 'partial_credit';
+    return 'no_submissions';
+  };
+
+  const afterLastDeadlineMode = getAfterLastDeadlineMode();
 
   const dateControlEnabled = useWatch({
     control,
@@ -292,105 +312,135 @@ export function DateControlForm({
           <Row class="mb-3">
             <Col md={6}>
               <Form.Group>
-                <div class="d-flex align-items-center mb-2">
-                  <TriStateCheckbox
-                    control={control}
-                    name="mainRule.dateControl.releaseDateEnabled"
-                    class="me-2"
+                <div class="mb-2">
+                  <Form.Check
+                    type="radio"
+                    id="release-immediately"
+                    label="Released immediately"
+                    checked={!releaseDateEnabled}
+                    onChange={() => {
+                      setValue('mainRule.dateControl.releaseDateEnabled', false);
+                      setValue('mainRule.dateControl.releaseDate', '');
+                    }}
                   />
-                  <Form.Label class="mb-0">Release Date</Form.Label>
+                  <Form.Check
+                    type="radio"
+                    id="release-after-date"
+                    label="Released after date"
+                    checked={releaseDateEnabled}
+                    onChange={() => {
+                      setValue('mainRule.dateControl.releaseDateEnabled', true);
+                    }}
+                  />
                 </div>
-                <Form.Control
-                  type="datetime-local"
-                  disabled={!releaseDateEnabled}
-                  {...control.register('mainRule.dateControl.releaseDate')}
-                />
+                {releaseDateEnabled && (
+                  <Form.Control
+                    type="datetime-local"
+                    {...control.register('mainRule.dateControl.releaseDate')}
+                  />
+                )}
               </Form.Group>
             </Col>
             <Col md={6}>
               <Form.Group>
-                <div class="d-flex align-items-center mb-2">
-                  <TriStateCheckbox
-                    control={control}
-                    name="mainRule.dateControl.dueDateEnabled"
-                    class="me-2"
+                <div class="mb-2">
+                  <Form.Check
+                    type="radio"
+                    id="due-never"
+                    label="No due date"
+                    checked={!dueDateEnabled}
+                    onChange={() => {
+                      setValue('mainRule.dateControl.dueDateEnabled', false);
+                      setValue('mainRule.dateControl.dueDate', '');
+                    }}
                   />
-                  <Form.Label class="mb-0">Due Date</Form.Label>
+                  <Form.Check
+                    type="radio"
+                    id="due-on-date"
+                    label="Due on date"
+                    checked={dueDateEnabled}
+                    onChange={() => {
+                      setValue('mainRule.dateControl.dueDateEnabled', true);
+                    }}
+                  />
                 </div>
-                <Form.Control
-                  type="datetime-local"
-                  disabled={!dueDateEnabled}
-                  {...control.register('mainRule.dateControl.dueDate')}
-                />
-                {dueDateEnabled && dueDate && (
-                  <Form.Text class="text-muted">
-                    {(() => {
-                      const dueDateObj = new Date(dueDate);
+                {dueDateEnabled && (
+                  <>
+                    <Form.Control
+                      type="datetime-local"
+                      {...control.register('mainRule.dateControl.dueDate')}
+                    />
+                    {dueDate && (
+                      <Form.Text class="text-muted">
+                        {(() => {
+                          const dueDateObj = new Date(dueDate);
 
-                      // Check if there are any early deadlines
-                      const validEarlyDeadlines = (earlyDeadlines || []).filter(
-                        (deadline) => deadline?.date,
-                      );
+                          // Check if there are any early deadlines
+                          const validEarlyDeadlines = (earlyDeadlines || []).filter(
+                            (deadline) => deadline?.date,
+                          );
 
-                      if (validEarlyDeadlines.length > 0) {
-                        // Find the latest early deadline
-                        const sortedEarlyDeadlines = validEarlyDeadlines.sort(
-                          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-                        );
-                        const latestEarlyDeadline = sortedEarlyDeadlines[0];
-                        const latestEarlyDate = new Date(latestEarlyDeadline.date);
+                          if (validEarlyDeadlines.length > 0) {
+                            // Find the latest early deadline
+                            const sortedEarlyDeadlines = validEarlyDeadlines.sort(
+                              (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+                            );
+                            const latestEarlyDeadline = sortedEarlyDeadlines[0];
+                            const latestEarlyDate = new Date(latestEarlyDeadline.date);
 
-                        return (
-                          <>
-                            <FriendlyDate
-                              date={latestEarlyDate}
-                              timezone={userTimezone}
-                              options={{ includeTz: false }}
-                            />{' '}
-                            —{' '}
-                            <FriendlyDate
-                              date={dueDateObj}
-                              timezone={userTimezone}
-                              options={{ includeTz: false }}
-                            />{' '}
-                            (100% credit)
-                          </>
-                        );
-                      } else if (releaseDateEnabled && releaseDate) {
-                        // No early deadlines, use release date
-                        const releaseDateObj = new Date(releaseDate);
-                        return (
-                          <>
-                            <FriendlyDate
-                              date={releaseDateObj}
-                              timezone={userTimezone}
-                              options={{ includeTz: false }}
-                            />{' '}
-                            —{' '}
-                            <FriendlyDate
-                              date={dueDateObj}
-                              timezone={userTimezone}
-                              options={{ includeTz: false }}
-                            />{' '}
-                            (100% credit)
-                          </>
-                        );
-                      } else {
-                        // No early deadlines and no release date
-                        return (
-                          <>
-                            While accessible —{' '}
-                            <FriendlyDate
-                              date={dueDateObj}
-                              timezone={userTimezone}
-                              options={{ includeTz: false }}
-                            />{' '}
-                            (100% credit)
-                          </>
-                        );
-                      }
-                    })()}
-                  </Form.Text>
+                            return (
+                              <>
+                                <FriendlyDate
+                                  date={latestEarlyDate}
+                                  timezone={userTimezone}
+                                  options={{ includeTz: false }}
+                                />{' '}
+                                —{' '}
+                                <FriendlyDate
+                                  date={dueDateObj}
+                                  timezone={userTimezone}
+                                  options={{ includeTz: false }}
+                                />{' '}
+                                (100% credit)
+                              </>
+                            );
+                          } else if (releaseDateEnabled && releaseDate) {
+                            // No early deadlines, use release date
+                            const releaseDateObj = new Date(releaseDate);
+                            return (
+                              <>
+                                <FriendlyDate
+                                  date={releaseDateObj}
+                                  timezone={userTimezone}
+                                  options={{ includeTz: false }}
+                                />{' '}
+                                —{' '}
+                                <FriendlyDate
+                                  date={dueDateObj}
+                                  timezone={userTimezone}
+                                  options={{ includeTz: false }}
+                                />{' '}
+                                (100% credit)
+                              </>
+                            );
+                          } else {
+                            // No early deadlines and no release date
+                            return (
+                              <>
+                                While accessible —{' '}
+                                <FriendlyDate
+                                  date={dueDateObj}
+                                  timezone={userTimezone}
+                                  options={{ includeTz: false }}
+                                />{' '}
+                                (100% credit)
+                              </>
+                            );
+                          }
+                        })()}
+                      </Form.Text>
+                    )}
+                  </>
                 )}
               </Form.Group>
             </Col>
@@ -755,45 +805,66 @@ export function DateControlForm({
                 </div>
               </Card.Header>
               <Card.Body>
-                <Row class="mb-3">
-                  <Col md={6}>
+                <Form.Group>
+                  <div class="mb-2">
                     <Form.Check
-                      type="checkbox"
-                      label="Allow Submissions"
-                      {...control.register(
-                        'mainRule.dateControl.afterLastDeadline.allowSubmissions',
-                      )}
+                      type="radio"
+                      id="after-deadline-no-submissions"
+                      label="No submissions allowed"
+                      checked={afterLastDeadlineMode === 'no_submissions'}
+                      onChange={() => {
+                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', false);
+                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
+                        setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                      }}
                     />
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <div class="d-flex align-items-center mb-2">
-                        <TriStateCheckbox
-                          control={control}
-                          name="mainRule.dateControl.afterLastDeadline.creditEnabled"
-                          disabled={!allowSubmissions}
-                          disabledReason={
-                            !allowSubmissions ? 'Enable Allow Submissions first' : undefined
-                          }
-                          class="me-2"
-                        />
-                        <Form.Label class="mb-0">Credit</Form.Label>
-                      </div>
+                    <Form.Check
+                      type="radio"
+                      id="after-deadline-practice-submissions"
+                      label="Allow practice submissions"
+                      checked={afterLastDeadlineMode === 'practice_submissions'}
+                      onChange={() => {
+                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
+                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', false);
+                        setValue('mainRule.dateControl.afterLastDeadline.credit', 0);
+                      }}
+                    />
+                    <Form.Text class="text-muted ms-4">
+                      No credit is given for practice submissions
+                    </Form.Text>
+                    <Form.Check
+                      type="radio"
+                      id="after-deadline-partial-credit"
+                      label="Allow submissions for partial credit"
+                      checked={afterLastDeadlineMode === 'partial_credit'}
+                      onChange={() => {
+                        setValue('mainRule.dateControl.afterLastDeadline.allowSubmissions', true);
+                        setValue('mainRule.dateControl.afterLastDeadline.creditEnabled', true);
+                      }}
+                    />
+                  </div>
+
+                  {afterLastDeadlineMode === 'partial_credit' && (
+                    <div class="ms-4">
                       <InputGroup>
                         <Form.Control
                           type="number"
                           min="0"
                           max="200"
-                          disabled={!allowSubmissions || !afterLastDeadlineCreditEnabled}
+                          placeholder="Credit percentage"
                           {...control.register('mainRule.dateControl.afterLastDeadline.credit', {
                             valueAsNumber: true,
                           })}
                         />
                         <InputGroup.Text>%</InputGroup.Text>
                       </InputGroup>
-                    </Form.Group>
-                  </Col>
-                </Row>
+                      <Form.Text class="text-muted">
+                        Students will receive this percentage of credit for submissions after the
+                        deadline
+                      </Form.Text>
+                    </div>
+                  )}
+                </Form.Group>
               </Card.Body>
             </Card>
           )}
@@ -810,21 +881,23 @@ export function DateControlForm({
                   />
                   <Form.Label class="mb-0">Time limit</Form.Label>
                 </div>
-                <InputGroup>
-                  <Form.Control
-                    type="number"
-                    placeholder="Duration in minutes"
-                    min="1"
-                    disabled={!durationMinutesEnabled}
-                    {...control.register('mainRule.dateControl.durationMinutes', {
-                      valueAsNumber: true,
-                    })}
-                  />
-                  <InputGroup.Text>minutes</InputGroup.Text>
-                </InputGroup>
+                {durationMinutesEnabled && (
+                  <InputGroup>
+                    <Form.Control
+                      type="number"
+                      placeholder="Duration in minutes"
+                      min="1"
+                      {...control.register('mainRule.dateControl.durationMinutes', {
+                        valueAsNumber: true,
+                      })}
+                    />
+                    <InputGroup.Text>minutes</InputGroup.Text>
+                  </InputGroup>
+                )}
                 <Form.Text class="text-muted">
-                  If this is a timed assessment, once students start it, they have this long to
-                  finish it.
+                  {durationMinutesEnabled
+                    ? `Students will have ${durationMinutes} minutes to complete the assessment.`
+                    : 'Add a time limit to the assessment.'}
                 </Form.Text>
               </Form.Group>
             </Col>
@@ -838,24 +911,29 @@ export function DateControlForm({
                   />
                   <Form.Label class="mb-0">Password</Form.Label>
                 </div>
-                <InputGroup>
-                  <Form.Control
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Password"
-                    disabled={!passwordEnabled}
-                    {...control.register('mainRule.dateControl.password')}
-                  />
-                  <Button
-                    variant="outline-secondary"
-                    disabled={!passwordEnabled}
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    <i
-                      class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
-                      aria-hidden="true"
+                {passwordEnabled && (
+                  <InputGroup>
+                    <Form.Control
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Password"
+                      {...control.register('mainRule.dateControl.password')}
                     />
-                  </Button>
-                </InputGroup>
+                    <Button
+                      variant="outline-secondary"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      <i
+                        class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`}
+                        aria-hidden="true"
+                      />
+                    </Button>
+                  </InputGroup>
+                )}
+                <Form.Text class="text-muted">
+                  {passwordEnabled
+                    ? 'This password will be required to start the assessment.'
+                    : 'Require a password in order to start the assessment.'}
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>
