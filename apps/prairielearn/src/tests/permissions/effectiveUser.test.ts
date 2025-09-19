@@ -578,13 +578,30 @@ describe('effective user', { timeout: 60_000 }, function () {
       await ensureEnrollment({ course_instance_id: courseInstanceId, user_id: user.user_id });
 
       const headers = {
+        // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
         cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
       };
+
+      // Access http://localhost:3000/pl/course_instance/2/instructor/instance_admin/assessments
+      // Should redirect
+
+      /**
+       * This should fire:
+       {
+          // try to redirect to the student course instance
+          canRedirect: (resLocals: Record<string, any>) => {
+            return resLocals?.course_instance?.id && resLocals?.authz_data?.has_student_access;
+          },
+          buildRedirect: (resLocals: Record<string, any>) =>
+            `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}`,
+        },
+       */
+
       // Test that instructor is denied access to instructor pages when emulating student
       const instructorPageUrl = `${context.baseUrl}/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
       const response = await fetch(instructorPageUrl, {
         headers,
-        redirect: 'manual',
+        // redirect: 'manual',
       });
 
       console.log(response.status);
