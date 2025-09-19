@@ -10,7 +10,12 @@ import { Hydrate } from '../lib/preact.js';
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
 
-export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
+export async function authzHasCoursePreviewOrInstanceView(
+  req: Request,
+  res: Response,
+): Promise<
+  { type: 'success' } | { type: 'redirect'; value: string } | { type: 'body'; value: string }
+> {
   const effectiveAccess =
     res.locals.authz_data.has_course_permission_preview ||
     res.locals.authz_data.has_course_instance_permission_view;
@@ -20,7 +25,7 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
     res.locals.authz_data.authn_has_course_instance_permission_view;
 
   if (effectiveAccess) {
-    return;
+    return { type: 'success' };
   } else if (
     authenticatedAccess &&
     // This is a dumb hack to work around the fact that this function is called from
@@ -35,31 +40,33 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
     // Try to redirect to an accessible page. If we can't, then show the error page.
     const redirectUrl = getRedirectForEffectiveAccessDenied(res);
     if (redirectUrl) {
-      res.redirect(redirectUrl);
-      return;
+      return { type: 'redirect', value: redirectUrl };
     }
     const pageContext = getPageContext(res.locals);
-    return PageLayout({
-      resLocals: res.locals,
-      navContext: {
-        type: pageContext.navbarType,
-        page: 'error',
-      },
-      pageTitle: 'Insufficient access',
-      content: (
-        <Hydrate>
-          <AuthzAccessMismatch
-            oneOfPermissionKeys={[
-              'has_course_permission_preview',
-              'has_course_instance_permission_view',
-            ]}
-            authzData={pageContext.authz_data}
-            authnUser={pageContext.authn_user}
-            authzUser={pageContext.authz_data.user}
-          />
-        </Hydrate>
-      ),
-    });
+    return {
+      type: 'body',
+      value: PageLayout({
+        resLocals: res.locals,
+        navContext: {
+          type: pageContext.navbarType,
+          page: 'error',
+        },
+        pageTitle: 'Insufficient access',
+        content: (
+          <Hydrate>
+            <AuthzAccessMismatch
+              oneOfPermissionKeys={[
+                'has_course_permission_preview',
+                'has_course_instance_permission_view',
+              ]}
+              authzData={pageContext.authz_data}
+              authnUser={pageContext.authn_user}
+              authzUser={pageContext.authz_data.user}
+            />
+          </Hydrate>
+        ),
+      }),
+    };
   } else {
     throw new error.HttpStatusError(
       403,
@@ -69,9 +76,11 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
 }
 
 export default asyncHandler(async (req, res, next) => {
-  const body = await authzHasCoursePreviewOrInstanceView(req, res);
-  if (body) {
-    res.status(403).send(body);
+  const result = await authzHasCoursePreviewOrInstanceView(req, res);
+  if (result.type === 'body') {
+    res.status(403).send(result.value);
+  } else if (result.type === 'redirect') {
+    res.redirect(result.value);
   } else {
     next();
   }
