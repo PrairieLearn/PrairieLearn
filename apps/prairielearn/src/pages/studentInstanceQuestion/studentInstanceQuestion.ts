@@ -1,4 +1,5 @@
 import assert from 'assert';
+import url from 'node:url';
 
 import { type Request, type Response, Router } from 'express';
 
@@ -30,6 +31,10 @@ const router = Router({ mergeParams: true });
 
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 router.use((req, res, next) => {
+  // We deliberately use `url` instead of `originalUrl`. The former is relative to
+  // where this router is mounted, while the latter is absolute to the app.
+  const pathname = url.parse(req.url).pathname ?? '/';
+
   // Because this router is mounted a general path, its middleware will also
   // be run for sub-routes like `submissions/:submission_id/file/:filename`
   // and `clientFilesQuestion/:filename`.
@@ -38,7 +43,7 @@ router.use((req, res, next) => {
   // as that's the only page that will record log entries with fingerprints. It
   // would be confusing if the fingerprint change count was incremented without
   // a corresponding log entry.
-  if (req.url !== '/') {
+  if (pathname !== '/') {
     next();
     return;
   }
