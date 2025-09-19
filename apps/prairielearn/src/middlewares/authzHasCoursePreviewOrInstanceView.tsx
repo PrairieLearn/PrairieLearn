@@ -8,6 +8,7 @@ import { getPageContext } from '../lib/client/page-context.js';
 import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
+import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
 
 export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
   const effectiveAccess =
@@ -31,6 +32,11 @@ export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Res
     // If a CSRF token is not present, we fall through to the error below.
     res.locals.__csrf_token
   ) {
+    const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+    if (redirectUrl) {
+      res.redirect(redirectUrl);
+      return;
+    }
     const pageContext = getPageContext(res.locals);
     return PageLayout({
       resLocals: res.locals,

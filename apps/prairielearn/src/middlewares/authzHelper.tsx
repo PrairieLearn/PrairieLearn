@@ -52,10 +52,6 @@ export const createAuthzMiddleware =
   (req: Request, res: Response, next: NextFunction) => {
     // This is special-cased because the middleware that sets authz_data
     // may not have run yet.
-    console.log('authzHelper');
-    // write to a file
-    fs.writeFileSync('authzHelper.txt', JSON.stringify(res.locals, null, 2));
-
     const authzData = res.locals.authz_data ?? {
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authn_is_administrator,

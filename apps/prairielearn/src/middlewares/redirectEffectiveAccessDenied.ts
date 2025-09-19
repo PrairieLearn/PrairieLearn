@@ -43,9 +43,6 @@ export function getRedirectForEffectiveAccessDenied(res: Response): string | nul
   // permission. This results in a 403 (Access Denied) error. Here
   // we try and detect this case and redirect to an accessible page.
 
-  // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.ts)
-  if (!res.locals.pl_requested_data_changed) return null;
-
   // skip if we don't have user data
   if (res.locals?.authn_user?.user_id == null) return null;
   if (res.locals?.user?.user_id == null) return null;
@@ -77,6 +74,11 @@ export const redirectEffectiveAccessDeniedErrorHandler: ErrorRequestHandler = (
   next: NextFunction,
 ) => {
   if (err.status !== 403) {
+    return next(err);
+  }
+
+  // we only redirect if we tried to change emulation data (see middlewares/effectiveRequestChanged.ts)
+  if (!res.locals.pl_requested_data_changed) {
     return next(err);
   }
 
