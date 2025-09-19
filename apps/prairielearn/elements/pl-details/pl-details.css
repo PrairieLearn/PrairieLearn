@@ -1,0 +1,10 @@
+/* Modified from https://codepen.io/wdzajicek/pen/VYZawjX */
+
+[hidden='until-found'].collapse:not(.show) {
+  /* Prevent Bootstrap .collapse class from adding display: none so that beforematch event still fires */
+  display: block !important;
+}
+
+[hidden='until-found'] {
+  display: none !important;
+}

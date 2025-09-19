@@ -3,5 +3,5 @@
   "title": "Element pl-dataframe: Display of Pandas DataFrames",
   "topic": "Element",
   "type": "v3",
-  "tags": ["erobson2"]
+  "tags": ["erobson2", "table", "dataframe"]
 }
