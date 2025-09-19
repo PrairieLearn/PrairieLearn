@@ -31,7 +31,6 @@ export async function init() {
       'check_course_instance_access.sql',
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
-      'assessments_format.sql',
       'assessments_format_for_question.sql',
       'random_unique.sql',
       'question_order.sql',
