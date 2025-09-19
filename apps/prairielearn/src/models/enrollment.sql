@@ -7,12 +7,7 @@ INSERT INTO
     first_joined_at
   )
 VALUES
-  (
-    $user_id,
-    $course_instance_id,
-    'joined',
-    now()
-  )
+  ($user_id, $course_instance_id, 'joined', now())
 ON CONFLICT DO NOTHING;
 
 -- BLOCK enroll_invited_user_in_course_instance
