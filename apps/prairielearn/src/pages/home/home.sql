@@ -179,10 +179,11 @@ SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
   ci.long_name,
-  ci.id
+  ci.id,
+  to_jsonb(e) AS enrollment
 FROM
-  users AS u
-  JOIN enrollments AS e ON (e.user_id = u.user_id)
+  enrollments AS e
+  LEFT JOIN users AS u ON (u.user_id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
@@ -195,7 +196,7 @@ FROM
       c.example_course IS FALSE
       OR $include_example_course_enrollments
     )
-    AND users_is_instructor_in_course ($user_id, c.id) IS FALSE
+    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
   ),
   LATERAL (
     SELECT
@@ -207,7 +208,8 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  u.user_id = $user_id
+  e.user_id = $user_id
+  OR e.pending_uid = $pending_uid
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
@@ -231,3 +233,25 @@ ORDER BY
   i.short_name,
   i.long_name,
   i.id;
+
+-- BLOCK accept_invitation
+UPDATE enrollments
+SET
+  status = 'joined',
+  user_id = $user_id,
+  joined_at = NOW(),
+  first_joined_at = NOW(),
+  pending_uid = NULL
+WHERE
+  course_instance_id = $course_instance_id
+  AND pending_uid = $uid
+  AND status = 'invited';
+
+-- BLOCK reject_invitation
+UPDATE enrollments
+SET
+  status = 'rejected'
+WHERE
+  course_instance_id = $course_instance_id
+  AND pending_uid = $uid
+  AND status = 'invited';
