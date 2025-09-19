@@ -1,159 +1,238 @@
 import { z } from 'zod';
 
-export const DeadlineEntryJsonSchema = z
+import { DateFromISOString } from '@prairielearn/zod';
+
+export { DateFromISOString };
+
+// TODO: Intuition: To prevent JSON users from creating roles that don't have intended effects, it might be nice to enforce that if an *enabled field is set to NULL
+// (i.e. inherit), we disallow the value to be set.
+const createEnabledFieldValidator = (pairs: Array<[string, string]>) => {
+  return (data: any) => {
+    for (const [enabledField, valueField] of pairs) {
+      if (data[enabledField] === null && data[valueField] !== undefined) {
+        return false;
+      }
+    }
+    return true;
+  };
+};
+
+// TODO:
+// Assignment-Level access control cannot inherit as there is nothing to inherit from. Thus, *enabled fields cannot be NULL.
+// This wouldn't be a problem in the UI, but for users that prefer to edit the JSON, it might be nice to do some validation to prevent non-sensical configs.
+// Should we validate this? How do we want to handle this in general?
+const createAssignmentLevelValidator = (enabledFields: string[]) => {
+  return (data: any, ctx: any) => {
+    const isAssignmentLevel = !data.targets || data.targets.length === 0;
+
+    if (isAssignmentLevel) {
+      const checkForNullEnabled = (obj: any, path: string[] = []) => {
+        if (!obj || typeof obj !== 'object') return; // If we are not an object, stop.
+
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = [...path, key];
+
+          if (key.endsWith('Enabled') && value === null) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `Assignment-level permissions cannot have null *Enabled fields (found null ${key})`,
+              path: currentPath,
+            });
+          } else if (typeof value === 'object' && value !== null) {
+            checkForNullEnabled(value, currentPath);
+          }
+        }
+      };
+
+      checkForNullEnabled(data);
+    }
+  };
+};
+
+const DeadlineSchema = z
   .object({
-    date: z.string().describe('The deadline date in ISO 8601 format (e.g., "2024-03-17T23:59")'),
-    credit: z.number().describe('The credit percentage for this deadline (e.g., 120 for 120%)'),
+    date: DateFromISOString.describe('Date as ISO String for additional deadline'),
+    credit: z.number().describe('Amount of credit as a percent to allow'),
   })
-  .describe('A deadline entry with date and credit percentage');
+  .optional();
 
-const PrairieTestExamJsonSchema = z
+const AfterLastDeadlineSchema = z
   .object({
-    examUuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('The PrairieTest exam UUID'),
-    readOnly: z.boolean().describe('Whether this exam is read-only').optional(),
+    allowSubmissions: z.boolean().optional(),
+    creditEnabled: z.boolean().nullable().optional(),
+    credit: z.number().optional(),
   })
-  .describe('A PrairieTest exam configuration');
+  .refine(createEnabledFieldValidator([['creditEnabled', 'credit']]), {
+    message: 'When creditEnabled is null, credit cannot be populated',
+  })
+  .optional();
 
-const DateControlJsonSchema = z
+const DateControlSchema = z
   .object({
-    enabled: z.boolean().describe('Whether date control is enabled').optional(),
-
+    enabled: z.boolean().nullable().optional(),
     releaseDateEnabled: z
       .boolean()
-      .describe('Whether release date is enabled')
+      .nullable()
       .optional()
-      .default(false),
-    releaseDate: z
-      .string()
-      .describe('The release date in ISO 8601 format (e.g., "2024-03-14T00:01")')
-      .optional(),
-
-    dueDateEnabled: z.boolean().describe('Whether due date is enabled').optional(),
-    dueDate: z
-      .string()
-      .describe('The due date in ISO 8601 format (e.g., "2024-03-21T23:59")')
-      .optional(),
-
-    earlyDeadlinesEnabled: z.boolean().describe('Whether early deadlines are enabled').optional(),
+      .describe('Whether to enable release date'),
+    releaseDate: DateFromISOString.optional().describe('Deadline date as ISO String'),
+    dueDateEnabled: z.boolean().nullable().optional().describe('Whether to enable due date'),
+    dueDate: DateFromISOString.optional().describe('Due date as ISO String'),
+    earlyDeadlinesEnabled: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe('Whether to enable early deadlines'),
     earlyDeadlines: z
-      .array(DeadlineEntryJsonSchema)
-      .describe('Array of early deadline entries with credit percentages')
-      .optional(),
-
-    lateDeadlinesEnabled: z.boolean().describe('Whether late deadlines are enabled').optional(),
+      .array(DeadlineSchema)
+      .optional()
+      .describe('Array of early deadlines with credit as percentages'),
+    lateDeadlinesEnabled: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe('Whether to enable late deadlines'),
     lateDeadlines: z
-      .array(DeadlineEntryJsonSchema)
-      .describe('Array of late deadline entries with credit percentages')
-      .optional(),
-
-    afterLastDeadline: z
-      .object({
-        allowSubmissions: z
-          .boolean()
-          .describe('Whether submissions are allowed after the last deadline')
-          .optional(),
-        creditEnabled: z
-          .boolean()
-          .describe('Whether credit text box value is enabled and considered')
-          .optional(),
-        credit: z.number().describe('The credit percentage after the last deadline').optional(),
-      })
-      .describe('Configuration for behavior after the last deadline')
-      .optional(),
-
-    durationMinutesEnabled: z.boolean().describe('Whether duration limit is enabled').optional(),
-    durationMinutes: z.number().positive().describe('The duration limit in minutes').optional(),
-
-    passwordEnabled: z.boolean().describe('Whether password protection is enabled').optional(),
-    password: z.string().describe('The password for accessing the assessment').optional(),
+      .array(DeadlineSchema)
+      .optional()
+      .describe('Array of late deadlines with credit as percentages'),
+    afterLastDeadline: AfterLastDeadlineSchema.describe(
+      'Controls for assessment behaviour after last deadline',
+    ),
+    durationMinutesEnabled: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe('Whether to enable duration minutes'),
+    durationMinutes: z.number().optional().describe('Desired duration limit for assessment'),
+    passwordEnabled: z.boolean().nullable().optional().describe('Whether to enable password'),
+    password: z.string().optional().describe('Password for assessment'),
   })
-  .describe('Date and time control configuration for the assessment');
+  .refine(
+    createEnabledFieldValidator([
+      ['releaseDateEnabled', 'releaseDate'],
+      ['dueDateEnabled', 'dueDate'],
+      ['earlyDeadlinesEnabled', 'earlyDeadlines'],
+      ['lateDeadlinesEnabled', 'lateDeadlines'],
+      ['durationMinutesEnabled', 'durationMinutes'],
+      ['passwordEnabled', 'password'],
+    ]),
+    { message: 'When an *Enabled field is null, the corresponding field cannot be populated' },
+  )
+  .optional();
 
-const PrairieTestControlJsonSchema = z
+const ExamSchema = z
   .object({
-    enabled: z.boolean().describe('Whether PrairieTest control is enabled').optional(),
-    exams: z
-      .array(PrairieTestExamJsonSchema)
-      .describe('Array of PrairieTest exam configurations')
-      .optional(),
+    examUuid: z.string().describe('UUID of associated PrairieTest exam'),
+    readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
   })
-  .describe('PrairieTest integration control configuration');
+  .optional();
 
-const AfterCompleteDateControlJsonSchema = z
+const PrairieTestControlSchema = z
   .object({
-    showAgainDateEnabled: z.boolean().describe('Whether show again date is enabled').optional(),
-    showAgainDate: z
-      .string()
-      .describe('The date when content should be shown again in ISO 8601 format')
-      .optional(),
+    enabled: z.boolean().optional().describe('Whether to enable PrairieTest controls'),
+    exams: z.array(ExamSchema).optional().describe('Array of associated PrairieTest exam configs'),
+  })
+  .optional();
+
+const HideQuestionsDateControlSchema = z
+  .object({
+    showAgainDateEnabled: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe(
+        'Whether to enable the ability for revealing hidden questions after assessment completion',
+      ),
+    showAgainDate: DateFromISOString.optional().describe(
+      'Date as ISO String for when to unhide questions to students after assessment completion',
+    ),
     hideAgainDateEnabled: z
       .boolean()
-      .describe('Whether hide again date is enabled (only for hideQuestionsDateControl)')
-      .optional(),
-    hideAgainDate: z
-      .string()
+      .nullable()
+      .optional()
       .describe(
-        'The date when content should be hidden again in ISO 8601 format (only for hideQuestionsDateControl)',
-      )
-      .optional(),
+        'Whether to enable the ability for re-hiding revealed questions after assessment completion',
+      ),
+    hideAgainDate: DateFromISOString.optional().describe(
+      'Date as ISO String for when to rehide questions to students after assessment completion',
+    ),
   })
-  .describe('Date control configuration for after-complete behavior');
+  .refine(
+    createEnabledFieldValidator([
+      ['showAgainDateEnabled', 'showAgainDate'],
+      ['hideAgainDateEnabled', 'hideAgainDate'],
+    ]),
+    { message: 'When a *DateEnabled field is null, the corresponding date cannot be populated' },
+  )
+  .optional();
 
-const AfterCompleteJsonSchema = z
+const HideScoreDateControlSchema = z
   .object({
-    hideQuestions: z.boolean().describe('Whether to hide questions after completion').optional(),
-    hideQuestionsDateControl: AfterCompleteDateControlJsonSchema.describe(
-      'Date control for hiding/showing questions after completion',
-    ).optional(),
-    hideScore: z.boolean().describe('Whether to hide score after completion').optional(),
-    hideScoreDateControl: z
-      .object({
-        showAgainDateEnabled: z
-          .boolean()
-          .describe('Whether show again date is enabled for scores')
-          .optional(),
-        showAgainDate: z
-          .string()
-          .describe('The date when scores should be shown again in ISO 8601 format')
-          .optional(),
-      })
-      .describe('Date control for hiding/showing scores after completion')
-      .optional(),
+    showAgainDateEnabled: z
+      .boolean()
+      .nullable()
+      .optional()
+      .describe('Whether to enable the ability to show hidden scores after assessment completion'),
+    showAgainDate: DateFromISOString.optional().describe(
+      'Date as ISO String for when to reveal hidden scores after assessment completion',
+    ),
   })
-  .describe('Configuration for behavior after assessment completion');
+  .refine(createEnabledFieldValidator([['showAgainDateEnabled', 'showAgainDate']]), {
+    message: 'When showAgainDateEnabled is null, showAgainDate cannot be populated',
+  })
+  .optional();
 
-export const AccessControlJsonSchema = z
+const AfterCompleteSchema = z
   .object({
-    // These three keys can't/shouldn't be inherited by overrides/other rules
+    hideQuestions: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to enable settings controlling question visibility after assessment completion',
+      ),
+    hideQuestionsDateControl: HideQuestionsDateControlSchema.describe(
+      'Settings controlling question visibility after assessment completion',
+    ),
+    hideScore: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to enable settings controlling score visibility after assessment completion',
+      ),
+    hideScoreDateControl: HideScoreDateControlSchema.describe(
+      'Settings controlling question visibility after assessment completion',
+    ),
+  })
+  .optional();
+
+const AccessControlJsonSchema = z
+  .object({
     targets: z
       .array(z.string())
-      .describe('Array of target identifiers (e.g., section names) that this rule applies to')
-      .optional(),
+      .optional()
+      .describe('Array of (User, Access Control Group) ids this set targets'),
     enabled: z
       .boolean()
-      .describe('Whether this access rule should be considered')
       .optional()
-      .default(true),
+      .describe('Whether this set of permissions is enabled')
+      .default(true), // default true if not set
     blockAccess: z
       .boolean()
-      .describe('Short circuit - deny access if this rule applies')
       .optional()
-      .default(false),
+      .describe('Short circuit for whether the targets should have access to the assessment')
+      .default(false), // default false if not set
 
-    // All other keys are inherited by overrides/other rules
     listBeforeRelease: z
       .boolean()
-      .describe('Whether students can see the title and click into the assessment before release')
-      .optional(),
-
-    dateControl: DateControlJsonSchema.optional(),
-    prairieTestControl: PrairieTestControlJsonSchema.optional(),
-    afterComplete: AfterCompleteJsonSchema.optional(),
+      .optional()
+      .describe('Whether students can see the title and click into the assessment before release'),
+    dateControl: DateControlSchema,
+    prairieTestControl: PrairieTestControlSchema,
+    afterComplete: AfterCompleteSchema,
   })
-  .describe('Access control configuration for assessments');
+  .superRefine(createAssignmentLevelValidator([]))
+  .optional();
 
-export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
+export type AccessControlJson = z.infer<typeof AccessControJsonlSchema>;
 export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;
