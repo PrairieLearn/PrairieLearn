@@ -1022,6 +1022,11 @@ async function validateQuestion({
 
   if (question.authors.length > 0) {
     for (const author of question.authors) {
+      if (!author.email && !author.orcid && !author.originCourse) {
+        errors.push(
+          'At least one of "email", "orcid", or "originCourse" is required for each author',
+        );
+      }
       if (author.orcid) {
         if (!validateORCID(author.orcid)) {
           errors.push(
