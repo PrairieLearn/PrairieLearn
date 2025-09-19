@@ -243,6 +243,7 @@ async function testVariant(
     user_id,
     authn_user_id,
     ignoreGradeRateLimit: true,
+    ignoreRealTimeGradingDisabled: true,
   });
   const test_submission = await selectSubmission(test_submission_id);
 

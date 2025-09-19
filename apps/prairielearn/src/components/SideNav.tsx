@@ -292,7 +292,7 @@ function CourseInstanceNav({
     <div class="side-nav-header">
       <div class="header-text">Course instance</div>
     </div>
-    <div class="side-nav-group mb-3">
+    <div class="side-nav-group mb-0">
       <div>
         <div id="course-instance-dropdown" class="dropdown">
           <button
