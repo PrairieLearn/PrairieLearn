@@ -638,7 +638,7 @@ export function QuestionFooterContent({
                   : ''}
             <div class="d-flex flex-column">
               ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
-              ${!assessment_question || assessment_question.allow_real_time_grading
+              ${assessment_question == null || assessment_question.allow_real_time_grading
                 ? ''
                 : html`
                     <small class="fst-italic text-end">
