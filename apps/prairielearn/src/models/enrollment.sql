@@ -11,7 +11,6 @@ VALUES
     $user_id,
     $course_instance_id,
     'joined',
-    now(),
     now()
   )
 ON CONFLICT DO NOTHING;
