@@ -1,8 +1,5 @@
-import * as crypto from 'crypto';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { v4 as uuidv4 } from 'uuid';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -13,6 +10,7 @@ import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { insertAccessToken } from '../../models/access-token.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
 
@@ -106,18 +104,17 @@ router.post(
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
       }
 
-      const name = req.body.token_name;
-      const token = uuidv4();
-      const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
+      await insertAccessToken(res.locals.authn_user.user_id, req.body.token_name);
 
-      await sqldb.execute(sql.insert_access_token, {
+      /* await sqldb.execute(sql.insert_access_token, {
         user_id: res.locals.authn_user.user_id,
         name,
         // The token will only be persisted until the next page render.
         // After that, we'll remove it from the database.
         token,
         token_hash,
-      });
+      }); */
+
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
       await sqldb.execute(sql.delete_access_token, {
