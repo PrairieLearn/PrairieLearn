@@ -55,7 +55,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
-  use_instance_question_groups,
+  use_instance_question_groups
 }: {
   urlPrefix: string;
   assessment_id: string;
@@ -85,6 +85,7 @@ export async function nextInstanceQuestionUrl({
     : null;
 
   let next_instance_question_id = await sqldb.queryOptionalRow(
+  const instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,
     {
       assessment_id,
@@ -95,7 +96,7 @@ export async function nextInstanceQuestionUrl({
       skip_graded_submissions,
       use_instance_question_groups,
     },
-    IdSchema.nullable(),
+    IdSchema.nullable()
   );
 
   if (

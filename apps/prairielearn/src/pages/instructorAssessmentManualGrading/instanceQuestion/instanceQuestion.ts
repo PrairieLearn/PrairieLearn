@@ -594,6 +594,9 @@ router.post(
         'success',
         `Successfully applied grade and feedback to ${instanceQuestionsInGroup.length} instance questions.`,
       );
+    } else if (body.__action === 'next_instance_question') {
+      req.session.skip_graded_submissions =
+        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -604,6 +607,7 @@ router.post(
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: res.locals.skip_graded_submissions,
           use_instance_question_groups: useInstanceQuestionGroups,
+          skip_graded_submissions: req.session.skip_graded_submissions,
         }),
       );
     } else if (body.__action === 'modify_rubric_settings') {

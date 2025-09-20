@@ -155,11 +155,13 @@ export function PageLayout({
             ${sideNavEnabled
               ? html`
                   <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                    })}
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                      })}
+                    </div>
                   </nav>
                 `
               : ''}

@@ -193,8 +193,8 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
+  first_joined_at: true,
   id: true,
-  joined_at: true,
   lti_managed: true,
   pending_lti13_email: true,
   pending_lti13_instance_id: true,
@@ -210,8 +210,8 @@ export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
 export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
+  first_joined_at: true,
   id: true,
-  joined_at: true,
   lti_managed: true,
   pending_uid: true,
   status: true,

@@ -25,6 +25,14 @@ export interface AIGradingLogger {
   error(msg: string): void;
 }
 
+export interface AiGradingGeneralStats {
+  submission_point_count: number;
+  submission_rubric_count: number;
+  mean_error: number | null;
+  /** Mapping from rubric item id to disagreement count */
+  rubric_stats: Record<string, number>;
+}
+
 export interface InstanceQuestionAIGradingInfo {
   /** If the submission was also manually graded. */
   submissionManuallyGraded: boolean;

@@ -1,12 +1,12 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -15,6 +15,7 @@ import {
 import type { InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
+import { hydrateHtml } from '../../../lib/preact.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
@@ -153,7 +154,10 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      ${aiGradingEnabled && aiGradingMode && aiGradingStats
+      ${aiGradingEnabled &&
+      aiGradingMode &&
+      aiGradingStats &&
+      Object.keys(aiGradingStats.rubric_stats).length === 0
         ? html`
             ${aiGradingStats.rubric_stats.length > 0
               ? html`
@@ -213,6 +217,17 @@ export function AssessmentQuestion({
                 `}
           `
         : ''}
+
+      <div class="mb-3">
+        ${hydrateHtml(
+          <RubricSettings
+            assessmentQuestion={assessment_question}
+            rubricData={rubric_data}
+            csrfToken={__csrf_token}
+            aiGradingStats={aiGradingStats}
+          />,
+        )}
+      </div>
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />

@@ -22,6 +22,7 @@ FROM
 WHERE
   id = $instance_question_id;
 
+
 -- BLOCK select_next_instance_question
 WITH
   instance_questions_to_grade AS (
