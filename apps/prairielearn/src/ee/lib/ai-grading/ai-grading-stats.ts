@@ -178,7 +178,7 @@ export async function calculateAiGradingStats(
  */
 export async function selectGradingJobsInfo<T extends { id: string }>(
   instance_questions: T[],
-): Promise<Record<string, GradingJobInfo[]>> {
+): Promise<Partial<Record<string, GradingJobInfo[]>>> {
   const grading_jobs = await queryRows(
     sql.select_ai_and_human_grading_jobs_and_rubric,
     { instance_question_ids: instance_questions.map((iq) => iq.id) },
@@ -265,7 +265,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     assessment_id: assessment.id,
   });
 
-  if (!assessmentQuestionRows) {
+  if (assessmentQuestionRows.length === 0) {
     return {
       perQuestion: [],
       total: {
