@@ -6,7 +6,8 @@
     "useIgnoreFile": true
   },
   "migrations": {
-    "migrationsDir": "apps/prairielearn/src/migrations"
+    "migrationsDir": "apps/prairielearn/src/migrations",
+    "after": 20250000000000
   },
   "typecheck": {
     "searchPath": ["public", "server*"]
@@ -16,7 +17,11 @@
   },
   "linter": {
     "rules": {
-      "recommended": false
+      "recommended": true,
+      "safety": {
+        "banDropColumn": "off",
+        "banDropNotNull": "off"
+      }
     }
   },
   "db": {
