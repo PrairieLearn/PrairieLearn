@@ -151,7 +151,7 @@ format-python: python-deps
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
 
-typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts
+typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
 	@yarn tsc -p contrib
 typecheck-scripts:
@@ -160,6 +160,8 @@ typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps
 	@yarn pyright
+typecheck-sql:
+	@yarn postgrestools check .
 
 changeset:
 	@yarn changeset
