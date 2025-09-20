@@ -1128,6 +1128,12 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
+export const QuestionAuthorSchema = z.object({
+  author_id: IdSchema,
+  id: IdSchema,
+  question_id: IdSchema,
+});
+
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1340,6 +1346,15 @@ export const TagSchema = z.object({
 });
 export type Tag = z.infer<typeof TagSchema>;
 
+export const AuthorSchema = z.object({
+  author_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: IdSchema,
+  orcid: z.string().nullable(),
+  origin_course: IdSchema.nullable(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
+
 export const TimeSeriesSchema = null;
 
 export const TopicSchema = z.object({
@@ -1505,6 +1520,7 @@ export const TableNames = [
   'audit_events',
   'audit_logs',
   'authn_providers',
+  'authors',
   'batched_migration_jobs',
   'batched_migrations',
   'chunks',
@@ -1558,6 +1574,7 @@ export const TableNames = [
   'pl_courses',
   'plan_grants',
   'query_runs',
+  'question_authors',
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',

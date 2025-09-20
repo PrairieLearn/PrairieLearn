@@ -4,5 +4,9 @@
   "topic": "Algebra",
   "tags": ["mwest", "tpl101", "fa17", "v3"],
   "type": "v3",
-  "sharingSets": ["final-exam"]
+  "sharingSets": ["final-exam"],
+  "authors": [
+    { "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" },
+    { "name": "Jane Smith", "email": "smith@example.org" }
+  ]
 }

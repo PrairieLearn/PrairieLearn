@@ -67,6 +67,7 @@ export async function init() {
       'sync_questions.sql',
       'sync_news_items.sql',
       'sync_question_tags.sql',
+      'sync_question_authors.sql',
       'sync_assessments.sql',
       'group_info.sql',
       'groups_uid_list.sql',
