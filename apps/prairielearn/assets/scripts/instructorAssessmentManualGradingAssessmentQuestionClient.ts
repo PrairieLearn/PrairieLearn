@@ -30,7 +30,15 @@ onDocumentReady(() => {
     aiGradingMode,
     csrfToken,
     rubric_data,
+    instanceQuestionGroups,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
+
+  const instanceQuestionGroupsByName = Object.fromEntries(
+    instanceQuestionGroups.map((group) => [
+      group.instance_question_group_name,
+      group.instance_question_group_description,
+    ]),
+  );
 
   document.querySelectorAll<HTMLFormElement>('form[name=grading-form]').forEach((form) => {
     form.addEventListener('submit', ajaxSubmit);
@@ -186,6 +194,7 @@ onDocumentReady(() => {
           searchable: false,
           sortable: true,
           switchable: false,
+          class: 'text-center',
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
             html`
               <a
@@ -221,6 +230,33 @@ onDocumentReady(() => {
                 : ''}
             `.toString(),
         },
+        aiGradingMode && instanceQuestionGroups.length > 0
+          ? {
+              field: 'instance_question_group_name',
+              title: 'Submission Group',
+              visible: aiGradingMode,
+              filterControl: 'select',
+              class: 'text-center',
+              formatter: (value: string | null) => {
+                if (!value) {
+                  return html`<span class="text-secondary">No group</span>`;
+                }
+                return html`
+                  <span class="d-flex align-items-center justify-content-center gap-2">
+                    ${value ?? 'No group'}
+                    <div
+                      data-bs-toggle="tooltip"
+                      data-bs-html="true"
+                      data-bs-title="${instanceQuestionGroupsByName[value]}"
+                    >
+                      <i class="fas fa-circle-info text-secondary"></i>
+                    </div>
+                  </span>
+                `;
+              },
+              sortable: true,
+            }
+          : null,
         {
           field: 'user_or_group_name',
           title: groupWork ? 'Group Name' : 'Name',
@@ -550,7 +586,12 @@ async function ajaxSubmit(this: HTMLFormElement, e: SubmitEvent) {
   const action = formData.get('__action');
   const batchAction = formData.get('batch_action');
 
-  if (action === 'batch_action' && batchAction === 'ai_grade_assessment_selected') {
+  const newPageBatchActions = new Set([
+    'ai_grade_assessment_selected',
+    'ai_instance_question_group_selected',
+  ]);
+
+  if (action === 'batch_action' && batchAction && newPageBatchActions.has(batchAction.toString())) {
     // We'll handle this with a normal form submission since it redirects to another page.
     return;
   }

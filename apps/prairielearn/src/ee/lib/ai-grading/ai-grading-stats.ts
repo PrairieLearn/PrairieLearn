@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import {
@@ -13,6 +14,7 @@ import {
   RubricItemSchema,
 } from '../../../lib/db-types.js';
 import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
+import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {
   selectInstanceQuestionsForAssessmentQuestion,
@@ -37,7 +39,13 @@ type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
  * This includes organizing information about past graders
  * and calculating point and/or rubric difference between human and AI.
  */
-export async function fillInstanceQuestionColumns<T extends { id: string }>(
+export async function fillInstanceQuestionColumns<
+  T extends {
+    id: string;
+    ai_instance_question_group_id: string | null;
+    manual_instance_question_group_id: string | null;
+  },
+>(
   instance_questions: T[],
   assessment_question: AssessmentQuestion,
 ): Promise<WithAIGradingStats<T>[]> {
@@ -49,6 +57,15 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 
+  const instanceQuestionIdToGroupName = (
+    await selectInstanceQuestionGroups({
+      assessmentQuestionId: assessment_question.id,
+    })
+  ).reduce((acc, curr) => {
+    acc[curr.id] = curr.instance_question_group_name;
+    return acc;
+  }, {});
+
   const results: WithAIGradingStats<T>[] = [];
 
   for (const base_instance_question of instance_questions) {
@@ -58,6 +75,7 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
       ai_grading_status: 'None',
       point_difference: null,
       rubric_difference: null,
+      instance_question_group_name: null,
       rubric_similarity: null,
     };
     results.push(instance_question);
@@ -108,6 +126,21 @@ export async function fillInstanceQuestionColumns<T extends { id: string }>(
         .map((item) => ({ ...item, false_positive: false }));
       instance_question.rubric_difference = fnItems.concat(fpItems);
     }
+
+    // Retrieve the current group of the instance question
+    const selectedInstanceQuestionGroupId = run(() => {
+      if (instance_question.manual_instance_question_group_id) {
+        return instance_question.manual_instance_question_group_id;
+      }
+      if (instance_question.ai_instance_question_group_id) {
+        return instance_question.ai_instance_question_group_id;
+      }
+      return null;
+    });
+
+    instance_question.instance_question_group_name = selectedInstanceQuestionGroupId
+      ? (instanceQuestionIdToGroupName[selectedInstanceQuestionGroupId] ?? null)
+      : null;
   }
   return results;
 }

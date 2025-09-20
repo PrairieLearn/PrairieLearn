@@ -36,6 +36,8 @@ $(() => {
       })
       .modal('show');
   }
+
+  addInstanceQuestionGroupSelectionDropdownListeners();
 });
 
 function resetRubricImportFormListeners() {
@@ -918,4 +920,64 @@ function ensureElementsExist(elements) {
       throw new Error(`Element ${elementName} is required but not found in the DOM.`);
     }
   }
+}
+
+function addInstanceQuestionGroupSelectionDropdownListeners() {
+  const { instanceQuestionId, instanceQuestionGroupsExist } = decodeData('instance-question-data');
+
+  if (!instanceQuestionGroupsExist) {
+    // Instance question grouping has not been run yet for the assessment question,
+    // so no instance question group dropdown is available.
+    return;
+  }
+
+  const instanceQuestionGroupSelectionDropdown = document.querySelector(
+    '#instance-question-group-selection-dropdown',
+  );
+
+  // Grade button without the dropdown containing the option to grade the entire submission group.
+  const gradeButton = document.querySelector('#grade-button');
+
+  // Grade button with a dropdown containing the option to grade the entire submission group.
+  const gradeButtonWithDropdown = document.querySelector('#grade-button-with-options');
+
+  ensureElementsExist({
+    instanceQuestionGroupSelectionDropdown,
+
+    gradeButton,
+    gradeButtonWithDropdown,
+  });
+
+  instanceQuestionGroupSelectionDropdown.addEventListener('click', async (e) => {
+    const selectedAiInstanceQuestionDropdownItem = e.target.closest('.dropdown-item');
+    const selectedAiInstanceQuestionGroupId = selectedAiInstanceQuestionDropdownItem.getAttribute(
+      'data-instance-question-group-id',
+    );
+
+    await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        manualInstanceQuestionGroupId: selectedAiInstanceQuestionGroupId,
+      }),
+    });
+
+    const activeDropdownItem = document.querySelector('.dropdown-item.active');
+    activeDropdownItem.classList.remove('active');
+
+    selectedAiInstanceQuestionDropdownItem.classList.add('active');
+
+    // If a instance question group is selected, show the grade button with a dropdown.
+    // Otherwise, show the grade button without a dropdown.
+    gradeButton.classList.toggle('d-none', selectedAiInstanceQuestionGroupId);
+    gradeButtonWithDropdown.classList.toggle('d-none', !selectedAiInstanceQuestionGroupId);
+
+    const instanceQuestionGroupSelectionDropdownSpan = document.querySelector(
+      '#instance-question-group-selection-dropdown-span',
+    );
+    instanceQuestionGroupSelectionDropdownSpan.innerHTML =
+      selectedAiInstanceQuestionDropdownItem.textContent;
+  });
 }
