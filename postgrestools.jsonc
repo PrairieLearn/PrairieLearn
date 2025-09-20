@@ -17,7 +17,8 @@
   },
   "linter": {
     "rules": {
-      "recommended": true,
+      "all": false,
+      "recommended": false,
       "safety": {
         "banDropColumn": "off",
         "banDropNotNull": "off"
