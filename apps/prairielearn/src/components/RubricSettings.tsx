@@ -14,11 +14,15 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
+  // Need this to extract things like course_short_name, course_instance_short_name, assessment_tid, question_qid
+  // I'll remove this once this part is reviewed
+  resLocals,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
+  resLocals: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const wasUsingRubric = Boolean(rubricData);
@@ -140,6 +144,48 @@ export function RubricSettings({
     setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
     setSettingsError(null);
     setEditMode(false);
+  };
+
+  const exportRubric = () => {
+    const rubricData = {
+      max_extra_points: maxExtraPoints,
+      min_points: minPoints,
+      replace_auto_points: replaceAutoPoints,
+      starting_points: startingPoints,
+      max_points: assessmentQuestion.max_points,
+      max_manual_points: assessmentQuestion.max_manual_points,
+      max_auto_points: assessmentQuestion.max_auto_points,
+      rubric_items: rubricItems.map((it, idx) => ({
+        order: idx,
+        points: it.points ? Number(it.points) : null, // We can discuss what really happens when point is empty later
+        description: it.description,
+        explanation: it.explanation ?? '',
+        grader_note: it.grader_note ?? '',
+        always_show_to_students: it.always_show_to_students,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(rubricData, null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    const course_short_name: string = resLocals.course.short_name;
+    const course_instance_short_name: string = resLocals.course_instance.short_name;
+    const assessment_tid: string = resLocals.assessment.tid;
+    const question_qid: string = resLocals.question.qid;
+    const exportFileName =
+      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
+        /[^a-zA-Z0-9_-]/g,
+        '_',
+      ) + '.json';
+    a.download = exportFileName;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -384,14 +430,48 @@ export function RubricSettings({
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
           </div>
         ))}
-        <div class="mb-3">
+        <div class="mb-3 gap-1 d-flex">
           <button
             type="button"
-            class="btn btn-secondary"
+            class="btn btn-sm btn-secondary"
             disabled={!editMode}
             onClick={addRubricItemRow}
           >
             Add item
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-primary"
+            disabled={!editMode}
+            onClick={exportRubric}
+          >
+            <i class="fas fa-download" />
+            Export rubric
+          </button>
+          <button
+            id="import-rubric-button"
+            type="button"
+            class="btn btn-sm btn-primary"
+            disabled={!editMode}
+            data-bs-title="Import rubric settings"
+            data-bs-toggle="popover"
+            data-bs-placement="auto"
+            data-bs-html="true"
+            data-bs-container="body"
+            data-bs-content="{escapeHtml(ImportRubricSettingsPopover())}"
+          >
+            <i class="fas fa-upload" />
+            Import rubric
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost"
+            disabled={!editMode}
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+          >
+            <i class="fas fa-circle-info" />
           </button>
         </div>
         {settingsError && (
