@@ -52,6 +52,7 @@
     "@prairielearn/path-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/postgres-tools": "workspace:^",
+    "@prairielearn/preact": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",

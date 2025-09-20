@@ -1,4 +1,5 @@
-import { InstructorInstanceAdminBillingForm } from '../../../../src/ee/pages/instructorInstanceAdminBilling/components/InstructorInstanceAdminBillingForm.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerReactFragment(InstructorInstanceAdminBillingForm);
+import { InstructorInstanceAdminBillingForm } from '../../../../src/ee/pages/instructorInstanceAdminBilling/components/InstructorInstanceAdminBillingForm.js';
+
+registerHydratedComponent(InstructorInstanceAdminBillingForm);

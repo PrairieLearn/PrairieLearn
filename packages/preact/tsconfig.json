@@ -1,0 +1,10 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "types": ["node"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "@prairielearn/preact-cjs"
+  }
+}
