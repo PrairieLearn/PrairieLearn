@@ -119,7 +119,7 @@ router.get(
       (await selectAssessmentQuestionHasInstanceQuestionGroups({
         assessmentQuestionId: res.locals.assessment_question.id,
       }));
-    
+
     res.redirect(
       await manualGrading.nextInstanceQuestionUrl({
         urlPrefix: res.locals.urlPrefix,
