@@ -594,6 +594,18 @@ router.post(
         'success',
         `Successfully applied grade and feedback to ${instanceQuestionsInGroup.length} instance questions.`,
       );
+
+      res.redirect(
+        await manualGrading.nextInstanceQuestionUrl({
+          urlPrefix: res.locals.urlPrefix,
+          assessment_id: res.locals.assessment.id,
+          assessment_question_id: res.locals.assessment_question.id,
+          user_id: res.locals.authz_data.user.user_id,
+          prior_instance_question_id: res.locals.instance_question.id,
+          skip_graded_submissions: req.session.skip_graded_submissions,
+          use_instance_question_groups: true,
+        }),
+      );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
         await manualGrading.updateAssessmentQuestionRubric(

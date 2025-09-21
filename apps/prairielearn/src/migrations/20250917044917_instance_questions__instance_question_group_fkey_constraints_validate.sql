@@ -1,7 +1,0 @@
-ALTER TABLE instance_questions VALIDATE CONSTRAINT instance_questions_ai_instance_question_group_id_fkey;
-
-ALTER TABLE instance_questions VALIDATE CONSTRAINT instance_questions_manual_instance_question_group_id_fkey;
-
-ALTER TABLE instance_questions VALIDATE CONSTRAINT instance_questions_ai_group_has_same_aq_id_fkey;
-
-ALTER TABLE instance_questions VALIDATE CONSTRAINT instance_questions_manual_group_has_same_aq_id_fkey;
