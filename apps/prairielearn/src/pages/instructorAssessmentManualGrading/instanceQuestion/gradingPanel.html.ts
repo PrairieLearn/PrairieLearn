@@ -62,6 +62,12 @@ export function GradingPanel({
 
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
 
+  const instanceQuestionGroupDescription = instanceQuestionGroupName
+    ? instanceQuestionGroups?.find(
+        (group) => group.instance_question_group_name === instanceQuestionGroupName,
+      )?.instance_question_group_description || ''
+    : '';
+
   return html`
     <form
       name="manual-grading-form"
@@ -103,14 +109,25 @@ export function GradingPanel({
         ${showInstanceQuestionGroup && context === 'main'
           ? html`
               <li class="list-group-item align-items-center">
-                <div class="d-flex align-items-center">
-                  <label for="instance-question-group-toggle" class="form-label">
-                    Submission Group:
-                    ${instanceQuestionGroups && instanceQuestionGroups.length > 0
-                      ? html` <i class="fas fa-circle-info"></i>`
-                      : ''}
-                  </label>
-                </div>
+                <label
+                  for="instance-question-group-toggle"
+                  class="form-label d-flex align-items-center gap-2"
+                >
+                  Submission Group:
+                  ${instanceQuestionGroupDescription &&
+                  instanceQuestionGroups &&
+                  instanceQuestionGroups.length > 0
+                    ? html`
+                        <div
+                          data-bs-toggle="tooltip"
+                          data-bs-html="true"
+                          data-bs-title="${instanceQuestionGroupDescription}"
+                        >
+                          <i class="fas fa-circle-info text-secondary"></i>
+                        </div>
+                      `
+                    : ''}
+                </label>
                 <div class="dropdown w-100 mb-2" role="combobox">
                   <button
                     id="instance-question-group-toggle"
