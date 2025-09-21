@@ -64,16 +64,16 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
-    this.updatePreview(options.preview);
-  }
-
   let currentContents = '';
   if (options.currentContents) {
     currentContents = this.b64DecodeUnicode(options.currentContents);
   }
   this.setEditorContents(currentContents);
+
+  if (options.preview) {
+    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.updatePreview(options.preview);
+  }
 
   this.syncSettings();
 
