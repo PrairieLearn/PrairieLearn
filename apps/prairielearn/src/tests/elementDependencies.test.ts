@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'path';
 
-import { assert, describe, test } from 'vitest';
+import { assert, describe, it } from 'vitest';
 
 import { APP_ROOT_PATH } from '../lib/paths.js';
 import { NODE_MODULES_PATHS } from '../middlewares/staticNodeModules.js';
@@ -24,7 +24,7 @@ export async function nodeModulesFileExists(assetPath: string): Promise<boolean>
 }
 
 describe('Element dependencies', () => {
-  test('All dependencies in info.json files exist in node_modules', async () => {
+  it('all dependencies in info.json files exist in node_modules', async () => {
     const elementDirs = await fs.readdir(ELEMENTS_PATH);
 
     for (const element of elementDirs) {
