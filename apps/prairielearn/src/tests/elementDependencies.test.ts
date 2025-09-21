@@ -25,10 +25,10 @@ export async function nodeModulesFileExists(assetPath: string): Promise<boolean>
 
 describe('Element dependencies', () => {
   test('All dependencies in info.json files exist in node_modules', async () => {
-    const elementDirs = await fs.readdir(ELEMENTS_PATH, { withFileTypes: true });
+    const elementDirs = await fs.readdir(ELEMENTS_PATH);
 
-    for (const dir of elementDirs) {
-      const infoJsonPath = path.join(ELEMENTS_PATH, dir.name, 'info.json');
+    for (const element of elementDirs) {
+      const infoJsonPath = path.join(ELEMENTS_PATH, element, 'info.json');
       const infoJsonContent = await fs.readFile(infoJsonPath, 'utf-8');
       const info = JSON.parse(infoJsonContent);
 
@@ -39,10 +39,9 @@ describe('Element dependencies', () => {
       ];
 
       for (const dependency of dependencies) {
-        const exists = await nodeModulesFileExists(dependency);
         assert.isTrue(
-          exists,
-          `Dependency "${dependency}" in element "${dir.name}" does not exist in node_modules`,
+          await nodeModulesFileExists(dependency),
+          `Dependency "${dependency}" in element "${element}" does not exist in node_modules`,
         );
       }
     }
