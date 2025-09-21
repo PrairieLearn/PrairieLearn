@@ -155,69 +155,6 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      ${aiGradingEnabled &&
-      aiGradingMode &&
-      aiGradingStats &&
-      Object.keys(aiGradingStats.rubric_stats).length === 0
-        ? html`
-            ${aiGradingStats.rubric_stats.length > 0
-              ? html`
-                  <div class="card overflow-hidden mb-3">
-                    <div class="table-responsive">
-                      <table class="table table-sm" aria-label="AI grading rubric item stats">
-                        <thead>
-                          <tr class="table-light fw-bold">
-                            <td class="col-5">Rubric item</td>
-                            <td>AI agreement</td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${aiGradingStats.rubric_stats.map(
-                            (item) =>
-                              html`<tr>
-                                <td>${item.rubric_item.description}</td>
-                                <td>
-                                  ${run(() => {
-                                    if (item.disagreement_count) {
-                                      return html`
-                                        <i class="bi bi-x-square-fill text-danger"></i>
-                                        <span class="text-muted">
-                                          (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
-                                          disagree)
-                                        </span>
-                                      `;
-                                    }
-
-                                    if (aiGradingStats.submission_rubric_count === 0) {
-                                      return html`&mdash;`;
-                                    }
-
-                                    return html`<i
-                                      class="bi bi-check-square-fill text-success"
-                                    ></i>`;
-                                  })}
-                                </td>
-                              </tr>`,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                `
-              : html`
-                  <div class="card mb-3">
-                    <div class="card-body">
-                      <div>Submission count: ${aiGradingStats.submission_point_count}</div>
-                      <div>
-                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
-                        <small class="text-muted">/${assessment_question.max_manual_points}</small>
-                        points
-                      </div>
-                    </div>
-                  </div>
-                `}
-          `
-        : ''}
 
       <div class="mb-3">
         ${hydrateHtml(
