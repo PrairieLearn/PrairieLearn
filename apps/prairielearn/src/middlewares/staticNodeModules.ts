@@ -4,7 +4,8 @@ import express, { Router } from 'express';
 import { type ServeStaticOptions } from 'serve-static';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
-const NODE_MODULES_PATHS = [
+
+export const NODE_MODULES_PATHS = [
   path.resolve(APP_ROOT_PATH, 'node_modules'),
   path.resolve(REPOSITORY_ROOT_PATH, 'node_modules'),
 ];
