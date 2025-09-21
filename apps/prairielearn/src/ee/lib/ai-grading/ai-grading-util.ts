@@ -1,10 +1,10 @@
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import type {
-  ChatCompletionContentPart,
   ChatCompletionMessageParam,
-  ParsedChatCompletion,
+  ParsedChatCompletion
 } from 'openai/resources/chat/completions.mjs';
+import type { EasyInputMessage, ResponseInputItem, ResponseInputMessageContentList } from 'openai/resources/responses/responses.mjs';
 import { z } from 'zod';
 
 import {
@@ -203,12 +203,12 @@ export function generateSubmissionMessage({
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   include_ai_grading_prompts: boolean;
-}): ChatCompletionMessageParam {
-  const message_content: ChatCompletionContentPart[] = [];
+}): ResponseInputItem {
+  const message_content: ResponseInputMessageContentList = [];
 
   if (include_ai_grading_prompts) {
     message_content.push({
-      type: 'text',
+      type: 'input_text',
       text: 'The student submitted the following response: \n<response>\n',
     });
   }
@@ -229,7 +229,7 @@ export function generateSubmissionMessage({
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           message_content.push({
-            type: 'text',
+            type: 'input_text',
             text: submissionTextSegment,
           });
           submissionTextSegment = '';
@@ -257,17 +257,16 @@ export function generateSubmissionMessage({
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
           message_content.push({
-            type: 'text',
+            type: 'input_text',
             text: `Image capture with ${fileName} was not captured.`,
           });
           return;
         }
 
         message_content.push({
-          type: 'image_url',
-          image_url: {
-            url: submitted_answer[fileName],
-          },
+          detail: 'auto',
+          type: 'input_image',
+          image_url: submitted_answer[fileName]
         });
       } else {
         submissionTextSegment += $submission_html(node).text();
@@ -276,14 +275,14 @@ export function generateSubmissionMessage({
 
   if (submissionTextSegment) {
     message_content.push({
-      type: 'text',
+      type: 'input_text',
       text: submissionTextSegment,
     });
   }
 
   if (include_ai_grading_prompts) {
     message_content.push({
-      type: 'text',
+      type: 'input_text',
       text: '\n</response>\nHow would you grade this? Please return the JSON object.',
     });
   }
@@ -291,7 +290,7 @@ export function generateSubmissionMessage({
   return {
     role: 'user',
     content: message_content,
-  } satisfies ChatCompletionMessageParam;
+  } satisfies EasyInputMessage;
 }
 
 export async function generateSubmissionEmbedding({

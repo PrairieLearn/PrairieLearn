@@ -1,7 +1,7 @@
 import * as async from 'async';
 import { OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
-import type { ChatCompletionMessageParam } from 'openai/resources/index.mjs';
+import { zodTextFormat } from 'openai/helpers/zod.mjs';
+import type { ResponseInput, ResponseInputItem } from 'openai/resources/responses/responses.mjs';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -106,7 +106,7 @@ async function aiEvaluateStudentResponse({
   });
 
   // Prompt the LLM to determine if the submission is correct or not.
-  const messages: ChatCompletionMessageParam[] = [
+  const messages: ResponseInput = [
     {
       role: 'user',
       content: 'Start of student submission:',
@@ -136,25 +136,28 @@ Return a boolean corresponding to whether or not the student's response is equiv
     },
   ];
 
-  const completion = await openai.chat.completions.parse({
-    messages,
+  const response = await openai.responses.parse({
+    input: messages,
     model: INSTANCE_QUESTION_GROUPING_OPENAI_MODEL,
     user: `course_${course.id}`,
-    response_format: zodResponseFormat(
-      z.object({
-        correct: z.boolean(),
-      }),
-      'response-evaluation',
-    ),
+    text: {
+      format: zodTextFormat(
+        z.object({
+          correct: z.boolean(),
+        }),
+        'response-evaluation',
+      ),
+    },
   });
+  console.log('Successfully formatted content');
 
-  const completionContent = completion.choices[0].message.parsed;
+  const parsed = response.output_parsed;
 
-  if (!completionContent) {
-    throw new Error('No completion content returned from OpenAI.');
+  if (!parsed) {
+    throw new Error('No response content returned from OpenAI.');
   }
 
-  return completionContent.correct;
+  return parsed.correct;
 }
 
 /**
