@@ -452,7 +452,7 @@ onDocumentReady(() => {
     };
   }) {
     const [form, setForm] = useState(() => ({
-      action: run(() => {
+      action: run((): TimeLimitAction => {
         if (row.time_remaining_sec !== null) return 'add';
         return 'set_total';
       }),
