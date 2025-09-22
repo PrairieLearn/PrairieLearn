@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact/server';
 import { renderHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';

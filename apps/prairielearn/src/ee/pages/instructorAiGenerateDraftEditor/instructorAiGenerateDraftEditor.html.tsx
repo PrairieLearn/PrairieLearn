@@ -1,6 +1,6 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { Hydrate } from '@prairielearn/preact/server';
 import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
