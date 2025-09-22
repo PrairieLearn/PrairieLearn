@@ -227,6 +227,77 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
+export const AccessControlSchema = z.object({
+  assessment_id: IdSchema,
+  block_acesss: z.boolean(),
+  course_instance_id: IdSchema,
+  enabled: z.boolean(),
+  id: IdSchema, // BIGSERIAL primary key, optional on insert
+  list_before_release: z.boolean(),
+
+  // Date control fields
+  date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
+  date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_credit_enable: z.boolean().nullable(),
+  date_control_due_date: DateFromISOString.nullable(),
+  date_control_due_date_enabled: z.boolean().nullable(),
+  date_control_duration_minutes: z.number().nullable(),
+  date_control_duration_minutes_enabled: z.boolean().nullable(),
+  date_control_early_deadlines_enabled: z.boolean().nullable(),
+  date_control_enabled: z.boolean().nullable(),
+  date_control_late_deadlines_enabled: z.boolean().nullable(),
+  date_control_password: z.string().nullable(),
+  date_control_password_enabled: z.boolean().nullable(),
+  date_control_release_date: DateFromISOString.nullable(),
+  date_control_release_date_enabled: z.boolean().nullable(),
+
+  // Prairie test control
+  after_complete_hide_questions_after_date: DateFromISOString.nullable(),
+
+  after_complete_hide_questions_after_date_enabled: z.boolean().nullable(),
+  after_complete_hide_questions_before_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_before_date_enabled: z.boolean().nullable(),
+  after_complete_hide_score_before_date: DateFromISOString.nullable(),
+  after_complete_hide_score_before_date_enabled: z.boolean().nullable(),
+  prairietest_control_enable: z.boolean().nullable(),
+});
+
+export const AccessControlEarlyDeadlineSchema = z.object({
+  credit: IdSchema,
+  date: DateFromISOString,
+  role_id: IdSchema,
+});
+
+export const AccessControlGroupMemberSchema = z.object({
+  group_id: IdSchema,
+  user_id: IdSchema,
+});
+
+export const AccessControlGroupSchema = z.object({
+  course_instance_id: IdSchema,
+  description: z.string(),
+  id: IdSchema,
+  name: z.string(),
+});
+
+export const AccessControlLateDeadlineSchema = z.object({
+  credit: IdSchema,
+  date: DateFromISOString,
+  role_id: IdSchema,
+});
+
+export const AccessControlPrairietestExamSchema = z.object({
+  exam_id: IdSchema,
+  read_only: z.boolean(),
+  role_id: IdSchema,
+});
+
+export const AccessControlTargetSchema = z.object({
+  access_control_id: IdSchema,
+  target_id: IdSchema,
+  target_type: z.enum(['assessment', 'group', 'individual']),
+});
+
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
 
@@ -1493,6 +1564,13 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
+  'access_control',
+  'access_control_early_deadline',
+  'access_control_group_member',
+  'access_control_groups',
+  'access_control_late_deadline',
+  'access_control_prairietest_exam',
+  'access_control_target',
   'access_logs',
   'access_tokens',
   'administrators',

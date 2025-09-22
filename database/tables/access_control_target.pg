@@ -1,0 +1,10 @@
+columns
+    access_control_id: bigint not null
+    target_id: bigint not null
+    target_type: permission_scope not null
+
+indexes
+    idx_rolepermission_lookup: USING btree (access_control_id, target_type)
+
+foreign-key constraints
+    access_control_target_access_control_id_fkey: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE
