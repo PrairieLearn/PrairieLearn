@@ -88,10 +88,10 @@ export default function ({ publicQuestionEndpoint } = { publicQuestionEndpoint: 
       // TODO: This is a little hacky. Further context: https://github.com/PrairieLearn/PrairieLearn/pull/12496#discussion_r2240249138
       const authzResult = await authzHasCoursePreviewOrInstanceView(req, res);
       if (authzResult.type === 'body') {
-        res.status(403).send(authzResult.value);
+        res.status(403).send(authzResult.html);
         return;
       } else if (authzResult.type === 'redirect') {
-        res.redirect(authzResult.value);
+        res.redirect(authzResult.url);
         return;
       }
       await selectAndAuthzInstructorQuestion(req, res);

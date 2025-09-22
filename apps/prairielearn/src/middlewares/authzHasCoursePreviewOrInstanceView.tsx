@@ -14,7 +14,7 @@ export async function authzHasCoursePreviewOrInstanceView(
   req: Request,
   res: Response,
 ): Promise<
-  { type: 'success' } | { type: 'redirect'; value: string } | { type: 'body'; value: string }
+  { type: 'success' } | { type: 'redirect'; url: string } | { type: 'body'; html: string }
 > {
   const effectiveAccess =
     res.locals.authz_data.has_course_permission_preview ||
@@ -40,13 +40,13 @@ export async function authzHasCoursePreviewOrInstanceView(
     // Try to redirect to an accessible page. If we can't, then show the error page.
     const redirectUrl = getRedirectForEffectiveAccessDenied(res);
     if (redirectUrl) {
-      return { type: 'redirect', value: redirectUrl };
+      return { type: 'redirect', url: redirectUrl };
     }
 
     const pageContext = getPageContext(res.locals);
     return {
       type: 'body',
-      value: PageLayout({
+      html: PageLayout({
         resLocals: res.locals,
         navContext: {
           type: pageContext.navbarType,
@@ -79,9 +79,9 @@ export async function authzHasCoursePreviewOrInstanceView(
 export default asyncHandler(async (req, res, next) => {
   const result = await authzHasCoursePreviewOrInstanceView(req, res);
   if (result.type === 'body') {
-    res.status(403).send(result.value);
+    res.status(403).send(result.html);
   } else if (result.type === 'redirect') {
-    res.redirect(result.value);
+    res.redirect(result.url);
   } else {
     next();
   }
