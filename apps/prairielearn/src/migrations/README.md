@@ -86,3 +86,24 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 - Third PR: Finalize
   - Remove the old column from the database
   - Remove the old column from the zod schema
+
+### Rename column with a default value, preserve data
+
+- First PR: Add new column
+  - Add new column with default value
+  - Change all writes to write to the new column and the old column
+
+- Second PR: Backfill the new column
+  - Enqueue a batched migration to backfill the column with appropriate values
+
+- Third PR: Remove old column, remove reads
+  - Finalize the batched migration
+  - Update application code to not read the old column, and read the new column
+
+- Fourth PR: Remove writes to the old column
+  - Update application code to not write the old column
+  - Mark the old column in the zod schema as `z.any()`
+
+- Fifth PR: Remove the old column from the database
+  - Remove the old column from the database
+  - Remove the old column from the zod schema
