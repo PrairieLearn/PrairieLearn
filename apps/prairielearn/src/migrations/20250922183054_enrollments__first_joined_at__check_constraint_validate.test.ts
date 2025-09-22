@@ -15,14 +15,14 @@ const enrollUser = async ({
   courseInstanceId,
   status,
   created_at,
-  joined_at,
+  first_joined_at,
   pending_uid,
 }: {
   uin: string;
   courseInstanceId: string;
   status: string;
   created_at: string | null;
-  joined_at: string | null;
+  first_joined_at: string | null;
   pending_uid: string | null;
 }) => {
   const user = await sqldb.queryRow(
@@ -44,7 +44,7 @@ const enrollUser = async ({
       course_instance_id: courseInstanceId,
       status,
       created_at,
-      joined_at,
+      first_joined_at,
       pending_uid,
     },
     z.any(),
@@ -54,7 +54,7 @@ const enrollUser = async ({
 
 test('joined_at check constraint works correctly', { timeout: 20_000 }, async () => {
   await testMigration({
-    name: '20250910203204_enrollments__joined_at__check_constraint',
+    name: '20250922183053_enrollments__first_joined_at__check_constraint_add',
     beforeMigration: async () => {
       const course = await insertCourse({
         institution_id: '1',
@@ -88,6 +88,7 @@ test('joined_at check constraint works correctly', { timeout: 20_000 }, async ()
           'created_at_null_2@example.com',
         ],
         // status is not 'joined', joined_at is not null
+        // you could get into this state by joining, leaving, and then being invited again.
         [
           'not_joined_1',
           courseInstanceId,
@@ -113,7 +114,7 @@ test('joined_at check constraint works correctly', { timeout: 20_000 }, async ()
         courseInstanceId,
         status,
         created_at,
-        joined_at,
+        first_joined_at,
         pending_uid,
       ] of validStates) {
         await enrollUser({
@@ -121,7 +122,7 @@ test('joined_at check constraint works correctly', { timeout: 20_000 }, async ()
           courseInstanceId,
           status,
           created_at,
-          joined_at,
+          first_joined_at,
           pending_uid,
         });
       }

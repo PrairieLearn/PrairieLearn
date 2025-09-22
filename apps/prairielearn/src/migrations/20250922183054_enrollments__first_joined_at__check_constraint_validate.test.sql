@@ -1,8 +1,8 @@
 -- BLOCK insert_course_instance
 INSERT INTO
-  course_instances (course_id, display_timezone)
+  course_instances (course_id, display_timezone, enrollment_code)
 VALUES
-  ($course_id, $display_timezone)
+  ($course_id, $display_timezone, 'BLABLABLAH')
 RETURNING
   id;
 
@@ -21,7 +21,7 @@ INSERT INTO
     course_instance_id,
     status,
     created_at,
-    joined_at,
+    first_joined_at,
     pending_uid
   )
 VALUES
@@ -30,7 +30,7 @@ VALUES
     $course_instance_id,
     $status,
     $created_at,
-    $joined_at,
+    $first_joined_at,
     $pending_uid
   )
 ON CONFLICT DO NOTHING
