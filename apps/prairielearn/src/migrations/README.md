@@ -8,6 +8,8 @@ The database has a special `migrations` table that tracks with migrations have a
 
 The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations (with `make update-database-description`) and the updates should be committed to git along with the migrations.
 
+We aim for zero-downtime deploys, so we need to think carefully about sequencing, existing table size, and so on to ensure that migrations are safe to run against a live database. Running `make lint-sql-migrations` will help check for common mistakes, such as holding exclusive locks on tables.
+
 ## Creating a migration
 
 Each migration should have a filename of the form `{TIMESTAMP}_{DESCRIPTION}.sql`, where timestamp has the form `YYYYMMDDHHMMSS`. Such a timestamp can be generated with the following command:
@@ -45,4 +47,44 @@ ALTER TABLE alternative_groups
 ADD UNIQUE (assessment_id, number);
 ```
 
-> Note: migrations were previously identified by indexes, but this caused problems with merge conflicts. See <https://github.com/PrairieLearn/PrairieLearn/pull/6129> or the PR that added support for timestamps.
+## Sample migration patterns
+
+This is a collection of how to sequence some common migrations. Bullet points are ordered in sequential time order -- e.g. the first bullet point should have a timestamp before the second bullet point.
+
+### Add column with default value
+
+- Use a **single migration**
+
+### Add column with backfill and no constraints
+
+- First PR: add column and backfill
+  - Add the new column
+  - Enqueue a batched migration to backfill the column with appropriate values
+- Second PR: finalize the batched migration
+
+### Add column with backfill and constraints
+
+- First PR: Add column and enqueue backfill
+  - Add the column without the constraints
+  - Enqueue a batched migration to backfill the column with appropriate values
+- Second PR: finalize and add constraints
+  - Finalize the batched migration
+  - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
+  - In a separate transaction, validate the constraint (this validates all existing data against the constraint)
+
+### Rename column with a default value, no data preservation
+
+If you have no meaningful reads/writes to the old column, you can combie the first and second PRs into a single PR.
+
+- First PR: Add new column
+  - Add new column with default value
+  - Change all writes to write to the new column and the old column
+
+- Second PR: Remove old column
+  - Update all reads to read from the new column
+  - Update all code to not write the old column
+  - Mark the old column in the zod schema as `z.any()`
+
+- Third PR: Finalize
+  - Remove the old column from the database
+  - Remove the old column from the zod schema
