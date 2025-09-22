@@ -64,24 +64,27 @@ export function PrairieTestControlForm({
         style={{ cursor: collapsible ? 'pointer' : 'default' }}
         onClick={toggleExpanded}
       >
-        <div class="d-flex align-items-center">
-          <Form.Check
-            type="checkbox"
-            class="me-2"
-            disabled={showOverrideButton}
-            {...control.register(`${namePrefix}.prairieTestControl.enabled`, {
-              validate: (value, formData) => {
-                const dateControlEnabled = formData.mainRule.dateControl?.enabled;
-                const controlEnabled = value || dateControlEnabled;
-                if (!controlEnabled) {
-                  return 'Either Date Control or PrairieTest Integration must be enabled';
-                }
-                return true;
-              },
-              deps: ['mainRule.dateControl.enabled'],
-            })}
-          />
-          <span>{title}</span>
+        <div>
+          <div class="d-flex align-items-center">
+            <Form.Check
+              type="checkbox"
+              class="me-2"
+              disabled={showOverrideButton}
+              {...control.register(`${namePrefix}.prairieTestControl.enabled`, {
+                validate: (value, formData) => {
+                  const dateControlEnabled = formData.mainRule.dateControl?.enabled;
+                  const controlEnabled = value || dateControlEnabled;
+                  if (!controlEnabled) {
+                    return 'Either Date Control or PrairieTest Integration must be enabled';
+                  }
+                  return true;
+                },
+                deps: ['mainRule.dateControl.enabled'],
+              })}
+            />
+            <span>{title}</span>
+          </div>
+          <Form.Text class="text-muted">{description}</Form.Text>
         </div>
         <div class="d-flex align-items-center">
           {showOverrideButton && onOverride && (
@@ -94,13 +97,12 @@ export function PrairieTestControlForm({
           )}
         </div>
       </Card.Header>
-      <Form.Text class="text-muted ms-3">{description}</Form.Text>
       {(formErrors as any)[namePrefix]?.prairieTestControl?.enabled && (
         <Form.Text class="text-danger d-block mt-1 ms-3">
           {(formErrors as any)[namePrefix].prairieTestControl.enabled.message}
         </Form.Text>
       )}
-      {enabled && (
+      {(enabled || namePrefix.startsWith('overrides.')) && (
         <Collapse in={!collapsible || isExpanded}>
           <Card.Body
             style={{
