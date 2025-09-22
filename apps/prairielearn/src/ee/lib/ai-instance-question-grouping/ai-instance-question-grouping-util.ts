@@ -41,7 +41,10 @@ export async function insertDefaultInstanceQuestionGroups({
   if (hasGroups) return;
 
   await runInTransactionAsync(async () => {
-    for (const { instance_question_group_name, instance_question_group_description } of STANDARD_INSTANCE_QUESTION_GROUPS) {
+    for (const {
+      instance_question_group_name,
+      instance_question_group_description,
+    } of STANDARD_INSTANCE_QUESTION_GROUPS) {
       await execute(sql.insert_instance_question_group, {
         assessment_question_id,
         instance_question_group_name,

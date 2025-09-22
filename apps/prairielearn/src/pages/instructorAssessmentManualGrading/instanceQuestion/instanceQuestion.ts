@@ -251,8 +251,8 @@ router.get(
           },
         ],
         currentInstanceQuestionGroupId:
-          (res.locals.instance_question.manual_instance_question_group_id ??
-            res.locals.instance_question.ai_instance_question_group_id) ??
+          res.locals.instance_question.manual_instance_question_group_id ??
+          res.locals.instance_question.ai_instance_question_group_id ??
           null,
       }),
     );

@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
 import { DateFromISOString } from '@prairielearn/zod';
 
 import {
@@ -128,7 +127,10 @@ export async function fillInstanceQuestionColumns<
     }
 
     // Retrieve the current group of the instance question
-    const selectedInstanceQuestionGroupId = instance_question.manual_instance_question_group_id ?? instance_question.ai_instance_question_group_id ?? null;
+    const selectedInstanceQuestionGroupId =
+      instance_question.manual_instance_question_group_id ??
+      instance_question.ai_instance_question_group_id ??
+      null;
 
     instance_question.instance_question_group_name = selectedInstanceQuestionGroupId
       ? (instanceQuestionIdToGroupName[selectedInstanceQuestionGroupId] ?? null)
