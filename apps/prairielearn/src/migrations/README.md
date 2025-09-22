@@ -96,7 +96,7 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 - Second PR: Backfill the new column
   - Enqueue a batched migration to backfill the column with appropriate values
 
-- Third PR: Remove old column, remove reads
+- Third PR: Remove reads to old column
   - Finalize the batched migration
   - Update application code to not read the old column, and read the new column
 
@@ -104,6 +104,6 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
   - Update application code to not write the old column
   - Mark the old column in the zod schema as `z.any()`
 
-- Fifth PR: Remove the old column from the database
+- Fifth PR: Fully remove the old column
   - Remove the old column from the database
   - Remove the old column from the zod schema
