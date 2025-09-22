@@ -7,16 +7,17 @@
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { getPageContext } from '../lib/client/page-context.js';
-import { Hydrate } from '../lib/preact.js';
 
 import {
   AuthzAccessMismatch,
   type CheckablePermissionKeys,
   getErrorExplanation,
 } from './AuthzAccessMismatch.js';
+import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
 
 export const createAuthzMiddleware =
   ({
@@ -49,6 +50,13 @@ export const createAuthzMiddleware =
 
     if (authenticatedAccess && !req.cookies.pl_test_user) {
       const pageContext = getPageContext(res.locals);
+
+      // Try to redirect to an accessible page. If we can't, then show the error page.
+      const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+      if (redirectUrl) {
+        res.redirect(redirectUrl);
+        return;
+      }
 
       res.status(403).send(
         PageLayout({

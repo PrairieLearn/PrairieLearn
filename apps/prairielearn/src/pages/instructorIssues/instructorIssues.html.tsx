@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
@@ -21,7 +22,6 @@ import {
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const PAGE_SIZE = 100;
 

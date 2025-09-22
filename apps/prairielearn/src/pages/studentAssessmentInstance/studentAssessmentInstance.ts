@@ -150,11 +150,7 @@ router.post(
       await processDeleteFile(req, res);
       res.redirect(req.originalUrl);
     } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-      if (req.body.__action === 'grade') {
-        if (!res.locals.assessment.allow_real_time_grading) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
-        }
-      } else if (req.body.__action === 'timeLimitFinish') {
+      if (req.body.__action === 'timeLimitFinish') {
         // Only close if the timer expired due to time limit, not for access end
         if (!res.locals.assessment_instance_time_limit_expired) {
           return res.redirect(req.originalUrl);
