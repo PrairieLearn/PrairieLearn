@@ -661,8 +661,6 @@ export const EnrollmentSchema = z.object({
   created_at: DateFromISOString.nullable(),
   first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  // TODO: remove this column
-  joined_at: z.any(),
   lti_managed: z.boolean(),
   pending_lti13_email: z.string().nullable(),
   pending_lti13_instance_id: IdSchema.nullable(),
