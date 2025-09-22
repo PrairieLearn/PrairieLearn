@@ -79,7 +79,7 @@ export async function nextInstanceQuestionUrl({
           const instanceQuestionGroups = await selectInstanceQuestionGroups({
             assessmentQuestionId: assessment_question_id,
           });
-          return instanceQuestionGroups.length > 0 ? instanceQuestionGroups[0].id : null;
+          return instanceQuestionGroups.at(0)?.id ?? null;
         }
       })
     : null;
