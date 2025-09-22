@@ -271,7 +271,7 @@ router.put(
 
     await updateManualInstanceQuestionGroup({
       instance_question_id: res.locals.instance_question.id,
-      manual_instance_question_group_id: manualInstanceQuestionGroupId || null,
+      manual_instance_question_group_id: manualInstanceQuestionGroupId ?? null,
     });
 
     res.sendStatus(204);
