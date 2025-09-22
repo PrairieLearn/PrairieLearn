@@ -32,6 +32,7 @@ export const createAuthzMiddleware =
   (req: Request, res: Response, next: NextFunction) => {
     // This is special-cased because the middleware that sets authz_data
     // may not have run yet.
+    const hasAuthzData = res.locals.authz_data !== undefined;
     const authzData = res.locals.authz_data ?? {
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authn_is_administrator,
@@ -49,7 +50,7 @@ export const createAuthzMiddleware =
     }
 
     if (authenticatedAccess && !req.cookies.pl_test_user) {
-      const pageContext = getPageContext(res.locals);
+      const pageContext = getPageContext(res.locals, { withAuthzData: hasAuthzData });
 
       // Try to redirect to an accessible page. If we can't, then show the error page.
       const redirectUrl = getRedirectForEffectiveAccessDenied(res);

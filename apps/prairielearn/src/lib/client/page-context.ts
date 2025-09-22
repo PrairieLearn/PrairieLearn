@@ -81,16 +81,9 @@ export type PageContextWithAuthzData = z.infer<typeof PageContextWithAuthzDataSc
 export function getPageContext(
   resLocals: Record<string, any>,
   options?: {
-    withAuthzData?: true;
+    withAuthzData: boolean;
   },
 ): PageContextWithAuthzData;
-
-export function getPageContext(
-  resLocals: Record<string, any>,
-  options: {
-    withAuthzData: false;
-  },
-): PageContext;
 
 export function getPageContext(
   resLocals: Record<string, any>,
