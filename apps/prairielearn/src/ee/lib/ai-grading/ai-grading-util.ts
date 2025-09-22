@@ -4,7 +4,7 @@ import type {
   ChatCompletionContentPart,
   ChatCompletionMessageParam,
   ParsedChatCompletion,
-} from 'openai/resources/chat/completions.mjs';
+} from 'openai/resources/chat/completions';
 import { z } from 'zod';
 
 import {

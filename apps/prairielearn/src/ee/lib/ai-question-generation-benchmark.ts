@@ -3,7 +3,7 @@ import path from 'node:path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { type OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
+import { zodTextFormat } from 'openai/helpers/zod';
 import * as tmp from 'tmp-promise';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -158,7 +158,11 @@ const BENCHMARKS: Benchmark[] = [
 ];
 
 const QuestionGenerationEvaluationSchema = z.object({
-  score: z.number().describe('Score the generated question from 1 (lowest) to 5 (highest).'),
+  score: z
+    .number()
+    .min(1)
+    .max(5)
+    .describe('Score the generated question from 1 (lowest) to 5 (highest).'),
   reasoning: z.string().array().describe('Provide your reasoning for the score.'),
 });
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
@@ -375,18 +379,18 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const completion = await client.chat.completions.parse({
+  const response = await client.responses.parse({
     model: MODEL_NAME,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: generatedQuestion.join('\n') },
-    ],
-    response_format: zodResponseFormat(
-      QuestionGenerationEvaluationSchema,
-      'question_generation_evaluation',
-    ),
+    instructions: systemPrompt,
+    input: generatedQuestion.join('\n'),
+    text: {
+      format: zodTextFormat(QuestionGenerationEvaluationSchema, 'question_generation_evaluation'),
+    },
+    reasoning: {
+      effort: 'low',
+    },
     user: openAiUserFromAuthn(authnUserId),
   });
 
-  return completion.choices[0].message.parsed;
+  return response.output_parsed;
 }
