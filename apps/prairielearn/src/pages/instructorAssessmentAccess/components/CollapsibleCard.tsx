@@ -11,6 +11,7 @@ interface CollapsibleCardProps {
   headerActions?: React.ReactNode;
   skeletonContent?: React.ReactNode;
   showSkeleton?: boolean;
+  isOverridden?: boolean;
 }
 
 export function CollapsibleCard({
@@ -23,6 +24,7 @@ export function CollapsibleCard({
   headerActions,
   skeletonContent,
   showSkeleton = false,
+  isOverridden = true,
 }: CollapsibleCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
@@ -32,8 +34,10 @@ export function CollapsibleCard({
     }
   };
 
+  const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6', borderColor: '#dee2e6' };
+
   return (
-    <Card class={`mb-3 ${className}`}>
+    <Card class={`mb-3 ${className}`} style={cardStyle}>
       <Card.Header
         class="d-flex justify-content-between align-items-center"
         style={{ cursor: collapsible ? 'pointer' : 'default' }}

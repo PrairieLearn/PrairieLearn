@@ -82,7 +82,7 @@ const sampleAccessControl: AccessControlJson[] = [
   {
     targets: ['sectionB'],
     enabled: true,
-    blockAccess: true,
+    blockAccess: false,
   },
 ];
 

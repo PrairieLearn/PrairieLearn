@@ -7,8 +7,9 @@ import {
   useWatch,
 } from 'react-hook-form';
 
-import { CollapsibleCard } from './CollapsibleCard.js';
-import { renderEffect } from './FormComponents.js';
+import { AfterCompleteForm } from './AfterCompleteForm.js';
+import { DateControlForm } from './DateControlForm.js';
+import { PrairieTestControlForm } from './PrairieTestControlForm.js';
 import type { AccessControlFormData } from './types.js';
 
 interface OverrideRulesFormProps {
@@ -35,30 +36,6 @@ export function OverrideRulesForm({
     name: 'overrides',
     defaultValue: [],
   });
-
-  // Helper function to check if an override has any configured effects
-  const hasConfiguredEffects = (overrideIndex: number) => {
-    const override = watchedOverrides[overrideIndex];
-    if (!override) return false;
-
-    // Check if any date control settings are configured
-    const dateControl = override.dateControl;
-    if (dateControl) {
-      if (dateControl.enabled) return true;
-      if (dateControl.releaseDateEnabled && dateControl.releaseDate) return true;
-      if (dateControl.dueDateEnabled && dateControl.dueDate) return true;
-      if (dateControl.earlyDeadlinesEnabled) return true;
-      if (dateControl.lateDeadlinesEnabled) return true;
-      if (dateControl.durationMinutesEnabled && dateControl.durationMinutes) return true;
-      if (dateControl.passwordEnabled && dateControl.password) return true;
-      if (dateControl.afterLastDeadline?.allowSubmissions) return true;
-      if (dateControl.afterLastDeadline?.creditEnabled && dateControl.afterLastDeadline?.credit) {
-        return true;
-      }
-    }
-
-    return false;
-  };
 
   return (
     <div>
@@ -110,7 +87,6 @@ export function OverrideRulesForm({
         const override = watchedOverrides[index];
         const isEnabled = override?.enabled;
         const blockAccess = override?.blockAccess;
-        const hasEffects = hasConfiguredEffects(index);
 
         return (
           <Card key={field.id} class="mb-4">
@@ -167,99 +143,57 @@ export function OverrideRulesForm({
                   <h6 class="mb-3">Override Settings</h6>
 
                   {/* Date Control Section */}
-                  <CollapsibleCard
+                  <DateControlForm
+                    control={control}
+                    namePrefix={`overrides.${index}` as any}
+                    setValue={setValue}
+                    overrideData={override?.dateControl}
+                    showOverrideButton={!override?.dateControl?.enabled}
                     title="Date Control"
                     description="Control access and credit to your exam based on a schedule"
                     collapsible={true}
-                    defaultExpanded={hasEffects}
-                    showSkeleton={!hasEffects}
-                    skeletonContent={
-                      <div class="text-center py-3">
-                        <p class="text-muted mb-0">No date control overrides configured</p>
-                        <small class="text-muted">
-                          Click "Override" to configure specific settings
-                        </small>
-                      </div>
+                    defaultExpanded={true}
+                    onOverride={() => {
+                      setValue(`overrides.${index}.dateControl.enabled` as any, true);
+                      setValue(`overrides.${index}.dateControl.releaseDateEnabled` as any, true);
+                      setValue(`overrides.${index}.dateControl.dueDateEnabled` as any, true);
+                    }}
+                  />
+
+                  {/* After Completion Behavior Section */}
+                  <AfterCompleteForm
+                    control={control}
+                    namePrefix={`overrides.${index}` as any}
+                    setValue={setValue}
+                    showOverrideButton={
+                      !override?.afterComplete?.hideQuestions && !override?.afterComplete?.hideScore
                     }
-                  >
-                    <div class="row">
-                      <div class="col-md-6">
-                        {renderEffect('releaseDateSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.releaseDateEnabled,
-                        })}
-                      </div>
-                      <div class="col-md-6">
-                        {renderEffect('dueDateSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.dueDateEnabled,
-                        })}
-                      </div>
-                    </div>
+                    title="After Completion Behavior"
+                    description="Configure what happens after students complete the assessment"
+                    collapsible={true}
+                    defaultExpanded={true}
+                    onOverride={() => {
+                      setValue(`overrides.${index}.afterComplete.hideQuestions` as any, true);
+                      setValue(`overrides.${index}.afterComplete.hideScore` as any, true);
+                    }}
+                  />
 
-                    <div class="row">
-                      <div class="col-md-6">
-                        {renderEffect('earlyDeadlineSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.earlyDeadlinesEnabled,
-                        })}
-                      </div>
-                      <div class="col-md-6">
-                        {renderEffect('lateDeadlineSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.lateDeadlinesEnabled,
-                        })}
-                      </div>
-                    </div>
-
-                    {renderEffect('afterLastDeadlineSetting', {
-                      control,
-                      namePrefix: `overrides.${index}`,
-                      setValue,
-                      disabled: false,
-                      collapsible: false,
-                      showSkeleton: !override?.dateControl?.afterLastDeadline?.allowSubmissions,
-                    })}
-
-                    <div class="row">
-                      <div class="col-md-6">
-                        {renderEffect('timeLimitSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.durationMinutesEnabled,
-                        })}
-                      </div>
-                      <div class="col-md-6">
-                        {renderEffect('passwordSetting', {
-                          control,
-                          namePrefix: `overrides.${index}`,
-                          setValue,
-                          disabled: false,
-                          collapsible: false,
-                          showSkeleton: !override?.dateControl?.passwordEnabled,
-                        })}
-                      </div>
-                    </div>
-                  </CollapsibleCard>
+                  {/* PrairieTest Integration Section */}
+                  <PrairieTestControlForm
+                    control={control}
+                    namePrefix={`overrides.${index}` as any}
+                    showOverrideButton={!override?.prairieTestControl?.enabled}
+                    title="PrairieTest Integration"
+                    description="Integrate with PrairieTest exams for access control"
+                    collapsible={true}
+                    defaultExpanded={true}
+                    onOverride={() => {
+                      setValue(`overrides.${index}.prairieTestControl.enabled` as any, true);
+                      setValue(`overrides.${index}.prairieTestControl.exams` as any, [
+                        { examUuid: '', readOnly: false },
+                      ]);
+                    }}
+                  />
                 </div>
               )}
             </Card.Body>
