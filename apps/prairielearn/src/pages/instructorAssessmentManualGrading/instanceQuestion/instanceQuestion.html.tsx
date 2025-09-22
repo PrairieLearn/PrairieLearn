@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -11,7 +12,6 @@ import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAnd
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type User } from '../../../lib/db-types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';

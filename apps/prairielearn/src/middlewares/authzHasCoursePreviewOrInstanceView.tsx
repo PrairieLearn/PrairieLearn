@@ -2,10 +2,10 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { getPageContext } from '../lib/client/page-context.js';
-import { Hydrate } from '../lib/preact.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 

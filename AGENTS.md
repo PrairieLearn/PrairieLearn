@@ -50,3 +50,10 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 - To run all Python tests, use `make test-python` from the root directory.
 
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
+
+## Rendering HTML
+
+The PrairieLearn web application renders HTML in one of two ways:
+
+- Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See `packages/html/README.md` for details.
+- Interactive components are built and rendered with Preact and hydrated with utilities from the `@prairielearn/preact` package. See `packages/preact/README.md` for details.

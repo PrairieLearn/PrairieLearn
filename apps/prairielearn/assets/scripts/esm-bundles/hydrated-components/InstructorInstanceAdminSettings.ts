@@ -1,4 +1,5 @@
-import { InstructorInstanceAdminSettings } from '../../../../src/pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings.html.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerReactFragment(InstructorInstanceAdminSettings);
+import { InstructorInstanceAdminSettings } from '../../../../src/pages/instructorInstanceAdminSettings/instructorInstanceAdminSettings.html.js';
+
+registerHydratedComponent(InstructorInstanceAdminSettings);

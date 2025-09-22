@@ -7,10 +7,10 @@
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { getPageContext } from '../lib/client/page-context.js';
-import { Hydrate } from '../lib/preact.js';
 
 import {
   AuthzAccessMismatch,
