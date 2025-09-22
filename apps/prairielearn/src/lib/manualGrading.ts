@@ -65,24 +65,25 @@ export async function nextInstanceQuestionUrl({
   skip_graded_submissions: boolean;
   use_instance_question_groups: boolean;
 }): Promise<string> {
-  const prior_instance_question_group_id = use_instance_question_groups
-    ? await run(async () => {
-        if (prior_instance_question_id) {
-          return await sqldb.queryOptionalRow(
-            sql.instance_question_group_id_for_instance_question,
-            {
-              instance_question_id: prior_instance_question_id,
-            },
-            IdSchema.nullable(),
-          );
-        } else {
-          const instanceQuestionGroups = await selectInstanceQuestionGroups({
-            assessmentQuestionId: assessment_question_id,
-          });
-          return instanceQuestionGroups.at(0)?.id ?? null;
-        }
-      })
-    : null;
+  const prior_instance_question_group_id = await run(async () => {
+    if (!use_instance_question_groups) {
+      return null;
+    }
+    if (prior_instance_question_id) {
+      return await sqldb.queryOptionalRow(
+        sql.instance_question_group_id_for_instance_question,
+        {
+          instance_question_id: prior_instance_question_id,
+        },
+        IdSchema.nullable(),
+      );
+    } else {
+      const instanceQuestionGroups = await selectInstanceQuestionGroups({
+        assessmentQuestionId: assessment_question_id,
+      });
+      return instanceQuestionGroups.length > 0 ? instanceQuestionGroups[0].id : null;
+    }
+  });
 
   let next_instance_question_id = await sqldb.queryOptionalRow(
     sql.select_next_instance_question,

@@ -110,15 +110,17 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
-    const aiGradingMode =
-      (await features.enabledFromLocals('ai-grading', res.locals)) &&
-      res.locals.assessment_question.ai_grading_mode;
-
-    const use_instance_question_groups =
-      aiGradingMode &&
-      (await selectAssessmentQuestionHasInstanceQuestionGroups({
+    const use_instance_question_groups = await run(async () => {
+      const aiGradingMode =
+        (await features.enabledFromLocals('ai-grading', res.locals)) &&
+        res.locals.assessment_question.ai_grading_mode;
+      if (!aiGradingMode) {
+        return false;
+      }
+      return await selectAssessmentQuestionHasInstanceQuestionGroups({
         assessmentQuestionId: res.locals.assessment_question.id,
-      }));
+      });
+    });
 
     res.redirect(
       await manualGrading.nextInstanceQuestionUrl({

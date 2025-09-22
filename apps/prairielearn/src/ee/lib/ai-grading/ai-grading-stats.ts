@@ -140,9 +140,9 @@ export async function fillInstanceQuestionColumns<
 export async function calculateAiGradingStats(
   assessment_question: AssessmentQuestion,
 ): Promise<AiGradingGeneralStats> {
-  const instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
-    assessment_question.id,
-  );
+  const instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: assessment_question.id,
+  });
   const rubric_items = await selectRubricForGrading(assessment_question.id);
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
@@ -319,9 +319,9 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
   for (let i = 0; i < assessmentQuestionRows.length; i++) {
     const questionRow = assessmentQuestionRows[i];
 
-    const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
-      questionRow.assessment_question.id,
-    );
+    const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+      assessment_question_id: questionRow.assessment_question.id,
+    });
 
     const instanceQuestionsTable = await fillInstanceQuestionColumns(
       instanceQuestions,

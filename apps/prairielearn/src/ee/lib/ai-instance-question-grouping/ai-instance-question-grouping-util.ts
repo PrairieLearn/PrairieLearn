@@ -24,7 +24,12 @@ const STANDARD_INSTANCE_QUESTION_GROUPS = [
   },
 ];
 
-/** Insert the default instance question groups for an assessment question if they don't exist */
+/**
+ * Insert the default instance question groups for an assessment question.
+ *
+ * If instance question groups already exist for the assessment question, no
+ * new groups are inserted.
+ */
 export async function insertDefaultInstanceQuestionGroups({
   assessment_question_id,
 }: {

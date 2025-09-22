@@ -92,6 +92,7 @@ WHERE
     iq.ai_instance_question_group_id
   ) = $selected_instance_question_group_id
   AND ai.assessment_id = $assessment_id
+  -- If skipping graded submissions, only include instance questions that require manual grading. 
   AND (
     NOT $skip_graded_submissions
     OR iq.requires_manual_grading

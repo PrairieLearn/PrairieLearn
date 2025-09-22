@@ -221,11 +221,11 @@ export async function aiInstanceQuestionGrouping({
       return;
     }
 
-    const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion(
-      assessment_question.id,
+    const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+      assessment_question_id: assessment_question.id,
       closed_instance_questions_only,
       ungrouped_instance_questions_only,
-    );
+    });
 
     const selectedInstanceQuestions =
       instanceQuestionIdsSet.size > 0

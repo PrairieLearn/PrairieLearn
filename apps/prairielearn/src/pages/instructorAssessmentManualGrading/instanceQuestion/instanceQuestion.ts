@@ -332,7 +332,7 @@ router.get(
 
 const PostBodySchema = z.union([
   z.object({
-    __action: z.union([
+    __action: z.enum([
       z.literal('add_manual_grade'),
       z.literal('add_manual_grade_for_instance_question_group'),
       z.literal('add_manual_grade_for_instance_question_group_ungraded'),
@@ -465,12 +465,17 @@ router.post(
         });
       }
 
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      const use_instance_question_groups =
-        aiGradingEnabled &&
-        (await selectAssessmentQuestionHasInstanceQuestionGroups({
+      const use_instance_question_groups = await run(async () => {
+        const aiGradingMode =
+          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+          res.locals.assessment_question.ai_grading_mode;
+        if (!aiGradingMode) {
+          return false;
+        }
+        return await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
-        }));
+        });
+      });
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -487,12 +492,17 @@ router.post(
       req.session.skip_graded_submissions =
         body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
-      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-      const use_instance_question_groups =
-        aiGradingEnabled &&
-        (await selectAssessmentQuestionHasInstanceQuestionGroups({
+      const use_instance_question_groups = await run(async () => {
+        const aiGradingMode =
+          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+          res.locals.assessment_question.ai_grading_mode;
+        if (!aiGradingMode) {
+          return false;
+        }
+        return await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
-        }));
+        });
+      });
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -515,11 +525,17 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const useInstanceQuestionGroups =
-        aiGradingEnabled &&
-        (await selectAssessmentQuestionHasInstanceQuestionGroups({
+      const useInstanceQuestionGroups = await run(async () => {
+        const aiGradingMode =
+          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+          res.locals.assessment_question.ai_grading_mode;
+        if (!aiGradingMode) {
+          return false;
+        }
+        return await selectAssessmentQuestionHasInstanceQuestionGroups({
           assessmentQuestionId: res.locals.assessment_question.id,
-        }));
+        });
+      });
 
       if (!useInstanceQuestionGroups) {
         // This should not happen, since the UI only lets users grade by instance question group if
@@ -576,8 +592,8 @@ router.post(
           {
             manual_score_perc: body.use_score_perc ? body.score_manual_percent : null,
             manual_points: body.use_score_perc ? null : body.score_manual_points,
-            auto_score_perc: body.use_score_perc ? body.score_auto_percent : null, // maybe different
-            auto_points: body.use_score_perc ? null : body.score_auto_points, // maybe different
+            auto_score_perc: body.use_score_perc ? body.score_auto_percent : null,
+            auto_points: body.use_score_perc ? null : body.score_auto_points,
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
@@ -643,17 +659,19 @@ router.post(
         requires_manual_grading: actionPrompt !== 'graded',
       });
 
-      const aiGradingMode =
-        (await features.enabledFromLocals('ai-grading', res.locals)) &&
-        res.locals.assessment_question.ai_grading_mode;
-
-      const use_instance_question_groups =
-        aiGradingMode &&
-        (await selectAssessmentQuestionHasInstanceQuestionGroups({
-          assessmentQuestionId: res.locals.assessment_question.id,
-        }));
-
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+
+      const use_instance_question_groups = await run(async () => {
+        const aiGradingMode =
+          (await features.enabledFromLocals('ai-grading', res.locals)) &&
+          res.locals.assessment_question.ai_grading_mode;
+        if (!aiGradingMode) {
+          return false;
+        }
+        return await selectAssessmentQuestionHasInstanceQuestionGroups({
+          assessmentQuestionId: res.locals.assessment_question.id,
+        });
+      });
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({

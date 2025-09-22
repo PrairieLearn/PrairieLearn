@@ -375,11 +375,15 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export async function selectInstanceQuestionsForAssessmentQuestion(
-  assessment_question_id: string,
+export async function selectInstanceQuestionsForAssessmentQuestion({
+  assessment_question_id,
   closed_instance_questions_only = false,
   ungrouped_instance_questions_only = false,
-): Promise<InstanceQuestion[]> {
+}: {
+  assessment_question_id: string;
+  closed_instance_questions_only?: boolean;
+  ungrouped_instance_questions_only?: boolean;
+}): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
     { assessment_question_id, closed_instance_questions_only, ungrouped_instance_questions_only },
