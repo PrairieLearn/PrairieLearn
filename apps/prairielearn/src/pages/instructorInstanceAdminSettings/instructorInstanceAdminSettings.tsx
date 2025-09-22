@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -208,10 +209,12 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
+      const { course_instance: courseInstanceContext, course: courseContext } =
+        getCourseInstanceContext(res.locals, 'instructor');
       const infoCourseInstancePath = path.join(
-        res.locals.course.path,
+        courseContext.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        courseInstanceContext.short_name,
         'infoCourseInstance.json',
       );
 
@@ -240,7 +243,7 @@ router.post(
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
         parsedBody.display_timezone,
-        res.locals.course.display_timezone,
+        courseContext.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
@@ -252,6 +255,12 @@ router.post(
         !parsedBody.show_in_enroll_page,
         false,
       );
+
+      // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
+      const parseDateTime = (date: string) => {
+        if (date === '') return null;
+        return Temporal.PlainDateTime.from(date).toString();
+      };
 
       const selfEnrollmentEnabled = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.enabled,
@@ -270,8 +279,8 @@ router.post(
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment?.beforeDate,
-        parsedBody.self_enrollment_enabled_before_date ?? null,
+        parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
+        parseDateTime(parsedBody.self_enrollment_enabled_before_date),
         null,
       );
 

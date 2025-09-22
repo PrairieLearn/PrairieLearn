@@ -128,6 +128,12 @@ export function SelfEnrollmentSettings({
     control,
     name: 'self_enrollment_enabled_before_date_enabled',
   });
+
+  const selfEnrollmentEnabledBeforeDate = useWatch({
+    control,
+    name: 'self_enrollment_enabled_before_date',
+  });
+
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -142,7 +148,7 @@ export function SelfEnrollmentSettings({
           class="form-check-input"
           type="checkbox"
           id="self_enrollment_enabled"
-          disabled={!canEdit || !enrollmentManagementEnabled}
+          disabled={!enrollmentManagementEnabled}
           {...control.register('self_enrollment_enabled')}
           name="self_enrollment_enabled"
         />
@@ -159,7 +165,6 @@ export function SelfEnrollmentSettings({
           class="form-check-input"
           type="checkbox"
           id="show_in_enroll_page"
-          disabled={!canEdit || !selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode}
           {...control.register('show_in_enroll_page')}
           name="show_in_enroll_page"
         />
@@ -181,6 +186,13 @@ export function SelfEnrollmentSettings({
           {...control.register('self_enrollment_use_enrollment_code')}
           name="self_enrollment_use_enrollment_code"
         />
+        {!selfEnrollmentEnabled && (
+          <input
+            type="hidden"
+            name="self_enrollment_use_enrollment_code"
+            value={selfEnrollmentUseEnrollmentCode ? 'on' : ''}
+          />
+        )}
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
@@ -199,13 +211,20 @@ export function SelfEnrollmentSettings({
           {...control.register('self_enrollment_enabled_before_date_enabled')}
           name="self_enrollment_enabled_before_date_enabled"
         />
+        {!selfEnrollmentEnabled && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date_enabled"
+            value={selfEnrollmentEnabledBeforeDateEnabled ? 'on' : ''}
+          />
+        )}
         <label class="form-check-label" for="disable_self_enrollment_after_date">
           Forbid self-enrollment after specified date
         </label>
         <div class="small text-muted">
           If enabled, self-enrollment will be disabled after the specified date.
         </div>
-        {selfEnrollmentEnabledBeforeDateEnabled && (
+        {selfEnrollmentEnabledBeforeDateEnabled ? (
           <>
             <input
               type="datetime-local"
@@ -216,9 +235,21 @@ export function SelfEnrollmentSettings({
               )}
               disabled={!canEdit || !selfEnrollmentEnabled || !enrollmentManagementEnabled}
               {...control.register('self_enrollment_enabled_before_date', {
-                required: selfEnrollmentEnabledBeforeDateEnabled ? 'Date is required' : false,
+                validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
+                  if (self_enrollment_enabled_before_date_enabled && !value) {
+                    return 'Date is required';
+                  }
+                  return true;
+                },
               })}
             />
+            {!selfEnrollmentEnabled && (
+              <input
+                type="hidden"
+                name="self_enrollment_enabled_before_date"
+                value={selfEnrollmentEnabledBeforeDate}
+              />
+            )}
             {selfEnrollmentEnabledBeforeDateError && (
               <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
             )}
@@ -226,6 +257,12 @@ export function SelfEnrollmentSettings({
               After this date, self-enrollment will be disabled.
             </small>
           </>
+        ) : (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date"
+            value={selfEnrollmentEnabledBeforeDate}
+          />
         )}
       </div>
 

@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -56,8 +57,14 @@ export function InstructorInstanceAdminSettings({
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
     self_enrollment_enabled_before_date_enabled:
       courseInstance.self_enrollment_enabled_before_date_enabled,
-    self_enrollment_enabled_before_date:
-      courseInstance.self_enrollment_enabled_before_date?.toISOString().slice(0, 16) ?? '',
+    self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
+      ? Temporal.Instant.fromEpochMilliseconds(
+          courseInstance.self_enrollment_enabled_before_date.getTime(),
+        )
+          .toZonedDateTimeISO(courseInstance.display_timezone)
+          .toPlainDateTime()
+          .toString()
+      : '',
   };
 
   const {
@@ -191,8 +198,8 @@ export function InstructorInstanceAdminSettings({
           </div>
 
           <SelfEnrollmentSettings
-            control={control}
             canEdit={canEdit}
+            control={control}
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
