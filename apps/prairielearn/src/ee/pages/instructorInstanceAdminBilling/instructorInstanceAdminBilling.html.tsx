@@ -1,4 +1,4 @@
-import { Hydrate } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';

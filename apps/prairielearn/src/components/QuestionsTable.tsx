@@ -1,6 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';

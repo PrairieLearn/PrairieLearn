@@ -1,5 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';

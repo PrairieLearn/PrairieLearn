@@ -2,7 +2,7 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';

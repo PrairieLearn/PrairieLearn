@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 import { ansiToHtml } from '../lib/chalk.js';
 

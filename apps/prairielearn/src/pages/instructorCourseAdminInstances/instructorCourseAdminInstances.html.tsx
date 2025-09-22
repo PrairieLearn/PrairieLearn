@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { Modal } from '../../components/Modal.js';

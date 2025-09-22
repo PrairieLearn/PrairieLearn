@@ -9,7 +9,7 @@ Utilities for rendering Preact components within PrairieLearn's HTML templating 
 To render a non-interactive Preact component to an HTML-safe string, use `renderHtml`:
 
 ```tsx
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/preact/server';
 import { html } from '@prairielearn/html';
 
 function MyComponent() {
@@ -22,7 +22,7 @@ const template = html`<div class="container">${renderHtml(<MyComponent />)}</div
 To render a complete document with a DOCTYPE declaration, use `renderHtmlDocument`:
 
 ```tsx
-import { renderHtmlDocument } from '@prairielearn/preact';
+import { renderHtmlDocument } from '@prairielearn/preact/server';
 
 const htmlDoc = renderHtmlDocument(
   <html>
@@ -41,7 +41,7 @@ Interactive components that require client-side JavaScript must be wrapped in a 
 The root component must live in a module that can be imported on the client, and it must have a `displayName` property set. This is used to identify the component during hydration.
 
 ```tsx
-import { Hydrate } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 
 function InteractiveComponent({ name }: { name: string }) {
   return <button onClick={() => alert(`Hello, ${name}!`)}>Click me</button>;
@@ -61,7 +61,7 @@ When rendering the page, wrap the component in `<Hydrate>`:
 Alternatively, you can use the `hydrateHtml` convenience function to produce an HTML-safe string directly:
 
 ```tsx
-import { hydrateHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 import { html } from '@prairielearn/html';
 
 const template = html`

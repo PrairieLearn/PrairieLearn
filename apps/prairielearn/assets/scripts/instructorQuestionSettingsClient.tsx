@@ -2,7 +2,7 @@ import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';

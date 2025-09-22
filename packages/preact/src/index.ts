@@ -4,8 +4,8 @@ import { HtmlSafeString, escapeHtml, unsafeHtml } from '@prairielearn/html';
 import { type VNode } from '@prairielearn/preact-cjs';
 
 // These functions are separated from the other utilities so that they can be imported
-// on the client. `index.tsx` imports `@prairielearn/compiled-assets`, which
-// cannot be bundled for the browser.
+// on both the client and the server. `server.tsx` imports `@prairielearn/compiled-assets`,
+// which cannot be bundled for the browser.
 
 /**
  * Render a non-interactive Preact component that is embedded within a tagged template literal.

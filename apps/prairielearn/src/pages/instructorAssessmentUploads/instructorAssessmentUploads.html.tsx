@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 import { JobStatus } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';

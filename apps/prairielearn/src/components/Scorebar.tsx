@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 export function Scorebar({
   score,

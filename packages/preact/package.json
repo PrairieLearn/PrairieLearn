@@ -9,7 +9,7 @@
   },
   "exports": {
     ".": "./dist/index.js",
-    "./client": "./dist/client.js",
+    "./server": "./dist/server.js",
     "./hydrated-component": "./dist/hydrated-component/index.js"
   },
   "scripts": {

@@ -8,7 +8,7 @@ import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { type ComponentChildren, Fragment, type VNode } from '@prairielearn/preact-cjs';
 
-import { renderHtml } from './client.js';
+import { renderHtml } from './index.js';
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {

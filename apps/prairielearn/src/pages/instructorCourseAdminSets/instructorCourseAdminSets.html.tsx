@@ -1,5 +1,5 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
 import { PageLayout } from '../../components/PageLayout.js';

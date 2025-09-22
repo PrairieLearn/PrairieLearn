@@ -1,5 +1,5 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact/client';
+import { renderHtml } from '@prairielearn/preact';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
