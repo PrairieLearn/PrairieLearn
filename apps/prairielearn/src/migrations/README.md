@@ -57,20 +57,18 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 ### Add column with backfill and no constraints
 
-- First PR: add column and backfill
-  - Add the new column
-  - Enqueue a batched migration to backfill the column with appropriate values
-- Second PR: finalize the batched migration
+- First PR: add the new column
+- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- Third PR: finalize the batched migration
 
 ### Add column with backfill and constraints
 
-- First PR: Add column and enqueue backfill
-  - Add the column without the constraints
-  - Enqueue a batched migration to backfill the column with appropriate values
-- Second PR: finalize and add constraints
+- First PR: add the column without the constraints
+- Second PR: enqueue a batched migration to backfill the column with appropriate values
+- Third PR: finalize and add constraints
   - Finalize the batched migration
   - Add the constraint with `NOT VALID` (this allows the constraint to be added without validating existing data)
-  - In a separate transaction, validate the constraint (this validates all existing data against the constraint)
+  - In a separate migration/transaction, validate the constraint (this validates all existing data against the constraint)
 
 ### Rename column with a default value, no data preservation
 
