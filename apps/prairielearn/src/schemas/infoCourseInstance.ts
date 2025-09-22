@@ -51,20 +51,27 @@ export const CourseInstanceJsonSchema = z
         enabled: z
           .boolean()
           .describe(
-            'If true, self-enrollment access is controlled by the beforeDate and requiresSecretLink properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+            'If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
           )
           .optional()
           .default(true),
         beforeDate: z
           .string()
           .describe(
-            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+            'Before this date, self-enrollment is enabled if beforeDateEnabled is true. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on enabled property.',
           )
           .optional(),
-        requiresSecretLink: z
+        beforeDateEnabled: z
           .boolean()
           .describe(
-            'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
+            'If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.',
+          )
+          .optional()
+          .default(false),
+        useEnrollmentCode: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.',
           )
           .optional()
           .default(false),

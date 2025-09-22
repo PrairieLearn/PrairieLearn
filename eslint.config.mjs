@@ -290,7 +290,7 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', '/_/'],
+          forbid: ['className', 'htmlFor', '/_/'],
         },
       ],
 

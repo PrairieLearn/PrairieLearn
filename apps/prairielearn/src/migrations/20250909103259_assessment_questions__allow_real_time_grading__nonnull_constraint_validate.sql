@@ -1,0 +1,8 @@
+ALTER TABLE assessment_questions VALIDATE CONSTRAINT assessment_questions_allow_real_time_grading_not_null;
+
+ALTER TABLE assessment_questions
+ALTER COLUMN allow_real_time_grading
+SET NOT NULL;
+
+ALTER TABLE assessment_questions
+DROP CONSTRAINT assessment_questions_allow_real_time_grading_not_null;

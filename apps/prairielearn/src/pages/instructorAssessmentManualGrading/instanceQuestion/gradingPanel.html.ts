@@ -22,25 +22,25 @@ export function GradingPanel({
   context,
   graders,
   disable,
-  hide_back_to_question,
   skip_text,
   custom_points,
   custom_auto_points,
   custom_manual_points,
   grading_job,
   aiGradingInfo,
+  skip_graded_submissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
-  hide_back_to_question?: boolean;
   skip_text?: string;
   custom_points?: number;
   custom_auto_points?: number;
   custom_manual_points?: number;
   grading_job?: SubmissionOrGradingJob;
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  skip_graded_submissions?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -49,10 +49,11 @@ export function GradingPanel({
   assert(submission, 'submission is missing');
   assert(resLocals.submission, 'resLocals.submission is missing');
 
-  const assessment_question_url = `${resLocals.urlPrefix}/assessment/${resLocals.assessment_instance.assessment_id}/manual_grading/assessment_question/${resLocals.instance_question.assessment_question_id}`;
   const open_issues: Issue[] = resLocals.issues.filter((issue) => issue.open);
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
-  skip_text = skip_text || (disable ? 'Next' : 'Skip');
+  skip_text = skip_text || 'Next';
+
+  const showSkipGradedSubmissionsButton = !disable && context === 'main';
 
   return html`
     <form
@@ -152,15 +153,31 @@ ${submission.feedback?.manual}</textarea
               </li>
             `
           : ''}
-        <li class="list-group-item d-flex align-items-center">
-          ${!hide_back_to_question
-            ? html`
-                <a class="btn btn-primary" href="${assessment_question_url}">
-                  <i class="fas fa-arrow-left"></i>
-                  Back to Question
-                </a>
-              `
-            : ''}
+        <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
+          <div class="form-check">
+            ${showSkipGradedSubmissionsButton
+              ? html`
+                  <input
+                    id="skip_graded_submissions"
+                    type="checkbox"
+                    class="form-check-input"
+                    name="skip_graded_submissions"
+                    value="true"
+                    ${skip_graded_submissions ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="skip_graded_submissions">
+                    Skip graded submissions
+                  </label>
+                `
+              : html`
+                  <input
+                    id="skip_graded_submissions"
+                    type="hidden"
+                    name="skip_graded_submissions"
+                    value="${skip_graded_submissions ? 'true' : 'false'}"
+                  />
+                `}
+          </div>
           <span class="ms-auto">
             ${!disable
               ? html`
@@ -170,18 +187,19 @@ ${submission.feedback?.manual}</textarea
                     name="__action"
                     value="add_manual_grade"
                   >
-                    Submit
+                    Grade
                   </button>
                 `
               : ''}
             <div class="btn-group">
-              <a
+              <button
+                type="submit"
                 class="btn btn-secondary"
-                href="${assessment_question_url}/next_ungraded?prior_instance_question_id=${resLocals
-                  .instance_question.id}"
+                name="__action"
+                value="next_instance_question"
               >
                 ${skip_text}
-              </a>
+              </button>
               ${!disable
                 ? html`
                     <button
