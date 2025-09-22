@@ -11,7 +11,7 @@ ADD CONSTRAINT instance_question_groups_unique_name_constraint UNIQUE (
   instance_question_group_name
 );
 
--- This is needed in instance_questions.pg for enforcing that instance questions using an
+-- This is needed to enforce that instance questions in the same
 -- instance question group have the same assessment_question_id
 ALTER TABLE instance_question_groups
 ADD CONSTRAINT instance_question_groups_unique_id_constraint UNIQUE (assessment_question_id, id);
