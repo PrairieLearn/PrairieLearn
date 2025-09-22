@@ -2,16 +2,7 @@ import itertools
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Callable, Generator
 from copy import deepcopy
-from enum import Enum
-
 import networkx as nx
-
-class HaltingReason(Enum):
-    SOURCE = "source"
-    CYCLE = "cycle"
-
-Multigraph = dict[str, list[list[str]]] | dict[str, list[str]]
-
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -323,7 +314,7 @@ def dfs_until(
     halting_condition: Callable[[tuple[str, list]], bool],
     graph: dict[str, list],
     start: str,
-) -> tuple[HaltingReason | str, dict[str, list[str]]]:
+) -> tuple[str | None, dict[str, list[str]]]:
     """
     Depth-First searches a graph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
@@ -350,11 +341,13 @@ def dfs_until(
         for target in graph[curr]:
             # This determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
-                return HaltingReason.CYCLE, traversed
+                raise Exception(
+                    f"Cycle encountered druing collapse of multigraph."
+                )
             if target not in visited:
                 stack.insert(0, (target, deepcopy(visited)))
 
-    return HaltingReason.SOURCE, traversed
+    return None, traversed
 
 
 def collapse_multigraph(
@@ -376,15 +369,9 @@ def collapse_multigraph(
         reason, dag = dfs_until(_is_edges_colored, graph, final)
 
         # DFS halted because source was reached
-        if reason == HaltingReason.SOURCE:
+        if reason == None:
             yield dag
             continue
-
-        # DFS halted for a cycle, cycles are not allowed at this time.
-        if reason == HaltingReason.CYCLE:
-            raise Exception(
-                f"Cycle encountered druing collapse of multigraph.\nProblem DAG: {dag}\nQuestion Multigraph: {depends_multi_graph}."
-            )
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
         for i, color in enumerate(graph[reason]):
