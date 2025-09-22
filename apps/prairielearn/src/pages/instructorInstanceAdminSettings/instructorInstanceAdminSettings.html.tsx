@@ -1,78 +1,16 @@
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
-import { Button, Form, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
+import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
-
-async function copyToClipboard(text: string) {
-  await navigator.clipboard.writeText(text);
-}
-
-function PublicLinkSharing({
-  publicLink,
-  sharingMessage,
-  publicLinkMessage,
-}: {
-  publicLink: string;
-  sharingMessage: string;
-  publicLinkMessage: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
-  return (
-    <>
-      <p>
-        <span class="badge color-green3 me-1">Public source</span>
-        {sharingMessage}
-      </p>
-      <div class="mb-3">
-        <label for="publicLink">Public link</label>
-        <InputGroup>
-          <Form.Control type="text" id="publicLink" value={publicLink} disabled />
-          <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              aria-label="Copy public link"
-              onClick={async () => {
-                await copyToClipboard(publicLink);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }}
-            >
-              <i class="far fa-clipboard" />
-            </Button>
-          </OverlayTrigger>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Public Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i class="fas fa-qrcode" />
-          </Button>
-        </InputGroup>
-        <small class="form-text text-muted">{publicLinkMessage}</small>
-      </div>
-      <QRCodeModal
-        id="publicLinkModal"
-        title="Public Link QR Code"
-        content={publicLink}
-        show={showQR}
-        onHide={() => setShowQR(false)}
-      />
-    </>
-  );
-}
 
 export function InstructorInstanceAdminSettings({
   csrfToken,
@@ -115,7 +53,9 @@ export function InstructorInstanceAdminSettings({
     show_in_enroll_page:
       courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
-    self_enrollment_requires_secret_link: courseInstance.self_enrollment_requires_secret_link,
+    self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    self_enrollment_enabled_before_date_enabled:
+      courseInstance.self_enrollment_enabled_before_date_enabled,
     self_enrollment_enabled_before_date:
       courseInstance.self_enrollment_enabled_before_date?.toISOString().slice(0, 16) ?? '',
   };

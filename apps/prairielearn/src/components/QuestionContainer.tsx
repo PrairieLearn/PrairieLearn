@@ -106,9 +106,14 @@ export function QuestionContainer({
           : ''
       }
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
+      aiGradingInfo?.explanation
+        ? AIGradingExplanation({
+            explanation: aiGradingInfo.explanation,
+          })
+        : ''}
+      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
       aiGradingInfo?.prompt
         ? AIGradingPrompt({
-            variantId: variant.id,
             prompt: aiGradingInfo.prompt,
             promptImageUrls: aiGradingInfo.promptImageUrls,
           })
@@ -161,11 +166,9 @@ export function QuestionContainer({
 }
 
 function AIGradingPrompt({
-  variantId,
   prompt,
   promptImageUrls,
 }: {
-  variantId: string;
   prompt: string;
   promptImageUrls: string[];
 }) {
@@ -174,45 +177,70 @@ function AIGradingPrompt({
       <div
         class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
       >
-        <h2>AI Grading Prompt</h2>
+        <h2>AI grading prompt</h2>
+        <button
+          type="button"
+          class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto collapsed"
+          data-bs-toggle="collapse"
+          data-bs-target="#ai-grading-prompt-body"
+          aria-expanded="false"
+          aria-controls="ai-grading-prompt-body"
+        >
+          <i class="fa fa-angle-up ms-1 expand-icon"></i>
+        </button>
+      </div>
+      <div class="js-submission-body js-collapsible-card-body collapse" id="ai-grading-prompt-body">
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item my-0">
+            <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
+            <pre class="mb-0"><code>${prompt}</code></pre>
+          </li>
+          <li class="list-group-item my-0">
+            ${promptImageUrls.length > 0
+              ? html`
+                  <h5 class="card-title mt-2 mb-3">Prompt images</h5>
+                  ${promptImageUrls.map(
+                    (url, index) =>
+                      html`<img
+                        src="${url}"
+                        alt="Image ${index + 1} in the AI grading prompt"
+                        class="img-fluid mb-2"
+                        style="max-height: 600px"
+                      />`,
+                  )}
+                `
+              : ''}
+          </li>
+        </ul>
+      </div>
+    </div>
+  `;
+}
+
+function AIGradingExplanation({ explanation }: { explanation: string }) {
+  return html`
+    <div class="card mb-3 grading-block">
+      <div
+        class="card-header collapsible-card-header bg-secondary text-white d-flex align-items-center"
+      >
+        <h2>AI grading explanation</h2>
         <button
           type="button"
           class="expand-icon-container btn btn-outline-light btn-sm text-nowrap ms-auto"
           data-bs-toggle="collapse"
-          data-bs-target="#ai-grading-prompt-${variantId}-body"
+          data-bs-target="#ai-grading-explanation-body"
           aria-expanded="true"
-          aria-controls="ai-grading-prompt-${variantId}-body"
+          aria-controls="ai-grading-explanation-body"
         >
           <i class="fa fa-angle-up ms-1 expand-icon"></i>
         </button>
       </div>
       <div
         class="js-submission-body js-collapsible-card-body show"
-        id="ai-grading-prompt-${variantId}-body"
+        id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <ul class="list-group list-group-flush">
-            <li class="list-group-item my-0">
-              <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
-              <pre class="mb-0"><code>${prompt}</code></pre>
-            </li>
-            <li class="list-group-item my-0">
-              ${promptImageUrls.length > 0
-                ? html`
-                    <h5 class="card-title mt-2 mb-3">Prompt images</h5>
-                    ${promptImageUrls.map(
-                      (url, index) =>
-                        html`<img
-                          src="${url}"
-                          alt="Image ${index + 1} in the AI grading prompt"
-                          class="img-fluid mb-2"
-                          style="max-height: 600px"
-                        />`,
-                    )}
-                  `
-                : ''}
-            </li>
-          </ul>
+          <pre class="mb-0" style="white-space: pre-wrap;">${explanation}</pre>
         </div>
       </div>
     </div>
@@ -431,7 +459,12 @@ function QuestionFooter({
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <input
+          type="hidden"
+          name="__csrf_token"
+          value="${resLocals.__csrf_token}"
+          data-skip-unload-check="true"
+        />
         ${QuestionFooterContent({ resLocals, questionContext })}
       </div>
     `;
@@ -439,7 +472,12 @@ function QuestionFooter({
     return html`
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+          <input
+            type="hidden"
+            name="__csrf_token"
+            value="${resLocals.__csrf_token}"
+            data-skip-unload-check="true"
+          />
           ${QuestionFooterContent({ resLocals, questionContext })}
         </form>
       </div>
@@ -549,9 +587,16 @@ export function QuestionFooterContent({
                 `
               : ''}
           </span>
-          <span class="d-flex">
+          <div class="d-flex">
             ${question.type === 'Freeform'
-              ? html` <input type="hidden" name="__variant_id" value="${variant.id}" /> `
+              ? html`
+                  <input
+                    type="hidden"
+                    name="__variant_id"
+                    value="${variant.id}"
+                    data-skip-unload-check="true"
+                  />
+                `
               : html`
                   <input type="hidden" name="postData" class="postData" />
                   <input type="hidden" name="__action" class="__action" />
@@ -591,8 +636,17 @@ export function QuestionFooterContent({
                       </button>
                     `
                   : ''}
-            ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
-          </span>
+            <div class="d-flex flex-column">
+              ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
+              ${assessment_question == null || assessment_question.allow_real_time_grading
+                ? ''
+                : html`
+                    <small class="fst-italic text-end">
+                      This question will be graded after the assessment is finished
+                    </small>
+                  `}
+            </div>
+          </div>
         </div>
       </div>
       ${SubmitRateFooter({
@@ -715,11 +769,13 @@ function AvailablePointsNotes({
   const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
   const additional = instance_question.points === 0 ? '' : 'additional';
+  const attemptSuffix = assessment_question?.allow_real_time_grading ? 'for this attempt' : '';
+
   return html`
-    <small class="fst-italic align-self-center text-end">
+    <small class="fst-italic text-end">
       ${roundedPoints[0] === 1
-        ? `1 ${additional} point available for this attempt`
-        : `${roundedPoints[0]} ${additional} points available for this attempt`}
+        ? `1 ${additional} point available ${attemptSuffix}`
+        : `${roundedPoints[0]} ${additional} points available ${attemptSuffix}`}
       ${maxManualPoints > 0
         ? roundedPoints[0] > maxManualPoints
           ? html`&mdash; ${Math.round((roundedPoints[0] - maxManualPoints) * 100) / 100}

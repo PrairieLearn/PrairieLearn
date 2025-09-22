@@ -3,64 +3,12 @@ import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
+import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
 import type { SettingsFormValues } from '../instructorInstanceAdminSettings.types.js';
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
-}
-
-function StudentLink({
-  studentLink,
-  studentLinkMessage,
-}: {
-  studentLink: string;
-  studentLinkMessage: string;
-}) {
-  const [showQR, setShowQR] = useState(false);
-  const [copied, setCopied] = useState(false);
-  return (
-    <div class="mb-3">
-      <label class="form-label" for="student_link">
-        Student Link
-      </label>
-      <InputGroup>
-        <Form.Control type="text" id="student_link" value={studentLink} disabled />
-        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Copy student link"
-            onClick={async () => {
-              await copyToClipboard(studentLink);
-              setCopied(true);
-              setTimeout(() => setCopied(false), 1500);
-            }}
-          >
-            <i class="bi bi-clipboard" />
-          </Button>
-        </OverlayTrigger>
-        <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
-          <Button
-            size="sm"
-            variant="outline-secondary"
-            aria-label="Student Link QR Code"
-            onClick={() => setShowQR(true)}
-          >
-            <i class="bi bi-qr-code-scan" />
-          </Button>
-        </OverlayTrigger>
-      </InputGroup>
-      <small class="form-text text-muted">{studentLinkMessage}</small>
-      <QRCodeModal
-        id="studentLinkModal"
-        title="Student Link QR Code"
-        content={studentLink}
-        show={showQR}
-        onHide={() => setShowQR(false)}
-      />
-    </div>
-  );
 }
 
 function SelfEnrollmentLink({
@@ -117,8 +65,8 @@ function SelfEnrollmentLink({
           </OverlayTrigger>
         </InputGroup>
         <small class="form-text text-muted">
-          This is the secret link that students will use to enroll in the course. Only students with
-          this specific link can enroll.
+          Students can use this link to immediately enroll in the course. Students can also enroll
+          by entering the enrollment code on any link to the course instance.
         </small>
       </div>
 
@@ -177,7 +125,7 @@ export function SelfEnrollmentSettings({
   const { register, watch, setValue, errors, canEdit, enrollmentManagementEnabled } = formMeta;
 
   const selfEnrollmentEnabled = watch('self_enrollment_enabled');
-  const selfEnrollmentRequiresSecretLink = watch('self_enrollment_requires_secret_link');
+  const selfEnrollmentUseEnrollmentCode = watch('self_enrollment_use_enrollment_code');
   const selfEnrollmentEnabledBeforeDate = watch('self_enrollment_enabled_before_date');
 
   const [showDateInput, setShowDateInput] = useState(!!selfEnrollmentEnabledBeforeDate);
@@ -208,7 +156,7 @@ export function SelfEnrollmentSettings({
           class="form-check-input"
           type="checkbox"
           id="show_in_enroll_page"
-          disabled={!canEdit || !selfEnrollmentEnabled || selfEnrollmentRequiresSecretLink}
+          disabled={!canEdit || !selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode}
           {...register('show_in_enroll_page')}
           name="show_in_enroll_page"
         />
@@ -225,17 +173,17 @@ export function SelfEnrollmentSettings({
         <input
           class="form-check-input"
           type="checkbox"
-          id="self_enrollment_requires_secret_link"
+          id="self_enrollment_use_enrollment_code"
           disabled={!canEdit || !selfEnrollmentEnabled || !enrollmentManagementEnabled}
-          {...register('self_enrollment_requires_secret_link')}
-          name="self_enrollment_requires_secret_link"
+          {...register('self_enrollment_use_enrollment_code')}
+          name="self_enrollment_use_enrollment_code"
         />
-        <label class="form-check-label" for="self_enrollment_requires_secret_link">
-          Self-enrollment requires secret link
+        <label class="form-check-label" for="self_enrollment_use_enrollment_code">
+          Use enrollment code for self-enrollment
         </label>
         <div class="small text-muted">
-          If enabled, self-enrollment requires a secret link to enroll. If disabled, any link to the
-          course instance will allow self-enrollment.
+          If enabled, self-enrollment requires an enrollment code to enroll. If disabled, any link
+          to the course instance will allow self-enrollment.
         </div>
       </div>
 
@@ -294,10 +242,10 @@ export function SelfEnrollmentSettings({
 
       {selfEnrollmentEnabled && (
         <>
-          {selfEnrollmentRequiresSecretLink ? (
+          {selfEnrollmentUseEnrollmentCode ? (
             <SelfEnrollmentLink selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
           ) : (
-            <StudentLink
+            <StudentLinkSharing
               studentLink={studentLink}
               studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
             />

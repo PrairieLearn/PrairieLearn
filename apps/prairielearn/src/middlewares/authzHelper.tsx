@@ -15,27 +15,8 @@ import { Hydrate } from '../lib/preact.js';
 import {
   AuthzAccessMismatch,
   type CheckablePermissionKeys,
-  PERMISSIONS_META,
+  getErrorExplanation,
 } from './AuthzAccessMismatch.js';
-
-function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
-  const descriptions = permissionKeys.map((key) => {
-    const permission = PERMISSIONS_META.find((p) => p.key === key);
-    return permission?.label.toLowerCase() || key.toString().replaceAll('_', ' ');
-  });
-
-  if (descriptions.length === 1) {
-    return descriptions[0];
-  } else if (descriptions.length === 2) {
-    return descriptions.join(' or ');
-  } else {
-    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
-  }
-}
-
-function getErrorExplanation(permissionKeys: CheckablePermissionKeys[]): string {
-  return `This page requires ${getPermissionDescription(permissionKeys)} permissions.`;
-}
 
 export const createAuthzMiddleware =
   ({
@@ -80,7 +61,7 @@ export const createAuthzMiddleware =
           content: (
             <Hydrate>
               <AuthzAccessMismatch
-                errorExplanation={errorExplanation ?? getErrorExplanation(oneOfPermissions)}
+                errorExplanation={errorExplanation}
                 oneOfPermissionKeys={oneOfPermissions}
                 authzData={authzData}
                 authnUser={pageContext.authn_user}

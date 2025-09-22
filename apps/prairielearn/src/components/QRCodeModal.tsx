@@ -40,7 +40,7 @@ export function QRCodeModal({
 }) {
   const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]);
   return (
-    <Modal show={show} aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
+    <Modal show={show} size="lg" aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
       </Modal.Header>

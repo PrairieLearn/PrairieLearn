@@ -1,13 +1,12 @@
 import { type ComponentType } from '@prairielearn/preact-cjs';
+import { type PromiseWithResolvers, withResolvers } from '@prairielearn/utils';
 
-import { type DeferredPromise, deferredPromise } from '../../../../src/lib/deferred.js';
-
-type AugmentedDeferredPromise<T> = DeferredPromise<T> & {
+type AugmentedPromiseWithResolvers<T> = PromiseWithResolvers<T> & {
   resolved: boolean;
 };
 
 export class ReactFragmentsRegistry {
-  private fragments: Record<string, AugmentedDeferredPromise<ComponentType<any>>> = {};
+  private fragments: Record<string, AugmentedPromiseWithResolvers<ComponentType<any>>> = {};
 
   setReactFragment(id: string, component: ComponentType<any>) {
     if (this.fragments[id]?.resolved) {
@@ -15,7 +14,7 @@ export class ReactFragmentsRegistry {
     }
 
     if (!this.fragments[id]) {
-      this.fragments[id] = { ...deferredPromise(), resolved: false };
+      this.fragments[id] = { ...withResolvers(), resolved: false };
     }
     this.fragments[id].resolve(component);
     this.fragments[id].resolved = true;
@@ -25,7 +24,7 @@ export class ReactFragmentsRegistry {
     if (!this.fragments[id]) {
       // This promise will be resolved later when the component is registered via `setReactFragment`.
       this.fragments[id] = {
-        ...deferredPromise(),
+        ...withResolvers(),
         resolved: false,
       };
     }
