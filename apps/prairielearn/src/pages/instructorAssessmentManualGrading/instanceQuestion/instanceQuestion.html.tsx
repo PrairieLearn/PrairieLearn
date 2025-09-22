@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -11,7 +12,6 @@ import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAnd
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, type User } from '../../../lib/db-types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -32,6 +32,7 @@ export function InstanceQuestion({
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData | null;
@@ -46,6 +47,7 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  skipGradedSubmissions: boolean;
 }) {
   return PageLayout({
     resLocals: {
@@ -147,7 +149,13 @@ export function InstanceQuestion({
           : ''}
       </div>
       ${conflict_grading_job
-        ? ConflictGradingJobModal({ resLocals, conflict_grading_job, graders, lastGrader })
+        ? ConflictGradingJobModal({
+            resLocals,
+            conflict_grading_job,
+            graders,
+            lastGrader,
+            skipGradedSubmissions,
+          })
         : ''}
       <div class="row">
         <div class="col-lg-8 col-12">
@@ -168,6 +176,7 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
+                skip_graded_submissions: skipGradedSubmissions,
               })}
             </div>
           </div>
@@ -214,11 +223,13 @@ function ConflictGradingJobModal({
   conflict_grading_job,
   graders,
   lastGrader,
+  skipGradedSubmissions,
 }: {
   resLocals: ResLocalsForPage['instance-question'];
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
+  skipGradedSubmissions: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -254,9 +265,9 @@ function ConflictGradingJobModal({
                   ${GradingPanel({
                     resLocals,
                     disable: true,
-                    hide_back_to_question: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>
@@ -282,6 +293,7 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    skip_graded_submissions: skipGradedSubmissions,
                   })}
                 </div>
               </div>

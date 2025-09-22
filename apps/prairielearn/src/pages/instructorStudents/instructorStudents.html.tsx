@@ -22,7 +22,10 @@ import {
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
 } from '../../lib/client/nuqs.js';
-import type { PageContext, StaffCourseInstanceContext } from '../../lib/client/page-context.js';
+import type {
+  PageContextWithAuthzData,
+  StaffCourseInstanceContext,
+} from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentDetailUrl } from '../../lib/client/url.js';
@@ -45,7 +48,7 @@ const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 const columnHelper = createColumnHelper<StudentRow>();
 
 interface StudentsCardProps {
-  authzData: PageContext['authz_data'];
+  authzData: PageContextWithAuthzData['authz_data'];
   course: StaffCourseInstanceContext['course'];
   courseInstance: StaffCourseInstanceContext['course_instance'];
   csrfToken: string;
@@ -224,8 +227,8 @@ function StudentsCard({
           );
         },
       }),
-      columnHelper.accessor((row) => row.enrollment.joined_at, {
-        id: 'enrollment_joined_at',
+      columnHelper.accessor((row) => row.enrollment.first_joined_at, {
+        id: 'enrollment_first_joined_at',
         header: 'Joined',
         cell: (info) => {
           const date = info.getValue();
@@ -387,7 +390,7 @@ export const InstructorStudents = ({
   isDevMode,
   urlPrefix,
 }: {
-  authzData: PageContext['authz_data'];
+  authzData: PageContextWithAuthzData['authz_data'];
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
