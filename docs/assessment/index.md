@@ -246,7 +246,7 @@ A question may also set a value to `points` instead of `autoPoints` and `manualP
 
 ## Question points for `Exam` assessments
 
-Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as `allowRealTimeGrading` is true (the default). See [Question scoring details for `Exam` assessments](#question-scoring-details-for-exam-assessments) for details on the exact scoring algorithm.
+Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as real-time grading is allowed (the default). See [Question scoring details for `Exam` assessments](#question-scoring-details-for-exam-assessments) for details on the exact scoring algorithm.
 
 Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](../manualGrading/index.md)).
 
