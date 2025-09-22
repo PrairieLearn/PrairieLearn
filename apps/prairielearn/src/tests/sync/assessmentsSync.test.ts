@@ -1978,7 +1978,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isTrue(syncedData.assessment.allow_real_time_grading);
     assert.isNull(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -1996,7 +1995,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isTrue(syncedData.assessment.allow_real_time_grading);
     assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -2014,7 +2012,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isFalse(syncedData.assessment.allow_real_time_grading);
     assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isFalse(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -3159,10 +3156,6 @@ describe('Assessment syncing', () => {
 
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingDefault');
 
-      // Assessment-level value should be true. This is only temporary for
-      // backwards compatibility.
-      assert.isTrue(syncedData.assessment.allow_real_time_grading);
-
       // Assessment JSON config is not explicitly set.
       assert.isNull(syncedData.assessment.json_allow_real_time_grading);
 
@@ -3214,7 +3207,6 @@ describe('Assessment syncing', () => {
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingAssessmentFalse');
 
       // Assessment-level should be false
-      assert.isFalse(syncedData.assessment.allow_real_time_grading);
       assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // All lower levels should be null (inheriting from assessment)
@@ -3258,7 +3250,6 @@ describe('Assessment syncing', () => {
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingZoneOverride');
 
       // Assessment-level should be false
-      assert.isFalse(syncedData.assessment.allow_real_time_grading);
       assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // Zone-level should override to true
@@ -3299,7 +3290,6 @@ describe('Assessment syncing', () => {
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingQuestionOverride');
 
       // Assessment and zone should have expected values
-      assert.isTrue(syncedData.assessment.allow_real_time_grading);
       assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
       assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
 
@@ -3408,7 +3398,6 @@ describe('Assessment syncing', () => {
       const syncedData = await getSyncedAssessmentData('allowRealTimeGradingMixedHierarchy');
 
       // Assessment should be false
-      assert.isFalse(syncedData.assessment.allow_real_time_grading);
       assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
 
       // Zone 1 should override to true
