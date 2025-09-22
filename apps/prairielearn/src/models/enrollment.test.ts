@@ -83,12 +83,13 @@ describe('ensureEnrollment', () => {
     });
 
     await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status)
-       VALUES ($user_id, $course_instance_id, 'blocked')
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)
        RETURNING *`,
       {
         user_id: user.user_id,
         course_instance_id: '1',
+        first_joined_at: new Date().toISOString(),
       },
       EnrollmentSchema,
     );
@@ -99,7 +100,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(initialEnrollment);
     assert.equal(initialEnrollment.status, 'blocked');
-    assert.isNull(initialEnrollment.first_joined_at);
+    assert.isNotNull(initialEnrollment.first_joined_at);
 
     await ensureEnrollment({
       course_instance_id: '1',
@@ -112,7 +113,7 @@ describe('ensureEnrollment', () => {
     });
     assert.isNotNull(finalEnrollment);
     assert.equal(finalEnrollment.status, 'blocked');
-    assert.isNull(finalEnrollment.first_joined_at);
+    assert.isNotNull(finalEnrollment.first_joined_at);
   });
 
   it('creates new enrollment for user with no existing enrollment', async () => {
