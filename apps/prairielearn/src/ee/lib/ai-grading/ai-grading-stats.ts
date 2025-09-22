@@ -128,15 +128,7 @@ export async function fillInstanceQuestionColumns<
     }
 
     // Retrieve the current group of the instance question
-    const selectedInstanceQuestionGroupId = run(() => {
-      if (instance_question.manual_instance_question_group_id) {
-        return instance_question.manual_instance_question_group_id;
-      }
-      if (instance_question.ai_instance_question_group_id) {
-        return instance_question.ai_instance_question_group_id;
-      }
-      return null;
-    });
+    const selectedInstanceQuestionGroupId = instance_question.manual_instance_question_group_id ?? instance_question.ai_instance_question_group_id ?? null;
 
     instance_question.instance_question_group_name = selectedInstanceQuestionGroupId
       ? (instanceQuestionIdToGroupName[selectedInstanceQuestionGroupId] ?? null)
