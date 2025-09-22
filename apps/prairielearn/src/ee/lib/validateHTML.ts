@@ -147,10 +147,9 @@ function isBooleanTrue(val: string): boolean {
 /**
  * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
- * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
  */
-function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): ValidationResult {
+function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
   if ('tagName' in ast) {
     switch (ast.tagName) {
       case 'pl-multiple-choice':
@@ -170,7 +169,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): Valid
       case 'pl-answer':
         return { errors: [] }; // covered elsewhere
       default:
-        if (ast.tagName && ast.tagName.startsWith('pl-') && !optimistic) {
+        if (ast.tagName.startsWith('pl-')) {
           return {
             errors: [
               `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
@@ -734,12 +733,12 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolean) {
-  let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast, optimistic);
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
+  let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
 
   if ('childNodes' in ast && ast.childNodes) {
     for (const child of ast.childNodes) {
-      const childResult = dfsCheckParseTree(child, optimistic);
+      const childResult = dfsCheckParseTree(child);
       errors = errors.concat(childResult.errors);
       childResult.mandatoryPythonCorrectAnswers?.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
@@ -756,9 +755,9 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolea
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable render error messages, if any.
  */
-export function validateHTML(file: string, optimistic: boolean, usesServerPy: boolean): string[] {
+export function validateHTML(file: string, usesServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
-  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree, optimistic);
+  const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
 
   const usedTemplateNames = extractMustacheTemplateNames(file);
   const templates = [
