@@ -6,6 +6,7 @@ import React, { useState } from 'preact/hooks';
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
@@ -450,13 +451,16 @@ onDocumentReady(() => {
       open: boolean;
     };
   }) {
-    const [form, setForm] = useState({
-      action: 'add' as TimeLimitAction,
+    const [form, setForm] = useState(() => ({
+      action: run(() => {
+        if (row.time_remaining_sec !== null) return 'add';
+        return 'set_total';
+      }),
       time_add: 5,
       date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
       reopen_closed: false,
       reopen_without_limit: true,
-    });
+    }));
     const showTimeLimitOptions =
       row.action === 'set_time_limit_all' || row.open || !form.reopen_without_limit;
 
@@ -534,6 +538,7 @@ onDocumentReady(() => {
               class="form-select select-time-limit"
               name="action"
               aria-label="Time limit options"
+              value={form.action}
               onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
             >
               {row.time_remaining_sec !== null ? (
