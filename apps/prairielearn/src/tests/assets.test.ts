@@ -32,7 +32,7 @@ async function getOrLoadElementsInfo() {
   return cachedElementsInfo;
 }
 
-describe('Static and dynamic assets', () => {
+describe('Static assets', () => {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
@@ -46,7 +46,7 @@ describe('Static and dynamic assets', () => {
       const nodeModulesScripts = elementInfo.dependencies?.nodeModulesScripts ?? [];
       const nodeModulesStyles = elementInfo.dependencies?.nodeModulesStyles ?? [];
       const dynamicNodeModulesScripts = Object.values(
-        elementInfo.dynamicDependencies?.nodeModulesScripts || {},
+        elementInfo.dynamicDependencies?.nodeModulesScripts ?? {},
       );
       [...nodeModulesScripts, ...nodeModulesStyles, ...dynamicNodeModulesScripts].forEach(
         (asset) => {
@@ -76,7 +76,7 @@ describe('Static and dynamic assets', () => {
       const elementScripts = elementInfo.dependencies?.elementScripts ?? [];
       const elementStyles = elementInfo.dependencies?.elementStyles ?? [];
       const dynamicElementScripts = Object.values(
-        elementInfo.dynamicDependencies?.elementScripts || {},
+        elementInfo.dynamicDependencies?.elementScripts ?? {},
       );
       [...elementScripts, ...elementStyles, ...dynamicElementScripts].forEach((asset) => {
         elementAssets.add(`${elementName}/${asset}`);
