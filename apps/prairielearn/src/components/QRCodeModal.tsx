@@ -40,15 +40,13 @@ export function QRCodeModal({
 }) {
   const svg = useMemo(() => new QR({ content, container: 'svg-viewbox' }).svg(), [content]);
   return (
-    <Modal show={show} aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
+    <Modal show={show} size="lg" aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <div class="d-flex" style="max-height: 80vh;">
-          {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
-          <div dangerouslySetInnerHTML={{ __html: svg }} />
-        </div>
+        {/* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */}
+        <div class="d-flex" style="max-height: 80vh;" dangerouslySetInnerHTML={{ __html: svg }} />
       </Modal.Body>
     </Modal>
   );
