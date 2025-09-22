@@ -344,7 +344,7 @@ export async function aiInstanceQuestionGrouping({
       },
     );
 
-    const error_count = instance_question_grouping_successes.filter((success) => !success).length;
+    const errorCount = instance_question_grouping_successes.filter((success) => !success).length;
 
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
