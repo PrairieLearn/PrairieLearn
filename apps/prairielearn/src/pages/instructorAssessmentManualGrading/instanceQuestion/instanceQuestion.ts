@@ -221,7 +221,7 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name,
+        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name ?? null,
         instanceQuestionGroups,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
