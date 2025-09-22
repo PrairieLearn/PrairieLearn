@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import type { FieldErrors, UseFormRegister, UseFormSetValue, UseFormWatch } from 'react-hook-form';
+import { type Control, useWatch } from 'react-hook-form';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
@@ -105,30 +105,33 @@ function SelfEnrollmentLink({
 }
 
 export function SelfEnrollmentSettings({
+  control,
+  canEdit,
+  enrollmentManagementEnabled,
   studentLink,
   selfEnrollLink,
   csrfToken,
-  formMeta,
 }: {
+  control: Control<SettingsFormValues>;
+  canEdit: boolean;
+  enrollmentManagementEnabled: boolean;
   studentLink: string;
   selfEnrollLink: string;
   csrfToken: string;
-  formMeta: {
-    enrollmentManagementEnabled: boolean;
-    register: UseFormRegister<SettingsFormValues>;
-    watch: UseFormWatch<SettingsFormValues>;
-    setValue: UseFormSetValue<SettingsFormValues>;
-    errors: FieldErrors<SettingsFormValues>;
-    canEdit: boolean;
-  };
 }) {
-  const { register, watch, setValue, errors, canEdit, enrollmentManagementEnabled } = formMeta;
-
-  const selfEnrollmentEnabled = watch('self_enrollment_enabled');
-  const selfEnrollmentUseEnrollmentCode = watch('self_enrollment_use_enrollment_code');
-  const selfEnrollmentEnabledBeforeDate = watch('self_enrollment_enabled_before_date');
-
-  const [showDateInput, setShowDateInput] = useState(!!selfEnrollmentEnabledBeforeDate);
+  const selfEnrollmentEnabled = useWatch({ control, name: 'self_enrollment_enabled' });
+  const selfEnrollmentUseEnrollmentCode = useWatch({
+    control,
+    name: 'self_enrollment_use_enrollment_code',
+  });
+  const selfEnrollmentEnabledBeforeDateEnabled = useWatch({
+    control,
+    name: 'self_enrollment_enabled_before_date_enabled',
+  });
+  const {
+    invalid: selfEnrollmentEnabledBeforeDateInvalid,
+    error: selfEnrollmentEnabledBeforeDateError,
+  } = control.getFieldState('self_enrollment_enabled_before_date');
 
   return (
     <>
@@ -140,7 +143,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_enabled"
           disabled={!canEdit || !enrollmentManagementEnabled}
-          {...register('self_enrollment_enabled')}
+          {...control.register('self_enrollment_enabled')}
           name="self_enrollment_enabled"
         />
         <label class="form-check-label" for="self_enrollment_enabled">
@@ -157,7 +160,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="show_in_enroll_page"
           disabled={!canEdit || !selfEnrollmentEnabled || selfEnrollmentUseEnrollmentCode}
-          {...register('show_in_enroll_page')}
+          {...control.register('show_in_enroll_page')}
           name="show_in_enroll_page"
         />
         <label class="form-check-label" for="show_in_enroll_page">
@@ -175,7 +178,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
           disabled={!canEdit || !selfEnrollmentEnabled || !enrollmentManagementEnabled}
-          {...register('self_enrollment_use_enrollment_code')}
+          {...control.register('self_enrollment_use_enrollment_code')}
           name="self_enrollment_use_enrollment_code"
         />
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
@@ -193,16 +196,8 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={!canEdit || !selfEnrollmentEnabled || !enrollmentManagementEnabled}
-          checked={showDateInput}
-          onChange={(e) => {
-            const target = e.target as HTMLInputElement;
-            setShowDateInput(target.checked);
-
-            // Clear the date when unchecking
-            if (!target.checked) {
-              setValue('self_enrollment_enabled_before_date', '');
-            }
-          }}
+          {...control.register('self_enrollment_enabled_before_date_enabled')}
+          name="self_enrollment_enabled_before_date_enabled"
         />
         <label class="form-check-label" for="disable_self_enrollment_after_date">
           Forbid self-enrollment after specified date
@@ -210,28 +205,22 @@ export function SelfEnrollmentSettings({
         <div class="small text-muted">
           If enabled, self-enrollment will be disabled after the specified date.
         </div>
-        {showDateInput && (
+        {selfEnrollmentEnabledBeforeDateEnabled && (
           <>
             <input
               type="datetime-local"
               aria-label="Self-enrollment enabled before date"
               class={clsx(
                 'form-control mt-2',
-                errors.self_enrollment_enabled_before_date && 'is-invalid',
+                selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
               )}
               disabled={!canEdit || !selfEnrollmentEnabled || !enrollmentManagementEnabled}
-              {...register('self_enrollment_enabled_before_date', {
-                required: showDateInput ? 'Date is required' : false,
+              {...control.register('self_enrollment_enabled_before_date', {
+                required: selfEnrollmentEnabledBeforeDateEnabled ? 'Date is required' : false,
               })}
-              // If no date is set, don't include the name in the form data.
-              {...(selfEnrollmentEnabledBeforeDate.length > 0
-                ? { name: 'self_enrollment_enabled_before_date' }
-                : {})}
             />
-            {errors.self_enrollment_enabled_before_date && (
-              <div class="invalid-feedback">
-                {errors.self_enrollment_enabled_before_date.message}
-              </div>
+            {selfEnrollmentEnabledBeforeDateError && (
+              <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
             )}
             <small class="form-text text-muted">
               After this date, self-enrollment will be disabled.

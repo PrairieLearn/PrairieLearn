@@ -62,9 +62,8 @@ export function InstructorInstanceAdminSettings({
 
   const {
     register,
-    watch,
-    setValue,
     reset,
+    control,
     formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
@@ -192,14 +191,9 @@ export function InstructorInstanceAdminSettings({
           </div>
 
           <SelfEnrollmentSettings
-            formMeta={{
-              enrollmentManagementEnabled,
-              register,
-              watch,
-              setValue,
-              errors,
-              canEdit,
-            }}
+            control={control}
+            canEdit={canEdit}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
             csrfToken={csrfToken}

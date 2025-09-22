@@ -282,6 +282,7 @@ router.post(
           selfEnrollmentBeforeDate) !== undefined;
 
       // Only write self enrollment settings if they are not the default values.
+      // When JSON.stringify is used, undefined values are not included in the JSON object.
       if (hasSelfEnrollmentSettings) {
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
