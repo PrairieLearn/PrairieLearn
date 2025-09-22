@@ -258,11 +258,17 @@ router.post(
         parsedBody.self_enrollment_enabled,
         true,
       );
-      const selfEnrollmentRequiresSecretLink = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment?.requiresSecretLink,
-        parsedBody.self_enrollment_requires_secret_link,
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
+        parsedBody.self_enrollment_use_enrollment_code,
         false,
       );
+      const selfEnrollmentBeforeDateEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.beforeDateEnabled,
+        parsedBody.self_enrollment_enabled_before_date_enabled,
+        false,
+      );
+
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.beforeDate,
         parsedBody.self_enrollment_enabled_before_date ?? null,
@@ -270,14 +276,17 @@ router.post(
       );
 
       const hasSelfEnrollmentSettings =
-        (selfEnrollmentEnabled ?? selfEnrollmentRequiresSecretLink ?? selfEnrollmentBeforeDate) !==
-        undefined;
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentBeforeDateEnabled ??
+          selfEnrollmentBeforeDate) !== undefined;
 
       // Only write self enrollment settings if they are not the default values.
       if (hasSelfEnrollmentSettings) {
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
-          requiresSecretLink: selfEnrollmentRequiresSecretLink,
+          useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          beforeDateEnabled: selfEnrollmentBeforeDateEnabled,
           beforeDate: selfEnrollmentBeforeDate,
         };
       } else {
