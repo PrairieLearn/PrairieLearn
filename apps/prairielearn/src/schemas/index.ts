@@ -10,7 +10,6 @@
  */
 
 export * from './infoAssessment.js';
-export * from './accessControl.js';
 export * from './infoCourse.js';
 export * from './infoCourseInstance.js';
 export * from './infoElementCore.js';

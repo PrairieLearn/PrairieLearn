@@ -17,9 +17,8 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import type { AccessControlJsonInput } from '../schemas/accessControl.js'; // TODO: I don't think this is the proper way to do this, but I'm not sure how to get the type her otherwise
 import {
-  // type AccessControlJson,
-  type AccessControlJsonInput,
   type AssessmentJson,
   type AssessmentSetJson,
   type CourseInstanceJson,
@@ -1419,7 +1418,7 @@ export function validateAccessControlArray({
   errors: string[];
 }[] {
   return accessControlJsonArray.map((accessControlJson, index) => {
-    const { warnings, errors } = validateAccessControlJson({ accessControlJson });
+    const { warnings, errors } = validateaccessControl({ accessControlJson });
 
     return {
       index,
@@ -1429,7 +1428,7 @@ export function validateAccessControlArray({
   });
 }
 
-export function validateAccessControlJson({
+export function validateaccessControl({
   accessControlJson,
 }: {
   accessControlJson: AccessControlJsonInput;
