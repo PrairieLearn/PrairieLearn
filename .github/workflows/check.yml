@@ -80,6 +80,11 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      # We must migrate our database before we can typecheck the SQL.
+      - name: Run the SQL typechecker
+        run: |
+          yarn migrate
+          make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
@@ -141,8 +146,6 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
-      - name: Run the SQL typechecker
-        run: make typecheck-sql
       - name: Run the Markdown linter
         run: make lint-markdown
       - name: Run the d2 diagram linter
