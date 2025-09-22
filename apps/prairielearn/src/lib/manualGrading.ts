@@ -101,7 +101,7 @@ export async function nextInstanceQuestionUrl({
   if (
     use_instance_question_groups &&
     next_instance_question_id == null &&
-    prior_instance_question_group_id
+    prior_instance_question_group_id != null
   ) {
     const next_instance_question_group_id = await sqldb.queryOptionalRow(
       sql.select_next_instance_question_group_id,
