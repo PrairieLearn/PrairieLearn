@@ -1,1 +1,0 @@
-ALTER TABLE enrollments VALIDATE CONSTRAINT first_joined_at_not_null_if_joined_and_created_at_not_null;
