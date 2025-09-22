@@ -728,9 +728,8 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 }
 
 /**
- * Optimistically checks the entire parse tree for errors in common PL tags recursively.
+ * Checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
- * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
 function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
@@ -752,7 +751,7 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
 /**
  * Checks for errors in common PL elements in an index.html file.
  * @param file The raw text of the file to use.
- * @param optimistic True if tags outside the subset are allowed, else false.
+ * @param usesServerPy True if a server.py file is present, else false.
  * @returns A list of human-readable render error messages, if any.
  */
 export function validateHTML(file: string, usesServerPy: boolean): string[] {
