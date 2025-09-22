@@ -221,7 +221,7 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name ?? null,
+        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name,
         instanceQuestionGroups,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
@@ -333,10 +333,10 @@ router.get(
 const PostBodySchema = z.union([
   z.object({
     __action: z.enum([
-      z.literal('add_manual_grade'),
-      z.literal('add_manual_grade_for_instance_question_group'),
-      z.literal('add_manual_grade_for_instance_question_group_ungraded'),
-      z.literal('next_instance_question'),
+      'add_manual_grade',
+      'add_manual_grade_for_instance_question_group',
+      'add_manual_grade_for_instance_question_group_ungraded',
+      'next_instance_question',
     ]),
     submission_id: IdSchema,
     modified_at: DateFromISOString,
