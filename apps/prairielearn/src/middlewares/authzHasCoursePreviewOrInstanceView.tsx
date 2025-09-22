@@ -42,6 +42,7 @@ export async function authzHasCoursePreviewOrInstanceView(
     if (redirectUrl) {
       return { type: 'redirect', value: redirectUrl };
     }
+
     const pageContext = getPageContext(res.locals);
     return {
       type: 'body',
