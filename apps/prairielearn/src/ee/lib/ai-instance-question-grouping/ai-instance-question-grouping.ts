@@ -347,7 +347,7 @@ export async function aiInstanceQuestionGrouping({
     const errorCount = instance_question_grouping_successes.filter((success) => !success).length;
 
     if (error_count > 0) {
-      job.error('Number of errors: ' + error_count);
+      job.error('Number of errors: ' + errorCount);
       job.fail('Errors occurred during AI submission grouping, see output for details');
     } else {
       job.info('AI submission grouping completed successfully');
