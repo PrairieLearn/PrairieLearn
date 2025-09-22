@@ -751,10 +751,10 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
 /**
  * Checks for errors in common PL elements in an index.html file.
  * @param file The raw text of the file to use.
- * @param usesServerPy True if a server.py file is present, else false.
+ * @param hasServerPy True if a server.py file is present, else false.
  * @returns A list of human-readable render error messages, if any.
  */
-export function validateHTML(file: string, usesServerPy: boolean): string[] {
+export function validateHTML(file: string, hasServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
   const { errors, mandatoryPythonCorrectAnswers } = dfsCheckParseTree(tree);
 
@@ -764,7 +764,7 @@ export function validateHTML(file: string, usesServerPy: boolean): string[] {
     ...Array.from(mandatoryPythonCorrectAnswers).map((x) => `correct_answers.${x}`),
   ];
 
-  if (!usesServerPy && templates.length > 0) {
+  if (!hasServerPy && templates.length > 0) {
     errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
   }
 
