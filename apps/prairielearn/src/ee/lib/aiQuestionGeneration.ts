@@ -181,18 +181,18 @@ export async function makeContext(
 /**
  * Extracts the generated HTML and Python code from an OpenAI completion into job parameters.
  *
- * @param completion The completion to extract from.
+ * @param response The completion to extract from.
  * @param job The job whose data we want to extract into.
  */
-function extractFromCompletion(
-  completion: OpenAI.Chat.Completions.ChatCompletion,
+function extractFromResponse(
+  response: OpenAI.Responses.Response,
   job: ServerJob,
 ): { html?: string; python?: string } {
-  const completionText = completion.choices[0].message.content;
+  const completionText = response.output_text;
 
   job.info(`completion is ${completionText}`);
 
-  job.info(`used ${completion?.usage?.total_tokens} OpenAI tokens to generate response.`);
+  job.info(`used ${response.usage?.total_tokens} OpenAI tokens to generate response.`);
 
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
@@ -354,23 +354,25 @@ export async function generateQuestion({
 ${promptPreamble(context)}
 # Prompt
 
-A user will now request your help in creating a question. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization). In their prompt, they may explain how to calculate the correct answer; this is just for the backend. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.
+A user will now ask you to create a question. Respond in a friendly but concise way. Include the contents of \`question.html\` and \`server.py\` in separate Markdown code fences, and mark each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+
+In their prompt, they may explain how to calculate the correct answer; this is just for the backend. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.
 
 Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.`;
 
     job.info(`system prompt is: ${sysPrompt}`);
 
-    const completion = await client.chat.completions.create({
+    const response = await client.responses.create({
       model: MODEL_NAME,
-      reasoning_effort: 'minimal',
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: prompt },
-      ],
+      instructions: sysPrompt,
+      input: prompt,
+      reasoning: {
+        effort: 'low',
+      },
       user: openAiUserFromAuthn(authnUserId),
     });
 
-    const results = extractFromCompletion(completion, job);
+    const results = extractFromResponse(response, job);
     const html = results?.html;
 
     let errors: string[] = [];
@@ -417,11 +419,12 @@ Keep in mind you are not just generating an example; you are generating an actua
         prompt_type: 'initial',
         user_prompt: prompt,
         system_prompt: sysPrompt,
-        response: completion.choices[0].message.content,
+        response: response.output_text,
         html: results?.html,
         python: results?.python,
         errors,
-        completion,
+        // TODO: rename this?
+        completion: response,
         job_sequence_id: serverJob.jobSequenceId,
       },
       IdSchema,
@@ -430,14 +433,14 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data.questionId = saveResults.question_id;
     job.data.questionQid = saveResults.question_qid;
 
-    job.data.promptTokens = completion.usage?.prompt_tokens;
-    job.data.completionTokens = completion.usage?.completion_tokens;
+    job.data.promptTokens = response.usage?.input_tokens;
+    job.data.completionTokens = response.usage?.output_tokens;
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
       authnUserId,
-      promptTokens: completion.usage?.prompt_tokens,
-      completionTokens: completion.usage?.completion_tokens,
+      promptTokens: response.usage?.input_tokens,
+      completionTokens: response.usage?.output_tokens,
     });
 
     job.data.html = html;
@@ -589,23 +592,25 @@ ${originalPython}
 
 # Prompt
 
-A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+A user will now ask you to revise the question that you generated. Respond in a friendly but concise way. Include the contents of \`question.html\` and \`server.py\` in separate Markdown code fences, and mark each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
 
 Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
 `;
 
   job.info(`system prompt is: ${sysPrompt}`);
 
-  const completion = await client.chat.completions.create({
+  const response = await client.responses.create({
     model: MODEL_NAME,
-    messages: [
-      { role: 'system', content: sysPrompt },
-      { role: 'user', content: revisionPrompt },
-    ],
+    instructions: sysPrompt,
+    input: revisionPrompt,
+    reasoning: {
+      // Use higher reasoning effort for revisions.
+      effort: 'medium',
+    },
     user: openAiUserFromAuthn(authnUserId),
   });
 
-  const results = extractFromCompletion(completion, job);
+  const results = extractFromResponse(response, job);
 
   const html = results?.html || originalHTML;
   const python = results?.python || originalPython;
@@ -624,11 +629,11 @@ Keep in mind you are not just generating an example; you are generating an actua
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
       system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
+      response: response.output_text,
       html,
       python,
       errors,
-      completion,
+      completion: response,
       job_sequence_id: jobSequenceId,
     },
     IdSchema,
@@ -658,14 +663,14 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
-  job.data.promptTokens = completion.usage?.prompt_tokens;
-  job.data.completionTokens = completion.usage?.completion_tokens;
+  job.data.promptTokens = response.usage?.input_tokens;
+  job.data.completionTokens = response.usage?.output_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
     authnUserId,
-    promptTokens: completion.usage?.prompt_tokens,
-    completionTokens: completion.usage?.completion_tokens,
+    promptTokens: response.usage?.input_tokens,
+    completionTokens: response.usage?.output_tokens,
   });
 
   job.data.html = html;
