@@ -2,12 +2,20 @@ import { Form, InputGroup } from 'react-bootstrap';
 import { type Control, type UseFormSetValue, useWatch } from 'react-hook-form';
 
 import type { AccessControlFormData } from './types.js';
+import { CollapsibleCard } from './CollapsibleCard.js';
+import {
+  SkeletonField,
+  SkeletonDeadlineList,
+  SkeletonAfterLastDeadline,
+} from './SkeletonComponents.js';
 
 interface BaseFormComponentProps {
   control: Control<AccessControlFormData>;
   namePrefix: string;
   setValue: UseFormSetValue<AccessControlFormData>;
   disabled?: boolean;
+  collapsible?: boolean;
+  showSkeleton?: boolean;
 }
 
 // Date Control Enabled Component
@@ -15,8 +23,16 @@ export function DateControlEnabledEffect({
   control,
   namePrefix,
   disabled,
+  collapsible = true,
+  showSkeleton = false,
 }: BaseFormComponentProps) {
-  return (
+  const dateControlEnabled = useWatch({
+    control,
+    name: `${namePrefix}.dateControl.enabled` as any,
+    defaultValue: false,
+  });
+
+  const content = (
     <Form.Group class="mb-3">
       <Form.Check
         type="checkbox"
@@ -29,6 +45,28 @@ export function DateControlEnabledEffect({
       </Form.Text>
     </Form.Group>
   );
+
+  const skeletonContent = (
+    <SkeletonField
+      label="Date Control Enabled"
+      type="checkbox"
+      placeholder="Not configured"
+      description="Enable or disable date-based access control for this override rule"
+    />
+  );
+
+  return (
+    <CollapsibleCard
+      title="Date Control"
+      description="Control access and credit to your exam based on a schedule"
+      collapsible={collapsible}
+      defaultExpanded={dateControlEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Release Date Setting Component
@@ -37,6 +75,8 @@ export function ReleaseDateEffect({
   namePrefix,
   setValue,
   disabled,
+  collapsible = true,
+  showSkeleton = false,
 }: BaseFormComponentProps) {
   const releaseDateEnabled = useWatch({
     control,
@@ -44,7 +84,7 @@ export function ReleaseDateEffect({
     defaultValue: false,
   });
 
-  return (
+  const content = (
     <Form.Group class="mb-3">
       <div class="mb-2">
         <Form.Check
@@ -78,17 +118,45 @@ export function ReleaseDateEffect({
       )}
     </Form.Group>
   );
+
+  const skeletonContent = (
+    <SkeletonField
+      label="Release Date"
+      type="datetime"
+      placeholder="No release date set"
+      description="Configure when the assessment becomes available to students"
+    />
+  );
+
+  return (
+    <CollapsibleCard
+      title="Release Date"
+      collapsible={collapsible}
+      defaultExpanded={releaseDateEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Due Date Setting Component
-export function DueDateEffect({ control, namePrefix, setValue, disabled }: BaseFormComponentProps) {
+export function DueDateEffect({
+  control,
+  namePrefix,
+  setValue,
+  disabled,
+  collapsible = true,
+  showSkeleton = false,
+}: BaseFormComponentProps) {
   const dueDateEnabled = useWatch({
     control,
     name: `${namePrefix}.dateControl.dueDateEnabled` as any,
     defaultValue: false,
   });
 
-  return (
+  const content = (
     <Form.Group class="mb-3">
       <div class="mb-2">
         <Form.Check
@@ -122,11 +190,44 @@ export function DueDateEffect({ control, namePrefix, setValue, disabled }: BaseF
       )}
     </Form.Group>
   );
+
+  const skeletonContent = (
+    <SkeletonField
+      label="Due Date"
+      type="datetime"
+      placeholder="No due date set"
+      description="Configure when the assessment is due"
+    />
+  );
+
+  return (
+    <CollapsibleCard
+      title="Due Date"
+      collapsible={collapsible}
+      defaultExpanded={dueDateEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Early Deadline Setting Component (simplified)
-export function EarlyDeadlineEffect({ control, namePrefix, disabled }: BaseFormComponentProps) {
-  return (
+export function EarlyDeadlineEffect({
+  control,
+  namePrefix,
+  disabled,
+  collapsible = true,
+  showSkeleton = false,
+}: BaseFormComponentProps) {
+  const earlyDeadlinesEnabled = useWatch({
+    control,
+    name: `${namePrefix}.dateControl.earlyDeadlinesEnabled` as any,
+    defaultValue: false,
+  });
+
+  const content = (
     <Form.Group class="mb-3">
       <Form.Check
         type="checkbox"
@@ -139,11 +240,37 @@ export function EarlyDeadlineEffect({ control, namePrefix, disabled }: BaseFormC
       </Form.Text>
     </Form.Group>
   );
+
+  const skeletonContent = <SkeletonDeadlineList />;
+
+  return (
+    <CollapsibleCard
+      title="Early Deadlines"
+      collapsible={collapsible}
+      defaultExpanded={earlyDeadlinesEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Late Deadline Setting Component (simplified)
-export function LateDeadlineEffect({ control, namePrefix, disabled }: BaseFormComponentProps) {
-  return (
+export function LateDeadlineEffect({
+  control,
+  namePrefix,
+  disabled,
+  collapsible = true,
+  showSkeleton = false,
+}: BaseFormComponentProps) {
+  const lateDeadlinesEnabled = useWatch({
+    control,
+    name: `${namePrefix}.dateControl.lateDeadlinesEnabled` as any,
+    defaultValue: false,
+  });
+
+  const content = (
     <Form.Group class="mb-3">
       <Form.Check
         type="checkbox"
@@ -156,6 +283,20 @@ export function LateDeadlineEffect({ control, namePrefix, disabled }: BaseFormCo
       </Form.Text>
     </Form.Group>
   );
+
+  const skeletonContent = <SkeletonDeadlineList />;
+
+  return (
+    <CollapsibleCard
+      title="Late Deadlines"
+      collapsible={collapsible}
+      defaultExpanded={lateDeadlinesEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // After Last Deadline Setting Component
@@ -164,6 +305,8 @@ export function AfterLastDeadlineEffect({
   namePrefix,
   setValue,
   disabled,
+  collapsible = true,
+  showSkeleton = false,
 }: BaseFormComponentProps) {
   const allowSubmissions = useWatch({
     control,
@@ -186,8 +329,9 @@ export function AfterLastDeadlineEffect({
   };
 
   const afterLastDeadlineMode = getAfterLastDeadlineMode();
+  const isConfigured = allowSubmissions || creditEnabled;
 
-  return (
+  const content = (
     <Form.Group class="mb-3">
       <div class="mb-2">
         <Form.Check
@@ -250,10 +394,30 @@ export function AfterLastDeadlineEffect({
       )}
     </Form.Group>
   );
+
+  const skeletonContent = <SkeletonAfterLastDeadline />;
+
+  return (
+    <CollapsibleCard
+      title="After Last Deadline"
+      collapsible={collapsible}
+      defaultExpanded={isConfigured}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Time Limit Setting Component
-export function TimeLimitEffect({ control, namePrefix, disabled }: BaseFormComponentProps) {
+export function TimeLimitEffect({
+  control,
+  namePrefix,
+  disabled,
+  collapsible = true,
+  showSkeleton = false,
+}: BaseFormComponentProps) {
   const durationMinutesEnabled = useWatch({
     control,
     name: `${namePrefix}.dateControl.durationMinutesEnabled` as any,
@@ -265,7 +429,7 @@ export function TimeLimitEffect({ control, namePrefix, disabled }: BaseFormCompo
     name: `${namePrefix}.dateControl.durationMinutes` as any,
   });
 
-  return (
+  const content = (
     <Form.Group class="mb-3">
       <div class="d-flex align-items-center mb-2">
         <Form.Check
@@ -297,17 +461,45 @@ export function TimeLimitEffect({ control, namePrefix, disabled }: BaseFormCompo
       </Form.Text>
     </Form.Group>
   );
+
+  const skeletonContent = (
+    <SkeletonField
+      label="Time Limit"
+      type="number"
+      placeholder="No time limit set"
+      unit="minutes"
+      description="Add a time limit to the assessment"
+    />
+  );
+
+  return (
+    <CollapsibleCard
+      title="Time Limit"
+      collapsible={collapsible}
+      defaultExpanded={durationMinutesEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
+  );
 }
 
 // Password Setting Component
-export function PasswordEffect({ control, namePrefix, disabled }: BaseFormComponentProps) {
+export function PasswordEffect({
+  control,
+  namePrefix,
+  disabled,
+  collapsible = true,
+  showSkeleton = false,
+}: BaseFormComponentProps) {
   const passwordEnabled = useWatch({
     control,
     name: `${namePrefix}.dateControl.passwordEnabled` as any,
     defaultValue: false,
   });
 
-  return (
+  const content = (
     <Form.Group class="mb-3">
       <div class="d-flex align-items-center mb-2">
         <Form.Check
@@ -330,6 +522,27 @@ export function PasswordEffect({ control, namePrefix, disabled }: BaseFormCompon
         Require a password for students to start the assessment
       </Form.Text>
     </Form.Group>
+  );
+
+  const skeletonContent = (
+    <SkeletonField
+      label="Password"
+      type="password"
+      placeholder="No password set"
+      description="Require a password for students to start the assessment"
+    />
+  );
+
+  return (
+    <CollapsibleCard
+      title="Password"
+      collapsible={collapsible}
+      defaultExpanded={passwordEnabled}
+      showSkeleton={showSkeleton}
+      skeletonContent={skeletonContent}
+    >
+      {content}
+    </CollapsibleCard>
   );
 }
 
