@@ -18,6 +18,8 @@ import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
+  // type AccessControlJson,
+  type AccessControlJsonInput,
   type AssessmentJson,
   type AssessmentSetJson,
   type CourseInstanceJson,
@@ -1403,6 +1405,110 @@ function validateCourseInstance({
       warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
+
+  return { warnings, errors };
+}
+
+export function validateAccessControlArray({
+  accessControlJsonArray,
+}: {
+  accessControlJsonArray: AccessControlJsonInput[];
+}): {
+  index: number;
+  warnings: string[];
+  errors: string[];
+}[] {
+  return accessControlJsonArray.map((accessControlJson, index) => {
+    const { warnings, errors } = validateAccessControlJson({ accessControlJson });
+
+    return {
+      index,
+      warnings,
+      errors,
+    };
+  });
+}
+
+export function validateAccessControlJson({
+  accessControlJson,
+}: {
+  accessControlJson: AccessControlJsonInput;
+}): { warnings: string[]; errors: string[] } {
+  const warnings: string[] = [];
+  const errors: string[] = [];
+
+  if (!accessControlJson) {
+    return { warnings, errors };
+  }
+
+  // Validate that a field does not have a value while {field}_enabled is NULL
+  const validateEnabledFieldConstraints = (data: AccessControlJsonInput, errors: string[]) => {
+    // Find {field}_enabled fields
+    const validateEnabledPairsInObject = (obj: any, context: string) => {
+      if (!obj || typeof obj !== 'object') return;
+
+      const enabledFields = Object.keys(obj).filter((key) => key.endsWith('Enabled'));
+
+      for (const enabledField of enabledFields) {
+        if (obj[enabledField] === null) {
+          // Find corresponding value field and check if there is a value
+          const valueField = enabledField.replace(/Enabled$/, '');
+
+          if (obj[valueField] !== undefined) {
+            errors.push(
+              `When ${enabledField} is null, ${valueField} cannot be populated (in ${context})`,
+            );
+          }
+        }
+      }
+    };
+
+    // Recursively validate all nested objects
+    const validateObjectRecursively = (obj: any, path: string[] = []) => {
+      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
+
+      const context = path.length > 0 ? path.join('.') : 'root';
+      validateEnabledPairsInObject(obj, context);
+
+      // Recurse
+      for (const [key, value] of Object.entries(obj)) {
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          validateObjectRecursively(value, [...path, key]);
+        }
+      }
+    };
+
+    validateObjectRecursively(data);
+  };
+
+  // Helper function to validate assignment-level constraints
+  const validateAssignmentLevelConstraints = (data: AccessControlJsonInput, errors: string[]) => {
+    const isAssignmentLevel = !data?.targets || data.targets.length === 0;
+
+    if (isAssignmentLevel) {
+      const checkForNullEnabledFields = (obj: any, errors: string[], path: string[] = []) => {
+        if (!obj || typeof obj !== 'object') return;
+
+        for (const [key, value] of Object.entries(obj)) {
+          const currentPath = [...path, key];
+
+          if (key.endsWith('Enabled') && value === null) {
+            errors.push(
+              `Assignment-level permissions cannot have null *Enabled fields (found null ${key} at ${currentPath.join('.')})`,
+            );
+          } else if (typeof value === 'object' && value !== null) {
+            checkForNullEnabledFields(value, errors, currentPath);
+          }
+        }
+      };
+
+      checkForNullEnabledFields(data, errors);
+    }
+  };
+
+  // Run validations
+  validateEnabledFieldConstraints(accessControlJson, errors);
+  validateAssignmentLevelConstraints(accessControlJson, errors);
 
   return { warnings, errors };
 }
