@@ -2,7 +2,7 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
 import { queryRow } from '@prairielearn/postgres';
 
-import { EnrollmentSchema } from '../lib/db-types.js';
+import { EnrollmentSchema, IdSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
@@ -46,6 +46,26 @@ describe('Instance Group Model', () => {
       assert.equal(group1.course_instance_id, group2.course_instance_id);
       assert.equal(group1.name, 'Group 1');
       assert.equal(group2.name, 'Group 2');
+    });
+
+    it('allows creating instance group with same name after soft deletion', async () => {
+      const group1 = await createInstanceGroup({
+        course_instance_id: '1',
+        name: 'Test Group',
+      });
+
+      // Soft delete the group
+      await deleteInstanceGroup(group1.id);
+
+      // Should be able to create another group with the same name
+      const group2 = await createInstanceGroup({
+        course_instance_id: '1',
+        name: 'Test Group',
+      });
+
+      assert.notEqual(group1.id, group2.id);
+      assert.equal(group2.name, 'Test Group');
+      assert.isNull(group2.deleted_at);
     });
   });
 
@@ -236,6 +256,58 @@ describe('Instance Group Model', () => {
         instance_group_id: group.id,
       });
 
+      const result = await addEnrollmentToInstanceGroup({
+        enrollment_id: enrollment.id,
+        instance_group_id: group.id,
+      });
+
+      assert.isNull(result);
+    });
+
+    it('returns null when trying to add enrollment to instance group from different course instance', async () => {
+      const user = await getOrCreateUser({
+        uid: 'test3@example.com',
+        name: 'Test User 3',
+        uin: 'test3',
+        email: 'test3@example.com',
+      });
+
+      // Create enrollment in course instance 1
+      const enrollment = await queryRow(
+        `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+         VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
+         RETURNING *`,
+        {
+          user_id: user.user_id,
+          course_instance_id: '1',
+          first_joined_at: new Date(),
+        },
+        EnrollmentSchema,
+      );
+
+      // Create a second course instance for testing
+      const courseInstance2Id = await queryRow(
+        `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
+         VALUES ($course_id, $short_name, $long_name, $display_timezone, $enrollment_code)
+         RETURNING id`,
+        {
+          course_id: '1',
+          short_name: 'test-instance-2',
+          long_name: 'Test Instance 2',
+          display_timezone: 'America/Chicago',
+          enrollment_code: 'test-code-2',
+        },
+        IdSchema,
+      );
+
+      // Create instance group in course instance 2
+      const group = await createInstanceGroup({
+        course_instance_id: courseInstance2Id,
+        name: 'Test Group',
+      });
+
+      // Try to add enrollment from course instance 1 to group in different course instance
+      // This should return null because the course instances don't match
       const result = await addEnrollmentToInstanceGroup({
         enrollment_id: enrollment.id,
         instance_group_id: group.id,

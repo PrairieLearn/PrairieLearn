@@ -53,7 +53,8 @@ SELECT
   e.id AS enrollment_id,
   ig.id AS instance_group_id
 FROM
-  enrollments AS e
+  enrollments AS e,
+  instance_groups AS ig
 WHERE
   e.id = $enrollment_id
   AND ig.id = $instance_group_id
