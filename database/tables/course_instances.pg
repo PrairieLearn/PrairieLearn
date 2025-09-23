@@ -1,4 +1,8 @@
 columns
+    access_control_published: boolean
+    access_control_published_end_date: timestamp with time zone
+    access_control_published_start_date: timestamp with time zone
+    access_control_published_start_date_enabled: boolean
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
     deleted_at: timestamp with time zone
