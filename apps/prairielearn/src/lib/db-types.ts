@@ -907,6 +907,22 @@ export const InstitutionAdministratorSchema = z.object({
 });
 export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;
 
+export const InstanceGroupSchema = z.object({
+  course_instance_id: IdSchema,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  name: z.string(),
+});
+export type InstanceGroup = z.infer<typeof InstanceGroupSchema>;
+
+export const EnrollmentInstanceGroupSchema = z.object({
+  created_at: DateFromISOString,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  instance_group_id: IdSchema,
+});
+export type EnrollmentInstanceGroup = z.infer<typeof EnrollmentInstanceGroupSchema>;
+
 export const IssueSchema = z.object({
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -1536,9 +1552,11 @@ export const TableNames = [
   'group_users',
   'groups',
   'instance_questions',
+  'enrollment_instance_groups',
   'institution_administrators',
   'institution_authn_providers',
   'institutions',
+  'instance_groups',
   'issues',
   'job_sequences',
   'jobs',
