@@ -7,6 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { assertNever } from '../../lib/types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -332,11 +333,18 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
 }
 
 function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
-  if (status === 'pending' || status === 'creating' || status === 'failed') {
-    return html`<span class="badge text-bg-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
-  } else if (status === 'approved') {
-    return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
-  } else if (status === 'denied') {
-    return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+  switch (status) {
+    case 'pending':
+    case 'creating':
+    case 'failed':
+      return html`<span class="badge text-bg-secondary">
+        <i class="fa fa-clock"></i> Pending</span
+      >`;
+    case 'approved':
+      return html`<span class="badge text-bg-success"> <i class="fa fa-check"></i> Approved</span>`;
+    case 'denied':
+      return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
+    default:
+      assertNever(status);
   }
 }

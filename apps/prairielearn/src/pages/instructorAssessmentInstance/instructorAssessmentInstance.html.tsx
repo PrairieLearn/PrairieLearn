@@ -2,6 +2,7 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.js';
@@ -19,7 +20,6 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -343,10 +343,10 @@ export function InstructorAssessmentInstance({
                           <th colspan="9">
                             ${instance_question.zone_title}
                             ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)}`
+                              ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}
                             ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)}`
+                              ? html`(best ${instance_question.zone_best_questions} questions)`
                               : ''}
                           </th>
                         </tr>
@@ -608,7 +608,7 @@ export function InstructorAssessmentInstance({
                                 class="btn btn-xs color-${FINGERPRINT_COLORS[
                                   row.client_fingerprint_number % 6
                                 ]}"
-                                id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
+                                id="fingerprintPopover${row.client_fingerprint.id}-${index}"
                                 data-bs-toggle="popover"
                                 data-bs-container="body"
                                 data-bs-html="true"

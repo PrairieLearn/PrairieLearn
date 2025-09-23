@@ -106,7 +106,7 @@ router.post('/', [
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action);
+      throw new error.HttpStatusError(400, 'unknown action: ' + req.body.__action);
     }
   }),
 ]);

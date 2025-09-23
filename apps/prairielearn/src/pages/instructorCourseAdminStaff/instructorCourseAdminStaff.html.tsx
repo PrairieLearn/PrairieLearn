@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -12,7 +13,6 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
@@ -301,7 +301,7 @@ function CoursePermissionsInsertForm({
         </select>
       </div>
 
-      ${courseInstances?.length > 0
+      ${courseInstances.length > 0
         ? html`
             <div class="mb-3">
               <label class="form-label" for="addUsersInputCourseInstance">
@@ -429,6 +429,7 @@ function StaffTable({
                               type="button"
                               class="btn btn-sm btn-outline-primary dropdown-toggle"
                               data-bs-toggle="dropdown"
+                              data-bs-boundary="body"
                               aria-haspopup="true"
                               aria-expanded="false"
                             >
@@ -563,6 +564,7 @@ function StaffTable({
                                   type="button"
                                   class="btn btn-sm btn-outline-primary dropdown-toggle"
                                   data-bs-toggle="dropdown"
+                                  data-bs-boundary="body"
                                   aria-haspopup="true"
                                   aria-expanded="false"
                                 >
@@ -649,6 +651,7 @@ function StaffTable({
                               type="button"
                               class="btn btn-sm btn-outline-dark dropdown-toggle"
                               data-bs-toggle="dropdown"
+                              data-bs-boundary="body"
                               aria-haspopup="true"
                               aria-expanded="false"
                             >

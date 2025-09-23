@@ -26,30 +26,26 @@ export async function run() {
 
   for (const assessment_instance of assessment_instances) {
     logger.verbose('autoFinishExams: finishing ' + assessment_instance.id, assessment_instance);
-    // Grading was performed by the system.
-    const user_id = null;
-    const authn_user_id = null;
-    // Don't require the assessment to be open. This is important to
-    // ensure we correctly handle the case where the PrairieLearn process
-    // dies in the middle of grading a question. In that case, the assessment
-    // would have already been closed, but we still need to grade it.
-    const requireOpen = false;
-    // Only mark this assessment as needing to be closed if it's still open.
-    const close = !!assessment_instance.open;
-    // Override any submission or grading rate limits.
-    const overrideGradeRate = true;
-    // We don't have a client fingerprint ID, so pass null.
-    const clientFingerprintId = null;
     try {
-      await gradeAssessmentInstance(
-        assessment_instance.id,
-        user_id,
-        authn_user_id,
-        requireOpen,
-        close,
-        overrideGradeRate,
-        clientFingerprintId,
-      );
+      await gradeAssessmentInstance({
+        assessment_instance_id: assessment_instance.id,
+        // Grading was performed by the system.
+        user_id: null,
+        authn_user_id: null,
+        // Don't require the assessment to be open. This is important to
+        // ensure we correctly handle the case where the PrairieLearn process
+        // dies in the middle of grading a question. In that case, the assessment
+        // would have already been closed, but we still need to grade it.
+        requireOpen: false,
+        // Only mark this assessment as needing to be closed if it's still open.
+        close: !!assessment_instance.open,
+        // Ignore any submission or grading rate limits.
+        ignoreGradeRateLimit: true,
+        // Ignore real-time grading disabled checks.
+        ignoreRealTimeGradingDisabled: true,
+        // We don't have a client fingerprint ID, so pass null.
+        client_fingerprint_id: null,
+      });
     } catch (err) {
       logger.error('Error finishing exam', error.addData(err, { assessment_instance }));
       Sentry.captureException(err, {

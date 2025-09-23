@@ -1,12 +1,12 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
-import { renderHtml } from '../../../src/lib/preact-html.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
@@ -63,7 +63,7 @@ onDocumentReady(() => {
     const sharing_sets = Object.fromEntries(
       data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
     );
-    sharing_sets['Public'] = 'Public';
+    sharing_sets.Public = 'Public';
     sharing_sets['Public source'] = 'Public source';
     return sharing_sets;
   };

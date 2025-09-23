@@ -97,7 +97,7 @@ export class Cache {
   /**
    * Returns the value for the corresponding key if it exists in the cache; null otherwise.
    */
-  async get(key: string): Promise<any> {
+  async get<T>(key: string): Promise<T | null> {
     if (!this.enabled) return null;
 
     const scopedKey = this.keyPrefix + key;
@@ -109,7 +109,7 @@ export class Cache {
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
-        return undefined;
+        return null;
       }
 
       case 'redis': {
@@ -118,7 +118,7 @@ export class Cache {
         if (typeof value === 'string') {
           return JSON.parse(value);
         }
-        return undefined;
+        return null;
       }
 
       default: {

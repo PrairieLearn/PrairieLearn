@@ -1,12 +1,14 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { run } from '@prairielearn/run';
+import { renderHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
-import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -14,7 +16,6 @@ import {
 } from '../../../lib/assets.js';
 import type { User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
 
 import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
@@ -150,66 +151,34 @@ export function AssessmentQuestion({
             </form>
           `
         : ''}
-      ${aiGradingEnabled && aiGradingMode && aiGradingStats
+      ${aiGradingEnabled &&
+      aiGradingMode &&
+      aiGradingStats &&
+      Object.keys(aiGradingStats.rubric_stats).length === 0
         ? html`
-            ${aiGradingStats.rubric_stats.length > 0
-              ? html`
-                  <div class="card overflow-hidden mb-3">
-                    <div class="table-responsive">
-                      <table class="table table-sm" aria-label="AI grading rubric item stats">
-                        <thead>
-                          <tr class="table-light fw-bold">
-                            <td>Rubric item</td>
-                            <td>AI agreement</td>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          ${aiGradingStats.rubric_stats.map(
-                            (item) =>
-                              html`<tr>
-                                <td>${item.rubric_item.description}</td>
-                                <td>
-                                  ${run(() => {
-                                    if (item.disagreement_count) {
-                                      return html`
-                                        <i class="bi bi-x-square-fill text-danger"></i>
-                                        <span class="text-muted">
-                                          (${item.disagreement_count}/${aiGradingStats.submission_rubric_count}
-                                          disagree)
-                                        </span>
-                                      `;
-                                    }
-
-                                    if (aiGradingStats.submission_rubric_count === 0) {
-                                      return html`&mdash;`;
-                                    }
-
-                                    return html`<i
-                                      class="bi bi-check-square-fill text-success"
-                                    ></i>`;
-                                  })}
-                                </td>
-                              </tr>`,
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                `
-              : html`
-                  <div class="card mb-3">
-                    <div class="card-body">
-                      <div>Submission count: ${aiGradingStats.submission_point_count}</div>
-                      <div>
-                        Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
-                        <small class="text-muted">/${assessment_question.max_manual_points}</small>
-                        points
-                      </div>
-                    </div>
-                  </div>
-                `}
+            <div class="card mb-3">
+              <div class="card-body">
+                <div>Submission count: ${aiGradingStats.submission_point_count}</div>
+                <div>
+                  Average AI error: ${aiGradingStats.mean_error ?? html`&mdash;`}
+                  <small class="text-muted">/${assessment_question.max_manual_points}</small>
+                  points
+                </div>
+              </div>
+            </div>
           `
         : ''}
+
+      <div class="mb-3">
+        ${hydrateHtml(
+          <RubricSettings
+            assessmentQuestion={assessment_question}
+            rubricData={rubric_data}
+            csrfToken={__csrf_token}
+            aiGradingStats={aiGradingStats}
+          />,
+        )}
+      </div>
 
       <form name="grading-form" method="POST">
         <input type="hidden" name="__action" value="batch_action" />
@@ -220,65 +189,6 @@ export function AssessmentQuestion({
           >
             <h1>Student instance questions</h1>
             <div class="d-flex flex-row gap-2">
-              <div class="dropdown">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
-                  data-bs-toggle="dropdown"
-                  name="status"
-                  disabled
-                >
-                  <i class="fas fa-tags"></i> Tag for grading
-                </button>
-                <div class="dropdown-menu dropdown-menu-end">
-                  <div class="dropdown-header">Assign for grading</div>
-                  ${courseStaff?.map(
-                    (grader) => html`
-                      <button
-                        class="dropdown-item"
-                        type="submit"
-                        name="batch_action_data"
-                        value="${JSON.stringify({
-                          requires_manual_grading: true,
-                          assigned_grader: grader.user_id,
-                        })}"
-                      >
-                        <i class="fas fa-user-tag"></i>
-                        Assign to: ${grader.name || ''} (${grader.uid})
-                      </button>
-                    `,
-                  )}
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ assigned_grader: null })}"
-                  >
-                    <i class="fas fa-user-slash"></i>
-                    Remove grader assignment
-                  </button>
-                  <div class="dropdown-divider"></div>
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ requires_manual_grading: true })}"
-                  >
-                    <i class="fas fa-tag"></i>
-                    Tag as required grading
-                  </button>
-                  <button
-                    class="dropdown-item"
-                    type="submit"
-                    name="batch_action_data"
-                    value="${JSON.stringify({ requires_manual_grading: false })}"
-                  >
-                    <i class="fas fa-check-square"></i>
-                    Tag as graded
-                  </button>
-                </div>
-              </div>
-
               ${aiGradingEnabled && aiGradingMode
                 ? html`
                     <div class="dropdown">
@@ -327,7 +237,66 @@ export function AssessmentQuestion({
                       </div>
                     </div>
                   `
-                : ''}
+                : html`
+                    <div class="dropdown">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
+                        data-bs-toggle="dropdown"
+                        name="status"
+                        disabled
+                      >
+                        <i class="fas fa-tags"></i> Tag for grading
+                      </button>
+                      <div class="dropdown-menu dropdown-menu-end">
+                        <div class="dropdown-header">Assign for grading</div>
+                        ${courseStaff.map(
+                          (grader) => html`
+                            <button
+                              class="dropdown-item"
+                              type="submit"
+                              name="batch_action_data"
+                              value="${JSON.stringify({
+                                requires_manual_grading: true,
+                                assigned_grader: grader.user_id,
+                              })}"
+                            >
+                              <i class="fas fa-user-tag"></i>
+                              Assign to: ${grader.name || ''} (${grader.uid})
+                            </button>
+                          `,
+                        )}
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ assigned_grader: null })}"
+                        >
+                          <i class="fas fa-user-slash"></i>
+                          Remove grader assignment
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ requires_manual_grading: true })}"
+                        >
+                          <i class="fas fa-tag"></i>
+                          Tag as required grading
+                        </button>
+                        <button
+                          class="dropdown-item"
+                          type="submit"
+                          name="batch_action_data"
+                          value="${JSON.stringify({ requires_manual_grading: false })}"
+                        >
+                          <i class="fas fa-check-square"></i>
+                          Tag as graded
+                        </button>
+                      </div>
+                    </div>
+                  `}
             </div>
           </div>
           <table id="grading-table" aria-label="Instance questions for manual grading"></table>

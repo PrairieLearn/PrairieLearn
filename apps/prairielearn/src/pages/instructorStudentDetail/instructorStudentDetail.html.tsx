@@ -11,13 +11,14 @@ import {
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { getAssessmentInstanceUrl } from '../../lib/client/url.js';
+import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
 import { type StaffGradebookRow, computeLabel, computeTitle } from '../../lib/gradebook.shared.js';
 
 export const UserDetailSchema = z.object({
   user: StaffUserSchema,
   course_instance: StaffCourseInstanceSchema,
   enrollment: StaffEnrollmentSchema.nullable(),
-  role: z.string(),
+  role: SprocUsersGetDisplayedRoleSchema,
 });
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
@@ -85,11 +86,11 @@ export function InstructorStudentDetail({
           <div class="d-flex">
             <div class="fw-bold me-1">Role:</div> {role}
           </div>
-          {enrollment?.created_at && (
+          {enrollment?.first_joined_at && (
             <div class="d-flex">
-              <div class="fw-bold me-1">Enrolled:</div>
+              <div class="fw-bold me-1">Joined:</div>
               <FriendlyDate
-                date={enrollment.created_at}
+                date={enrollment.first_joined_at}
                 timezone={course_instance.display_timezone}
               />
             </div>

@@ -3,11 +3,11 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
-import { Hydrate } from '../../lib/preact.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 
 import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
@@ -25,7 +25,7 @@ router.get(
     const pageContext = getPageContext(res.locals);
     const { urlPrefix } = pageContext;
     const courseInstanceContext = getCourseInstanceContext(res.locals, 'instructor');
-    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext);
+    const courseInstanceUrl = getCourseInstanceUrl(courseInstanceContext.course_instance.id);
 
     const student = await queryOptionalRow(
       sql.select_student_info,

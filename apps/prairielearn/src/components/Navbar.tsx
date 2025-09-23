@@ -135,7 +135,7 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
       ? html`
           <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
             ${unsafeHtml(course.announcement_html)}
@@ -406,6 +406,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
       instructorLink = `${urlPrefix}/instructor/question/${question.id}`;
     } else if (assessment_instance?.assessment_id) {
       instructorLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+    } else if (assessment?.id) {
+      instructorLink = `${urlPrefix}/instructor/assessment/${assessment.id}`;
     } else {
       instructorLink = `${urlPrefix}/instructor/instance_admin`;
     }

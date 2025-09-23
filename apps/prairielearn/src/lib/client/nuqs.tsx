@@ -132,7 +132,7 @@ export const parseAsColumnPinningState = createParser<ColumnPinningState>({
     };
   },
   serialize(value) {
-    if (!value || !value.left) return '';
+    if (!value?.left) return '';
     return value.left.join(',');
   },
   eq(a, b) {

@@ -5,6 +5,7 @@
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
 import base64
+import html
 import json
 import urllib.parse
 from io import BytesIO
@@ -61,6 +62,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if external_image_capture_url
         else None
     )
+
+    if data["ai_grading"]:
+        if data["panel"] == "question":
+            return ""
+
+        uuid = html.escape(pl.get_uuid())
+        name = html.escape(file_name)
+
+        # The AI grading rendering process will recursively strip any nodes that
+        # don't contain text. Usually this is fine, but in this case this node
+        # really only serves to provide a filename and data attribute for the
+        # AI grading system to pick up on.
+        #
+        # To avoid this node being stripped, we just include the filename as text.
+        return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
 
     html_params = {
         "uuid": pl.get_uuid(),

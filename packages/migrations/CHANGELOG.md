@@ -1,5 +1,31 @@
 # @prairielearn/migrations
 
+## 4.0.0
+
+### Major Changes
+
+- d4d5ce6: - `init(...)` now accepts an options object instead of positional arguments.
+  - `init(...)` now supports a `migrationFilters` option to control which migrations to run.
+
+## 3.0.25
+
+### Patch Changes
+
+- d6f506e: Update README for migrations to use modern function calls
+- Updated dependencies [c6f661c]
+  - @prairielearn/postgres@4.2.0
+
+## 3.0.24
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/error@2.0.19
+  - @prairielearn/logger@2.0.20
+  - @prairielearn/named-locks@3.0.23
+  - @prairielearn/postgres@4.1.1
+
 ## 3.0.23
 
 ### Patch Changes

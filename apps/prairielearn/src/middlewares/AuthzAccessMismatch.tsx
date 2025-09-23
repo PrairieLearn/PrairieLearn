@@ -1,7 +1,7 @@
 import _ from 'lodash';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
-import type { PageContext } from '../lib/client/page-context.js';
+import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
 import type { StaffUser } from '../lib/client/safe-db-types.js';
 
 // These keys can be used as part of permission checks.
@@ -15,13 +15,13 @@ export type CheckablePermissionKeys = Extract<
   | 'has_course_instance_permission_edit'
   | 'has_student_access'
   | 'has_student_access_with_enrollment',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 // These keys are used to show users diagnostic information about their permissions.
 type DiagnosticPermissionKeys = Extract<
   CheckablePermissionKeys | 'course_role' | 'course_instance_role',
-  keyof PageContext['authz_data']
+  keyof PageContextWithAuthzData['authz_data']
 >;
 
 interface PermissionMeta {
@@ -145,6 +145,25 @@ function formatUser(user: StaffUser) {
   return `${user.name} (${user.uid})`;
 }
 
+function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
+  const descriptions = permissionKeys.map((key) => {
+    const permission = PERMISSIONS_META.find((p) => p.key === key);
+    return permission?.label.toLowerCase() || key.toString().replaceAll('_', ' ');
+  });
+
+  if (descriptions.length === 1) {
+    return descriptions[0];
+  } else if (descriptions.length === 2) {
+    return descriptions.join(' or ');
+  } else {
+    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
+  }
+}
+
+export function getErrorExplanation(permissionKeys: CheckablePermissionKeys[]): string {
+  return `This page requires ${getPermissionDescription(permissionKeys)} permissions.`;
+}
+
 export function AuthzAccessMismatch({
   errorExplanation,
   oneOfPermissionKeys,
@@ -158,7 +177,7 @@ export function AuthzAccessMismatch({
    */
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
-  authzData: PageContext['authz_data'];
+  authzData: PageContextWithAuthzData['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
@@ -192,7 +211,7 @@ export function AuthzAccessMismatch({
           <h1>Effective user has insufficient access</h1>
         </div>
         <div class="card-body">
-          <p>{errorExplanation}</p>
+          <p>{errorExplanation ?? getErrorExplanation(oneOfPermissionKeys)}</p>
           {hasEffectiveUser ? (
             <p>
               The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}
