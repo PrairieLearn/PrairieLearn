@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export interface Filenames {
   scoresCsvFilename: string;

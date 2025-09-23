@@ -1451,6 +1451,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
+  // Perform auth for all student-facing instance question routes.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+    (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
@@ -1458,27 +1465,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
-  );
-
-  if (config.devMode) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    );
-  }
-
-  // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
-    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for questions
@@ -1511,6 +1497,27 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
     (await import('./pages/legacyQuestionText/legacyQuestionText.js')).default,
+  );
+
+  if (config.devMode) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
+      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
+      (await import('./pages/jobSequence/jobSequence.js')).default,
+    );
+  }
+
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1968,7 +1975,10 @@ export async function initExpress(): Promise<Express> {
   // if no earlier routes matched, this will match and generate a 404 error
   app.use((await import('./middlewares/notFound.js')).default);
 
-  app.use((await import('./middlewares/redirectEffectiveAccessDenied.js')).default);
+  app.use(
+    (await import('./middlewares/redirectEffectiveAccessDenied.js'))
+      .redirectEffectiveAccessDeniedErrorHandler,
+  );
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.
@@ -2320,10 +2330,10 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
 
       if (argv['migrate-and-exit']) {
         logger.info('option --migrate-and-exit passed, running DB setup and exiting');

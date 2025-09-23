@@ -5,6 +5,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 import {
   StaffAlternativeGroupSchema,
+  type StaffAssessmentQuestion,
   StaffAssessmentQuestionSchema,
   StaffAssessmentSchema,
   StaffCourseInstanceSchema,
@@ -53,6 +54,14 @@ const RawStaffAssessmentQuestionRowSchema = AssessmentQuestionRowMetaSchema.exte
 export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
+
+export async function selectAssessmentQuestionById(id: string): Promise<StaffAssessmentQuestion> {
+  return await sqldb.queryRow(
+    sql.select_assessment_question_by_id,
+    { id },
+    StaffAssessmentQuestionSchema,
+  );
+}
 
 export async function selectAssessmentQuestions({
   assessment_id,

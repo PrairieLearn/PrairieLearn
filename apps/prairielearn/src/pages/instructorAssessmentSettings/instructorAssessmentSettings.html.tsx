@@ -1,14 +1,14 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
-import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QRCodeModal } from '../../components/QRCodeModal.js';
+import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -52,12 +52,12 @@ export function InstructorAssessmentSettings({
           urlPrefix={resLocals.urlPrefix}
         />,
       )}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'studentLinkModal',
         title: 'Student Link QR Code',
         content: studentLink,
       })}
-      ${QRCodeModal({
+      ${QRCodeModalHtml({
         id: 'publicLinkModal',
         title: 'Public Link QR Code',
         content: publicLink,
@@ -67,7 +67,7 @@ export function InstructorAssessmentSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
-          ${GitHubButton(assessmentGHLink)}
+          ${GitHubButtonHtml(assessmentGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-assessment-settings-form" method="POST">
@@ -301,13 +301,13 @@ ${resLocals.assessment.honor_code}</textarea
                   </div>
                 `
               : ''}
-            ${StudentLinkSharing({
+            ${StudentLinkSharingHtml({
               studentLink,
               studentLinkMessage: 'The link that students will use to access this assessment.',
             })}
             <h2 class="h4">Sharing</h2>
             ${resLocals.assessment.share_source_publicly
-              ? PublicLinkSharing({
+              ? PublicLinkSharingHtml({
                   publicLink,
                   sharingMessage: "This assessment's source is publicly shared.",
                   publicLinkMessage:

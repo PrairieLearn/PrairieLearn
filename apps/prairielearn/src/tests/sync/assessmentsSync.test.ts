@@ -1978,7 +1978,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isTrue(syncedData.assessment.allow_real_time_grading);
     assert.isNull(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -1996,7 +1995,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isTrue(syncedData.assessment.allow_real_time_grading);
     assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isTrue(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -2014,7 +2012,6 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedData = await getSyncedAssessmentData('newexam');
-    assert.isFalse(syncedData.assessment.allow_real_time_grading);
     assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
     assert.lengthOf(syncedData.assessment_questions, 1);
     assert.isFalse(syncedData.assessment_questions[0].allow_real_time_grading);
@@ -2031,35 +2028,6 @@ describe('Assessment syncing', () => {
     assert.match(
       syncedAssessment.sync_errors,
       /Real-time grading cannot be disabled for Homework-type assessments/,
-    );
-  });
-
-  it('records an error if multiple-element points array is specified for a question when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [
-      {
-        title: 'zone 1',
-        questions: [
-          {
-            id: util.QUESTION_ID,
-            points: [5, 4, 3],
-          },
-          {
-            id: util.ALTERNATIVE_QUESTION_ID,
-            points: [10, 9, 8],
-          },
-        ],
-      },
-    ];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('fail');
-    assert.isNotNull(syncedAssessment.sync_errors);
-    assert.match(
-      syncedAssessment.sync_errors,
-      /Cannot specify an array of multiple point values for a question/,
     );
   });
 
@@ -2101,39 +2069,6 @@ describe('Assessment syncing', () => {
 
     const syncedAssessment = await findSyncedAssessment('points_array_size_one');
     assert.equal(syncedAssessment.sync_errors, null);
-  });
-
-  it('records an error if multiple-element points array is specified for an alternative when real-time grading is disallowed', async () => {
-    const courseData = util.getCourseData();
-    const assessment = makeAssessment(courseData);
-    assessment.allowRealTimeGrading = false;
-    assessment.zones = [
-      {
-        title: 'zone 1',
-        questions: [
-          {
-            points: [10, 9, 8],
-            alternatives: [
-              {
-                id: util.QUESTION_ID,
-              },
-              {
-                id: util.ALTERNATIVE_QUESTION_ID,
-                points: [5, 4, 3],
-              },
-            ],
-          },
-        ],
-      },
-    ];
-    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
-    await util.writeAndSyncCourseData(courseData);
-    const syncedAssessment = await findSyncedAssessment('fail');
-    assert.isNotNull(syncedAssessment.sync_errors);
-    assert.match(
-      syncedAssessment.sync_errors,
-      /Cannot specify an array of multiple point values for an alternative/,
-    );
   });
 
   it('records an error if an increasing points array is specified for an alternative', async () => {
@@ -3190,6 +3125,532 @@ describe('Assessment syncing', () => {
     );
     assert.isDefined(matchingAlternativeGroup);
     assert.isNull(matchingAlternativeGroup.number_choose);
+  });
+
+  describe('allowRealTimeGrading hierarchical inheritance', () => {
+    it('defaults to true for all levels when not specified', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 10,
+          },
+          {
+            points: 5,
+            alternatives: [
+              {
+                id: util.ALTERNATIVE_QUESTION_ID,
+                points: 5,
+              },
+            ],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingDefault'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingDefault');
+
+      // Assessment JSON config is not explicitly set.
+      assert.isNull(syncedData.assessment.json_allow_real_time_grading);
+
+      // Zone JSON config is not explicitly set.
+      assert.isNotEmpty(syncedData.zones);
+      assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
+
+      // Alternative group JSON config is not explicitly set.
+      assert.isNotEmpty(syncedData.alternative_groups);
+      assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
+
+      assert.isNotEmpty(syncedData.assessment_questions);
+      syncedData.assessment_questions.forEach((aq) => {
+        // The resolved config for each assessment question should be true.
+        assert.isTrue(aq.allow_real_time_grading);
+
+        // Assessment question JSON config is not explicitly set.
+        assert.isNull(aq.json_allow_real_time_grading);
+      });
+    });
+
+    it('correctly cascades assessment-level allowRealTimeGrading: false', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.allowRealTimeGrading = false;
+      assessment.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 10,
+          },
+          {
+            points: 5,
+            alternatives: [
+              {
+                id: util.ALTERNATIVE_QUESTION_ID,
+                points: 5,
+              },
+            ],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingAssessmentFalse'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingAssessmentFalse');
+
+      // Assessment-level should be false
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
+
+      // All lower levels should be null (inheriting from assessment)
+      assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
+      assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
+
+      syncedData.assessment_questions.forEach((aq) => {
+        assert.isNull(aq.json_allow_real_time_grading);
+        assert.isFalse(aq.allow_real_time_grading);
+      });
+    });
+
+    it('correctly handles zone-level allowRealTimeGrading override', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.allowRealTimeGrading = false;
+      assessment.zones?.push({
+        title: 'test zone',
+        allowRealTimeGrading: true,
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 10,
+          },
+          {
+            points: 5,
+            alternatives: [
+              {
+                id: util.ALTERNATIVE_QUESTION_ID,
+                points: 5,
+              },
+            ],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingZoneOverride'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingZoneOverride');
+
+      // Assessment-level should be false
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
+
+      // Zone-level should override to true
+      assert.isTrue(syncedData.zones[0].json_allow_real_time_grading);
+
+      // Lower levels should be null (inheriting from zone)
+      assert.isNull(syncedData.alternative_groups[0].json_allow_real_time_grading);
+
+      syncedData.assessment_questions.forEach((aq) => {
+        assert.isNull(aq.json_allow_real_time_grading);
+        assert.isTrue(aq.allow_real_time_grading);
+      });
+    });
+
+    it('correctly handles question-level allowRealTimeGrading override', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.allowRealTimeGrading = true;
+      assessment.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 10,
+            allowRealTimeGrading: false,
+          },
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 5,
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingQuestionOverride'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingQuestionOverride');
+
+      // Assessment and zone should have expected values
+      assert.isTrue(syncedData.assessment.json_allow_real_time_grading);
+      assert.isNull(syncedData.zones[0].json_allow_real_time_grading);
+
+      // First question should override to false
+      const firstQuestion = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.QUESTION_ID,
+      );
+      assert.ok(firstQuestion);
+      assert.isFalse(firstQuestion.json_allow_real_time_grading);
+      assert.isFalse(firstQuestion.allow_real_time_grading);
+
+      // Second question should be null (inheriting)
+      const secondQuestion = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+      );
+      assert.ok(secondQuestion);
+      assert.isNull(secondQuestion.json_allow_real_time_grading);
+      assert.isTrue(secondQuestion.allow_real_time_grading);
+    });
+
+    it('correctly handles alternative-level allowRealTimeGrading override', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.allowRealTimeGrading = true;
+      assessment.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            points: 10,
+            allowRealTimeGrading: false,
+            alternatives: [
+              {
+                id: util.QUESTION_ID,
+                allowRealTimeGrading: true,
+              },
+              {
+                id: util.ALTERNATIVE_QUESTION_ID,
+                points: 5,
+              },
+            ],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingAlternativeOverride'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingAlternativeOverride');
+
+      // First alternative should override to true despite question-level false
+      const firstQuestion = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.QUESTION_ID,
+      );
+      assert.ok(firstQuestion);
+      assert.isTrue(firstQuestion.json_allow_real_time_grading);
+      assert.isTrue(firstQuestion.allow_real_time_grading);
+
+      // Second alternative should be null (inheriting from question-level false)
+      const secondQuestion = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+      );
+      assert.ok(secondQuestion);
+      assert.isNull(secondQuestion.json_allow_real_time_grading);
+      assert.isFalse(secondQuestion.allow_real_time_grading);
+    });
+
+    it('correctly handles complex mixed hierarchy scenario', async () => {
+      const courseData = util.getCourseData();
+      const assessment = makeAssessment(courseData, 'Exam');
+      assessment.allowRealTimeGrading = false; // Assessment: false
+      assessment.zones?.push(
+        {
+          title: 'zone 1',
+          allowRealTimeGrading: true, // Zone 1: true (overrides assessment)
+          questions: [
+            {
+              id: util.QUESTION_ID,
+              points: 10,
+              // Should inherit from zone: true
+            },
+          ],
+        },
+        {
+          title: 'zone 2',
+          // Should inherit from assessment: false
+          questions: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              points: 5,
+              allowRealTimeGrading: true, // Question: true (overrides zone)
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+              points: 8,
+              // Should inherit from zone (assessment): false
+            },
+          ],
+        },
+      );
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+        'allowRealTimeGradingMixedHierarchy'
+      ] = assessment;
+      await util.writeAndSyncCourseData(courseData);
+
+      const syncedData = await getSyncedAssessmentData('allowRealTimeGradingMixedHierarchy');
+
+      // Assessment should be false
+      assert.isFalse(syncedData.assessment.json_allow_real_time_grading);
+
+      // Zone 1 should override to true
+      const zone1 = syncedData.zones.find((z) => z.title === 'zone 1');
+      assert.ok(zone1);
+      assert.isTrue(zone1.json_allow_real_time_grading);
+
+      // Zone 2 should be null (inheriting from assessment)
+      const zone2 = syncedData.zones.find((z) => z.title === 'zone 2');
+      assert.ok(zone2);
+      assert.isNull(zone2.json_allow_real_time_grading);
+
+      // Question in zone 1 should be null (inheriting from zone)
+      const questionInZone1 = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.QUESTION_ID,
+      );
+      assert.ok(questionInZone1);
+      assert.isNull(questionInZone1.json_allow_real_time_grading);
+      assert.isTrue(questionInZone1.allow_real_time_grading);
+
+      // First question in zone 2 should override to true
+      const firstQuestionInZone2 = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
+      );
+      assert.ok(firstQuestionInZone2);
+      assert.isTrue(firstQuestionInZone2.json_allow_real_time_grading);
+      assert.isTrue(firstQuestionInZone2.allow_real_time_grading);
+
+      // Second question in zone 2 should be null (inheriting from zone)
+      const secondQuestionInZone2 = syncedData.assessment_questions.find(
+        (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
+      );
+      assert.ok(secondQuestionInZone2);
+      assert.isNull(secondQuestionInZone2.json_allow_real_time_grading);
+      assert.isFalse(secondQuestionInZone2.allow_real_time_grading);
+    });
+
+    it('records an error if allowRealTimeGrading is disabled on a Homework assessment at any level', async () => {
+      const courseData = util.getCourseData();
+
+      // Test zone-level disable
+      const assessmentZoneFalse = makeAssessment(courseData, 'Homework');
+      assessmentZoneFalse.zones?.push({
+        title: 'test zone',
+        allowRealTimeGrading: false,
+        questions: [
+          {
+            id: util.QUESTION_ID,
+            points: 10,
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkZoneFalse'] =
+        assessmentZoneFalse;
+
+      // Test question-level disable
+      const assessmentQuestionFalse = makeAssessment(courseData, 'Homework');
+      assessmentQuestionFalse.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            id: util.ALTERNATIVE_QUESTION_ID,
+            points: 10,
+            allowRealTimeGrading: false,
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkQuestionFalse'] =
+        assessmentQuestionFalse;
+
+      // Test alternative-level disable
+      const assessmentAlternativeFalse = makeAssessment(courseData, 'Homework');
+      assessmentAlternativeFalse.zones?.push({
+        title: 'test zone',
+        questions: [
+          {
+            points: 10,
+            alternatives: [
+              {
+                id: util.MANUAL_GRADING_QUESTION_ID,
+                allowRealTimeGrading: false,
+              },
+            ],
+          },
+        ],
+      });
+      courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkAlternativeFalse'] =
+        assessmentAlternativeFalse;
+
+      await util.writeAndSyncCourseData(courseData);
+
+      // Check that all three assessments have sync errors
+      const syncedZoneFalse = await findSyncedAssessment('homeworkZoneFalse');
+      assert.isNotNull(syncedZoneFalse.sync_errors);
+      assert.match(
+        syncedZoneFalse.sync_errors,
+        /Real-time grading cannot be disabled for Homework-type assessments/,
+      );
+
+      const syncedQuestionFalse = await findSyncedAssessment('homeworkQuestionFalse');
+      assert.isNotNull(syncedQuestionFalse.sync_errors);
+      assert.match(
+        syncedQuestionFalse.sync_errors,
+        /Real-time grading cannot be disabled for Homework-type assessments/,
+      );
+
+      const syncedAlternativeFalse = await findSyncedAssessment('homeworkAlternativeFalse');
+      assert.isNotNull(syncedAlternativeFalse.sync_errors);
+      assert.match(
+        syncedAlternativeFalse.sync_errors,
+        /Real-time grading cannot be disabled for Homework-type assessments/,
+      );
+    });
+
+    it.each([
+      {
+        name: 'assessment level without alternatives',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+        },
+      },
+      {
+        name: 'zone level without alternatives',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+        },
+      },
+      {
+        name: 'question level without alternatives',
+        zone: {
+          questions: [{ id: util.QUESTION_ID, points: [10, 8, 5], allowRealTimeGrading: false }],
+        },
+      },
+      {
+        name: 'assessment level with alternative with own points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [{ alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }] }],
+        },
+      },
+      {
+        name: 'zone level with alternative with own points',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [{ alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }] }],
+        },
+      },
+      {
+        name: 'alternative group level with own points',
+        zone: {
+          questions: [
+            {
+              allowRealTimeGrading: false,
+              alternatives: [{ id: util.QUESTION_ID, points: [10, 8, 5] }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative level with own points',
+        zone: {
+          questions: [
+            {
+              alternatives: [
+                { id: util.QUESTION_ID, points: [10, 8, 5], allowRealTimeGrading: false },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        name: 'assessment level with alternative with inherited points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'zone level with alternative with inherited points',
+        zone: {
+          allowRealTimeGrading: false,
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative group level with inherited points',
+        zone: {
+          questions: [
+            {
+              allowRealTimeGrading: false,
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID }],
+            },
+          ],
+        },
+      },
+      {
+        name: 'alternative level with inherited points',
+        zone: {
+          questions: [
+            {
+              points: [10, 8, 5],
+              alternatives: [{ id: util.QUESTION_ID, allowRealTimeGrading: false }],
+            },
+          ],
+        },
+      },
+      // All of the same tests apply to `autoPoints` as well. We'll assume that
+      // a single test for `autoPoints` is sufficient.
+      {
+        name: 'assessment level with auto points',
+        allowRealTimeGrading: false,
+        zone: {
+          questions: [
+            {
+              autoPoints: [10, 8, 5],
+              id: util.QUESTION_ID,
+            },
+          ],
+        },
+      },
+    ])(
+      'records an error if an array of multiple points is used when real-time grading is disabled at $name',
+      async ({ allowRealTimeGrading, zone }) => {
+        const courseData = util.getCourseData();
+
+        const assessment = makeAssessment(courseData, 'Exam');
+        assessment.allowRealTimeGrading = allowRealTimeGrading ?? undefined;
+        assessment.zones?.push(zone);
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['test'] = assessment;
+
+        await util.writeAndSyncCourseData(courseData);
+
+        const syncedAssessment = await findSyncedAssessment('test');
+        assert.isNotNull(syncedAssessment.sync_errors);
+        assert.match(
+          syncedAssessment.sync_errors,
+          /Cannot specify an array of multiple point values if real-time grading is disabled/,
+        );
+      },
+    );
   });
 
   it('stores json points data correctly for homework assessments', async () => {

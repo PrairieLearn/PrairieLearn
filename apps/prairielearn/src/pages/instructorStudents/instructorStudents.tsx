@@ -5,6 +5,7 @@ import z from 'zod';
 import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -14,7 +15,6 @@ import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { Hydrate } from '../../lib/preact.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 

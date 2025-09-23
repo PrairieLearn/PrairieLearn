@@ -33,7 +33,6 @@ WITH
 SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
-  tags_for_question (q.id) AS tags,
   issue_count.open_issue_count
 FROM
   questions AS q
@@ -84,7 +83,6 @@ WITH
 SELECT
   to_json(q) AS question,
   to_json(top) AS topic,
-  tags_for_question (q.id) AS tags,
   assessments_format_for_question (q.id, ci.id) AS assessments,
   issue_count.open_issue_count
 FROM

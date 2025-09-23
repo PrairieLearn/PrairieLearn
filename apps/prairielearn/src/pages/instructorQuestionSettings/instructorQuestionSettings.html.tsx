@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
-import { GitHubButton } from '../../components/GitHubButton.js';
+import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -22,7 +23,6 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -54,6 +54,7 @@ export function InstructorQuestionSettings({
   questionTestPath,
   questionTestCsrfToken,
   questionGHLink,
+  questionTags,
   qids,
   assessmentsWithQuestion,
   sharingEnabled,
@@ -69,6 +70,7 @@ export function InstructorQuestionSettings({
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
+  questionTags: Tag[];
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
@@ -83,7 +85,7 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
+  const questionTagNames = new Set(questionTags.map((tag) => tag.name));
 
   return PageLayout({
     resLocals,
@@ -127,7 +129,7 @@ export function InstructorQuestionSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>Question Settings</h1>
-          ${GitHubButton(questionGHLink)}
+          ${GitHubButtonHtml(questionGHLink)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -229,14 +231,14 @@ export function InstructorQuestionSettings({
                                         data-description="${tag.implicit
                                           ? ''
                                           : TagDescription(tag)}"
-                                        ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                        ${questionTagNames.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
                                   })
                                 : ''}
                             </select>
                           `
-                        : renderHtml(<TagBadgeList tags={resLocals.tags} />)}
+                        : renderHtml(<TagBadgeList tags={questionTags} />)}
                     </td>
                   </tr>
                   ${shouldShowAssessmentsList
