@@ -87,8 +87,8 @@ export function getPageContext(
 
 export function getPageContext(
   resLocals: Record<string, any>,
-  options?: {
-    withAuthzData?: false;
+  options: {
+    withAuthzData: false;
   },
 ): PageContext;
 
