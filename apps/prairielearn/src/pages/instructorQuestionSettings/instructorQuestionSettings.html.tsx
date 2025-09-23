@@ -403,11 +403,10 @@ export function InstructorQuestionSettings({
                   name="workspace_environment"
                   ${canEdit ? '' : 'disabled'}
                 >
-                ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
+${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                   typeof resLocals.question.workspace_environment === 'object'
                     ? JSON.stringify(resLocals.question.workspace_environment, null, 2)
-                    : '{}'}
-                </textarea
+                    : '{}'}</textarea
                 >
                 <small class="form-text text-muted">
                   Environment variables to set inside the workspace container. Variables must be

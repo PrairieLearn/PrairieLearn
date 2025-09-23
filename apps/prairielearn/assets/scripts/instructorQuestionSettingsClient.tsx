@@ -40,8 +40,7 @@ onDocumentReady(() => {
   );
 
   let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
-  let externalGradingOptionsShown =
-    showExternalGradingOptionsButton?.getAttribute('hidden') === 'true';
+  let externalGradingOptionsShown = showExternalGradingOptionsButton!.hidden;
 
   function updateWorkspaceOptionsValidation() {
     if (workspaceOptionsShown) {

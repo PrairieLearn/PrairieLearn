@@ -285,7 +285,7 @@ router.post(
         entrypoint: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.entrypoint,
           body.external_grading_entrypoint,
-          (v) => !v || v.length === 0,
+          (v) => v === undefined || v === null || v.length === 0,
         ),
         serverFilesCourse: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.serverFilesCourse,
@@ -304,7 +304,7 @@ router.post(
         ),
         environment: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.environment,
-          JSON.parse(body.external_grading_environment?.replace(/\r\n/g, '\n') || '{}'),
+          JSON.parse(body.external_grading_environment || '{}'),
           (val) => !val || Object.keys(val).length === 0,
         ),
       };
