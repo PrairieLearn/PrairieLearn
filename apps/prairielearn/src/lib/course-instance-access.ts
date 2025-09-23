@@ -6,18 +6,20 @@ import {
   type EnumModeReason,
 } from './db-types.js';
 
+export interface CourseInstanceAccessParams {
+  course_instance_role: EnumCourseInstanceRole;
+  course_role: EnumCourseRole;
+  mode_reason: EnumModeReason;
+  mode: EnumMode;
+}
+
 /**
  * Evaluates whether a user can access a course instance based on the course instance's
  * access control settings and the user's authorization context.
  */
 export function evaluateCourseInstanceAccess(
   courseInstance: CourseInstance,
-  params: {
-    course_instance_role: EnumCourseInstanceRole;
-    course_role: EnumCourseRole;
-    mode_reason: EnumModeReason;
-    mode: EnumMode;
-  },
+  params: CourseInstanceAccessParams,
   // This is done like this for testing purposes.
   currentDate: Date = new Date(),
 ):

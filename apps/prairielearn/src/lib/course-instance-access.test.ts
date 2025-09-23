@@ -1,6 +1,9 @@
 import { assert, describe, it } from 'vitest';
 
-import { evaluateCourseInstanceAccess } from './course-instance-access.js';
+import {
+  type CourseInstanceAccessParams,
+  evaluateCourseInstanceAccess,
+} from './course-instance-access.js';
 import { type CourseInstance } from './db-types.js';
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
@@ -25,6 +28,8 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     sync_job_sequence_id: null,
     sync_warnings: null,
     assessments_group_by: 'Set',
+
+    // These are the only fields we care about.
     access_control_published: null,
     access_control_published_start_date: null,
     access_control_published_start_date_enabled: null,
@@ -37,8 +42,8 @@ function createMockParams(
   overrides: Partial<CourseInstanceAccessParams> = {},
 ): CourseInstanceAccessParams {
   return {
-    authz_mode_reason: 'Default',
-    authz_mode: 'Public',
+    mode_reason: 'Default',
+    mode: 'Public',
     course_instance_role: 'None',
     course_role: 'None',
     ...overrides,

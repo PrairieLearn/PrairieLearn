@@ -1408,13 +1408,22 @@ function validateCourseInstance({
     errors.push('Cannot use both "allowAccess" and "accessControl" in the same course instance.');
   } else if (usingModernAccessControl) {
     assert(courseInstance.accessControl != null);
-    warnings.push('"accessControl" is not configurable yet.');
     if (
       courseInstance.accessControl.publishedEndDate != null &&
       parseJsonDate(courseInstance.accessControl.publishedEndDate) == null
     ) {
       errors.push('"accessControl.publishedEndDate" is not a valid date.');
     }
+
+    if (
+      courseInstance.accessControl.published &&
+      courseInstance.accessControl.publishedEndDate == null
+    ) {
+      errors.push(
+        '"accessControl.publishedEndDate" is required if "accessControl.published" is true.',
+      );
+    }
+
     if (
       courseInstance.accessControl.publishedStartDate != null &&
       parseJsonDate(courseInstance.accessControl.publishedStartDate) == null
