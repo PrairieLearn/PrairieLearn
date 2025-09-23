@@ -55,6 +55,7 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
       course_instance_id: '1',
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
   });
 

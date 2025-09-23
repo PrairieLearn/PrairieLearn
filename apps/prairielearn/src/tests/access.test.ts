@@ -117,6 +117,7 @@ describe('Access control', { timeout: 20000 }, function () {
         course_instance_id: '1',
         agent_user_id: null,
         agent_authn_user_id: null,
+        action_detail: 'implicit_joined',
       });
     });
   });

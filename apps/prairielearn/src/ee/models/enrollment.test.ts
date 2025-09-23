@@ -73,18 +73,21 @@ describe('getEnrollmentCountsForInstitution', () => {
       user_id: freeUser.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
     await ensureEnrollment({
       course_instance_id: '1',
       user_id: paidUser1.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
     await ensureEnrollment({
       course_instance_id: courseInstance.id,
       user_id: paidUser2.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -160,6 +163,7 @@ describe('getEnrollmentCountsForCourse', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourse({ course_id: '1', created_since: '1 year' });
@@ -181,6 +185,7 @@ describe('getEnrollmentCountsForCourse', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -212,6 +217,7 @@ describe('getEnrollmentCountsForCourse', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -260,6 +266,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const result = await getEnrollmentCountsForCourseInstance('1');
@@ -281,6 +288,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await ensurePlanGrant({
@@ -312,6 +320,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await ensurePlanGrant({

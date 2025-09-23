@@ -50,6 +50,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
       course_instance_id: '1',
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
@@ -58,6 +59,7 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
       course_instance_id: '1',
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await getOrCreateUser(studentNotEnrolled);

@@ -85,6 +85,7 @@ describe('studentCourseInstanceUpgrade', () => {
       course_instance_id: '1',
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
@@ -106,6 +107,7 @@ describe('studentCourseInstanceUpgrade', () => {
       course_instance_id: '1',
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     // Simulates the dev user (an instructor) using "Student view" for an

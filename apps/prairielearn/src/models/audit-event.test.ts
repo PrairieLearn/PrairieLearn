@@ -36,7 +36,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'User created',
+        action_detail: null,
         new_row: await selectUserById('1'),
         context: { test: 'basic' },
       });
@@ -253,7 +253,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'Updated user data',
+        action_detail: 'TEST_VALUE',
         old_row: { test: 'old data' },
         context: { test: 'data2' },
       });
@@ -450,7 +450,7 @@ describe('audit-event', () => {
         agent_user_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'Updated user data',
+        action_detail: 'TEST_VALUE',
         old_row: { test: 'old data' },
         context: { test: 'newer' },
       });
@@ -511,7 +511,7 @@ describe('audit-event', () => {
         row_id: '1',
         subject_user_id: user.user_id,
         course_instance_id: '1',
-        action_detail: 'Updated user profile',
+        action_detail: 'TEST_VALUE',
         context: { test: 'full_fields' },
         old_row: { name: 'Old Name' },
         new_row: { name: 'New Name' },
@@ -534,7 +534,7 @@ describe('audit-event', () => {
       expect(auditEvent).toMatchInlineSnapshot(`
         {
           "action": "update",
-          "action_detail": "Updated user profile",
+          "action_detail": "TEST_VALUE",
           "agent_authn_user_id": "1",
           "agent_user_id": "1",
           "assessment_id": "1",

@@ -57,6 +57,7 @@ describe('ensureEnrollment', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -108,6 +109,7 @@ describe('ensureEnrollment', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -138,6 +140,7 @@ describe('ensureEnrollment', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
@@ -183,6 +186,7 @@ describe('ensureEnrollment', () => {
       user_id: user.user_id,
       agent_user_id: null,
       agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     const finalEnrollment = await getEnrollmentForUserInCourseInstance({
