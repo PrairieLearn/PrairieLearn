@@ -6,7 +6,7 @@ columns
 
 indexes
     instance_groups_pkey: PRIMARY KEY (id) USING btree (id)
-    instance_groups_course_instance_id_name_key: UNIQUE (course_instance_id, name) USING btree (course_instance_id, name)
+    instance_groups_course_instance_id_name_unique: UNIQUE USING btree (course_instance_id, name) WHERE deleted_at IS NULL
 
 foreign-key constraints
     instance_groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON DELETE CASCADE
