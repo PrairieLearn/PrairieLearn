@@ -9,6 +9,7 @@ import type { StaffCourseInstanceContext } from '../../lib/client/page-context.j
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
+import { AccessControlEditor } from './components/AccessControlEditor.js';
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
 
 interface SettingsFormValues {
@@ -35,6 +36,7 @@ export function InstructorInstanceAdminSettings({
   selfEnrollLink,
   enrollmentManagementEnabled,
   infoCourseInstancePath,
+  hasAllowAccessRules,
 }: {
   csrfToken: string;
   urlPrefix: string;
@@ -51,6 +53,7 @@ export function InstructorInstanceAdminSettings({
   selfEnrollLink: string;
   enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
+  hasAllowAccessRules: boolean;
 }) {
   const defaultValues: SettingsFormValues = {
     ciid: courseInstance.short_name,
@@ -70,18 +73,19 @@ export function InstructorInstanceAdminSettings({
   });
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-        <h1>
-          {hasEnhancedNavigation ? 'General course instance settings' : 'Course instance settings'}
-        </h1>
-        <GitHubButton gitHubLink={instanceGHLink ?? null} />
-      </div>
-      <div class="card-body">
-        {/* Any javascript submit will not contain the value of the submit button. */}
-        <form method="POST" name="edit-course-instance-settings-form">
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <input type="hidden" name="orig_hash" value={origHash} />
+    <>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h1>
+            {hasEnhancedNavigation ? 'General course instance settings' : 'Course instance settings'}
+          </h1>
+          <GitHubButton gitHubLink={instanceGHLink ?? null} />
+        </div>
+        <div class="card-body">
+          {/* Any javascript submit will not contain the value of the submit button. */}
+          <form method="POST" name="edit-course-instance-settings-form">
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <input type="hidden" name="orig_hash" value={origHash} />
           <div class="mb-3">
             <label class="form-label" for="ciid">
               CIID
@@ -291,6 +295,16 @@ export function InstructorInstanceAdminSettings({
         </button>
       </div>
     </div>
+
+    <AccessControlEditor
+      courseInstance={courseInstance}
+      canEdit={canEdit}
+      timezone={courseInstance.display_timezone}
+      csrfToken={csrfToken}
+      origHash={origHash}
+      hasAllowAccessRules={hasAllowAccessRules}
+    />
+    </>
   );
 }
 InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';

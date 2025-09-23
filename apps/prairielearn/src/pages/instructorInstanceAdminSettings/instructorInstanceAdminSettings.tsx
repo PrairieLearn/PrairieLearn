@@ -58,6 +58,11 @@ router.get(
       { course_instance_id: courseInstance.id },
       z.number(),
     );
+    const hasAllowAccessRules = await sqldb.queryRow(
+      sql.select_has_allow_access_rules,
+      { course_instance_id: courseInstance.id },
+      z.boolean(),
+    );
     const host = getCanonicalHost(req);
     const studentLink = new URL(`${plainUrlPrefix}/course_instance/${courseInstance.id}`, host)
       .href;
@@ -141,6 +146,7 @@ router.get(
                 selfEnrollLink={selfEnrollLink}
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
                 infoCourseInstancePath={infoCourseInstancePath}
+                hasAllowAccessRules={hasAllowAccessRules}
               />
             </Hydrate>
             <Hydrate>
@@ -296,6 +302,63 @@ router.post(
         enrollment_code: await uniqueEnrollmentCode(),
       });
       flash('success', 'Self-enrollment key generated successfully');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_access_control') {
+      const infoCourseInstancePath = path.join(
+        res.locals.course.path,
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'infoCourseInstance.json',
+      );
+
+      if (!(await fs.pathExists(infoCourseInstancePath))) {
+        throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
+      }
+
+      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
+        await fs.readFile(infoCourseInstancePath, 'utf8'),
+      );
+
+      // Update access control settings
+      if (!courseInstanceInfo.accessControl) {
+        courseInstanceInfo.accessControl = {};
+      }
+
+      courseInstanceInfo.accessControl.published = req.body.published === 'true';
+      courseInstanceInfo.accessControl.publishedStartDateEnabled = req.body.publishedStartDateEnabled === 'true';
+      
+      if (req.body.publishedStartDate && req.body.publishedStartDate.trim() !== '') {
+        courseInstanceInfo.accessControl.publishedStartDate = req.body.publishedStartDate;
+      } else {
+        delete courseInstanceInfo.accessControl.publishedStartDate;
+      }
+
+      if (req.body.publishedEndDate && req.body.publishedEndDate.trim() !== '') {
+        courseInstanceInfo.accessControl.publishedEndDate = req.body.publishedEndDate;
+      } else {
+        delete courseInstanceInfo.accessControl.publishedEndDate;
+      }
+
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
+
+      const editor = new FileModifyEditor({
+        locals: res.locals as any,
+        container: {
+          rootPath: getPaths(undefined, res.locals).rootPath,
+          invalidRootPaths: getPaths(undefined, res.locals).invalidRootPaths,
+        },
+        filePath: infoCourseInstancePath,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: req.body.orig_hash,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+      flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
