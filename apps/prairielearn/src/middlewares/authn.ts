@@ -70,6 +70,7 @@ export default asyncHandler(async (req, res, next) => {
       await insertAuditEvent({
         table_name: 'enrollments',
         action: 'insert',
+        action_detail: 'implicit_joined',
         row_id: enrollment.id,
         new_row: enrollment,
         agent_user_id: null,

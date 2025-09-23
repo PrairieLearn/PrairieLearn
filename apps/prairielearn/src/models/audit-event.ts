@@ -1,5 +1,3 @@
-import z from 'zod';
-
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
@@ -22,64 +20,55 @@ const requiredTableFields = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id'],
+  enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
 } as const satisfies Partial<Record<TableName, readonly string[]>>;
 
 /**
  * This lists all the possible table+action_detail combinations that are supported.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const supportedTableActionCombinations = z.discriminatedUnion('table_name', [
-  z.object({
-    table_name: z.literal('course_instances'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('pl_courses'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('users'),
-    // We need a value for testing, but this is not a real action detail.
-    action_detail: z.enum(['TEST_VALUE']).nullable().optional(),
-  }),
-  z.object({
-    table_name: z.literal('groups'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('assessment_instances'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('assessment_questions'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('assessments'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('institutions'),
-    action_detail: z.null().optional(),
-  }),
-  z.object({
-    table_name: z.literal('enrollments'),
-    action_detail: z
-      .enum([
-        'implicit_joined',
-        'explicit_joined',
-        'invited',
-        'invitation_accepted',
-        'invitation_rejected',
-      ])
-      .optional()
-      .nullable(),
-  }),
-]);
-
-type SupportedTableActionCombination = z.infer<typeof supportedTableActionCombinations>;
-
+type SupportedTableActionCombination =
+  | {
+      table_name: 'course_instances';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'pl_courses';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'users';
+      action_detail?: 'TEST_VALUE' | null;
+    }
+  | {
+      table_name: 'groups';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessment_instances';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessment_questions';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessments';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'institutions';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'enrollments';
+      action_detail?:
+        | 'implicit_joined'
+        | 'explicit_joined'
+        | 'invited'
+        | 'invitation_accepted'
+        | 'invitation_rejected'
+        | null;
+    };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
   Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
 >;

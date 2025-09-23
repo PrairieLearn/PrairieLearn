@@ -25,7 +25,7 @@ WHERE
 RETURNING
   *;
 
--- BLOCK select_enrollment_for_user_in_course_instance_by_pending_uid
+-- BLOCK select_enrollment_in_course_instance_by_pending_uid
 SELECT
   *
 FROM
@@ -34,7 +34,7 @@ WHERE
   pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id;
 
--- BLOCK select_enrollment_for_user_in_course_instance
+-- BLOCK select_enrollment_in_course_instance_by_user_id
 SELECT
   *
 FROM

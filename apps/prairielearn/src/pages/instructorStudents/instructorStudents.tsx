@@ -11,6 +11,7 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
@@ -53,10 +54,11 @@ router.get(
     if (typeof uid !== 'string') {
       throw new HttpStatusError(400, 'UID must be a string');
     }
-    const staffEnrollment = await selectEnrollmentByUid({
+    const enrollment = await selectEnrollmentByUid({
       course_instance_id: courseInstance.id,
       uid,
     });
+    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
     res.json(staffEnrollment);
   }),
 );
@@ -92,7 +94,8 @@ router.post(
           agent_user_id: pageContext.authz_data.user.user_id,
           agent_authn_user_id: pageContext.authn_user.user_id,
         });
-        res.json({ ok: true, data: enrollment });
+        const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+        res.json({ ok: true, data: staffEnrollment });
         return;
       }
 
@@ -122,7 +125,8 @@ router.post(
         agent_authn_user_id: pageContext.authn_user.user_id,
       });
 
-      res.json({ ok: true, data: enrollment });
+      const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+      res.json({ ok: true, data: staffEnrollment });
     } catch (err) {
       res.status(400).json({ error: err.message });
     }

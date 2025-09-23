@@ -10,7 +10,6 @@ import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
-import { type StaffEnrollment, StaffEnrollmentSchema } from '../lib/client/safe-db-types.js';
 import {
   type Course,
   type CourseInstance,
@@ -63,10 +62,10 @@ export async function ensureEnrollment({
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
   action_detail: SupportedActionsForTable<'enrollments'>;
-}): Promise<StaffEnrollment | null> {
+}): Promise<Enrollment | null> {
   const result = await runInTransactionAsync(async () => {
     const user = await selectUserById(user_id);
-    const enrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
+    const enrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
     });
@@ -108,10 +107,7 @@ export async function ensureEnrollment({
     }
     return inserted;
   });
-  if (result) {
-    return StaffEnrollmentSchema.parse(result);
-  }
-  return null;
+  return result;
 }
 
 /**
@@ -176,23 +172,23 @@ export async function ensureCheckedEnrollment({
   });
 }
 
-export async function getEnrollmentForUserInCourseInstance({
+export async function selectOptionalCourseInstanceEnrollmentByUserId({
   user_id,
   course_instance_id,
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
-    sql.select_enrollment_for_user_in_course_instance,
+    sql.select_enrollment_in_course_instance_by_user_id,
     { user_id, course_instance_id },
     EnrollmentSchema,
   );
 }
 
-export async function getEnrollmentForUserInCourseInstanceByPendingUid({
+export async function selectOptionalCourseInstanceEnrollmentByPendingUid({
   pending_uid,
   course_instance_id,
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
-    sql.select_enrollment_for_user_in_course_instance_by_pending_uid,
+    sql.select_enrollment_in_course_instance_by_pending_uid,
     { pending_uid, course_instance_id },
     EnrollmentSchema,
   );
@@ -235,7 +231,7 @@ export async function selectEnrollmentByUid({
   return await queryOptionalRow(
     sql.select_enrollment_by_uid,
     { course_instance_id, uid },
-    StaffEnrollmentSchema,
+    EnrollmentSchema,
   );
 }
 
@@ -251,9 +247,13 @@ export async function inviteStudentByUid({
   existing_enrollment_id: string | null;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
-}): Promise<StaffEnrollment> {
+}): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const enrollment = await queryRow(
+    const existingEnrollment = existing_enrollment_id
+      ? await selectEnrollmentById({ id: existing_enrollment_id })
+      : null;
+
+    const newEnrollment = await queryRow(
       sql.upsert_enrollment_invitation_by_uid,
       {
         course_instance_id,
@@ -261,21 +261,23 @@ export async function inviteStudentByUid({
       },
       EnrollmentSchema,
     );
-    let old_row: Enrollment | null = null;
-    if (existing_enrollment_id) {
-      old_row = await selectEnrollmentById({ id: existing_enrollment_id });
+
+    // If we have an existing enrollment and it's invited, we can just return the new enrollment.
+    if (existingEnrollment && existingEnrollment.status === 'invited') {
+      return newEnrollment;
     }
+
     await insertAuditEvent({
       table_name: 'enrollments',
       action: existing_enrollment_id ? 'update' : 'insert',
       action_detail: 'invited',
-      row_id: enrollment.id,
+      row_id: newEnrollment.id,
       subject_user_id: null,
-      new_row: enrollment,
-      old_row,
+      new_row: newEnrollment,
+      old_row: existingEnrollment,
       agent_user_id,
       agent_authn_user_id,
     });
-    return StaffEnrollmentSchema.parse(enrollment);
+    return newEnrollment;
   });
 }

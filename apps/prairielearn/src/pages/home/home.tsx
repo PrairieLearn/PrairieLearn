@@ -15,7 +15,7 @@ import { isEnterprise } from '../../lib/license.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import {
   ensureEnrollment,
-  getEnrollmentForUserInCourseInstanceByPendingUid,
+  selectOptionalCourseInstanceEnrollmentByPendingUid,
 } from '../../models/enrollment.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
@@ -135,19 +135,23 @@ router.post(
         action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      const oldEnrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
+      const oldEnrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
         course_instance_id: body.course_instance_id,
         pending_uid: uid,
       });
 
+      if (!oldEnrollment) {
+        throw new Error('Could not find enrollment to reject');
+      }
+
       const newEnrollment = await queryRow(
         sql.reject_invitation,
         {
-          course_instance_id: body.course_instance_id,
-          uid,
+          enrollment_id: oldEnrollment.id,
         },
         EnrollmentSchema,
       );
+
       await insertAuditEvent({
         table_name: 'enrollments',
         action: 'update',

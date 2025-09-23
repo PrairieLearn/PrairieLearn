@@ -239,8 +239,7 @@ UPDATE enrollments
 SET
   status = 'rejected'
 WHERE
-  course_instance_id = $course_instance_id
-  AND pending_uid = $uid
+  id = $enrollment_id
   AND status = 'invited'
 RETURNING
   *;
