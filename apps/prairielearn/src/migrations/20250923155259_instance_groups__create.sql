@@ -1,7 +1,7 @@
 CREATE TABLE instance_groups (
   id BIGSERIAL PRIMARY KEY,
   -- This also creates an index to lookup instance_groups for a course instance.
-  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE,
+  course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE CASCADE,
   name TEXT NOT NULL,
   deleted_at TIMESTAMP WITH TIME ZONE
 );

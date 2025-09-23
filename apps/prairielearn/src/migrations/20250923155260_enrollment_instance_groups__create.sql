@@ -1,8 +1,8 @@
 -- This table is used to track which instance groups an enrollment (enrolled user) is a member of.
 CREATE TABLE enrollment_instance_groups (
   id BIGSERIAL PRIMARY KEY,
-  enrollment_id BIGINT NOT NULL REFERENCES enrollments (id) ON DELETE CASCADE,
-  instance_group_id BIGINT NOT NULL REFERENCES instance_groups (id) ON DELETE CASCADE,
+  enrollment_id BIGINT NOT NULL REFERENCES enrollments (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  instance_group_id BIGINT NOT NULL REFERENCES instance_groups (id) ON UPDATE CASCADE ON DELETE CASCADE,
   -- Entries in this table are hard-deleted.
   UNIQUE (enrollment_id, instance_group_id)
 );

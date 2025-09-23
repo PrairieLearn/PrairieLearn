@@ -69,11 +69,12 @@ describe('database', { timeout: 20_000 }, function () {
 
     for (const table of softDeleteTables) {
       for (const constraint of data.tables[table].foreignKeyConstraints) {
-        const match = constraint.def.match(
-          /^FOREIGN KEY \((.*)\) REFERENCES (.*)\(.*\) ON UPDATE .* ON DELETE (.*)$/,
-        );
+        const pattern = /^FOREIGN KEY \((.*)\) REFERENCES (.*)\(.*\) ON UPDATE .* ON DELETE (.*)$/;
+        const match = constraint.def.match(pattern);
         if (!match) {
-          throw new Error(`Failed to match foreign key for ${table}: ${constraint.def}`);
+          throw new Error(
+            `Failed to match foreign key for ${table}: ${constraint.def} -- it should match ${pattern}`,
+          );
         }
         const [, keyName, otherTable, deleteAction] = match;
 

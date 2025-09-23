@@ -9,7 +9,7 @@ indexes
     instance_groups_course_instance_id_name_unique: UNIQUE USING btree (course_instance_id, name) WHERE deleted_at IS NULL
 
 foreign-key constraints
-    instance_groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON DELETE CASCADE
+    instance_groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    enrollment_instance_groups: FOREIGN KEY (instance_group_id) REFERENCES instance_groups(id) ON DELETE CASCADE
+    enrollment_instance_groups: FOREIGN KEY (instance_group_id) REFERENCES instance_groups(id) ON UPDATE CASCADE ON DELETE CASCADE

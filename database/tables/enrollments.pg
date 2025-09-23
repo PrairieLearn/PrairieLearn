@@ -34,4 +34,4 @@ foreign-key constraints
     enrollments_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    enrollment_instance_groups: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE
+    enrollment_instance_groups: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE

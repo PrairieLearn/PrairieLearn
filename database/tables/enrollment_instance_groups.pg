@@ -9,5 +9,5 @@ indexes
     enrollment_instance_groups_instance_group_id_key: USING btree (instance_group_id)
 
 foreign-key constraints
-    enrollment_instance_groups_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE
-    enrollment_instance_groups_instance_group_id_fkey: FOREIGN KEY (instance_group_id) REFERENCES instance_groups(id) ON DELETE CASCADE
+    enrollment_instance_groups_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    enrollment_instance_groups_instance_group_id_fkey: FOREIGN KEY (instance_group_id) REFERENCES instance_groups(id) ON UPDATE CASCADE ON DELETE CASCADE
