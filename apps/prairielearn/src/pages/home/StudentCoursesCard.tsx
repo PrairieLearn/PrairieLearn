@@ -8,6 +8,8 @@ import {
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 
+import { EnrollmentCodeModal } from './EnrollmentCodeModal.js';
+
 export const StudentHomePageCourseSchema = z.object({
   id: RawStudentCourseInstanceSchema.shape.id,
   course_short_name: RawStudentCourseSchema.shape.short_name,
@@ -24,6 +26,7 @@ interface StudentCoursesCardProps {
   csrfToken: string;
   urlPrefix: string;
   isDevMode: boolean;
+  enrollmentManagementEnabled: boolean;
 }
 
 export function StudentCoursesCard({
@@ -33,9 +36,11 @@ export function StudentCoursesCard({
   csrfToken,
   urlPrefix,
   isDevMode,
+  enrollmentManagementEnabled,
 }: StudentCoursesCardProps) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
+  const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
 
   const invited: StudentHomePageCourse[] = studentCourses.filter(
     (ci) => ci.enrollment.status === 'invited',
@@ -44,16 +49,28 @@ export function StudentCoursesCard({
     (ci) => ci.enrollment.status === 'joined',
   );
 
+  const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useState(false);
+
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
-        {canAddCourses && (
-          <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
-            <i class="fa fa-edit" aria-hidden="true" />
-            <span class="d-none d-sm-inline">Add or remove courses</span>
-          </a>
-        )}
+        {canAddCourses &&
+          (enrollmentManagementEnabled ? (
+            <button
+              type="button"
+              class="btn btn-light btn-sm ms-auto"
+              onClick={() => setShowEnrollmentCodeModal(true)}
+            >
+              <i class="fa fa-edit" aria-hidden="true" />
+              <span class="d-none d-sm-inline">Add course</span>
+            </button>
+          ) : (
+            <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
+              <i class="fa fa-edit" aria-hidden="true" />
+              <span class="d-none d-sm-inline">Add course</span>
+            </a>
+          ))}
       </div>
 
       {studentCourses.length === 0 ? (
@@ -117,11 +134,20 @@ export function StudentCoursesCard({
               ))}
               {joined.map((courseInstance) => (
                 <tr key={courseInstance.id}>
-                  <td>
-                    <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
-                      {courseInstance.course_short_name}: {courseInstance.course_title},
-                      {courseInstance.long_name}
-                    </a>
+                  <td class="align-middle">
+                    <div class="d-flex align-items-center justify-content-between gap-2">
+                      <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
+                        {courseInstance.course_short_name}: {courseInstance.course_title},
+                        {courseInstance.long_name}
+                      </a>
+                      <button
+                        type="button"
+                        class="btn btn-danger btn-sm"
+                        onClick={() => setRemovingCourseId(courseInstance.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -129,6 +155,11 @@ export function StudentCoursesCard({
           </table>
         </div>
       )}
+
+      <EnrollmentCodeModal
+        show={showEnrollmentCodeModal}
+        onHide={() => setShowEnrollmentCodeModal(false)}
+      />
 
       <Modal
         show={rejectingCourseId !== null}

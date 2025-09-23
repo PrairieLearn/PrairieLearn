@@ -510,6 +510,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
   app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
+  app.use('/lookup_code', (await import('./pages/lookupCode/lookupCode.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.

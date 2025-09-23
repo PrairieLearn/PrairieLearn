@@ -10,6 +10,7 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
@@ -68,6 +69,10 @@ router.get(
       withAuthzData: false,
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.authn_institution.id,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -88,6 +93,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
         postContent:
@@ -111,7 +117,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
@@ -130,6 +136,12 @@ router.post(
       await execute(sql.reject_invitation, {
         course_instance_id: body.course_instance_id,
         uid,
+      });
+    } else if (body.__action === 'unenroll') {
+      await execute(sql.unenroll, {
+        course_instance_id: body.course_instance_id,
+        user_id,
+        req_date: res.locals.req_date,
       });
     }
 

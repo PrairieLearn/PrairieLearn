@@ -254,3 +254,18 @@ WHERE
   course_instance_id = $course_instance_id
   AND pending_uid = $uid
   AND status = 'invited';
+
+-- BLOCK unenroll
+DELETE FROM enrollments AS e USING users AS u
+WHERE
+  u.user_id = $user_id
+  AND e.user_id = $user_id
+  AND e.course_instance_id = $course_instance_id
+  AND check_course_instance_access (
+    $course_instance_id,
+    u.uid,
+    u.institution_id,
+    $req_date
+  )
+RETURNING
+  e.id;
