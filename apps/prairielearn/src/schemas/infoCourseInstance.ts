@@ -44,7 +44,10 @@ const AccessControlJsonSchema = z.object({
     .optional()
     .default(false),
   publishedStartDate: z.string().describe('When the course instance is published.').optional(),
-  publishedEndDate: z.string().describe('When the course instance is archived.').optional(),
+  publishedEndDate: z
+    .string()
+    .describe('When the course instance is archived. Required if published is true.')
+    .optional(),
   // The schema currently doesn't include overrides, but we may add them later.
 });
 

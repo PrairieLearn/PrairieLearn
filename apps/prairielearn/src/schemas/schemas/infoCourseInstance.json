@@ -72,7 +72,6 @@
     },
     "accessControl": {
       "type": "object",
-      "required": ["publishedEndDate"],
       "properties": {
         "published": {
           "description": "If false, enrolled students will not be able to access the course instance, and unenrolled students will not be able to enroll.",
@@ -89,7 +88,7 @@
           "type": "string"
         },
         "publishedEndDate": {
-          "description": "When the course instance is archived.",
+          "description": "When the course instance is archived. Required if published is true.",
           "type": "string"
         }
       }

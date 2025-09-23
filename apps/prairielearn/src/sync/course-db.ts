@@ -1408,27 +1408,41 @@ function validateCourseInstance({
     errors.push('Cannot use both "allowAccess" and "accessControl" in the same course instance.');
   } else if (usingModernAccessControl) {
     assert(courseInstance.accessControl != null);
-    if (
-      courseInstance.accessControl.publishedEndDate != null &&
-      parseJsonDate(courseInstance.accessControl.publishedEndDate) == null
-    ) {
+    const hasPublishedEndDate = courseInstance.accessControl.publishedEndDate != null;
+    const hasPublishedStartDate = courseInstance.accessControl.publishedStartDate != null;
+    const parsedPublishedStartDate =
+      courseInstance.accessControl.publishedStartDate == null
+        ? null
+        : parseJsonDate(courseInstance.accessControl.publishedStartDate);
+    const parsedPublishedEndDate =
+      courseInstance.accessControl.publishedEndDate == null
+        ? null
+        : parseJsonDate(courseInstance.accessControl.publishedEndDate);
+
+    if (hasPublishedEndDate && parsedPublishedEndDate == null) {
       errors.push('"accessControl.publishedEndDate" is not a valid date.');
     }
 
-    if (
-      courseInstance.accessControl.published &&
-      courseInstance.accessControl.publishedEndDate == null
-    ) {
+    if (courseInstance.accessControl.published && !hasPublishedEndDate) {
       errors.push(
         '"accessControl.publishedEndDate" is required if "accessControl.published" is true.',
       );
     }
 
-    if (
-      courseInstance.accessControl.publishedStartDate != null &&
-      parseJsonDate(courseInstance.accessControl.publishedStartDate) == null
-    ) {
+    if (hasPublishedStartDate && parsedPublishedStartDate == null) {
       errors.push('"accessControl.publishedStartDate" is not a valid date.');
+    }
+
+    if (
+      hasPublishedStartDate &&
+      hasPublishedEndDate &&
+      parsedPublishedStartDate != null &&
+      parsedPublishedEndDate != null &&
+      isAfter(parsedPublishedStartDate, parsedPublishedEndDate)
+    ) {
+      errors.push(
+        '"accessControl.publishedStartDate" must be before "accessControl.publishedEndDate".',
+      );
     }
   }
 
