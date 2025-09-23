@@ -1,0 +1,13 @@
+columns
+    enrollment_id: bigint not null
+    id: bigint not null default nextval('enrollment_instance_groups_id_seq'::regclass)
+    instance_group_id: bigint not null
+
+indexes
+    enrollment_instance_groups_pkey: PRIMARY KEY (id) USING btree (id)
+    enrollment_instance_groups_enrollment_id_instance_group_id_key: UNIQUE (enrollment_id, instance_group_id) USING btree (enrollment_id, instance_group_id)
+    enrollment_instance_groups_instance_group_id_key: USING btree (instance_group_id)
+
+foreign-key constraints
+    enrollment_instance_groups_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON DELETE CASCADE
+    enrollment_instance_groups_instance_group_id_fkey: FOREIGN KEY (instance_group_id) REFERENCES instance_groups(id) ON DELETE CASCADE
