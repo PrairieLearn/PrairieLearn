@@ -1,6 +1,6 @@
 columns
     course_instance_id: bigint not null
-    deleted_at: timestamp without time zone
+    deleted_at: timestamp with time zone
     id: bigint not null default nextval('instance_groups_id_seq'::regclass)
     name: text not null
 
