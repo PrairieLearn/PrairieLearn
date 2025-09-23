@@ -177,14 +177,7 @@ export function AuthzAccessMismatch({
    */
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
-  authzData:
-    | PageContextWithAuthzData['authz_data']
-    | {
-        is_administrator: boolean;
-        is_authn_administrator: boolean;
-        has_course_permission_preview: undefined;
-        has_course_instance_permission_view: undefined;
-      };
+  authzData: PageContextWithAuthzData['authz_data'];
   authnUser: StaffUser;
   authzUser: StaffUser | null;
 }) {
