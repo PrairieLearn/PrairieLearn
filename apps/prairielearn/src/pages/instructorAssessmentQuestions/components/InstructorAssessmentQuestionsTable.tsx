@@ -18,7 +18,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
-import { ExamResetWarningModal } from './ExamResetWarningModal.js';
+import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -70,15 +70,10 @@ export function InstructorAssessmentQuestionsTable({
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
-  const [showExamWarningModal, setShowExamWarningModal] = useState(false);
 
-  const handleResetButtonClick = (questionId: string) => {
-    if (assessmentType === 'Exam') {
-      setShowExamWarningModal(true);
-    } else {
-      setResetAssessmentQuestionId(questionId);
-      setShowResetModal(true);
-    }
+  const handleResetButtonClick = (assessmentQuestionId: string) => {
+    setResetAssessmentQuestionId(assessmentQuestionId);
+    setShowResetModal(true);
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -265,16 +260,16 @@ export function InstructorAssessmentQuestionsTable({
           </table>
         </div>
       </div>
-      <ResetQuestionVariantsModal
-        csrfToken={csrfToken}
-        assessmentQuestionId={resetAssessmentQuestionId}
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-      />
-      <ExamResetWarningModal
-        show={showExamWarningModal}
-        onHide={() => setShowExamWarningModal(false)}
-      />
+      {assessmentType === 'Homework' ? (
+        <ResetQuestionVariantsModal
+          csrfToken={csrfToken}
+          assessmentQuestionId={resetAssessmentQuestionId}
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+        />
+      ) : (
+        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+      )}
     </>
   );
 }

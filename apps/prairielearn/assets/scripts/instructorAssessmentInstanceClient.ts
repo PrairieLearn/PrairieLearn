@@ -5,14 +5,14 @@ onDocumentReady(() => {
     const button = (e as any).relatedTarget as HTMLElement;
     const modal = e.target as HTMLElement;
 
+    if (modal.querySelector('.js-instance-question-id') === null) {
+      // The version of this modal shown for Exam assessments doesn't have this element.
+      // Skip templating to avoid an error being logged.
+      return;
+    }
+
     templateFromAttributes(button, modal, {
       'data-instance-question-id': '.js-instance-question-id',
     });
-  });
-
-  // The exam warning modal doesn't need to populate instance question ID since it doesn't perform any action
-  // We add an event listener for consistency and potential future functionality
-  document.getElementById('examResetWarningModal')?.addEventListener('show.bs.modal', () => {
-    // No additional setup needed for the warning modal
   });
 });
