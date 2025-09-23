@@ -43,7 +43,7 @@ describe('audit-event', () => {
       expect(auditEvent).toMatchInlineSnapshot(`
         {
           "action": "insert",
-          "action_detail": "User created",
+          "action_detail": null,
           "agent_authn_user_id": "1",
           "agent_user_id": "1",
           "assessment_id": null,

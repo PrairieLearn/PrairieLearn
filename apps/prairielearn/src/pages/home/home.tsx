@@ -13,7 +13,10 @@ import { config } from '../../lib/config.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
-import { ensureEnrollment, getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
+import {
+  ensureEnrollment,
+  getEnrollmentForUserInCourseInstanceByPendingUid,
+} from '../../models/enrollment.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -132,9 +135,9 @@ router.post(
         action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      const oldEnrollment = await getEnrollmentForUserInCourseInstance({
+      const oldEnrollment = await getEnrollmentForUserInCourseInstanceByPendingUid({
         course_instance_id: body.course_instance_id,
-        user_id,
+        pending_uid: uid,
       });
 
       const newEnrollment = await queryRow(
@@ -149,6 +152,8 @@ router.post(
         table_name: 'enrollments',
         action: 'update',
         action_detail: 'invitation_rejected',
+        subject_user_id: null,
+        course_instance_id: body.course_instance_id,
         row_id: newEnrollment.id,
         old_row: oldEnrollment,
         new_row: newEnrollment,
