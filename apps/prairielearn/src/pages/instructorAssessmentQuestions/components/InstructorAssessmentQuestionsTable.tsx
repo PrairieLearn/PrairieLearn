@@ -18,6 +18,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
+import { ExamResetWarningModal } from './ExamResetWarningModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -69,10 +70,15 @@ export function InstructorAssessmentQuestionsTable({
 }) {
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [showExamWarningModal, setShowExamWarningModal] = useState(false);
 
   const handleResetButtonClick = (questionId: string) => {
-    setResetAssessmentQuestionId(questionId);
-    setShowResetModal(true);
+    if (assessmentType === 'Exam') {
+      setShowExamWarningModal(true);
+    } else {
+      setResetAssessmentQuestionId(questionId);
+      setShowResetModal(true);
+    }
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -264,6 +270,10 @@ export function InstructorAssessmentQuestionsTable({
         assessmentQuestionId={resetAssessmentQuestionId}
         show={showResetModal}
         onHide={() => setShowResetModal(false)}
+      />
+      <ExamResetWarningModal
+        show={showExamWarningModal}
+        onHide={() => setShowExamWarningModal(false)}
       />
     </>
   );

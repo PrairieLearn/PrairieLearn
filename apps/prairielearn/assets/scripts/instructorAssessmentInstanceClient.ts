@@ -9,4 +9,10 @@ onDocumentReady(() => {
       'data-instance-question-id': '.js-instance-question-id',
     });
   });
+
+  // The exam warning modal doesn't need to populate instance question ID since it doesn't perform any action
+  // We add an event listener for consistency and potential future functionality
+  document.getElementById('examResetWarningModal')?.addEventListener('show.bs.modal', () => {
+    // No additional setup needed for the warning modal
+  });
 });

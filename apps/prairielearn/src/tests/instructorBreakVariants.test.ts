@@ -116,7 +116,7 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  test.sequential('instructor breaks first variant via assessment question page', async () => {
+  test.sequential('instructor cannot break variants on Exam assessment via questions page', async () => {
     const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`;
 
     const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
@@ -130,10 +130,17 @@ describe('Instructor force-breaking variants', () => {
         unsafe_assessment_question_id: partialCredit1AssessmentQuestionId,
       }),
     });
-    assert.equal(breakVariantsResponse.status, 200);
+    
+    // Since this is an Exam assessment, the request should fail with a 400 error
+    assert.equal(breakVariantsResponse.status, 400);
+    
+    // Check that the error message is present in the response body
+    const responseText = await breakVariantsResponse.text();
+    assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
+    assert.include(responseText, 'instance questions to become unopenable');
   });
 
-  test.sequential('instructor breaks second variant via student instance page', async () => {
+  test.sequential('instructor cannot break variants on Exam assessment via instance page', async () => {
     const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
     const instanceQuestion = await queryRow(
@@ -153,10 +160,17 @@ describe('Instructor force-breaking variants', () => {
         unsafe_instance_question_id: instanceQuestion,
       }),
     });
-    assert.equal(breakVariantsResponse.status, 200);
+    
+    // Since this is an Exam assessment, the request should fail with a 400 error
+    assert.equal(breakVariantsResponse.status, 400);
+    
+    // Check that the error message is present in the response body
+    const responseText = await breakVariantsResponse.text();
+    assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
+    assert.include(responseText, 'instance questions to become unopenable');
   });
 
-  test.sequential('student sees new variant when revisiting first question', async () => {
+  test.sequential('student sees same variant when revisiting first question (reset was blocked)', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -167,11 +181,12 @@ describe('Instructor force-breaking variants', () => {
 
       const variantId = questionResponse.$('input[name=__variant_id]').val();
       assert.isDefined(variantId);
-      assert.notEqual(variantId.toString(), partialCredit1VariantId);
+      // Since reset was blocked for Exam assessments, variant should remain the same
+      assert.equal(variantId.toString(), partialCredit1VariantId);
     });
   });
 
-  test.sequential('student sees new variant when revisiting second question', async () => {
+  test.sequential('student sees same variant when revisiting second question (reset was blocked)', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -182,7 +197,8 @@ describe('Instructor force-breaking variants', () => {
 
       const variantId = questionResponse.$('input[name=__variant_id]').val();
       assert.isDefined(variantId);
-      assert.notEqual(variantId.toString(), partialCredit2VariantId);
+      // Since reset was blocked for Exam assessments, variant should remain the same
+      assert.equal(variantId.toString(), partialCredit2VariantId);
     });
   });
 });

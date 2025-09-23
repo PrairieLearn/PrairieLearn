@@ -114,6 +114,7 @@ export function InstructorAssessmentInstance({
         csrfToken: resLocals.__csrf_token,
         groupWork: resLocals.assessment.group_work,
       })}
+      ${ExamResetWarningModal()}
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
           authzData={resLocals.authz_data}
@@ -463,7 +464,9 @@ export function InstructorAssessmentInstance({
                                 <button
                                   class="dropdown-item"
                                   data-bs-toggle="modal"
-                                  data-bs-target="#resetQuestionVariantsModal"
+                                  data-bs-target="${resLocals.assessment.type === 'Exam' 
+                                    ? '#examResetWarningModal'
+                                    : '#resetQuestionVariantsModal'}"
                                   data-instance-question-id="${instance_question.id}"
                                 >
                                   Reset question variants
@@ -823,6 +826,42 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
+}
+
+function ExamResetWarningModal() {
+  return Modal({
+    id: 'examResetWarningModal',
+    title: 'Reset Question Variants Not Supported',
+    body: html`
+      <div class="alert alert-warning" role="alert">
+        <strong>This feature is not currently supported for Exam assessments.</strong>
+      </div>
+      <p>Resetting question variants on Exam assessments can cause problems:</p>
+      <ul>
+        <li>
+          <strong>Instance questions may become unopenable:</strong> If students have already
+          exhausted all their attempts, they may encounter "instance question is not open"
+          errors when trying to view the question.
+        </li>
+        <li>
+          <strong>Inconsistent attempt counts:</strong> Students may face new variants but with
+          fewer attempts than expected, since attempt counts are tied to instance questions
+          rather than individual variants.
+        </li>
+        <li>
+          <strong>Confusing score history:</strong> The relationship between scores and attempt
+          history may become unclear to both students and instructors.
+        </li>
+      </ul>
+      <p>
+        If you need to address issues with question variants in an Exam assessment, please
+        consider alternative approaches or contact support for guidance.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Understood</button>
     `,
   });
 }
