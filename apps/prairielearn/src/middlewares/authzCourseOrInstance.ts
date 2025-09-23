@@ -11,6 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import { config } from '../lib/config.js';
 import { clearCookie } from '../lib/cookie.js';
+import { evaluateCourseInstanceAccess } from '../lib/course-instance-access.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
@@ -116,6 +117,65 @@ export interface ResLocalsCourseInstance extends ResLocalsCourse {
   user: ResLocalsCourseInstanceAuthz['user'];
 }
 
+/**
+ * Checks if the user has access to the course or course instance.
+ *
+ * Returns either the authz data or the reason why the user does not have access.
+ */
+async function checkCourseOrInstanceAccess(params: {
+  user_id: string;
+  course_id: string | null;
+  course_instance_id: string | null;
+  is_administrator: boolean;
+  allow_example_course_override: boolean;
+  ip: string | undefined;
+  req_date: Date;
+  req_mode: string | null;
+  req_course_role: string | null;
+  req_course_instance_role: string | null;
+}): Promise<
+  | {
+      hasAccess: false;
+      reason: string;
+    }
+  | {
+      hasAccess: true;
+      authzData: SelectAuthzData;
+    }
+> {
+  const authzData = await sqldb.queryOptionalRow(
+    sql.select_authz_data,
+    params,
+    SelectAuthzDataSchema,
+  );
+
+  if (authzData === null) {
+    return {
+      hasAccess: false,
+      reason: 'Access denied',
+    };
+  }
+
+  if (authzData.course_instance != null) {
+    const result = evaluateCourseInstanceAccess(authzData.course_instance, {
+      course_role: authzData.permissions_course.course_role,
+      course_instance_role: authzData.permissions_course_instance.course_instance_role,
+      mode_reason: authzData.mode_reason,
+      mode: authzData.mode,
+    });
+    if (!result.hasAccess) {
+      return {
+        hasAccess: false,
+        reason: result.reason,
+      };
+    }
+  }
+  return {
+    hasAccess: true,
+    authzData,
+  };
+}
+
 export async function authzCourseOrInstance(req: Request, res: Response) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
 
@@ -144,14 +204,12 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     );
   }
 
-  const authzData = await sqldb.queryOptionalRow(
-    sql.select_authz_data,
-    params,
-    SelectAuthzDataSchema,
-  );
-  if (authzData === null) {
-    throw new HttpStatusError(403, 'Access denied');
+  const accessResult = await checkCourseOrInstanceAccess(params);
+  if (!accessResult.hasAccess) {
+    throw new HttpStatusError(403, accessResult.reason);
   }
+
+  const authzData = accessResult.authzData;
 
   debug('authn user is authorized');
 
