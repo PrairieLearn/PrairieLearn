@@ -293,6 +293,7 @@ describe('audit-event', () => {
 
       const enrollmentsAuditEvent = await insertAuditEvent({
         action: 'insert',
+        action_detail: 'implicit_joined',
         table_name: 'enrollments',
         row_id: '1',
         agent_authn_user_id: '1',
