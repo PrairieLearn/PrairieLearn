@@ -20,7 +20,7 @@ SET
   pending_uid = NULL,
   first_joined_at = now()
 WHERE
-  enrollment_id = $enrollment_id
+  id = $enrollment_id
   AND status = 'invited'
 RETURNING
   *;
