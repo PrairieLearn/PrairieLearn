@@ -560,6 +560,10 @@ export const CourseSchema = z.object({
 export type Course = z.infer<typeof CourseSchema>;
 
 export const CourseInstanceSchema = z.object({
+  access_control_published: z.boolean().nullable(),
+  access_control_published_end_date: DateFromISOString.nullable(),
+  access_control_published_start_date: DateFromISOString.nullable(),
+  access_control_published_start_date_enabled: z.boolean().nullable(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),

@@ -70,6 +70,30 @@
       "properties": {},
       "deprecated": true
     },
+    "accessControl": {
+      "type": "object",
+      "required": ["publishedEndDate"],
+      "properties": {
+        "published": {
+          "description": "If false, enrolled students will not be able to access the course instance, and unenrolled students will not be able to enroll.",
+          "type": "boolean",
+          "default": true
+        },
+        "publishedStartDateEnabled": {
+          "description": "If true, publishedStartDate is used to control access to the course instance.",
+          "type": "boolean",
+          "default": false
+        },
+        "publishedStartDate": {
+          "description": "When the course instance is published.",
+          "type": "string"
+        },
+        "publishedEndDate": {
+          "description": "When the course instance is archived.",
+          "type": "string"
+        }
+      }
+    },
     "allowAccess": {
       "description": "List of access rules for the course instance. Access is permitted if any access rule is satisfied.",
       "type": "array",

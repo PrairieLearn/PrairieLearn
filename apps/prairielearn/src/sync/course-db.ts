@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -1079,6 +1080,10 @@ function validateAssessment({
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
+
+  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `accessControl`.
+  // So further validation will never be done here.
+
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1394,6 +1399,28 @@ function validateCourseInstance({
 
   if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
+  }
+
+  const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
+  const usingModernAccessControl = courseInstance.accessControl != null;
+
+  if (usingLegacyAllowAccess && usingModernAccessControl) {
+    errors.push('Cannot use both "allowAccess" and "accessControl" in the same course instance.');
+  } else if (usingModernAccessControl) {
+    assert(courseInstance.accessControl != null);
+    warnings.push('"accessControl" is not configurable yet.');
+    if (
+      courseInstance.accessControl.publishedEndDate != null &&
+      parseJsonDate(courseInstance.accessControl.publishedEndDate) == null
+    ) {
+      errors.push('"accessControl.publishedEndDate" is not a valid date.');
+    }
+    if (
+      courseInstance.accessControl.publishedStartDate != null &&
+      parseJsonDate(courseInstance.accessControl.publishedStartDate) == null
+    ) {
+      errors.push('"accessControl.publishedStartDate" is not a valid date.');
+    }
   }
 
   let accessibleInFuture = false;

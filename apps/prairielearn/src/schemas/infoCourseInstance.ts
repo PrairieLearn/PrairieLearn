@@ -24,11 +24,29 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessControlJsonSchema = z
+const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
+
+const AccessControlJsonSchema = z.object({
+  published: z
+    .boolean()
+    .describe(
+      'If false, enrolled students will not be able to access the course instance, and unenrolled students will not be able to enroll.',
+    )
+    .optional()
+    .default(true),
+  publishedStartDateEnabled: z
+    .boolean()
+    .describe('If true, publishedStartDate is used to control access to the course instance.')
+    .optional()
+    .default(false),
+  publishedStartDate: z.string().describe('When the course instance is published.').optional(),
+  publishedEndDate: z.string().describe('When the course instance is archived.').optional(),
+  // The schema currently doesn't include overrides, but we may add them later.
+});
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -86,7 +104,8 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional().default([]),
+    accessControl: AccessControlJsonSchema.optional(),
+    allowAccess: AllowAccessJsonSchema.optional().default([]),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

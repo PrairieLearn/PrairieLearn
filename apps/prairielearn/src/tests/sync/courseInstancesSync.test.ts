@@ -133,6 +133,174 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.institution, 'Any');
   });
 
+  it('syncs access control published field', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      published: false,
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.equal(syncedCourseInstance.access_control_published, false);
+
+    // Test updating the published field
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      published: true,
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const updatedSyncedCourseInstance = await findSyncedUndeletedCourseInstance(
+      util.COURSE_INSTANCE_ID,
+    );
+    assert.equal(updatedSyncedCourseInstance.access_control_published, true);
+  });
+
+  it('syncs access control published start date enabled field', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedStartDateEnabled: true,
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.equal(syncedCourseInstance.access_control_published_start_date_enabled, true);
+
+    // Test updating the field
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedStartDateEnabled: false,
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const updatedSyncedCourseInstance = await findSyncedUndeletedCourseInstance(
+      util.COURSE_INSTANCE_ID,
+    );
+    assert.equal(updatedSyncedCourseInstance.access_control_published_start_date_enabled, false);
+  });
+
+  it('syncs access control published start date field', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedStartDate: '2024-01-15T09:00:00',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.equal(
+      syncedCourseInstance.access_control_published_start_date?.getTime(),
+      new Date('2024-01-15T15:00:00.000Z').getTime(), // UTC conversion
+    );
+
+    // Test updating the date
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedStartDate: '2024-02-20T14:30:00',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const updatedSyncedCourseInstance = await findSyncedUndeletedCourseInstance(
+      util.COURSE_INSTANCE_ID,
+    );
+    assert.equal(
+      updatedSyncedCourseInstance.access_control_published_start_date?.getTime(),
+      new Date('2024-02-20T20:30:00.000Z').getTime(), // UTC conversion
+    );
+  });
+
+  it('syncs access control published end date field', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedEndDate: '2024-12-31T23:59:59',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+    assert.equal(
+      syncedCourseInstance.access_control_published_end_date?.getTime(),
+      new Date('2025-01-01T05:59:59.000Z').getTime(), // UTC conversion
+    );
+
+    // Test updating the date
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedEndDate: '2024-06-15T18:00:00',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const updatedSyncedCourseInstance = await findSyncedUndeletedCourseInstance(
+      util.COURSE_INSTANCE_ID,
+    );
+    assert.equal(
+      updatedSyncedCourseInstance.access_control_published_end_date?.getTime(),
+      new Date('2024-06-16T00:00:00.000Z').getTime(), // UTC conversion
+    );
+  });
+
+  it('syncs all access control fields together', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      published: false,
+      publishedStartDateEnabled: true,
+      publishedStartDate: '2024-01-15T09:00:00',
+      publishedEndDate: '2024-12-31T23:59:59',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+
+    assert.equal(syncedCourseInstance.access_control_published, false);
+    assert.equal(syncedCourseInstance.access_control_published_start_date_enabled, true);
+    assert.equal(
+      syncedCourseInstance.access_control_published_start_date?.getTime(),
+      new Date('2024-01-15T15:00:00.000Z').getTime(),
+    );
+    assert.equal(
+      syncedCourseInstance.access_control_published_end_date?.getTime(),
+      new Date('2025-01-01T05:59:59.000Z').getTime(),
+    );
+  });
+
+  it('handles null/undefined access control fields', async () => {
+    const courseData = util.getCourseData();
+    // Test with no accessControl object
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+
+    assert.isNull(syncedCourseInstance.access_control_published);
+    assert.isNull(syncedCourseInstance.access_control_published_start_date_enabled);
+    assert.isNull(syncedCourseInstance.access_control_published_start_date);
+    assert.isNull(syncedCourseInstance.access_control_published_end_date);
+
+    // Test with empty accessControl object
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {};
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const updatedSyncedCourseInstance = await findSyncedUndeletedCourseInstance(
+      util.COURSE_INSTANCE_ID,
+    );
+
+    assert.isNull(updatedSyncedCourseInstance.access_control_published);
+    assert.isNull(updatedSyncedCourseInstance.access_control_published_start_date_enabled);
+    assert.isNull(updatedSyncedCourseInstance.access_control_published_start_date);
+    assert.isNull(updatedSyncedCourseInstance.access_control_published_end_date);
+  });
+
+  it('handles access control fields with custom timezone', async () => {
+    const courseData = util.getCourseData();
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone =
+      'America/New_York';
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = {
+      publishedStartDate: '2024-01-15T09:00:00',
+      publishedEndDate: '2024-12-31T23:59:59',
+    };
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+    const syncedCourseInstance = await findSyncedUndeletedCourseInstance(util.COURSE_INSTANCE_ID);
+
+    // With America/New_York timezone (EST/EDT), the dates should be converted to UTC
+    assert.equal(
+      syncedCourseInstance.access_control_published_start_date?.getTime(),
+      new Date('2024-01-15T14:00:00.000Z').getTime(), // EST is UTC-5
+    );
+    assert.equal(
+      syncedCourseInstance.access_control_published_end_date?.getTime(),
+      new Date('2025-01-01T04:59:59.000Z').getTime(), // EST is UTC-5
+    );
+  });
+
   it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
