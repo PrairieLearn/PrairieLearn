@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -12,7 +13,6 @@ import {
   type User,
   UserSchema,
 } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,

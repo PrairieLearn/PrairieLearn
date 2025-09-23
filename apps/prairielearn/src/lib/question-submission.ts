@@ -73,12 +73,14 @@ export async function processSubmission(
 
   if (req.body.__action === 'grade') {
     const ignoreGradeRateLimit = !options.studentSubmission;
+    const ignoreRealTimeGradingDisabled = !options.studentSubmission;
     await saveAndGradeSubmission(
       submission,
       variant,
       res.locals.question,
       res.locals.course,
       ignoreGradeRateLimit,
+      ignoreRealTimeGradingDisabled,
     );
     return submission.variant_id;
   } else if (req.body.__action === 'save') {

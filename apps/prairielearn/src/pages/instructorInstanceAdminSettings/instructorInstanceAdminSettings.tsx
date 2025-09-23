@@ -9,6 +9,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -27,7 +28,6 @@ import {
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { Hydrate } from '../../lib/preact.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
