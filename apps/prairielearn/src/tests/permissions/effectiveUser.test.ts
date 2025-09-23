@@ -581,7 +581,13 @@ describe('effective user', { timeout: 60_000 }, function () {
         uin: 'student',
         email: 'student@example.com',
       });
-      await ensureEnrollment({ course_instance_id: courseInstanceId, user_id: user.user_id });
+      await ensureEnrollment({
+        course_instance_id: courseInstanceId,
+        agent_user_id: null,
+        agent_authn_user_id: null,
+        user_id: user.user_id,
+        action_detail: 'implicit_joined',
+      });
 
       const headers = {
         // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
