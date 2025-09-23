@@ -30,9 +30,9 @@ export const createAuthzMiddleware =
     unauthorizedUsers: 'passthrough' | 'block';
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
+    const hasAuthzData = res.locals.authz_data != null;
     // This is special-cased because the middleware that sets authz_data
     // may not have run yet.
-    const hasAuthzData = res.locals.authz_data != null;
     const authzData = res.locals.authz_data ?? {
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authn_is_administrator,
