@@ -168,7 +168,7 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
           target="_blank"
           rel="noopener noreferrer"
         >
-          <i class="bi bi-journal-text" aria-hidden="true" />
+          <i class="bi bi-journal-text me-1" aria-hidden="true" />
           <span class="d-none d-sm-inline">View docs</span>
         </a>
       </div>
