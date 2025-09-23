@@ -916,7 +916,6 @@ export const InstanceGroupSchema = z.object({
 export type InstanceGroup = z.infer<typeof InstanceGroupSchema>;
 
 export const EnrollmentInstanceGroupSchema = z.object({
-  created_at: DateFromISOString,
   enrollment_id: IdSchema,
   id: IdSchema,
   instance_group_id: IdSchema,

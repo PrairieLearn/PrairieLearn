@@ -49,8 +49,16 @@ RETURNING
 -- BLOCK add_enrollment_to_instance_group
 INSERT INTO
   enrollment_instance_groups (enrollment_id, instance_group_id)
-VALUES
-  ($enrollment_id, $instance_group_id)
+SELECT
+  e.id AS enrollment_id,
+  ig.id AS instance_group_id
+FROM
+  enrollments AS e
+WHERE
+  e.id = $enrollment_id
+  AND ig.id = $instance_group_id
+  -- Ensure the enrollment is in the same course instance as the instance group
+  AND e.course_instance_id = ig.course_instance_id
 ON CONFLICT (enrollment_id, instance_group_id) DO NOTHING
 RETURNING
   *;
