@@ -447,15 +447,17 @@ small .user-output-invalid {
  * https://github.com/twbs/bootstrap/issues/41414
  */
 input.form-control:not(:disabled),
-select.form-select:not(:disabled) {
-  border: var(--bs-border-width) solid #777777; /* 4.47 */
+select.form-select:not(:disabled),
+.input-group-text,
+.input-group > .border {
+  --bs-border-color: var(--bs-secondary);
 }
 
 input.form-check-input {
-  border: calc(var(--bs-border-width) * 1.5) solid #777777; /* 4.47 */
+  --bs-border-width: 1.5px;
+  --bs-border-color: var(--bs-secondary);
 }
 
 input.form-check-input:disabled {
-  /* Below contrast levels, but any darker looks like it is enabled. */
-  border: var(--bs-border-width) solid #999999; /* 2.84 */
+  --bs-border-color: #aaaaaa;
 }
