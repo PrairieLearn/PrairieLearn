@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,7 +10,10 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
+import { ensureEnrollment, getEnrollmentForUserInCourseInstance } from '../../models/enrollment.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -121,15 +124,36 @@ router.post(
     } = getPageContext(res.locals, { withAuthzData: false });
 
     if (body.__action === 'accept_invitation') {
-      await execute(sql.accept_invitation, {
+      await ensureEnrollment({
         course_instance_id: body.course_instance_id,
-        uid,
         user_id,
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
+        action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      await execute(sql.reject_invitation, {
+      const oldEnrollment = await getEnrollmentForUserInCourseInstance({
         course_instance_id: body.course_instance_id,
-        uid,
+        user_id,
+      });
+
+      const newEnrollment = await queryRow(
+        sql.reject_invitation,
+        {
+          course_instance_id: body.course_instance_id,
+          uid,
+        },
+        EnrollmentSchema,
+      );
+      await insertAuditEvent({
+        table_name: 'enrollments',
+        action: 'update',
+        action_detail: 'invitation_rejected',
+        row_id: newEnrollment.id,
+        old_row: oldEnrollment,
+        new_row: newEnrollment,
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
       });
     }
 

@@ -65,7 +65,16 @@ const supportedTableActionCombinations = z.discriminatedUnion('table_name', [
   }),
   z.object({
     table_name: z.literal('enrollments'),
-    action_detail: z.enum(['implicit_joined', 'explicit_joined', 'invited']).optional().nullable(),
+    action_detail: z
+      .enum([
+        'implicit_joined',
+        'explicit_joined',
+        'invited',
+        'invitation_accepted',
+        'invitation_rejected',
+      ])
+      .optional()
+      .nullable(),
   }),
 ]);
 
