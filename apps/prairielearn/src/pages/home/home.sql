@@ -269,3 +269,15 @@ WHERE
   )
 RETURNING
   e.id;
+
+-- BLOCK select_course_instance
+SELECT
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(c.*) AS course,
+  to_jsonb(i.*) AS institution
+FROM
+  course_instances AS ci
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN institutions AS i ON (i.id = c.institution_id)
+WHERE
+  ci.id = $course_instance_id;

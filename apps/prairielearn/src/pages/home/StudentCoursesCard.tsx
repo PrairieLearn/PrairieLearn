@@ -78,8 +78,7 @@ export function StudentCoursesCard({
           <div class="card-body">
             No courses found with student access. Courses with instructor access are found in the
             list above.
-            {canAddCourses &&
-              ' Use the "Add or remove courses" button to add a course as a student.'}
+            {canAddCourses && ' Use the "Add course" button to add a course as a student.'}
           </div>
         ) : isDevMode ? (
           <div class="card-body">
@@ -89,7 +88,7 @@ export function StudentCoursesCard({
         ) : (
           <div class="card-body">
             No courses found.
-            {canAddCourses && ' Use the "Add or remove courses" button to add one.'}
+            {canAddCourses && ' Use the "Add course" button to add one.'}
           </div>
         )
       ) : (
@@ -189,6 +188,36 @@ export function StudentCoursesCard({
             <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
             <button type="submit" class="btn btn-danger">
               Reject invitation
+            </button>
+          </form>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        show={removingCourseId !== null}
+        backdrop="static"
+        onHide={() => setRemovingCourseId(null)}
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Remove course</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>Are you sure you want to remove this course from your PrairieLearn account?</p>
+          <p>
+            Removing courses here only affects what is visible to you on PrairieLearn. This does not
+            change your university course registration.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" class="btn btn-secondary" onClick={() => setRemovingCourseId(null)}>
+            Cancel
+          </button>
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value={csrfToken} />
+            <input type="hidden" name="__action" value="unenroll" />
+            <input type="hidden" name="course_instance_id" value={removingCourseId ?? ''} />
+            <button type="submit" class="btn btn-danger">
+              Remove course
             </button>
           </form>
         </Modal.Footer>
