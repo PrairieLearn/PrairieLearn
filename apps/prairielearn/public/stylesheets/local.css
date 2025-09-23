@@ -456,11 +456,7 @@ input.form-check-input {
 }
 
 input.form-check-input.disabled,
-input.form-check-input:disabled,
-input.form-control.disabled,
-input.form-control:disabled,
-select.form-select.disabled,
-select.form-select:disabled {
+input.form-check-input:disabled {
   /* Below contrast levels, but any darker looks like it is enabled. */
   border: var(--bs-border-width) solid #999999; /* 2.84 */
 }
