@@ -14,15 +14,16 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
+
   // Need this to extract things like course_short_name, course_instance_short_name, assessment_tid, question_qid
   // I'll remove this once this part is reviewed
-  resLocals,
+  contexts,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  resLocals: Record<string, any>;
+  contexts: Record<string, string>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const wasUsingRubric = Boolean(rubricData);
@@ -172,10 +173,8 @@ export function RubricSettings({
     const a = document.createElement('a');
     a.href = url;
 
-    const course_short_name: string = resLocals.course.short_name;
-    const course_instance_short_name: string = resLocals.course_instance.short_name;
-    const assessment_tid: string = resLocals.assessment.tid;
-    const question_qid: string = resLocals.question.qid;
+    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } =
+      contexts;
     const exportFileName =
       `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
