@@ -22,25 +22,22 @@ import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
-import { insertAuditEvent } from './audit-event.js';
+import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
 import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function enrollInvitedUserInCourseInstance({
-  course_instance_id,
+  enrollment_id,
   user_id,
-  pending_uid,
 }: {
-  course_instance_id: string;
+  enrollment_id: string;
   user_id: string;
-  pending_uid: string;
 }): Promise<Enrollment> {
   return await queryRow(
-    sql.enroll_invited_user_in_course_instance,
+    sql.enroll_invited_user,
     {
-      course_instance_id,
-      pending_uid,
+      enrollment_id,
       user_id,
     },
     EnrollmentSchema,
@@ -59,11 +56,13 @@ export async function ensureEnrollment({
   user_id,
   agent_user_id,
   agent_authn_user_id,
+  action_detail,
 }: {
   course_instance_id: string;
   user_id: string;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
+  action_detail: SupportedActionsForTable<'enrollments'>;
 }): Promise<StaffEnrollment | null> {
   const result = await runInTransactionAsync(async () => {
     const user = await selectUserById(user_id);
@@ -74,16 +73,14 @@ export async function ensureEnrollment({
 
     if (enrollment && enrollment.status === 'invited') {
       const updated = await enrollInvitedUserInCourseInstance({
-        course_instance_id,
+        enrollment_id: enrollment.id,
         user_id,
-        pending_uid: user.uid,
       });
 
       await insertAuditEvent({
         table_name: 'enrollments',
         action: 'update',
-        // The user implicitly joined to the course instance, probably by clicking a link.
-        action_detail: 'implicit_joined',
+        action_detail,
         row_id: updated.id,
         old_row: enrollment,
         new_row: updated,
@@ -102,6 +99,7 @@ export async function ensureEnrollment({
       await insertAuditEvent({
         table_name: 'enrollments',
         action: 'insert',
+        action_detail,
         row_id: inserted.id,
         new_row: inserted,
         agent_user_id,
@@ -134,11 +132,13 @@ export async function ensureCheckedEnrollment({
   course,
   course_instance,
   authz_data,
+  action_detail,
 }: {
   institution: Institution;
   course: Course;
   course_instance: CourseInstance;
   authz_data: any;
+  action_detail: SupportedActionsForTable<'enrollments'>;
 }) {
   // Safety check: ensure the student would otherwise have access to the course.
   // If they don't, throw an access denied error. In most cases, this should
@@ -172,6 +172,7 @@ export async function ensureCheckedEnrollment({
     user_id: authz_data.authn_user.user_id,
     agent_user_id: authz_data.authn_user.user_id,
     agent_authn_user_id: authz_data.user.id,
+    action_detail,
   });
 }
 
@@ -213,6 +214,7 @@ export async function generateAndEnrollUsers({
         // This is done by the system
         agent_user_id: null,
         agent_authn_user_id: null,
+        action_detail: 'implicit_joined',
       });
     }
     return users;
@@ -266,7 +268,7 @@ export async function inviteStudentByUid({
     await insertAuditEvent({
       table_name: 'enrollments',
       action: existing_enrollment_id ? 'update' : 'insert',
-      action_detail: existing_enrollment_id ? 'invited' : null,
+      action_detail: 'invited',
       row_id: enrollment.id,
       subject_user_id: null,
       new_row: enrollment,

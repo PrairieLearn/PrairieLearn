@@ -7,7 +7,7 @@ ON CONFLICT DO NOTHING
 RETURNING
   *;
 
--- BLOCK enroll_invited_user_in_course_instance
+-- BLOCK enroll_invited_user
 UPDATE enrollments
 SET
   status = 'joined',
@@ -15,8 +15,7 @@ SET
   pending_uid = NULL,
   joined_at = now()
 WHERE
-  pending_uid = $pending_uid
-  AND course_instance_id = $course_instance_id
+  enrollment_id = $enrollment_id
   AND status = 'invited'
 RETURNING
   *;
@@ -67,12 +66,6 @@ VALUES
   ($course_instance_id, 'invited', $uid)
 ON CONFLICT (course_instance_id, pending_uid) DO UPDATE
 SET
-  lti_managed = FALSE,
-  pending_lti13_email = NULL,
-  pending_lti13_instance_id = NULL,
-  pending_lti13_name = NULL,
-  pending_lti13_sub = NULL,
-  pending_uid = $uid,
   status = 'invited',
   user_id = NULL
 RETURNING

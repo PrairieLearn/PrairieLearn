@@ -1,3 +1,5 @@
+import z from 'zod';
+
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
@@ -21,8 +23,57 @@ const requiredTableFields = {
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
   enrollments: ['course_instance_id', 'subject_user_id'],
-} satisfies Partial<Record<TableName, string[]>>;
+} as const satisfies Partial<Record<TableName, readonly string[]>>;
 
+/**
+ * This lists all the possible table+action_detail combinations that are supported.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const supportedTableActionCombinations = z.discriminatedUnion('table_name', [
+  z.object({
+    table_name: z.literal('course_instances'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('pl_courses'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('users'),
+    // We need a value for testing, but this is not a real action detail.
+    action_detail: z.enum(['TEST_VALUE']).nullable().optional(),
+  }),
+  z.object({
+    table_name: z.literal('groups'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('assessment_instances'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('assessment_questions'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('assessments'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('institutions'),
+    action_detail: z.null().optional(),
+  }),
+  z.object({
+    table_name: z.literal('enrollments'),
+    action_detail: z.enum(['implicit_joined', 'explicit_joined', 'invited']).optional().nullable(),
+  }),
+]);
+
+type SupportedTableActionCombination = z.infer<typeof supportedTableActionCombinations>;
+
+export type SupportedActionsForTable<T extends TableName> = NonNullable<
+  Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
+>;
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
@@ -66,16 +117,13 @@ export async function selectAuditEvents({
   );
 }
 
-interface InsertAuditEventParams {
+export type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
-  table_name: keyof typeof requiredTableFields;
   row_id: string;
   /** Most events should have an associated authenticated user */
   agent_authn_user_id: string | null;
   /** Most events should have an associated authorized user */
   agent_user_id: string | null;
-  /** Only 'update' actions require an action_detail */
-  action_detail?: string | null;
   /** Most events have no context */
   context?: Record<string, any> | null;
   /** Creation events have no old row */
@@ -93,7 +141,7 @@ interface InsertAuditEventParams {
   course_instance_id?: string | null;
   group_id?: string | null;
   institution_id?: string | null;
-}
+};
 
 /**
  * Inserts a new audit event. This should be done after the action has been performed.

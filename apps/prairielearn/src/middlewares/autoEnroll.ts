@@ -35,6 +35,7 @@ export default asyncHandler(async (req, res, next) => {
       course: res.locals.course,
       course_instance: res.locals.course_instance,
       authz_data: res.locals.authz_data,
+      action_detail: 'implicit_joined',
     });
 
     // This is the only part of the `authz_data` that would change as a
