@@ -37,19 +37,20 @@ async function getFileTransfer(file_transfer_id: string, user_id: string): Promi
   return file_transfer;
 }
 
-async function doTransfer(res: Response, editor: Editor, fileTransferId: string) {
+async function doTransfer(res: Response, editor: Editor, fileTransferId: string): Promise<boolean> {
   const serverJob = await editor.prepareServerJob();
   try {
     await editor.executeWithServerJob(serverJob);
   } catch {
     res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-    return;
+    return false;
   }
 
   await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
     user_id: res.locals.user.user_id,
   });
+  return true;
 }
 
 export function getContentDir(fullPath: string, parentDir: string): string {
@@ -78,7 +79,7 @@ router.get(
         is_transfer: true,
       });
 
-      await doTransfer(res, editor, file_transfer.id);
+      if (!(await doTransfer(res, editor, file_transfer.id))) return;
 
       const question = await selectQuestionByUuid({
         course_id: res.locals.course.id,
@@ -106,7 +107,7 @@ router.get(
         course_instance: fromCourseInstance,
       });
 
-      await doTransfer(res, editor, file_transfer.id);
+      if (!(await doTransfer(res, editor, file_transfer.id))) return;
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
