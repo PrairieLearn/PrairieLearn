@@ -2,7 +2,6 @@ import assert from 'node:assert';
 
 import * as error from '@prairielearn/error';
 import {
-  execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -25,7 +24,7 @@ import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
 
 import { type SupportedActionsForTable, insertAuditEvent } from './audit-event.js';
-import { generateUsers, selectUserById } from './user.js';
+import { generateUsers, selectAndLockUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -93,14 +92,14 @@ export async function ensureEnrollment({
   action_detail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment | null> {
   const result = await runInTransactionAsync(async () => {
-    const user = await selectUserById(user_id);
+    const user = await selectAndLockUserById(user_id);
     const enrollment = await selectOptionalEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
     });
 
     if (enrollment) {
-      await lockEnrollment({ id: enrollment.id });
+      await selectAndLockEnrollmentById(enrollment.id);
     }
 
     if (enrollment && enrollment.status === 'invited') {
@@ -358,7 +357,10 @@ export async function inviteStudentByUid({
     });
 
     if (existingEnrollment) {
-      await lockEnrollment({ id: existingEnrollment.id });
+      if (existingEnrollment.user_id) {
+        await selectAndLockUserById(existingEnrollment.user_id);
+      }
+      await selectAndLockEnrollmentById(existingEnrollment.id);
       return await dangerouslyInviteExistingEnrollment({
         enrollment_id: existingEnrollment.id,
         agent_user_id,
@@ -376,6 +378,6 @@ export async function inviteStudentByUid({
   });
 }
 
-export async function lockEnrollment({ id }: { id: string }) {
-  await execute(sql.lock_enrollment, { id });
+export async function selectAndLockEnrollmentById(id: string) {
+  await queryRow(sql.select_and_lock_enrollment_by_id, { id }, EnrollmentSchema);
 }

@@ -83,7 +83,7 @@ VALUES
 RETURNING
   *;
 
--- BLOCK lock_enrollment
+-- BLOCK select_and_lock_enrollment_by_id
 SELECT
   *
 FROM
