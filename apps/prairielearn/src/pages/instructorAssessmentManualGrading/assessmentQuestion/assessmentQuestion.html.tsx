@@ -235,6 +235,7 @@ export function AssessmentQuestion({
                       <div class="dropdown-menu dropdown-menu-end">
                         <button
                           class="dropdown-item grading-tag-button"
+                          type="button"
                           data-bs-toggle="modal"
                           data-bs-target="#group-confirmation-modal-selected"
                         >
@@ -242,6 +243,7 @@ export function AssessmentQuestion({
                         </button>
                         <button
                           class="dropdown-item"
+                          type="button"
                           data-bs-toggle="modal"
                           data-bs-target="#group-confirmation-modal-all"
                         >
@@ -249,6 +251,7 @@ export function AssessmentQuestion({
                         </button>
                         <button
                           class="dropdown-item"
+                          type="button"
                           data-bs-toggle="modal"
                           data-bs-target="#group-confirmation-modal-ungrouped"
                         >
