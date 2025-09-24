@@ -30,7 +30,9 @@ FROM
   questions AS q
 WHERE
   q.course_id = $course_id
-  AND q.deleted_at IS NULL;
+  AND q.deleted_at IS NULL
+  -- Questions with sync errors may have null titles
+  AND q.title IS NOT NULL;
 
 -- BLOCK select_question_uuids_for_course
 SELECT
