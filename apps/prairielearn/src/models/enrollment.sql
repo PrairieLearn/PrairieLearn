@@ -64,14 +64,22 @@ WHERE
     OR u.uid = $uid
   );
 
--- BLOCK upsert_enrollment_invitation_by_uid
+-- BLOCK invite_existing_enrollment
+UPDATE enrollments
+SET
+  status = 'invited',
+  user_id = NULL,
+  pending_uid = $pending_uid
+WHERE
+  -- status sanity checks should be performed upstream.
+  id = $enrollment_id
+RETURNING
+  *;
+
+-- BLOCK invite_new_enrollment
 INSERT INTO
   enrollments (course_instance_id, status, pending_uid)
 VALUES
-  ($course_instance_id, 'invited', $uid)
-ON CONFLICT (course_instance_id, pending_uid) DO UPDATE
-SET
-  status = 'invited',
-  user_id = NULL
+  ($course_instance_id, 'invited', $pending_uid)
 RETURNING
   *;

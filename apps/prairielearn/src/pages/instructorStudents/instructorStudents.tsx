@@ -16,7 +16,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { inviteStudentByUid, selectEnrollmentByUid } from '../../models/enrollment.js';
+import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -54,11 +54,11 @@ router.get(
     if (typeof uid !== 'string') {
       throw new HttpStatusError(400, 'UID must be a string');
     }
-    const enrollment = await selectEnrollmentByUid({
+    const enrollment = await selectOptionalEnrollmentByUid({
       course_instance_id: courseInstance.id,
       uid,
     });
-    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+    const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
     res.json(staffEnrollment);
   }),
 );
@@ -81,51 +81,33 @@ router.post(
       });
       const body = BodySchema.parse(req.body);
 
-      const existingEnrollment = await selectEnrollmentByUid({
+      // Try to find an existing enrollment so we can error gracefully.
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
         course_instance_id: courseInstance.id,
         uid: body.uid,
       });
 
-      if (!existingEnrollment) {
-        const enrollment = await inviteStudentByUid({
-          course_instance_id: courseInstance.id,
-          uid: body.uid,
-          existing_enrollment_id: null,
-          agent_user_id: pageContext.authz_data.user.user_id,
-          agent_authn_user_id: pageContext.authn_user.user_id,
-        });
-        const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
-        res.json({ ok: true, data: staffEnrollment });
-        return;
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'joined') {
+          res.status(400).json({ error: 'The user is already enrolled' });
+          return;
+        }
+
+        if (existingEnrollment.status === 'invited') {
+          res.status(400).json({ error: 'The user has a existing invitation' });
+          return;
+        }
       }
 
-      // Case 1: if the user is already enrolled, we can't invite them without that user being de-enrolled first.
-      const isEnrolled = existingEnrollment.status === 'joined';
-      if (isEnrolled) {
-        res.status(400).json({ error: 'The user is already enrolled' });
-        return;
-      }
-
-      // Case 2: the user has a existing invitation, we can't invite them again.
-      const hasExistingInvitation = existingEnrollment.status === 'invited';
-
-      if (hasExistingInvitation) {
-        res.status(400).json({ error: 'The user has a existing invitation' });
-        return;
-      }
-
-      // If the user is synced via LTI, they are either invited via LTI or removed via LTI. The UI has
-      // already confirmed that the instructor means to de-sync them from LTI and invite them again.
-      // If they are not synced via LTI, we can invite them. So in both cases, we can invite them.
       const enrollment = await inviteStudentByUid({
         course_instance_id: courseInstance.id,
         uid: body.uid,
-        existing_enrollment_id: existingEnrollment.id,
         agent_user_id: pageContext.authz_data.user.user_id,
         agent_authn_user_id: pageContext.authn_user.user_id,
       });
 
       const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+
       res.json({ ok: true, data: staffEnrollment });
     } catch (err) {
       res.status(400).json({ error: err.message });

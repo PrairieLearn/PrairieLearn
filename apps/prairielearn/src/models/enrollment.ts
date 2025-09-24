@@ -221,7 +221,12 @@ export async function selectEnrollmentById({ id }: { id: string }) {
   return await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
 }
 
-export async function selectEnrollmentByUid({
+/**
+ * Look up an enrollment by uid and course instance id.
+ * If there is no enrollment where the uid or pending_uid matches the given uid,
+ * this will return null.
+ */
+export async function selectOptionalEnrollmentByUid({
   course_instance_id,
   uid,
 }: {
@@ -235,49 +240,112 @@ export async function selectEnrollmentByUid({
   );
 }
 
+async function inviteExistingEnrollment({
+  enrollment_id,
+  agent_user_id,
+  pending_uid,
+  agent_authn_user_id,
+}: {
+  enrollment_id: string;
+  agent_user_id: string | null;
+  pending_uid: string;
+  agent_authn_user_id: string | null;
+}): Promise<Enrollment> {
+  const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
+
+  if (oldEnrollment.status === 'invited') {
+    throw new Error('Enrollment is already invited');
+  }
+
+  if (oldEnrollment.status === 'joined') {
+    throw new Error('Enrollment is already joined');
+  }
+
+  const newEnrollment = await queryRow(
+    sql.invite_existing_enrollment,
+    { enrollment_id, pending_uid },
+    EnrollmentSchema,
+  );
+
+  await insertAuditEvent({
+    table_name: 'enrollments',
+    action: 'update',
+    action_detail: 'invited',
+    row_id: newEnrollment.id,
+    old_row: oldEnrollment,
+    new_row: newEnrollment,
+    agent_user_id,
+    agent_authn_user_id,
+  });
+
+  return newEnrollment;
+}
+
+async function inviteNewEnrollment({
+  course_instance_id,
+  pending_uid,
+  agent_user_id,
+  agent_authn_user_id,
+}: {
+  course_instance_id: string;
+  pending_uid: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
+}) {
+  const newEnrollment = await queryRow(
+    sql.invite_new_enrollment,
+    { course_instance_id, pending_uid },
+    EnrollmentSchema,
+  );
+
+  await insertAuditEvent({
+    table_name: 'enrollments',
+    action: 'insert',
+    action_detail: 'invited',
+    row_id: newEnrollment.id,
+    new_row: newEnrollment,
+    agent_user_id,
+    agent_authn_user_id,
+  });
+
+  return newEnrollment;
+}
+/**
+ * Invite a student by uid. This does not prevent being invited via
+ * If there is an existing enrollment with the given uid, it will be updated to a invitation.
+ * If there is no existing enrollment, a new enrollment will be created.
+ */
 export async function inviteStudentByUid({
   course_instance_id,
   uid,
-  existing_enrollment_id,
   agent_user_id,
   agent_authn_user_id,
 }: {
   course_instance_id: string;
   uid: string;
-  existing_enrollment_id: string | null;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
-    const existingEnrollment = existing_enrollment_id
-      ? await selectEnrollmentById({ id: existing_enrollment_id })
-      : null;
+    const existingEnrollment = await selectOptionalEnrollmentByUid({
+      course_instance_id,
+      uid,
+    });
 
-    const newEnrollment = await queryRow(
-      sql.upsert_enrollment_invitation_by_uid,
-      {
-        course_instance_id,
-        uid,
-      },
-      EnrollmentSchema,
-    );
-
-    // If we have an existing enrollment and it's invited, we can just return the new enrollment.
-    if (existingEnrollment && existingEnrollment.status === 'invited') {
-      return newEnrollment;
+    if (existingEnrollment) {
+      return await inviteExistingEnrollment({
+        enrollment_id: existingEnrollment.id,
+        agent_user_id,
+        pending_uid: uid,
+        agent_authn_user_id,
+      });
     }
 
-    await insertAuditEvent({
-      table_name: 'enrollments',
-      action: existing_enrollment_id ? 'update' : 'insert',
-      action_detail: 'invited',
-      row_id: newEnrollment.id,
-      subject_user_id: null,
-      new_row: newEnrollment,
-      old_row: existingEnrollment,
+    return await inviteNewEnrollment({
+      course_instance_id,
+      pending_uid: uid,
       agent_user_id,
       agent_authn_user_id,
     });
-    return newEnrollment;
   });
 }
