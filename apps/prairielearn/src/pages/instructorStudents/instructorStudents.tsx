@@ -94,7 +94,7 @@ router.post(
         }
 
         if (existingEnrollment.status === 'invited') {
-          res.status(400).json({ error: 'The user has a existing invitation' });
+          res.status(400).json({ error: 'The user has an existing invitation' });
           return;
         }
       }
