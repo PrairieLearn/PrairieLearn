@@ -6,6 +6,7 @@ import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
+import { AccessControlMigrationModal } from './components/AccessControlMigrationModal.js';
 
 export function InstructorInstanceAdminAccess({
   accessRules,
@@ -31,17 +32,23 @@ export function InstructorInstanceAdminAccess({
       <Hydrate>
         <AccessControlForm
           courseInstance={courseInstance}
-          accessRules={accessRules}
+          hasAccessRules={accessRules.length > 0}
           canEdit={hasCourseInstancePermissionEdit}
           csrfToken={csrfToken}
-          timeZone={courseInstance.display_timezone}
           origHash={origHash}
         />
       </Hydrate>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>{courseInstance.long_name} course instance access rules</h1>
+          {hasCourseInstancePermissionEdit &&
+            hasCourseInstancePermissionView &&
+            accessRules.length > 0 && (
+              <Hydrate>
+                <AccessControlMigrationModal accessRules={accessRules} csrfToken={csrfToken} />
+              </Hydrate>
+            )}
         </div>
 
         <div class="table-responsive">

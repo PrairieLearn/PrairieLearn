@@ -3,8 +3,9 @@ import { assert, describe, it } from 'vitest';
 import {
   type CourseInstanceAccessParams,
   evaluateCourseInstanceAccess,
+  migrateAccessRulesToAccessControl,
 } from './course-instance-access.js';
-import { type CourseInstance } from './db-types.js';
+import { type CourseInstance, type CourseInstanceAccessRule } from './db-types.js';
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
   return {
@@ -323,5 +324,148 @@ describe('evaluateCourseInstanceAccess', () => {
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');
+  });
+});
+
+describe('migrateAccessRulesToAccessControl', () => {
+  function createMockAccessRule(
+    overrides: Partial<CourseInstanceAccessRule> = {},
+  ): CourseInstanceAccessRule {
+    return {
+      id: '1',
+      course_instance_id: '1',
+      start_date: null,
+      end_date: null,
+      uids: null,
+      institution: null,
+      json_comment: null,
+      number: null,
+      ...overrides,
+    };
+  }
+
+  it('successfully migrates a single rule with start and end dates', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const endDate = new Date('2024-07-01T00:00:00Z');
+    const accessRules = [createMockAccessRule({ start_date: startDate, end_date: endDate })];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isTrue(result.success);
+    if (result.success) {
+      assert.isTrue(result.accessControl.published);
+      assert.isTrue(result.accessControl.publishedStartDateEnabled);
+      assert.equal(result.accessControl.publishedStartDate, startDate);
+      assert.equal(result.accessControl.publishedEndDate, endDate);
+    }
+  });
+
+  it('successfully migrates a single rule with only start date', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const accessRules = [createMockAccessRule({ start_date: startDate, end_date: null })];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isTrue(result.success);
+    if (result.success) {
+      assert.isTrue(result.accessControl.published);
+      assert.isTrue(result.accessControl.publishedStartDateEnabled);
+      assert.equal(result.accessControl.publishedStartDate, startDate);
+      assert.isNull(result.accessControl.publishedEndDate);
+    }
+  });
+
+  it('successfully migrates a single rule with only end date', () => {
+    const endDate = new Date('2024-07-01T00:00:00Z');
+    const accessRules = [createMockAccessRule({ start_date: null, end_date: endDate })];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isTrue(result.success);
+    if (result.success) {
+      assert.isTrue(result.accessControl.published);
+      assert.isFalse(result.accessControl.publishedStartDateEnabled);
+      assert.isNull(result.accessControl.publishedStartDate);
+      assert.equal(result.accessControl.publishedEndDate, endDate);
+    }
+  });
+
+  it('fails when there are no access rules', () => {
+    const accessRules: CourseInstanceAccessRule[] = [];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.equal(result.error, 'Expected exactly 1 access rule, but found 0');
+    }
+  });
+
+  it('fails when there are multiple access rules', () => {
+    const accessRules = [
+      createMockAccessRule({ start_date: new Date('2024-05-01T00:00:00Z') }),
+      createMockAccessRule({ start_date: new Date('2024-06-01T00:00:00Z') }),
+    ];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.equal(result.error, 'Expected exactly 1 access rule, but found 2');
+    }
+  });
+
+  it('fails when access rule has UID selectors', () => {
+    const accessRules = [
+      createMockAccessRule({
+        start_date: new Date('2024-05-01T00:00:00Z'),
+        uids: ['user1', 'user2'],
+      }),
+    ];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.equal(
+        result.error,
+        'Cannot migrate access rules with UID selectors. Only global rules can be migrated.',
+      );
+    }
+  });
+
+  it('fails when access rule has no dates', () => {
+    const accessRules = [
+      createMockAccessRule({
+        start_date: null,
+        end_date: null,
+      }),
+    ];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.equal(result.error, 'Cannot migrate access rules without start or end dates.');
+    }
+  });
+
+  it('handles empty UID array as global rule', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const accessRules = [
+      createMockAccessRule({
+        start_date: startDate,
+        uids: [],
+      }),
+    ];
+
+    const result = migrateAccessRulesToAccessControl(accessRules);
+
+    assert.isTrue(result.success);
+    if (result.success) {
+      assert.isTrue(result.accessControl.published);
+      assert.isTrue(result.accessControl.publishedStartDateEnabled);
+      assert.equal(result.accessControl.publishedStartDate, startDate);
+    }
   });
 });

@@ -176,6 +176,67 @@ router.post(
 
       flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'migrate_access_rules') {
+      const published = req.body.published;
+      const publishedStartDateEnabled = req.body.publishedStartDateEnabled;
+      const publishedStartDate = req.body.publishedStartDate || null;
+      const publishedEndDate = req.body.publishedEndDate || null;
+
+      // Read the existing infoCourseInstance.json file
+      const infoCourseInstancePath = path.join(
+        res.locals.course.path,
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'infoCourseInstance.json',
+      );
+
+      if (!(await fs.pathExists(infoCourseInstancePath))) {
+        throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
+      }
+
+      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
+        await fs.readFile(infoCourseInstancePath, 'utf8'),
+      );
+
+      // Add the access control settings
+      if (!courseInstanceInfo.accessControl) {
+        courseInstanceInfo.accessControl = {};
+      }
+
+      courseInstanceInfo.accessControl.published = published;
+      courseInstanceInfo.accessControl.publishedStartDateEnabled = publishedStartDateEnabled;
+      courseInstanceInfo.accessControl.publishedStartDate = publishedStartDate;
+      courseInstanceInfo.accessControl.publishedEndDate = publishedEndDate;
+
+      // Remove the allowAccess rules
+      if (courseInstanceInfo.allowAccess) {
+        delete courseInstanceInfo.allowAccess;
+      }
+
+      // Format and write the updated JSON
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
+
+      const paths = getPaths(undefined, res.locals);
+      const editor = new FileModifyEditor({
+        locals: res.locals as any,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
+        },
+        filePath: infoCourseInstancePath,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: req.body.orig_hash,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      flash('success', 'Access rules migrated to access control successfully');
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }
