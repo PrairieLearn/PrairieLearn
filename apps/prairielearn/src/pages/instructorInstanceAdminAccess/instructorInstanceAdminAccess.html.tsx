@@ -4,14 +4,20 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
-import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import {
+  type CourseInstance,
+  type CourseInstanceAccessControlOverride,
+  type CourseInstanceAccessRule,
+} from '../../lib/db-types.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
 import { AccessControlMigrationModal } from './components/AccessControlMigrationModal.js';
+import { AccessControlOverrides } from './components/AccessControlOverrides.js';
 
 export function InstructorInstanceAdminAccess({
   accessRules,
+  accessControlOverrides,
   courseInstance,
   hasCourseInstancePermissionView,
   hasCourseInstancePermissionEdit,
@@ -22,6 +28,7 @@ export function InstructorInstanceAdminAccess({
   hasCourseInstancePermissionView: boolean;
   hasCourseInstancePermissionEdit: boolean;
   accessRules: CourseInstanceAccessRule[];
+  accessControlOverrides: CourseInstanceAccessControlOverride[];
   csrfToken: string;
   origHash: string;
 }) {
@@ -43,6 +50,15 @@ export function InstructorInstanceAdminAccess({
           canEdit={hasCourseInstancePermissionEdit}
           csrfToken={csrfToken}
           origHash={origHash}
+        />
+      </Hydrate>
+
+      <Hydrate>
+        <AccessControlOverrides
+          courseInstance={courseInstance}
+          overrides={accessControlOverrides}
+          canEdit={hasCourseInstancePermissionEdit}
+          csrfToken={csrfToken}
         />
       </Hydrate>
 

@@ -1,4 +1,10 @@
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   type CourseInstanceAccessControlEnrollmentOverride,
@@ -18,6 +24,19 @@ export async function selectAccessControlOverridesByEnrollmentId(
   return await queryRows(
     sql.select_access_control_overrides_by_enrollment_id,
     { enrollment_id },
+    CourseInstanceAccessControlOverrideSchema,
+  );
+}
+
+/**
+ * Finds all access control overrides for a course instance.
+ */
+export async function selectAccessControlOverridesByCourseInstance(
+  course_instance_id: string,
+): Promise<CourseInstanceAccessControlOverride[]> {
+  return await queryRows(
+    sql.select_access_control_overrides_by_course_instance,
+    { course_instance_id },
     CourseInstanceAccessControlOverrideSchema,
   );
 }
@@ -103,4 +122,49 @@ export async function createAccessControlOverrideWithEnrollments({
 
     return override;
   });
+}
+
+/**
+ * Deletes an access control override.
+ */
+export async function deleteAccessControlOverride({
+  override_id,
+  course_instance_id,
+}: {
+  override_id: string;
+  course_instance_id: string;
+}): Promise<void> {
+  await execute(sql.delete_access_control_override, {
+    override_id,
+    course_instance_id,
+  });
+}
+
+/**
+ * Updates an access control override.
+ */
+export async function updateAccessControlOverride({
+  override_id,
+  course_instance_id,
+  enabled,
+  name,
+  published_end_date,
+}: {
+  override_id: string;
+  course_instance_id: string;
+  enabled: boolean;
+  name: string | null;
+  published_end_date: Date | null;
+}): Promise<CourseInstanceAccessControlOverride> {
+  return await queryRow(
+    sql.update_access_control_override,
+    {
+      override_id,
+      course_instance_id,
+      enabled,
+      name,
+      published_end_date,
+    },
+    CourseInstanceAccessControlOverrideSchema,
+  );
 }

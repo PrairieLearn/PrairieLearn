@@ -32,3 +32,33 @@ VALUES
   ($course_instance_access_control_override_id, $enrollment_id)
 RETURNING
   *;
+
+-- BLOCK select_access_control_overrides_by_course_instance
+SELECT
+  ci_overrides.*
+FROM
+  course_instance_access_control_overrides AS ci_overrides
+WHERE
+  ci_overrides.course_instance_id = $course_instance_id
+ORDER BY
+  ci_overrides.id;
+
+-- BLOCK delete_access_control_override
+DELETE FROM
+  course_instance_access_control_overrides
+WHERE
+  id = $override_id
+  AND course_instance_id = $course_instance_id;
+
+-- BLOCK update_access_control_override
+UPDATE
+  course_instance_access_control_overrides
+SET
+  enabled = $enabled,
+  name = $name,
+  published_end_date = $published_end_date
+WHERE
+  id = $override_id
+  AND course_instance_id = $course_instance_id
+RETURNING
+  *;

@@ -22,7 +22,12 @@ import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
-import { createAccessControlOverrideWithEnrollments } from '../../models/course-instance-access-control-overrides.js';
+import {
+  createAccessControlOverrideWithEnrollments,
+  deleteAccessControlOverride,
+  selectAccessControlOverridesByCourseInstance,
+  updateAccessControlOverride,
+} from '../../models/course-instance-access-control-overrides.js';
 import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
@@ -38,6 +43,10 @@ router.get(
       sql.course_instance_access_rules,
       { course_instance_id: res.locals.course_instance.id },
       CourseInstanceAccessRuleSchema,
+    );
+
+    const accessControlOverrides = await selectAccessControlOverridesByCourseInstance(
+      res.locals.course_instance.id,
     );
 
     const {
@@ -88,6 +97,7 @@ router.get(
             />
             <InstructorInstanceAdminAccess
               accessRules={accessRules}
+              accessControlOverrides={accessControlOverrides}
               courseInstance={courseInstance}
               hasCourseInstancePermissionView={hasCourseInstancePermissionView}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -294,6 +304,77 @@ router.post(
       }
 
       flash('success', 'Access rules migrated to access control successfully');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'add_override') {
+      const name = req.body.name || null;
+      const enabled = req.body.enabled === 'true';
+      const published_end_date = req.body.published_end_date
+        ? new Date(req.body.published_end_date)
+        : null;
+      const uids = req.body.uids
+        .split(/[,\n]/)
+        .map((uid: string) => uid.trim())
+        .filter((uid: string) => uid.length > 0);
+
+      if (uids.length === 0) {
+        throw new error.HttpStatusError(400, 'At least one UID is required');
+      }
+
+      // Get enrollment IDs for the UIDs
+      const enrollments = await getEnrollmentsByUidsInCourseInstance({
+        uids,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      if (enrollments.length === 0) {
+        throw new error.HttpStatusError(400, 'No enrollments found for the provided UIDs');
+      }
+
+      const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
+
+      await createAccessControlOverrideWithEnrollments({
+        course_instance_id: res.locals.course_instance.id,
+        enabled,
+        name,
+        published_end_date,
+        enrollment_ids: enrollmentIds,
+      });
+
+      flash('success', 'Access control override added successfully');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'delete_override') {
+      const override_id = req.body.override_id;
+
+      await deleteAccessControlOverride({
+        override_id,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      flash('success', 'Access control override deleted successfully');
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'toggle_override') {
+      const override_id = req.body.override_id;
+      const enabled = req.body.enabled === 'true';
+
+      // Get the current override to preserve other fields
+      const currentOverrides = await selectAccessControlOverridesByCourseInstance(
+        res.locals.course_instance.id,
+      );
+      const currentOverride = currentOverrides.find((o) => o.id === override_id);
+
+      if (!currentOverride) {
+        throw new error.HttpStatusError(404, 'Override not found');
+      }
+
+      await updateAccessControlOverride({
+        override_id,
+        course_instance_id: res.locals.course_instance.id,
+        enabled,
+        name: currentOverride.name,
+        published_end_date: currentOverride.published_end_date,
+      });
+
+      flash('success', 'Access control override updated successfully');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
