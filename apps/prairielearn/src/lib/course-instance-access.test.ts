@@ -1,9 +1,12 @@
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
+
+import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstanceAccessParams,
+  convertAccessRuleToJson,
   evaluateCourseInstanceAccess,
-  migrateAccessRulesToAccessControl,
+  migrateAccessRuleJsonToAccessControl,
 } from './course-instance-access.js';
 import { type CourseInstance, type CourseInstanceAccessRule } from './db-types.js';
 
@@ -327,7 +330,7 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 });
 
-describe('migrateAccessRulesToAccessControl', () => {
+describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + migrateAccessRuleJsonToAccessControl)', () => {
   function createMockAccessRule(
     overrides: Partial<CourseInstanceAccessRule> = {},
   ): CourseInstanceAccessRule {
@@ -349,56 +352,78 @@ describe('migrateAccessRulesToAccessControl', () => {
     const endDate = new Date('2024-07-01T00:00:00Z');
     const accessRules = [createMockAccessRule({ start_date: startDate, end_date: endDate })];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isTrue(result.success);
-    if (result.success) {
-      assert.isTrue(result.accessControl.published);
-      assert.isTrue(result.accessControl.publishedStartDateEnabled);
-      assert.equal(result.accessControl.publishedStartDate, startDate);
-      assert.equal(result.accessControl.publishedEndDate, endDate);
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": "2024-07-01T00:00:00",
+          "publishedStartDate": "2024-05-01T00:00:00",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
   });
 
   it('successfully migrates a single rule with only start date', () => {
     const startDate = new Date('2024-05-01T00:00:00Z');
     const accessRules = [createMockAccessRule({ start_date: startDate, end_date: null })];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isTrue(result.success);
-    if (result.success) {
-      assert.isTrue(result.accessControl.published);
-      assert.isTrue(result.accessControl.publishedStartDateEnabled);
-      assert.equal(result.accessControl.publishedStartDate, startDate);
-      assert.isNull(result.accessControl.publishedEndDate);
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
   });
 
   it('successfully migrates a single rule with only end date', () => {
     const endDate = new Date('2024-07-01T00:00:00Z');
     const accessRules = [createMockAccessRule({ start_date: null, end_date: endDate })];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isTrue(result.success);
-    if (result.success) {
-      assert.isTrue(result.accessControl.published);
-      assert.isFalse(result.accessControl.publishedStartDateEnabled);
-      assert.isNull(result.accessControl.publishedStartDate);
-      assert.equal(result.accessControl.publishedEndDate, endDate);
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": "2024-07-01T00:00:00",
+          "publishedStartDate": null,
+          "publishedStartDateEnabled": false,
+        },
+        "success": true,
+      }
+    `);
   });
 
   it('fails when there are no access rules', () => {
     const accessRules: CourseInstanceAccessRule[] = [];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));
+    const result = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
 
-    assert.isFalse(result.success);
-    if (!result.success) {
-      assert.equal(result.error, 'Expected exactly 1 access rule, but found 0');
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Expected exactly 1 access rule, but found 0",
+        "success": false,
+      }
+    `);
   });
 
   it('fails when there are multiple access rules', () => {
@@ -407,12 +432,16 @@ describe('migrateAccessRulesToAccessControl', () => {
       createMockAccessRule({ start_date: new Date('2024-06-01T00:00:00Z') }),
     ];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));
+    const result = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
 
-    assert.isFalse(result.success);
-    if (!result.success) {
-      assert.equal(result.error, 'Expected exactly 1 access rule, but found 2');
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Expected exactly 1 access rule, but found 2",
+        "success": false,
+      }
+    `);
   });
 
   it('fails when access rule has UID selectors', () => {
@@ -423,15 +452,16 @@ describe('migrateAccessRulesToAccessControl', () => {
       }),
     ];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isFalse(result.success);
-    if (!result.success) {
-      assert.equal(
-        result.error,
-        'Cannot migrate access rules with UID selectors. Only global rules can be migrated.',
-      );
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Cannot migrate access rules with UID selectors. Only global rules can be migrated.",
+        "success": false,
+      }
+    `);
   });
 
   it('fails when access rule has no dates', () => {
@@ -442,12 +472,16 @@ describe('migrateAccessRulesToAccessControl', () => {
       }),
     ];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isFalse(result.success);
-    if (!result.success) {
-      assert.equal(result.error, 'Cannot migrate access rules without start or end dates.');
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Cannot migrate access rules without start or end dates.",
+        "success": false,
+      }
+    `);
   });
 
   it('handles empty UID array as global rule', () => {
@@ -459,13 +493,249 @@ describe('migrateAccessRulesToAccessControl', () => {
       }),
     ];
 
-    const result = migrateAccessRulesToAccessControl(accessRules);
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
 
-    assert.isTrue(result.success);
-    if (result.success) {
-      assert.isTrue(result.accessControl.published);
-      assert.isTrue(result.accessControl.publishedStartDateEnabled);
-      assert.equal(result.accessControl.publishedStartDate, startDate);
-    }
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
+  });
+});
+
+describe('convertAccessRuleToJson', () => {
+  function createMockAccessRule(
+    overrides: Partial<CourseInstanceAccessRule> = {},
+  ): CourseInstanceAccessRule {
+    return {
+      id: '1',
+      course_instance_id: '1',
+      start_date: null,
+      end_date: null,
+      uids: null,
+      institution: null,
+      json_comment: null,
+      number: null,
+      ...overrides,
+    };
+  }
+
+  it('converts access rule with all fields', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const endDate = new Date('2024-07-01T00:00:00Z');
+    const accessRule = createMockAccessRule({
+      start_date: startDate,
+      end_date: endDate,
+      uids: ['user1', 'user2'],
+      institution: 'Test University',
+      json_comment: { text: 'Test comment' },
+    });
+
+    const result = convertAccessRuleToJson(accessRule, 'UTC');
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "comment": {
+          "text": "Test comment",
+        },
+        "endDate": "2024-07-01T00:00:00",
+        "institution": "Test University",
+        "startDate": "2024-05-01T00:00:00",
+        "uids": [
+          "user1",
+          "user2",
+        ],
+      }
+    `);
+  });
+
+  it('converts access rule with minimal fields', () => {
+    const accessRule = createMockAccessRule({
+      start_date: new Date('2024-05-01T00:00:00Z'),
+    });
+
+    const result = convertAccessRuleToJson(accessRule, 'UTC');
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "startDate": "2024-05-01T00:00:00",
+      }
+    `);
+  });
+
+  it('handles null and empty values correctly', () => {
+    const accessRule = createMockAccessRule({
+      uids: [],
+    });
+
+    const result = convertAccessRuleToJson(accessRule, 'UTC');
+
+    expect(result).toMatchInlineSnapshot('{}');
+  });
+});
+
+describe('migrateAccessRuleJsonToAccessControl', () => {
+  function createMockAccessRuleJson(overrides: Partial<AccessRuleJson> = {}): AccessRuleJson {
+    return {
+      ...overrides,
+    };
+  }
+
+  it('successfully migrates a single rule with start and end dates', () => {
+    const accessRules = [
+      createMockAccessRuleJson({
+        startDate: '2024-05-01T00:00:00.000Z',
+        endDate: '2024-07-01T00:00:00.000Z',
+      }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": "2024-07-01T00:00:00.000Z",
+          "publishedStartDate": "2024-05-01T00:00:00.000Z",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
+  });
+
+  it('successfully migrates a single rule with only start date', () => {
+    const accessRules = [
+      createMockAccessRuleJson({
+        startDate: '2024-05-01T00:00:00.000Z',
+      }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00.000Z",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
+  });
+
+  it('successfully migrates a single rule with only end date', () => {
+    const accessRules = [
+      createMockAccessRuleJson({
+        endDate: '2024-07-01T00:00:00.000Z',
+      }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": "2024-07-01T00:00:00.000Z",
+          "publishedStartDate": null,
+          "publishedStartDateEnabled": false,
+        },
+        "success": true,
+      }
+    `);
+  });
+
+  it('fails when there are no access rules', () => {
+    const accessRules: AccessRuleJson[] = [];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Expected exactly 1 access rule, but found 0",
+        "success": false,
+      }
+    `);
+  });
+
+  it('fails when there are multiple access rules', () => {
+    const accessRules = [
+      createMockAccessRuleJson({ startDate: '2024-05-01T00:00:00.000Z' }),
+      createMockAccessRuleJson({ startDate: '2024-06-01T00:00:00.000Z' }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Expected exactly 1 access rule, but found 2",
+        "success": false,
+      }
+    `);
+  });
+
+  it('fails when access rule has UID selectors', () => {
+    const accessRules = [
+      createMockAccessRuleJson({
+        startDate: '2024-05-01T00:00:00.000Z',
+        uids: ['user1', 'user2'],
+      }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Cannot migrate access rules with UID selectors. Only global rules can be migrated.",
+        "success": false,
+      }
+    `);
+  });
+
+  it('fails when access rule has no dates', () => {
+    const accessRules = [createMockAccessRuleJson({})];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "error": "Cannot migrate access rules without start or end dates.",
+        "success": false,
+      }
+    `);
+  });
+
+  it('handles empty UID array as global rule', () => {
+    const accessRules = [
+      createMockAccessRuleJson({
+        startDate: '2024-05-01T00:00:00.000Z',
+        uids: [],
+      }),
+    ];
+
+    const result = migrateAccessRuleJsonToAccessControl(accessRules);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00.000Z",
+          "publishedStartDateEnabled": true,
+        },
+        "success": true,
+      }
+    `);
   });
 });

@@ -1,3 +1,7 @@
+import { Temporal } from '@js-temporal/polyfill';
+
+import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
+
 import {
   type CourseInstance,
   type CourseInstanceAccessRule,
@@ -6,7 +10,6 @@ import {
   type EnumMode,
   type EnumModeReason,
 } from './db-types.js';
-import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 export interface CourseInstanceAccessParams {
   course_instance_role: EnumCourseInstanceRole;
@@ -73,8 +76,8 @@ export interface AccessControlMigrationResult {
   accessControl: {
     published: boolean;
     publishedStartDateEnabled: boolean;
-    publishedStartDate: Date | null;
-    publishedEndDate: Date | null;
+    publishedStartDate: string | null;
+    publishedEndDate: string | null;
   };
 }
 
@@ -87,10 +90,20 @@ export type AccessControlMigrationResponse =
   | AccessControlMigrationResult
   | AccessControlMigrationError;
 
+const toIsoString = (date: Date, timezone: string) => {
+  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
+    .toZonedDateTimeISO(timezone)
+    .toPlainDateTime()
+    .toString();
+};
+
 /**
  * Converts a database CourseInstanceAccessRule to the AccessRuleJson format.
  */
-export function convertAccessRuleToJson(accessRule: CourseInstanceAccessRule): AccessRuleJson {
+export function convertAccessRuleToJson(
+  accessRule: CourseInstanceAccessRule,
+  courseInstanceTimezone: string,
+): AccessRuleJson {
   const json: AccessRuleJson = {};
 
   if (accessRule.json_comment) {
@@ -102,11 +115,11 @@ export function convertAccessRuleToJson(accessRule: CourseInstanceAccessRule): A
   }
 
   if (accessRule.start_date) {
-    json.startDate = accessRule.start_date.toISOString();
+    json.startDate = toIsoString(accessRule.start_date, courseInstanceTimezone);
   }
 
   if (accessRule.end_date) {
-    json.endDate = accessRule.end_date.toISOString();
+    json.endDate = toIsoString(accessRule.end_date, courseInstanceTimezone);
   }
 
   if (accessRule.institution) {
@@ -117,11 +130,11 @@ export function convertAccessRuleToJson(accessRule: CourseInstanceAccessRule): A
 }
 
 /**
- * Attempts to migrate legacy access rules to the new access control format.
+ * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new access control format.
  * Only migrates if there is exactly one rule with no UID selector and valid dates.
  */
-export function migrateAccessRulesToAccessControl(
-  accessRules: CourseInstanceAccessRule[],
+export function migrateAccessRuleJsonToAccessControl(
+  accessRules: AccessRuleJson[],
 ): AccessControlMigrationResponse {
   // Must have exactly one rule
   if (accessRules.length !== 1) {
@@ -134,7 +147,7 @@ export function migrateAccessRulesToAccessControl(
   const rule = accessRules[0];
 
   // Must not have UID selector (global rule)
-  if (rule.uids !== null && rule.uids.length > 0) {
+  if (rule.uids && rule.uids.length > 0) {
     return {
       success: false,
       error: 'Cannot migrate access rules with UID selectors. Only global rules can be migrated.',
@@ -142,7 +155,7 @@ export function migrateAccessRulesToAccessControl(
   }
 
   // Must have at least one date
-  if (rule.start_date === null && rule.end_date === null) {
+  if (!rule.startDate && !rule.endDate) {
     return {
       success: false,
       error: 'Cannot migrate access rules without start or end dates.',
@@ -152,9 +165,9 @@ export function migrateAccessRulesToAccessControl(
   // Build the new access control configuration
   const accessControl = {
     published: true, // Legacy rules imply published access
-    publishedStartDateEnabled: rule.start_date !== null,
-    publishedStartDate: rule.start_date,
-    publishedEndDate: rule.end_date,
+    publishedStartDateEnabled: !!rule.startDate,
+    publishedStartDate: rule.startDate || null,
+    publishedEndDate: rule.endDate || null,
   };
 
   return {

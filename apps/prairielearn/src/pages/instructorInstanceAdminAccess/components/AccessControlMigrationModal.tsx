@@ -1,10 +1,10 @@
 import { useState } from 'preact/compat';
 
-import { migrateAccessRulesToAccessControl } from '../../../lib/course-instance-access.js';
-import type { CourseInstanceAccessRule } from '../../../lib/db-types.js';
+import { migrateAccessRuleJsonToAccessControl } from '../../../lib/course-instance-access.js';
+import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 
 interface AccessControlMigrationModalProps {
-  accessRules: CourseInstanceAccessRule[];
+  accessRules: AccessRuleJson[];
   csrfToken: string;
 }
 
@@ -15,8 +15,8 @@ export function AccessControlMigrationModal({
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Attempt to migrate the access rules
-  const migrationResult = migrateAccessRulesToAccessControl(accessRules);
+  // Attempt migration with the provided access rules
+  const migrationResult = migrateAccessRuleJsonToAccessControl(accessRules);
 
   const handleConfirm = async () => {
     if (!migrationResult.success) return;
@@ -28,8 +28,8 @@ export function AccessControlMigrationModal({
         __action: 'migrate_access_rules',
         published: migrationResult.accessControl.published,
         publishedStartDateEnabled: migrationResult.accessControl.publishedStartDateEnabled,
-        publishedStartDate: migrationResult.accessControl.publishedStartDate?.toISOString() || null,
-        publishedEndDate: migrationResult.accessControl.publishedEndDate?.toISOString() || null,
+        publishedStartDate: migrationResult.accessControl.publishedStartDate || null,
+        publishedEndDate: migrationResult.accessControl.publishedEndDate || null,
       };
 
       const response = await fetch(window.location.pathname, {

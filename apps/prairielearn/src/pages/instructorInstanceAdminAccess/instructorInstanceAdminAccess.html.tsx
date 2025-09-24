@@ -3,7 +3,9 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
+import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
 import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
 import { AccessControlMigrationModal } from './components/AccessControlMigrationModal.js';
@@ -27,6 +29,11 @@ export function InstructorInstanceAdminAccess({
     isRenderableComment(access_rule.json_comment),
   );
 
+  // Convert access rules to JSON format for the migration modal
+  const accessRuleJsonArray: AccessRuleJson[] = accessRules.map((rule) =>
+    convertAccessRuleToJson(rule, courseInstance.display_timezone),
+  );
+
   return (
     <>
       <Hydrate>
@@ -46,7 +53,10 @@ export function InstructorInstanceAdminAccess({
             hasCourseInstancePermissionView &&
             accessRules.length > 0 && (
               <Hydrate>
-                <AccessControlMigrationModal accessRules={accessRules} csrfToken={csrfToken} />
+                <AccessControlMigrationModal
+                  accessRules={accessRuleJsonArray}
+                  csrfToken={csrfToken}
+                />
               </Hydrate>
             )}
         </div>
