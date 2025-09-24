@@ -1,0 +1,38 @@
+columns
+    after_complete_hide_questions_after_date: timestamp with time zone
+    after_complete_hide_questions_after_date_enabled: boolean
+    after_complete_hide_questions_before_date: timestamp with time zone
+    after_complete_hide_questions_before_date_enabled: boolean
+    after_complete_hide_score_before_date: timestamp with time zone
+    after_complete_hide_score_before_date_enabled: boolean
+    assessment_id: bigint not null
+    block_acesss: boolean
+    course_instance_id: bigint not null
+    date_control_after_last_deadline_allow_submissions: boolean
+    date_control_after_last_deadline_credit: integer
+    date_control_after_last_deadline_credit_enable: boolean
+    date_control_due_date: timestamp with time zone
+    date_control_due_date_enabled: boolean
+    date_control_duration_minutes: integer
+    date_control_duration_minutes_enabled: boolean
+    date_control_early_deadlines_enabled: boolean
+    date_control_enabled: boolean
+    date_control_late_deadlines_enabled: boolean
+    date_control_password: text
+    date_control_password_enabled: boolean
+    date_control_release_date: timestamp with time zone
+    date_control_release_date_enabled: boolean
+    enabled: boolean
+    id: bigint not null default nextval('access_control_id_seq'::regclass)
+    list_before_release: boolean
+    prairietest_control_enable: boolean
+
+indexes
+    access_control_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    access_control_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    access_control_target: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE

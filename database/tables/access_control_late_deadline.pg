@@ -1,0 +1,4 @@
+columns
+    credit: integer not null
+    date: timestamp with time zone not null
+    role_id: bigint not null

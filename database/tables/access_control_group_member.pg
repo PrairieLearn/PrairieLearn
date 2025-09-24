@@ -1,0 +1,7 @@
+columns
+    group_id: bigint not null
+    user_id: bigint not null
+
+foreign-key constraints
+    access_control_group_member_group_id_fkey: FOREIGN KEY (group_id) REFERENCES access_control_groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_group_member_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

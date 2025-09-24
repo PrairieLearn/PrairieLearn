@@ -1,0 +1,16 @@
+columns
+    course_instance_id: bigint not null
+    description: text
+    id: bigint not null default nextval('access_control_groups_id_seq'::regclass)
+    name: text
+
+indexes
+    access_control_groups_pkey: PRIMARY KEY (id) USING btree (id)
+    access_control_groups_course_instance_id_id_key: UNIQUE (course_instance_id, id) USING btree (course_instance_id, id)
+    idx_sections_on_course_instance_id: USING btree (course_instance_id)
+
+foreign-key constraints
+    access_control_groups_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    access_control_group_member: FOREIGN KEY (group_id) REFERENCES access_control_groups(id) ON UPDATE CASCADE ON DELETE CASCADE
