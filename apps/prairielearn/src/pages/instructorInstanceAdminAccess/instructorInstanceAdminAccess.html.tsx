@@ -1,57 +1,79 @@
 import { formatDate } from '@prairielearn/formatter';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
+import { AccessControlForm } from './components/AccessControlForm.js';
+
 export function InstructorInstanceAdminAccess({
   accessRules,
   courseInstance,
   hasCourseInstancePermissionView,
+  hasCourseInstancePermissionEdit,
+  csrfToken,
+  origHash,
 }: {
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   accessRules: CourseInstanceAccessRule[];
+  csrfToken: string;
+  origHash: string;
 }) {
   const showComments = accessRules.some((access_rule) =>
     isRenderableComment(access_rule.json_comment),
   );
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h1>{courseInstance.long_name} course instance access rules</h1>
-      </div>
+    <>
+      <Hydrate>
+        <AccessControlForm
+          courseInstance={courseInstance}
+          accessRules={accessRules}
+          canEdit={hasCourseInstancePermissionEdit}
+          csrfToken={csrfToken}
+          timeZone={courseInstance.display_timezone}
+          origHash={origHash}
+        />
+      </Hydrate>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover" aria-label="Access rules">
-          <thead>
-            <tr>
-              {showComments && (
-                <th style="width: 1%">
-                  <span class="visually-hidden">Comments</span>
-                </th>
-              )}
-              <th>UIDs</th>
-              <th>Start date</th>
-              <th>End date</th>
-              <th>Institution</th>
-            </tr>
-          </thead>
-          <tbody>
-            {accessRules.map((accessRule) => (
-              <AccessRuleRow
-                key={accessRule.id}
-                accessRule={accessRule}
-                timeZone={courseInstance.display_timezone}
-                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-                showComments={showComments}
-              />
-            ))}
-          </tbody>
-        </table>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <h1>{courseInstance.long_name} course instance access rules</h1>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover" aria-label="Access rules">
+            <thead>
+              <tr>
+                {showComments && (
+                  <th style="width: 1%">
+                    <span class="visually-hidden">Comments</span>
+                  </th>
+                )}
+                <th>UIDs</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Institution</th>
+              </tr>
+            </thead>
+            <tbody>
+              {accessRules.map((accessRule) => (
+                <AccessRuleRow
+                  key={accessRule.id}
+                  accessRule={accessRule}
+                  timeZone={courseInstance.display_timezone}
+                  hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+                  showComments={showComments}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
