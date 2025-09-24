@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
+import { type AccessControlJson, type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstance,
@@ -23,6 +23,7 @@ export interface CourseInstanceAccessParams {
  * access control settings and the user's authorization context.
  */
 export function evaluateCourseInstanceAccess(
+  // TODO: take in an enrollment, not courseInstance, so that we can consider overrides.
   courseInstance: CourseInstance,
   params: CourseInstanceAccessParams,
   // This is done like this for testing purposes.
@@ -71,20 +72,17 @@ export function evaluateCourseInstanceAccess(
   return { hasAccess: true };
 }
 
+interface CourseInstanceAccessControlOverrideData {
+  enabled: boolean;
+  name: string | null;
+  published_end_date: string | null;
+  uids: string[];
+}
+
 export interface AccessControlMigrationResult {
   success: true;
-  accessControl: {
-    published: boolean;
-    publishedStartDateEnabled: boolean;
-    publishedStartDate: string | null;
-    publishedEndDate: string | null;
-  };
-  overrides: {
-    enabled: boolean;
-    name: string | null;
-    publishedEndDate: string | null;
-    uids: string[];
-  }[];
+  accessControl: AccessControlJson;
+  overrides: CourseInstanceAccessControlOverrideData[];
 }
 
 export interface AccessControlMigrationError {
@@ -163,23 +161,18 @@ export function migrateAccessRuleJsonToAccessControl(
   // Build the new access control configuration
   const accessControl = {
     published: true, // Legacy rules imply published access
-    publishedStartDateEnabled: !!rule.startDate,
-    publishedStartDate: rule.startDate || null,
-    publishedEndDate: rule.endDate || null,
+    publishedStartDateEnabled: rule.startDate !== undefined,
+    publishedStartDate: rule.startDate,
+    publishedEndDate: rule.endDate,
   };
 
   // Convert UID selectors to overrides
-  const overrides: {
-    enabled: boolean;
-    name: string | null;
-    publishedEndDate: string | null;
-    uids: string[];
-  }[] = [];
+  const overrides: CourseInstanceAccessControlOverrideData[] = [];
   if (rule.uids && rule.uids.length > 0) {
     overrides.push({
       enabled: true,
       name: typeof rule.comment === 'string' ? rule.comment : null,
-      publishedEndDate: rule.endDate || null,
+      published_end_date: rule.endDate ?? null,
       uids: rule.uids,
     });
   }

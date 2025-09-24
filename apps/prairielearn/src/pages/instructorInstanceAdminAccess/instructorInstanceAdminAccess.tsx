@@ -14,10 +14,16 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import {
+  convertAccessRuleToJson,
+  migrateAccessRuleJsonToAccessControl,
+} from '../../lib/course-instance-access.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { createAccessControlOverrideWithEnrollments } from '../../models/course-instance-access-control-overrides.js';
+import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
 import { InstructorInstanceAdminAccess } from './instructorInstanceAdminAccess.html.js';
@@ -155,7 +161,7 @@ router.post(
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
-      console.log('formattedJson', formattedJson);
+      // JSON file has been formatted and is ready to be written
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
         locals: res.locals as any,
@@ -178,11 +184,33 @@ router.post(
       flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'migrate_access_rules') {
-      console.log('Migrating access rules');
-      const published = req.body.published;
-      const publishedStartDateEnabled = req.body.publishedStartDateEnabled;
-      const publishedStartDate = req.body.publishedStartDate || null;
-      const publishedEndDate = req.body.publishedEndDate || null;
+      // Starting migration of access rules to access control
+
+      // Get the existing access rules from the database
+      const accessRules = await queryRows(
+        sql.course_instance_access_rules,
+        { course_instance_id: res.locals.course_instance.id },
+        CourseInstanceAccessRuleSchema,
+      );
+
+      if (accessRules.length === 0) {
+        throw new error.HttpStatusError(400, 'No access rules found to migrate');
+      }
+
+      // Convert access rules to JSON format
+      const accessRuleJsonArray = accessRules.map((rule) =>
+        convertAccessRuleToJson(rule, res.locals.course_instance.display_timezone),
+      );
+
+      // Calculate the migration
+      const migrationResult = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
+
+      if (!migrationResult.success) {
+        throw new error.HttpStatusError(
+          400,
+          `Cannot migrate access rules: ${migrationResult.error}`,
+        );
+      }
 
       // Read the existing infoCourseInstance.json file
       const infoCourseInstancePath = path.join(
@@ -205,17 +233,14 @@ router.post(
         courseInstanceInfo.accessControl = {};
       }
 
-      courseInstanceInfo.accessControl.published = published;
-      courseInstanceInfo.accessControl.publishedStartDateEnabled = publishedStartDateEnabled;
-      courseInstanceInfo.accessControl.publishedStartDate = publishedStartDate;
-      courseInstanceInfo.accessControl.publishedEndDate = publishedEndDate;
+      courseInstanceInfo.accessControl = migrationResult.accessControl;
 
       // Remove the allowAccess rules
       if (courseInstanceInfo.allowAccess) {
         delete courseInstanceInfo.allowAccess;
       }
 
-      console.log('courseInstanceInfo', courseInstanceInfo);
+      // Course instance info has been updated with access control settings
 
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
@@ -239,6 +264,33 @@ router.post(
         console.error('Error migrating access rules:', error);
 
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      // Insert overrides if any were generated from the migration
+      if (migrationResult.overrides && migrationResult.overrides.length > 0) {
+        for (const override of migrationResult.overrides) {
+          if (override.uids && override.uids.length > 0) {
+            // Get enrollment IDs for the UIDs
+            const enrollments = await getEnrollmentsByUidsInCourseInstance({
+              uids: override.uids,
+              course_instance_id: res.locals.course_instance.id,
+            });
+
+            if (enrollments.length > 0) {
+              const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
+
+              await createAccessControlOverrideWithEnrollments({
+                course_instance_id: res.locals.course_instance.id,
+                enabled: override.enabled,
+                name: override.name,
+                published_end_date: override.published_end_date
+                  ? new Date(override.published_end_date)
+                  : null,
+                enrollment_ids: enrollmentIds,
+              });
+            }
+          }
+        }
       }
 
       flash('success', 'Access rules migrated to access control successfully');

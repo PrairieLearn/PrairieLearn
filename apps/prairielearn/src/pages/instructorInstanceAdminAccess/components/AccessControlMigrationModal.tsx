@@ -23,21 +23,13 @@ export function AccessControlMigrationModal({
 
     setIsSubmitting(true);
     try {
-      const requestBody = {
-        __csrf_token: csrfToken,
-        __action: 'migrate_access_rules',
-        published: migrationResult.accessControl.published,
-        publishedStartDateEnabled: migrationResult.accessControl.publishedStartDateEnabled,
-        publishedStartDate: migrationResult.accessControl.publishedStartDate || null,
-        publishedEndDate: migrationResult.accessControl.publishedEndDate || null,
-      };
+      const formData = new FormData();
+      formData.append('__csrf_token', csrfToken);
+      formData.append('__action', 'migrate_access_rules');
 
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+        body: formData,
       });
 
       if (response.ok) {

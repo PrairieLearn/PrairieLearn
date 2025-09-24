@@ -157,6 +157,7 @@ async function checkCourseOrInstanceAccess(params: {
   }
 
   if (authzData.course_instance != null) {
+    // TODO: Deal with overrides. this will have to happen outside of this function.
     const result = evaluateCourseInstanceAccess(authzData.course_instance, {
       course_role: authzData.permissions_course.course_role,
       course_instance_role: authzData.permissions_course_instance.course_instance_role,

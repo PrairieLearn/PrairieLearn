@@ -53,6 +53,8 @@ const AccessControlJsonSchema = z.object({
   // The schema currently doesn't include overrides, but we may add them later.
 });
 
+export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
+
 export const CourseInstanceJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),

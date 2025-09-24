@@ -39,3 +39,13 @@ FROM
 WHERE
   pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id;
+
+-- BLOCK select_enrollments_by_uids_in_course_instance
+SELECT
+  e.*
+FROM
+  enrollments AS e
+  JOIN users AS u ON (u.user_id = e.user_id)
+WHERE
+  u.uid = ANY($uids)
+  AND e.course_instance_id = $course_instance_id;
