@@ -404,18 +404,22 @@ onDocumentReady(() => {
                     (item) =>
                       html`<div>
                         ${item.false_positive
-                          ? html`<i
-                              class="bi bi-plus-square-fill text-danger"
-                              data-toggle="tooltip"
-                              data-placement="top"
-                              title="Selected by AI but not by human"
-                            ></i>`
-                          : html`<i
-                              class="bi bi-dash-square-fill text-danger"
-                              data-toggle="tooltip"
-                              data-placement="top"
-                              title="Selected by human but not by AI"
-                            ></i>`}
+                          ? html`
+                              <i
+                                class="bi bi-plus-square-fill text-danger"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="Selected by AI but not by human"
+                              ></i>
+                            `
+                          : html`
+                              <i
+                                class="bi bi-dash-square-fill text-danger"
+                                data-toggle="tooltip"
+                                data-placement="top"
+                                title="Selected by human but not by AI"
+                              ></i>
+                            `}
                         <span>${item.description}</span>
                       </div>`,
                   ),
