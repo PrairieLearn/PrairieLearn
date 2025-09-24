@@ -83,3 +83,12 @@ VALUES
   ($course_instance_id, 'invited', $pending_uid)
 RETURNING
   *;
+
+-- BLOCK lock_enrollment
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  id = $id
+FOR NO KEY UPDATE;

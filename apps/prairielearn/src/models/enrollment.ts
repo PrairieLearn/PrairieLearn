@@ -1,5 +1,8 @@
+import assert from 'node:assert';
+
 import * as error from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -26,14 +29,21 @@ import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function enrollInvitedUserInCourseInstance({
+async function dangerouslyEnrollInvitedUserInCourseInstance({
   enrollment_id,
   user_id,
+  agent_user_id,
+  agent_authn_user_id,
+  action_detail,
 }: {
   enrollment_id: string;
   user_id: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
+  action_detail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment> {
-  return await queryRow(
+  const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
+  const newEnrollment = await queryRow(
     sql.enroll_invited_user,
     {
       enrollment_id,
@@ -41,6 +51,19 @@ export async function enrollInvitedUserInCourseInstance({
     },
     EnrollmentSchema,
   );
+
+  await insertAuditEvent({
+    table_name: 'enrollments',
+    action: 'update',
+    action_detail,
+    row_id: newEnrollment.id,
+    old_row: oldEnrollment,
+    new_row: newEnrollment,
+    agent_user_id,
+    agent_authn_user_id,
+  });
+
+  return newEnrollment;
 }
 
 /**
@@ -70,21 +93,17 @@ export async function ensureEnrollment({
       pending_uid: user.uid,
     });
 
+    if (enrollment) {
+      await lockEnrollment({ id: enrollment.id });
+    }
+
     if (enrollment && enrollment.status === 'invited') {
-      const updated = await enrollInvitedUserInCourseInstance({
+      const updated = await dangerouslyEnrollInvitedUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,
-      });
-
-      await insertAuditEvent({
-        table_name: 'enrollments',
-        action: 'update',
-        action_detail,
-        row_id: updated.id,
-        old_row: enrollment,
-        new_row: updated,
         agent_user_id,
         agent_authn_user_id,
+        action_detail,
       });
       return updated;
     }
@@ -240,7 +259,11 @@ export async function selectOptionalEnrollmentByUid({
   );
 }
 
-async function inviteExistingEnrollment({
+/**
+ * This function invites an existing enrollment.
+ * All usages of this function should hold a lock on the enrollment.
+ */
+async function dangerouslyInviteExistingEnrollment({
   enrollment_id,
   agent_user_id,
   pending_uid,
@@ -253,13 +276,8 @@ async function inviteExistingEnrollment({
 }): Promise<Enrollment> {
   const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
 
-  if (oldEnrollment.status === 'invited') {
-    throw new Error('Enrollment is already invited');
-  }
-
-  if (oldEnrollment.status === 'joined') {
-    throw new Error('Enrollment is already joined');
-  }
+  assert(oldEnrollment.status !== 'invited');
+  assert(oldEnrollment.status !== 'joined');
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -333,7 +351,8 @@ export async function inviteStudentByUid({
     });
 
     if (existingEnrollment) {
-      return await inviteExistingEnrollment({
+      await lockEnrollment({ id: existingEnrollment.id });
+      return await dangerouslyInviteExistingEnrollment({
         enrollment_id: existingEnrollment.id,
         agent_user_id,
         pending_uid: uid,
@@ -348,4 +367,8 @@ export async function inviteStudentByUid({
       agent_authn_user_id,
     });
   });
+}
+
+export async function lockEnrollment({ id }: { id: string }) {
+  await execute(sql.lock_enrollment, { id });
 }
