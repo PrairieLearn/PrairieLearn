@@ -31,7 +31,7 @@ router.post(
           'Reset question variants is not supported for Exam assessments. This can cause instance questions to become unopenable and create inconsistent attempt counts.',
         );
       }
-      
+
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,

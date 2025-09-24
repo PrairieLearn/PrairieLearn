@@ -116,89 +116,101 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  test.sequential('instructor cannot break variants on Exam assessment via questions page', async () => {
-    const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`;
+  test.sequential(
+    'instructor cannot break variants on Exam assessment via questions page',
+    async () => {
+      const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`;
 
-    const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
-    const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
+      const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
+      const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
 
-    const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_assessment_question_id: partialCredit1AssessmentQuestionId,
-      }),
-    });
-    
-    // Since this is an Exam assessment, the request should fail with a 400 error
-    assert.equal(breakVariantsResponse.status, 400);
-    
-    // Check that the error message is present in the response body
-    const responseText = await breakVariantsResponse.text();
-    assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
-    assert.include(responseText, 'instance questions to become unopenable');
-  });
+      const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_assessment_question_id: partialCredit1AssessmentQuestionId,
+        }),
+      });
 
-  test.sequential('instructor cannot break variants on Exam assessment via instance page', async () => {
-    const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
+      // Since this is an Exam assessment, the request should fail with a 400 error
+      assert.equal(breakVariantsResponse.status, 400);
 
-    const instanceQuestion = await queryRow(
-      sql.select_instance_question,
-      { assessment_question_id: partialCredit2AssessmentQuestionId },
-      IdSchema,
-    );
+      // Check that the error message is present in the response body
+      const responseText = await breakVariantsResponse.text();
+      assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
+      assert.include(responseText, 'instance questions to become unopenable');
+    },
+  );
 
-    const instanceResponse = await fetchCheerio(instanceUrl);
-    const csrfToken = getCSRFToken(instanceResponse.$);
+  test.sequential(
+    'instructor cannot break variants on Exam assessment via instance page',
+    async () => {
+      const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
-    const breakVariantsResponse = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_instance_question_id: instanceQuestion,
-      }),
-    });
-    
-    // Since this is an Exam assessment, the request should fail with a 400 error
-    assert.equal(breakVariantsResponse.status, 400);
-    
-    // Check that the error message is present in the response body
-    const responseText = await breakVariantsResponse.text();
-    assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
-    assert.include(responseText, 'instance questions to become unopenable');
-  });
+      const instanceQuestion = await queryRow(
+        sql.select_instance_question,
+        { assessment_question_id: partialCredit2AssessmentQuestionId },
+        IdSchema,
+      );
 
-  test.sequential('student sees same variant when revisiting first question (reset was blocked)', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 1")').attr('href');
+      const instanceResponse = await fetchCheerio(instanceUrl);
+      const csrfToken = getCSRFToken(instanceResponse.$);
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
-      assert.equal(questionResponse.status, 200);
+      const breakVariantsResponse = await fetchCheerio(instanceUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_instance_question_id: instanceQuestion,
+        }),
+      });
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      // Since reset was blocked for Exam assessments, variant should remain the same
-      assert.equal(variantId.toString(), partialCredit1VariantId);
-    });
-  });
+      // Since this is an Exam assessment, the request should fail with a 400 error
+      assert.equal(breakVariantsResponse.status, 400);
 
-  test.sequential('student sees same variant when revisiting second question (reset was blocked)', async () => {
-    await withUser(studentUser, async () => {
-      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
-      assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 2")').attr('href');
+      // Check that the error message is present in the response body
+      const responseText = await breakVariantsResponse.text();
+      assert.include(responseText, 'Reset question variants is not supported for Exam assessments');
+      assert.include(responseText, 'instance questions to become unopenable');
+    },
+  );
 
-      const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
-      assert.equal(questionResponse.status, 200);
+  test.sequential(
+    'student sees same variant when revisiting first question (reset was blocked)',
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const addNumbersUrl = assessmentResponse.$('a:contains("Question 1")').attr('href');
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val();
-      assert.isDefined(variantId);
-      // Since reset was blocked for Exam assessments, variant should remain the same
-      assert.equal(variantId.toString(), partialCredit2VariantId);
-    });
-  });
+        const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
+        assert.equal(questionResponse.status, 200);
+
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        // Since reset was blocked for Exam assessments, variant should remain the same
+        assert.equal(variantId.toString(), partialCredit1VariantId);
+      });
+    },
+  );
+
+  test.sequential(
+    'student sees same variant when revisiting second question (reset was blocked)',
+    async () => {
+      await withUser(studentUser, async () => {
+        const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+        assert.equal(assessmentResponse.status, 200);
+        const addNumbersUrl = assessmentResponse.$('a:contains("Question 2")').attr('href');
+
+        const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
+        assert.equal(questionResponse.status, 200);
+
+        const variantId = questionResponse.$('input[name=__variant_id]').val();
+        assert.isDefined(variantId);
+        // Since reset was blocked for Exam assessments, variant should remain the same
+        assert.equal(variantId.toString(), partialCredit2VariantId);
+      });
+    },
+  );
 });
