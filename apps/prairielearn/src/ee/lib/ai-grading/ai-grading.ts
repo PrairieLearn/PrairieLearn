@@ -202,6 +202,8 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
+      const hasImage = containsImageCapture(submission_text);
+
       const example_submissions = await run(async () => {
         // We're currently disabling RAG for submissions that deal with images.
         // It won't make sense to pull graded examples for such questions until we
@@ -214,7 +216,7 @@ export async function aiGrade({
         // generating the embeddings, it does mean that we don't have to special-case
         // image-based questions in the embedding generation code, which keeps things
         // simpler overall.
-        if (containsImageCapture(submission_text)) return [];
+        if (hasImage) return [];
 
         return await selectClosestSubmissionInfo({
           submission_id: submission.id,
@@ -241,6 +243,20 @@ export async function aiGrade({
         rubric_items,
       });
 
+      // If the submission contains images, prompt the model to transcribe any relevant information
+      // out of the image.
+      const explanationDescription = run(() => {
+        const parts = ['Instructor-facing explanation of the grading decision.'];
+        if (hasImage) {
+          parts.push(
+            'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
+            'You MUST transcribe the final answer(s) from the images.',
+            'Use LaTeX formatting for any mathematical expressions.',
+          );
+        }
+        return parts.join(' ');
+      });
+
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
@@ -255,7 +271,7 @@ export async function aiGrade({
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
-          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
+          explanation: z.string().describe(explanationDescription),
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -370,7 +386,7 @@ export async function aiGrade({
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const GradingResultSchema = z.object({
-          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
+          explanation: z.string().describe(explanationDescription),
           feedback: z
             .string()
             .describe(
