@@ -8,6 +8,7 @@ columns
 indexes
     course_instance_access_control_overrides_pkey: PRIMARY KEY (id) USING btree (id)
     course_instance_access_control_overrides_course_instance_id_idx: USING btree (course_instance_id)
+    course_instance_access_control_overrides_course_instance_id_name_unique: UNIQUE (course_instance_id, name)
 
 foreign-key constraints
     course_instance_access_control_override_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

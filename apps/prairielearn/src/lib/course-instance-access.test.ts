@@ -364,6 +364,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "publishedStartDate": "2024-05-01T00:00:00",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -385,6 +386,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "publishedStartDate": "2024-05-01T00:00:00",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -406,6 +408,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "publishedStartDate": null,
           "publishedStartDateEnabled": false,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -444,11 +447,15 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
     `);
   });
 
-  it('fails when access rule has UID selectors', () => {
+  it('successfully migrates access rule with UID selectors to overrides', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const endDate = new Date('2024-07-01T00:00:00Z');
     const accessRules = [
       createMockAccessRule({
-        start_date: new Date('2024-05-01T00:00:00Z'),
-        uids: ['user1', 'user2'],
+        start_date: startDate,
+        end_date: endDate,
+        uids: ['user1@example.com', 'user2@example.com'],
+        json_comment: 'Test comment',
       }),
     ];
 
@@ -458,8 +465,61 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "error": "Cannot migrate access rules with UID selectors. Only global rules can be migrated.",
-        "success": false,
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": "2024-07-01T00:00:00",
+          "publishedStartDate": "2024-05-01T00:00:00",
+          "publishedStartDateEnabled": true,
+        },
+        "overrides": [
+          {
+            "enabled": true,
+            "name": "Test comment",
+            "publishedEndDate": "2024-07-01T00:00:00",
+            "uids": [
+              "user1@example.com",
+              "user2@example.com",
+            ],
+          },
+        ],
+        "success": true,
+      }
+    `);
+  });
+
+  it('successfully migrates access rule with UID selectors and no comment', () => {
+    const startDate = new Date('2024-05-01T00:00:00Z');
+    const accessRules = [
+      createMockAccessRule({
+        start_date: startDate,
+        uids: ['user1@example.com'],
+        json_comment: null,
+      }),
+    ];
+
+    // Convert to JSON format first
+    const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
+    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00",
+          "publishedStartDateEnabled": true,
+        },
+        "overrides": [
+          {
+            "enabled": true,
+            "name": null,
+            "publishedEndDate": null,
+            "uids": [
+              "user1@example.com",
+            ],
+          },
+        ],
+        "success": true,
       }
     `);
   });
@@ -505,6 +565,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "publishedStartDate": "2024-05-01T00:00:00",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -607,6 +668,7 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
           "publishedStartDate": "2024-05-01T00:00:00.000Z",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -629,6 +691,7 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
           "publishedStartDate": "2024-05-01T00:00:00.000Z",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -651,6 +714,7 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
           "publishedStartDate": null,
           "publishedStartDateEnabled": false,
         },
+        "overrides": [],
         "success": true,
       }
     `);
@@ -685,11 +749,12 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
     `);
   });
 
-  it('fails when access rule has UID selectors', () => {
+  it('successfully migrates access rule with UID selectors to overrides', () => {
     const accessRules = [
       createMockAccessRuleJson({
         startDate: '2024-05-01T00:00:00.000Z',
-        uids: ['user1', 'user2'],
+        uids: ['user1@example.com', 'user2@example.com'],
+        comment: { text: 'Test comment' },
       }),
     ];
 
@@ -697,8 +762,26 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "error": "Cannot migrate access rules with UID selectors. Only global rules can be migrated.",
-        "success": false,
+        "accessControl": {
+          "published": true,
+          "publishedEndDate": null,
+          "publishedStartDate": "2024-05-01T00:00:00.000Z",
+          "publishedStartDateEnabled": true,
+        },
+        "overrides": [
+          {
+            "enabled": true,
+            "name": {
+              "text": "Test comment",
+            },
+            "publishedEndDate": null,
+            "uids": [
+              "user1@example.com",
+              "user2@example.com",
+            ],
+          },
+        ],
+        "success": true,
       }
     `);
   });
@@ -734,6 +817,7 @@ describe('migrateAccessRuleJsonToAccessControl', () => {
           "publishedStartDate": "2024-05-01T00:00:00.000Z",
           "publishedStartDateEnabled": true,
         },
+        "overrides": [],
         "success": true,
       }
     `);

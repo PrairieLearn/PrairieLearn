@@ -79,6 +79,12 @@ export interface AccessControlMigrationResult {
     publishedStartDate: string | null;
     publishedEndDate: string | null;
   };
+  overrides: {
+    enabled: boolean;
+    name: string | null;
+    publishedEndDate: string | null;
+    uids: string[];
+  }[];
 }
 
 export interface AccessControlMigrationError {
@@ -131,7 +137,7 @@ export function convertAccessRuleToJson(
 
 /**
  * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new access control format.
- * Only migrates if there is exactly one rule with no UID selector and valid dates.
+ * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
  */
 export function migrateAccessRuleJsonToAccessControl(
   accessRules: AccessRuleJson[],
@@ -145,14 +151,6 @@ export function migrateAccessRuleJsonToAccessControl(
   }
 
   const rule = accessRules[0];
-
-  // Must not have UID selector (global rule)
-  if (rule.uids && rule.uids.length > 0) {
-    return {
-      success: false,
-      error: 'Cannot migrate access rules with UID selectors. Only global rules can be migrated.',
-    };
-  }
 
   // Must have at least one date
   if (!rule.startDate && !rule.endDate) {
@@ -170,8 +168,25 @@ export function migrateAccessRuleJsonToAccessControl(
     publishedEndDate: rule.endDate || null,
   };
 
+  // Convert UID selectors to overrides
+  const overrides: {
+    enabled: boolean;
+    name: string | null;
+    publishedEndDate: string | null;
+    uids: string[];
+  }[] = [];
+  if (rule.uids && rule.uids.length > 0) {
+    overrides.push({
+      enabled: true,
+      name: typeof rule.comment === 'string' ? rule.comment : null,
+      publishedEndDate: rule.endDate || null,
+      uids: rule.uids,
+    });
+  }
+
   return {
     success: true,
     accessControl,
+    overrides,
   };
 }

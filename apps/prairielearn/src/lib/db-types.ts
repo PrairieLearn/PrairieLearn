@@ -609,6 +609,26 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
+export const CourseInstanceAccessControlOverrideSchema = z.object({
+  course_instance_id: IdSchema,
+  enabled: z.boolean(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  published_end_date: DateFromISOString.nullable(),
+});
+export type CourseInstanceAccessControlOverride = z.infer<
+  typeof CourseInstanceAccessControlOverrideSchema
+>;
+
+export const CourseInstanceAccessControlEnrollmentOverrideSchema = z.object({
+  course_instance_access_control_override_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstanceAccessControlEnrollmentOverride = z.infer<
+  typeof CourseInstanceAccessControlEnrollmentOverrideSchema
+>;
+
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
