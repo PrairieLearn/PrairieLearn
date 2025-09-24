@@ -64,7 +64,7 @@ export async function aiGrade({
 }: {
   question: Question;
   course: Course;
-  course_instance_id?: string;
+  course_instance_id: string;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   authn_user_id: string;
@@ -264,6 +264,13 @@ export async function aiGrade({
           text: {
             format: zodTextFormat(RubricGradingResultSchema, 'score'),
           },
+          metadata: {
+            course_id: course.id.toString(),
+            course_instance_id: course_instance_id.toString(),
+            assessment_id: assessment_question.assessment_id.toString(),
+            assessment_question_id: assessment_question.id.toString(),
+            instance_question_id: instance_question.id.toString(),
+          },
           prompt_cache_key: `assessment_question_${assessment_question.id}`,
           safety_identifier: `course_${course.id}`,
         });
@@ -381,6 +388,13 @@ export async function aiGrade({
           input,
           text: {
             format: zodTextFormat(GradingResultSchema, 'score'),
+          },
+          metadata: {
+            course_id: course.id.toString(),
+            course_instance_id: course_instance_id.toString(),
+            assessment_id: assessment_question.assessment_id.toString(),
+            assessment_question_id: assessment_question.id.toString(),
+            instance_question_id: instance_question.id.toString(),
           },
           prompt_cache_key: `assessment_question_${assessment_question.id}`,
           safety_identifier: `course_${course.id}`,

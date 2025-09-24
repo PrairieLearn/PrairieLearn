@@ -262,7 +262,7 @@ function generateSubmissionMessage({
   // to the message content to construct an AI-readable version of the submission.
 
   const $submission_html = cheerio.load(submission_text);
-  let submissionTextSegment = '[BEGIN STUDENT_RESPONSE]\n\n';
+  let submissionTextSegment = '';
 
   $submission_html
     .root()
@@ -275,7 +275,7 @@ function generateSubmissionMessage({
           // Push and reset the current text segment before adding the image.
           content.push({
             type: 'input_text',
-            text: submissionTextSegment,
+            text: submissionTextSegment.trim(),
           });
           submissionTextSegment = '';
         }
@@ -321,7 +321,7 @@ function generateSubmissionMessage({
   if (submissionTextSegment) {
     content.push({
       type: 'input_text',
-      text: submissionTextSegment.trimEnd() + '\n\n[END STUDENT_RESPONSE]',
+      text: submissionTextSegment.trim(),
     });
   }
 
