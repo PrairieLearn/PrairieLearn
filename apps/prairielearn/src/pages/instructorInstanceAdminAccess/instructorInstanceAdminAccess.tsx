@@ -155,6 +155,7 @@ router.post(
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
+      console.log('formattedJson', formattedJson);
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
         locals: res.locals as any,
@@ -177,6 +178,7 @@ router.post(
       flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'migrate_access_rules') {
+      console.log('Migrating access rules');
       const published = req.body.published;
       const publishedStartDateEnabled = req.body.publishedStartDateEnabled;
       const publishedStartDate = req.body.publishedStartDate || null;
@@ -213,6 +215,8 @@ router.post(
         delete courseInstanceInfo.allowAccess;
       }
 
+      console.log('courseInstanceInfo', courseInstanceInfo);
+
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
@@ -231,7 +235,9 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch {
+      } catch (error) {
+        console.error('Error migrating access rules:', error);
+
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
