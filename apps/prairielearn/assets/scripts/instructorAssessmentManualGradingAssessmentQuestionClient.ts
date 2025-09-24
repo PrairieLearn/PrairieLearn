@@ -407,17 +407,17 @@ onDocumentReady(() => {
                           ? html`
                               <i
                                 class="bi bi-plus-square-fill text-danger"
-                                data-toggle="tooltip"
-                                data-placement="top"
-                                title="Selected by AI but not by human"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by AI but not by human"
                               ></i>
                             `
                           : html`
                               <i
                                 class="bi bi-dash-square-fill text-danger"
-                                data-toggle="tooltip"
-                                data-placement="top"
-                                title="Selected by human but not by AI"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
+                                data-bs-title="Selected by human but not by AI"
                               ></i>
                             `}
                         <span>${item.description}</span>
