@@ -182,7 +182,7 @@ export function AssessmentQuestion({
               course_instance_short_name: resLocals.course_instance.short_name,
               assessment_tid: resLocals.assessment.tid,
               question_qid: resLocals.question.qid,
-              file_upload_max_bypes: config.fileUploadMaxBytes,
+              file_upload_max_bytes: config.fileUploadMaxBytes,
             }}
           />,
         )}

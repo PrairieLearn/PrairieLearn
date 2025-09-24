@@ -205,7 +205,7 @@ export function RubricSettings({
       return;
     }
     const file = input.files[0];
-    if (file.size > contexts.file_upload_max_bypes) {
+    if (file.size > contexts.file_upload_max_bytes) {
       setImportModalWarning(
         `File size exceeds the maximum limit of ${contexts.file_upload_max_bytes} bytes. Please choose a smaller file.`,
       );
@@ -560,7 +560,7 @@ export function RubricSettings({
                 required
               />
               <small class="form-text text-muted">
-                Max file size: {filesize(contexts.file_upload_max_bypes, { base: 10, round: 0 })}
+                Max file size: {filesize(contexts.file_upload_max_bytes, { base: 10, round: 0 })}
               </small>
               {importModalWarning && (
                 <div
