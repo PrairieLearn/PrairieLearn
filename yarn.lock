@@ -3910,6 +3910,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/preact": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
@@ -4178,6 +4179,27 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     original-preact: "npm:preact@^10.27.0"
+    typescript: "npm:^5.9.2"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact@workspace:^, @prairielearn/preact@workspace:packages/preact":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact@workspace:packages/preact"
+  dependencies:
+    "@prairielearn/browser-utils": "workspace:^"
+    "@prairielearn/compiled-assets": "workspace:^"
+    "@prairielearn/error": "workspace:^"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/utils": "workspace:^"
+    "@types/node": "npm:^22.18.0"
+    clsx: "npm:^2.1.1"
+    preact: "npm:^10.27.0"
+    preact-render-to-string: "npm:^6.6.1"
+    selector-observer: "npm:^2.1.6"
+    superjson: "npm:^2.2.2"
     typescript: "npm:^5.9.2"
   languageName: unknown
   linkType: soft

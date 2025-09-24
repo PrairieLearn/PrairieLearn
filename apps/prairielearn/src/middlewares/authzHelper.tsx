@@ -7,16 +7,17 @@
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
 import { getPageContext } from '../lib/client/page-context.js';
-import { Hydrate } from '../lib/preact.js';
 
 import {
   AuthzAccessMismatch,
   type CheckablePermissionKeys,
   getErrorExplanation,
 } from './AuthzAccessMismatch.js';
+import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
 
 export const createAuthzMiddleware =
   ({
@@ -29,6 +30,7 @@ export const createAuthzMiddleware =
     unauthorizedUsers: 'passthrough' | 'block';
   }) =>
   (req: Request, res: Response, next: NextFunction) => {
+    const hasAuthzData = res.locals.authz_data != null;
     // This is special-cased because the middleware that sets authz_data
     // may not have run yet.
     const authzData = res.locals.authz_data ?? {
@@ -47,8 +49,17 @@ export const createAuthzMiddleware =
       return;
     }
 
-    if (authenticatedAccess && !req.cookies.pl_test_user) {
+    // If we don't have authz data from the request, we fallback to the non-friendly error page.
+    // We also do this fallback if we are in a test.
+    if (authenticatedAccess && !req.cookies.pl_test_user && hasAuthzData) {
       const pageContext = getPageContext(res.locals);
+
+      // Try to redirect to an accessible page. If we can't, then show the error page.
+      const redirectUrl = getRedirectForEffectiveAccessDenied(res);
+      if (redirectUrl) {
+        res.redirect(redirectUrl);
+        return;
+      }
 
       res.status(403).send(
         PageLayout({
