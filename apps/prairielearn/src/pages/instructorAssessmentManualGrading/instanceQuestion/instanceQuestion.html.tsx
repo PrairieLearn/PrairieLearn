@@ -54,7 +54,9 @@ export function InstanceQuestion({
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
 }) {
-  const instanceQuestionGroupsExist = instanceQuestionGroups && instanceQuestionGroups.length > 0;
+  const instanceQuestionGroupsExist = instanceQuestionGroups
+    ? instanceQuestionGroups.length > 0
+    : false;
 
   return PageLayout({
     resLocals: {
