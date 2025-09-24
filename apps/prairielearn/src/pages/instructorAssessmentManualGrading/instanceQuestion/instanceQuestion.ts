@@ -46,7 +46,6 @@ import {
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
-import { InstanceQuestionGroupSwitcher } from './instanceQuestionGroupSwitcher.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
@@ -221,39 +220,12 @@ router.get(
         ...(await prepareLocalsForRender(req.query, res.locals)),
         assignedGrader,
         lastGrader,
-        instanceQuestionGroupName: instanceQuestionGroup?.instance_question_group_name,
+        selectedInstanceQuestionGroup: instanceQuestionGroup,
         instanceQuestionGroups,
         aiGradingEnabled,
         aiGradingMode: aiGradingEnabled && res.locals.assessment_question.ai_grading_mode,
         aiGradingInfo,
         skipGradedSubmissions: req.session.skip_graded_submissions,
-      }),
-    );
-  }),
-);
-
-router.get(
-  '/instance_question_groups/switcher',
-  asyncHandler(async (req, res) => {
-    const instanceQuestionGroups = await selectInstanceQuestionGroups({
-      assessmentQuestionId: res.locals.assessment_question.id,
-    });
-
-    res.send(
-      InstanceQuestionGroupSwitcher({
-        instanceQuestionGroups: [
-          ...instanceQuestionGroups,
-          {
-            assessment_question_id: res.locals.assessment_question.id,
-            instance_question_group_name: 'No group',
-            instance_question_group_description: 'Group was not assigned.',
-            id: '',
-          },
-        ],
-        currentInstanceQuestionGroupId:
-          res.locals.instance_question.manual_instance_question_group_id ??
-          res.locals.instance_question.ai_instance_question_group_id ??
-          null,
       }),
     );
   }),
@@ -271,7 +243,7 @@ router.put(
 
     await updateManualInstanceQuestionGroup({
       instance_question_id: res.locals.instance_question.id,
-      manual_instance_question_group_id: manualInstanceQuestionGroupId ?? null,
+      manual_instance_question_group_id: manualInstanceQuestionGroupId || null,
     });
 
     res.sendStatus(204);

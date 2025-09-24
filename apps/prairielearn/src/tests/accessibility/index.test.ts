@@ -328,7 +328,6 @@ const SKIP_ROUTES = [
   // HTML documents.
   /^\/pl\/navbar\/course/,
   /^\/pl\/assessments_switcher\/course_instance/,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id/instance_question_groups/switcher',
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,

@@ -949,10 +949,13 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
   });
 
   instanceQuestionGroupSelectionDropdown.addEventListener('click', async (e) => {
-    const selectedAiInstanceQuestionDropdownItem = e.target.closest('.dropdown-item');
-    const selectedAiInstanceQuestionGroupId = selectedAiInstanceQuestionDropdownItem.getAttribute(
-      'data-instance-question-group-id',
-    );
+    const selectedGroupDropdownItem = e.target.closest('.dropdown-item');
+
+    const {
+      id: selectedGroupId,
+      name: selectedGroupName,
+      description: selectedGroupDescription,
+    } = selectedGroupDropdownItem.dataset;
 
     await fetch(`${instanceQuestionId}/manual_instance_question_group`, {
       method: 'PUT',
@@ -960,24 +963,39 @@ function addInstanceQuestionGroupSelectionDropdownListeners() {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        manualInstanceQuestionGroupId: selectedAiInstanceQuestionGroupId,
+        manualInstanceQuestionGroupId: selectedGroupId,
       }),
     });
 
     const activeDropdownItem = document.querySelector('.dropdown-item.active');
     activeDropdownItem.classList.remove('active');
 
-    selectedAiInstanceQuestionDropdownItem.classList.add('active');
+    selectedGroupDropdownItem.classList.add('active');
 
     // If a instance question group is selected, show the grade button with a dropdown.
     // Otherwise, show the grade button without a dropdown.
-    gradeButton.classList.toggle('d-none', selectedAiInstanceQuestionGroupId);
-    gradeButtonWithDropdown.classList.toggle('d-none', !selectedAiInstanceQuestionGroupId);
+    gradeButton.classList.toggle('d-none', selectedGroupId);
+    gradeButtonWithDropdown.classList.toggle('d-none', !selectedGroupId);
 
-    const instanceQuestionGroupSelectionDropdownSpan = document.querySelector(
+    const groupSelectionDropdownSpan = document.querySelector(
       '#instance-question-group-selection-dropdown-span',
     );
-    instanceQuestionGroupSelectionDropdownSpan.innerHTML =
-      selectedAiInstanceQuestionDropdownItem.textContent;
+    groupSelectionDropdownSpan.innerHTML = selectedGroupName;
+
+    const groupDescriptionTooltip = document.querySelector(
+      '#instance-question-group-description-tooltip',
+    );
+
+    groupDescriptionTooltip.setAttribute('data-bs-title', selectedGroupDescription);
+    groupDescriptionTooltip.setAttribute('aria-label', selectedGroupDescription);
+
+    // Update the tooltip title
+    const tooltip = window.bootstrap.Tooltip.getInstance(groupDescriptionTooltip);
+    if (tooltip) {
+      // Dispose the current tooltip instance
+      tooltip.dispose();
+      // Re-initialize the tooltip
+      new window.bootstrap.Tooltip(groupDescriptionTooltip);
+    }
   });
 }

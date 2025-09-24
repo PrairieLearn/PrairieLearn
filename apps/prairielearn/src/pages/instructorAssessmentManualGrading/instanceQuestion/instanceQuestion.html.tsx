@@ -30,7 +30,7 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
-  instanceQuestionGroupName,
+  selectedInstanceQuestionGroup,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
@@ -42,7 +42,7 @@ export function InstanceQuestion({
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
-  instanceQuestionGroupName?: string;
+  selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -190,7 +190,7 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
-                instanceQuestionGroupName,
+                selectedInstanceQuestionGroup,
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
