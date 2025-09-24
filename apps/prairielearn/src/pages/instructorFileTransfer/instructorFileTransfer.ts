@@ -10,6 +10,7 @@ import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { HttpRedirect } from '../../lib/redirect.js';
 import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
@@ -37,20 +38,18 @@ async function getFileTransfer(file_transfer_id: string, user_id: string): Promi
   return file_transfer;
 }
 
-async function doTransfer(res: Response, editor: Editor, fileTransferId: string): Promise<boolean> {
+async function doTransfer(res: Response, editor: Editor, fileTransferId: string) {
   const serverJob = await editor.prepareServerJob();
   try {
     await editor.executeWithServerJob(serverJob);
   } catch {
-    res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-    return false;
+    throw new HttpRedirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
   }
 
   await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
     user_id: res.locals.user.user_id,
   });
-  return true;
 }
 
 export function getContentDir(fullPath: string, parentDir: string): string {
@@ -79,7 +78,7 @@ router.get(
         is_transfer: true,
       });
 
-      if (!(await doTransfer(res, editor, file_transfer.id))) return;
+      await doTransfer(res, editor, file_transfer.id);
 
       const question = await selectQuestionByUuid({
         course_id: res.locals.course.id,
@@ -107,7 +106,7 @@ router.get(
         course_instance: fromCourseInstance,
       });
 
-      if (!(await doTransfer(res, editor, file_transfer.id))) return;
+      await doTransfer(res, editor, file_transfer.id);
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
