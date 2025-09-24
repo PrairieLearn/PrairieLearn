@@ -17,9 +17,6 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
-
-  // Need this to extract things like course_short_name, course_instance_short_name, assessment_tid, question_qid
-  // I'll remove this once this part is reviewed
   contexts,
 }: {
   assessmentQuestion: AssessmentQuestion;
