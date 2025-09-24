@@ -190,7 +190,7 @@ export function RubricSettings({
     URL.revokeObjectURL(url);
   };
 
-  function roundPoints(points) {
+  function roundPoints(points: number) {
     return Math.round(Number(points) * 100) / 100;
   }
 
