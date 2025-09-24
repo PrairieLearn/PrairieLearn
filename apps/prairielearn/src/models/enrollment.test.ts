@@ -10,8 +10,8 @@ import { getOrCreateUser } from '../tests/utils/auth.js';
 
 import {
   ensureEnrollment,
-  selectOptionalCourseInstanceEnrollmentByPendingUid,
-  selectOptionalCourseInstanceEnrollmentByUserId,
+  selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUserId,
 } from './enrollment.js';
 
 describe('ensureEnrollment', () => {
@@ -43,7 +43,7 @@ describe('ensureEnrollment', () => {
       EnrollmentSchema,
     );
 
-    const initialEnrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
+    const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
       pending_uid: user.uid,
       course_instance_id: '1',
     });
@@ -60,7 +60,7 @@ describe('ensureEnrollment', () => {
       action_detail: 'implicit_joined',
     });
 
-    const finalEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const finalEnrollment = await selectOptionalEnrollmentByUserId({
       course_instance_id: '1',
       user_id: user.user_id,
     });
@@ -70,7 +70,7 @@ describe('ensureEnrollment', () => {
     assert.isNull(finalEnrollment.pending_uid);
     assert.equal(finalEnrollment.user_id, user.user_id);
 
-    const invitedEnrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
+    const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pending_uid: user.uid,
       course_instance_id: '1',
     });
@@ -97,7 +97,7 @@ describe('ensureEnrollment', () => {
       EnrollmentSchema,
     );
 
-    const initialEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const initialEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });
@@ -113,7 +113,7 @@ describe('ensureEnrollment', () => {
       action_detail: 'implicit_joined',
     });
 
-    const finalEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const finalEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });
@@ -130,7 +130,7 @@ describe('ensureEnrollment', () => {
       email: 'new@example.com',
     });
 
-    const initialEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const initialEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });
@@ -144,7 +144,7 @@ describe('ensureEnrollment', () => {
       action_detail: 'implicit_joined',
     });
 
-    const finalEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const finalEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });
@@ -174,7 +174,7 @@ describe('ensureEnrollment', () => {
       EnrollmentSchema,
     );
 
-    const initialEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const initialEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });
@@ -190,7 +190,7 @@ describe('ensureEnrollment', () => {
       action_detail: 'implicit_joined',
     });
 
-    const finalEnrollment = await selectOptionalCourseInstanceEnrollmentByUserId({
+    const finalEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: user.user_id,
       course_instance_id: '1',
     });

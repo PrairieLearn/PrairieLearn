@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { selectOptionalCourseInstanceEnrollmentByUserId } from '../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
@@ -214,7 +214,7 @@ async function selectUserInCourseInstance({
       [user.user_id, course_instance_id],
       z.boolean(),
     )) ||
-    (await selectOptionalCourseInstanceEnrollmentByUserId({
+    (await selectOptionalEnrollmentByUserId({
       course_instance_id,
       user_id: user.user_id,
     }))

@@ -29,7 +29,12 @@ import { generateUsers, selectUserById } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-async function dangerouslyEnrollInvitedUserInCourseInstance({
+/**
+ * Changes the status of an invited enrollment to joined.
+ *
+ * Function callers should hold a lock on the enrollment.
+ */
+async function dangerouslyEnrollUserInCourseInstance({
   enrollment_id,
   user_id,
   agent_user_id,
@@ -43,8 +48,9 @@ async function dangerouslyEnrollInvitedUserInCourseInstance({
   action_detail: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment> {
   const oldEnrollment = await selectEnrollmentById({ id: enrollment_id });
+  assert(oldEnrollment.status !== 'joined');
   const newEnrollment = await queryRow(
-    sql.enroll_invited_user,
+    sql.enroll_user,
     {
       enrollment_id,
       user_id,
@@ -88,7 +94,7 @@ export async function ensureEnrollment({
 }): Promise<Enrollment | null> {
   const result = await runInTransactionAsync(async () => {
     const user = await selectUserById(user_id);
-    const enrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
+    const enrollment = await selectOptionalEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
     });
@@ -98,7 +104,7 @@ export async function ensureEnrollment({
     }
 
     if (enrollment && enrollment.status === 'invited') {
-      const updated = await dangerouslyEnrollInvitedUserInCourseInstance({
+      const updated = await dangerouslyEnrollUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,
         agent_user_id,
@@ -191,23 +197,23 @@ export async function ensureCheckedEnrollment({
   });
 }
 
-export async function selectOptionalCourseInstanceEnrollmentByUserId({
+export async function selectOptionalEnrollmentByUserId({
   user_id,
   course_instance_id,
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
-    sql.select_enrollment_in_course_instance_by_user_id,
+    sql.select_enrollment_by_user_id,
     { user_id, course_instance_id },
     EnrollmentSchema,
   );
 }
 
-export async function selectOptionalCourseInstanceEnrollmentByPendingUid({
+export async function selectOptionalEnrollmentByPendingUid({
   pending_uid,
   course_instance_id,
 }): Promise<Enrollment | null> {
   return await queryOptionalRow(
-    sql.select_enrollment_in_course_instance_by_pending_uid,
+    sql.select_enrollment_by_pending_uid,
     { pending_uid, course_instance_id },
     EnrollmentSchema,
   );
@@ -262,6 +268,7 @@ export async function selectOptionalEnrollmentByUid({
 /**
  * This function invites an existing enrollment.
  * All usages of this function should hold a lock on the enrollment.
+ * Callers should ensure that the enrollment is not already invited or joined.
  */
 async function dangerouslyInviteExistingEnrollment({
   enrollment_id,

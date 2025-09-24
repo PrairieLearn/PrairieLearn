@@ -12,7 +12,7 @@ ON CONFLICT DO NOTHING
 RETURNING
   *;
 
--- BLOCK enroll_invited_user
+-- BLOCK enroll_user
 UPDATE enrollments
 SET
   status = 'joined',
@@ -21,11 +21,10 @@ SET
   first_joined_at = now()
 WHERE
   id = $enrollment_id
-  AND status = 'invited'
 RETURNING
   *;
 
--- BLOCK select_enrollment_in_course_instance_by_pending_uid
+-- BLOCK select_enrollment_by_pending_uid
 SELECT
   *
 FROM
@@ -34,7 +33,7 @@ WHERE
   pending_uid = $pending_uid
   AND course_instance_id = $course_instance_id;
 
--- BLOCK select_enrollment_in_course_instance_by_user_id
+-- BLOCK select_enrollment_by_user_id
 SELECT
   *
 FROM

@@ -13,10 +13,7 @@ import { config } from '../../lib/config.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
-import {
-  ensureEnrollment,
-  selectOptionalCourseInstanceEnrollmentByPendingUid,
-} from '../../models/enrollment.js';
+import { ensureEnrollment, selectOptionalEnrollmentByPendingUid } from '../../models/enrollment.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -135,7 +132,7 @@ router.post(
         action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      const oldEnrollment = await selectOptionalCourseInstanceEnrollmentByPendingUid({
+      const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
         course_instance_id: body.course_instance_id,
         pending_uid: uid,
       });
