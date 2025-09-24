@@ -369,7 +369,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       reasoning: {
         effort: 'low',
       },
-      user: openAiUserFromAuthn(authnUserId),
+      safety_identifier: openAiUserFromAuthn(authnUserId),
     });
 
     const results = extractFromResponse(response, job);
@@ -607,7 +607,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       // Use higher reasoning effort for revisions.
       effort: 'medium',
     },
-    user: openAiUserFromAuthn(authnUserId),
+    safety_identifier: openAiUserFromAuthn(authnUserId),
   });
 
   const results = extractFromResponse(response, job);

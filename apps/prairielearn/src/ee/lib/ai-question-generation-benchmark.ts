@@ -18,7 +18,6 @@ import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
 import { generateQuestion } from './aiQuestionGeneration.js';
-import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
@@ -278,7 +277,6 @@ export async function benchmarkAiQuestionGeneration({
 
       const evaluationResult = await evaluateGeneratedQuestion({
         client,
-        authnUserId,
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
@@ -319,14 +317,12 @@ export async function benchmarkAiQuestionGeneration({
 
 async function evaluateGeneratedQuestion({
   client,
-  authnUserId,
   originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
   client: OpenAI;
-  authnUserId: string;
   originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
@@ -389,7 +385,6 @@ async function evaluateGeneratedQuestion({
     reasoning: {
       effort: 'low',
     },
-    user: openAiUserFromAuthn(authnUserId),
   });
 
   return response.output_parsed;

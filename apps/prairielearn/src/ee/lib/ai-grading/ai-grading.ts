@@ -2,7 +2,7 @@ import assert from 'node:assert';
 
 import * as async from 'async';
 import { OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod';
+import { zodTextFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -27,7 +27,6 @@ import * as questionServers from '../../../question-servers/index.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   OPEN_AI_MODEL,
-  OPEN_AI_TEMPERATURE,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
@@ -233,7 +232,7 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
-      const { messages } = await generatePrompt({
+      const input = await generatePrompt({
         questionPrompt,
         submission_text,
         submitted_answer: submission.submitted_answer,
@@ -259,25 +258,25 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const completion = await openai.chat.completions.parse({
-          messages,
+        const response = await openai.responses.parse({
           model: OPEN_AI_MODEL,
-          user: `course_${course.id}`,
-          response_format: zodResponseFormat(RubricGradingResultSchema, 'score'),
-          temperature: OPEN_AI_TEMPERATURE,
+          input,
+          text: {
+            format: zodTextFormat(RubricGradingResultSchema, 'score'),
+          },
+          prompt_cache_key: `assessment_question_${assessment_question.id}`,
+          safety_identifier: `course_${course.id}`,
         });
         try {
-          logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          logger.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logger.info(`Tokens used for prompt: ${response.usage?.input_tokens ?? 0}`);
+          logger.info(`Tokens used for completion: ${response.usage?.output_tokens ?? 0}`);
+          logger.info(`Tokens used in total: ${response.usage?.total_tokens ?? 0}`);
 
-          const response = completion.choices[0].message;
+          logger.info(`Raw response:\n${response.output_text}`);
 
-          logger.info(`Raw response:\n${response.content}`);
-
-          if (response.parsed) {
+          if (response.output_parsed) {
             const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-              ai_rubric_items: response.parsed.rubric_items,
+              ai_rubric_items: response.output_parsed.rubric_items,
               rubric_items,
             });
             if (shouldUpdateScore) {
@@ -305,8 +304,8 @@ export async function aiGrade({
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
-                  prompt: messages,
-                  completion,
+                  prompt: input,
+                  completion: response,
                   course_id: course.id,
                   course_instance_id,
                 });
@@ -342,8 +341,8 @@ export async function aiGrade({
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
-                  prompt: messages,
-                  completion,
+                  prompt: input,
+                  completion: response,
                   course_id: course.id,
                   course_instance_id,
                 });
@@ -355,10 +354,8 @@ export async function aiGrade({
             for (const item of appliedRubricDescription) {
               logger.info(`- ${item}`);
             }
-          } else if (response.refusal) {
-            logger.error(`ERROR AI grading for ${instance_question.id}`);
-            logger.error(response.refusal);
-
+          } else {
+            logger.error(`ERROR AI grading for ${instance_question.id}: no response`);
             return false;
           }
         } catch (err) {
@@ -379,27 +376,28 @@ export async function aiGrade({
           score: z.number().min(0).max(100),
         });
 
-        const completion = await openai.chat.completions.parse({
-          messages,
+        const response = await openai.responses.parse({
           model: OPEN_AI_MODEL,
-          user: `course_${course.id}`,
-          response_format: zodResponseFormat(GradingResultSchema, 'score'),
-          temperature: OPEN_AI_TEMPERATURE,
+          input,
+          text: {
+            format: zodTextFormat(GradingResultSchema, 'score'),
+          },
+          prompt_cache_key: `assessment_question_${assessment_question.id}`,
+          safety_identifier: `course_${course.id}`,
         });
         try {
-          logger.info(`Tokens used for prompt: ${completion.usage?.prompt_tokens ?? 0}`);
-          logger.info(`Tokens used for completion: ${completion.usage?.completion_tokens ?? 0}`);
-          logger.info(`Tokens used in total: ${completion.usage?.total_tokens ?? 0}`);
+          logger.info(`Tokens used for prompt: ${response.usage?.input_tokens ?? 0}`);
+          logger.info(`Tokens used for completion: ${response.usage?.output_tokens ?? 0}`);
+          logger.info(`Tokens used in total: ${response.usage?.total_tokens ?? 0}`);
 
-          const response = completion.choices[0].message;
-          logger.info(`Raw response:\n${response.content}`);
+          logger.info(`Raw response:\n${response.output_text}`);
 
-          if (response.parsed) {
-            const score = response.parsed.score;
+          if (response.output_parsed) {
+            const score = response.output_parsed.score;
 
             if (shouldUpdateScore) {
               // Requires grading: update instance question score
-              const feedback = response.parsed.feedback;
+              const feedback = response.output_parsed.feedback;
               await runInTransactionAsync(async () => {
                 const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
                   assessment_question.assessment_id,
@@ -418,8 +416,8 @@ export async function aiGrade({
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
-                  prompt: messages,
-                  completion,
+                  prompt: input,
+                  completion: response,
                   course_id: course.id,
                   course_instance_id,
                 });
@@ -446,19 +444,17 @@ export async function aiGrade({
                 await insertAiGradingJob({
                   grading_job_id,
                   job_sequence_id: serverJob.jobSequenceId,
-                  prompt: messages,
-                  completion,
+                  prompt: input,
+                  completion: response,
                   course_id: course.id,
                   course_instance_id,
                 });
               });
             }
 
-            logger.info(`AI score: ${response.parsed.score}`);
-          } else if (response.refusal) {
-            logger.error(`ERROR AI grading for ${instance_question.id}`);
-            logger.error(response.refusal);
-
+            logger.info(`AI score: ${response.output_parsed.score}`);
+          } else {
+            logger.error(`ERROR AI grading for ${instance_question.id}: no response`);
             return false;
           }
         } catch (err) {

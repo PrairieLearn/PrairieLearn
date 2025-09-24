@@ -1,10 +1,11 @@
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
 import type {
-  ChatCompletionContentPart,
-  ChatCompletionMessageParam,
-  ParsedChatCompletion,
-} from 'openai/resources/chat/completions';
+  ParsedResponse,
+  ResponseInput,
+  ResponseInputItem,
+  ResponseInputMessageContentList,
+} from 'openai/resources/responses/responses';
 import { z } from 'zod';
 
 import {
@@ -44,7 +45,6 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
-export const OPEN_AI_TEMPERATURE = 0.2;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -59,15 +59,15 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): number {
+export function calculateApiCost(usage?: OpenAI.Responses.ResponseUsage): number {
   if (!usage) {
     return 0;
   }
-  const cached_input_tokens = usage.prompt_tokens_details?.cached_tokens ?? 0;
-  const prompt_tokens = usage.prompt_tokens - cached_input_tokens;
-  const completion_tokens = usage.completion_tokens;
+  const cached_input_tokens = usage.input_tokens_details?.cached_tokens ?? 0;
+  const prompt_tokens = usage.input_tokens - cached_input_tokens;
+  const completion_tokens = usage.output_tokens;
 
-  // Pricings are updated according to https://platform.openai.com/docs/pricing
+  // Pricing is updated according to https://platform.openai.com/docs/pricing
   const cached_input_cost = 1.25 / 10 ** 6;
   const prompt_cost = 2.5 / 10 ** 6;
   const completion_cost = 10 / 10 ** 6;
@@ -77,6 +77,13 @@ export function calculateApiCost(usage?: OpenAI.Completions.CompletionUsage): nu
     prompt_tokens * prompt_cost +
     completion_tokens * completion_cost
   );
+}
+
+type Prompt = (string | string[])[];
+
+function formatPrompt(prompt: Prompt): string {
+  const joinedParagraphs = prompt.map((part) => (Array.isArray(part) ? part.join(' ') : part));
+  return joinedParagraphs.join('\n\n');
 }
 
 export async function generatePrompt({
@@ -91,92 +98,145 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-}): Promise<{
-  messages: ChatCompletionMessageParam[];
-}> {
-  const messages: ChatCompletionMessageParam[] = [];
+}): Promise<ResponseInput> {
+  const input: ResponseInput = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
-    let rubric_info = '';
-    for (const item of rubric_items) {
-      rubric_info += `description: ${item.description}\n`;
-      if (item.explanation) {
-        rubric_info += `explanation: ${item.explanation}\n`;
-      }
-      if (item.grader_note) {
-        rubric_info += `grader note: ${item.grader_note}\n`;
-      }
-      rubric_info += '\n';
-    }
-    messages.push(
+    input.push(
       {
-        role: 'system',
-        content:
-          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any. You should also include an explanation on why you make these choices." +
-          (example_submissions.length > 0
-            ? ' I will provide some example student responses and their corresponding selected rubric items.'
-            : ''),
+        role: 'developer',
+        content: formatPrompt([
+          [
+            "You are an instructor for a course, and you are grading a student's response to a question.",
+            'You are provided several rubric items with a description, explanation, and grader note.',
+            "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
+            'If no rubric items apply, do not select any.',
+            'You should also include an explanation on why you make these choices.',
+          ],
+          'Here are the rubric items:',
+        ]),
       },
       {
-        role: 'system',
-        content: `Here are the rubric items:\n\n${rubric_info}`,
+        role: 'user',
+        content: rubric_items
+          .map((item) => {
+            const itemParts: string[] = [`description: ${item.description}`];
+            if (item.explanation) {
+              itemParts.push(`explanation: ${item.explanation}`);
+            }
+            if (item.grader_note) {
+              itemParts.push(`grader note: ${item.grader_note}`);
+            }
+            return itemParts.join('\n');
+          })
+          .join('\n\n'),
       },
     );
   } else {
-    messages.push({
-      role: 'system',
-      content:
-        "You are an instructor for a course, and you are grading a student's response to a question. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. Follow any special instructions given by the instructor in the question. Include feedback for the student, but omit the feedback if the student's response is entirely correct. Also include an explanation on why you made these choices." +
-        (example_submissions.length > 0
-          ? ' I will provide some example student responses and their corresponding scores and feedback.'
-          : ''),
+    input.push({
+      role: 'developer',
+      content: formatPrompt([
+        "You are an instructor for a course, and you are grading a student's response to a question.",
+        'The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest.',
+        'Follow any special instructions given by the instructor in the question.',
+        "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
+        'Also include an explanation on why you made these choices.',
+      ]),
     });
   }
 
-  // Question prompt
-  messages.push({
-    role: 'user',
-    content: `Question: \n${questionPrompt}`,
-  });
+  input.push(
+    {
+      role: 'developer',
+      content: 'I will now provide the question for which you will be grading a response:',
+    },
+    {
+      role: 'user',
+      content: formatPrompt(['[BEGIN QUESTION_PROMPT]', questionPrompt, '[END QUESTION_PROMPT]']),
+    },
+  );
 
-  // Examples
-  for (const example of example_submissions) {
-    if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
-      // Note that the example may have been graded with a different rubric,
-      // or the rubric may have changed significantly since the example was graded.
-      // We'll show whatever items were selected anyways, since it'll likely
-      // still be useful context to the LLM.
-      const rubric_grading_items = await selectRubricGradingItems(example.manual_rubric_grading_id);
-      let rubric_grading_info = '';
-      for (const item of rubric_grading_items) {
-        rubric_grading_info += `description: ${item.description}\n`;
-      }
-      messages.push({
-        role: 'user',
-        content: `Example student response: \n<response>\n${example.submission_text} \n<response>\nSelected rubric items for this example student response: \n${rubric_grading_info}`,
+  if (example_submissions.length > 0) {
+    if (rubric_items.length > 0) {
+      input.push({
+        role: 'developer',
+        content:
+          'I will provide some example student responses and their corresponding selected rubric items.',
       });
     } else {
-      messages.push({
-        role: 'user',
+      input.push({
+        role: 'developer',
         content:
-          `Example student response: \n<response>\n${example.submission_text} \n<response>\nScore for this example student response: \n${example.score_perc}\n` +
-          (example.feedback?.manual
-            ? `Feedback for this example student response: \n${example.feedback.manual}\n`
-            : ''),
+          'Here are some example student responses and their corresponding scores and feedback.',
       });
+    }
+
+    // Examples
+    for (const example of example_submissions) {
+      if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
+        // Note that the example may have been graded with a different rubric,
+        // or the rubric may have changed significantly since the example was graded.
+        // We'll show whatever items were selected anyways, since it'll likely
+        // still be useful context to the LLM.
+        const rubric_grading_items = await selectRubricGradingItems(
+          example.manual_rubric_grading_id,
+        );
+        input.push({
+          role: 'user',
+          content: formatPrompt([
+            '[BEGIN EXAMPLE_SUBMISSION]',
+            example.submission_text,
+            '[END EXAMPLE_SUBMISSION]',
+            '[BEGIN SELECTED_RUBRIC_ITEMS]',
+            run(() => {
+              if (rubric_grading_items.length === 0) {
+                return 'No rubric items were selected for this example student response.';
+              }
+              return rubric_grading_items.map((item) => `- ${item.description}`).join('\n');
+            }),
+            '[END SELECTED_RUBRIC_ITEMS]',
+          ]),
+        });
+      } else {
+        input.push({
+          role: 'user',
+          content: formatPrompt([
+            '[BEGIN EXAMPLE_SUBMISSION]',
+            example.submission_text,
+            '[END EXAMPLE_SUBMISSION]',
+            '[BEGIN GRADING_RESULT]',
+            JSON.stringify(
+              {
+                score: example.score_perc,
+                feedback: example.feedback?.manual?.trim() || '',
+              },
+              null,
+              2,
+            ),
+            '[END GRADING_RESULT]',
+          ]),
+        });
+      }
     }
   }
 
-  // Student response
-  messages.push(
+  input.push(
+    {
+      role: 'developer',
+      content: 'The student made the following submission:',
+    },
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
     }),
+    {
+      role: 'developer',
+      content: 'Please grade the submission according to the above instructions.',
+    },
   );
 
-  return { messages };
+  return input;
 }
 
 /**
@@ -195,19 +255,14 @@ function generateSubmissionMessage({
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-}): ChatCompletionMessageParam {
-  const message_content: ChatCompletionContentPart[] = [];
-
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+}): ResponseInputItem {
+  const content: ResponseInputMessageContentList = [];
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
 
   const $submission_html = cheerio.load(submission_text);
-  let submissionTextSegment = '';
+  let submissionTextSegment = '[BEGIN STUDENT_RESPONSE]\n\n';
 
   $submission_html
     .root()
@@ -218,8 +273,8 @@ function generateSubmissionMessage({
       if (imageCaptureUUID) {
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
-          message_content.push({
-            type: 'text',
+          content.push({
+            type: 'input_text',
             text: submissionTextSegment,
           });
           submissionTextSegment = '';
@@ -246,18 +301,17 @@ function generateSubmissionMessage({
         if (!submitted_answer[fileName]) {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
-          message_content.push({
-            type: 'text',
+          content.push({
+            type: 'input_text',
             text: `Image capture with ${fileName} was not captured.`,
           });
           return;
         }
 
-        message_content.push({
-          type: 'image_url',
-          image_url: {
-            url: submitted_answer[fileName],
-          },
+        content.push({
+          type: 'input_image',
+          image_url: submitted_answer[fileName],
+          detail: 'auto',
         });
       } else {
         submissionTextSegment += $submission_html(node).text();
@@ -265,21 +319,16 @@ function generateSubmissionMessage({
     });
 
   if (submissionTextSegment) {
-    message_content.push({
-      type: 'text',
-      text: submissionTextSegment,
+    content.push({
+      type: 'input_text',
+      text: submissionTextSegment.trimEnd() + '\n\n[END STUDENT_RESPONSE]',
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
-
   return {
     role: 'user',
-    content: message_content,
-  } satisfies ChatCompletionMessageParam;
+    content,
+  };
 }
 
 export async function generateSubmissionEmbedding({
@@ -393,8 +442,8 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: ChatCompletionMessageParam[];
-  completion: ParsedChatCompletion<any>;
+  prompt: ResponseInput;
+  completion: ParsedResponse<any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -404,8 +453,8 @@ export async function insertAiGradingJob({
     prompt: JSON.stringify(prompt),
     completion,
     model: OPEN_AI_MODEL,
-    prompt_tokens: completion.usage?.prompt_tokens ?? 0,
-    completion_tokens: completion.usage?.completion_tokens ?? 0,
+    prompt_tokens: completion.usage?.input_tokens ?? 0,
+    completion_tokens: completion.usage?.output_tokens ?? 0,
     cost: calculateApiCost(completion.usage),
     course_id,
     course_instance_id,
