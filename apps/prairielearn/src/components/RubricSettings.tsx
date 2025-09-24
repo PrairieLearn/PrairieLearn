@@ -1,5 +1,8 @@
+/* eslint-disable no-alert */
 import clsx from 'clsx';
-import { useMemo, useState } from 'preact/hooks';
+import { filesize } from 'filesize';
+import { useMemo, useRef, useState } from 'preact/hooks';
+import { Overlay, Popover } from 'react-bootstrap';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
@@ -23,7 +26,7 @@ export function RubricSettings({
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  contexts: Record<string, string>;
+  contexts: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const wasUsingRubric = Boolean(rubricData);
@@ -48,6 +51,9 @@ export function RubricSettings({
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [showImportPopover, setShowImportPopover] = useState<boolean>(false);
+  const target = useRef(null);
+  const rubricFile = useRef<HTMLInputElement>(null);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -185,6 +191,84 @@ export function RubricSettings({
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  function roundPoints(points) {
+    return Math.round(Number(points) * 100) / 100;
+  }
+
+  const importRubric = async () => {
+    const input = rubricFile.current;
+    if (!input?.files || input.files.length === 0) {
+      alert('Please select a file to import.');
+      return;
+    }
+    const file = input.files[0];
+    if (file.size > contexts.file_upload_max_bypes) {
+      alert(
+        `File size exceeds the maximum limit of ${contexts.file_upload_max_bytes} bytes. Please choose a smaller file.`,
+      );
+      return;
+    }
+
+    try {
+      const fileContent = await file.text();
+      if (fileContent.trim() === '') {
+        return;
+      }
+      let parsedData;
+      try {
+        parsedData = JSON.parse(fileContent);
+      } catch {
+        alert('Error parsing JSON file, please check the file format.');
+        return;
+      }
+
+      // This factor scales the imported rubric point values to ensure that they
+      // are correctly aligned with the point values of the recipient question.
+      let scaleFactor = 1;
+
+      if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
+        // If the rubric does not use auto points, or if it replaces auto points,
+        // then the scale factor is based on max_points (the total point gs of the rubric)
+        const maxPoints = assessmentQuestion.max_points ?? 0;
+
+        if (maxPoints > 0 && parsedData.max_points) {
+          scaleFactor = maxPoints / parsedData.max_points;
+        }
+      } else {
+        // If the rubric uses auto points and does not replace them, it
+        // applies only to the manual points of the assessment question.
+        // Therefore, we base the scale factor on max_manual_points.
+        const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
+
+        if (maxManualPoints > 0 && parsedData.max_manual_points) {
+          scaleFactor = maxManualPoints / parsedData.max_manual_points;
+        }
+      }
+      setMaxExtraPoints(roundPoints((parsedData.max_extra_points || 0) * scaleFactor));
+      setMinPoints(roundPoints((parsedData.min_points || 0) * scaleFactor));
+      setReplaceAutoPoints(parsedData.replace_auto_points);
+      setStartingPoints(roundPoints((parsedData.starting_points || 0) * scaleFactor));
+
+      const rubricItems = parsedData.rubric_items;
+      if (!rubricItems || !Array.isArray(rubricItems)) {
+        alert('Invalid rubric data format. Expected rubric_items to be an array.');
+        return;
+      }
+
+      const scaledRubricItems: RubricItemData[] = [];
+      for (const rubricItem of rubricItems) {
+        scaledRubricItems.push({
+          ...rubricItem,
+          points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+        });
+      }
+      setRubricItems(scaledRubricItems);
+      setShowImportPopover(false);
+    } catch {
+      alert('Error reading file content.');
+    }
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -448,20 +532,63 @@ export function RubricSettings({
             Export rubric
           </button>
           <button
+            ref={target}
             id="import-rubric-button"
             type="button"
             class="btn btn-sm btn-primary"
             disabled={!editMode}
-            data-bs-title="Import rubric settings"
-            data-bs-toggle="popover"
-            data-bs-placement="auto"
-            data-bs-html="true"
-            data-bs-container="body"
-            data-bs-content="{escapeHtml(ImportRubricSettingsPopover())}"
+            onClick={() => setShowImportPopover(!showImportPopover)}
           >
             <i class="fas fa-upload" />
             Import rubric
           </button>
+          <Overlay
+            target={target.current}
+            show={showImportPopover}
+            placement="right"
+            rootClose
+            onHide={() => setShowImportPopover(false)}
+          >
+            <Popover>
+              <Popover.Header as="h3">Import rubric settings</Popover.Header>
+              <Popover.Body>
+                <label class="form-label" for="rubric-settings-file-input">
+                  Choose file
+                </label>
+                <input
+                  ref={rubricFile}
+                  type="file"
+                  name="file"
+                  class="form-control"
+                  id="rubric-settings-file-input"
+                  accept="application/json,.json"
+                  required
+                />
+                <small class="form-text text-muted">
+                  Max file size: {filesize(contexts.file_upload_max_bypes, { base: 10, round: 0 })}
+                </small>
+                <div class="mb-3">
+                  <div class="text-end">
+                    <button
+                      type="button"
+                      class="btn btn-secondary"
+                      onClick={() => setShowImportPopover(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      id="upload-rubric-file-button"
+                      type="submit"
+                      class="btn btn-primary"
+                      onClick={() => importRubric()}
+                    >
+                      Upload file
+                    </button>
+                  </div>
+                </div>
+              </Popover.Body>
+            </Popover>
+          </Overlay>
           <button
             type="button"
             class="btn btn-sm btn-ghost"

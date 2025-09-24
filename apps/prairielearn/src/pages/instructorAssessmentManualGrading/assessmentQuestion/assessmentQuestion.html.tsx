@@ -12,6 +12,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import { config } from '../../../lib/config.js';
 import type { User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 import { renderHtml } from '../../../lib/preact-html.js';
@@ -181,6 +182,7 @@ export function AssessmentQuestion({
               course_instance_short_name: resLocals.course_instance.short_name,
               assessment_tid: resLocals.assessment.tid,
               question_qid: resLocals.question.qid,
+              file_upload_max_bypes: config.fileUploadMaxBytes,
             }}
           />,
         )}
