@@ -1,11 +1,11 @@
 import { render } from 'preact-render-to-string/jsx';
 
 import { HtmlSafeString, escapeHtml, unsafeHtml } from '@prairielearn/html';
-import type { VNode } from '@prairielearn/preact-cjs';
+import { type VNode } from '@prairielearn/preact-cjs';
 
-// This function must live outside of `preact.tsx` so that it can be imported
-// on the client. `preact.tsx` imports `@prairielearn/compiled-assets`, which
-// cannot be bundled for the browser.
+// These functions are separated from the other utilities so that they can be imported
+// on both the client and the server. `server.tsx` imports `@prairielearn/compiled-assets`,
+// which cannot be bundled for the browser.
 
 /**
  * Render a non-interactive Preact component that is embedded within a tagged template literal.
