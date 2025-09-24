@@ -161,7 +161,7 @@ export function RubricSettings({
       max_auto_points: assessmentQuestion.max_auto_points,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
-        points: it.points ? Number(it.points) : null, // We can discuss what really happens when point is empty later
+        points: it.points ? Number(it.points) : null,
         description: it.description,
         explanation: it.explanation ?? '',
         grader_note: it.grader_note ?? '',
