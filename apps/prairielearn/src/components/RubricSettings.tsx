@@ -1,8 +1,7 @@
-/* eslint-disable no-alert */
 import clsx from 'clsx';
 import { filesize } from 'filesize';
 import { useMemo, useRef, useState } from 'preact/hooks';
-import { Overlay, Popover } from 'react-bootstrap';
+import { Modal } from 'react-bootstrap';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
@@ -48,8 +47,8 @@ export function RubricSettings({
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
-  const [showImportPopover, setShowImportPopover] = useState<boolean>(false);
-  const target = useRef(null);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
 
   // Derived totals/warnings
@@ -194,15 +193,20 @@ export function RubricSettings({
     return Math.round(Number(points) * 100) / 100;
   }
 
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportModalWarning(null);
+  };
+
   const importRubric = async () => {
     const input = rubricFile.current;
     if (!input?.files || input.files.length === 0) {
-      alert('Please select a file to import.');
+      setImportModalWarning('Please select a file to import.');
       return;
     }
     const file = input.files[0];
     if (file.size > contexts.file_upload_max_bypes) {
-      alert(
+      setImportModalWarning(
         `File size exceeds the maximum limit of ${contexts.file_upload_max_bytes} bytes. Please choose a smaller file.`,
       );
       return;
@@ -217,7 +221,7 @@ export function RubricSettings({
       try {
         parsedData = JSON.parse(fileContent);
       } catch {
-        alert('Error parsing JSON file, please check the file format.');
+        setImportModalWarning('Error parsing JSON file, please check the file format.');
         return;
       }
 
@@ -250,7 +254,7 @@ export function RubricSettings({
 
       const rubricItems = parsedData.rubric_items;
       if (!rubricItems || !Array.isArray(rubricItems)) {
-        alert('Invalid rubric data format. Expected rubric_items to be an array.');
+        setImportModalWarning('Invalid rubric data format. Expected rubric_items to be an array.');
         return;
       }
 
@@ -262,9 +266,9 @@ export function RubricSettings({
         });
       }
       setRubricItems(scaledRubricItems);
-      setShowImportPopover(false);
+      resetImportModal();
     } catch {
-      alert('Error reading file content.');
+      setImportModalWarning('Error reading file content.');
     }
   };
 
@@ -529,63 +533,65 @@ export function RubricSettings({
             Export rubric
           </button>
           <button
-            ref={target}
             id="import-rubric-button"
             type="button"
             class="btn btn-sm btn-primary"
             disabled={!editMode}
-            onClick={() => setShowImportPopover(!showImportPopover)}
+            onClick={() => setShowImportModal(!showImportModal)}
           >
             <i class="fas fa-upload" />
             Import rubric
           </button>
-          <Overlay
-            target={target.current}
-            show={showImportPopover}
-            placement="right"
-            rootClose
-            onHide={() => setShowImportPopover(false)}
-          >
-            <Popover>
-              <Popover.Header as="h3">Import rubric settings</Popover.Header>
-              <Popover.Body>
-                <label class="form-label" for="rubric-settings-file-input">
-                  Choose file
-                </label>
-                <input
-                  ref={rubricFile}
-                  type="file"
-                  name="file"
-                  class="form-control"
-                  id="rubric-settings-file-input"
-                  accept="application/json,.json"
-                  required
-                />
-                <small class="form-text text-muted">
-                  Max file size: {filesize(contexts.file_upload_max_bypes, { base: 10, round: 0 })}
-                </small>
-                <div class="mb-3">
-                  <div class="text-end">
-                    <button
-                      type="button"
-                      class="btn btn-secondary"
-                      onClick={() => setShowImportPopover(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      id="upload-rubric-file-button"
-                      type="submit"
-                      class="btn btn-primary"
-                      onClick={() => importRubric()}
-                    >
-                      Upload file
-                    </button>
-                  </div>
+          <Modal show={showImportModal} size="lg" onHide={() => resetImportModal()}>
+            <Modal.Header closeButton>
+              <Modal.Title>Import rubric settings</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <label class="form-label" for="rubric-settings-file-input">
+                Choose file
+              </label>
+              <input
+                ref={rubricFile}
+                type="file"
+                name="file"
+                class="form-control"
+                id="rubric-settings-file-input"
+                accept="application/json,.json"
+                required
+              />
+              <small class="form-text text-muted">
+                Max file size: {filesize(contexts.file_upload_max_bypes, { base: 10, round: 0 })}
+              </small>
+              {importModalWarning && (
+                <div
+                  key={importModalWarning}
+                  class="alert alert-warning alert-dismissible fade show"
+                  role="alert"
+                >
+                  {importModalWarning}
+                  <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Close"
+                  />
                 </div>
-              </Popover.Body>
-            </Popover>
-          </Overlay>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <button type="button" class="btn btn-secondary" onClick={() => resetImportModal()}>
+                Cancel
+              </button>
+              <button
+                id="upload-rubric-file-button"
+                type="submit"
+                class="btn btn-primary"
+                onClick={() => importRubric()}
+              >
+                Upload file
+              </button>
+            </Modal.Footer>
+          </Modal>
           <button
             type="button"
             class="btn btn-sm btn-ghost"
