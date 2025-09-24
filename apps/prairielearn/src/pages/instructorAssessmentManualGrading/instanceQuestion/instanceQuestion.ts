@@ -520,7 +520,7 @@ router.post(
         res.locals.instance_question.ai_instance_question_group_id;
 
       if (!selected_instance_question_group_id) {
-        throw new error.HttpStatusError(404, 'Selected AI instance  group not found');
+        throw new error.HttpStatusError(404, 'Selected instance question group not found');
       }
 
       const instanceQuestionsInGroup = await sqldb.queryRows(
