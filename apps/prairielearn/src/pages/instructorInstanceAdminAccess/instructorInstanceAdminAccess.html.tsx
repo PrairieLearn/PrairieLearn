@@ -36,9 +36,9 @@ export function InstructorInstanceAdminAccess({
   );
 
   // Convert access rules to JSON format for the migration modal
-  const accessRuleJsonArray: AccessRuleJson[] = accessRules.map((rule) =>
-    convertAccessRuleToJson(rule, courseInstance.display_timezone),
-  );
+
+  const hasModernAccessControl =
+    courseInstance.access_control_published !== null || accessControlExtensions.length > 0;
 
   return (
     <>
@@ -52,22 +52,56 @@ export function InstructorInstanceAdminAccess({
           accessControlExtensions={accessControlExtensions}
         />
       </Hydrate>
+      {!hasModernAccessControl && (
+        <LegacyAccessRuleCard
+          accessRules={accessRules}
+          showComments={showComments}
+          courseInstance={courseInstance}
+          hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+          csrfToken={csrfToken}
+          origHash={origHash}
+        />
+      )}
+    </>
+  );
+}
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h1>{courseInstance.long_name} course instance access rules</h1>
-          {hasCourseInstancePermissionEdit &&
-            hasCourseInstancePermissionView &&
-            accessRules.length > 0 && (
-              <Hydrate>
-                <AccessControlMigrationModal
-                  accessRules={accessRuleJsonArray}
-                  csrfToken={csrfToken}
-                  origHash={origHash}
-                />
-              </Hydrate>
-            )}
-        </div>
+function LegacyAccessRuleCard({
+  accessRules,
+  showComments,
+  courseInstance,
+  hasCourseInstancePermissionView,
+  hasCourseInstancePermissionEdit,
+  csrfToken,
+  origHash,
+}: {
+  accessRules: CourseInstanceAccessRule[];
+  showComments: boolean;
+  courseInstance: CourseInstance;
+  hasCourseInstancePermissionView: boolean;
+  hasCourseInstancePermissionEdit: boolean;
+  csrfToken: string;
+  origHash: string;
+}) {
+  const accessRuleJsonArray: AccessRuleJson[] = accessRules.map((rule) =>
+    convertAccessRuleToJson(rule, courseInstance.display_timezone),
+  );
+  return (
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+        <h1>{courseInstance.long_name} course instance access rules</h1>
+        {hasCourseInstancePermissionEdit &&
+          hasCourseInstancePermissionView &&
+          accessRules.length > 0 && (
+            <Hydrate>
+              <AccessControlMigrationModal
+                accessRules={accessRuleJsonArray}
+                csrfToken={csrfToken}
+                origHash={origHash}
+              />
+            </Hydrate>
+          )}
 
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Access rules">
@@ -98,7 +132,7 @@ export function InstructorInstanceAdminAccess({
           </table>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

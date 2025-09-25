@@ -38,16 +38,6 @@ export function AccessControlForm({
   const [showExtendModal, setShowExtendModal] = useState(false);
   const [newArchiveDate, setNewArchiveDate] = useState('');
 
-  // Check if legacy allowAccess rules exist
-  const hasLegacyAccessRules = hasAccessRules;
-
-  // Check if new access control is configured
-  const hasNewAccessControl =
-    courseInstance.access_control_published !== null ||
-    courseInstance.access_control_published_start_date_enabled !== null ||
-    courseInstance.access_control_published_start_date !== null ||
-    courseInstance.access_control_published_end_date !== null;
-
   const defaultValues: AccessControlFormValues = {
     published: courseInstance.access_control_published ?? true,
     publishedStartDateEnabled: courseInstance.access_control_published_start_date_enabled ?? false,
@@ -170,9 +160,6 @@ export function AccessControlForm({
     void handleSubmit(onSubmit)();
   };
 
-  // Show warning if both systems are configured
-  const showConflictWarning = hasLegacyAccessRules && hasNewAccessControl;
-
   const formatDate = (dateString: string) => {
     if (!dateString) return '';
     const date = new Date(dateString);
@@ -183,6 +170,16 @@ export function AccessControlForm({
     });
   };
 
+  if (hasAccessRules) {
+    return (
+      <div class="alert alert-info" role="alert">
+        <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
+        allowAccess system. To use the new access control system, you must first remove all
+        allowAccess rules from the course configuration.
+      </div>
+    );
+  }
+
   return (
     <>
       <div class="card mb-4">
@@ -190,30 +187,6 @@ export function AccessControlForm({
           <h1>Access Control Settings</h1>
         </div>
         <div class="card-body">
-          {showConflictWarning && (
-            <div class="alert alert-warning" role="alert">
-              <strong>Configuration Conflict:</strong> Both legacy allowAccess rules and new access
-              control settings are configured. Only one system can be active at a time. Please
-              choose which system to use.
-            </div>
-          )}
-
-          {hasLegacyAccessRules && !hasNewAccessControl && (
-            <div class="alert alert-info" role="alert">
-              <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
-              allowAccess system. To use the new access control system, you must first remove all
-              allowAccess rules from the course configuration.
-            </div>
-          )}
-
-          {!hasLegacyAccessRules && hasNewAccessControl && (
-            <div class="alert alert-info" role="alert">
-              <strong>New Access Control Active:</strong> This course instance is using the new
-              access control system. Legacy allowAccess rules cannot be used when the new system is
-              configured.
-            </div>
-          )}
-
           <form onSubmit={handleSubmit(onSubmit)}>
             <input type="hidden" name="__csrf_token" value={csrfToken} />
 
@@ -224,7 +197,7 @@ export function AccessControlForm({
                   <h5 class="mb-0">
                     Current Status: <span class="text-success">Published</span>
                   </h5>
-                  {canEdit && !hasLegacyAccessRules && (
+                  {canEdit && (
                     <button
                       type="button"
                       class="btn btn-outline-danger"
@@ -245,10 +218,10 @@ export function AccessControlForm({
                       type="datetime-local"
                       class={clsx('form-control', errors.publishedEndDate && 'is-invalid')}
                       id="publishedEndDate"
-                      disabled={!canEdit || hasLegacyAccessRules}
+                      disabled={!canEdit}
                       {...register('publishedEndDate')}
                     />
-                    {canEdit && !hasLegacyAccessRules && (
+                    {canEdit && (
                       <button
                         type="button"
                         class="btn btn-outline-danger"
@@ -278,7 +251,7 @@ export function AccessControlForm({
                   <h5 class="mb-0">
                     Current Status: <span class="text-warning">Unpublished</span>
                   </h5>
-                  {canEdit && !hasLegacyAccessRules && (
+                  {canEdit && (
                     <button
                       type="button"
                       class="btn btn-primary"
@@ -296,7 +269,7 @@ export function AccessControlForm({
                       class="form-check-input"
                       type="checkbox"
                       id="publishedStartDateEnabled"
-                      disabled={!canEdit || hasLegacyAccessRules}
+                      disabled={!canEdit}
                       {...register('publishedStartDateEnabled')}
                     />
                     <label class="form-check-label" for="publishedStartDateEnabled">
@@ -310,7 +283,7 @@ export function AccessControlForm({
                         type="datetime-local"
                         class={clsx('form-control', errors.publishedStartDate && 'is-invalid')}
                         id="publishedStartDate"
-                        disabled={!canEdit || hasLegacyAccessRules}
+                        disabled={!canEdit}
                         {...register('publishedStartDate', {
                           required: publishedStartDateEnabled
                             ? 'Start date is required when enabled'
@@ -338,7 +311,7 @@ export function AccessControlForm({
                   <h5 class="mb-0">
                     Current Status: <span class="text-danger">Archived</span>
                   </h5>
-                  {canEdit && !hasLegacyAccessRules && (
+                  {canEdit && (
                     <button
                       type="button"
                       class="btn btn-primary"
@@ -358,7 +331,7 @@ export function AccessControlForm({
               <input type="checkbox" {...register('published')} />
             </div>
 
-            {canEdit && !hasLegacyAccessRules && isDirty && (
+            {canEdit && isDirty && (
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
                   {isSubmitting ? 'Saving...' : 'Save Changes'}

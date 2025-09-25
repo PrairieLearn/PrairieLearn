@@ -25,7 +25,6 @@ export interface CourseInstanceAccessParams {
  * access control settings and the user's authorization context.
  */
 export function evaluateCourseInstanceAccess(
-  // TODO: take in an enrollment, not courseInstance, so that we can consider overrides.
   courseInstance: CourseInstance,
   params: CourseInstanceAccessParams,
   // This is done like this for testing purposes.
@@ -72,18 +71,18 @@ export function evaluateCourseInstanceAccess(
   }
 
   const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
-    if (a === null) return 1;
-    if (b === null) return -1;
     return b.getTime() - a.getTime();
   });
 
-  if (sortedPossibleEndDates.length > 0) {
-    if (currentDate > sortedPossibleEndDates[0]) {
-      return {
-        hasAccess: false,
-        reason: 'Course instance has been archived',
-      };
-    }
+  if (sortedPossibleEndDates.length === 0) {
+    throw new Error('No possible end dates found');
+  }
+
+  if (currentDate > sortedPossibleEndDates[0]) {
+    return {
+      hasAccess: false,
+      reason: 'Course instance has been archived',
+    };
   }
 
   return { hasAccess: true };

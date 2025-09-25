@@ -50,6 +50,7 @@ function createMockParams(
     mode: 'Public',
     course_instance_role: 'None',
     course_role: 'None',
+    accessControlExtensions: [],
     ...overrides,
   };
 }
