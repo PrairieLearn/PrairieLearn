@@ -197,14 +197,14 @@ def grade_multigraph(
     submission: list[str],
     depends_multigraph: dict[str, list[str] | list[list[str]]],
     final: str,
+    path_names: dict[str, str],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
     # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
-    collapsed_dags = [
-        graph for graph in collapse_multigraph(depends_multigraph, final, path_names={})
-    ]
+    collapsed_dags = list(collapse_multigraph(depends_multigraph, final, path_names))
+    print(collapsed_dags)
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
@@ -329,6 +329,7 @@ def dfs_until(
     :param start: the starting point for the search.
     :return: the reason or node that halted the search with the nodes and their corresponding
     edges the DFS was able to reach before halting.
+    :Exception: Will throw an exception if a cycle is found
     """
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []
@@ -346,7 +347,7 @@ def dfs_until(
         for target in graph[curr]:
             # This determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
-                raise Exception(f"Cycle encountered druing collapse of multigraph.")
+                raise Exception("Cycle encountered druing collapse of multigraph.")
             if target not in visited:
                 stack.insert(0, (target, deepcopy(visited)))
 
@@ -356,7 +357,7 @@ def dfs_until(
 def collapse_multigraph(
     depends_multi_graph: dict[str, list[str] | list[list[str]]],
     final: str,
-    path_names: dict[str, str] = {},
+    path_names: dict[str, str],
 ) -> Generator[dict[str, list[str]], None, None]:
     """
     :param depends_multi_graph: a dependency graph that contains nodes with multiple colored
@@ -372,7 +373,7 @@ def collapse_multigraph(
         reason, dag = dfs_until(_is_edges_colored, graph, final)
 
         # DFS halted because source was reached
-        if reason == None:
+        if reason is None:
             yield dag
             continue
 
@@ -381,11 +382,11 @@ def collapse_multigraph(
             # Get the current paths name attached to the node + the nodes numerical position in the graph
             path = (
                 path_names[reason + str(i)]
-                if reason + str(i) in path_names.keys()
+                if reason + str(i) in path_names
                 else ""
             )
 
-            if path == enc_path or enc_path == "":
+            if enc_path in [path, ""]:
                 partially_collapsed = deepcopy(graph)
                 if isinstance(color, list):
                     partially_collapsed[reason] = color

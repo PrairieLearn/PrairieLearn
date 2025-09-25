@@ -121,6 +121,7 @@ def get_multigraph_info(
 class OrderBlocksOptions:
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
+        self.paths = {}
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
         self.weight = pl.get_integer_attrib(html_element, "weight", WEIGHT_DEFAULT)
         self.grading_method = pl.get_enum_attrib(
@@ -349,9 +350,10 @@ class AnswerOptions:
     ) -> None:
         self._check_options(html_element, order_block_options.grading_method)
         if order_block_options.is_multi:
-            self.tag, self.depends, self.final, self.paths = get_multigraph_info(
+            self.tag, self.depends, self.final, path = get_multigraph_info(
                 html_element
             )
+            order_block_options.paths.update(path)
             self.final = pl.get_boolean_attrib(html_element, "final", False)
         else:
             self.tag, self.depends = get_graph_info(html_element)
