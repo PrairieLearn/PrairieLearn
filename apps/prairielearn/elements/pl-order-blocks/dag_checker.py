@@ -198,7 +198,7 @@ def grade_multigraph(
     depends_multigraph: dict[str, list[str] | list[list[str]]],
     final: str,
     path_names: dict[str, str],
-    group_belonging: Mapping[str, str | None] | None = None,
+    group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
     # TODO add grouping correctness for block groups grading
