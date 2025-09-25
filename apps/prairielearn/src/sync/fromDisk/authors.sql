@@ -26,7 +26,8 @@ FROM
   AND a.orcid IS NOT DISTINCT FROM d.orcid
   AND a.origin_course IS NOT DISTINCT FROM d."originCourse"::bigint
 WHERE
-  a.id IS NULL;
+  a.id IS NULL
+ON CONFLICT DO NOTHING;
 
 -- BLOCK select_authors
 SELECT

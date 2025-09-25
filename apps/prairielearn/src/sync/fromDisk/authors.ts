@@ -106,14 +106,14 @@ export async function sync(
     if (infofile.hasErrors(question)) return;
     const dedupedQuestionAuthors = new Set<string>();
     (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
-    const questionTagIds = [...dedupedQuestionAuthors]
+    const questionAuthorIds = [...dedupedQuestionAuthors]
       .map((a) => {
         const author = authorIdMap.get(a) ?? null;
         return author;
       })
       // Authors that were skipped earlier will not be in the map and should be skipped again
       .filter((a) => a !== null);
-    questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionTagIds]));
+    questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionAuthorIds]));
   });
 
   await callAsync('sync_question_authors', [questionAuthorsParam]);
