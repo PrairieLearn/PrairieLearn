@@ -66,6 +66,7 @@ export async function uploadInstanceQuestionScores(
       csvParse({
         // Replace all keys with their lower-case values
         columns: (header) => header.map((column) => column.toLowerCase()),
+        info: true,
         cast: (value, context) => {
           if (context.column === 'instance') return parseInt(value);
           if (
@@ -87,13 +88,11 @@ export async function uploadInstanceQuestionScores(
     );
 
     try {
-      let number = 1;
-      for await (const record of csvParser) {
+      for await (const { info, record } of csvParser) {
         try {
-          number++;
           if (await updateInstanceQuestionFromJson(record, assessment_id, authn_user_id)) {
             successCount++;
-            const msg = `Processed CSV line ${number}: ${JSON.stringify(record)}`;
+            const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
             if (output == null) {
               output = msg;
             } else {
@@ -105,7 +104,7 @@ export async function uploadInstanceQuestionScores(
           }
         } catch (err) {
           errorCount++;
-          const msg = `Error processing CSV line ${number}: ${JSON.stringify(record)}\n${err}`;
+          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {
             output = msg;
           } else {
@@ -190,6 +189,7 @@ export async function uploadAssessmentInstanceScores(
       csvParse({
         // Replace all keys with their lower-case values
         columns: (header) => header.map((column) => column.toLowerCase()),
+        info: true,
         cast: (value, context) => {
           if (context.column === 'instance') return parseInt(value);
           if (['score_perc', 'points'].includes(context.column.toString())) {
@@ -202,10 +202,8 @@ export async function uploadAssessmentInstanceScores(
     );
 
     try {
-      let number = 1;
-      for await (const record of csvParser) {
-        number++;
-        const msg = `Processing CSV line ${number}: ${JSON.stringify(record)}`;
+      for await (const { info, record } of csvParser) {
+        const msg = `Processing CSV line ${info.lines}: ${JSON.stringify(record)}`;
         if (output == null) {
           output = msg;
         } else {
