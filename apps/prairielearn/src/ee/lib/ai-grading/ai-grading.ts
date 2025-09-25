@@ -252,7 +252,9 @@ export async function aiGrade({
           parts.push(
             'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
             'You MUST transcribe the final answer(s) from the images.',
-            'Use LaTeX formatting for any mathematical expressions.',
+            'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
+            'You MUST wrap inline LaTeX in dollar signs ($).',
+            'You MUST wrap block LaTeX in double dollar signs ($$).',
           );
         }
         return parts.join(' ');
