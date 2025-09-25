@@ -17,7 +17,7 @@ export const UserDetailSchema = z.object({
   user: StaffUserSchema.nullable(),
   course_instance: StaffCourseInstanceSchema,
   enrollment: StaffEnrollmentSchema,
-  role: z.string(),
+  role: z.enum(['None', 'Student', 'Staff']),
 });
 
 export type UserDetail = z.infer<typeof UserDetailSchema>;
