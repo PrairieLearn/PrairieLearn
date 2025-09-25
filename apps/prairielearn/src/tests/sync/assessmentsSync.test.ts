@@ -3656,7 +3656,7 @@ describe('Assessment syncing', () => {
   it('stores json points data correctly for homework assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, points: 10 },
@@ -3687,7 +3687,7 @@ describe('Assessment syncing', () => {
   it('stores json points data correctly for exam assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, points: 10 },
@@ -3718,7 +3718,7 @@ describe('Assessment syncing', () => {
   it('stores json max points data correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, points: 10, maxPoints: 10 },
@@ -3745,7 +3745,7 @@ describe('Assessment syncing', () => {
   it('stores json auto points data correctly for homework assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, autoPoints: 10 },
@@ -3771,7 +3771,7 @@ describe('Assessment syncing', () => {
   it('stores json auto points data correctly for exam assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, autoPoints: 10 },
@@ -3797,7 +3797,7 @@ describe('Assessment syncing', () => {
   it('stores json max auto points data correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, autoPoints: 10, maxAutoPoints: 10 },
@@ -3824,7 +3824,7 @@ describe('Assessment syncing', () => {
   it('stores json manual points data correctly for homework assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, manualPoints: 10 },
@@ -3850,7 +3850,7 @@ describe('Assessment syncing', () => {
   it('stores json manual points data correctly for exam assessments', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, manualPoints: 10 },
@@ -3876,7 +3876,7 @@ describe('Assessment syncing', () => {
   it('stores json force max points data correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, points: 10, forceMaxPoints: true },
@@ -3903,7 +3903,7 @@ describe('Assessment syncing', () => {
   it('stores json tries per variant data correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.zones?.push({
+    assessment.zones!.push({
       title: 'zone 1',
       questions: [
         { id: util.QUESTION_ID, points: 10, triesPerVariant: 1 },
