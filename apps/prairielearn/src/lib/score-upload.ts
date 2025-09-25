@@ -1,8 +1,8 @@
+import { parse as csvParse } from 'csv-parse';
 import isPlainObject from 'is-plain-obj';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
-import { parse as csvParse } from 'csv-parse';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -68,7 +68,7 @@ export async function uploadInstanceQuestionScores(
         columns: (header) => header.map((column) => column.toLowerCase()),
         info: true,
         cast: (value, context) => {
-          if (context.column === 'instance') return parseInt(value);
+          if (context.column === 'instance') return Number.parseInt(value);
           if (
             [
               'score_perc',
@@ -79,7 +79,7 @@ export async function uploadInstanceQuestionScores(
               'auto_points',
             ].includes(context.column.toString())
           ) {
-            return parseFloat(value);
+            return Number.parseFloat(value);
           }
           return value;
         },
@@ -191,9 +191,9 @@ export async function uploadAssessmentInstanceScores(
         columns: (header) => header.map((column) => column.toLowerCase()),
         info: true,
         cast: (value, context) => {
-          if (context.column === 'instance') return parseInt(value);
+          if (context.column === 'instance') return Number.parseInt(value);
           if (['score_perc', 'points'].includes(context.column.toString())) {
-            return parseFloat(value);
+            return Number.parseFloat(value);
           }
           return value;
         },
