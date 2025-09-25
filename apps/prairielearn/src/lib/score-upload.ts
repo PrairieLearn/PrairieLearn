@@ -68,6 +68,8 @@ export async function uploadInstanceQuestionScores(
         columns: (header) => header.map((column) => column.toLowerCase()),
         info: true,
         cast: (value, context) => {
+          if (value === '') return null;
+          if (context.header) return value; // do not cast header row
           if (context.column === 'instance') return Number.parseInt(value);
           if (
             [
@@ -191,6 +193,8 @@ export async function uploadAssessmentInstanceScores(
         columns: (header) => header.map((column) => column.toLowerCase()),
         info: true,
         cast: (value, context) => {
+          if (value === '') return null;
+          if (context.header) return value; // do not cast header row
           if (context.column === 'instance') return Number.parseInt(value);
           if (['score_perc', 'points'].includes(context.column.toString())) {
             return Number.parseFloat(value);
