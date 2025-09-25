@@ -81,7 +81,7 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 - Second PR: Remove old column
   - Update all reads to read from the new column
   - Update all code to not write the old column
-  - Mark the old column in the zod schema as `z.any()`
+  - Mark the old column in the zod schema as `z.unknown()`
 
 - Third PR: Finalize
   - Remove the old column from the database
@@ -102,7 +102,7 @@ If you have no meaningful reads/writes to the old column, you can combie the fir
 
 - Fourth PR: Remove writes to the old column
   - Update application code to not write the old column
-  - Mark the old column in the zod schema as `z.any()`
+  - Mark the old column in the zod schema as `z.unknown()`
 
 - Fifth PR: Fully remove the old column
   - Remove the old column from the database
