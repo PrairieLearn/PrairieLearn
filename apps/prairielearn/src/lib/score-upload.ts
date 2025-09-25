@@ -1,8 +1,8 @@
-import csvtojson from 'csvtojson';
 import isPlainObject from 'is-plain-obj';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
+import { parse as csvParse } from 'csv-parse';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -62,34 +62,38 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvConverter = csvtojson({
-      colParser: {
-        instance: 'number',
-        score_perc: 'number',
-        points: 'number',
-        manual_score_perc: 'number',
-        manual_points: 'number',
-        auto_score_perc: 'number',
-        auto_points: 'number',
-        submission_id: 'number',
-      },
-      maxRowLength: 10000,
-    });
+    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
+      csvParse({
+        // Replace all keys with their lower-case values
+        columns: (first_line) => first_line.map((column_name) => column_name.toLowerCase()),
+        cast: (value, context) => {
+          if (context.column === 'instance') return parseInt(value);
+          if (
+            [
+              'score_perc',
+              'points',
+              'manual_score_perc',
+              'manual_points',
+              'auto_score_perc',
+              'auto_points',
+            ].includes(context.column.toString())
+          ) {
+            return parseFloat(value);
+          }
+          return value;
+        },
+        maxRecordSize: 10000,
+      }),
+    );
 
     try {
-      await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
-        // Replace all keys with their lower-case values
-        json = _.mapKeys(json, (_v, k) => k.toLowerCase());
+      let number = 1;
+      for await (const record of csvParser) {
         try {
-          if (await updateInstanceQuestionFromJson(json, assessment_id, authn_user_id)) {
+          number++;
+          if (await updateInstanceQuestionFromJson(record, assessment_id, authn_user_id)) {
             successCount++;
-            // The number refers to a zero-based index of the data entries.
-            // Adding 1 to use 1-based (as is used in Excel et al), and 1 to
-            // account for the header.
-            const msg = `Processed CSV line ${number + 2}: ${JSON.stringify(json)}`;
+            const msg = `Processed CSV line ${number}: ${JSON.stringify(record)}`;
             if (output == null) {
               output = msg;
             } else {
@@ -101,7 +105,7 @@ export async function uploadInstanceQuestionScores(
           }
         } catch (err) {
           errorCount++;
-          const msg = `Error processing CSV line ${number + 2}: ${JSON.stringify(json)}\n${err}`;
+          const msg = `Error processing CSV line ${number}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {
             output = msg;
           } else {
@@ -115,7 +119,7 @@ export async function uploadInstanceQuestionScores(
           outputCount = 0;
           outputThreshold *= 2; // exponential backoff
         }
-      });
+      }
     } finally {
       // Log output even in the case of failure.
       if (output != null) {
@@ -182,32 +186,33 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvStream = streamifier.createReadStream(csvFile.buffer, {
-      encoding: 'utf8',
-    });
-    const csvConverter = csvtojson({
-      colParser: {
-        instance: 'number',
-        score_perc: 'number',
-        points: 'number',
-      },
-      maxRowLength: 1000,
-    });
+    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
+      csvParse({
+        // Replace all keys with their lower-case values
+        columns: (first_line) => first_line.map((column_name) => column_name.toLowerCase()),
+        cast: (value, context) => {
+          if (context.column === 'instance') return parseInt(value);
+          if (['score_perc', 'points'].includes(context.column.toString())) {
+            return parseFloat(value);
+          }
+          return value;
+        },
+        maxRecordSize: 1000,
+      }),
+    );
 
     try {
-      await csvConverter.fromStream(csvStream).subscribe(async (json, number) => {
-        // Replace all keys with their lower-case values
-        json = _.mapKeys(json, (v, k) => {
-          return k.toLowerCase();
-        });
-        const msg = `Processing CSV line ${number + 2}: ${JSON.stringify(json)}`;
+      let number = 1;
+      for await (const record of csvParser) {
+        number++;
+        const msg = `Processing CSV line ${number}: ${JSON.stringify(record)}`;
         if (output == null) {
           output = msg;
         } else {
           output += '\n' + msg;
         }
         try {
-          await updateAssessmentInstanceFromJson(json, assessment_id, authn_user_id);
+          await updateAssessmentInstanceFromJson(record, assessment_id, authn_user_id);
           successCount++;
         } catch (err) {
           errorCount++;
@@ -221,7 +226,7 @@ export async function uploadAssessmentInstanceScores(
           outputCount = 0;
           outputThreshold *= 2; // exponential backoff
         }
-      });
+      }
     } finally {
       // Log output even in the case of failure.
       if (output != null) {
