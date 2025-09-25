@@ -54,14 +54,14 @@ WITH
     SELECT
       *
     FROM
-      jsonb_to_recordset($1::jsonb) AS t (question_id bigint, author_id bigint)
+      jsonb_to_recordset($1::jsonb) AS t (question_id text, author_id text)
   ),
   deleted AS (
     DELETE FROM question_authors qa
     WHERE
       qa.question_id IN (
         SELECT DISTINCT
-          question_id
+          question_id::bigint
         FROM
           incoming
       )
@@ -71,8 +71,8 @@ WITH
         FROM
           incoming i
         WHERE
-          i.question_id = qa.question_id
-          AND i.author_id = qa.author_id
+          i.question_id::bigint = qa.question_id
+          AND i.author_id::bigint = qa.author_id
       )
     RETURNING
       1
@@ -80,13 +80,13 @@ WITH
 INSERT INTO
   question_authors (question_id, author_id)
 SELECT
-  i.question_id,
-  i.author_id
+  i.question_id::bigint,
+  i.author_id::bigint
 FROM
   incoming i
   LEFT JOIN question_authors qa ON (
-    qa.question_id = i.question_id
-    AND qa.author_id = i.author_id
+    qa.question_id = i.question_id::bigint
+    AND qa.author_id = i.author_id::bigint
   )
 WHERE
   qa.question_id IS NULL
