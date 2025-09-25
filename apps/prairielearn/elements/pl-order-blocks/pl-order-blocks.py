@@ -15,6 +15,7 @@ from dag_checker import (
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
+    Multigraph
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
@@ -86,7 +87,7 @@ def extract_dag(
 
 def extract_multigraph(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[dict[str, list[str] | list[list[str]]], str]:
+) -> tuple[Multigraph, str]:
     depends_graph = {}
     final = ""
     for ans in answers_list:
