@@ -119,7 +119,7 @@ def solve_problem(
         solution = solve_multigraph(depends_graph, final)[0]
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
-        assert False, "unreachable"
+        raise AssertionError("Unreachable code.")
 
 
 def prepare(html: str, data: pl.QuestionData) -> None:

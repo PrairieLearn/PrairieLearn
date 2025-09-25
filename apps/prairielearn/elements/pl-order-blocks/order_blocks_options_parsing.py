@@ -101,7 +101,7 @@ def get_multigraph_info(
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", None)
-    has_colors = True if "|" in depends else False
+    has_colors = "|" in depends
     paths: dict[str, str] = {}
     for i, name in enumerate(re.findall(r"\w+:", depends)):
         paths[tag + str(i)] = name
@@ -225,7 +225,7 @@ class OrderBlocksOptions:
                 if options.final:
                     return
             raise ValueError(
-                f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
+                "Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
             )
 
     def _validate_order_blocks_options(self) -> None:
