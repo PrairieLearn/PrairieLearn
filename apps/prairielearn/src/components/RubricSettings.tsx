@@ -4,6 +4,7 @@ import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
+import { downloadAsJSON } from '../lib/client/downloads.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
@@ -168,24 +169,13 @@ export function RubricSettings({
       })),
     };
 
-    const blob = new Blob([JSON.stringify(rubricData, null, 2)], {
-      type: 'application/json',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-
     const { course_short_name, course_instance_short_name, assessment_tid, question_qid } = context;
     const exportFileName =
       `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
         '_',
       ) + '.json';
-    a.download = exportFileName;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
+    downloadAsJSON(rubricData, exportFileName);
   };
 
   function roundPoints(points: number) {
