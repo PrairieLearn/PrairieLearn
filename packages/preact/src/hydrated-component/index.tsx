@@ -1,35 +1,43 @@
-import './debug.js';
+import '../debug.js';
 
-import { type ComponentType, hydrate } from 'preact';
 import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { type ComponentType, hydrate } from '@prairielearn/preact-cjs';
 
-import { ReactFragmentsRegistry } from './registry.js';
+import { HydratedComponentsRegistry } from './registry.js';
 
-const registry = new ReactFragmentsRegistry();
+// This file, if imported, will register a selector observer that will hydrate
+// registered components on the client.
 
-export function registerReactFragment(component: ComponentType<any>, nameOverride?: string) {
+const registry = new HydratedComponentsRegistry();
+
+/**
+ * Registers a Preact component for client-side hydration. The component should have a
+ * `displayName` property. If it's missing, or the name of the component bundle differs,
+ * you can provide a `nameOverride`.
+ */
+export function registerHydratedComponent(component: ComponentType<any>, nameOverride?: string) {
   // Each React component that will be hydrated on the page must be registered.
   // Note that we don't try to use `component.name` since it can be minified or mangled.
   const id = nameOverride ?? component.displayName;
   if (!id) {
     throw new Error('React fragment must have a displayName or nameOverride');
   }
-  registry.setReactFragment(id, component);
+  registry.setComponent(id, component);
 }
 
 onDocumentReady(() => {
-  observe('.js-react-fragment', {
+  observe('.js-hydrated-component', {
     async add(el) {
       const componentName = el.getAttribute('data-component');
       if (!componentName) {
-        throw new Error('js-react-fragment element must have a data-component attribute');
+        throw new Error('js-hydrated-component element must have a data-component attribute');
       }
 
-      // If you forget to register a component with `registerReactFragment`, this is going to hang.
-      const Component = await registry.getReactFragment(componentName);
+      // If you forget to register a component with `registerHydratedComponent`, this is going to hang.
+      const Component = await registry.getComponent(componentName);
 
       const dataElement = el.querySelector('script[data-component-props]');
       if (!dataElement) throw new Error('No data element found');
