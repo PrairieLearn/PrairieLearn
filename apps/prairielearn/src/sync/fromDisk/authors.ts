@@ -2,11 +2,39 @@ import * as sqldb from '@prairielearn/postgres';
 import { callAsync } from '@prairielearn/postgres';
 
 import { AuthorSchema } from '../../lib/db-types.js';
-import { findCourseBySharingName } from '../../models/course.js';
+import { findCoursesBySharingNames } from '../../models/course.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function resolveSharingNames(courseData: CourseData) {
+  // Collect all sharing names to resolve
+  const sharingNamesToResolve = new Set<string>();
+  for (const qid of Object.keys(courseData.questions)) {
+    const question = courseData.questions[qid];
+    if (infofile.hasErrors(question)) continue;
+    const authors = question.data?.authors ?? [];
+    for (const author of authors) {
+      if (author.originCourse) sharingNamesToResolve.add(author.originCourse);
+    }
+  }
+
+  // Resolve sharing names in batch
+  const sharingNameLookupTable = new Map<string, string>();
+  if (sharingNamesToResolve.size > 0) {
+    const resolved = await findCoursesBySharingNames([...sharingNamesToResolve]);
+    resolved.forEach((course, sharingName) => {
+      if (course) {
+        sharingNameLookupTable.set(sharingName, course.id);
+      } else {
+        // This should never happen since all sharing names should have been validated before
+        throw new Error(`Course with sharing name ${sharingName} not found!`);
+      }
+    });
+  }
+  return sharingNameLookupTable;
+}
 
 export async function sync(
   courseId: string,
@@ -35,8 +63,8 @@ export async function sync(
   // Collect all unique authors from all questions
   // Also setting up reverse lookup of resolved authors from database back to JSON
   const uniqueAuthors = new Map<string, JSONAuthor>();
-  // Cache sharing name -> course ID mappings
-  const sharingNameCache = new Map<string, string>();
+  // Sharing name -> course ID mappings (resolved in bulk)
+  const sharingNameLookupTable = await resolveSharingNames(courseData);
 
   for (const qid of Object.keys(courseData.questions)) {
     const question = courseData.questions[qid];
@@ -48,24 +76,11 @@ export async function sync(
         name: author.name ?? null,
         email: author.email ?? null,
         orcid: normalizedOrcid ?? null,
-        originCourse: null,
+        originCourse: author.originCourse
+          ? (sharingNameLookupTable.get(author.originCourse) ?? null)
+          : null,
         id: null,
       };
-
-      // TODO: Batch lookup
-      if (author.originCourse) {
-        let originCourseID = sharingNameCache.get(author.originCourse) ?? null;
-        if (originCourseID == null) {
-          const originCourse = await findCourseBySharingName(author.originCourse);
-          originCourseID = originCourse?.id ?? null;
-        }
-        if (originCourseID == null) {
-          // This should never happen in practice since we already verified the existence when validating the question
-          throw new Error(`Course with sharing name ${author.originCourse} not found!`);
-        }
-        normalizedAuthor.originCourse = originCourseID;
-        sharingNameCache.set(author.originCourse, originCourseID);
-      }
 
       uniqueAuthors.set(JSON.stringify(normalizedAuthor), author);
     }
