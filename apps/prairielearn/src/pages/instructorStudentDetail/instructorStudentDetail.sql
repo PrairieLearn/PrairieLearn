@@ -11,28 +11,3 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = e.user_id)
 WHERE
   e.id = $enrollment_id;
-
--- BLOCK update_enrollment_block
-UPDATE enrollments
-SET
-  status = 'blocked'
-WHERE
-  id = $enrollment_id
-  AND course_instance_id = $course_instance_id
-  AND status = 'joined';
-
--- BLOCK update_enrollment_unblock
-UPDATE enrollments
-SET
-  status = 'joined'
-WHERE
-  id = $enrollment_id
-  AND course_instance_id = $course_instance_id
-  AND status = 'blocked';
-
--- BLOCK delete_invitation
-DELETE FROM enrollments
-WHERE
-  id = $enrollment_id
-  AND course_instance_id = $course_instance_id
-  AND status = 'invited';

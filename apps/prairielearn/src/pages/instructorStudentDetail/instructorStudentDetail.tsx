@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
@@ -11,6 +11,12 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
+import {
+  deleteEnrollmentById,
+  enrollUserInCourseInstance,
+  selectEnrollmentById,
+  setEnrollmentStatusBlocked,
+} from '../../models/enrollment.js';
 
 import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
 
@@ -118,27 +124,38 @@ router.post(
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
 
+    // assert that the enrollment belongs to the course instance
+    const enrollment = await selectEnrollmentById({ id: enrollment_id });
+    if (enrollment.course_instance_id !== course_instance.id) {
+      throw new HttpStatusError(400, 'Enrollment does not belong to the course instance');
+    }
+
     switch (action) {
       case 'block_student': {
-        await execute(sql.update_enrollment_block, {
+        await setEnrollmentStatusBlocked({
           enrollment_id,
-          course_instance_id: course_instance.id,
+          agent_user_id: res.locals.authn_user.user_id,
+          agent_authn_user_id: res.locals.user.id,
         });
         res.redirect(req.originalUrl);
         break;
       }
       case 'unblock_student': {
-        await execute(sql.update_enrollment_unblock, {
+        await enrollUserInCourseInstance({
           enrollment_id,
-          course_instance_id: course_instance.id,
+          user_id: res.locals.authn_user.user_id,
+          agent_user_id: res.locals.authn_user.user_id,
+          agent_authn_user_id: res.locals.user.id,
+          action_detail: 'unblocked',
         });
         res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        await execute(sql.delete_invitation, {
+        await deleteEnrollmentById({
           enrollment_id,
-          course_instance_id: course_instance.id,
+          agent_user_id: res.locals.authn_user.user_id,
+          agent_authn_user_id: res.locals.user.id,
         });
         res.redirect(
           `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,

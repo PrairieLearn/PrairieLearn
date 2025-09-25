@@ -67,6 +67,9 @@ type SupportedTableActionCombination =
         | 'invited'
         | 'invitation_accepted'
         | 'invitation_rejected'
+        | 'blocked'
+        | 'unblocked'
+        | 'invitation_deleted'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
