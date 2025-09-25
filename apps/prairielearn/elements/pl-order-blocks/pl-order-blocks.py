@@ -9,7 +9,14 @@ from typing import TypedDict, no_type_check
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, grade_multigraph, lcs_partial_credit, solve_dag, solve_multigraph, collapse_multigraph
+from dag_checker import (
+    grade_dag,
+    grade_multigraph,
+    lcs_partial_credit,
+    solve_dag,
+    solve_multigraph,
+    collapse_multigraph,
+)
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
     FeedbackType,
@@ -137,7 +144,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
             "distractor_feedback": answer_options.distractor_feedback,
             "ordering_feedback": answer_options.ordering_feedback,
             "uuid": pl.get_uuid(),
-            "final": answer_options.final
+            "final": answer_options.final,
         }
         if answer_options.correct:
             correct_answers.append(answer_data_dict)
@@ -204,9 +211,14 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     }
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
-    if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi:
+    if (
+        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
+        and not order_blocks_options.is_multi
+    ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
-            correct_answers, order_blocks_options.grading_method, order_blocks_options.is_multi
+            correct_answers,
+            order_blocks_options.grading_method,
+            order_blocks_options.is_multi,
         )
 
 
@@ -588,7 +600,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 submission, depends_graph, group_belonging
             )
         # DAG
-        elif grading_method is GradingMethodType.DAG and not order_blocks_options.is_multi:
+        elif (
+            grading_method is GradingMethodType.DAG
+            and not order_blocks_options.is_multi
+        ):
             depends_graph, group_belonging = extract_dag(true_answer_list)
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
@@ -597,7 +612,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
             depends_multigraph, final = extract_multigraph(true_answer_list)
 
-            #TODO: add group belonging support for group blocks
+            # TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
                 submission, depends_multigraph, final, {}
             )
@@ -633,7 +648,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
                     block["ordering_feedback"] = ""
-
 
         if order_blocks_options.partial_credit is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:

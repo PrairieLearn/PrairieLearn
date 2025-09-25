@@ -74,7 +74,7 @@ FEEDBACK_DEFAULT = FeedbackType.NONE
 WEIGHT_DEFAULT = 1
 SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
- 
+
 
 def is_multigraph(element: lxml.html.HtmlElement) -> bool:
     for html_tag in element:  # iterate through the html tags inside pl-order-blocks
@@ -185,7 +185,6 @@ class OrderBlocksOptions:
             html_element, "min-incorrect", len(self.incorrect_answers)
         )
 
-
     def _check_options(self, html_element: lxml.html.HtmlElement) -> None:
         if html_element.tag != "pl-order-blocks":
             raise ValueError("HTML element is not a pl-order-blocks")
@@ -220,12 +219,14 @@ class OrderBlocksOptions:
         self._validate_order_blocks_options()
         self._validate_answer_options()
 
+        # Check that if it is a multigraph to ensure the final tag exists
         if self.is_multi:
             for options in self.answer_options:
-                if options.final: return
+                if options.final:
+                    return
             raise ValueError(
-            f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
-        )
+                f"Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
+            )
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -344,13 +345,15 @@ class AnswerOptions:
         self,
         html_element: lxml.html.HtmlElement,
         group_info: GroupInfo,
-        order_block_options: OrderBlocksOptions
+        order_block_options: OrderBlocksOptions,
     ) -> None:
         self._check_options(html_element, order_block_options.grading_method)
         if order_block_options.is_multi:
-            self.tag, self.depends, self.final, self.paths = get_multigraph_info(html_element)
+            self.tag, self.depends, self.final, self.paths = get_multigraph_info(
+                html_element
+            )
             self.final = pl.get_boolean_attrib(html_element, "final", False)
-        else: 
+        else:
             self.tag, self.depends = get_graph_info(html_element)
             self.final, self.paths = None, None
         self.correct = pl.get_boolean_attrib(
@@ -421,7 +424,7 @@ class AnswerOptions:
                     "distractor-feedback",
                     "distractor-for",
                     "ordering-feedback",
-                    "final"
+                    "final",
                 ],
             )
 
@@ -443,13 +446,13 @@ def collect_answer_options(
                     options = AnswerOptions(
                         answer_element,
                         {"tag": group_tag, "depends": group_depends},
-                        order_blocks_options
+                        order_blocks_options,
                     )
                     answer_options.append(options)
             case "pl-answer":
                 options = AnswerOptions(
-                        inner_element, {"tag": None, "depends": None}, order_blocks_options
-                    )
+                    inner_element, {"tag": None, "depends": None}, order_blocks_options
+                )
                 answer_options.append(options)
             case _:
                 raise ValueError(

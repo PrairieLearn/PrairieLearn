@@ -4,6 +4,7 @@ from collections.abc import Iterable, Mapping, Sequence, Callable, Generator
 from copy import deepcopy
 import networkx as nx
 
+
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
 ) -> bool:
@@ -51,6 +52,7 @@ def solve_dag(
         sort = not_in_group[:group_start] + group + not_in_group[group_start:]
 
     return sort
+
 
 def solve_multigraph(
     depends_multi_graph: dict[str, list[str] | list[list[str]]],
@@ -198,9 +200,11 @@ def grade_multigraph(
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
-    #TODO add grouping correctness for block groups grading
+    # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
-    collapsed_dags = [graph for graph in collapse_multigraph(depends_multigraph, final, path_names={})]
+    collapsed_dags = [
+        graph for graph in collapse_multigraph(depends_multigraph, final, path_names={})
+    ]
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
@@ -221,7 +225,8 @@ def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     return all(u in cover or v in cover for u, v in G.edges)
 
 
-def lcs_partial_credit( submission: Sequence[str | None],
+def lcs_partial_credit(
+    submission: Sequence[str | None],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, str | None],
 ) -> int:
@@ -341,9 +346,7 @@ def dfs_until(
         for target in graph[curr]:
             # This determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
-                raise Exception(
-                    f"Cycle encountered druing collapse of multigraph."
-                )
+                raise Exception(f"Cycle encountered druing collapse of multigraph.")
             if target not in visited:
                 stack.insert(0, (target, deepcopy(visited)))
 
