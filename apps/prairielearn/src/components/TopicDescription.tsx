@@ -7,8 +7,7 @@ export function TopicDescription({ topic }: { topic: Topic }) {
 
   return (
     <span class="text-muted">
-      Auto-generated from use in a question; edit this topic or add it to your infoCourse.json file
-      to customize
+      Auto-generated from use in a question; edit this topic to customize
     </span>
   );
 }

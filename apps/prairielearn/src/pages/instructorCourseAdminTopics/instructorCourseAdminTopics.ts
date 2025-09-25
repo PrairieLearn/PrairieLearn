@@ -14,6 +14,7 @@ import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
+import { TopicSchema } from '../../lib/db-types.js';
 
 import { InstructorCourseAdminTopics } from './instructorCourseAdminTopics.html.js';
 
@@ -64,7 +65,19 @@ router.post(
       const body = z
         .object({
           orig_hash: z.string(),
-          topics: z.string().transform((s) => JSON.parse(s)),
+          topics: z.string().transform((s) =>
+            z
+              .array(
+                TopicSchema.pick({
+                  name: true,
+                  color: true,
+                  description: true,
+                  json_comment: true,
+                  implicit: true,
+                }),
+              )
+              .parse(JSON.parse(s)),
+          ),
         })
         .parse(req.body);
 

@@ -1,9 +1,10 @@
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { type Topic } from '../../lib/db-types.js';
 import { Hydrate } from '../../lib/preact.js';
-
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
+import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
+import { type Topic } from '../../lib/db-types.js';
+import { z } from 'zod';
 
 export function InstructorCourseAdminTopics({
   resLocals,
@@ -16,6 +17,7 @@ export function InstructorCourseAdminTopics({
 }) {
   const allowEdit =
     resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course;
+  const StaffTopics = z.array(StaffTopicSchema).parse(topics);
   return PageLayout({
     resLocals,
     pageTitle: 'Topics',
@@ -36,7 +38,7 @@ export function InstructorCourseAdminTopics({
         />
         <Hydrate>
           <InstructorCourseAdminTopicsTable
-            topics={topics}
+            topics={StaffTopics}
             allowEdit={allowEdit}
             csrfToken={resLocals.__csrf_token}
             origHash={origHash}

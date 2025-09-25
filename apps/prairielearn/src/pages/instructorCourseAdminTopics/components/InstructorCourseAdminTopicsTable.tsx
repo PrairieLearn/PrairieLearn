@@ -6,6 +6,7 @@ import { TopicDescription } from '../../../components/TopicDescription.js';
 import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
+import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 
 const emptyTopic: Topic = {
   color: '',
@@ -24,7 +25,7 @@ export function InstructorCourseAdminTopicsTable({
   origHash,
   csrfToken,
 }: {
-  topics: Topic[];
+  topics: StaffTopic[];
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
@@ -128,23 +129,25 @@ export function InstructorCourseAdminTopicsTable({
                 return (
                   <tr key={topic.name}>
                     {editMode && allowEdit ? (
-                      <td class="d-flex align-items-center px-3">
-                        <button
-                          class="btn btn-sm btn-ghost"
-                          type="button"
-                          aria-label={`Edit topic ${topic.name}`}
-                          onClick={() => handleOpenEditModal(index)}
-                        >
-                          <i class="fa fa-edit" aria-hidden="true" />
-                        </button>
-                        <button
-                          class="btn btn-sm btn-ghost"
-                          type="button"
-                          aria-label={`Delete topic ${topic.name}`}
-                          onClick={() => handleDeleteTopic(topic.id)}
-                        >
-                          <i class="fa fa-trash text-danger" aria-hidden="true" />
-                        </button>
+                      <td class="align-middle">
+                        <div class="d-flex align-items-center">
+                          <button
+                            class="btn btn-sm btn-ghost"
+                            type="button"
+                            aria-label={`Edit topic ${topic.name}`}
+                            onClick={() => handleOpenEditModal(index)}
+                          >
+                            <i class="fa fa-edit" aria-hidden="true" />
+                          </button>
+                          <button
+                            class="btn btn-sm btn-ghost"
+                            type="button"
+                            aria-label={`Delete topic ${topic.name}`}
+                            onClick={() => handleDeleteTopic(topic.id)}
+                          >
+                            <i class="fa fa-trash text-danger" aria-hidden="true" />
+                          </button>
+                        </div>
                       </td>
                     ) : (
                       ''
