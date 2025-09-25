@@ -146,10 +146,8 @@ router.post(
         if (!oldEnrollment) {
           throw new Error('Could not find enrollment to reject');
         }
+        await selectAndLockUserById(user_id);
         await selectAndLockEnrollmentById(oldEnrollment.id);
-        if (oldEnrollment.user_id) {
-          await selectAndLockUserById(oldEnrollment.user_id);
-        }
 
         const newEnrollment = await queryRow(
           sql.reject_invitation,

@@ -70,7 +70,6 @@ SET
   user_id = NULL,
   pending_uid = $pending_uid
 WHERE
-  -- status sanity checks should be performed upstream.
   id = $enrollment_id
 RETURNING
   *;

@@ -336,7 +336,7 @@ async function inviteNewEnrollment({
   return newEnrollment;
 }
 /**
- * Invite a student by uid. This does not prevent being invited via
+ * Invite a student by uid.
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
  */
@@ -380,5 +380,5 @@ export async function inviteStudentByUid({
 }
 
 export async function selectAndLockEnrollmentById(id: string) {
-  await queryRow(sql.select_and_lock_enrollment_by_id, { id }, EnrollmentSchema);
+  return await queryRow(sql.select_and_lock_enrollment_by_id, { id }, EnrollmentSchema);
 }
