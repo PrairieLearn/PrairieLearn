@@ -117,6 +117,8 @@ def solve_problem(
     elif grading_method is GradingMethodType.DAG and is_multi:
         depends_graph, final = extract_multigraph(answers_list)
         solution = solve_multigraph(depends_graph, final)[0]
+        print(solution)
+        answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
         raise AssertionError("Unreachable code.")
@@ -212,7 +214,6 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     grade(html, data_copy)
     if (
         data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
-        and not order_blocks_options.is_multi
     ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
@@ -613,7 +614,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
             # TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
-                submission, depends_multigraph, final, {}
+                submission, depends_multigraph, final, order_blocks_options.paths, {}
             )
         else:
             # This is so num_initial_correct and true_answer_length is not possibly unbound
