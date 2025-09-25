@@ -1,5 +1,13 @@
 import pytest
-from dag_checker import dag_to_nx, grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import (
+    dag_to_nx,
+    grade_dag,
+    grade_multigraph,
+    lcs_partial_credit,
+    solve_dag,
+    solve_multigraph,
+    Multigraph
+)
 
 problem_1_dag = {
     "1": [],
@@ -160,3 +168,72 @@ def test_solve_dag() -> None:
     for depends_graph, group_belonging in problems:
         solution = solve_dag(depends_graph, group_belonging)
         assert len(solution) == grade_dag(solution, depends_graph, group_belonging)[0]
+
+
+problem_4_final = "6"
+problem_4_sum: Multigraph = {
+    "1": [],
+    "2": ["1"],
+    "3": ["2"],
+    "4": ["2"],
+    "5": [["1"], ["2"]],
+    "6": [["3", "4"], ["5"]],
+}
+
+problem_4_orderings = []
+
+problem_5_final = "5"
+problem_5_named_paths = {"40": "path1:", "41": "path2:", "50": "path1:", "51": "path2:"}
+problem_5_git: Multigraph = {
+    "1": [],
+    "2": [],
+    "3": [],
+    "4": [["2"], ["1"]],
+    "5": [["4"], ["3", "4"]],
+}
+
+problem_6_final = "3"
+problem_6_cycle: Multigraph = {
+    "1": [["2"], []],
+    "2": ["1"],
+    "3": [["2"], ["1"]],
+}
+
+problem_7_final = "4"
+problem_7_optional_source: Multigraph = {
+    "1": [["3"], []],
+    "2": [["3"], []],
+    "3": [],
+    "4": [["2"], ["1"]],
+}
+
+
+def test_solve_multigraph():
+    problem_4_solutions = solve_multigraph(problem_4_sum, problem_4_final)
+    for solution in problem_4_solutions:
+        assert (
+            len(solution)
+            == grade_multigraph(solution, problem_4_sum, problem_4_final, {}, {})[0]
+        )
+
+    problem_5_solutions = solve_multigraph(
+        problem_5_git, problem_5_final, problem_5_named_paths
+    )
+    for solution in problem_5_solutions:
+        assert (
+            len(solution)
+            == grade_multigraph(solution, problem_5_git, problem_5_final, {}, {})[0]
+        )
+
+    # Contains a cycle and should fail.
+    with pytest.raises(Exception):
+        solve_multigraph(problem_6_cycle, problem_6_final)
+
+    problem_7_solutions = solve_multigraph(problem_7_optional_source, problem_7_final)
+    for solution in problem_7_solutions:
+        assert (
+            len(solution)
+            == grade_multigraph(
+                solution, problem_7_optional_source, problem_7_final, {}, {}
+            )[0]
+        )
