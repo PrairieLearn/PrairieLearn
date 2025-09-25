@@ -177,7 +177,7 @@ export function AssessmentQuestion({
             rubricData={rubric_data}
             csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}
-            contexts={{
+            context={{
               course_short_name: resLocals.course.short_name,
               course_instance_short_name: resLocals.course_instance.short_name,
               assessment_tid: resLocals.assessment.tid,

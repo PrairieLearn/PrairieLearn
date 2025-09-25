@@ -16,13 +16,13 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
-  contexts,
+  context,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
-  contexts: Record<string, any>;
+  context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const wasUsingRubric = Boolean(rubricData);
@@ -175,8 +175,7 @@ export function RubricSettings({
     const a = document.createElement('a');
     a.href = url;
 
-    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } =
-      contexts;
+    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } = context;
     const exportFileName =
       `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
@@ -205,9 +204,9 @@ export function RubricSettings({
       return;
     }
     const file = input.files[0];
-    if (file.size > contexts.file_upload_max_bytes) {
+    if (file.size > context.file_upload_max_bytes) {
       setImportModalWarning(
-        `File size exceeds the maximum limit of ${contexts.file_upload_max_bytes} bytes. Please choose a smaller file.`,
+        `File size exceeds the maximum limit of ${context.file_upload_max_bytes} bytes. Please choose a smaller file.`,
       );
       return;
     }
@@ -560,7 +559,7 @@ export function RubricSettings({
                 required
               />
               <small class="form-text text-muted">
-                Max file size: {filesize(contexts.file_upload_max_bytes, { base: 10, round: 0 })}
+                Max file size: {filesize(context.file_upload_max_bytes, { base: 10, round: 0 })}
               </small>
               {importModalWarning && (
                 <div
