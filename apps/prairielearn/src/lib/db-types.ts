@@ -609,19 +609,19 @@ export const CourseInstanceAccessRuleSchema = z.object({
 });
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
-export const CourseInstanceAccessControlOverrideSchema = z.object({
+export const CourseInstanceAccessControlExtensionSchema = z.object({
   course_instance_id: IdSchema,
   enabled: z.boolean(),
   id: IdSchema,
   name: z.string().nullable(),
   published_end_date: DateFromISOString.nullable(),
 });
-export type CourseInstanceAccessControlOverride = z.infer<
-  typeof CourseInstanceAccessControlOverrideSchema
+export type CourseInstanceAccessControlExtension = z.infer<
+  typeof CourseInstanceAccessControlExtensionSchema
 >;
 
 export const CourseInstanceAccessControlEnrollmentOverrideSchema = z.object({
-  course_instance_access_control_override_id: IdSchema,
+  course_instance_access_control_extension_id: IdSchema,
   enrollment_id: IdSchema,
   id: IdSchema,
 });

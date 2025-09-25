@@ -72,7 +72,7 @@ export function evaluateCourseInstanceAccess(
   return { hasAccess: true };
 }
 
-interface CourseInstanceAccessControlOverrideData {
+interface CourseInstanceAccessControlExtensionData {
   enabled: boolean;
   name: string | null;
   published_end_date: string | null;
@@ -82,7 +82,7 @@ interface CourseInstanceAccessControlOverrideData {
 export interface AccessControlMigrationResult {
   success: true;
   accessControl: AccessControlJson;
-  overrides: CourseInstanceAccessControlOverrideData[];
+  extensions: CourseInstanceAccessControlExtensionData[];
 }
 
 export interface AccessControlMigrationError {
@@ -179,10 +179,10 @@ export function migrateAccessRuleJsonToAccessControl(
     publishedEndDate: rule.endDate,
   };
 
-  // Convert UID selectors to overrides
-  const overrides: CourseInstanceAccessControlOverrideData[] = [];
+  // Convert UID selectors to extensions
+  const extensions: CourseInstanceAccessControlExtensionData[] = [];
   if (rule.uids && rule.uids.length > 0) {
-    overrides.push({
+    extensions.push({
       enabled: true,
       name: typeof rule.comment === 'string' ? rule.comment : null,
       published_end_date: rule.endDate ?? null,
@@ -193,6 +193,6 @@ export function migrateAccessRuleJsonToAccessControl(
   return {
     success: true,
     accessControl,
-    overrides,
+    extensions,
   };
 }

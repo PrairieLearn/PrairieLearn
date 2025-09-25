@@ -2,12 +2,12 @@ import { useState } from 'preact/compat';
 
 import {
   type CourseInstance,
-  type CourseInstanceAccessControlOverride,
+  type CourseInstanceAccessControlExtension,
 } from '../../../lib/db-types.js';
 
 interface AccessControlOverridesProps {
   courseInstance: CourseInstance;
-  overrides: CourseInstanceAccessControlOverride[];
+  overrides: CourseInstanceAccessControlExtension[];
   canEdit: boolean;
   csrfToken: string;
 }
@@ -23,7 +23,7 @@ export function AccessControlOverrides({
 
   const handleDelete = async (overrideId: string) => {
     // eslint-disable-next-line no-alert
-    if (!confirm('Are you sure you want to delete this override?')) {
+    if (!confirm('Are you sure you want to delete this extension?')) {
       return;
     }
 
@@ -46,12 +46,12 @@ export function AccessControlOverrides({
       if (response.ok) {
         window.location.reload();
       } else {
-        throw new Error('Failed to delete override');
+        throw new Error('Failed to delete extension');
       }
     } catch (error) {
-      console.error('Error deleting override:', error);
+      console.error('Error deleting extension:', error);
       // eslint-disable-next-line no-alert
-      alert('Failed to delete override. Please try again.');
+      alert('Failed to delete extension. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -78,12 +78,12 @@ export function AccessControlOverrides({
       if (response.ok) {
         window.location.reload();
       } else {
-        throw new Error('Failed to toggle override');
+        throw new Error('Failed to toggle extension');
       }
     } catch (error) {
-      console.error('Error toggling override:', error);
+      console.error('Error toggling extension:', error);
       // eslint-disable-next-line no-alert
-      alert('Failed to toggle override. Please try again.');
+      alert('Failed to toggle extension. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +92,7 @@ export function AccessControlOverrides({
   return (
     <>
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0">Access Control Overrides</h5>
+        <h5 class="mb-0">Access Control Extensions</h5>
         {canEdit && (
           <button
             type="button"
@@ -100,18 +100,18 @@ export function AccessControlOverrides({
             disabled={isSubmitting}
             onClick={() => setShowAddForm(true)}
           >
-            Add Override
+            Add Extension
           </button>
         )}
       </div>
 
       {overrides.length === 0 ? (
         <div class="text-center text-muted mb-3">
-          <p class="mb-0">No access control overrides configured.</p>
+          <p class="mb-0">No access control extensions configured.</p>
         </div>
       ) : (
         <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Access control overrides">
+          <table class="table table-sm table-hover" aria-label="Access control extensions">
             <thead>
               <tr>
                 <th>Name</th>
@@ -152,7 +152,7 @@ function OverrideRow({
   onToggleEnabled,
   isSubmitting,
 }: {
-  override: CourseInstanceAccessControlOverride;
+  override: CourseInstanceAccessControlExtension;
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
@@ -161,7 +161,7 @@ function OverrideRow({
 }) {
   return (
     <tr>
-      <td>{override.name || <em class="text-muted">Unnamed override</em>}</td>
+      <td>{override.name || <em class="text-muted">Unnamed extension</em>}</td>
       <td>
         <div class="form-check form-switch">
           <input
@@ -229,12 +229,12 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       if (response.ok) {
         window.location.reload();
       } else {
-        throw new Error('Failed to add override');
+        throw new Error('Failed to add extension');
       }
     } catch (error) {
-      console.error('Error adding override:', error);
+      console.error('Error adding extension:', error);
       // eslint-disable-next-line no-alert
-      alert('Failed to add override. Please try again.');
+      alert('Failed to add extension. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -245,7 +245,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title">Add Access Control Override</h5>
+            <h5 class="modal-title">Add Access Control Extension</h5>
             <button type="button" class="btn-close" onClick={onClose} />
           </div>
           <form onSubmit={handleSubmit}>
@@ -259,7 +259,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
                   class="form-control"
                   id="override-name"
                   value={formData.name}
-                  placeholder="Optional name for this override"
+                  placeholder="Optional name for this extension"
                   onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
                 />
               </div>
@@ -293,7 +293,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
                   }
                 />
                 <div class="form-text">
-                  If set, this override will automatically disable after this date.
+                  If set, this extension will automatically disable after this date.
                 </div>
               </div>
 
@@ -311,7 +311,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
                   onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
                 />
                 <div class="form-text">
-                  Enter the UIDs of users who should have this override applied.
+                  Enter the UIDs of users who should have this extension applied.
                 </div>
               </div>
             </div>
@@ -325,7 +325,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
                 Cancel
               </button>
               <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Adding...' : 'Add Override'}
+                {isSubmitting ? 'Adding...' : 'Add Extension'}
               </button>
             </div>
           </form>

@@ -23,11 +23,11 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
-  createAccessControlOverrideWithEnrollments,
-  deleteAccessControlOverride,
-  selectAccessControlOverridesByCourseInstance,
-  updateAccessControlOverride,
-} from '../../models/course-instance-access-control-overrides.js';
+  createAccessControlExtensionWithEnrollments,
+  deleteAccessControlExtension,
+  selectAccessControlExtensionsByCourseInstance,
+  updateAccessControlExtension,
+} from '../../models/course-instance-access-control-extensions.js';
 import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
@@ -45,7 +45,7 @@ router.get(
       CourseInstanceAccessRuleSchema,
     );
 
-    const accessControlOverrides = await selectAccessControlOverridesByCourseInstance(
+    const accessControlExtensions = await selectAccessControlExtensionsByCourseInstance(
       res.locals.course_instance.id,
     );
 
@@ -97,7 +97,7 @@ router.get(
             />
             <InstructorInstanceAdminAccess
               accessRules={accessRules}
-              accessControlOverrides={accessControlOverrides}
+              accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionView={hasCourseInstancePermissionView}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
@@ -264,25 +264,25 @@ router.post(
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
-      // Insert overrides if any were generated from the migration
-      if (migrationResult.overrides.length > 0) {
-        for (const override of migrationResult.overrides) {
-          if (override.uids && override.uids.length > 0) {
+      // Insert extensions if any were generated from the migration
+      if (migrationResult.extensions.length > 0) {
+        for (const extension of migrationResult.extensions) {
+          if (extension.uids && extension.uids.length > 0) {
             // Get enrollment IDs for the UIDs
             const enrollments = await getEnrollmentsByUidsInCourseInstance({
-              uids: override.uids,
+              uids: extension.uids,
               course_instance_id: res.locals.course_instance.id,
             });
 
             if (enrollments.length > 0) {
               const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
-              await createAccessControlOverrideWithEnrollments({
+              await createAccessControlExtensionWithEnrollments({
                 course_instance_id: res.locals.course_instance.id,
-                enabled: override.enabled,
-                name: override.name,
-                published_end_date: override.published_end_date
-                  ? new Date(override.published_end_date)
+                enabled: extension.enabled,
+                name: extension.name,
+                published_end_date: extension.published_end_date
+                  ? new Date(extension.published_end_date)
                   : null,
                 enrollment_ids: enrollmentIds,
               });
@@ -321,7 +321,7 @@ router.post(
 
       const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
-      await createAccessControlOverrideWithEnrollments({
+      await createAccessControlExtensionWithEnrollments({
         course_instance_id: res.locals.course_instance.id,
         enabled,
         name,
@@ -329,41 +329,41 @@ router.post(
         enrollment_ids: enrollmentIds,
       });
 
-      flash('success', 'Access control override added successfully');
+      flash('success', 'Access control extension added successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_override') {
       const override_id = req.body.override_id;
 
-      await deleteAccessControlOverride({
-        override_id,
+      await deleteAccessControlExtension({
+        extension_id: override_id,
         course_instance_id: res.locals.course_instance.id,
       });
 
-      flash('success', 'Access control override deleted successfully');
+      flash('success', 'Access control extension deleted successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'toggle_override') {
       const override_id = req.body.override_id;
       const enabled = req.body.enabled === 'true';
 
-      // Get the current override to preserve other fields
-      const currentOverrides = await selectAccessControlOverridesByCourseInstance(
+      // Get the current extension to preserve other fields
+      const currentExtensions = await selectAccessControlExtensionsByCourseInstance(
         res.locals.course_instance.id,
       );
-      const currentOverride = currentOverrides.find((o) => o.id === override_id);
+      const currentExtension = currentExtensions.find((e) => e.id === override_id);
 
-      if (!currentOverride) {
-        throw new error.HttpStatusError(404, 'Override not found');
+      if (!currentExtension) {
+        throw new error.HttpStatusError(404, 'Extension not found');
       }
 
-      await updateAccessControlOverride({
-        override_id,
+      await updateAccessControlExtension({
+        extension_id: override_id,
         course_instance_id: res.locals.course_instance.id,
         enabled,
-        name: currentOverride.name,
-        published_end_date: currentOverride.published_end_date,
+        name: currentExtension.name,
+        published_end_date: currentExtension.published_end_date,
       });
 
-      flash('success', 'Access control override updated successfully');
+      flash('success', 'Access control extension updated successfully');
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');

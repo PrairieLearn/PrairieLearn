@@ -9,42 +9,42 @@ import {
 import {
   type CourseInstanceAccessControlEnrollmentOverride,
   CourseInstanceAccessControlEnrollmentOverrideSchema,
-  type CourseInstanceAccessControlOverride,
-  CourseInstanceAccessControlOverrideSchema,
+  type CourseInstanceAccessControlExtension,
+  CourseInstanceAccessControlExtensionSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Finds all access control overrides that apply to a specific enrollment.
+ * Finds all access control extensions that apply to a specific enrollment.
  */
-export async function selectAccessControlOverridesByEnrollmentId(
+export async function selectAccessControlExtensionsByEnrollmentId(
   enrollment_id: string,
-): Promise<CourseInstanceAccessControlOverride[]> {
+): Promise<CourseInstanceAccessControlExtension[]> {
   return await queryRows(
-    sql.select_access_control_overrides_by_enrollment_id,
+    sql.select_access_control_extensions_by_enrollment_id,
     { enrollment_id },
-    CourseInstanceAccessControlOverrideSchema,
+    CourseInstanceAccessControlExtensionSchema,
   );
 }
 
 /**
- * Finds all access control overrides for a course instance.
+ * Finds all access control extensions for a course instance.
  */
-export async function selectAccessControlOverridesByCourseInstance(
+export async function selectAccessControlExtensionsByCourseInstance(
   course_instance_id: string,
-): Promise<CourseInstanceAccessControlOverride[]> {
+): Promise<CourseInstanceAccessControlExtension[]> {
   return await queryRows(
-    sql.select_access_control_overrides_by_course_instance,
+    sql.select_access_control_extensions_by_course_instance,
     { course_instance_id },
-    CourseInstanceAccessControlOverrideSchema,
+    CourseInstanceAccessControlExtensionSchema,
   );
 }
 
 /**
- * Creates a new access control override for a course instance.
+ * Creates a new access control extension for a course instance.
  */
-export async function insertAccessControlOverride({
+export async function insertAccessControlExtension({
   course_instance_id,
   enabled,
   name,
@@ -54,33 +54,33 @@ export async function insertAccessControlOverride({
   enabled: boolean;
   name: string | null;
   published_end_date: Date | null;
-}): Promise<CourseInstanceAccessControlOverride> {
+}): Promise<CourseInstanceAccessControlExtension> {
   return await queryRow(
-    sql.insert_access_control_override,
+    sql.insert_access_control_extension,
     {
       course_instance_id,
       enabled,
       name,
       published_end_date,
     },
-    CourseInstanceAccessControlOverrideSchema,
+    CourseInstanceAccessControlExtensionSchema,
   );
 }
 
 /**
- * Links an access control override to a specific enrollment.
+ * Links an access control extension to a specific enrollment.
  */
 export async function insertAccessControlEnrollmentOverride({
-  course_instance_access_control_override_id,
+  course_instance_access_control_extension_id,
   enrollment_id,
 }: {
-  course_instance_access_control_override_id: string;
+  course_instance_access_control_extension_id: string;
   enrollment_id: string;
 }): Promise<CourseInstanceAccessControlEnrollmentOverride> {
   return await queryRow(
     sql.insert_access_control_enrollment_override,
     {
-      course_instance_access_control_override_id,
+      course_instance_access_control_extension_id,
       enrollment_id,
     },
     CourseInstanceAccessControlEnrollmentOverrideSchema,
@@ -88,9 +88,9 @@ export async function insertAccessControlEnrollmentOverride({
 }
 
 /**
- * Creates an access control override with enrollment links in a transaction.
+ * Creates an access control extension with enrollment links in a transaction.
  */
-export async function createAccessControlOverrideWithEnrollments({
+export async function createAccessControlExtensionWithEnrollments({
   course_instance_id,
   enabled,
   name,
@@ -102,10 +102,10 @@ export async function createAccessControlOverrideWithEnrollments({
   name: string | null;
   published_end_date: Date | null;
   enrollment_ids: string[];
-}): Promise<CourseInstanceAccessControlOverride> {
+}): Promise<CourseInstanceAccessControlExtension> {
   return await runInTransactionAsync(async () => {
-    // Create the override
-    const override = await insertAccessControlOverride({
+    // Create the extension
+    const extension = await insertAccessControlExtension({
       course_instance_id,
       enabled,
       name,
@@ -115,56 +115,56 @@ export async function createAccessControlOverrideWithEnrollments({
     // Link to enrollments
     for (const enrollment_id of enrollment_ids) {
       await insertAccessControlEnrollmentOverride({
-        course_instance_access_control_override_id: override.id,
+        course_instance_access_control_extension_id: extension.id,
         enrollment_id,
       });
     }
 
-    return override;
+    return extension;
   });
 }
 
 /**
- * Deletes an access control override.
+ * Deletes an access control extension.
  */
-export async function deleteAccessControlOverride({
-  override_id,
+export async function deleteAccessControlExtension({
+  extension_id,
   course_instance_id,
 }: {
-  override_id: string;
+  extension_id: string;
   course_instance_id: string;
 }): Promise<void> {
-  await execute(sql.delete_access_control_override, {
-    override_id,
+  await execute(sql.delete_access_control_extension, {
+    extension_id,
     course_instance_id,
   });
 }
 
 /**
- * Updates an access control override.
+ * Updates an access control extension.
  */
-export async function updateAccessControlOverride({
-  override_id,
+export async function updateAccessControlExtension({
+  extension_id,
   course_instance_id,
   enabled,
   name,
   published_end_date,
 }: {
-  override_id: string;
+  extension_id: string;
   course_instance_id: string;
   enabled: boolean;
   name: string | null;
   published_end_date: Date | null;
-}): Promise<CourseInstanceAccessControlOverride> {
+}): Promise<CourseInstanceAccessControlExtension> {
   return await queryRow(
-    sql.update_access_control_override,
+    sql.update_access_control_extension,
     {
-      override_id,
+      extension_id,
       course_instance_id,
       enabled,
       name,
       published_end_date,
     },
-    CourseInstanceAccessControlOverrideSchema,
+    CourseInstanceAccessControlExtensionSchema,
   );
 }

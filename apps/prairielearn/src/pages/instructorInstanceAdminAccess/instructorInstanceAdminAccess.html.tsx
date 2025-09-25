@@ -6,7 +6,7 @@ import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
 import {
   type CourseInstance,
-  type CourseInstanceAccessControlOverride,
+  type CourseInstanceAccessControlExtension,
   type CourseInstanceAccessRule,
 } from '../../lib/db-types.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
@@ -16,7 +16,7 @@ import { AccessControlMigrationModal } from './components/AccessControlMigration
 
 export function InstructorInstanceAdminAccess({
   accessRules,
-  accessControlOverrides,
+  accessControlExtensions,
   courseInstance,
   hasCourseInstancePermissionView,
   hasCourseInstancePermissionEdit,
@@ -27,7 +27,7 @@ export function InstructorInstanceAdminAccess({
   hasCourseInstancePermissionView: boolean;
   hasCourseInstancePermissionEdit: boolean;
   accessRules: CourseInstanceAccessRule[];
-  accessControlOverrides: CourseInstanceAccessControlOverride[];
+  accessControlExtensions: CourseInstanceAccessControlExtension[];
   csrfToken: string;
   origHash: string;
 }) {
@@ -49,7 +49,7 @@ export function InstructorInstanceAdminAccess({
           canEdit={hasCourseInstancePermissionEdit}
           csrfToken={csrfToken}
           origHash={origHash}
-          accessControlOverrides={accessControlOverrides}
+          accessControlExtensions={accessControlExtensions}
         />
       </Hydrate>
 
