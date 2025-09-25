@@ -1,4 +1,5 @@
 import { useState } from 'preact/compat';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import {
   type CourseInstance,
@@ -138,7 +139,14 @@ export function AccessControlOverrides({
       )}
 
       {showAddForm && (
-        <AddOverrideForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
+        <div class="card mt-3">
+          <div class="card-header">
+            <h6 class="mb-0">Add Access Control Extension</h6>
+          </div>
+          <div class="card-body">
+            <AddOverrideForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
+          </div>
+        </div>
       )}
     </>
   );
@@ -196,26 +204,25 @@ function OverrideRow({
 }
 
 function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     enabled: true,
     published_end_date: '',
     uids: '',
   });
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSubmit = async (e: Event) => {
-    e.preventDefault();
+  const queryClient = useQueryClient();
 
-    setIsSubmitting(true);
-    try {
+  const addOverrideMutation = useMutation({
+    mutationFn: async (data: typeof formData) => {
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'add_override',
-        name: formData.name,
-        enabled: formData.enabled.toString(),
-        published_end_date: formData.published_end_date || '',
-        uids: formData.uids,
+        name: data.name,
+        enabled: data.enabled.toString(),
+        published_end_date: data.published_end_date || '',
+        uids: data.uids,
       };
 
       const response = await fetch(window.location.pathname, {
@@ -226,112 +233,139 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         body: JSON.stringify(requestBody),
       });
 
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        throw new Error('Failed to add extension');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+
+        // Handle field-specific errors
+        if (errorData.errors) {
+          setErrors(errorData.errors);
+          throw new Error('Validation errors occurred');
+        }
+
+        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
-    } catch (error) {
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate and refetch the page data
+      queryClient.invalidateQueries({ queryKey: ['instructorInstanceAdminAccess'] });
+      onClose();
+    },
+    onError: (error: Error) => {
       console.error('Error adding extension:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to add extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+      setErrors({ general: error.message });
+    },
+  });
+
+  const handleSubmit = async (e: Event) => {
+    e.preventDefault();
+    setErrors({});
+    addOverrideMutation.mutate(formData);
   };
 
   return (
-    <div class="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
-      <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Add Access Control Extension</h5>
-            <button type="button" class="btn-close" onClick={onClose} />
+    <form onSubmit={handleSubmit}>
+      {errors.general && (
+        <div class="alert alert-danger" role="alert">
+          {errors.general}
+        </div>
+      )}
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="override-name" class="form-label">
+              Name
+            </label>
+            <input
+              type="text"
+              class="form-control"
+              id="override-name"
+              value={formData.name}
+              placeholder="Optional name for this extension"
+              onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
+            />
+            {errors.name && <div class="invalid-feedback d-block">{errors.name}</div>}
           </div>
-          <form onSubmit={handleSubmit}>
-            <div class="modal-body">
-              <div class="mb-3">
-                <label for="override-name" class="form-label">
-                  Name
-                </label>
-                <input
-                  type="text"
-                  class="form-control"
-                  id="override-name"
-                  value={formData.name}
-                  placeholder="Optional name for this extension"
-                  onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
-                />
-              </div>
-
-              <div class="mb-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="checkbox"
-                    id="override-enabled"
-                    checked={formData.enabled}
-                    onChange={(e) => setFormData({ ...formData, enabled: e.currentTarget.checked })}
-                  />
-                  <label class="form-check-label" for="override-enabled">
-                    Enabled
-                  </label>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="override-end-date" class="form-label">
-                  End Date (Optional)
-                </label>
-                <input
-                  type="datetime-local"
-                  class="form-control"
-                  id="override-end-date"
-                  value={formData.published_end_date}
-                  onChange={(e) =>
-                    setFormData({ ...formData, published_end_date: e.currentTarget.value })
-                  }
-                />
-                <div class="form-text">
-                  If set, this extension will automatically disable after this date.
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label for="override-uids" class="form-label">
-                  User UIDs
-                </label>
-                <textarea
-                  class="form-control"
-                  id="override-uids"
-                  rows={3}
-                  value={formData.uids}
-                  placeholder="Enter UIDs, one per line or separated by commas"
-                  required
-                  onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
-                />
-                <div class="form-text">
-                  Enter the UIDs of users who should have this extension applied.
-                </div>
-              </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                id="override-enabled"
+                checked={formData.enabled}
+                onChange={(e) => setFormData({ ...formData, enabled: e.currentTarget.checked })}
+              />
+              <label class="form-check-label" for="override-enabled">
+                Enabled
+              </label>
             </div>
-            <div class="modal-footer">
-              <button
-                type="button"
-                class="btn btn-secondary"
-                disabled={isSubmitting}
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-                {isSubmitting ? 'Adding...' : 'Add Extension'}
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
       </div>
-    </div>
+
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="override-end-date" class="form-label">
+              End Date (Optional)
+            </label>
+            <input
+              type="datetime-local"
+              class="form-control"
+              id="override-end-date"
+              value={formData.published_end_date}
+              onChange={(e) =>
+                setFormData({ ...formData, published_end_date: e.currentTarget.value })
+              }
+            />
+            <div class="form-text">
+              If set, this extension will automatically disable after this date.
+            </div>
+            {errors.published_end_date && (
+              <div class="invalid-feedback d-block">{errors.published_end_date}</div>
+            )}
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-3">
+            <label for="override-uids" class="form-label">
+              User UIDs
+            </label>
+            <textarea
+              class="form-control"
+              id="override-uids"
+              rows={3}
+              value={formData.uids}
+              placeholder="Enter UIDs, one per line or separated by commas"
+              required
+              onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
+            />
+            <div class="form-text">
+              Enter the UIDs of users who should have this extension applied.
+            </div>
+            {errors.uids && <div class="invalid-feedback d-block">{errors.uids}</div>}
+          </div>
+        </div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          disabled={addOverrideMutation.isPending}
+          onClick={onClose}
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary" disabled={addOverrideMutation.isPending}>
+          {addOverrideMutation.isPending ? 'Adding...' : 'Add Extension'}
+        </button>
+      </div>
+    </form>
   );
 }
 

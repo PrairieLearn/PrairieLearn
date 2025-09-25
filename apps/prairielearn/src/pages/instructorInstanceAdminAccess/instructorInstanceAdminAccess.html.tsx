@@ -102,35 +102,35 @@ function LegacyAccessRuleCard({
               />
             </Hydrate>
           )}
+      </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Access rules">
-            <thead>
-              <tr>
-                {showComments && (
-                  <th style="width: 1%">
-                    <span class="visually-hidden">Comments</span>
-                  </th>
-                )}
-                <th>UIDs</th>
-                <th>Start date</th>
-                <th>End date</th>
-                <th>Institution</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accessRules.map((accessRule) => (
-                <AccessRuleRow
-                  key={accessRule.id}
-                  accessRule={accessRule}
-                  timeZone={courseInstance.display_timezone}
-                  hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-                  showComments={showComments}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div class="table-responsive">
+        <table class="table table-sm table-hover" aria-label="Access rules">
+          <thead>
+            <tr>
+              {showComments && (
+                <th style="width: 1%">
+                  <span class="visually-hidden">Comments</span>
+                </th>
+              )}
+              <th>UIDs</th>
+              <th>Start date</th>
+              <th>End date</th>
+              <th>Institution</th>
+            </tr>
+          </thead>
+          <tbody>
+            {accessRules.map((accessRule) => (
+              <AccessRuleRow
+                key={accessRule.id}
+                accessRule={accessRule}
+                timeZone={courseInstance.display_timezone}
+                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+                showComments={showComments}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );
