@@ -40,7 +40,7 @@ import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
-import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
@@ -463,6 +463,7 @@ router.get(
 
     const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
     const courseTags = await selectTagsByCourseId(res.locals.course.id);
+    const questionTags = await selectTagsByQuestionId(res.locals.question.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
@@ -500,6 +501,7 @@ router.get(
         questionTestPath,
         questionTestCsrfToken,
         questionGHLink,
+        questionTags,
         qids,
         assessmentsWithQuestion,
         sharingEnabled,

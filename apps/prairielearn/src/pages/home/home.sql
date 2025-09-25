@@ -239,7 +239,7 @@ UPDATE enrollments
 SET
   status = 'joined',
   user_id = $user_id,
-  joined_at = NOW(),
+  first_joined_at = NOW(),
   pending_uid = NULL
 WHERE
   course_instance_id = $course_instance_id

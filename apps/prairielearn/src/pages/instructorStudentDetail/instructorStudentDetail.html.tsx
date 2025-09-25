@@ -86,11 +86,11 @@ export function InstructorStudentDetail({
           <div class="d-flex">
             <div class="fw-bold me-1">Role:</div> {role}
           </div>
-          {enrollment?.joined_at && (
+          {enrollment?.first_joined_at && (
             <div class="d-flex">
               <div class="fw-bold me-1">Joined:</div>
               <FriendlyDate
-                date={enrollment.joined_at}
+                date={enrollment.first_joined_at}
                 timezone={course_instance.display_timezone}
               />
             </div>
