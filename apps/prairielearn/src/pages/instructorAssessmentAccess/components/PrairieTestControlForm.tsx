@@ -7,7 +7,7 @@ import type { AccessControlFormData } from './types.js';
 interface PrairieTestControlFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: 'mainRule' | `overrides.${number}`;
-  ruleEnabled?: boolean;
+  _ruleEnabled?: boolean;
   showOverrideButton?: boolean;
   onOverride?: () => void;
   title?: string;
@@ -19,7 +19,7 @@ interface PrairieTestControlFormProps {
 export function PrairieTestControlForm({
   control,
   namePrefix,
-  ruleEnabled = true,
+  _ruleEnabled = true,
   showOverrideButton = false,
   onOverride,
   title = 'PrairieTest Integration',
@@ -88,7 +88,7 @@ export function PrairieTestControlForm({
         </div>
         <div class="d-flex align-items-center">
           {showOverrideButton && onOverride && (
-            <Button size="sm" variant="outline-primary" onClick={onOverride} class="me-2">
+            <Button size="sm" variant="outline-primary" class="me-2" onClick={onOverride}>
               Override
             </Button>
           )}
@@ -102,7 +102,7 @@ export function PrairieTestControlForm({
           {(formErrors as any)[namePrefix].prairieTestControl.enabled.message}
         </Form.Text>
       )}
-      {(enabled || namePrefix.startsWith('overrides.')) && (
+      {(enabled === true || namePrefix.startsWith('overrides.')) && (
         <Collapse in={!collapsible || isExpanded}>
           <Card.Body
             style={{

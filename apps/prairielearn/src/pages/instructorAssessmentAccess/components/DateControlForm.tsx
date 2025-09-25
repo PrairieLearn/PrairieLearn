@@ -221,7 +221,7 @@ export function DateControlForm({
 
     if (index === 0) {
       // First early deadline: from release date (or "while accessible" if no release date)
-      if (releaseDate && releaseDateEnabled) {
+      if (releaseDate && releaseDateEnabled === true) {
         startDate = new Date(releaseDate);
       }
     } else {
@@ -259,7 +259,7 @@ export function DateControlForm({
 
     if (index === 0) {
       // First late deadline: from due date
-      if (dueDate && dueDateEnabled) {
+      if (dueDate && dueDateEnabled === true) {
         startDate = new Date(dueDate);
       }
     } else {
@@ -290,7 +290,7 @@ export function DateControlForm({
   // Determine the last effective deadline for "After Last Deadline" text
   const getLastDeadlineText = () => {
     // Only consider late deadlines if Late Deadlines is enabled
-    if (lateDeadlinesEnabled) {
+    if (lateDeadlinesEnabled === true) {
       // Get all late deadlines that have dates
       const validLateDeadlines = (lateDeadlines || []).filter((deadline) => deadline?.date);
 
@@ -313,7 +313,7 @@ export function DateControlForm({
     }
 
     // Fall back to due date if Late Deadlines is disabled or no late deadlines exist
-    if (dueDate) {
+    if (dueDateEnabled === true && dueDate) {
       const date = new Date(dueDate);
       return (
         <>
@@ -388,13 +388,13 @@ export function DateControlForm({
               <Row class="mb-3">
                 <Col md={6}>
                   <OverrideElement
-                    isOverridden={releaseDateEnabled}
+                    isOverridden={releaseDateEnabled !== undefined}
                     showOverrideButton={namePrefix.startsWith('overrides.')}
                     onOverride={() =>
                       setValue(`${namePrefix}.dateControl.releaseDateEnabled` as any, true)
                     }
                     onRemoveOverride={() =>
-                      setValue(`${namePrefix}.dateControl.releaseDateEnabled` as any, false)
+                      setValue(`${namePrefix}.dateControl.releaseDateEnabled` as any, undefined)
                     }
                   >
                     <Form.Group>
@@ -404,7 +404,7 @@ export function DateControlForm({
                           name="releaseMode"
                           id="release-immediately"
                           label="Released immediately"
-                          checked={!releaseDateEnabled}
+                          checked={releaseDateEnabled === false}
                           onChange={(e) => {
                             if ((e.target as HTMLInputElement).checked) {
                               setValue(
@@ -419,10 +419,10 @@ export function DateControlForm({
                           name="releaseMode"
                           id="release-after-date"
                           label="Released after date"
-                          checked={releaseDateEnabled}
+                          checked={releaseDateEnabled === true}
                           onChange={(e) => {
                             if ((e.target as HTMLInputElement).checked) {
-                              setValue('mainRule.dateControl.releaseDateEnabled', true);
+                              setValue(`${namePrefix}.dateControl.releaseDateEnabled` as any, true);
                             }
                           }}
                         />
@@ -438,13 +438,13 @@ export function DateControlForm({
                 </Col>
                 <Col md={6}>
                   <OverrideElement
-                    isOverridden={dueDateEnabled}
+                    isOverridden={dueDateEnabled !== undefined}
                     showOverrideButton={namePrefix.startsWith('overrides.')}
                     onOverride={() =>
                       setValue(`${namePrefix}.dateControl.dueDateEnabled` as any, true)
                     }
                     onRemoveOverride={() =>
-                      setValue(`${namePrefix}.dateControl.dueDateEnabled` as any, false)
+                      setValue(`${namePrefix}.dateControl.dueDateEnabled` as any, undefined)
                     }
                   >
                     <Form.Group>
@@ -454,10 +454,10 @@ export function DateControlForm({
                           name="dueMode"
                           id="due-never"
                           label="No due date"
-                          checked={!dueDateEnabled}
+                          checked={dueDateEnabled === false}
                           onChange={(e) => {
                             if ((e.target as HTMLInputElement).checked) {
-                              setValue('mainRule.dateControl.dueDateEnabled', false);
+                              setValue(`${namePrefix}.dateControl.dueDateEnabled` as any, false);
                             }
                           }}
                         />
@@ -466,10 +466,10 @@ export function DateControlForm({
                           name="dueMode"
                           id="due-on-date"
                           label="Due on date"
-                          checked={dueDateEnabled}
+                          checked={dueDateEnabled === true}
                           onChange={(e) => {
                             if ((e.target as HTMLInputElement).checked) {
-                              setValue('mainRule.dateControl.dueDateEnabled', true);
+                              setValue(`${namePrefix}.dateControl.dueDateEnabled` as any, true);
                             }
                           }}
                         />
@@ -515,7 +515,7 @@ export function DateControlForm({
                                       (100% credit)
                                     </>
                                   );
-                                } else if (releaseDateEnabled && releaseDate) {
+                                } else if (releaseDateEnabled === true && releaseDate) {
                                   // No early deadlines, use release date
                                   const releaseDateObj = new Date(releaseDate);
                                   return (
@@ -562,7 +562,7 @@ export function DateControlForm({
               <Row class="mb-4">
                 <Col md={6}>
                   {/* Early Deadlines */}
-                  {dueDateEnabled && dueDate && (
+                  {dueDateEnabled === true && dueDate && (
                     <div class="mb-4">
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="d-flex align-items-center">
@@ -578,14 +578,14 @@ export function DateControlForm({
                         <Button
                           size="sm"
                           variant="outline-primary"
-                          disabled={!earlyDeadlinesEnabled}
+                          disabled={earlyDeadlinesEnabled !== true}
                           onClick={addEarlyDeadline}
                         >
                           Add Early
                         </Button>
                       </div>
 
-                      {earlyDeadlinesEnabled &&
+                      {earlyDeadlinesEnabled === true &&
                         earlyDeadlineFields.map((field, index) => (
                           <div key={field.id} class="mb-3">
                             <Row class="mb-1">
@@ -593,7 +593,7 @@ export function DateControlForm({
                                 <Form.Control
                                   type="datetime-local"
                                   placeholder="Deadline Date"
-                                  disabled={!earlyDeadlinesEnabled}
+                                  disabled={earlyDeadlinesEnabled !== true}
                                   {...control.register(
                                     `mainRule.dateControl.earlyDeadlines.${index}.date`,
                                     {
@@ -646,7 +646,7 @@ export function DateControlForm({
                                     placeholder="Credit"
                                     min="0"
                                     max="200"
-                                    disabled={!earlyDeadlinesEnabled}
+                                    disabled={earlyDeadlinesEnabled !== true}
                                     {...control.register(
                                       `mainRule.dateControl.earlyDeadlines.${index}.credit`,
                                       {
@@ -707,7 +707,7 @@ export function DateControlForm({
                                 <Button
                                   size="sm"
                                   variant="outline-danger"
-                                  disabled={!earlyDeadlinesEnabled}
+                                  disabled={earlyDeadlinesEnabled !== true}
                                   onClick={() => removeEarlyDeadline(index)}
                                 >
                                   <i class="bi bi-x" aria-hidden="true" />
@@ -744,7 +744,7 @@ export function DateControlForm({
                 </Col>
                 <Col md={6}>
                   {/* Late Deadlines */}
-                  {dueDateEnabled && dueDate && (
+                  {dueDateEnabled === true && dueDate && (
                     <div class="mb-4">
                       <div class="d-flex justify-content-between align-items-center mb-2">
                         <div class="d-flex align-items-center">
@@ -758,14 +758,14 @@ export function DateControlForm({
                         <Button
                           size="sm"
                           variant="outline-primary"
-                          disabled={!lateDeadlinesEnabled}
+                          disabled={lateDeadlinesEnabled !== true}
                           onClick={addLateDeadline}
                         >
                           Add Late
                         </Button>
                       </div>
 
-                      {lateDeadlinesEnabled &&
+                      {lateDeadlinesEnabled === true &&
                         lateDeadlineFields.map((field, index) => (
                           <div key={field.id} class="mb-3">
                             <Row class="mb-1">
@@ -773,7 +773,7 @@ export function DateControlForm({
                                 <Form.Control
                                   type="datetime-local"
                                   placeholder="Deadline Date"
-                                  disabled={!lateDeadlinesEnabled}
+                                  disabled={lateDeadlinesEnabled !== true}
                                   {...control.register(
                                     `mainRule.dateControl.lateDeadlines.${index}.date`,
                                     {
@@ -826,7 +826,7 @@ export function DateControlForm({
                                     placeholder="Credit"
                                     min="0"
                                     max="200"
-                                    disabled={!lateDeadlinesEnabled}
+                                    disabled={lateDeadlinesEnabled !== true}
                                     {...control.register(
                                       `mainRule.dateControl.lateDeadlines.${index}.credit`,
                                       {
@@ -887,7 +887,7 @@ export function DateControlForm({
                                 <Button
                                   size="sm"
                                   variant="outline-danger"
-                                  disabled={!lateDeadlinesEnabled}
+                                  disabled={lateDeadlinesEnabled !== true}
                                   onClick={() => removeLateDeadline(index)}
                                 >
                                   <i class="bi bi-x" aria-hidden="true" />
@@ -907,15 +907,17 @@ export function DateControlForm({
                                 </Col>
                               </Row>
                             )}
-                            {getLateDeadlineTimeRange(index) && dueDateEnabled && dueDate && (
-                              <Row>
-                                <Col md={10}>
-                                  <Form.Text class="text-muted">
-                                    {getLateDeadlineTimeRange(index)}
-                                  </Form.Text>
-                                </Col>
-                              </Row>
-                            )}
+                            {getLateDeadlineTimeRange(index) &&
+                              dueDateEnabled === true &&
+                              dueDate && (
+                                <Row>
+                                  <Col md={10}>
+                                    <Form.Text class="text-muted">
+                                      {getLateDeadlineTimeRange(index)}
+                                    </Form.Text>
+                                  </Col>
+                                </Row>
+                              )}
                           </div>
                         ))}
                     </div>
@@ -924,7 +926,7 @@ export function DateControlForm({
               </Row>
 
               {/* After Last Deadline */}
-              {dueDateEnabled && dueDate && (
+              {dueDateEnabled === true && dueDate && (
                 <Card class="mb-3">
                   <Card.Header>
                     <div>
@@ -1032,13 +1034,13 @@ export function DateControlForm({
               <Row class="mb-3">
                 <Col md={6}>
                   <OverrideElement
-                    isOverridden={timeLimitEnabled}
+                    isOverridden={timeLimitEnabled !== undefined}
                     showOverrideButton={namePrefix.startsWith('overrides.')}
                     onOverride={() =>
                       setValue(`${namePrefix}.dateControl.timeLimitEnabled` as any, true)
                     }
                     onRemoveOverride={() =>
-                      setValue(`${namePrefix}.dateControl.timeLimitEnabled` as any, false)
+                      setValue(`${namePrefix}.dateControl.timeLimitEnabled` as any, undefined)
                     }
                   >
                     <Form.Group>
@@ -1050,7 +1052,7 @@ export function DateControlForm({
                         />
                         <Form.Label class="mb-0">Time limit</Form.Label>
                       </div>
-                      {durationMinutesEnabled && (
+                      {durationMinutesEnabled === true && (
                         <InputGroup>
                           <Form.Control
                             type="number"
@@ -1064,7 +1066,7 @@ export function DateControlForm({
                         </InputGroup>
                       )}
                       <Form.Text class="text-muted">
-                        {durationMinutesEnabled
+                        {durationMinutesEnabled === true
                           ? `Students will have ${durationMinutes} minutes to complete the assessment.`
                           : 'Add a time limit to the assessment.'}
                       </Form.Text>
@@ -1073,13 +1075,13 @@ export function DateControlForm({
                 </Col>
                 <Col md={6}>
                   <OverrideElement
-                    isOverridden={passwordEnabled}
+                    isOverridden={passwordEnabled !== undefined}
                     showOverrideButton={namePrefix.startsWith('overrides.')}
                     onOverride={() =>
                       setValue(`${namePrefix}.dateControl.passwordEnabled` as any, true)
                     }
                     onRemoveOverride={() =>
-                      setValue(`${namePrefix}.dateControl.passwordEnabled` as any, false)
+                      setValue(`${namePrefix}.dateControl.passwordEnabled` as any, undefined)
                     }
                   >
                     <Form.Group>
@@ -1091,7 +1093,7 @@ export function DateControlForm({
                         />
                         <Form.Label class="mb-0">Password</Form.Label>
                       </div>
-                      {passwordEnabled && (
+                      {passwordEnabled === true && (
                         <InputGroup>
                           <Form.Control
                             type={showPassword ? 'text' : 'password'}
@@ -1110,7 +1112,7 @@ export function DateControlForm({
                         </InputGroup>
                       )}
                       <Form.Text class="text-muted">
-                        {passwordEnabled
+                        {passwordEnabled === true
                           ? 'This password will be required to start the assessment.'
                           : 'Require a password in order to start the assessment.'}
                       </Form.Text>

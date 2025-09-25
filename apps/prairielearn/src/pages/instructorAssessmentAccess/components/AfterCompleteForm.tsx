@@ -70,11 +70,20 @@ export function AfterCompleteForm({
 
   // Determine the current radio selection for hide questions
   const getHideQuestionsMode = () => {
-    if (!hideQuestions) return 'show_questions';
-    if (hideQuestions && !showAgainDateEnabledQuestions) return 'hide_questions_forever';
-    if (hideQuestions && showAgainDateEnabledQuestions && !hideAgainDateEnabledQuestions)
+    if (hideQuestions === false) return 'show_questions';
+    if (hideQuestions === true && showAgainDateEnabledQuestions === false)
+      return 'hide_questions_forever';
+    if (
+      hideQuestions === true &&
+      showAgainDateEnabledQuestions === true &&
+      hideAgainDateEnabledQuestions === false
+    )
       return 'hide_questions_until_date';
-    if (hideQuestions && showAgainDateEnabledQuestions && hideAgainDateEnabledQuestions)
+    if (
+      hideQuestions === true &&
+      showAgainDateEnabledQuestions === true &&
+      hideAgainDateEnabledQuestions === true
+    )
       return 'hide_questions_between_dates';
     return 'show_questions';
   };
@@ -83,9 +92,9 @@ export function AfterCompleteForm({
 
   // Determine the current radio selection for hide score
   const getHideScoreMode = () => {
-    if (!hideScore) return 'show_score';
-    if (hideScore && !showAgainDateEnabledScore) return 'hide_score_forever';
-    if (hideScore && showAgainDateEnabledScore) return 'hide_score_until_date';
+    if (hideScore === false) return 'show_score';
+    if (hideScore === true && showAgainDateEnabledScore === false) return 'hide_score_forever';
+    if (hideScore === true && showAgainDateEnabledScore === true) return 'hide_score_until_date';
     return 'show_score';
   };
 
@@ -151,15 +160,15 @@ export function AfterCompleteForm({
     }
 
     // Time limit (only if Date Control is enabled)
-    if (dateControlEnabled && durationMinutesEnabled && durationMinutes) {
+    if (dateControlEnabled === true && durationMinutesEnabled === true && durationMinutes) {
       criteria.push(`${durationMinutes} minutes after starting`);
     }
 
     // Deadlines (only if Date Control is enabled)
     if (
-      dateControlEnabled &&
-      lateDeadlinesEnabled &&
-      dueDateEnabled &&
+      dateControlEnabled === true &&
+      lateDeadlinesEnabled === true &&
+      dueDateEnabled === true &&
       dueDate &&
       lateDeadlines?.length &&
       lateDeadlines.length > 0
@@ -175,13 +184,13 @@ export function AfterCompleteForm({
           criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
         }
       }
-    } else if (dateControlEnabled && dueDateEnabled && dueDate) {
+    } else if (dateControlEnabled === true && dueDateEnabled === true && dueDate) {
       const date = new Date(dueDate);
       criteria.push(`${date.toLocaleDateString()} at ${date.toLocaleTimeString()}`);
     }
 
     // PrairieTest Control
-    if (prairieTestEnabled && prairieTestExams && prairieTestExams.length > 0) {
+    if (prairieTestEnabled === true && prairieTestExams && prairieTestExams.length > 0) {
       const validExams = prairieTestExams.filter((exam) => exam?.examUuid);
       const subList = validExams.map((exam) => exam.examUuid);
       criteria.push('When any of these exams ends:', subList);
@@ -210,12 +219,12 @@ export function AfterCompleteForm({
   // Helper function to get the last deadline for validation
   const getLastDeadlineDate = (): string | null => {
     // Only consider dates if Date Control is enabled
-    if (!dateControlEnabled) return null;
+    if (dateControlEnabled !== true) return null;
 
     // Check late deadlines first
     if (
-      lateDeadlinesEnabled &&
-      dueDateEnabled &&
+      lateDeadlinesEnabled === true &&
+      dueDateEnabled === true &&
       dueDate &&
       lateDeadlines &&
       lateDeadlines.length > 0
@@ -227,7 +236,7 @@ export function AfterCompleteForm({
         );
         return sortedLateDeadlines[0].date || null;
       }
-    } else if (dueDateEnabled && dueDate) {
+    } else if (dueDateEnabled === true && dueDate) {
       return dueDate;
     }
 
@@ -306,7 +315,7 @@ export function AfterCompleteForm({
                 disabled={!ruleEnabled}
                 {...control.register(`${namePrefix}.afterComplete.hideQuestions`)}
               />
-              {hideQuestions && (
+              {hideQuestions === true && (
                 <Form.Text class="text-muted d-block mt-1">
                   {hideQuestionsMode === 'hide_questions_forever' &&
                     'Questions will be hidden after completion.'}
@@ -320,13 +329,13 @@ export function AfterCompleteForm({
                     `Questions will be hidden after completion and only shown between ${new Date(showAgainDate).toLocaleDateString()} at ${new Date(showAgainDate).toLocaleTimeString()} — ${new Date(hideAgainDate).toLocaleDateString()} at ${new Date(hideAgainDate).toLocaleTimeString()}.`}
                 </Form.Text>
               )}
-              {!hideQuestions && (
+              {hideQuestions === false && (
                 <Form.Text class="text-muted d-block mt-1">
                   Questions will be visible after completion
                 </Form.Text>
               )}
             </Card.Header>
-            {hideQuestions && (
+            {hideQuestions === true && (
               <Card.Body>
                 <Form.Group>
                   <div class="mb-2">
@@ -475,7 +484,7 @@ export function AfterCompleteForm({
                 disabled={!ruleEnabled}
                 {...control.register(`${namePrefix}.afterComplete.hideScore`)}
               />
-              {hideScore && (
+              {hideScore === true && (
                 <Form.Text class="text-muted d-block mt-1">
                   {hideScoreMode === 'hide_score_forever' &&
                     'Score will be hidden after completion.'}
@@ -484,13 +493,13 @@ export function AfterCompleteForm({
                     `Score will be hidden after completion until ${new Date(showAgainDate).toLocaleDateString()} at ${new Date(showAgainDate).toLocaleTimeString()}.`}
                 </Form.Text>
               )}
-              {!hideScore && (
+              {hideScore === false && (
                 <Form.Text class="text-muted d-block mt-1">
                   Score will be visible after completion
                 </Form.Text>
               )}
             </Card.Header>
-            {hideScore && (
+            {hideScore === true && (
               <Card.Body>
                 <Form.Group>
                   <div class="mb-2">
