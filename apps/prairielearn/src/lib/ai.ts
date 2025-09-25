@@ -2,6 +2,34 @@ import type OpenAI from 'openai';
 
 import { config } from './config.js';
 
+type Prompt = (string | string[])[];
+
+/**
+ * Utility function to format a prompt from an array of strings and/or string arrays.
+ *
+ * Entries in the top-level array are considered paragraphs and are joined with two newlines.
+ * Entries in nested arrays are joined with a single space to form a single paragraph.
+ */
+export function formatPrompt(prompt: Prompt): string {
+  const joinedParagraphs = prompt.map((part) => (Array.isArray(part) ? part.join(' ') : part));
+  return joinedParagraphs.join('\n\n');
+}
+
+export function logResponseUsage({
+  response,
+  logger,
+}: {
+  response: OpenAI.Responses.Response;
+  logger: { info: (msg: string) => void };
+}) {
+  const { usage } = response;
+  logger.info(`Input tokens: ${usage?.input_tokens ?? 0}`);
+  logger.info(`  Cached input tokens: ${usage?.input_tokens_details.cached_tokens ?? 0}`);
+  logger.info(`Output tokens: ${usage?.output_tokens ?? 0}`);
+  logger.info(`  Reasoning tokens: ${usage?.output_tokens_details.reasoning_tokens ?? 0}`);
+  logger.info(`Total tokens: ${usage?.total_tokens ?? 0}`);
+}
+
 /**
  * Compute the cost of an OpenAI response, in US dollars.
  */

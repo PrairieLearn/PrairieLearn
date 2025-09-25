@@ -183,6 +183,13 @@ function PromptHistory({
   showJobLogs: boolean;
 }) {
   return prompts.map((prompt, index, filteredPrompts) => {
+    // Exclude auto-revision prompts from the visible history.
+    //
+    // TODO: this is still broken. Specifically, it'll show the "Revert to this revision"
+    // button for the the wrong prompt. When reverting to something and auto-revisions are in play,
+    // it should revert to the most recent auto-revision, not the "initial" or "human_revision" prompt.
+    if (prompt.prompt_type === 'auto_revision') return '';
+
     // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
     // `bg-secondary-subtle` class instead of the custom styles here.
     return html`

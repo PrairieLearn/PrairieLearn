@@ -19,7 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { calculateResponseCost } from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -59,13 +59,6 @@ export const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
-
-type Prompt = (string | string[])[];
-
-function formatPrompt(prompt: Prompt): string {
-  const joinedParagraphs = prompt.map((part) => (Array.isArray(part) ? part.join(' ') : part));
-  return joinedParagraphs.join('\n\n');
-}
 
 export async function generatePrompt({
   questionPrompt,

@@ -10,7 +10,9 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
+import { formatPrompt, logResponseUsage } from '../../lib/ai.js';
 import * as b64Util from '../../lib/base64-util.js';
+import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
@@ -41,38 +43,52 @@ const NUM_TOTAL_ATTEMPTS = 2;
  * @returns A string, the prompt preamble.
  */
 function promptPreamble(context: string): string {
-  return `# Introduction
-
-You are an assistant that helps instructors write questions for PrairieLearn.
-
-A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It can also include PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
-
-A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions.
-
-## Generating and using random parameters
-
-\`server.py\` may define a \`generate\` function. \`generate\` has a single parameter \`data\` which can be modified by reference. It has the following properties:
-
-- \`params\`: A dictionary. Random parameters, choices, etc. can be written here for later retrieval.
-- \`correct_answers\`: A dictionary. Correct answers can be written here for later retrieval, if needed.
-
-Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
-
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
-
-If the question does not use random parameters, \`server.py\` can be omitted.
-
-## Formatting
-
-You can use LaTeX to format numerical quantities, equations, formulas, and so on. For inline LaTeX, use \`$...$\`. For block LaTeX, use \`$$...$$\`.
-
-# Context
-
-Here is some context that may help you respond to the user. This context may include example questions, documentation, or other information that may be helpful.
-
-${context}
-
-`;
+  return formatPrompt([
+    '# Introduction',
+    'You are an assistant that helps instructors write questions for PrairieLearn.',
+    [
+      'A question has a `question.html` file that can contain standard HTML, CSS, and JavaScript.',
+      'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
+    ],
+    [
+      'A question may also have a `server.py` file that can randomly generate unique parameters and answers,',
+      'and which can also assign grades to student submissions.',
+    ],
+    '## Generating and using random parameters',
+    [
+      '`server.py` may define a `generate` function.',
+      '`generate` has a single parameter `data` which can be modified by reference.',
+      'It has the following properties:',
+    ],
+    '- `params`: A dictionary where random parameters, choices, etc. can be written here for later retrieval, e.g. during rendering or grading.',
+    [
+      '- `correct_answers`:',
+      'A dictionary where correct answers can be written.',
+      'You MUST ONLY write to this dictionary if actually required by the question or a specific element.',
+      'Pay attention to the provided examples and documentation for each element.',
+    ],
+    [
+      'Parameters can be read in `question.html` with Mustache syntax.',
+      'For instance, if `server.py` contains `data["params"]["answer"]`,',
+      'it can be read with `{{ params.answer }}` in `question.html`.',
+    ],
+    [
+      'If a `question.html` file includes Mustache templates, a `server.py` should be provided to generate the necessary parameters.',
+      'Remember that Mustache logic is quite limited, so any computation should be done in `server.py`.',
+    ],
+    'If the question does not use random parameters, `server.py` can be omitted.',
+    '## Formatting',
+    [
+      'You can use LaTeX to format numerical quantities, equations, formulas, and so on.',
+      'For inline LaTeX, use `$...$`. For block LaTeX, use `$$...$$`.',
+    ],
+    '# Context',
+    [
+      'Here is some context that may help you respond to the user.',
+      'This context may include example questions, documentation, or other information that may be helpful.',
+    ],
+    context,
+  ]);
 }
 
 async function checkRender(
@@ -109,7 +125,7 @@ async function checkRender(
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
     .filter((output) => output !== undefined)
     .map((output) => {
-      return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
+      return `When trying to render, your code created an error with the following output:\n\n\`\`\`${output}\`\`\`\n\nPlease fix it.`;
     });
 }
 
@@ -190,9 +206,9 @@ function extractFromResponse(
 ): { html?: string; python?: string } {
   const completionText = response.output_text;
 
-  job.info(`completion is ${completionText}`);
+  job.info(`${chalk.bold('Completion:')}\n\n${completionText}\n`);
 
-  job.info(`used ${response.usage?.total_tokens} OpenAI tokens to generate response.`);
+  logResponseUsage({ response, logger: job });
 
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
@@ -203,12 +219,12 @@ function extractFromResponse(
   const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
-    job.info(`extracted html file: ${html}`);
+    job.info(`\nextracted question.html:\n\n\`\`\`${html}\`\`\`\n\n`);
     out.html = html;
   }
 
   if (python !== undefined) {
-    job.info(`extracted python file: ${python}`);
+    job.info(`\nextracted server.py:\n\n\`\`\`${python}\`\`\`\n\n`);
     out.python = python;
   }
 
@@ -346,25 +362,35 @@ export async function generateQuestion({
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`Prompt: "${prompt}"`);
-
     const context = await makeContext(client, prompt, [], authnUserId);
 
-    const sysPrompt = `
-${promptPreamble(context)}
-# Prompt
+    const instructions = formatPrompt([
+      promptPreamble(context),
+      '# Prompt',
+      [
+        'A user will now ask you to create a question.',
+        'Respond in a friendly but concise way.',
+        'Include the contents of `question.html` and `server.py` in separate Markdown code fences, and mark each code fence with the language (either `html` or `python`).',
+        'Omit `server.py` if the question does not require it (for instance, if the question does not require randomization).',
+      ],
+      'Here is an example of a well-formed response:',
+      [
+        '```html\n<!-- Question HTML goes here -->\n```',
+        '```python\ndef generate(data):\n  # Code goes here\n```',
+      ],
+      [
+        'In their prompt, they may explain how to calculate the correct answer; this is just for the backend.',
+        'Do NOT display the method to calculate the correct answer in your `question.html` unless otherwise requested.',
+      ],
+      'Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.',
+    ]);
 
-A user will now ask you to create a question. Respond in a friendly but concise way. Include the contents of \`question.html\` and \`server.py\` in separate Markdown code fences, and mark each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-
-In their prompt, they may explain how to calculate the correct answer; this is just for the backend. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.`;
-
-    job.info(`system prompt is: ${sysPrompt}`);
+    job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
+    job.info(`\n\n${chalk.bold('Prompt:')}\n\n${prompt}`);
 
     const response = await client.responses.create({
       model: MODEL_NAME,
-      instructions: sysPrompt,
+      instructions,
       input: prompt,
       reasoning: {
         effort: 'low',
@@ -418,12 +444,11 @@ Keep in mind you are not just generating an example; you are generating an actua
         prompting_user_id: authnUserId,
         prompt_type: 'initial',
         user_prompt: prompt,
-        system_prompt: sysPrompt,
+        system_prompt: instructions,
         response: response.output_text,
         html: results?.html,
         python: results?.python,
         errors,
-        // TODO: rename this?
         completion: response,
         job_sequence_id: serverJob.jobSequenceId,
       },
@@ -553,8 +578,6 @@ async function regenInternal({
   hasCoursePermissionEdit: boolean;
   jobSequenceId: string;
 }) {
-  job.info(`prompt is ${revisionPrompt}`);
-
   let tags: string[] = [];
   if (originalHTML) {
     const ast = parse5.parseFragment(originalHTML);
@@ -563,44 +586,30 @@ async function regenInternal({
 
   const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
-  const sysPrompt = `
-${promptPreamble(context)}
-# Previous Generations
+  const instructions = formatPrompt([
+    promptPreamble(context),
+    '# Previous generation',
+    'A user previously asked you to generate a question with following prompt:',
+    originalPrompt,
+    'You generated the following:',
+    originalHTML === undefined ? '' : `\`\`\`html\n${originalHTML}\`\`\``,
+    originalPython === undefined ? '' : `\`\`\`python\n${originalPython}\`\`\``,
+    '# Prompt',
+    [
+      'A user will now ask you to revise the question that you generated.',
+      'Respond in a friendly but concise way. Include the contents of `question.html` and `server.py` in separate Markdown code fences, and mark each code fence with the language (either `html` or `python`).',
+      'Omit `server.py` if the question does not require it (for instance, if the question does not require randomization).',
+      'You MUST NOT mention the previous generation or error(s) in any way.',
+    ],
+    'Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.',
+  ]);
 
-A user previously used the assistant to generate a question with following prompt:
-
-${originalPrompt}
-
-You generated the following:
-
-${
-  originalHTML === undefined
-    ? ''
-    : `\`\`\`html
-${originalHTML}
-\`\`\``
-}
-
-${
-  originalPython === undefined
-    ? ''
-    : `\`\`\`python
-${originalPython}
-\`\`\``
-}
-
-# Prompt
-
-A user will now ask you to revise the question that you generated. Respond in a friendly but concise way. Include the contents of \`question.html\` and \`server.py\` in separate Markdown code fences, and mark each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
-`;
-
-  job.info(`system prompt is: ${sysPrompt}`);
+  job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
+  job.info(`${chalk.bold('Revision prompt:')}\n\n${revisionPrompt}`);
 
   const response = await client.responses.create({
     model: MODEL_NAME,
-    instructions: sysPrompt,
+    instructions,
     input: revisionPrompt,
     reasoning: {
       // Use higher reasoning effort for revisions.
@@ -627,7 +636,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
-      system_prompt: sysPrompt,
+      system_prompt: instructions,
       response: response.output_text,
       html,
       python,

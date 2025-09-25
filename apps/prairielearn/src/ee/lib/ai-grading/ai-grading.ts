@@ -9,6 +9,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   type AssessmentQuestion,
@@ -44,21 +45,6 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
-
-function logResponseUsage({
-  response,
-  logger,
-}: {
-  response: OpenAI.Responses.Response;
-  logger: AIGradingLogger;
-}) {
-  const { usage } = response;
-  logger.info(`Input tokens: ${usage?.input_tokens ?? 0}`);
-  logger.info(`  Cached input tokens: ${usage?.input_tokens_details.cached_tokens ?? 0}`);
-  logger.info(`Output tokens: ${usage?.output_tokens ?? 0}`);
-  logger.info(`  Reasoning tokens: ${usage?.output_tokens_details.reasoning_tokens ?? 0}`);
-  logger.info(`Total tokens: ${usage?.total_tokens ?? 0}`);
-}
 
 function logMissingResponse({
   instance_question,

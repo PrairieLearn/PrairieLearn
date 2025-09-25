@@ -256,7 +256,7 @@ export async function benchmarkAiQuestionGeneration({
       // Log the prompts, responses, and errors for debugging.
       for (const prompt of prompts) {
         job.info('User prompt');
-        job.info('======');
+        job.info('===========');
         job.info(prompt.user_prompt.trimEnd());
         job.info('\n');
 
