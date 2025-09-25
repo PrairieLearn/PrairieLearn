@@ -880,7 +880,8 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
     if (!course) {
       const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
       affectedQuestions.forEach((question) => {
-        questionInfos[question].errors.push(
+        infofile.addError(
+          questionInfos[question],
           `The author origin course with the sharing name ${sharingName} does not exist`,
         );
       });
