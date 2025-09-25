@@ -158,6 +158,19 @@ export function migrateAccessRuleJsonToAccessControl(
     };
   }
 
+  // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
+  // We will silently update the dates to the nearest valid date.
+  if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
+    rule.startDate = undefined;
+  }
+
+  // We can't do anything with the end date if it is before 1884.
+  if (rule.endDate && new Date(rule.endDate).getFullYear() < 1884) {
+    return {
+      success: false,
+      error: 'Cannot migrate the end date, it is too old.',
+    };
+  }
   // Build the new access control configuration
   const accessControl = {
     published: true, // Legacy rules imply published access

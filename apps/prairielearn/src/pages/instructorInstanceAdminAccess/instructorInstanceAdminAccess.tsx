@@ -270,14 +270,14 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (error) {
-        console.error('Error migrating access rules:', error);
+      } catch (fileError) {
+        console.error('Error migrating access rules:', fileError);
 
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
       // Insert overrides if any were generated from the migration
-      if (migrationResult.overrides && migrationResult.overrides.length > 0) {
+      if (migrationResult.overrides.length > 0) {
         for (const override of migrationResult.overrides) {
           if (override.uids && override.uids.length > 0) {
             // Get enrollment IDs for the UIDs

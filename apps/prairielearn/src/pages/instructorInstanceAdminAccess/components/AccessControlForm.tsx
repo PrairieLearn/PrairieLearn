@@ -3,7 +3,9 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
-import type { CourseInstance } from '../../../lib/db-types.js';
+import type { CourseInstance, CourseInstanceAccessControlOverride } from '../../../lib/db-types.js';
+
+import { AccessControlOverrides } from './AccessControlOverrides.js';
 
 interface AccessControlFormValues {
   published: boolean;
@@ -18,6 +20,7 @@ interface AccessControlFormProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
+  accessControlOverrides: CourseInstanceAccessControlOverride[];
 }
 
 export function AccessControlForm({
@@ -26,6 +29,7 @@ export function AccessControlForm({
   canEdit,
   csrfToken,
   origHash,
+  accessControlOverrides,
 }: AccessControlFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showExtendModal, setShowExtendModal] = useState(false);
@@ -367,6 +371,15 @@ export function AccessControlForm({
               </div>
             )}
           </form>
+
+          {/* Access Control Overrides Section */}
+          <hr class="my-4" />
+          <AccessControlOverrides
+            courseInstance={courseInstance}
+            overrides={accessControlOverrides}
+            canEdit={canEdit}
+            csrfToken={csrfToken}
+          />
         </div>
       </div>
 

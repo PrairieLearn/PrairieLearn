@@ -6,11 +6,13 @@ import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 interface AccessControlMigrationModalProps {
   accessRules: AccessRuleJson[];
   csrfToken: string;
+  origHash: string;
 }
 
 export function AccessControlMigrationModal({
   accessRules,
   csrfToken,
+  origHash,
 }: AccessControlMigrationModalProps) {
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -23,13 +25,18 @@ export function AccessControlMigrationModal({
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('__csrf_token', csrfToken);
-      formData.append('__action', 'migrate_access_rules');
+      const requestBody = {
+        __csrf_token: csrfToken,
+        __action: 'migrate_access_rules',
+        orig_hash: origHash,
+      };
 
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {

@@ -22,20 +22,25 @@ export function AccessControlOverrides({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDelete = async (overrideId: string) => {
+    // eslint-disable-next-line no-alert
     if (!confirm('Are you sure you want to delete this override?')) {
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('__csrf_token', csrfToken);
-      formData.append('__action', 'delete_override');
-      formData.append('override_id', overrideId);
+      const requestBody = {
+        __csrf_token: csrfToken,
+        __action: 'delete_override',
+        override_id: overrideId,
+      };
 
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -55,15 +60,19 @@ export function AccessControlOverrides({
   const handleToggleEnabled = async (overrideId: string, enabled: boolean) => {
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('__csrf_token', csrfToken);
-      formData.append('__action', 'toggle_override');
-      formData.append('override_id', overrideId);
-      formData.append('enabled', enabled.toString());
+      const requestBody = {
+        __csrf_token: csrfToken,
+        __action: 'toggle_override',
+        override_id: overrideId,
+        enabled: enabled.toString(),
+      };
 
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -81,15 +90,15 @@ export function AccessControlOverrides({
   };
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-info text-white d-flex align-items-center justify-content-between">
-        <h2>Access Control Overrides</h2>
+    <>
+      <div class="d-flex align-items-center justify-content-between mb-3">
+        <h5 class="mb-0">Access Control Overrides</h5>
         {canEdit && (
           <button
             type="button"
-            class="btn btn-light btn-sm"
-            onClick={() => setShowAddForm(true)}
+            class="btn btn-outline-primary btn-sm"
             disabled={isSubmitting}
+            onClick={() => setShowAddForm(true)}
           >
             Add Override
           </button>
@@ -97,8 +106,8 @@ export function AccessControlOverrides({
       </div>
 
       {overrides.length === 0 ? (
-        <div class="card-body text-center text-muted">
-          <p>No access control overrides configured.</p>
+        <div class="text-center text-muted mb-3">
+          <p class="mb-0">No access control overrides configured.</p>
         </div>
       ) : (
         <div class="table-responsive">
@@ -118,9 +127,9 @@ export function AccessControlOverrides({
                   override={override}
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
+                  isSubmitting={isSubmitting}
                   onDelete={handleDelete}
                   onToggleEnabled={handleToggleEnabled}
-                  isSubmitting={isSubmitting}
                 />
               ))}
             </tbody>
@@ -129,13 +138,9 @@ export function AccessControlOverrides({
       )}
 
       {showAddForm && (
-        <AddOverrideForm
-          courseInstance={courseInstance}
-          csrfToken={csrfToken}
-          onClose={() => setShowAddForm(false)}
-        />
+        <AddOverrideForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
       )}
-    </div>
+    </>
   );
 }
 
@@ -163,8 +168,8 @@ function OverrideRow({
             class="form-check-input"
             type="checkbox"
             checked={override.enabled}
-            onChange={(e) => onToggleEnabled(override.id, e.currentTarget.checked)}
             disabled={!canEdit || isSubmitting}
+            onChange={(e) => onToggleEnabled(override.id, e.currentTarget.checked)}
           />
           <label class="form-check-label">{override.enabled ? 'Enabled' : 'Disabled'}</label>
         </div>
@@ -179,8 +184,8 @@ function OverrideRow({
           <button
             type="button"
             class="btn btn-sm btn-outline-danger"
-            onClick={() => onDelete(override.id)}
             disabled={isSubmitting}
+            onClick={() => onDelete(override.id)}
           >
             Delete
           </button>
@@ -190,15 +195,7 @@ function OverrideRow({
   );
 }
 
-function AddOverrideForm({
-  courseInstance,
-  csrfToken,
-  onClose,
-}: {
-  courseInstance: CourseInstance;
-  csrfToken: string;
-  onClose: () => void;
-}) {
+function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -212,17 +209,21 @@ function AddOverrideForm({
 
     setIsSubmitting(true);
     try {
-      const submitData = new FormData();
-      submitData.append('__csrf_token', csrfToken);
-      submitData.append('__action', 'add_override');
-      submitData.append('name', formData.name);
-      submitData.append('enabled', formData.enabled.toString());
-      submitData.append('published_end_date', formData.published_end_date || '');
-      submitData.append('uids', formData.uids);
+      const requestBody = {
+        __csrf_token: csrfToken,
+        __action: 'add_override',
+        name: formData.name,
+        enabled: formData.enabled.toString(),
+        published_end_date: formData.published_end_date || '',
+        uids: formData.uids,
+      };
 
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        body: submitData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
       });
 
       if (response.ok) {
@@ -258,8 +259,8 @@ function AddOverrideForm({
                   class="form-control"
                   id="override-name"
                   value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
                   placeholder="Optional name for this override"
+                  onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
                 />
               </div>
 
@@ -305,9 +306,9 @@ function AddOverrideForm({
                   id="override-uids"
                   rows={3}
                   value={formData.uids}
-                  onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
                   placeholder="Enter UIDs, one per line or separated by commas"
                   required
+                  onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
                 />
                 <div class="form-text">
                   Enter the UIDs of users who should have this override applied.
@@ -318,8 +319,8 @@ function AddOverrideForm({
               <button
                 type="button"
                 class="btn btn-secondary"
-                onClick={onClose}
                 disabled={isSubmitting}
+                onClick={onClose}
               >
                 Cancel
               </button>
@@ -334,7 +335,9 @@ function AddOverrideForm({
   );
 }
 
-// Helper function to format dates
+/**
+ * Helper function to format dates
+ */
 function formatDate(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone,

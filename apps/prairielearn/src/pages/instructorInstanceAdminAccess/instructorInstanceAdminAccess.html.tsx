@@ -13,7 +13,6 @@ import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
 import { AccessControlMigrationModal } from './components/AccessControlMigrationModal.js';
-import { AccessControlOverrides } from './components/AccessControlOverrides.js';
 
 export function InstructorInstanceAdminAccess({
   accessRules,
@@ -50,15 +49,7 @@ export function InstructorInstanceAdminAccess({
           canEdit={hasCourseInstancePermissionEdit}
           csrfToken={csrfToken}
           origHash={origHash}
-        />
-      </Hydrate>
-
-      <Hydrate>
-        <AccessControlOverrides
-          courseInstance={courseInstance}
-          overrides={accessControlOverrides}
-          canEdit={hasCourseInstancePermissionEdit}
-          csrfToken={csrfToken}
+          accessControlOverrides={accessControlOverrides}
         />
       </Hydrate>
 
@@ -72,6 +63,7 @@ export function InstructorInstanceAdminAccess({
                 <AccessControlMigrationModal
                   accessRules={accessRuleJsonArray}
                   csrfToken={csrfToken}
+                  origHash={origHash}
                 />
               </Hydrate>
             )}
