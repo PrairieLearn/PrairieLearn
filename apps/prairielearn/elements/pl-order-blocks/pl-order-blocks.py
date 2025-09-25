@@ -117,7 +117,6 @@ def solve_problem(
     elif grading_method is GradingMethodType.DAG and is_multi:
         depends_graph, final = extract_multigraph(answers_list)
         solution = solve_multigraph(depends_graph, final)[0]
-        print(solution)
         answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
