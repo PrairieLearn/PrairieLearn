@@ -174,7 +174,7 @@ export async function aiGrade({
       // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
-        { question: true, submissions: false, answer: false },
+        { question: true, submissions: false, answer: true },
         variant,
         question,
         null,
@@ -188,6 +188,7 @@ export async function aiGrade({
         return false;
       }
       const questionPrompt = render_question_results.data.questionHtml;
+      const questionAnswer = render_question_results.data.answerHtml;
 
       let submission_embedding = await selectEmbeddingForSubmission(submission.id);
       if (!submission_embedding) {
@@ -234,6 +235,7 @@ export async function aiGrade({
 
       const input = await generatePrompt({
         questionPrompt,
+        questionAnswer,
         submission_text,
         submitted_answer: submission.submitted_answer,
         example_submissions,

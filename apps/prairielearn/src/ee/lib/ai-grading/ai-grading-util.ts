@@ -44,7 +44,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
+export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-mini-2025-08-07';
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -88,12 +88,14 @@ function formatPrompt(prompt: Prompt): string {
 
 export async function generatePrompt({
   questionPrompt,
+  questionAnswer,
   submission_text,
   submitted_answer,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
+  questionAnswer: string;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
@@ -149,13 +151,26 @@ export async function generatePrompt({
   input.push(
     {
       role: 'developer',
-      content: 'I will now provide the question for which you will be grading a response:',
+      content: 'This is the question for which you will be grading a response:',
     },
     {
       role: 'user',
-      content: formatPrompt(['[BEGIN QUESTION_PROMPT]', questionPrompt, '[END QUESTION_PROMPT]']),
+      content: questionPrompt,
     },
   );
+
+  if (questionAnswer.trim()) {
+    input.push(
+      {
+        role: 'developer',
+        content: 'The instructor has provided the following answer for this question:',
+      },
+      {
+        role: 'user',
+        content: questionAnswer.trim(),
+      },
+    );
+  }
 
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
