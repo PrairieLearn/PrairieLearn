@@ -2,7 +2,13 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,11 +16,23 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
+import {
+  CourseInstanceSchema,
+  CourseSchema,
+  EnrollmentSchema,
+  InstitutionSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
+import {
+  ensureCheckedEnrollment,
+  ensureEnrollment,
+  selectAndLockEnrollmentById,
+  selectOptionalEnrollmentByPendingUid,
+} from '../../models/enrollment.js';
+import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -130,15 +148,46 @@ router.post(
     } = getPageContext(res.locals, { withAuthzData: false });
 
     if (body.__action === 'accept_invitation') {
-      await execute(sql.accept_invitation, {
+      await ensureEnrollment({
         course_instance_id: body.course_instance_id,
-        uid,
         user_id,
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
+        action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      await execute(sql.reject_invitation, {
-        course_instance_id: body.course_instance_id,
-        uid,
+      await runInTransactionAsync(async () => {
+        const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
+          course_instance_id: body.course_instance_id,
+          pending_uid: uid,
+        });
+
+        if (!oldEnrollment) {
+          throw new Error('Could not find enrollment to reject');
+        }
+        await selectAndLockUserById(user_id);
+        await selectAndLockEnrollmentById(oldEnrollment.id);
+
+        const newEnrollment = await queryRow(
+          sql.reject_invitation,
+          {
+            enrollment_id: oldEnrollment.id,
+          },
+          EnrollmentSchema,
+        );
+
+        await insertAuditEvent({
+          table_name: 'enrollments',
+          action: 'update',
+          action_detail: 'invitation_rejected',
+          subject_user_id: null,
+          course_instance_id: body.course_instance_id,
+          row_id: newEnrollment.id,
+          old_row: oldEnrollment,
+          new_row: newEnrollment,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+        });
       });
     } else if (body.__action === 'unenroll') {
       await execute(sql.unenroll, {
@@ -166,6 +215,7 @@ router.post(
         course,
         course_instance,
         authz_data: res.locals.authz_data,
+        action_detail: 'explicit_joined',
       });
     }
 

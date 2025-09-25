@@ -961,7 +961,12 @@ function CopyQuestionModal({
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="form-select" name="to_course_id" required>
+            <select
+              class="form-select"
+              name="to_course_id"
+              required
+              aria-label="Destination course"
+            >
               ${questionCopyTargets.map(
                 (course, index) => html`
                   <option
