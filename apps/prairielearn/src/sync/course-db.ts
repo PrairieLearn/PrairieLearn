@@ -871,6 +871,9 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
     return map;
   }, new Map<string, string[]>());
 
+  // Avoid unneeded database queries if no origin courses are set
+  if (originCourseIDs.size === 0) return;
+
   // Then, look up all the course IDs at once and find unresolvable ones
   const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
   originCourses.forEach((course, sharingName) => {
