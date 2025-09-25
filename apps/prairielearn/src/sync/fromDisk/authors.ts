@@ -56,7 +56,7 @@ export async function sync(
     name: string | null;
     email: string | null;
     orcid: string | null;
-    originCourse: string | null;
+    origin_course: string | null;
     id: string | null;
   }
 
@@ -76,7 +76,7 @@ export async function sync(
         name: author.name ?? null,
         email: author.email ?? null,
         orcid: normalizedOrcid ?? null,
-        originCourse: author.originCourse
+        origin_course: author.originCourse
           ? (sharingNameLookupTable.get(author.originCourse) ?? null)
           : null,
         id: null,
@@ -103,7 +103,7 @@ export async function sync(
       name: author.author_name ?? null,
       email: author.email ?? null,
       orcid: author.orcid ?? null,
-      originCourse: author.origin_course ?? null,
+      origin_course: author.origin_course ?? null,
       id: null,
     };
     const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
