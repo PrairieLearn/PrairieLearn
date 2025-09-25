@@ -13,7 +13,11 @@ import { config } from '../../lib/config.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
-import { ensureEnrollment, selectOptionalEnrollmentByPendingUid } from '../../models/enrollment.js';
+import {
+  ensureEnrollment,
+  selectAndLockEnrollmentById,
+  selectOptionalEnrollmentByPendingUid,
+} from '../../models/enrollment.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -141,6 +145,7 @@ router.post(
         if (!oldEnrollment) {
           throw new Error('Could not find enrollment to reject');
         }
+        await selectAndLockEnrollmentById(oldEnrollment.id);
 
         const newEnrollment = await queryRow(
           sql.reject_invitation,
