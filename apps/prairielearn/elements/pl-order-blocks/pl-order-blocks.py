@@ -15,7 +15,6 @@ from dag_checker import (
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
-    collapse_multigraph,
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
@@ -120,7 +119,7 @@ def solve_problem(
         solution = solve_multigraph(depends_graph, final)[0]
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
-        assert_never(grading_method)
+        assert False, "unreachable"
 
 
 def prepare(html: str, data: pl.QuestionData) -> None:
