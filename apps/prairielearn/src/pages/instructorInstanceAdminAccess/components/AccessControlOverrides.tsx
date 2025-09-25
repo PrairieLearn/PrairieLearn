@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
+import { Alert } from 'react-bootstrap';
 
 import {
   type CourseInstance,
@@ -93,7 +94,12 @@ export function AccessControlOverrides({
   return (
     <>
       <div class="d-flex align-items-center justify-content-between mb-3">
-        <h5 class="mb-0">Access Control Extensions</h5>
+        <div>
+          <h5 class="mb-0">Access Control Extensions</h5>
+          <small class="text-muted">
+            If multiple extensions apply, the latest date will take effect.
+          </small>
+        </div>
         {canEdit && (
           <button
             type="button"
@@ -206,11 +212,11 @@ function OverrideRow({
 function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
-    enabled: true,
     published_end_date: '',
     uids: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showError, setShowError] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -220,7 +226,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         __csrf_token: csrfToken,
         __action: 'add_override',
         name: data.name,
-        enabled: data.enabled.toString(),
+        enabled: 'true',
         published_end_date: data.published_end_date || '',
         uids: data.uids,
       };
@@ -234,46 +240,63 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+        }
 
         // Handle field-specific errors
         if (errorData.errors) {
           setErrors(errorData.errors);
+          setShowError(true);
           throw new Error('Validation errors occurred');
         }
 
-        throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        // Handle general error
+        if (errorData.message) {
+          setErrors({ general: errorData.message });
+          setShowError(true);
+          throw new Error(errorData.message);
+        }
+
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       return response.json();
     },
     onSuccess: () => {
       // Invalidate and refetch the page data
-      queryClient.invalidateQueries({ queryKey: ['instructorInstanceAdminAccess'] });
+      void queryClient.invalidateQueries({ queryKey: ['instructorInstanceAdminAccess'] });
       onClose();
     },
     onError: (error: Error) => {
       console.error('Error adding extension:', error);
-      setErrors({ general: error.message });
+      if (!errors.general) {
+        setErrors({ general: error.message });
+        setShowError(true);
+      }
     },
   });
 
   const handleSubmit = async (e: Event) => {
     e.preventDefault();
     setErrors({});
+    setShowError(false);
     addOverrideMutation.mutate(formData);
   };
 
   return (
     <form onSubmit={handleSubmit}>
-      {errors.general && (
-        <div class="alert alert-danger" role="alert">
+      {showError && errors.general && (
+        <Alert variant="danger" dismissible onClose={() => setShowError(false)}>
           {errors.general}
-        </div>
+        </Alert>
       )}
 
       <div class="row">
-        <div class="col-md-6">
+        <div class="col-md-12">
           <div class="mb-3">
             <label for="override-name" class="form-label">
               Name
@@ -287,22 +310,6 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
               onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
             />
             {errors.name && <div class="invalid-feedback d-block">{errors.name}</div>}
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                id="override-enabled"
-                checked={formData.enabled}
-                onChange={(e) => setFormData({ ...formData, enabled: e.currentTarget.checked })}
-              />
-              <label class="form-check-label" for="override-enabled">
-                Enabled
-              </label>
-            </div>
           </div>
         </div>
       </div>

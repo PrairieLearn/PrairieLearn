@@ -1,14 +1,19 @@
 import { Temporal } from '@js-temporal/polyfill';
+import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type {
   CourseInstance,
   CourseInstanceAccessControlExtension,
 } from '../../../lib/db-types.js';
 
 import { AccessControlOverrides } from './AccessControlOverrides.js';
+
+// Create QueryClient outside component to ensure stability
+const queryClient = new QueryClient();
 
 interface AccessControlFormValues {
   published: boolean;
@@ -356,12 +361,14 @@ export function AccessControlForm({
 
           {/* Access Control Extensions Section */}
           <hr class="my-4" />
-          <AccessControlOverrides
-            courseInstance={courseInstance}
-            overrides={accessControlExtensions}
-            canEdit={canEdit}
-            csrfToken={csrfToken}
-          />
+          <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+            <AccessControlOverrides
+              courseInstance={courseInstance}
+              overrides={accessControlExtensions}
+              canEdit={canEdit}
+              csrfToken={csrfToken}
+            />
+          </QueryClientProviderDebug>
         </div>
       </div>
 
