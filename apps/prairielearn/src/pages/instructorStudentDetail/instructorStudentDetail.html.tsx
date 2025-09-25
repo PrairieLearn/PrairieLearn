@@ -121,6 +121,15 @@ export function InstructorStudentDetail({
                     </button>
                   </form>
                 )}
+                {enrollment.status === 'rejected' && (
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value={csrfToken} />
+                    <input type="hidden" name="__action" value="invite_student" />
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-user-plus me-1" aria-hidden="true" /> Re-invite student
+                    </button>
+                  </form>
+                )}
               </div>
             )}
           </div>
@@ -151,7 +160,7 @@ export function InstructorStudentDetail({
           )}
           {enrollment?.first_joined_at && (
             <div class="d-flex">
-              <div class="fw-bold me-1">Joined:</div>
+              <div class="fw-bold me-1">First joined:</div>
               <FriendlyDate
                 date={enrollment.first_joined_at}
                 timezone={course_instance.display_timezone}

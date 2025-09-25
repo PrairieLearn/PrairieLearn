@@ -14,6 +14,7 @@ import { getCourseInstanceUrl } from '../../lib/url.js';
 import {
   deleteEnrollmentById,
   enrollUserInCourseInstance,
+  inviteEnrollmentById,
   selectEnrollmentById,
   setEnrollmentStatusBlocked,
 } from '../../models/enrollment.js';
@@ -143,7 +144,6 @@ router.post(
       case 'unblock_student': {
         await enrollUserInCourseInstance({
           enrollment_id,
-          user_id: res.locals.authn_user.user_id,
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
           action_detail: 'unblocked',
@@ -160,6 +160,19 @@ router.post(
         res.redirect(
           `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
         );
+        break;
+      }
+      case 'invite_student': {
+        if (!enrollment.pending_uid) {
+          throw new HttpStatusError(400, 'Enrollment does not have a pending UID');
+        }
+        await inviteEnrollmentById({
+          enrollment_id,
+          pending_uid: enrollment.pending_uid,
+          agent_user_id: res.locals.authn_user.user_id,
+          agent_authn_user_id: res.locals.user.id,
+        });
+        res.redirect(req.originalUrl);
         break;
       }
       default:
