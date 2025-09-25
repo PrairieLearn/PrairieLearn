@@ -95,10 +95,16 @@ export function AccessControlForm({
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'update_access_control',
-        published: data.published,
-        publishedStartDateEnabled: data.publishedStartDateEnabled,
-        publishedStartDate: data.publishedStartDate || null,
-        publishedEndDate: data.publishedEndDate || null,
+        accessControl: {
+          published: data.published,
+          publishedStartDateEnabled: data.publishedStartDateEnabled,
+          publishedStartDate: data.publishedStartDate
+            ? Temporal.PlainDateTime.from(data.publishedStartDate).toString()
+            : undefined,
+          publishedEndDate: data.publishedEndDate
+            ? Temporal.PlainDateTime.from(data.publishedEndDate).toString()
+            : undefined,
+        },
         orig_hash: origHash,
       };
 

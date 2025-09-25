@@ -123,11 +123,6 @@ router.post(
     }
 
     if (req.body.__action === 'update_access_control') {
-      const published = req.body.published;
-      const publishedStartDateEnabled = req.body.publishedStartDateEnabled;
-      const publishedStartDate = req.body.publishedStartDate || null;
-      const publishedEndDate = req.body.publishedEndDate || null;
-
       // Validate that we're not mixing systems
       const accessRules = await queryRows(
         sql.course_instance_access_rules,
@@ -159,14 +154,7 @@ router.post(
       );
 
       // Update the access control settings
-      if (!courseInstanceInfo.accessControl) {
-        courseInstanceInfo.accessControl = {};
-      }
-
-      courseInstanceInfo.accessControl.published = published;
-      courseInstanceInfo.accessControl.publishedStartDateEnabled = publishedStartDateEnabled;
-      courseInstanceInfo.accessControl.publishedStartDate = publishedStartDate;
-      courseInstanceInfo.accessControl.publishedEndDate = publishedEndDate;
+      courseInstanceInfo.accessControl = req.body.accessControl;
 
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
