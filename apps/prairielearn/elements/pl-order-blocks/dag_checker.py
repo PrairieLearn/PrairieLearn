@@ -198,7 +198,7 @@ def grade_multigraph(
     depends_multigraph: dict[str, list[str] | list[list[str]]],
     final: str,
     path_names: dict[str, str],
-    group_belonging: Mapping[str, str | None],
+    group_belonging: Mapping[str, str | None] | None = None,
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
     # TODO add grouping correctness for block groups grading
@@ -315,8 +315,8 @@ def lcs_partial_credit(
 
 
 def dfs_until(
-    halting_condition: Callable[[tuple[str, list]], bool],
-    graph: dict[str, list],
+    halting_condition: Callable[[tuple[str, list[str]]], bool],
+    graph: dict[str, list[str | list[str]]],
     start: str,
 ) -> tuple[str | None, dict[str, list[str]]]:
     """
@@ -393,7 +393,7 @@ def collapse_multigraph(
                 collapsing_graphs.append((partially_collapsed, path))
 
 
-def _is_edges_colored(value: tuple[str, list]) -> bool:
+def _is_edges_colored(value: tuple[str, list[str | list[str]]]) -> bool:
     """a halting condition function for dfs_until, used to check for colored edges."""
     _, edges = value
     if edges and isinstance(edges[0], list):
