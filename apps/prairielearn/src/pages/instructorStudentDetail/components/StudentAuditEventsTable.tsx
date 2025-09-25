@@ -36,28 +36,36 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
     return (
       <div class="card-body">
         <div class="text-muted">No enrollment events found.</div>
+        <div class="card-footer text-muted small">
+          Missing events? Enrollment events were not logged before October 2025.
+        </div>
       </div>
     );
   }
 
   return (
-    <table class="table table-sm table-hover" aria-label="Student Audit Events">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Event</th>
-        </tr>
-      </thead>
-      <tbody>
-        {events.map((e) => (
-          <tr key={e.id}>
-            <td class="align-middle">
-              <FriendlyDate date={e.date} />
-            </td>
-            <td class="align-middle">{renderEnrollmentEventText(e)}</td>
+    <>
+      <table class="table table-sm table-hover" aria-label="Student Audit Events">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Event</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {events.map((e) => (
+            <tr key={e.id}>
+              <td class="align-middle">
+                <FriendlyDate date={e.date} />
+              </td>
+              <td class="align-middle">{renderEnrollmentEventText(e)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div class="card-footer text-muted small">
+        Missing events? Enrollment events were not logged before October 2025.
+      </div>
+    </>
   );
 }
