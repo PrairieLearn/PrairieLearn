@@ -5,6 +5,8 @@ from copy import deepcopy
 import networkx as nx
 
 
+Multigraph = dict[str, Sequence[str | list[str]]]
+
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
 ) -> bool:
@@ -55,7 +57,7 @@ def solve_dag(
 
 
 def solve_multigraph(
-    depends_multi_graph: dict[str, list[str] | list[list[str]]],
+    depends_multi_graph: Multigraph,
     final: str,
     path_names: dict[str, str] = {},
 ) -> list[list[str]]:
@@ -195,7 +197,7 @@ def grade_dag(
 
 def grade_multigraph(
     submission: list[str],
-    depends_multigraph: dict[str, list[str] | list[list[str]]],
+    depends_multigraph: Multigraph,
     final: str,
     path_names: dict[str, str],
     group_belonging: Mapping[str, str | None],
@@ -315,8 +317,8 @@ def lcs_partial_credit(
 
 
 def dfs_until(
-    halting_condition: Callable[[tuple[str, list[str]]], bool],
-    graph: dict[str, list[str | list[str]]],
+    halting_condition: Callable[[tuple[str, Sequence[str | list[str]]]], bool],
+    graph: Multigraph,
     start: str,
 ) -> tuple[str | None, dict[str, list[str]]]:
     """
@@ -330,9 +332,9 @@ def dfs_until(
     edges the DFS was able to reach before halting.
     :Exception: Will throw an exception if a cycle is found
     """
-    stack: list[tuple[str, list[str]]] = []
-    visited: list[str] = []
-    traversed: dict[str, list[str]] = {}
+    stack = []
+    visited = []
+    traversed = {}
     stack.append((start, visited))
     while stack:
         curr, visited = stack.pop(0)
@@ -354,7 +356,7 @@ def dfs_until(
 
 
 def collapse_multigraph(
-    depends_multi_graph: dict[str, list[str] | list[list[str]]],
+    depends_multi_graph: Multigraph,
     final: str,
     path_names: dict[str, str],
 ) -> Generator[dict[str, list[str]], None, None]:
@@ -393,7 +395,7 @@ def collapse_multigraph(
                 collapsing_graphs.append((partially_collapsed, path))
 
 
-def _is_edges_colored(value: tuple[str, list[str | list[str]]]) -> bool:
+def _is_edges_colored(value: tuple[str, Sequence[str | list[str]]]) -> bool:
     """a halting condition function for dfs_until, used to check for colored edges."""
     _, edges = value
     if edges and isinstance(edges[0], list):

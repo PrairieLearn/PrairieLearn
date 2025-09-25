@@ -6,6 +6,7 @@ from dag_checker import (
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
+    Multigraph
 )
 
 problem_1_dag = {
@@ -170,7 +171,7 @@ def test_solve_dag() -> None:
 
 
 problem_4_final = "6"
-problem_4_sum: dict[str, list[str] | list[list[str]]] = {
+problem_4_sum: Multigraph = {
     "1": [],
     "2": ["1"],
     "3": ["2"],
@@ -183,7 +184,7 @@ problem_4_orderings = []
 
 problem_5_final = "5"
 problem_5_named_paths = {"40": "path1:", "41": "path2:", "50": "path1:", "51": "path2:"}
-problem_5_git: dict[str, list[str] | list[list[str]]] = {
+problem_5_git: Multigraph = {
     "1": [],
     "2": [],
     "3": [],
@@ -192,14 +193,14 @@ problem_5_git: dict[str, list[str] | list[list[str]]] = {
 }
 
 problem_6_final = "3"
-problem_6_cycle: dict[str, list[str] | list[list[str]]] = {
+problem_6_cycle: Multigraph = {
     "1": [["2"], []],
     "2": ["1"],
     "3": [["2"], ["1"]],
 }
 
 problem_7_final = "4"
-problem_7_optional_source: dict[str, list[str] | list[list[str]]] = {
+problem_7_optional_source: Multigraph = {
     "1": [["3"], []],
     "2": [["3"], []],
     "3": [],
