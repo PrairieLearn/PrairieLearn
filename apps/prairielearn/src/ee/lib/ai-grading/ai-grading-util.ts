@@ -151,7 +151,7 @@ export async function generatePrompt({
       input.push({
         role: 'developer',
         content:
-          'I will provide some example student responses and their corresponding selected rubric items.',
+          'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
