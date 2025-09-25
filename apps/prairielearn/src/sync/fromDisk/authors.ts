@@ -1,5 +1,4 @@
 import * as sqldb from '@prairielearn/postgres';
-import { callAsync } from '@prairielearn/postgres';
 
 import { AuthorSchema } from '../../lib/db-types.js';
 import { findCoursesBySharingNames } from '../../models/course.js';
@@ -116,20 +115,27 @@ export async function sync(
   }
 
   // Create question-author relationships
-  const questionAuthorsParam: string[] = [];
+  const qaPairs: { question_id: string; author_id: string | null }[] = [];
+
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
+    // De-duplicate repeated authors in the same question info file
     const dedupedQuestionAuthors = new Set<string>();
     (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
-    const questionAuthorIds = [...dedupedQuestionAuthors]
-      .map((a) => {
-        const author = authorIdMap.get(a) ?? null;
-        return author;
-      })
-      // Authors that were skipped earlier will not be in the map and should be skipped again
-      .filter((a) => a !== null);
-    questionAuthorsParam.push(JSON.stringify([questionIds[qid], questionAuthorIds]));
+
+    // Lookup author IDs and set up data structure for DB
+    const authorIds = [...dedupedQuestionAuthors]
+      .map((a) => authorIdMap.get(a) ?? null)
+      .filter((id) => id !== null);
+    // Include questions with empty author lists to ensure deletion of existing authors
+    if (authorIds.length === 0) {
+      qaPairs.push({ question_id: questionIds[qid], author_id: null });
+    } else {
+      for (const authorId of authorIds) {
+        qaPairs.push({ question_id: questionIds[qid], author_id: authorId });
+      }
+    }
   });
 
-  await callAsync('sync_question_authors', [questionAuthorsParam]);
+  await sqldb.execute(sql.insert_question_authors, [JSON.stringify(qaPairs)]);
 }

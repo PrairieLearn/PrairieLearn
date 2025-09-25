@@ -21,10 +21,12 @@ FROM
         origin_course text
       )
   ) d
-  LEFT JOIN authors a ON a.author_name IS NOT DISTINCT FROM d.name
-  AND a.email IS NOT DISTINCT FROM d.email
-  AND a.orcid IS NOT DISTINCT FROM d.orcid
-  AND a.origin_course IS NOT DISTINCT FROM d.origin_course::bigint
+  LEFT JOIN authors a ON (
+    a.author_name IS NOT DISTINCT FROM d.name
+    AND a.email IS NOT DISTINCT FROM d.email
+    AND a.orcid IS NOT DISTINCT FROM d.orcid
+    AND a.origin_course IS NOT DISTINCT FROM d.origin_course::bigint
+  )
 WHERE
   a.id IS NULL
 ON CONFLICT DO NOTHING;
@@ -45,3 +47,48 @@ FROM
     AND a.orcid IS NOT DISTINCT FROM author.orcid
     AND a.origin_course IS NOT DISTINCT FROM author.origin_course
   );
+
+-- BLOCK insert_question_authors
+WITH
+  incoming AS (
+    SELECT
+      *
+    FROM
+      jsonb_to_recordset($1::jsonb) AS t (question_id bigint, author_id bigint)
+  ),
+  deleted AS (
+    DELETE FROM question_authors qa
+    WHERE
+      qa.question_id IN (
+        SELECT DISTINCT
+          question_id
+        FROM
+          incoming
+      )
+      AND NOT EXISTS (
+        SELECT
+          1
+        FROM
+          incoming i
+        WHERE
+          i.question_id = qa.question_id
+          AND i.author_id = qa.author_id
+      )
+    RETURNING
+      1
+  )
+INSERT INTO
+  question_authors (question_id, author_id)
+SELECT
+  i.question_id,
+  i.author_id
+FROM
+  incoming i
+  LEFT JOIN question_authors qa ON (
+    qa.question_id = i.question_id
+    AND qa.author_id = i.author_id
+  )
+WHERE
+  qa.question_id IS NULL
+  AND i.author_id IS NOT NULL
+ON CONFLICT (question_id, author_id) DO NOTHING;
