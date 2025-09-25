@@ -232,13 +232,6 @@ export async function updateCourseSharingName({ course_id, sharing_name }): Prom
 }
 
 /**
- * Look up a course by sharing name (may return null if non-existent)
- */
-export async function findCourseBySharingName(sharing_name: string): Promise<Course | null> {
-  return await queryOptionalRow(sql.find_course_by_sharing_name, { sharing_name }, CourseSchema);
-}
-
-/**
  * Look up courses by sharing names (may return null if non-existent)
  */
 export async function findCoursesBySharingNames(
