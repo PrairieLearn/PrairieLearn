@@ -212,7 +212,7 @@ def test_solve_multigraph():
     for solution in problem_4_solutions:
         assert (
             len(solution)
-            == grade_multigraph(solution, problem_4_sum, problem_4_final, {})[0]
+            == grade_multigraph(solution, problem_4_sum, problem_4_final, {}, {})[0]
         )
 
     problem_5_solutions = solve_multigraph(
@@ -221,7 +221,7 @@ def test_solve_multigraph():
     for solution in problem_5_solutions:
         assert (
             len(solution)
-            == grade_multigraph(solution, problem_5_git, problem_5_final, {})[0]
+            == grade_multigraph(solution, problem_5_git, problem_5_final, {}, {})[0]
         )
 
     # Contains a cycle and should fail.
@@ -233,6 +233,6 @@ def test_solve_multigraph():
         assert (
             len(solution)
             == grade_multigraph(
-                solution, problem_7_optional_source, problem_7_final, {}
+                solution, problem_7_optional_source, problem_7_final, {}, {}
             )[0]
         )
