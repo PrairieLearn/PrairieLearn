@@ -204,7 +204,6 @@ def grade_multigraph(
     # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
     collapsed_dags = list(collapse_multigraph(depends_multigraph, final, path_names))
-    print(collapsed_dags)
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
