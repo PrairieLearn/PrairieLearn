@@ -248,7 +248,7 @@ export function RubricSettings({
       }
       setMaxExtraPoints(roundPoints((parsedData.max_extra_points || 0) * scaleFactor));
       setMinPoints(roundPoints((parsedData.min_points || 0) * scaleFactor));
-      setReplaceAutoPoints(parsedData.replace_auto_points);
+      setReplaceAutoPoints(Boolean(parsedData.replace_auto_points));
       setStartingPoints(roundPoints((parsedData.starting_points || 0) * scaleFactor));
 
       const rubricItems = parsedData.rubric_items;
