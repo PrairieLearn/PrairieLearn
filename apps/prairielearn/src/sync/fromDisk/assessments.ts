@@ -297,7 +297,6 @@ function getParamsForAssessment(
         ? assessment.type === 'Exam'
         : assessment.shuffleQuestions,
     allow_issue_reporting: assessment.allowIssueReporting,
-    allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
     json_allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.

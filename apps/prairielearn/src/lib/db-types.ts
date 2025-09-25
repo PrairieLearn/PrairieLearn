@@ -274,7 +274,7 @@ export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_personal_notes: z.boolean(),
-  allow_real_time_grading: z.boolean().nullable(),
+  allow_real_time_grading: z.unknown(), // TODO: This column is being removed
   assessment_module_id: IdSchema.nullable(),
   assessment_set_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),
