@@ -10,6 +10,7 @@ import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { HttpRedirect } from '../../lib/redirect.js';
 import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
@@ -42,8 +43,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
   try {
     await editor.executeWithServerJob(serverJob);
   } catch {
-    res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-    return;
+    throw new HttpRedirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
   }
 
   await sqldb.execute(sql.soft_delete_file_transfer, {
