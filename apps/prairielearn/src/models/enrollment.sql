@@ -18,7 +18,7 @@ SET
   status = 'joined',
   user_id = $user_id,
   pending_uid = NULL,
-  first_joined_at = now()
+  first_joined_at = COALESCE(first_joined_at, now())
 WHERE
   id = $enrollment_id
 RETURNING

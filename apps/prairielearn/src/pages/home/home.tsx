@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -132,34 +132,36 @@ router.post(
         action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
-        course_instance_id: body.course_instance_id,
-        pending_uid: uid,
-      });
+      await runInTransactionAsync(async () => {
+        const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
+          course_instance_id: body.course_instance_id,
+          pending_uid: uid,
+        });
 
-      if (!oldEnrollment) {
-        throw new Error('Could not find enrollment to reject');
-      }
+        if (!oldEnrollment) {
+          throw new Error('Could not find enrollment to reject');
+        }
 
-      const newEnrollment = await queryRow(
-        sql.reject_invitation,
-        {
-          enrollment_id: oldEnrollment.id,
-        },
-        EnrollmentSchema,
-      );
+        const newEnrollment = await queryRow(
+          sql.reject_invitation,
+          {
+            enrollment_id: oldEnrollment.id,
+          },
+          EnrollmentSchema,
+        );
 
-      await insertAuditEvent({
-        table_name: 'enrollments',
-        action: 'update',
-        action_detail: 'invitation_rejected',
-        subject_user_id: null,
-        course_instance_id: body.course_instance_id,
-        row_id: newEnrollment.id,
-        old_row: oldEnrollment,
-        new_row: newEnrollment,
-        agent_user_id: user_id,
-        agent_authn_user_id: user_id,
+        await insertAuditEvent({
+          table_name: 'enrollments',
+          action: 'update',
+          action_detail: 'invitation_rejected',
+          subject_user_id: null,
+          course_instance_id: body.course_instance_id,
+          row_id: newEnrollment.id,
+          old_row: oldEnrollment,
+          new_row: newEnrollment,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+        });
       });
     }
 

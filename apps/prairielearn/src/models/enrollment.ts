@@ -328,6 +328,7 @@ async function inviteNewEnrollment({
     action_detail: 'invited',
     row_id: newEnrollment.id,
     new_row: newEnrollment,
+    subject_user_id: null,
     agent_user_id,
     agent_authn_user_id,
   });
