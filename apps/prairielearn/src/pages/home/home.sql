@@ -234,6 +234,16 @@ ORDER BY
   i.long_name,
   i.id;
 
+-- BLOCK reject_invitation
+UPDATE enrollments
+SET
+  status = 'rejected'
+WHERE
+  id = $enrollment_id
+  AND status = 'invited'
+RETURNING
+  *;
+
 -- BLOCK unenroll
 DELETE FROM enrollments AS e USING users AS u
 WHERE
