@@ -178,6 +178,11 @@ export function RubricSettings({
     downloadAsJSON(rubricData, exportFileName);
   };
 
+  /**
+   * Rounds the points for a rubric item to two decimal places
+   * @param points original points
+   * @returns rounded points
+   */
   function roundPoints(points: number) {
     return Math.round(Number(points) * 100) / 100;
   }
