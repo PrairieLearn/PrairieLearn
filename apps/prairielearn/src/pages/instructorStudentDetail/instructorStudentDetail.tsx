@@ -61,7 +61,7 @@ router.get(
     }
 
     // Trying to access a student from a different course instance.
-    if (student.enrollment?.course_instance_id !== courseInstance.id) {
+    if (student.enrollment.course_instance_id !== courseInstance.id) {
       throw new HttpStatusError(404, 'Student not found');
     }
 
@@ -79,14 +79,16 @@ router.get(
       if (student.user) {
         return `${student.user.name} (${student.user.uid})`;
       }
-      return `${student.enrollment?.pending_uid}`;
+      return `${student.enrollment.pending_uid}`;
     });
 
-    const auditEvents = await selectAuditEvents({
-      subject_user_id: student.user?.user_id,
-      course_instance_id: courseInstance.id,
-      table_names: ['enrollments'],
-    });
+    const auditEvents = student.user
+      ? await selectAuditEvents({
+          subject_user_id: student.user.user_id,
+          course_instance_id: courseInstance.id,
+          table_names: ['enrollments'],
+        })
+      : [];
 
     res.send(
       PageLayout({
