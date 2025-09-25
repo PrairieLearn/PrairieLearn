@@ -47,6 +47,7 @@ export function InstructorAiGenerateDraftEditor({
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
+        <link href="${nodeModulesAssetPath('highlight.js/styles/github.css')}" rel="stylesheet" />
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
