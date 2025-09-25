@@ -16,7 +16,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
-import { findCourseBySharingName } from '../models/course.js';
+import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -851,6 +851,40 @@ function checkDuplicateUUIDs<T>(
   });
 }
 
+async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<QuestionJson>>) {
+  // First, create a map from origin courses to questions that reference them
+  const originCourseIDs = Object.entries(questionInfos).reduce((map, [id, info]) => {
+    if (!info.data?.authors) {
+      // No authors -> skip
+      return map;
+    }
+    info.data.authors.forEach((author) => {
+      if (author.originCourse) {
+        let originCourseRefs = map.get(author.originCourse);
+        if (!originCourseRefs) {
+          originCourseRefs = [];
+          map.set(author.originCourse, originCourseRefs);
+        }
+        originCourseRefs.push(id);
+      }
+    });
+    return map;
+  }, new Map<string, string[]>());
+
+  // Then, look up all the course IDs at once and find unresolvable ones
+  const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
+  originCourses.forEach((course, sharingName) => {
+    if (!course) {
+      const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
+      affectedQuestions.forEach((question) => {
+        questionInfos[question].errors.push(
+          `The author origin course with the sharing name ${sharingName} does not exist`,
+        );
+      });
+    }
+  });
+}
+
 /**
  * Checks that roles are not present.
  * @returns A list of warnings, if any
@@ -1041,14 +1075,7 @@ async function validateQuestion({
           errors.push(`The author email address ${author.email} is invalid`);
         }
       }
-      if (author.originCourse) {
-        const course = await findCourseBySharingName(author.originCourse);
-        if (!course) {
-          errors.push(
-            `The author origin course with the sharing name ${author.originCourse} does not exist`,
-          );
-        }
-      }
+      // Origin courses are validated in bulk loadQuestions, and skipped here.
     }
   }
 
@@ -1516,10 +1543,12 @@ export async function loadQuestions({
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
+  await checkAuthorOriginCourses(questions);
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
   );
+
   return questions;
 }
 

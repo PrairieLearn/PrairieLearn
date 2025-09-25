@@ -39,7 +39,9 @@ FROM
     orcid text,
     "originCourse" bigint
   )
-  JOIN authors a ON (a.author_name IS NOT DISTINCT FROM author.name
-  AND a.email IS NOT DISTINCT FROM author.email
-  AND a.orcid IS NOT DISTINCT FROM author.orcid
-  AND a.origin_course IS NOT DISTINCT FROM author."originCourse");
+  JOIN authors a ON (
+    a.author_name IS NOT DISTINCT FROM author.name
+    AND a.email IS NOT DISTINCT FROM author.email
+    AND a.orcid IS NOT DISTINCT FROM author.orcid
+    AND a.origin_course IS NOT DISTINCT FROM author."originCourse"
+  );
