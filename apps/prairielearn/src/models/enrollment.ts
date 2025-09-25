@@ -489,9 +489,11 @@ export async function deleteEnrollmentById({
       table_name: 'enrollments',
       action: 'delete',
       action_detail: 'invitation_deleted',
-      row_id: deletedEnrollment.id,
+      row_id: oldEnrollment.id,
       old_row: oldEnrollment,
       new_row: null,
+      subject_user_id: null,
+      course_instance_id: oldEnrollment.course_instance_id,
       agent_user_id,
       agent_authn_user_id,
     });
@@ -501,7 +503,7 @@ export async function deleteEnrollmentById({
 }
 
 /**
- * Re-invites a student who was previously rejected.
+ * Invites an enrollment by id, given a pending uid.
  */
 export async function inviteEnrollmentById({
   enrollment_id,
