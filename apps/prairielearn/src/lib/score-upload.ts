@@ -65,7 +65,7 @@ export async function uploadInstanceQuestionScores(
     const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
       csvParse({
         // Replace all keys with their lower-case values
-        columns: (first_line) => first_line.map((column_name) => column_name.toLowerCase()),
+        columns: (header) => header.map((column) => column.toLowerCase()),
         cast: (value, context) => {
           if (context.column === 'instance') return parseInt(value);
           if (
@@ -189,7 +189,7 @@ export async function uploadAssessmentInstanceScores(
     const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
       csvParse({
         // Replace all keys with their lower-case values
-        columns: (first_line) => first_line.map((column_name) => column_name.toLowerCase()),
+        columns: (header) => header.map((column) => column.toLowerCase()),
         cast: (value, context) => {
           if (context.column === 'instance') return parseInt(value);
           if (['score_perc', 'points'].includes(context.column.toString())) {
