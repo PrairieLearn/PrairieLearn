@@ -163,6 +163,7 @@ router.post(
         }
         await deleteEnrollmentById({
           enrollment_id,
+          action_detail: 'invitation_deleted',
           agent_user_id: res.locals.authn_user.user_id,
           agent_authn_user_id: res.locals.user.id,
         });
