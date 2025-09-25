@@ -583,7 +583,7 @@ export function RubricSettings({
               </button>
               <button
                 id="upload-rubric-file-button"
-                type="submit"
+                type="button"
                 class="btn btn-primary"
                 onClick={() => importRubric()}
               >
