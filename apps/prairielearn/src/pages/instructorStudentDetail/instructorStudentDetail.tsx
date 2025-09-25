@@ -133,6 +133,9 @@ router.post(
 
     switch (action) {
       case 'block_student': {
+        if (enrollment.status !== 'joined') {
+          throw new HttpStatusError(400, 'Enrollment is not joined');
+        }
         await setEnrollmentStatusBlocked({
           enrollment_id,
           agent_user_id: res.locals.authn_user.user_id,
@@ -142,6 +145,9 @@ router.post(
         break;
       }
       case 'unblock_student': {
+        if (enrollment.status !== 'blocked') {
+          throw new HttpStatusError(400, 'Enrollment is not blocked');
+        }
         await enrollUserInCourseInstance({
           enrollment_id,
           agent_user_id: res.locals.authn_user.user_id,
@@ -152,6 +158,9 @@ router.post(
         break;
       }
       case 'cancel_invitation': {
+        if (enrollment.status !== 'invited') {
+          throw new HttpStatusError(400, 'Enrollment is not invited');
+        }
         await deleteEnrollmentById({
           enrollment_id,
           agent_user_id: res.locals.authn_user.user_id,
@@ -165,6 +174,9 @@ router.post(
       case 'invite_student': {
         if (!enrollment.pending_uid) {
           throw new HttpStatusError(400, 'Enrollment does not have a pending UID');
+        }
+        if (enrollment.status !== 'rejected') {
+          throw new HttpStatusError(400, 'Enrollment is not rejected');
         }
         await inviteEnrollmentById({
           enrollment_id,
