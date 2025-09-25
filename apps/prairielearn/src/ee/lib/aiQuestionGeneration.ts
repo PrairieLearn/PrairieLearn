@@ -439,8 +439,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
       authnUserId,
-      promptTokens: response.usage?.input_tokens,
-      completionTokens: response.usage?.output_tokens,
+      usage: response.usage,
     });
 
     job.data.html = html;
@@ -669,8 +668,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
     authnUserId,
-    promptTokens: response.usage?.input_tokens,
-    completionTokens: response.usage?.output_tokens,
+    usage: response.usage,
   });
 
   job.data.html = html;

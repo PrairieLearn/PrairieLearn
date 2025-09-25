@@ -19,6 +19,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { calculateResponseCost } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -58,26 +59,6 @@ export const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
-
-export function calculateApiCost(usage?: OpenAI.Responses.ResponseUsage): number {
-  if (!usage) {
-    return 0;
-  }
-  const cached_input_tokens = usage.input_tokens_details?.cached_tokens ?? 0;
-  const prompt_tokens = usage.input_tokens - cached_input_tokens;
-  const completion_tokens = usage.output_tokens;
-
-  // Pricing is updated according to https://platform.openai.com/docs/pricing
-  const cached_input_cost = 1.25 / 10 ** 6;
-  const prompt_cost = 2.5 / 10 ** 6;
-  const completion_cost = 10 / 10 ** 6;
-
-  return (
-    cached_input_tokens * cached_input_cost +
-    prompt_tokens * prompt_cost +
-    completion_tokens * completion_cost
-  );
-}
 
 type Prompt = (string | string[])[];
 
@@ -451,14 +432,14 @@ export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
   prompt,
-  completion,
+  response,
   course_id,
   course_instance_id,
 }: {
   grading_job_id: string;
   job_sequence_id: string;
   prompt: ResponseInput;
-  completion: ParsedResponse<any>;
+  response: ParsedResponse<any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -466,11 +447,11 @@ export async function insertAiGradingJob({
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),
-    completion,
+    completion: response,
     model: OPEN_AI_MODEL,
-    prompt_tokens: completion.usage?.input_tokens ?? 0,
-    completion_tokens: completion.usage?.output_tokens ?? 0,
-    cost: calculateApiCost(completion.usage),
+    prompt_tokens: response.usage?.input_tokens ?? 0,
+    completion_tokens: response.usage?.output_tokens ?? 0,
+    cost: calculateResponseCost(response.usage),
     course_id,
     course_instance_id,
   });
