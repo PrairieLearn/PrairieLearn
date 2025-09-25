@@ -3,11 +3,11 @@ SELECT
   ci_extensions.*
 FROM
   course_instance_access_control_extensions AS ci_extensions
-  JOIN course_instance_access_control_enrollment_overrides AS ci_enrollment_overrides ON (
-    ci_enrollment_overrides.course_instance_access_control_extension_id = ci_extensions.id
+  JOIN course_instance_access_control_enrollment_extensions AS ci_enrollment_extensions ON (
+    ci_enrollment_extensions.course_instance_access_control_extension_id = ci_extensions.id
   )
 WHERE
-  ci_enrollment_overrides.enrollment_id = $enrollment_id;
+  ci_enrollment_extensions.enrollment_id = $enrollment_id;
 
 -- BLOCK insert_access_control_extension
 INSERT INTO
@@ -27,9 +27,9 @@ VALUES
 RETURNING
   *;
 
--- BLOCK insert_access_control_enrollment_override
+-- BLOCK insert_access_control_enrollment_extension
 INSERT INTO
-  course_instance_access_control_enrollment_overrides (
+  course_instance_access_control_enrollment_extensions (
     course_instance_access_control_extension_id,
     enrollment_id
   )

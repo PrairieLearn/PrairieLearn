@@ -7,8 +7,8 @@ import {
 } from '@prairielearn/postgres';
 
 import {
-  type CourseInstanceAccessControlEnrollmentOverride,
-  CourseInstanceAccessControlEnrollmentOverrideSchema,
+  type CourseInstanceAccessControlEnrollmentExtension,
+  CourseInstanceAccessControlEnrollmentExtensionSchema,
   type CourseInstanceAccessControlExtension,
   CourseInstanceAccessControlExtensionSchema,
 } from '../lib/db-types.js';
@@ -70,20 +70,20 @@ export async function insertAccessControlExtension({
 /**
  * Links an access control extension to a specific enrollment.
  */
-export async function insertAccessControlEnrollmentOverride({
+export async function insertAccessControlEnrollmentExtension({
   course_instance_access_control_extension_id,
   enrollment_id,
 }: {
   course_instance_access_control_extension_id: string;
   enrollment_id: string;
-}): Promise<CourseInstanceAccessControlEnrollmentOverride> {
+}): Promise<CourseInstanceAccessControlEnrollmentExtension> {
   return await queryRow(
-    sql.insert_access_control_enrollment_override,
+    sql.insert_access_control_enrollment_extension,
     {
       course_instance_access_control_extension_id,
       enrollment_id,
     },
-    CourseInstanceAccessControlEnrollmentOverrideSchema,
+    CourseInstanceAccessControlEnrollmentExtensionSchema,
   );
 }
 
@@ -114,7 +114,7 @@ export async function createAccessControlExtensionWithEnrollments({
 
     // Link to enrollments
     for (const enrollment_id of enrollment_ids) {
-      await insertAccessControlEnrollmentOverride({
+      await insertAccessControlEnrollmentExtension({
         course_instance_access_control_extension_id: extension.id,
         enrollment_id,
       });
