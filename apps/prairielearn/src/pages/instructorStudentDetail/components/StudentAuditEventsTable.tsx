@@ -1,6 +1,6 @@
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { type StaffAuditEvent } from '../../../lib/client/safe-db-types.js';
-import { type SupportedActionsForTable } from '../../../models/audit-event.js';
+import { type SupportedActionsForTable } from '../../../models/audit-event.types.js';
 
 interface StudentAuditEventsTableProps {
   events: StaffAuditEvent[];
