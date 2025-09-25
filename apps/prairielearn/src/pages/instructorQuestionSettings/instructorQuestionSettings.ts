@@ -285,7 +285,7 @@ router.post(
         entrypoint: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.entrypoint,
           body.external_grading_entrypoint,
-          (v) => v === undefined || v === null || v.length === 0,
+          (v) => v == null || v.length === 0,
         ),
         serverFilesCourse: propertyValueWithDefault(
           questionInfo.externalGradingOptions?.serverFilesCourse,
