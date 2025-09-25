@@ -29,7 +29,7 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
-      throw new Error(`Error loading page: ${res.status}`);
+      throw new Error(`Error loading page "${url}": ${res.status}`);
     }
     return res.text();
   });
@@ -425,6 +425,9 @@ describe('accessibility', () => {
     const enrollment = await ensureEnrollment({
       course_instance_id: '1',
       user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
 
     await features.enable('question-sharing');

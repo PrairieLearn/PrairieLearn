@@ -1,0 +1,37 @@
+{
+  "name": "@prairielearn/preact",
+  "version": "1.0.0",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/preact"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./server": "./dist/server.js",
+    "./hydrated-component": "./dist/hydrated-component/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "dependencies": {
+    "@prairielearn/browser-utils": "workspace:^",
+    "@prairielearn/compiled-assets": "workspace:^",
+    "@prairielearn/error": "workspace:^",
+    "@prairielearn/html": "workspace:^",
+    "@prairielearn/preact-cjs": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
+    "clsx": "^2.1.1",
+    "preact": "^10.27.0",
+    "preact-render-to-string": "^6.6.1",
+    "selector-observer": "^2.1.6",
+    "superjson": "^2.2.2"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^22.18.0",
+    "typescript": "^5.9.2"
+  }
+}

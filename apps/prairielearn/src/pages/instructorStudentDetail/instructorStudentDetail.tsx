@@ -3,13 +3,13 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
-import { Hydrate } from '../../lib/preact.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 
 import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';

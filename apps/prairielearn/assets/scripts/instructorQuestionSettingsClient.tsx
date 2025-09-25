@@ -2,11 +2,11 @@ import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
-import { renderHtml } from '../../src/lib/preact-html.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';

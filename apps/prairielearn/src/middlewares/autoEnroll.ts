@@ -2,10 +2,7 @@ import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import {
-  ensureCheckedEnrollment,
-  getEnrollmentForUserInCourseInstance,
-} from '../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -18,7 +15,7 @@ export default asyncHandler(async (req, res, next) => {
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
-  const existingEnrollment = await getEnrollmentForUserInCourseInstance({
+  const existingEnrollment = await selectOptionalEnrollmentByUserId({
     user_id: res.locals.authn_user.user_id,
     course_instance_id: courseInstance.id,
   });
@@ -44,6 +41,7 @@ export default asyncHandler(async (req, res, next) => {
       course: res.locals.course,
       course_instance: res.locals.course_instance,
       authz_data: res.locals.authz_data,
+      action_detail: 'implicit_joined',
     });
 
     // This is the only part of the `authz_data` that would change as a

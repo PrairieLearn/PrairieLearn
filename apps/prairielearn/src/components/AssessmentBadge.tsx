@@ -1,5 +1,6 @@
+import { renderHtml } from '@prairielearn/preact';
+
 import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 export function AssessmentBadge({
   assessment,

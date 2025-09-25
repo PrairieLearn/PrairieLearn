@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
+import { Hydrate } from '@prairielearn/preact/server';
+
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { Hydrate } from '../../lib/preact.js';
 
 import { StudentCoursesCard } from './StudentCoursesCard.js';
 
