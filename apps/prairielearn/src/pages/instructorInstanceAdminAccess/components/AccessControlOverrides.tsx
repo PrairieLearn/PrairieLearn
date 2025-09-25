@@ -1,5 +1,5 @@
-import { useState } from 'preact/compat';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'preact/compat';
 
 import {
   type CourseInstance,
