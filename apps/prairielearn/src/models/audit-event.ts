@@ -159,40 +159,42 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     agent_authn_user_id,
     agent_user_id,
     assessment_id:
-      assessment_id === null
-        ? null
+      assessment_id !== undefined
+        ? assessment_id
         : ((table_name === 'assessments' ? row_id : null) ?? inferred_assessment_id),
     assessment_instance_id:
-      assessment_instance_id === null
-        ? null
+      assessment_instance_id !== undefined
+        ? assessment_instance_id
         : ((table_name === 'assessment_instances' ? row_id : null) ??
           inferred_assessment_instance_id),
     assessment_question_id:
-      assessment_question_id === null
-        ? null
+      assessment_question_id !== undefined
+        ? assessment_question_id
         : ((table_name === 'assessment_questions' ? row_id : null) ??
           inferred_assessment_question_id),
     context,
     course_id:
-      course_id === null
-        ? null
+      course_id !== undefined
+        ? course_id
         : ((table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id),
     course_instance_id:
-      course_instance_id === null
-        ? null
+      course_instance_id !== undefined
+        ? course_instance_id
         : ((table_name === 'course_instances' ? row_id : null) ?? inferred_course_instance_id),
     group_id:
-      group_id === null ? null : ((table_name === 'groups' ? row_id : null) ?? inferred_group_id),
+      group_id !== undefined
+        ? group_id
+        : ((table_name === 'groups' ? row_id : null) ?? inferred_group_id),
     institution_id:
-      institution_id === null
-        ? null
+      institution_id !== undefined
+        ? institution_id
         : ((table_name === 'institutions' ? row_id : null) ?? inferred_institution_id),
     new_row,
     old_row,
     row_id,
     subject_user_id:
-      subject_user_id === null
-        ? null
+      subject_user_id !== undefined
+        ? subject_user_id
         : ((table_name === 'users' ? row_id : null) ?? inferred_subject_user_id),
     table_name,
   };

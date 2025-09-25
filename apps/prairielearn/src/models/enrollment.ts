@@ -471,10 +471,12 @@ export async function setEnrollmentStatusBlocked({
 export async function deleteEnrollmentById({
   enrollment_id,
   agent_user_id,
+  action_detail,
   agent_authn_user_id,
 }: {
   enrollment_id: string;
   agent_user_id: string | null;
+  action_detail: SupportedActionsForTable<'enrollments'>;
   agent_authn_user_id: string | null;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
@@ -489,7 +491,7 @@ export async function deleteEnrollmentById({
     await insertAuditEvent({
       table_name: 'enrollments',
       action: 'delete',
-      action_detail: 'invitation_deleted',
+      action_detail,
       row_id: oldEnrollment.id,
       old_row: oldEnrollment,
       new_row: null,
