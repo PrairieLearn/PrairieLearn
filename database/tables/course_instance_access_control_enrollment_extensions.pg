@@ -1,0 +1,13 @@
+columns
+    course_instance_access_control_extension_id: bigint not null
+    enrollment_id: bigint not null
+    id: bigint not null default nextval('course_instance_access_control_enrollment_extensions_id_seq'::regclass)
+
+indexes
+    course_instance_access_control_enrollment_extensions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_access_control_enrollment_extensions_course_ins: USING btree (course_instance_access_control_extension_id)
+    course_instance_access_control_enrollment_extensions_enrollment: USING btree (enrollment_id)
+
+foreign-key constraints
+    course_instance_access_contro_course_instance_access_contr_fkey: FOREIGN KEY (course_instance_access_control_extension_id) REFERENCES course_instance_access_control_extensions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_access_control_enrollment_ex_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE CASCADE

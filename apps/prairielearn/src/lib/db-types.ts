@@ -614,7 +614,7 @@ export const CourseInstanceAccessControlExtensionSchema = z.object({
   enabled: z.boolean(),
   id: IdSchema,
   name: z.string().nullable(),
-  published_end_date: DateFromISOString.nullable(),
+  published_end_date: DateFromISOString,
 });
 export type CourseInstanceAccessControlExtension = z.infer<
   typeof CourseInstanceAccessControlExtensionSchema

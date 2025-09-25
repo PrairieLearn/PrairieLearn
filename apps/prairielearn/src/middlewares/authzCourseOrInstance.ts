@@ -24,7 +24,9 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { selectAccessControlExtensionsByEnrollmentId } from '../models/course-instance-access-control-extensions.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
@@ -158,12 +160,21 @@ async function checkCourseOrInstanceAccess(params: {
   }
 
   if (authzData.course_instance != null) {
+    const enrollment = await selectOptionalEnrollmentByUserId({
+      user_id: params.user_id,
+      course_instance_id: authzData.course_instance.id,
+    });
+
+    const accessControlExtensions = enrollment
+      ? await selectAccessControlExtensionsByEnrollmentId(enrollment.id)
+      : [];
     // TODO: Deal with overrides. this will have to happen outside of this function.
     const result = evaluateCourseInstanceAccess(authzData.course_instance, {
       course_role: authzData.permissions_course.course_role,
       course_instance_role: authzData.permissions_course_instance.course_instance_role,
       mode_reason: authzData.mode_reason,
       mode: authzData.mode,
+      accessControlExtensions,
     });
     if (!result.hasAccess) {
       return {

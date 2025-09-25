@@ -4,6 +4,7 @@ import { type AccessControlJson, type AccessRuleJson } from '../schemas/infoCour
 
 import {
   type CourseInstance,
+  type CourseInstanceAccessControlExtension,
   type CourseInstanceAccessRule,
   type EnumCourseInstanceRole,
   type EnumCourseRole,
@@ -16,6 +17,7 @@ export interface CourseInstanceAccessParams {
   course_role: EnumCourseRole;
   mode_reason: EnumModeReason;
   mode: EnumMode;
+  accessControlExtensions: CourseInstanceAccessControlExtension[];
 }
 
 /**
@@ -60,8 +62,23 @@ export function evaluateCourseInstanceAccess(
     }
   }
 
+  // Consider the latest enabled extensions.
+
+  const possibleEndDates = params.accessControlExtensions
+    .filter((extension) => extension.enabled)
+    .map((extension) => extension.published_end_date);
   if (courseInstance.access_control_published_end_date) {
-    if (currentDate > courseInstance.access_control_published_end_date) {
+    possibleEndDates.push(courseInstance.access_control_published_end_date);
+  }
+
+  const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
+    if (a === null) return 1;
+    if (b === null) return -1;
+    return b.getTime() - a.getTime();
+  });
+
+  if (sortedPossibleEndDates.length > 0) {
+    if (currentDate > sortedPossibleEndDates[0]) {
       return {
         hasAccess: false,
         reason: 'Course instance has been archived',

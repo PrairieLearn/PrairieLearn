@@ -3,7 +3,7 @@ CREATE TABLE course_instance_access_control_extensions (
   course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
   enabled BOOLEAN NOT NULL DEFAULT FALSE,
   name TEXT,
-  published_end_date TIMESTAMP WITH TIME ZONE
+  published_end_date TIMESTAMP WITH TIME ZONE NOT NULL
   -- These records will be hard deleted.
 );
 
