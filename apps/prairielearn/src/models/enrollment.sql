@@ -47,5 +47,5 @@ FROM
   enrollments AS e
   JOIN users AS u ON (u.user_id = e.user_id)
 WHERE
-  u.uid = ANY($uids)
+  u.uid = ANY ($uids)
   AND e.course_instance_id = $course_instance_id;

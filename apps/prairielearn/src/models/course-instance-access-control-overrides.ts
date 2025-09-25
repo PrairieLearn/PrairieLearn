@@ -8,8 +8,8 @@ import {
 
 import {
   type CourseInstanceAccessControlEnrollmentOverride,
-  type CourseInstanceAccessControlOverride,
   CourseInstanceAccessControlEnrollmentOverrideSchema,
+  type CourseInstanceAccessControlOverride,
   CourseInstanceAccessControlOverrideSchema,
 } from '../lib/db-types.js';
 

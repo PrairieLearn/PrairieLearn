@@ -305,6 +305,7 @@ router.post(
         .filter((uid: string) => uid.length > 0);
 
       if (uids.length === 0) {
+        // TODO: handle errors better.
         throw new error.HttpStatusError(400, 'At least one UID is required');
       }
 

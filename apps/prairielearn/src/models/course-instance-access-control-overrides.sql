@@ -18,7 +18,12 @@ INSERT INTO
     published_end_date
   )
 VALUES
-  ($course_instance_id, $enabled, $name, $published_end_date)
+  (
+    $course_instance_id,
+    $enabled,
+    $name,
+    $published_end_date
+  )
 RETURNING
   *;
 
@@ -29,7 +34,10 @@ INSERT INTO
     enrollment_id
   )
 VALUES
-  ($course_instance_access_control_override_id, $enrollment_id)
+  (
+    $course_instance_access_control_override_id,
+    $enrollment_id
+  )
 RETURNING
   *;
 
@@ -44,15 +52,13 @@ ORDER BY
   ci_overrides.id;
 
 -- BLOCK delete_access_control_override
-DELETE FROM
-  course_instance_access_control_overrides
+DELETE FROM course_instance_access_control_overrides
 WHERE
   id = $override_id
   AND course_instance_id = $course_instance_id;
 
 -- BLOCK update_access_control_override
-UPDATE
-  course_instance_access_control_overrides
+UPDATE course_instance_access_control_overrides
 SET
   enabled = $enabled,
   name = $name,
