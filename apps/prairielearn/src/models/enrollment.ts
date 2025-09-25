@@ -373,6 +373,7 @@ async function inviteNewEnrollment({
 
   return newEnrollment;
 }
+
 /**
  * Invite a student by uid.
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
