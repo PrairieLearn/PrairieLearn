@@ -183,7 +183,7 @@ function getParamsForAssessment(
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints,
-            triesPerVariant: question.triesPerVariant ?? 1,
+            triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
             allowRealTimeGrading: questionAllowRealTimeGrading ?? true,
