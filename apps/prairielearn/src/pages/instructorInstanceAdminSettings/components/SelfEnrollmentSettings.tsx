@@ -273,17 +273,13 @@ export function SelfEnrollmentSettings({
         )}
       </div>
 
-      {selfEnrollmentEnabled && (
-        <>
-          {selfEnrollmentUseEnrollmentCode ? (
-            <SelfEnrollmentLink selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
-          ) : (
-            <StudentLinkSharing
-              studentLink={studentLink}
-              studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
-            />
-          )}
-        </>
+      {selfEnrollmentEnabled && selfEnrollmentUseEnrollmentCode ? (
+        <SelfEnrollmentLink selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
+      ) : (
+        <StudentLinkSharing
+          studentLink={studentLink}
+          studentLinkMessage={`This is the link that students will use to ${selfEnrollmentEnabled ? 'access the course' : 'accept invitations'}. You can copy this link to share with students.`}
+        />
       )}
     </>
   );
