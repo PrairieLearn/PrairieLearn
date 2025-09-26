@@ -332,7 +332,7 @@ describe('Instructor force-breaking variants on exam', () => {
     });
   });
 
-  test.sequential('student sees new variant when revisiting second question', async () => {
+  test.sequential('student sees same variant when revisiting second question', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
