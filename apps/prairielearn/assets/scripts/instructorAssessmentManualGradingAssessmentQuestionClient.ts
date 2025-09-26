@@ -81,12 +81,13 @@ onDocumentReady(() => {
   };
 
   window.submissionGroups = function () {
-    return Object.fromEntries(
-      instanceQuestionGroups.map((group) => [
-        group.instance_question_group_name,
-        group.instance_question_group_name,
+    return Object.fromEntries([
+      ...instanceQuestionGroups.map((g) => [
+        g.instance_question_group_name,
+        g.instance_question_group_name,
       ]),
-    );
+      ['No Group', 'No Group'],
+    ]);
   };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
@@ -248,13 +249,12 @@ onDocumentReady(() => {
               filterControl: 'select',
               class: 'text-center',
               formatter: (value: string | null) => {
-                const displayValue = value ?? 'No group';
                 if (!value) {
-                  return html`<span class="text-secondary">${displayValue}</span>`.toString();
+                  return html`<span class="text-secondary">No Group</span>`.toString();
                 }
                 return html`
                   <span class="d-flex align-items-center justify-content-center gap-2">
-                    ${displayValue}
+                    ${value}
                     <div
                       data-bs-toggle="tooltip"
                       data-bs-html="true"
