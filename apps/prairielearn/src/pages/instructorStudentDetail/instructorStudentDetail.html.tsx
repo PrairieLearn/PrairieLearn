@@ -76,7 +76,7 @@ export function InstructorStudentDetail({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1 class="mb-0">Details</h1>
-          {user && (
+          {user && enrollment.status === 'joined' && (
             <button type="button" class="btn btn-sm btn-light" onClick={handleViewAsStudent}>
               <i class="fas fa-user-graduate me-1" aria-hidden="true" />
               View as student
@@ -87,10 +87,7 @@ export function InstructorStudentDetail({
           <div class="d-flex align-items-center justify-content-between">
             <h2 class="d-flex align-items-center">
               {user?.name ?? enrollment.pending_uid}
-              <EnrollmentStatusIcon
-                class="badge bg-secondary ms-2 fs-6"
-                status={enrollment.status}
-              />
+              <EnrollmentStatusIcon type="badge" class="ms-2 fs-6" status={enrollment.status} />
             </h2>
             {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && enrollment && (
               <div class="d-flex gap-2 align-items-center">
@@ -173,7 +170,7 @@ export function InstructorStudentDetail({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h2 class="mb-0">Gradebook</h2>
-          {user && (
+          {user && enrollment.status === 'joined' && (
             <button
               type="button"
               class="btn btn-sm btn-light"

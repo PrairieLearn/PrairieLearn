@@ -207,7 +207,7 @@ function StudentsCard({
       columnHelper.accessor((row) => row.enrollment.status, {
         id: 'enrollment_status',
         header: 'Status',
-        cell: (info) => <EnrollmentStatusIcon status={info.getValue()} />,
+        cell: (info) => <EnrollmentStatusIcon type="text" status={info.getValue()} />,
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
           const current = row.getValue(columnId);
