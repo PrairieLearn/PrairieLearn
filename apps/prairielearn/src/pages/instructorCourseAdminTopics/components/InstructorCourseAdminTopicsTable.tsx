@@ -165,7 +165,7 @@ export function InstructorCourseAdminTopicsTable({
               })}
               {editMode ? (
                 <tr>
-                  <td colSpan={editMode ? 6 : 4}>
+                  <td colSpan={6}>
                     <button class="btn btn-sm btn-ghost" type="button" onClick={handleNewTopic}>
                       <i class="fa fa-plus" aria-hidden="true" /> New Topic
                     </button>
