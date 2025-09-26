@@ -26,6 +26,7 @@ check constraints
     enrollments_lti13_pending_lti_managed_true: CHECK (status = 'lti13_pending'::enum_enrollment_status AND lti_managed = true OR status <> 'lti13_pending'::enum_enrollment_status)
     enrollments_pending_uid_null_only_if_invited_rejected: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) = (pending_uid IS NOT NULL))
     enrollments_user_id_null_only_if_invited_rejected_pending: CHECK ((status = ANY (ARRAY['invited'::enum_enrollment_status, 'rejected'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status])) = (user_id IS NULL))
+    first_joined_at_not_null_if_joined_and_created_at_not_null: CHECK (created_at IS NULL OR (status = ANY (ARRAY['invited'::enum_enrollment_status, 'lti13_pending'::enum_enrollment_status, 'rejected'::enum_enrollment_status])) OR first_joined_at IS NOT NULL)
 
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
