@@ -1,4 +1,4 @@
-import { Modal } from 'react-bootstrap';
+import { Button, Modal } from 'react-bootstrap';
 
 export function ExamResetNotSupportedModal({
   show,
@@ -20,9 +20,9 @@ export function ExamResetNotSupportedModal({
         </p>
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" class="btn btn-secondary" onClick={onHide}>
+        <Button variant="primary" onClick={onHide}>
           Close
-        </button>
+        </Button>
       </Modal.Footer>
     </Modal>
   );
