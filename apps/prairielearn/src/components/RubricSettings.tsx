@@ -1,5 +1,4 @@
 import clsx from 'clsx';
-import { filesize } from 'filesize';
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 
@@ -199,12 +198,6 @@ export function RubricSettings({
       return;
     }
     const file = input.files[0];
-    if (file.size > context.file_upload_max_bytes) {
-      setImportModalWarning(
-        `File size exceeds the maximum limit of ${context.file_upload_max_bytes} bytes. Please choose a smaller file.`,
-      );
-      return;
-    }
 
     try {
       const fileContent = await file.text();
@@ -553,9 +546,6 @@ export function RubricSettings({
                 accept="application/json,.json"
                 required
               />
-              <small class="form-text text-muted">
-                Max file size: {filesize(context.file_upload_max_bytes, { base: 10, round: 0 })}
-              </small>
               {importModalWarning && (
                 <div
                   key={importModalWarning}
