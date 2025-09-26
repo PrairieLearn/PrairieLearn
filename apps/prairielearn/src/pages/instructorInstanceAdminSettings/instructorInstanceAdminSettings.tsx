@@ -258,7 +258,7 @@ router.post(
 
       // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
       const parseDateTime = (date: string) => {
-        if (date === '') return null;
+        if (date === '') return undefined;
         return Temporal.PlainDateTime.from(date).toString();
       };
 
@@ -278,13 +278,10 @@ router.post(
         false,
       );
 
-      console.log('va1', parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''));
-      console.log('val2', parseDateTime(parsedBody.self_enrollment_enabled_before_date));
-
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         parseDateTime(parsedBody.self_enrollment_enabled_before_date),
-        null,
+        undefined,
       );
 
       const hasSelfEnrollmentSettings =

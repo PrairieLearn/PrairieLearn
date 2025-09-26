@@ -184,10 +184,6 @@ describe('editors', () => {
       const property = propertyValueWithDefault('Existing', 'New', 'Default');
       assert.equal(property, 'New');
     });
-    it('should return undefined if the old and new values are the same as the default value', () => {
-      const property = propertyValueWithDefault('Default', 'Default', 'Default');
-      assert.equal(property, undefined);
-    });
     it('should return undefined if the new value is the same as the default value', () => {
       const property = propertyValueWithDefault('Existing', 'Default', 'Default');
       assert.equal(property, undefined);

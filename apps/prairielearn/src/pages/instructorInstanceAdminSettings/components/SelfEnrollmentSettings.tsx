@@ -142,13 +142,6 @@ export function SelfEnrollmentSettings({
   const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
     control.getFieldState('show_in_enroll_page');
 
-  console.log(
-    'showInEnrollPageInvalid',
-    showInEnrollPageInvalid,
-    'showInEnrollPageError',
-    showInEnrollPageError,
-  );
-
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -165,7 +158,7 @@ export function SelfEnrollmentSettings({
             type="checkbox"
             id="self_enrollment_enabled"
             {...control.register('self_enrollment_enabled', {
-              // Re-run validation when self-enrollment is enabled or disabled
+              // Re-run validation on show_in_enroll_page when self-enrollment changes
               deps: ['show_in_enroll_page'],
             })}
             name="self_enrollment_enabled"
@@ -191,7 +184,6 @@ export function SelfEnrollmentSettings({
               }
               return true;
             },
-            // deps: ['self_enrollment_enabled'],
           })}
           name="show_in_enroll_page"
         />
