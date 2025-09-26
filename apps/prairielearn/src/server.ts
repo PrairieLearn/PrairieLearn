@@ -2343,7 +2343,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // in the public schema, but all sprocs are in the random
     // schema. Every server invocation thus has its own copy
     // of its sprocs, allowing us to update servers while old
-    // servers are still running. See docs/dev-guide.md for
+    // servers are still running. See docs/dev-guide/guide.md for
     // more info.
     //
     // We use the combination of instance ID and port number to uniquely
@@ -2361,7 +2361,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     if (schemaPrefix.length > 28) {
       throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
     }
-    if (config.devMode) {
+    if (config.devMode && !argv['migrate-and-exit']) {
       await sqldb.clearSchemasStartingWith(schemaPrefix);
     }
 

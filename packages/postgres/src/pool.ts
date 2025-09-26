@@ -4,7 +4,7 @@ import { Readable, Transform } from 'node:stream';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { DatabaseError, type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
 
@@ -1012,7 +1012,7 @@ export class PostgresPool {
       FOR r IN
         SELECT nspname
         FROM pg_namespace
-        WHERE nspname LIKE '${prefix}' || '%'
+        WHERE nspname LIKE ${escapeLiteral(prefix + '%')}
           AND nspname NOT LIKE 'pg_temp_%'
       LOOP
         EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
