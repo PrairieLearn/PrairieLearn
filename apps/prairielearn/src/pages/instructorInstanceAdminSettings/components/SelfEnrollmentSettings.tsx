@@ -129,11 +129,6 @@ export function SelfEnrollmentSettings({
     name: 'self_enrollment_enabled_before_date_enabled',
   });
 
-  const selfEnrollmentEnabledBeforeDate = useWatch({
-    control,
-    name: 'self_enrollment_enabled_before_date',
-  });
-
   const showInEnrollPage = useWatch({
     control,
     name: 'show_in_enroll_page',
@@ -199,22 +194,20 @@ export function SelfEnrollmentSettings({
         )}
       </div>
 
-      <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
         <input
-          class="form-check-input"
+          class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
           disabled={!canEdit || !selfEnrollmentEnabled}
           {...control.register('self_enrollment_use_enrollment_code')}
           name="self_enrollment_use_enrollment_code"
         />
-        {!selfEnrollmentEnabled && (
-          <input
-            type="hidden"
-            name="self_enrollment_use_enrollment_code"
-            value={selfEnrollmentUseEnrollmentCode ? 'on' : ''}
-          />
-        )}
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
@@ -225,68 +218,52 @@ export function SelfEnrollmentSettings({
         </div>
       </div>
 
-      <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
         <input
-          class="form-check-input"
+          class={clsx('form-check-input')}
           type="checkbox"
           id="disable_self_enrollment_after_date"
-          disabled={!canEdit || !selfEnrollmentEnabled}
+          disabled={!canEdit}
           {...control.register('self_enrollment_enabled_before_date_enabled')}
           name="self_enrollment_enabled_before_date_enabled"
         />
-        {!selfEnrollmentEnabled && (
-          <input
-            type="hidden"
-            name="self_enrollment_enabled_before_date_enabled"
-            value={selfEnrollmentEnabledBeforeDateEnabled ? 'on' : ''}
-          />
-        )}
         <label class="form-check-label" for="disable_self_enrollment_after_date">
           Forbid self-enrollment after specified date
         </label>
         <div class="small text-muted">
           If checked, self-enrollment will be forbidden after the specified date.
         </div>
-        {selfEnrollmentEnabledBeforeDateEnabled ? (
-          <>
-            <input
-              type="datetime-local"
-              aria-label="Self-enrollment enabled before date"
-              class={clsx(
-                'form-control mt-2',
-                selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
-              )}
-              disabled={!canEdit || !selfEnrollmentEnabled}
-              {...control.register('self_enrollment_enabled_before_date', {
-                validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
-                  if (self_enrollment_enabled_before_date_enabled && !value) {
-                    return 'Date is required';
-                  }
-                  return true;
-                },
-              })}
-            />
-            {!selfEnrollmentEnabled && (
-              <input
-                type="hidden"
-                name="self_enrollment_enabled_before_date"
-                value={selfEnrollmentEnabledBeforeDate}
-              />
-            )}
-            {selfEnrollmentEnabledBeforeDateError && (
-              <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
-            )}
-            <small class="form-text text-muted">
-              After this date, self-enrollment will be forbidden.
-            </small>
-          </>
-        ) : (
+
+        <div class={clsx(!selfEnrollmentEnabledBeforeDateEnabled && 'd-none')}>
           <input
-            type="hidden"
-            name="self_enrollment_enabled_before_date"
-            value={selfEnrollmentEnabledBeforeDate}
+            type="datetime-local"
+            aria-label="Self-enrollment enabled before date"
+            class={clsx(
+              'form-control mt-2',
+              selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
+            )}
+            disabled={!canEdit}
+            {...control.register('self_enrollment_enabled_before_date', {
+              validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
+                if (self_enrollment_enabled_before_date_enabled && !value) {
+                  return 'Date is required';
+                }
+                return true;
+              },
+            })}
           />
-        )}
+          {selfEnrollmentEnabledBeforeDateError && (
+            <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+          )}
+          <small class="form-text text-muted">
+            After this date, self-enrollment will be forbidden.
+          </small>
+        </div>
       </div>
 
       {selfEnrollmentEnabled && enrollmentManagementEnabled && selfEnrollmentUseEnrollmentCode ? (
