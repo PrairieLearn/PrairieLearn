@@ -374,17 +374,17 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     let errors: string[] = [];
     if (html && typeof html === 'string') {
-      errors = validateHTML(html, !!results?.python);
+      errors = validateHTML(html, !!results.python);
     } else {
       errors = ['Please generate a question.html file.'];
     }
 
     const files = {};
-    if (results?.html) {
-      files['question.html'] = results?.html;
+    if (results.html) {
+      files['question.html'] = results.html;
     }
-    if (results?.python) {
-      files['server.py'] = results?.python;
+    if (results.python) {
+      files['server.py'] = results.python;
     }
 
     const courseFilesClient = getCourseFilesClient();

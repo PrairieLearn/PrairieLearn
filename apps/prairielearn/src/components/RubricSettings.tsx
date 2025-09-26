@@ -262,8 +262,9 @@ export function RubricSettings({
   const submitSettings = async (use_rubric: boolean) => {
     // Performs validation on the required inputs
     if (use_rubric) {
-      const required =
-        document.querySelectorAll<HTMLInputElement>('#rubric-editing input[required]') ?? [];
+      const required = document.querySelectorAll<HTMLInputElement>(
+        '#rubric-editing input[required]',
+      );
       const isValid = Array.from(required).every((input) => input.reportValidity());
       if (!isValid) {
         return;
@@ -274,7 +275,7 @@ export function RubricSettings({
       __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: rubricData?.modified_at?.toString() ?? '',
+      modified_at: rubricData?.modified_at.toString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,

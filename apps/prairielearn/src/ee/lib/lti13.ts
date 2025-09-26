@@ -835,10 +835,10 @@ class Lti13ContextMembership {
       return this.#membershipsBySub[user.lti13_sub] ?? null;
     }
     for (const match of ['uid', 'email']) {
-      if (!(user[match] in this.#membershipsByEmail)) {
-        continue;
-      }
       const memberResults = this.#membershipsByEmail[user[match]];
+
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
       if (memberResults.length > 1) return null;

@@ -134,17 +134,13 @@ export async function aiGrade({
     const instance_questions = all_instance_questions.filter((instance_question) => {
       switch (mode) {
         case 'human_graded':
-          // Things that have been graded by a human
-          return (
-            !instance_question.requires_manual_grading &&
-            instance_question.status !== 'unanswered' &&
-            !instance_question.is_ai_graded
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return instanceQuestionGradingJobs[instance_question.id]?.some(
+            (job) => job.grading_method === 'Manual',
           );
         case 'all':
-          // Everything
           return true;
         case 'selected':
-          // Things that have been selected by checkbox
           return instance_question_ids?.includes(instance_question.id);
         default:
           assertNever(mode);
@@ -165,6 +161,7 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
       );

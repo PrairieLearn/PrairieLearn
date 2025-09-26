@@ -193,12 +193,14 @@ function GroupRoleTable({
                                   !userCanAssignRoles
                                     ? 'disabled'
                                     : ''}
-                                  ${user.uid in rolesInfo.roleAssignments &&
-                                  rolesInfo.roleAssignments[user.uid].some((a) =>
-                                    idsEqual(a.group_role_id, role.id),
-                                  )
-                                    ? 'checked'
-                                    : ''}
+                                  ${
+                                    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                                    rolesInfo.roleAssignments[user.uid]?.some((a) =>
+                                      idsEqual(a.group_role_id, role.id),
+                                    )
+                                      ? 'checked'
+                                      : ''
+                                  }
                                 />
                                 ${role.role_name}
                               </label>
