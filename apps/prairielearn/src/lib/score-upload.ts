@@ -1,6 +1,5 @@
 import { type Options as CsvParseOptions, parse as csvParse } from 'csv-parse';
 import isPlainObject from 'is-plain-obj';
-import _ from 'lodash';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
