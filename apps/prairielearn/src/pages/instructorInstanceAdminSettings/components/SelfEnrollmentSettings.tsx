@@ -134,6 +134,11 @@ export function SelfEnrollmentSettings({
     name: 'self_enrollment_enabled_before_date',
   });
 
+  const showInEnrollPage = useWatch({
+    control,
+    name: 'show_in_enroll_page',
+  });
+
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -153,7 +158,7 @@ export function SelfEnrollmentSettings({
           name="self_enrollment_enabled"
         />
         <label class="form-check-label" for="self_enrollment_enabled">
-          Enable self-enrollment
+          Allow self-enrollment
         </label>
         <div class="small text-muted">
           Allow students to enroll themselves in this course instance.
@@ -172,8 +177,9 @@ export function SelfEnrollmentSettings({
           Show on enrollment page
         </label>
         <div class="small text-muted">
-          If enabled, students can discover the course instance on the enrollment page. If disabled,
-          they will need a direct link to the course instance to enroll.
+          {showInEnrollPage
+            ? 'Students can discover the course instance on the enrollment page.'
+            : 'Students will need a direct link to the course instance to enroll.'}
         </div>
       </div>
 
@@ -194,11 +200,12 @@ export function SelfEnrollmentSettings({
           />
         )}
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
-          Use enrollment code for self-enrollment
+          Require enrollment code for self-enrollment
         </label>
         <div class="small text-muted">
-          If enabled, self-enrollment requires an enrollment code to enroll. If disabled, any link
-          to the course instance will allow self-enrollment.
+          {selfEnrollmentUseEnrollmentCode
+            ? 'Self-enrollment requires an enrollment code.'
+            : 'Any link to the course instance will allow self-enrollment.'}
         </div>
       </div>
 
@@ -222,7 +229,7 @@ export function SelfEnrollmentSettings({
           Forbid self-enrollment after specified date
         </label>
         <div class="small text-muted">
-          If enabled, self-enrollment will be disabled after the specified date.
+          If checked, self-enrollment will be forbidden after the specified date.
         </div>
         {selfEnrollmentEnabledBeforeDateEnabled ? (
           <>
@@ -254,7 +261,7 @@ export function SelfEnrollmentSettings({
               <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
             )}
             <small class="form-text text-muted">
-              After this date, self-enrollment will be disabled.
+              After this date, self-enrollment will be forbidden.
             </small>
           </>
         ) : (
