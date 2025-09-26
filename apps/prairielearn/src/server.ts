@@ -2335,6 +2335,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
         project: 'prairielearn',
       });
     }
+
     // We create and activate a random DB schema name
     // (https://www.postgresql.org/docs/current/ddl-schemas.html)
     // after we have run the migrations but before we create
