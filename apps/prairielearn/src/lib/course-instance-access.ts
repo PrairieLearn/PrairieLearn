@@ -42,6 +42,7 @@ export function evaluateCourseInstanceAccess(
     return { hasAccess: true };
   }
 
+  // If no start date is set, the course instance is not published
   if (courseInstance.access_control_published_start_date == null) {
     return {
       hasAccess: false,
@@ -56,28 +57,33 @@ export function evaluateCourseInstanceAccess(
     };
   }
 
-  // Consider the latest enabled extensions.
-
-  const possibleEndDates = params.accessControlExtensions
-    .filter((extension) => extension.enabled)
-    .map((extension) => extension.published_end_date);
-  if (courseInstance.access_control_published_end_date) {
-    possibleEndDates.push(courseInstance.access_control_published_end_date);
-  }
-
-  const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
-    return b.getTime() - a.getTime();
-  });
-
-  if (sortedPossibleEndDates.length === 0) {
-    throw new Error('No possible end dates found');
-  }
-
-  if (currentDate > sortedPossibleEndDates[0]) {
+  // Check if course instance has been archived
+  if (
+    courseInstance.access_control_published_end_date &&
+    currentDate > courseInstance.access_control_published_end_date
+  ) {
     return {
       hasAccess: false,
       reason: 'Course instance has been archived',
     };
+  }
+
+  // Consider the latest enabled extensions.
+  const possibleEndDates = params.accessControlExtensions
+    .filter((extension) => extension.enabled)
+    .map((extension) => extension.published_end_date);
+
+  if (possibleEndDates.length > 0) {
+    const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
+      return b.getTime() - a.getTime();
+    });
+
+    if (currentDate > sortedPossibleEndDates[0]) {
+      return {
+        hasAccess: false,
+        reason: 'Course instance has been archived',
+      };
+    }
   }
 
   return { hasAccess: true };
@@ -161,11 +167,18 @@ export function migrateAccessRuleJsonToAccessControl(
 
   const rule = accessRules[0];
 
-  // Must have at least one date
+  // Must have both dates or neither
   if (!rule.startDate && !rule.endDate) {
     return {
       success: false,
       error: 'Cannot migrate access rules without start or end dates.',
+    };
+  }
+
+  if ((rule.startDate && !rule.endDate) || (!rule.startDate && rule.endDate)) {
+    return {
+      success: false,
+      error: 'Access rules must have both start and end dates, or neither.',
     };
   }
 
@@ -184,7 +197,6 @@ export function migrateAccessRuleJsonToAccessControl(
   }
   // Build the new access control configuration
   const accessControl = {
-    published: true, // Legacy rules imply published access
     publishedStartDate: rule.startDate,
     publishedEndDate: rule.endDate,
   };

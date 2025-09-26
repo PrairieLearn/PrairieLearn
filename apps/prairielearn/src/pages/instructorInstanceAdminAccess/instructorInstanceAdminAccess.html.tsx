@@ -38,7 +38,9 @@ export function InstructorInstanceAdminAccess({
   // Convert access rules to JSON format for the migration modal
 
   const hasModernAccessControl =
-    courseInstance.access_control_published !== null || accessControlExtensions.length > 0;
+    (courseInstance.access_control_published_start_date !== null &&
+      courseInstance.access_control_published_end_date !== null) ||
+    accessControlExtensions.length > 0;
 
   return (
     <>

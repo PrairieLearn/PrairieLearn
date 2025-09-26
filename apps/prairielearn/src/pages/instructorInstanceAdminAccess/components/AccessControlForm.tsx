@@ -71,15 +71,15 @@ export function AccessControlForm({
     defaultValues,
   });
 
-  const published = watch('published');
-  const publishedStartDateEnabled = watch('publishedStartDateEnabled');
   const publishedStartDate = watch('publishedStartDate');
   const publishedEndDate = watch('publishedEndDate');
 
-  // Determine current state
-  const isPublished = published;
-  const isArchived = publishedEndDate && new Date(publishedEndDate) <= new Date();
-  const isUnpublished = !published;
+  // Determine current state based on dates
+  const hasStartDate = publishedStartDate && publishedStartDate.trim() !== '';
+  const hasEndDate = publishedEndDate && publishedEndDate.trim() !== '';
+  const isPublished = hasStartDate && hasEndDate;
+  const isArchived = hasEndDate && new Date(publishedEndDate) <= new Date();
+  const isUnpublished = !hasStartDate && !hasEndDate;
 
   const onSubmit = async (data: AccessControlFormValues) => {
     if (!canEdit) return;
@@ -90,14 +90,12 @@ export function AccessControlForm({
         __csrf_token: csrfToken,
         __action: 'update_access_control',
         accessControl: {
-          published: data.published,
-          publishedStartDateEnabled: data.publishedStartDateEnabled,
           publishedStartDate: data.publishedStartDate
             ? Temporal.PlainDateTime.from(data.publishedStartDate).toString()
-            : undefined,
+            : null,
           publishedEndDate: data.publishedEndDate
             ? Temporal.PlainDateTime.from(data.publishedEndDate).toString()
-            : undefined,
+            : null,
         },
         orig_hash: origHash,
       };
@@ -125,12 +123,20 @@ export function AccessControlForm({
   };
 
   const handleUnpublish = () => {
-    setValue('published', false);
+    setValue('publishedStartDate', '');
+    setValue('publishedEndDate', '');
     void handleSubmit(onSubmit)();
   };
 
   const handlePublishNow = () => {
-    setValue('published', true);
+    const now = new Date();
+    const isoString = now.toISOString().slice(0, 16);
+    setValue('publishedStartDate', isoString);
+    // Set end date to a reasonable default (1 year from now)
+    const oneYearFromNow = new Date();
+    oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+    const endDateString = oneYearFromNow.toISOString().slice(0, 16);
+    setValue('publishedEndDate', endDateString);
     void handleSubmit(onSubmit)();
   };
 
@@ -265,40 +271,43 @@ export function AccessControlForm({
                 </div>
 
                 <div class="mb-3">
-                  <div class="form-check">
-                    <input
-                      class="form-check-input"
-                      type="checkbox"
-                      id="publishedStartDateEnabled"
-                      disabled={!canEdit}
-                      {...register('publishedStartDateEnabled')}
-                    />
-                    <label class="form-check-label" for="publishedStartDateEnabled">
-                      <strong>Schedule publish for</strong>
-                    </label>
-                  </div>
+                  <label class="form-label" for="publishedStartDate">
+                    <strong>Publish Date</strong>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class={clsx('form-control', errors.publishedStartDate && 'is-invalid')}
+                    id="publishedStartDate"
+                    disabled={!canEdit}
+                    {...register('publishedStartDate')}
+                  />
+                  {errors.publishedStartDate && (
+                    <div class="invalid-feedback">{errors.publishedStartDate.message}</div>
+                  )}
+                  {publishedStartDate && (
+                    <div class="form-text">
+                      Course will be published on {formatDate(publishedStartDate)}.
+                    </div>
+                  )}
+                </div>
 
-                  {publishedStartDateEnabled && (
-                    <div class="mt-2">
-                      <input
-                        type="datetime-local"
-                        class={clsx('form-control', errors.publishedStartDate && 'is-invalid')}
-                        id="publishedStartDate"
-                        disabled={!canEdit}
-                        {...register('publishedStartDate', {
-                          required: publishedStartDateEnabled
-                            ? 'Start date is required when enabled'
-                            : false,
-                        })}
-                      />
-                      {errors.publishedStartDate && (
-                        <div class="invalid-feedback">{errors.publishedStartDate.message}</div>
-                      )}
-                      {publishedStartDate && (
-                        <div class="form-text">
-                          Course will be published on {formatDate(publishedStartDate)}.
-                        </div>
-                      )}
+                <div class="mb-3">
+                  <label class="form-label" for="publishedEndDate">
+                    <strong>Archive Date</strong>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class={clsx('form-control', errors.publishedEndDate && 'is-invalid')}
+                    id="publishedEndDate"
+                    disabled={!canEdit}
+                    {...register('publishedEndDate')}
+                  />
+                  {errors.publishedEndDate && (
+                    <div class="invalid-feedback">{errors.publishedEndDate.message}</div>
+                  )}
+                  {publishedEndDate && (
+                    <div class="form-text">
+                      Course will be archived on {formatDate(publishedEndDate)}.
                     </div>
                   )}
                 </div>
@@ -327,10 +336,6 @@ export function AccessControlForm({
               </div>
             )}
 
-            {/* Legacy form fields for compatibility */}
-            <div class="d-none">
-              <input type="checkbox" {...register('published')} />
-            </div>
 
             {canEdit && isDirty && (
               <div class="d-flex gap-2">
