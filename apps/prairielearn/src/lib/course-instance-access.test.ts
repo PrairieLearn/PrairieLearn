@@ -1,6 +1,5 @@
 import { assert, describe, expect, it } from 'vitest';
 
-import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstanceAccessParams,
@@ -34,9 +33,7 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     assessments_group_by: 'Set',
 
     // These are the only fields we care about.
-    access_control_published: null,
     access_control_published_start_date: null,
-    access_control_published_start_date_enabled: null,
     access_control_published_end_date: null,
     ...overrides,
   };
@@ -84,9 +81,7 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 
   it('denies access when course instance is not published', () => {
-    const courseInstance = createMockCourseInstance({
-      access_control_published: false,
-    });
+    const courseInstance = createMockCourseInstance({});
     const params = createMockParams();
 
     const result = evaluateCourseInstanceAccess(courseInstance, params);
@@ -95,34 +90,11 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.equal(result.reason, 'Course instance is not published');
   });
 
-  it('allows access when course instance is published', () => {
-    const courseInstance = createMockCourseInstance({
-      access_control_published: true,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
-
-    assert.isTrue(result.hasAccess);
-  });
-
-  it('allows access when access_control_published is null (default behavior)', () => {
-    const courseInstance = createMockCourseInstance({
-      access_control_published: null,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
-
-    assert.isTrue(result.hasAccess);
-  });
-
   it('denies access when published start date is enabled and current date is before start date', () => {
     const startDate = new Date('2024-06-01T00:00:00Z');
     const currentDate = new Date('2024-05-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: startDate,
     });
     const params = createMockParams();
@@ -133,12 +105,11 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.equal(result.reason, 'Course instance is not yet published');
   });
 
-  it('allows access when published start date is enabled and current date is after start date', () => {
+  it('allows access when published start date is set and current date is after start date', () => {
     const startDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: startDate,
     });
     const params = createMockParams();
@@ -148,64 +119,7 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.isTrue(result.hasAccess);
   });
 
-  it('allows access when published start date is enabled and current date equals start date', () => {
-    const startDate = new Date('2024-06-01T00:00:00Z');
-    const currentDate = new Date('2024-06-01T00:00:00Z');
 
-    const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
-      access_control_published_start_date: startDate,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isTrue(result.hasAccess);
-  });
-
-  it('ignores published start date when start date enabled is false', () => {
-    const startDate = new Date('2024-06-01T00:00:00Z');
-    const currentDate = new Date('2024-05-01T00:00:00Z');
-
-    const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: false,
-      access_control_published_start_date: startDate,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isTrue(result.hasAccess);
-  });
-
-  it('ignores published start date when start date enabled is null', () => {
-    const startDate = new Date('2024-06-01T00:00:00Z');
-    const currentDate = new Date('2024-05-01T00:00:00Z');
-
-    const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: null,
-      access_control_published_start_date: startDate,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isTrue(result.hasAccess);
-  });
-
-  it('ignores published start date when start date is null', () => {
-    const currentDate = new Date('2024-06-01T00:00:00Z');
-
-    const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
-      access_control_published_start_date: null,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isTrue(result.hasAccess);
-  });
 
   it('denies access when current date is after published end date', () => {
     const endDate = new Date('2024-05-01T00:00:00Z');
@@ -255,7 +169,6 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: startDate,
       access_control_published_end_date: endDate,
     });
@@ -272,7 +185,6 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: startDate,
       access_control_published_end_date: endDate,
     });
@@ -284,29 +196,9 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.equal(result.reason, 'Course instance is not yet published');
   });
 
-  it('prioritizes published restriction over date restrictions', () => {
-    const startDate = new Date('2024-05-01T00:00:00Z');
-    const endDate = new Date('2024-07-01T00:00:00Z');
-    const currentDate = new Date('2024-06-01T00:00:00Z');
-
-    const courseInstance = createMockCourseInstance({
-      access_control_published: false,
-      access_control_published_start_date_enabled: true,
-      access_control_published_start_date: startDate,
-      access_control_published_end_date: endDate,
-    });
-    const params = createMockParams();
-
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
-
-    assert.isFalse(result.hasAccess);
-    assert.equal(result.reason, 'Course instance is not published');
-  });
 
   it('staff bypass all restrictions even when course instance is not published', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_published: false,
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: new Date('2024-07-01T00:00:00Z'),
       access_control_published_end_date: new Date('2024-05-01T00:00:00Z'),
     });
@@ -319,7 +211,6 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('uses current date when no date is provided', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date_enabled: true,
       access_control_published_start_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
     });
     const params = createMockParams();
@@ -363,7 +254,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": "2024-07-01T00:00:00",
           "publishedStartDate": "2024-05-01T00:00:00",
-          "publishedStartDateEnabled": true,
         },
         "overrides": [],
         "success": true,
@@ -385,7 +275,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": null,
           "publishedStartDate": "2024-05-01T00:00:00",
-          "publishedStartDateEnabled": true,
         },
         "overrides": [],
         "success": true,
@@ -407,7 +296,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": "2024-07-01T00:00:00",
           "publishedStartDate": null,
-          "publishedStartDateEnabled": false,
         },
         "overrides": [],
         "success": true,
@@ -470,7 +358,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": "2024-07-01T00:00:00",
           "publishedStartDate": "2024-05-01T00:00:00",
-          "publishedStartDateEnabled": true,
         },
         "overrides": [
           {
@@ -508,7 +395,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": null,
           "publishedStartDate": "2024-05-01T00:00:00",
-          "publishedStartDateEnabled": true,
         },
         "overrides": [
           {
@@ -564,7 +450,6 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           "published": true,
           "publishedEndDate": null,
           "publishedStartDate": "2024-05-01T00:00:00",
-          "publishedStartDateEnabled": true,
         },
         "overrides": [],
         "success": true,
@@ -644,183 +529,3 @@ describe('convertAccessRuleToJson', () => {
   });
 });
 
-describe('migrateAccessRuleJsonToAccessControl', () => {
-  function createMockAccessRuleJson(overrides: Partial<AccessRuleJson> = {}): AccessRuleJson {
-    return {
-      ...overrides,
-    };
-  }
-
-  it('successfully migrates a single rule with start and end dates', () => {
-    const accessRules = [
-      createMockAccessRuleJson({
-        startDate: '2024-05-01T00:00:00.000Z',
-        endDate: '2024-07-01T00:00:00.000Z',
-      }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "accessControl": {
-          "published": true,
-          "publishedEndDate": "2024-07-01T00:00:00.000Z",
-          "publishedStartDate": "2024-05-01T00:00:00.000Z",
-          "publishedStartDateEnabled": true,
-        },
-        "overrides": [],
-        "success": true,
-      }
-    `);
-  });
-
-  it('successfully migrates a single rule with only start date', () => {
-    const accessRules = [
-      createMockAccessRuleJson({
-        startDate: '2024-05-01T00:00:00.000Z',
-      }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "accessControl": {
-          "published": true,
-          "publishedEndDate": null,
-          "publishedStartDate": "2024-05-01T00:00:00.000Z",
-          "publishedStartDateEnabled": true,
-        },
-        "overrides": [],
-        "success": true,
-      }
-    `);
-  });
-
-  it('successfully migrates a single rule with only end date', () => {
-    const accessRules = [
-      createMockAccessRuleJson({
-        endDate: '2024-07-01T00:00:00.000Z',
-      }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "accessControl": {
-          "published": true,
-          "publishedEndDate": "2024-07-01T00:00:00.000Z",
-          "publishedStartDate": null,
-          "publishedStartDateEnabled": false,
-        },
-        "overrides": [],
-        "success": true,
-      }
-    `);
-  });
-
-  it('fails when there are no access rules', () => {
-    const accessRules: AccessRuleJson[] = [];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "error": "Expected exactly 1 access rule, but found 0",
-        "success": false,
-      }
-    `);
-  });
-
-  it('fails when there are multiple access rules', () => {
-    const accessRules = [
-      createMockAccessRuleJson({ startDate: '2024-05-01T00:00:00.000Z' }),
-      createMockAccessRuleJson({ startDate: '2024-06-01T00:00:00.000Z' }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "error": "Expected exactly 1 access rule, but found 2",
-        "success": false,
-      }
-    `);
-  });
-
-  it('successfully migrates access rule with UID selectors to overrides', () => {
-    const accessRules = [
-      createMockAccessRuleJson({
-        startDate: '2024-05-01T00:00:00.000Z',
-        uids: ['user1@example.com', 'user2@example.com'],
-        comment: { text: 'Test comment' },
-      }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "accessControl": {
-          "published": true,
-          "publishedEndDate": null,
-          "publishedStartDate": "2024-05-01T00:00:00.000Z",
-          "publishedStartDateEnabled": true,
-        },
-        "overrides": [
-          {
-            "enabled": true,
-            "name": {
-              "text": "Test comment",
-            },
-            "publishedEndDate": null,
-            "uids": [
-              "user1@example.com",
-              "user2@example.com",
-            ],
-          },
-        ],
-        "success": true,
-      }
-    `);
-  });
-
-  it('fails when access rule has no dates', () => {
-    const accessRules = [createMockAccessRuleJson({})];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "error": "Cannot migrate access rules without start or end dates.",
-        "success": false,
-      }
-    `);
-  });
-
-  it('handles empty UID array as global rule', () => {
-    const accessRules = [
-      createMockAccessRuleJson({
-        startDate: '2024-05-01T00:00:00.000Z',
-        uids: [],
-      }),
-    ];
-
-    const result = migrateAccessRuleJsonToAccessControl(accessRules);
-
-    expect(result).toMatchInlineSnapshot(`
-      {
-        "accessControl": {
-          "published": true,
-          "publishedEndDate": null,
-          "publishedStartDate": "2024-05-01T00:00:00.000Z",
-          "publishedStartDateEnabled": true,
-        },
-        "overrides": [],
-        "success": true,
-      }
-    `);
-  });
-});

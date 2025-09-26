@@ -73,22 +73,12 @@
     "accessControl": {
       "type": "object",
       "properties": {
-        "published": {
-          "description": "If false, enrolled students will not be able to access the course instance, and unenrolled students will not be able to enroll.",
-          "type": "boolean",
-          "default": true
-        },
-        "publishedStartDateEnabled": {
-          "description": "If true, publishedStartDate is used to control access to the course instance.",
-          "type": "boolean",
-          "default": false
-        },
         "publishedStartDate": {
-          "description": "When the course instance is published.",
+          "description": "When the course instance is published. If specified, publishedEndDate must also be specified.",
           "type": "string"
         },
         "publishedEndDate": {
-          "description": "When the course instance is archived. Required if published is true.",
+          "description": "When the course instance is archived. If specified, publishedStartDate must also be specified.",
           "type": "string"
         }
       }

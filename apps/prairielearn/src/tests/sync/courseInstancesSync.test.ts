@@ -149,120 +149,45 @@ describe('Course instance syncing', () => {
     const schemaMappings: {
       json: CourseInstanceJsonInput['accessControl'];
       db: {
-        access_control_published: boolean | null;
-        access_control_published_start_date_enabled: boolean | null;
         access_control_published_start_date: Date | null;
         access_control_published_end_date: Date | null;
       } | null;
       errors: string[];
     }[] = [
       {
-        json: {
-          published: false,
-        },
-        db: {
-          access_control_published: false,
-          access_control_published_start_date_enabled: false,
-          access_control_published_start_date: null,
-          access_control_published_end_date: null,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          published: true,
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: true,
-          access_control_published_start_date_enabled: false,
-          access_control_published_start_date: null,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          publishedStartDateEnabled: true,
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: true,
-          access_control_published_start_date_enabled: true,
-          access_control_published_start_date: null,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          publishedStartDateEnabled: false,
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: true,
-          access_control_published_start_date_enabled: false,
-          access_control_published_start_date: null,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          publishedStartDate: jsonDate,
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: true,
-          access_control_published_start_date_enabled: false,
-          access_control_published_start_date: date,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: true,
-          access_control_published_start_date_enabled: false,
-          access_control_published_start_date: null,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        json: {
-          published: false,
-          publishedStartDateEnabled: true,
-          publishedStartDate: jsonDate,
-          publishedEndDate: jsonDate,
-        },
-        db: {
-          access_control_published: false,
-          access_control_published_start_date_enabled: true,
-          access_control_published_start_date: date,
-          access_control_published_end_date: date,
-        },
-        errors: [],
-      },
-      {
-        // An empty object implies published: true.
         json: {},
-        db: null,
-        errors: [
-          '"accessControl.publishedEndDate" is required if "accessControl.published" is true.',
-        ],
-      },
-      {
-        json: undefined,
         db: {
-          access_control_published: null,
-          access_control_published_start_date_enabled: null,
           access_control_published_start_date: null,
           access_control_published_end_date: null,
         },
+        errors: [],
+      },
+      {
+        json: {
+          publishedEndDate: jsonDate,
+        },
+        db: {
+          access_control_published_start_date: null,
+          access_control_published_end_date: date,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          publishedStartDate: jsonDate,
+          publishedEndDate: jsonDate,
+        },
+        db: {
+          access_control_published_start_date: date,
+          access_control_published_end_date: date,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          publishedStartDate: jsonDate,
+        },
+        db: null,
         errors: [],
       },
       {
@@ -324,9 +249,6 @@ describe('Course instance syncing', () => {
         }
 
         const result = {
-          access_control_published: syncedCourseInstance.access_control_published,
-          access_control_published_start_date_enabled:
-            syncedCourseInstance.access_control_published_start_date_enabled,
           access_control_published_start_date:
             syncedCourseInstance.access_control_published_start_date,
           access_control_published_end_date: syncedCourseInstance.access_control_published_end_date,

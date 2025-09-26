@@ -16,8 +16,6 @@ import { AccessControlOverrides } from './AccessControlOverrides.js';
 const queryClient = new QueryClient();
 
 interface AccessControlFormValues {
-  published: boolean;
-  publishedStartDateEnabled: boolean;
   publishedStartDate: string;
   publishedEndDate: string;
 }
@@ -44,8 +42,6 @@ export function AccessControlForm({
   const [newArchiveDate, setNewArchiveDate] = useState('');
 
   const defaultValues: AccessControlFormValues = {
-    published: courseInstance.access_control_published ?? true,
-    publishedStartDateEnabled: courseInstance.access_control_published_start_date_enabled ?? false,
     publishedStartDate: courseInstance.access_control_published_start_date
       ? Temporal.Instant.fromEpochMilliseconds(
           courseInstance.access_control_published_start_date.getTime(),

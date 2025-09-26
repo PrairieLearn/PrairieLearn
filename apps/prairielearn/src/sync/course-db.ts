@@ -1410,10 +1410,26 @@ function validateCourseInstance({
     assert(courseInstance.accessControl != null);
     const hasPublishedEndDate = courseInstance.accessControl.publishedEndDate != null;
     const hasPublishedStartDate = courseInstance.accessControl.publishedStartDate != null;
+    if (hasPublishedStartDate && !hasPublishedEndDate) {
+      errors.push(
+        '"accessControl.publishedEndDate" is required if "accessControl.publishedStartDate" is specified.',
+      );
+    }
+    if (!hasPublishedStartDate && hasPublishedEndDate) {
+      errors.push(
+        '"accessControl.publishedStartDate" is required if "accessControl.publishedEndDate" is specified.',
+      );
+    }
+
     const parsedPublishedStartDate =
       courseInstance.accessControl.publishedStartDate == null
         ? null
         : parseJsonDate(courseInstance.accessControl.publishedStartDate);
+
+    if (hasPublishedStartDate && parsedPublishedStartDate == null) {
+      errors.push('"accessControl.publishedStartDate" is not a valid date.');
+    }
+
     const parsedPublishedEndDate =
       courseInstance.accessControl.publishedEndDate == null
         ? null
@@ -1421,16 +1437,6 @@ function validateCourseInstance({
 
     if (hasPublishedEndDate && parsedPublishedEndDate == null) {
       errors.push('"accessControl.publishedEndDate" is not a valid date.');
-    }
-
-    if (courseInstance.accessControl.published && !hasPublishedEndDate) {
-      errors.push(
-        '"accessControl.publishedEndDate" is required if "accessControl.published" is true.',
-      );
-    }
-
-    if (hasPublishedStartDate && parsedPublishedStartDate == null) {
-      errors.push('"accessControl.publishedStartDate" is not a valid date.');
     }
 
     if (

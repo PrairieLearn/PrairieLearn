@@ -33,24 +33,18 @@ const AllowAccessJsonSchema = z
   );
 
 const AccessControlJsonSchema = z.object({
-  published: z
-    .boolean()
+  publishedStartDate: z
+    .string()
     .describe(
-      'If false, enrolled students will not be able to access the course instance, and unenrolled students will not be able to enroll.',
+      'When the course instance is published. If specified, publishedEndDate must also be specified.',
     )
-    .optional()
-    .default(true),
-  publishedStartDateEnabled: z
-    .boolean()
-    .describe('If true, publishedStartDate is used to control access to the course instance.')
-    .optional()
-    .default(false),
-  publishedStartDate: z.string().describe('When the course instance is published.').optional(),
+    .optional(),
   publishedEndDate: z
     .string()
-    .describe('When the course instance is archived. Required if published is true.')
+    .describe(
+      'When the course instance is archived. If specified, publishedStartDate must also be specified.',
+    )
     .optional(),
-  // The schema currently doesn't include overrides, but we may add them later.
 });
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;

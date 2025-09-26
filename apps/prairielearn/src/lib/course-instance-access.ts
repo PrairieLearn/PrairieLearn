@@ -42,23 +42,18 @@ export function evaluateCourseInstanceAccess(
     return { hasAccess: true };
   }
 
-  if (courseInstance.access_control_published === false) {
+  if (courseInstance.access_control_published_start_date == null) {
     return {
       hasAccess: false,
       reason: 'Course instance is not published',
     };
   }
 
-  if (
-    courseInstance.access_control_published_start_date_enabled === true &&
-    courseInstance.access_control_published_start_date
-  ) {
-    if (currentDate < courseInstance.access_control_published_start_date) {
-      return {
-        hasAccess: false,
-        reason: 'Course instance is not yet published',
-      };
-    }
+  if (currentDate < courseInstance.access_control_published_start_date) {
+    return {
+      hasAccess: false,
+      reason: 'Course instance is not yet published',
+    };
   }
 
   // Consider the latest enabled extensions.
@@ -190,7 +185,6 @@ export function migrateAccessRuleJsonToAccessControl(
   // Build the new access control configuration
   const accessControl = {
     published: true, // Legacy rules imply published access
-    publishedStartDateEnabled: rule.startDate !== undefined,
     publishedStartDate: rule.startDate,
     publishedEndDate: rule.endDate,
   };
