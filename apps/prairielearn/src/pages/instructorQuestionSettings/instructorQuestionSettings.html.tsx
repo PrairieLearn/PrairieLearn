@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
@@ -22,7 +23,6 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -54,6 +54,7 @@ export function InstructorQuestionSettings({
   questionTestPath,
   questionTestCsrfToken,
   questionGHLink,
+  questionTags,
   qids,
   assessmentsWithQuestion,
   sharingEnabled,
@@ -69,6 +70,7 @@ export function InstructorQuestionSettings({
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
+  questionTags: Tag[];
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
@@ -83,7 +85,7 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
+  const questionTagNames = new Set(questionTags.map((tag) => tag.name));
 
   return PageLayout({
     resLocals,
@@ -229,14 +231,14 @@ export function InstructorQuestionSettings({
                                         data-description="${tag.implicit
                                           ? ''
                                           : TagDescription(tag)}"
-                                        ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                        ${questionTagNames.has(tag.name) ? 'selected' : ''}
                                       ></option>
                                     `;
                                   })
                                 : ''}
                             </select>
                           `
-                        : renderHtml(<TagBadgeList tags={resLocals.tags} />)}
+                        : renderHtml(<TagBadgeList tags={questionTags} />)}
                     </td>
                   </tr>
                   ${shouldShowAssessmentsList
@@ -443,6 +445,135 @@ ${Object.keys(resLocals.question.workspace_environment).length > 0 &&
                 <div class="small text-muted">
                   If enabled, the URL will be rewritten such that the workspace container will see
                   all requests as originating from "/".
+                </div>
+              </div>
+            </div>
+            <div class="d-flex align-items-center mb-3">
+              <h2 class="h4 mb-0 me-2">External Grading</h2>
+              <button
+                class="btn btn-sm btn-light"
+                type="button"
+                id="show-external-grading-options-button"
+                ${resLocals.question.external_grading_image ? 'hidden' : ''}
+              >
+                Configure external grading
+              </button>
+            </div>
+            <div>
+              <div
+                id="external-grading-options"
+                ${resLocals.question.external_grading_image ? '' : 'hidden'}
+              >
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enabled"
+                    name="external_grading_enabled"
+                    ${canEdit ? '' : 'disabled'}
+                    ${resLocals.question.external_grading_enabled === true ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="external_grading_enabled">Enabled</label>
+                  <div class="small text-muted">
+                    Whether the external grader is currently enabled. Useful for troubleshooting
+                    external grader failures, for instance.
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_image">Image</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="external_grading_image"
+                    name="external_grading_image"
+                    value="${resLocals.question.external_grading_image}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The Docker image that will be used to grade this question. Only images from the
+                    Dockerhub registry are supported.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_entrypoint">Entrypoint</label>
+                  <input
+                    class="form-control"
+                    type="text"
+                    id="external_grading_entrypoint"
+                    name="external_grading_entrypoint"
+                    ${canEdit ? '' : 'disabled'}
+                    value="${resLocals.question.external_grading_entrypoint}"
+                  />
+                  <small class="form-text text-muted">
+                    Program or command to run as the entrypoint to your grader. If not provided, the
+                    default entrypoint for the image will be used.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_files">Server files</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="external_grading_files"
+                    name="external_grading_files"
+                    value="${resLocals.question.external_grading_files?.join(', ')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The list of files or directories that will be copied from
+                    <code>course/serverFilesCourse</code> into the grading job. You may enter
+                    multiple files or directories, separated by commas.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_timeout">Timeout</label>
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="external_grading_timeout"
+                    name="external_grading_timeout"
+                    min="0"
+                    value="${resLocals.question.external_grading_timeout}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The number of seconds after which the grading job will timeout.
+                  </small>
+                </div>
+                <div class="mb-3">
+                  <label class="form-label" for="external_grading_environment">Environment</label>
+                  <textarea
+                    class="form-control"
+                    id="external_grading_environment"
+                    name="external_grading_environment"
+                    ${canEdit ? '' : 'disabled'}
+                  >
+${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
+                    typeof resLocals.question.external_grading_environment === 'object'
+                      ? JSON.stringify(resLocals.question.external_grading_environment, null, 2)
+                      : '{}'}</textarea
+                  >
+                  <small class="form-text text-muted">
+                    Environment variables to set inside the grading container. Variables must be
+                    specified as a JSON object (e.g. <code>{"key":"value"}</code>).
+                  </small>
+                </div>
+                <div class="mb-3 form-check">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    id="external_grading_enable_networking"
+                    name="external_grading_enable_networking"
+                    ${canEdit ? '' : 'disabled'}
+                    ${resLocals.question.external_grading_enable_networking ? 'checked' : ''}
+                  />
+                  <label class="form-check-label" for="external_grading_enable_networking">
+                    Enable networking
+                  </label>
+                  <div class="small text-muted">
+                    Whether the grading containers should have network access. Access is disabled by
+                    default.
+                  </div>
                 </div>
               </div>
             </div>

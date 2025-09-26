@@ -360,7 +360,6 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     job.info(`system prompt is: ${sysPrompt}`);
 
-    // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
       model: MODEL_NAME,
       messages: [
@@ -375,19 +374,17 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     let errors: string[] = [];
     if (html && typeof html === 'string') {
-      errors = validateHTML(html, false, !!results.python);
+      errors = validateHTML(html, !!results?.python);
     } else {
       errors = ['Please generate a question.html file.'];
     }
 
     const files = {};
-
-    if (results.html) {
-      files['question.html'] = results.html;
+    if (results?.html) {
+      files['question.html'] = results?.html;
     }
-
-    if (results.python) {
-      files['server.py'] = results.python;
+    if (results?.python) {
+      files['server.py'] = results?.python;
     }
 
     const courseFilesClient = getCourseFilesClient();
@@ -594,8 +591,6 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   job.info(`system prompt is: ${sysPrompt}`);
 
-  // TODO [very important]: normalize to prevent prompt injection attacks
-
   const completion = await client.chat.completions.create({
     model: MODEL_NAME,
     messages: [
@@ -613,7 +608,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!python);
+    errors = validateHTML(html, !!python);
   }
 
   const ai_question_generation_prompt_id = await queryRow(
@@ -635,11 +630,10 @@ Keep in mind you are not just generating an example; you are generating an actua
   );
 
   const files: Record<string, string> = {};
-  if (results.html && html !== undefined) {
+  if (html) {
     files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
-
-  if (results.python && python !== undefined) {
+  if (python) {
     files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 

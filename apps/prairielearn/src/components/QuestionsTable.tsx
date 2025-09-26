@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlSafeString, html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { hydrateHtml } from '../lib/preact.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
 import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';

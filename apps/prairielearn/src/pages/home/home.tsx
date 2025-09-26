@@ -1,14 +1,24 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
+import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
+import {
+  ensureEnrollment,
+  selectAndLockEnrollmentById,
+  selectOptionalEnrollmentByPendingUid,
+} from '../../models/enrollment.js';
+import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -41,7 +51,9 @@ router.get(
     const studentCourses = await queryRows(
       sql.select_student_courses,
       {
+        // Use the authenticated user, not the authorized user.
         user_id: res.locals.authn_user.user_id,
+        pending_uid: res.locals.authn_user.uid,
         req_date: res.locals.req_date,
         // This is a somewhat ugly escape hatch specifically for load testing. In
         // general, we don't want to clutter the home page with example course
@@ -60,6 +72,10 @@ router.get(
       StaffInstitutionSchema,
     );
 
+    const { authn_provider_name, __csrf_token, urlPrefix } = getPageContext(res.locals, {
+      withAuthzData: false,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -73,10 +89,13 @@ router.get(
         },
         content: (
           <Home
-            resLocals={res.locals}
+            canAddCourses={authn_provider_name !== 'LTI'}
+            csrfToken={__csrf_token}
             instructorCourses={instructorCourses}
             studentCourses={studentCourses}
             adminInstitutions={adminInstitutions}
+            urlPrefix={urlPrefix}
+            isDevMode={config.devMode}
           />
         ),
         postContent:
@@ -93,6 +112,67 @@ router.get(
           ),
       }),
     );
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const BodySchema = z.object({
+      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      course_instance_id: z.string().min(1),
+    });
+    const body = BodySchema.parse(req.body);
+
+    const {
+      authn_user: { uid, user_id },
+    } = getPageContext(res.locals, { withAuthzData: false });
+
+    if (body.__action === 'accept_invitation') {
+      await ensureEnrollment({
+        course_instance_id: body.course_instance_id,
+        user_id,
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
+        action_detail: 'invitation_accepted',
+      });
+    } else if (body.__action === 'reject_invitation') {
+      await runInTransactionAsync(async () => {
+        const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
+          course_instance_id: body.course_instance_id,
+          pending_uid: uid,
+        });
+
+        if (!oldEnrollment) {
+          throw new Error('Could not find enrollment to reject');
+        }
+        await selectAndLockUserById(user_id);
+        await selectAndLockEnrollmentById(oldEnrollment.id);
+
+        const newEnrollment = await queryRow(
+          sql.reject_invitation,
+          {
+            enrollment_id: oldEnrollment.id,
+          },
+          EnrollmentSchema,
+        );
+
+        await insertAuditEvent({
+          table_name: 'enrollments',
+          action: 'update',
+          action_detail: 'invitation_rejected',
+          subject_user_id: null,
+          course_instance_id: body.course_instance_id,
+          row_id: newEnrollment.id,
+          old_row: oldEnrollment,
+          new_row: newEnrollment,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+        });
+      });
+    }
+
+    res.redirect(req.originalUrl);
   }),
 );
 

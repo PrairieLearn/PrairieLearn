@@ -290,7 +290,7 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', '/_/'],
+          forbid: ['className', 'htmlFor', '/_/'],
         },
       ],
 
@@ -401,22 +401,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
 
-      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // We use empty functions in quite a few places, so we'll disable this rule.
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Look, sometimes we just want to use `any`.
-      '@typescript-eslint/no-explicit-any': 'off',
-
-      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
-      // TODO: fix the violations so we can enable this rule.
-      '@typescript-eslint/no-dynamic-delete': 'off',
-
-      // We use `!` to assert that a value is not `null` or `undefined`.
-      '@typescript-eslint/no-non-null-assertion': 'off',
-
-      // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
         { children: 'never', propElementValues: 'always', props: 'never' },
@@ -456,17 +440,29 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+      // We use empty functions in quite a few places, so we'll disable this rule.
+      '@typescript-eslint/no-empty-function': 'off',
+      // Look, sometimes we just want to use `any`.
+      '@typescript-eslint/no-explicit-any': 'off',
+      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+      // TODO: fix the violations so we can enable this rule.
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // Replaces the standard `no-unused-vars` rule.
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           args: 'after-used',
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_', // Args can be _
+          varsIgnorePattern: '^_.', // This includes lodash, which should be considered
         },
       ],
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
 
       // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
       ...pluginQuery.configs['flat/recommended'][0].rules,

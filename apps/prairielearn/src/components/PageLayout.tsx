@@ -2,10 +2,10 @@ import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HtmlSafeString, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -155,11 +155,13 @@ export function PageLayout({
             ${sideNavEnabled
               ? html`
                   <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                    })}
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                      })}
+                    </div>
                   </nav>
                 `
               : ''}

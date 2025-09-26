@@ -64,7 +64,8 @@ router.post(
         authn_user_id: res.locals.authn_user.user_id,
         requireOpen: true,
         close: true,
-        overrideGradeRate: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
         client_fingerprint_id: null,
       });
       res.send(JSON.stringify({}));
@@ -84,7 +85,8 @@ router.post(
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         close: req.body.__action === 'close_all',
-        overrideGradeRate: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
