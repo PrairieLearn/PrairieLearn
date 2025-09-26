@@ -66,7 +66,11 @@ export async function uploadInstanceQuestionScores(
       csvParse({
         // Replace all keys with their lower-case values
         columns: (header) => header.map((column) => column.toLowerCase()),
-        info: true,
+        info: true, // include line number info
+        bom: true, // handle byte order mark if present (sometimes present in files from Excel)
+        trim: true, // trim whitespace around values
+        skipEmptyLines: true,
+        maxRecordSize: 10000,
         cast: (value, context) => {
           if (value === '') return null;
           if (context.header) return value; // do not cast header row
@@ -85,7 +89,6 @@ export async function uploadInstanceQuestionScores(
           }
           return value;
         },
-        maxRecordSize: 10000,
       }),
     );
 
@@ -191,7 +194,11 @@ export async function uploadAssessmentInstanceScores(
       csvParse({
         // Replace all keys with their lower-case values
         columns: (header) => header.map((column) => column.toLowerCase()),
-        info: true,
+        info: true, // include line number info
+        bom: true, // handle byte order mark if present (sometimes present in files from Excel)
+        trim: true, // trim whitespace around values
+        skipEmptyLines: true,
+        maxRecordSize: 10000,
         cast: (value, context) => {
           if (value === '') return null;
           if (context.header) return value; // do not cast header row
@@ -201,7 +208,6 @@ export async function uploadAssessmentInstanceScores(
           }
           return value;
         },
-        maxRecordSize: 1000,
       }),
     );
 
