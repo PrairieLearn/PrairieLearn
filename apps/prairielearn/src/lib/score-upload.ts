@@ -1,4 +1,4 @@
-import { parse as csvParse } from 'csv-parse';
+import { type Options as CsvParseOptions, parse as csvParse } from 'csv-parse';
 import isPlainObject from 'is-plain-obj';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
@@ -15,12 +15,13 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const DEFAULT_CSV_PARSE_OPTIONS = {
-  columns: (header: string[]) => header.map((column) => column.toLowerCase()),
+const DEFAULT_CSV_PARSE_OPTIONS: CsvParseOptions = {
+  columns: (header) => header.map((column) => column.toLowerCase()),
   info: true, // include line number info
   bom: true, // handle byte order mark if present (sometimes present in files from Excel)
   trim: true, // trim whitespace around values
   skipEmptyLines: true,
+  relaxColumnCount: true, // allow rows with different number of columns
   maxRecordSize: 10000,
 };
 
