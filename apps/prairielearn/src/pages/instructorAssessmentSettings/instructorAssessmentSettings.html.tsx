@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
@@ -8,7 +9,6 @@ import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorAssessmentSettings({
   resLocals,

@@ -1975,7 +1975,10 @@ export async function initExpress(): Promise<Express> {
   // if no earlier routes matched, this will match and generate a 404 error
   app.use((await import('./middlewares/notFound.js')).default);
 
-  app.use((await import('./middlewares/redirectEffectiveAccessDenied.js')).default);
+  app.use(
+    (await import('./middlewares/redirectEffectiveAccessDenied.js'))
+      .redirectEffectiveAccessDeniedErrorHandler,
+  );
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.

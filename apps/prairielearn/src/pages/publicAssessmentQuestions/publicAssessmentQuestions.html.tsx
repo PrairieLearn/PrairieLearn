@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
@@ -9,7 +10,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
 import { type Assessment, type AssessmentSet, type Course } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function PublicAssessmentQuestions({

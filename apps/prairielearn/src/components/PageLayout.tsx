@@ -2,10 +2,10 @@ import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HtmlSafeString, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
