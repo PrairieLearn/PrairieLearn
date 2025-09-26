@@ -190,7 +190,7 @@ describe('Instructor force-breaking variants on exam', () => {
 
     assessment = await selectAssessmentByTid({
       course_instance_id: '1',
-      tid: 'exam1-automaticTestSuite',
+      tid: 'exam15-breakVariants',
     });
     assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
 
@@ -225,7 +225,7 @@ describe('Instructor force-breaking variants on exam', () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
-      const partialCredit1Url = assessmentResponse.$('a:contains("Question 4")').attr('href');
+      const partialCredit1Url = assessmentResponse.$('a:contains("Question 1")').attr('href');
 
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
       assert.equal(questionResponse.status, 200);
@@ -252,7 +252,7 @@ describe('Instructor force-breaking variants on exam', () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
-      const partialCredit2Url = assessmentResponse.$('a:contains("Question 5")').attr('href');
+      const partialCredit2Url = assessmentResponse.$('a:contains("Question 2")').attr('href');
 
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
       assert.equal(questionResponse.status, 200);
@@ -321,7 +321,7 @@ describe('Instructor force-breaking variants on exam', () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 4")').attr('href');
+      const addNumbersUrl = assessmentResponse.$('a:contains("Question 1")').attr('href');
 
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
@@ -336,7 +336,7 @@ describe('Instructor force-breaking variants on exam', () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
-      const addNumbersUrl = assessmentResponse.$('a:contains("Question 5")').attr('href');
+      const addNumbersUrl = assessmentResponse.$('a:contains("Question 2")').attr('href');
 
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
