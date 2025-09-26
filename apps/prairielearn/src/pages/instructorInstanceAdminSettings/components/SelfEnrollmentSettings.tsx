@@ -139,6 +139,9 @@ export function SelfEnrollmentSettings({
     name: 'show_in_enroll_page',
   });
 
+  const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
+    control.getFieldState('show_in_enroll_page');
+
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -167,15 +170,25 @@ export function SelfEnrollmentSettings({
 
       <div class="mb-3 form-check">
         <input
-          class="form-check-input"
+          class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
           type="checkbox"
           id="show_in_enroll_page"
-          {...control.register('show_in_enroll_page')}
+          {...control.register('show_in_enroll_page', {
+            validate: (value, { self_enrollment_enabled }) => {
+              if (!self_enrollment_enabled && value) {
+                return 'If self-enrollment is not enabled, you cannot show the course instance on the enrollment page.';
+              }
+              return true;
+            },
+          })}
           name="show_in_enroll_page"
         />
         <label class="form-check-label" for="show_in_enroll_page">
           Show on enrollment page
         </label>
+        {showInEnrollPageError && (
+          <div class="invalid-feedback">{showInEnrollPageError.message}</div>
+        )}
         <div class="small text-muted">
           {showInEnrollPage
             ? 'Students can discover the course instance on the enrollment page.'
