@@ -60,7 +60,7 @@ function SelfEnrollmentLink({
               aria-label="Generate new self-enrollment link"
               onClick={() => setShowConfirm(true)}
             >
-              <i class="bi-arrow-repeat" />
+              <i class="bi bi-arrow-repeat" />
             </Button>
           </OverlayTrigger>
         </InputGroup>
