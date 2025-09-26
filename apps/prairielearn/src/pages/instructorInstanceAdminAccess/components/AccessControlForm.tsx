@@ -336,7 +336,6 @@ export function AccessControlForm({
               </div>
             )}
 
-
             {canEdit && isDirty && (
               <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
