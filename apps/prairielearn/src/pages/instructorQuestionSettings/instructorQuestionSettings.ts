@@ -170,69 +170,27 @@ router.post(
       const origHash = body.orig_hash;
       questionInfo.title = body.title;
       questionInfo.topic = body.topic;
-      questionInfo.tags = propertyValueWithDefault(
-        questionInfo.tags,
-        body.tags,
-        (val) => !val || val.length === 0,
-      );
+      questionInfo.tags = propertyValueWithDefault(body.tags, (val) => !val || val.length === 0);
 
-      questionInfo.gradingMethod = propertyValueWithDefault(
-        questionInfo.gradingMethod,
-        body.grading_method,
-        'Internal',
-      );
+      questionInfo.gradingMethod = propertyValueWithDefault(body.grading_method, 'Internal');
 
-      questionInfo.singleVariant = propertyValueWithDefault(
-        questionInfo.singleVariant,
-        body.single_variant,
-        false,
-      );
+      questionInfo.singleVariant = propertyValueWithDefault(body.single_variant, false);
 
-      questionInfo.showCorrectAnswer = propertyValueWithDefault(
-        questionInfo.showCorrectAnswer,
-        body.show_correct_answer,
-        true,
-      );
+      questionInfo.showCorrectAnswer = propertyValueWithDefault(body.show_correct_answer, true);
 
       const workspaceOptions = {
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
-        image: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.image,
-          body.workspace_image?.trim(),
-          '',
-        ),
-        port: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.port,
-          body.workspace_port,
-          null,
-        ),
-        home: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.home,
-          body.workspace_home?.trim(),
-          '',
-        ),
-        args: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.args,
-          body.workspace_args,
-          (v) => !v || v.length === 0,
-        ),
-        rewriteUrl: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.rewriteUrl,
-          body.workspace_rewrite_url,
-          true,
-        ),
+        image: propertyValueWithDefault(body.workspace_image?.trim(), ''),
+        port: propertyValueWithDefault(body.workspace_port, null),
+        home: propertyValueWithDefault(body.workspace_home?.trim(), ''),
+        args: propertyValueWithDefault(body.workspace_args, (v) => !v || v.length === 0),
+        rewriteUrl: propertyValueWithDefault(body.workspace_rewrite_url, true),
         gradedFiles: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.gradedFiles,
           body.workspace_graded_files,
           (v) => !v || v.length === 0,
         ),
-        enableNetworking: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.enableNetworking,
-          body.workspace_enable_networking,
-          false,
-        ),
+        enableNetworking: propertyValueWithDefault(body.workspace_enable_networking, false),
         environment: propertyValueWithDefault(
-          questionInfo.workspaceOptions?.environment,
           JSON.parse(body.workspace_environment?.replace(/\r\n/g, '\n') || '{}'),
           (val) => !val || Object.keys(val).length === 0,
         ),
@@ -245,7 +203,6 @@ router.post(
         const filteredOptions = Object.fromEntries(
           Object.entries(
             propertyValueWithDefault(
-              questionInfo.workspaceOptions,
               workspaceOptions,
               (val) => !val || Object.keys(val).length === 0,
             ),

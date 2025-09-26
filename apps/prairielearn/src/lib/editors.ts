@@ -193,24 +193,14 @@ export function getUniqueNames({
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
  */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
-  const isExistingDefault =
-    typeof defaultValue === 'function'
-      ? defaultValue(existingValue)
-      : existingValue === defaultValue;
+export function propertyValueWithDefault(newValue: any, defaultValue: any) {
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
-  if (existingValue === undefined) {
-    if (!isNewDefault) {
-      return newValue;
-    }
+  if (!isNewDefault) {
+    return newValue;
   } else {
-    if (!isExistingDefault && isNewDefault) {
-      return undefined;
-    } else {
-      return newValue;
-    }
+    return undefined;
   }
 }
 
