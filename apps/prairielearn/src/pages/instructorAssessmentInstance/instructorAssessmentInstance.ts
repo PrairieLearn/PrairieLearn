@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -154,7 +154,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
+      throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
@@ -163,7 +163,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
 
@@ -204,12 +204,9 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'reset_question_variants') {
-      // Block reset variants for Exam assessments
       if (res.locals.assessment.type === 'Exam') {
-        throw new error.HttpStatusError(
-          400,
-          'Reset question variants is not supported for Exam assessments. This can cause instance questions to become unopenable and create inconsistent attempt counts.',
-        );
+        // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
+        throw new HttpStatusError(403, 'Cannot reset variants for Exam assessments');
       }
 
       await resetVariantsForInstanceQuestion({
@@ -219,7 +216,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

@@ -5,9 +5,9 @@
   "set": "Exam",
   "number": "1",
   "module": "Module1",
+  "shuffleQuestions": false,
   "allowAccess": [
     {
-      "mode": "Exam",
       "credit": 100,
       "timeLimitMin": 50,
       "startDate": "1900-07-07T23:59:59",
