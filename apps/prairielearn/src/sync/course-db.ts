@@ -7,7 +7,7 @@ import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
-import { type ZodSchema, type z } from 'zod';
+import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
@@ -16,6 +16,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
+import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
@@ -504,7 +505,7 @@ export async function loadCourseInfo({
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
     zodSchema: schemas.CourseJsonSchema,
-    validate: () => ({ warnings: [], errors: [] }),
+    validate: () => Promise.resolve({ warnings: [], errors: [] }),
   });
 
   if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
@@ -682,7 +683,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -717,7 +718,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 
   loadedJson.data = result.data;
 
-  const validationResult = validate(loadedJson.data);
+  const validationResult = await validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -747,7 +748,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -847,6 +848,44 @@ function checkDuplicateUUIDs<T>(
       infofile.addWarning(infos[id], makeErrorMessage(uuid, otherIds));
       infos[id].uuid = undefined;
     });
+  });
+}
+
+async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<QuestionJson>>) {
+  // First, create a map from origin courses to questions that reference them
+  const originCourseIDs = Object.entries(questionInfos).reduce((map, [id, info]) => {
+    if (!info.data?.authors) {
+      // No authors -> skip
+      return map;
+    }
+    info.data.authors.forEach((author) => {
+      if (author.originCourse) {
+        let originCourseRefs = map.get(author.originCourse);
+        if (!originCourseRefs) {
+          originCourseRefs = [];
+          map.set(author.originCourse, originCourseRefs);
+        }
+        originCourseRefs.push(id);
+      }
+    });
+    return map;
+  }, new Map<string, string[]>());
+
+  // Avoid unneeded database queries if no origin courses are set
+  if (originCourseIDs.size === 0) return;
+
+  // Then, look up all the course IDs at once and find unresolvable ones
+  const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
+  originCourses.forEach((course, sharingName) => {
+    if (!course) {
+      const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
+      affectedQuestions.forEach((question) => {
+        infofile.addError(
+          questionInfos[question],
+          `The author origin course with the sharing name ${sharingName} does not exist`,
+        );
+      });
+    }
   });
 }
 
@@ -951,13 +990,36 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
-function validateQuestion({
+function validateORCID(orcid: string): boolean {
+  // Drop any dashes
+  const digits = orcid.replaceAll('-', '');
+
+  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
+  if (!/^\d{15}[\dX]$/.test(digits)) {
+    return false;
+  }
+
+  // Calculate and verify checksum
+  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
+  let total = 0;
+  for (let i = 0; i < 15; i++) {
+    total = (total + Number.parseInt(digits[i])) * 2;
+  }
+
+  const remainder = total % 11;
+  const result = (12 - remainder) % 11;
+  const checkDigit = result === 10 ? 'X' : String(result);
+
+  return digits[15] === checkDigit;
+}
+
+async function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -996,6 +1058,31 @@ function validateQuestion({
     }
   }
 
+  if (question.authors.length > 0) {
+    for (const author of question.authors) {
+      if (!author.email && !author.orcid && !author.originCourse) {
+        errors.push(
+          'At least one of "email", "orcid", or "originCourse" is required for each author',
+        );
+      }
+      if (author.orcid) {
+        if (!validateORCID(author.orcid)) {
+          errors.push(
+            `The author ORCID identifier ${author.orcid} has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
+          );
+        }
+      }
+      if (author.email) {
+        const parsedEmail = z.string().email().safeParse(author.email);
+
+        if (!parsedEmail.success) {
+          errors.push(`The author email address ${author.email} is invalid`);
+        }
+      }
+      // Origin courses are validated in bulk loadQuestions, and skipped here.
+    }
+  }
+
   return { warnings, errors };
 }
 
@@ -1009,7 +1096,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-function validateAssessment({
+async function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1019,7 +1106,7 @@ function validateAssessment({
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1340,13 +1427,13 @@ function validateAssessment({
   return { warnings, errors };
 }
 
-function validateCourseInstance({
+async function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
-}): { warnings: string[]; errors: string[] } {
+}): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1460,10 +1547,12 @@ export async function loadQuestions({
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
+  await checkAuthorOriginCourses(questions);
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`,
   );
+
   return questions;
 }
 

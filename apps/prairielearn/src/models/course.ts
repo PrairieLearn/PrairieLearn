@@ -230,3 +230,23 @@ export async function updateCourseSharingName({ course_id, sharing_name }): Prom
     sharing_name,
   });
 }
+
+/**
+ * Look up courses by sharing names (may return null if non-existent)
+ */
+export async function findCoursesBySharingNames(
+  sharing_names: string[],
+): Promise<Map<string, Course | null>> {
+  const rows = await queryRows(sql.find_courses_by_sharing_names, { sharing_names }, CourseSchema);
+
+  const result = new Map<string, Course | null>();
+  for (const name of sharing_names) result.set(name, null);
+
+  for (const row of rows) {
+    // This condition is only for the type checker - since we looked up by sharing name, all found courses will have sharing names set
+    if (row.sharing_name) {
+      result.set(row.sharing_name, row);
+    }
+  }
+  return result;
+}
