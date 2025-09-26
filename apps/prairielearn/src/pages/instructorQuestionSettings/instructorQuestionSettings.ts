@@ -52,6 +52,24 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+// This will not correctly handle any filenames that have a comma in them.
+// Currently, we do not have any such filenames in prod so we don't think that
+// escaping commas in individual filenames is necessary.
+const GradedFilesSchema = z
+  .string()
+  .transform((s) =>
+    s
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== ''),
+  )
+  .optional();
+
+const ArgumentsSchema = z
+  .string()
+  .transform((s) => shlex.split(s || ''))
+  .optional();
+
 router.post(
   '/test',
   asyncHandler(async (req, res) => {
@@ -134,25 +152,18 @@ router.post(
           workspace_image: z.string().optional(),
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
-          workspace_args: z
-            .string()
-            .transform((s) => shlex.split(s || ''))
-            .optional(),
+          workspace_args: ArgumentsSchema,
           workspace_rewrite_url: BooleanFromCheckboxSchema,
-          // This will not correctly handle any filenames that have a comma in them.
-          // Currently, we do not have any such filenames in prod so we don't think that
-          // escaping commas in individual filenames is necessary.
-          workspace_graded_files: z
-            .string()
-            .transform((s) =>
-              s
-                .split(',')
-                .map((s) => s.trim())
-                .filter((s) => s !== ''),
-            )
-            .optional(),
+          workspace_graded_files: GradedFilesSchema,
           workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
+          external_grading_enabled: BooleanFromCheckboxSchema,
+          external_grading_image: z.string().optional(),
+          external_grading_files: GradedFilesSchema,
+          external_grading_entrypoint: ArgumentsSchema,
+          external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
+          external_grading_enable_networking: BooleanFromCheckboxSchema,
+          external_grading_environment: z.string().optional(),
         })
         .parse(req.body);
 
@@ -257,6 +268,63 @@ router.post(
             : undefined;
       } else {
         questionInfo.workspaceOptions = undefined;
+      }
+
+      const externalGradingOptions = {
+        comment: questionInfo.externalGradingOptions?.comment ?? undefined,
+        enabled: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enabled,
+          body.external_grading_enabled,
+          false,
+        ),
+        image: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.image,
+          body.external_grading_image,
+          '',
+        ),
+        entrypoint: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.entrypoint,
+          body.external_grading_entrypoint,
+          (v) => v == null || v.length === 0,
+        ),
+        serverFilesCourse: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.serverFilesCourse,
+          body.external_grading_files,
+          (v) => !v || v.length === 0,
+        ),
+        timeout: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.timeout,
+          body.external_grading_timeout,
+          null,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enableNetworking,
+          body.external_grading_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.environment,
+          JSON.parse(body.external_grading_environment || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+      if (externalGradingOptions.image) {
+        const filteredExternalGradingOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.externalGradingOptions,
+              externalGradingOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+
+        questionInfo.externalGradingOptions =
+          Object.keys(filteredExternalGradingOptions).length > 0
+            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
+            : undefined;
+      } else {
+        questionInfo.externalGradingOptions = undefined;
       }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));

@@ -80,6 +80,24 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      - name: Start Postgres
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          EOF
+
+          sudo systemctl restart postgresql.service
+      # We must migrate our database before we can typecheck the SQL.
+      - name: Run the SQL typechecker
+        run: |
+          yarn migrate
+          make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
