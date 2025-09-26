@@ -15,6 +15,15 @@ import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+const DEFAULT_CSV_PARSE_OPTIONS = {
+  columns: (header: string[]) => header.map((column) => column.toLowerCase()),
+  info: true, // include line number info
+  bom: true, // handle byte order mark if present (sometimes present in files from Excel)
+  trim: true, // trim whitespace around values
+  skipEmptyLines: true,
+  maxRecordSize: 10000,
+};
+
 /**
  * Update question instance scores from a CSV file.
  *
@@ -64,13 +73,7 @@ export async function uploadInstanceQuestionScores(
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
     const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
       csvParse({
-        // Replace all keys with their lower-case values
-        columns: (header) => header.map((column) => column.toLowerCase()),
-        info: true, // include line number info
-        bom: true, // handle byte order mark if present (sometimes present in files from Excel)
-        trim: true, // trim whitespace around values
-        skipEmptyLines: true,
-        maxRecordSize: 10000,
+        ...DEFAULT_CSV_PARSE_OPTIONS,
         cast: (value, context) => {
           if (value === '') return null;
           if (context.header) return value; // do not cast header row
@@ -192,13 +195,7 @@ export async function uploadAssessmentInstanceScores(
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
     const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
       csvParse({
-        // Replace all keys with their lower-case values
-        columns: (header) => header.map((column) => column.toLowerCase()),
-        info: true, // include line number info
-        bom: true, // handle byte order mark if present (sometimes present in files from Excel)
-        trim: true, // trim whitespace around values
-        skipEmptyLines: true,
-        maxRecordSize: 10000,
+        ...DEFAULT_CSV_PARSE_OPTIONS,
         cast: (value, context) => {
           if (value === '') return null;
           if (context.header) return value; // do not cast header row
