@@ -232,7 +232,9 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', 'Instance deleted.');
-      return res.redirect(req.originalUrl);
+      return res.redirect(
+        `${config.urlPrefix}/administrator/institution/${req.params.institution_id}/lti13`,
+      );
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

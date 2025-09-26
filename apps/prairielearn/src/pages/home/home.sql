@@ -234,23 +234,12 @@ ORDER BY
   i.long_name,
   i.id;
 
--- BLOCK accept_invitation
-UPDATE enrollments
-SET
-  status = 'joined',
-  user_id = $user_id,
-  joined_at = NOW(),
-  pending_uid = NULL
-WHERE
-  course_instance_id = $course_instance_id
-  AND pending_uid = $uid
-  AND status = 'invited';
-
 -- BLOCK reject_invitation
 UPDATE enrollments
 SET
   status = 'rejected'
 WHERE
-  course_instance_id = $course_instance_id
-  AND pending_uid = $uid
-  AND status = 'invited';
+  id = $enrollment_id
+  AND status = 'invited'
+RETURNING
+  *;

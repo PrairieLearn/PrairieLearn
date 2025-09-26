@@ -20,9 +20,58 @@ const requiredTableFields = {
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
   institutions: ['institution_id'],
-  enrollments: ['course_instance_id', 'subject_user_id'],
-} satisfies Partial<Record<TableName, string[]>>;
+  enrollments: ['course_instance_id', 'subject_user_id', 'action_detail'],
+} as const satisfies Partial<Record<TableName, readonly string[]>>;
 
+/**
+ * This lists all the possible table+action_detail combinations that are supported.
+ */
+type SupportedTableActionCombination =
+  | {
+      table_name: 'course_instances';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'pl_courses';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'users';
+      action_detail?: 'TEST_VALUE' | null;
+    }
+  | {
+      table_name: 'groups';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessment_instances';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessment_questions';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'assessments';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'institutions';
+      action_detail?: null;
+    }
+  | {
+      table_name: 'enrollments';
+      action_detail?:
+        | 'implicit_joined'
+        | 'explicit_joined'
+        | 'invited'
+        | 'invitation_accepted'
+        | 'invitation_rejected'
+        | null;
+    };
+export type SupportedActionsForTable<T extends TableName> = NonNullable<
+  Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
+>;
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.
@@ -66,16 +115,13 @@ export async function selectAuditEvents({
   );
 }
 
-interface InsertAuditEventParams {
+export type InsertAuditEventParams = SupportedTableActionCombination & {
   action: EnumAuditEventAction;
-  table_name: keyof typeof requiredTableFields;
   row_id: string;
   /** Most events should have an associated authenticated user */
   agent_authn_user_id: string | null;
   /** Most events should have an associated authorized user */
   agent_user_id: string | null;
-  /** Only 'update' actions require an action_detail */
-  action_detail?: string | null;
   /** Most events have no context */
   context?: Record<string, any> | null;
   /** Creation events have no old row */
@@ -93,7 +139,7 @@ interface InsertAuditEventParams {
   course_instance_id?: string | null;
   group_id?: string | null;
   institution_id?: string | null;
-}
+};
 
 /**
  * Inserts a new audit event. This should be done after the action has been performed.
