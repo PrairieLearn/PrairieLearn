@@ -1,6 +1,5 @@
 import { assert, describe, expect, it } from 'vitest';
 
-
 import {
   type CourseInstanceAccessParams,
   convertAccessRuleToJson,
@@ -119,8 +118,6 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.isTrue(result.hasAccess);
   });
 
-
-
   it('denies access when current date is after published end date', () => {
     const endDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
@@ -195,7 +192,6 @@ describe('evaluateCourseInstanceAccess', () => {
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');
   });
-
 
   it('staff bypass all restrictions even when course instance is not published', () => {
     const courseInstance = createMockCourseInstance({
@@ -528,4 +524,3 @@ describe('convertAccessRuleToJson', () => {
     expect(result).toMatchInlineSnapshot('{}');
   });
 });
-
