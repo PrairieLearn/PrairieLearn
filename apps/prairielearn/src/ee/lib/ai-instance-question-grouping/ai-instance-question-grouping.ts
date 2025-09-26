@@ -232,7 +232,9 @@ export async function aiInstanceQuestionGrouping({
         ? allInstanceQuestions.filter((q) => instanceQuestionIdsSet.has(q.id))
         : allInstanceQuestions;
 
-    job.info(`Grouping ${selectedInstanceQuestions.length} instance questions...`);
+    job.info(
+      `Grouping ${selectedInstanceQuestions.length} instance question${selectedInstanceQuestions.length !== 1 ? 's' : ''}...`,
+    );
 
     await insertDefaultInstanceQuestionGroups({
       assessment_question_id: assessment_question.id,

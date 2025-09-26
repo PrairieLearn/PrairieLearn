@@ -17,6 +17,7 @@ declare global {
   interface Window {
     gradersList: () => any;
     rubricItemsList: () => any;
+    submissionGroups: () => any;
   }
 }
 
@@ -77,6 +78,15 @@ onDocumentReady(() => {
     const rubricItems = data.flatMap((row) => row.rubric_difference ?? []);
     rubricItems.sort((a, b) => a.number - b.number);
     return Object.fromEntries(rubricItems.map((item) => [item.description, item.description]));
+  };
+
+  window.submissionGroups = function () {
+    return Object.fromEntries(
+      instanceQuestionGroups.map((group) => [
+        group.instance_question_group_name,
+        group.instance_question_group_name,
+      ]),
+    );
   };
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
@@ -238,12 +248,13 @@ onDocumentReady(() => {
               filterControl: 'select',
               class: 'text-center',
               formatter: (value: string | null) => {
+                const displayValue = value ?? 'No group';
                 if (!value) {
-                  return html`<span class="text-secondary">No group</span>`;
+                  return html`<span class="text-secondary">${displayValue}</span>`.toString();
                 }
                 return html`
                   <span class="d-flex align-items-center justify-content-center gap-2">
-                    ${value ?? 'No group'}
+                    ${displayValue}
                     <div
                       data-bs-toggle="tooltip"
                       data-bs-html="true"
@@ -252,8 +263,11 @@ onDocumentReady(() => {
                       <i class="fas fa-circle-info text-secondary"></i>
                     </div>
                   </span>
-                `;
+                `.toString();
               },
+              filterData: 'func:submissionGroups',
+              filterCustomSearch: (text: string, value: string) =>
+                value.toLowerCase().includes(html`${text}`.toString()),
               sortable: true,
             }
           : null,
