@@ -25,6 +25,11 @@ class SourceBlocksOrderType(Enum):
     ORDERED = "ordered"
 
 
+class DistractorOrderType(Enum):
+    RANDOM = "random"
+    INHERIT = "inherit"
+
+
 class SolutionPlacementType(Enum):
     RIGHT = "right"
     BOTTOM = "bottom"
@@ -67,6 +72,7 @@ ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
+DISTRACTOR_ORDER_DEFAULT = DistractorOrderType.INHERIT
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -103,6 +109,12 @@ class OrderBlocksOptions:
             "source-blocks-order",
             SourceBlocksOrderType,
             SOURCE_BLOCKS_ORDER_DEFAULT,
+        )
+        self.distractor_order = pl.get_enum_attrib(
+            html_element,
+            "distractor-order",
+            DistractorOrderType,
+            DISTRACTOR_ORDER_DEFAULT,
         )
         self.indentation = pl.get_boolean_attrib(
             html_element, "indentation", INDENTION_DEFAULT
@@ -172,6 +184,7 @@ class OrderBlocksOptions:
             "format",
             "code-language",
             "allow-blank",
+            "distractor-order",
         ]
         pl.check_attribs(
             html_element,
