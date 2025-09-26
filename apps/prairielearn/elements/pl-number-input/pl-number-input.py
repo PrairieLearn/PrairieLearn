@@ -35,12 +35,14 @@ SHOW_PLACEHOLDER_DEFAULT = True
 SHOW_CORRECT_ANSWER_DEFAULT = True
 ALLOW_FRACTIONS_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = 0
+BLANK_VALUE_DEFAULT = "0"
 CUSTOM_FORMAT_DEFAULT = ".12g"
 SHOW_SCORE_DEFAULT = True
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
+ANSWER_SHOULD_BE_BLANK_WARNING = "The correct answer was to leave this input blank."
+
 
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
@@ -75,10 +77,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    correct_answer = pl.get_float_attrib(element, "correct-answer", None)
+    correct_answer = pl.get_string_attrib(element, "correct-answer", None)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
+        if correct_answer != "":
+            correct_answer = pl.get_float_attrib(element, "correct-answer", None)
+        elif allow_blank and blank_value == "":
+            correct_answer = ""
+        else:
+            raise ValueError(
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -93,7 +105,7 @@ def format_true_ans(
     element: lxml.html.HtmlElement, data: pl.QuestionData, name: str
 ) -> str:
     correct_answer = pl.from_json(data["correct_answers"].get(name, None))
-    if correct_answer is not None:
+    if correct_answer != "":
         # Get format and comparison parameters
         custom_format = pl.get_string_attrib(element, "custom-format", None)
         comparison = pl.get_enum_attrib(
@@ -294,9 +306,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             submitted_answer = pl.from_json(submitted_answer)
 
             html_params["suffix"] = suffix
-            html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
-                submitted_answer
-            )
+            if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
+                html_params["submitted_answer"] = ""
+            else:
+                html_params["submitted_answer"] = ("{:" + custom_format + "}").format(
+                    submitted_answer
+                )
+
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
@@ -359,24 +375,28 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "allow-fractions", ALLOW_FRACTIONS_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     submitted_answer = data["submitted_answers"].get(name, None)
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
-
-    res = pl.string_fraction_to_number(
-        submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
-    )
-    if res[0] is not None:
-        _, newdata = res
-        data["submitted_answers"][name] = newdata["submitted_answers"]
+    if submitted_answer == "":
+        data["submitted_answers"][name] = ""
     else:
-        _, newdata = res
-        data["format_errors"][name] = get_format_string(
-            allow_complex, allow_fractions, newdata["format_errors"]
+        res = pl.string_fraction_to_number(
+            submitted_answer,
+            allow_fractions=allow_fractions,
+            allow_complex=allow_complex,
         )
-        data["submitted_answers"][name] = None
+        if res[0] is not None:
+            _, newdata = res
+            data["submitted_answers"][name] = newdata["submitted_answers"]
+        else:
+            _, newdata = res
+            data["format_errors"][name] = get_format_string(
+                allow_complex, allow_fractions, newdata["format_errors"]
+            )
+            data["submitted_answers"][name] = None
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -406,6 +426,21 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         submitted_answer_parsed: Any = pl.from_json(submitted_answer)
         feedback = ""
         is_correct = None
+
+        # Special cases: submitted or correct answer are the empty string
+        if isinstance(correct_answer, str) and correct_answer.strip() == "":
+            if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
+                return (
+                    True,
+                    "The correct answer used for grading was blank",
+                )
+            return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
+        elif isinstance(submitted_answer, str) and submitted_answer.strip() == "":
+            correct_answer_converted = np.float64(correct_answer)
+            return (
+                False,
+                f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank.",
+            )
 
         # Cast both submitted and true answers as np.float64, because...
         #
@@ -506,8 +541,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # If correct answer is in a format generated by pl.to_json, convert it
         # back to a standard type (otherwise, do nothing)
         correct_answer = pl.from_json(correct_answer)
-        correct_answer_converted = np.float64(correct_answer)
-
+        if isinstance(correct_answer, str) and correct_answer.strip() == "":
+            correct_answer_converted = "blank"
+        else:
+            correct_answer_converted = np.float64(correct_answer)
     if result == "correct":
         data["raw_submitted_answers"][name] = str(correct_answer)
         data["partial_scores"][name] = {
@@ -538,7 +575,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 )
             )
 
-        if comparison is ComparisonType.RELABS:
+        # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
+        if correct_answer_converted == "blank":
+            answer = random.choice([-1.1, 1.1])
+            feedback = ANSWER_SHOULD_BE_BLANK_WARNING
+        elif comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             # Get max error according to numpy.allclose()
