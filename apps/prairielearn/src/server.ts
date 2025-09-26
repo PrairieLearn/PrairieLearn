@@ -2331,11 +2331,42 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
         directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
         project: 'prairielearn',
       });
+    }
+    // We create and activate a random DB schema name
+    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
+    // after we have run the migrations but before we create
+    // the sprocs. This means all tables (from migrations) are
+    // in the public schema, but all sprocs are in the random
+    // schema. Every server invocation thus has its own copy
+    // of its sprocs, allowing us to update servers while old
+    // servers are still running. See docs/dev-guide.md for
+    // more info.
+    //
+    // We use the combination of instance ID and port number to uniquely
+    // identify each server; in some cases, we're running multiple instances
+    // on the same physical host.
+    //
+    // The schema prefix should not exceed 28 characters; this is due to
+    // the underlying Postgres limit of 63 characters for schema names.
+    // Currently, EC2 instance IDs are 19 characters long, and we use
+    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+    // of those ever get longer, we have a little wiggle room. Nonetheless,
+    // we'll check to make sure we don't exceed the limit and fail fast if
+    // we do.
+    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+    if (schemaPrefix.length > 28) {
+      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+    }
+    if (config.devMode) {
+      await sqldb.clearSchemasStartingWith(schemaPrefix);
+    }
 
-      if (argv['migrate-and-exit']) {
-        logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-        process.exit(0);
-      }
+    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+    await sprocs.init();
+
+    if (argv['migrate-and-exit']) {
+      logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+      process.exit(0);
     }
 
     // Collect metrics on our Postgres connection pools.
@@ -2409,38 +2440,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       { valueType: opentelemetry.ValueType.INT, interval: 1000 },
       () => codeCaller.getMetrics().pending,
     );
-
-    // We create and activate a random DB schema name
-    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
-    // after we have run the migrations but before we create
-    // the sprocs. This means all tables (from migrations) are
-    // in the public schema, but all sprocs are in the random
-    // schema. Every server invocation thus has its own copy
-    // of its sprocs, allowing us to update servers while old
-    // servers are still running. See docs/dev-guide.md for
-    // more info.
-    //
-    // We use the combination of instance ID and port number to uniquely
-    // identify each server; in some cases, we're running multiple instances
-    // on the same physical host.
-    //
-    // The schema prefix should not exceed 28 characters; this is due to
-    // the underlying Postgres limit of 63 characters for schema names.
-    // Currently, EC2 instance IDs are 19 characters long, and we use
-    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
-    // of those ever get longer, we have a little wiggle room. Nonetheless,
-    // we'll check to make sure we don't exceed the limit and fail fast if
-    // we do.
-    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
-    if (schemaPrefix.length > 28) {
-      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
-    }
-    if (config.devMode) {
-      await sqldb.clearSchemasStartingWith(schemaPrefix);
-    }
-
-    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-    await sprocs.init();
 
     if (config.runBatchedMigrations) {
       // Now that all migrations have been run, we can start executing any
