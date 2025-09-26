@@ -448,6 +448,8 @@ small .user-output-invalid {
  */
 input.form-control:not(:disabled),
 select.form-select:not(:disabled),
+textarea.form-control:not(:disabled),
+.input-group > .form-control:not(:disabled),
 .input-group-text,
 .input-group > .border {
   --bs-border-color: var(--bs-secondary);
@@ -460,4 +462,9 @@ input.form-check-input {
 
 input.form-check-input:disabled {
   --bs-border-color: #aaaaaa;
+}
+
+/* for pl-dropdown */
+div.ts-control {
+  border: 1px solid var(--bs-secondary);
 }
