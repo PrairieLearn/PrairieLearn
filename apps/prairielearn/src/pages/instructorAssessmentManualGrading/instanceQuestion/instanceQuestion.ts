@@ -129,9 +129,7 @@ router.get(
       );
 
       if (ai_grading_job_data) {
-        const promptForGradingJob = ai_grading_job_data.prompt as
-          | ChatCompletionMessageParam[]
-          | null;
+        const promptForGradingJob = ai_grading_job_data.prompt;
         const selectedRubricItems = await selectRubricGradingItems(
           ai_grading_job_data.manual_rubric_grading_id,
         );
@@ -143,21 +141,6 @@ router.get(
             { submission_id },
             z.boolean(),
           )) ?? false;
-
-        /** Images sent in the AI grading prompt */
-        const promptImageUrls: string[] = [];
-
-        if (promptForGradingJob) {
-          for (const message of promptForGradingJob) {
-            if (message.content && typeof message.content === 'object') {
-              for (const part of message.content) {
-                if (part.type === 'image_url') {
-                  promptImageUrls.push(part.image_url.url);
-                }
-              }
-            }
-          }
-        }
 
         const formattedPrompt =
           promptForGradingJob !== null
@@ -184,7 +167,6 @@ router.get(
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
-          promptImageUrls,
           explanation,
         };
       }
