@@ -10,11 +10,11 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { TopicSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-import { TopicSchema } from '../../lib/db-types.js';
 
 import { InstructorCourseAdminTopics } from './instructorCourseAdminTopics.html.js';
 

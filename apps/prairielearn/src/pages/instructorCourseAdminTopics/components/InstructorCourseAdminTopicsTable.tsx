@@ -3,10 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
+import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 import { type Topic } from '../../../lib/db-types.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
-import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 
 const emptyTopic: Topic = {
   color: '',
