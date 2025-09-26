@@ -1,4 +1,5 @@
-import { InstructorCourseAdminTopicsTable } from '../../../../src/pages/instructorCourseAdminTopics/components/InstructorCourseAdminTopicsTable.js';
-import { registerReactFragment } from '../../behaviors/react-fragments/index.js';
+import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-registerReactFragment(InstructorCourseAdminTopicsTable);
+import { InstructorCourseAdminTopicsTable } from '../../../../src/pages/instructorCourseAdminTopics/components/InstructorCourseAdminTopicsTable.js';
+
+registerHydratedComponent(InstructorCourseAdminTopicsTable);

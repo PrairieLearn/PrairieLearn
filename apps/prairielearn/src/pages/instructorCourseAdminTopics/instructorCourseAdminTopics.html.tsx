@@ -1,6 +1,6 @@
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { Hydrate } from '../../lib/preact.js';
+import { Hydrate } from '@prairielearn/preact/server';
 import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
 import { type Topic } from '../../lib/db-types.js';
