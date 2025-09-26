@@ -142,6 +142,13 @@ export function SelfEnrollmentSettings({
   const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
     control.getFieldState('show_in_enroll_page');
 
+  console.log(
+    'showInEnrollPageInvalid',
+    showInEnrollPageInvalid,
+    'showInEnrollPageError',
+    showInEnrollPageError,
+  );
+
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -157,7 +164,10 @@ export function SelfEnrollmentSettings({
             class="form-check-input"
             type="checkbox"
             id="self_enrollment_enabled"
-            {...control.register('self_enrollment_enabled')}
+            {...control.register('self_enrollment_enabled', {
+              // Re-run validation when self-enrollment is enabled or disabled
+              deps: ['show_in_enroll_page'],
+            })}
             name="self_enrollment_enabled"
           />
           <label class="form-check-label" for="self_enrollment_enabled">
@@ -177,24 +187,26 @@ export function SelfEnrollmentSettings({
           {...control.register('show_in_enroll_page', {
             validate: (value, { self_enrollment_enabled }) => {
               if (!self_enrollment_enabled && value) {
-                return 'If self-enrollment is not enabled, you cannot show the course instance on the enrollment page.';
+                return 'Self-enrollment must be enabled to show the course instance on the enrollment page.';
               }
               return true;
             },
+            // deps: ['self_enrollment_enabled'],
           })}
           name="show_in_enroll_page"
         />
         <label class="form-check-label" for="show_in_enroll_page">
           Show on enrollment page
         </label>
-        {showInEnrollPageError && (
+        {showInEnrollPageError ? (
           <div class="invalid-feedback">{showInEnrollPageError.message}</div>
+        ) : (
+          <div class="small text-muted">
+            {showInEnrollPage
+              ? 'Students can discover the course instance on the enrollment page.'
+              : 'Students will need a direct link to the course instance to enroll.'}
+          </div>
         )}
-        <div class="small text-muted">
-          {showInEnrollPage
-            ? 'Students can discover the course instance on the enrollment page.'
-            : 'Students will need a direct link to the course instance to enroll.'}
-        </div>
       </div>
 
       {enrollmentManagementEnabled && (
@@ -216,7 +228,7 @@ export function SelfEnrollmentSettings({
               />
             )}
             <label class="form-check-label" for="self_enrollment_use_enrollment_code">
-              Require enrollment code for self-enrollment
+              Use enrollment code for self-enrollment
             </label>
             <div class="small text-muted">
               {selfEnrollmentUseEnrollmentCode

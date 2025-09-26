@@ -77,6 +77,8 @@ export function InstructorInstanceAdminSettings({
     defaultValues,
   });
 
+  console.log('errors', errors, isValid, isDirty, '!isDirty || !isValid', !isDirty || !isValid);
+
   return (
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">

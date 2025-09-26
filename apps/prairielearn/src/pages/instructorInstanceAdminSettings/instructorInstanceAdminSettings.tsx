@@ -278,6 +278,9 @@ router.post(
         false,
       );
 
+      console.log('va1', parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''));
+      console.log('val2', parseDateTime(parsedBody.self_enrollment_enabled_before_date));
+
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         parseDateTime(parsedBody.self_enrollment_enabled_before_date),
