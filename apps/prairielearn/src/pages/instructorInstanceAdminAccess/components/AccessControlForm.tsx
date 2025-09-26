@@ -75,11 +75,30 @@ export function AccessControlForm({
   const publishedEndDate = watch('publishedEndDate');
 
   // Determine current state based on dates
-  const hasStartDate = publishedStartDate && publishedStartDate.trim() !== '';
-  const hasEndDate = publishedEndDate && publishedEndDate.trim() !== '';
-  const isPublished = hasStartDate && hasEndDate;
-  const isArchived = hasEndDate && new Date(publishedEndDate) <= new Date();
-  const isUnpublished = !hasStartDate && !hasEndDate;
+  const getAccessControlState = ():
+    | 'published'
+    | 'archived'
+    | 'pending-publish'
+    | 'unpublished' => {
+    const hasStartDate = publishedStartDate && publishedStartDate.trim() !== '';
+    const hasEndDate = publishedEndDate && publishedEndDate.trim() !== '';
+
+    if (hasStartDate && hasEndDate) {
+      // Check if archived
+      if (new Date(publishedEndDate) <= new Date()) {
+        return 'archived';
+      }
+      return 'published';
+    }
+
+    if (hasStartDate || hasEndDate) {
+      return 'pending-publish';
+    }
+
+    return 'unpublished';
+  };
+
+  const accessControlState = getAccessControlState();
 
   const onSubmit = async (data: AccessControlFormValues) => {
     if (!canEdit) return;
@@ -198,7 +217,7 @@ export function AccessControlForm({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
 
             {/* Published State */}
-            {isPublished && !isArchived && (
+            {accessControlState === 'published' && (
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5 class="mb-0">
@@ -251,8 +270,87 @@ export function AccessControlForm({
               </div>
             )}
 
+            {/* Pending Publish State */}
+            {accessControlState === 'pending-publish' && (
+              <div class="mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h5 class="mb-0">
+                    Current Status: <span class="text-info">Pending Publish</span>
+                  </h5>
+                  {canEdit && (
+                    <div class="d-flex gap-2">
+                      <button
+                        type="button"
+                        class="btn btn-outline-danger"
+                        disabled={isSubmitting}
+                        onClick={handleUnpublish}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-primary"
+                        disabled={isSubmitting}
+                        onClick={handlePublishNow}
+                      >
+                        Complete Setup
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div class="alert alert-info" role="alert">
+                  <strong>Incomplete Configuration:</strong> This course instance has partial access
+                  control settings. Both start and end dates must be configured for the course to be
+                  published.
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="publishedStartDate">
+                    <strong>Publish Date</strong>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class={clsx('form-control', errors.publishedStartDate && 'is-invalid')}
+                    id="publishedStartDate"
+                    disabled={!canEdit}
+                    {...register('publishedStartDate')}
+                  />
+                  {errors.publishedStartDate && (
+                    <div class="invalid-feedback">{errors.publishedStartDate.message}</div>
+                  )}
+                  {publishedStartDate && (
+                    <div class="form-text">
+                      Course will be published on {formatDate(publishedStartDate)}.
+                    </div>
+                  )}
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label" for="publishedEndDate">
+                    <strong>Archive Date</strong>
+                  </label>
+                  <input
+                    type="datetime-local"
+                    class={clsx('form-control', errors.publishedEndDate && 'is-invalid')}
+                    id="publishedEndDate"
+                    disabled={!canEdit}
+                    {...register('publishedEndDate')}
+                  />
+                  {errors.publishedEndDate && (
+                    <div class="invalid-feedback">{errors.publishedEndDate.message}</div>
+                  )}
+                  {publishedEndDate && (
+                    <div class="form-text">
+                      Course will be archived on {formatDate(publishedEndDate)}.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Unpublished State */}
-            {isUnpublished && (
+            {accessControlState === 'unpublished' && (
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5 class="mb-0">
@@ -315,7 +413,7 @@ export function AccessControlForm({
             )}
 
             {/* Archived State */}
-            {isArchived && (
+            {accessControlState === 'archived' && (
               <div class="mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                   <h5 class="mb-0">
