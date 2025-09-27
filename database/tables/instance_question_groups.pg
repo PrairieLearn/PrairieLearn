@@ -6,8 +6,8 @@ columns
 
 indexes
     instance_question_groups_pkey: PRIMARY KEY (id) USING btree (id)
-    instance_question_groups_unique_id_constraint: UNIQUE (assessment_question_id, id) USING btree (assessment_question_id, id)
-    instance_question_groups_unique_name_constraint: UNIQUE (assessment_question_id, instance_question_group_name) USING btree (assessment_question_id, instance_question_group_name)
+    instance_question_groups_assessment_question_id_id_key: UNIQUE (assessment_question_id, id) USING btree (assessment_question_id, id)
+    instance_question_groups_assessment_question_id_instance_qu_key: UNIQUE (assessment_question_id, instance_question_group_name) USING btree (assessment_question_id, instance_question_group_name)
 
 foreign-key constraints
     instance_question_groups_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
