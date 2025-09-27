@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureCheckedEnrollment } from '../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -14,6 +14,11 @@ export default asyncHandler(async (req, res, next) => {
   // TODO: check if self-enrollment requires a secret link.
 
   const courseInstance: CourseInstance = res.locals.course_instance;
+
+  const existingEnrollment = await selectOptionalEnrollmentByUserId({
+    user_id: res.locals.authn_user.user_id,
+    course_instance_id: courseInstance.id,
+  });
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // then we can enroll the user.
@@ -28,7 +33,8 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    selfEnrollmentAllowed
+    selfEnrollmentAllowed &&
+    (existingEnrollment == null || existingEnrollment.status !== 'blocked')
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,

@@ -103,7 +103,7 @@ export function StatusColumnFilter({
                     onChange={() => toggleSelected(status)}
                   />
                   <label class="form-check-label" for={`status-${status}`}>
-                    <EnrollmentStatusIcon status={status} />
+                    <EnrollmentStatusIcon type="text" status={status} />
                   </label>
                 </div>
               );

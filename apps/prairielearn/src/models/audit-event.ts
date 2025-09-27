@@ -67,6 +67,9 @@ type SupportedTableActionCombination =
         | 'invited'
         | 'invitation_accepted'
         | 'invitation_rejected'
+        | 'blocked'
+        | 'unblocked'
+        | 'invitation_deleted'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
@@ -166,21 +169,21 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
 export async function insertAuditEvent(params: InsertAuditEventParams): Promise<StaffAuditEvent> {
   const {
     action,
-    action_detail = null,
+    action_detail,
     agent_authn_user_id,
     agent_user_id,
-    assessment_id = null,
-    assessment_instance_id = null,
-    assessment_question_id = null,
+    assessment_id,
+    assessment_instance_id,
+    assessment_question_id,
     context = {},
-    course_id = null,
-    course_instance_id = null,
-    group_id = null,
-    institution_id = null,
+    course_id,
+    course_instance_id,
+    group_id,
+    institution_id,
     new_row = null,
     old_row = null,
     row_id,
-    subject_user_id = null,
+    subject_user_id,
     table_name,
   } = params;
 
@@ -224,40 +227,52 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     agent_authn_user_id,
     agent_user_id,
     assessment_id:
-      assessment_id ?? (table_name === 'assessments' ? row_id : null) ?? inferred_assessment_id,
+      assessment_id !== undefined
+        ? assessment_id
+        : ((table_name === 'assessments' ? row_id : null) ?? inferred_assessment_id),
     assessment_instance_id:
-      assessment_instance_id ??
-      (table_name === 'assessment_instances' ? row_id : null) ??
-      inferred_assessment_instance_id,
+      assessment_instance_id !== undefined
+        ? assessment_instance_id
+        : ((table_name === 'assessment_instances' ? row_id : null) ??
+          inferred_assessment_instance_id),
     assessment_question_id:
-      assessment_question_id ??
-      (table_name === 'assessment_questions' ? row_id : null) ??
-      inferred_assessment_question_id,
+      assessment_question_id !== undefined
+        ? assessment_question_id
+        : ((table_name === 'assessment_questions' ? row_id : null) ??
+          inferred_assessment_question_id),
     context,
-    course_id: course_id ?? (table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id,
+    course_id:
+      course_id !== undefined
+        ? course_id
+        : ((table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id),
     course_instance_id:
-      course_instance_id ??
-      (table_name === 'course_instances' ? row_id : null) ??
-      inferred_course_instance_id,
-    group_id: group_id ?? (table_name === 'groups' ? row_id : null) ?? inferred_group_id,
+      course_instance_id !== undefined
+        ? course_instance_id
+        : ((table_name === 'course_instances' ? row_id : null) ?? inferred_course_instance_id),
+    group_id:
+      group_id !== undefined
+        ? group_id
+        : ((table_name === 'groups' ? row_id : null) ?? inferred_group_id),
     institution_id:
-      institution_id ?? (table_name === 'institutions' ? row_id : null) ?? inferred_institution_id,
+      institution_id !== undefined
+        ? institution_id
+        : ((table_name === 'institutions' ? row_id : null) ?? inferred_institution_id),
     new_row,
     old_row,
     row_id,
     subject_user_id:
-      subject_user_id ?? (table_name === 'users' ? row_id : null) ?? inferred_subject_user_id,
+      subject_user_id !== undefined
+        ? subject_user_id
+        : ((table_name === 'users' ? row_id : null) ?? inferred_subject_user_id),
     table_name,
   };
 
-  if (
-    !requiredTableFields[table_name].every(
-      // params[field] === null is a special case for when the field is explicitly marked as NULL.
-      (field) => params[field] === null || Boolean(resolvedParams[field]),
-    )
-  ) {
+  const missingFields = requiredTableFields[table_name].filter(
+    (field) => resolvedParams[field] !== null && !resolvedParams[field],
+  );
+  if (missingFields.length > 0) {
     throw new Error(
-      `${table_name} requires the following fields: ${requiredTableFields[table_name].join(', ')}`,
+      `${table_name} requires the following fields: ${requiredTableFields[table_name].join(', ')}. It is missing the following fields: ${missingFields.join(', ')}`,
     );
   }
 
