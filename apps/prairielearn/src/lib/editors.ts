@@ -957,8 +957,6 @@ export class CourseInstanceCopyEditor extends Editor {
     const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
       z.string(),
     );
 
