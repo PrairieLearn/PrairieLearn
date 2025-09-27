@@ -1,6 +1,6 @@
 {{#question}}
 {{#inline}}<span class="d-inline-block ms-2">{{/inline}}
-    <span class="input-group pl-symbolic-input" {{#formula_editor}}style="width:100%"{{/formula_editor}}>
+    <span class="input-group pl-symbolic-input {{#formula_editor}}w-100{{/formula_editor}}">
         {{#label}}
         <span class="input-group-text" id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
         {{/label}}
@@ -33,7 +33,7 @@
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
                 {{#suffix}}aria-describedby="pl-symbolic-input-{{uuid}}-suffix"{{/suffix}}
                 >
-                {{#raw_submitted_answer_l}}{{raw_submitted_answer_l}}{{/raw_submitted_answer_l}}
+                {{#raw_submitted_answer_latex}}{{raw_submitted_answer_latex}}{{/raw_submitted_answer_latex}}
             </math-field>
         {{/formula_editor}}
         {{^formula_editor}}
@@ -115,7 +115,15 @@
                 await window.PLSymbolicInputParseError("{{uuid}}");
             });
         </script>
-        {{#raw_submitted_answer_l}}<math-field id="symbolic-input-parse-error-{{uuid}}" read-only custom-functions="{{custom_functions}}" {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} class="gray-bg">{{raw_submitted_answer_l}}</math-field>{{/raw_submitted_answer_l}}
+        {{#raw_submitted_answer_latex}}
+            <math-field 
+                id="symbolic-input-parse-error-{{uuid}}" 
+                read-only 
+                custom-functions="{{custom_functions}}" 
+                {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} 
+                class="gray-bg"
+            >{{raw_submitted_answer_latex}}</math-field>
+        {{/raw_submitted_answer_latex}}
     {{/formula_editor}}
     {{^formula_editor}}
         {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
@@ -168,23 +176,32 @@
 {{^error}}
 {{#label}}<span>{{{label}}}</span>{{/label}}
 ${{a_sub}}$
-{{#raw_submitted_answer_l}}
+{{#raw_submitted_answer_latex}}
     <script>
         $(async function() {
             await window.PLSymbolicInputPopover("{{uuid}}");
         });
     </script>
-{{/raw_submitted_answer_l}}
+{{/raw_submitted_answer_latex}}
 <!-- Show submitted answer submission was parsed from -->
 <button type="button" id="pl-symbolic-input-{{uuid}}-button" class="ms-1 btn btn-sm btn-secondary small border"
     data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
     title="Original Input" 
-    {{^raw_submitted_answer_l}}
+    {{^raw_submitted_answer_latex}}
     data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>"
-    {{/raw_submitted_answer_l}}
-    {{#raw_submitted_answer_l}}
-    data-bs-content='Parsed from <math-field read-only id="symbolic-input-popover-{{uuid}}" {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} custom-functions="{{custom_functions_escaped}}" class="gray-bg">{{raw_submitted_answer_l}}</math-field>'
-    {{/raw_submitted_answer_l}}
+    {{/raw_submitted_answer_latex}}
+    {{#raw_submitted_answer_latex}}
+    data-bs-content='Parsed from 
+        <math-field 
+            read-only 
+            id="symbolic-input-popover-{{uuid}}"
+            {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
+            custom-functions="{{custom_functions}}"
+            class="gray-bg"
+        >
+            {{raw_submitted_answer_latex}}
+        </math-field>'
+    {{/raw_submitted_answer_latex}}
 >
     <i class="fa fa-question-circle" aria-hidden="true"></i>
 </button>

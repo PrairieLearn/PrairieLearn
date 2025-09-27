@@ -28,7 +28,7 @@ DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
-FORMULA_EDITOR_DEFAULT = False
+SHOW_FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
@@ -210,9 +210,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Next, get some attributes we will use in multiple places
     formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", FORMULA_EDITOR_DEFAULT
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
-    raw_submitted_answer_l = data["raw_submitted_answers"].get(name + "-latex", None)
+    raw_submitted_answer_latex = data["raw_submitted_answers"].get(
+        name + "-latex", None
+    )
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
     score = data["partial_scores"].get(name, {}).get("score")
@@ -239,11 +241,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "allow_complex": allow_complex,
             "allow_trig": allow_trig,
             "raw_submitted_answer": raw_submitted_answer,
-            "raw_submitted_answer_l": raw_submitted_answer_l,
+            "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,
-            "custom_functions": custom_functions,
+            "custom_functions": ",".join(custom_functions),
         }
 
         if show_score and score is not None:
@@ -261,11 +263,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             "a_sub": a_sub_converted,
             "raw_submitted_answer": raw_submitted_answer,
-            "raw_submitted_answer_l": raw_submitted_answer_l,
+            "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "formula_editor": formula_editor,
-            "custom_functions": custom_functions,
-            # Used in the "Parsed from" popover, which is wrapped in single quotes
-            "custom_functions_escaped": str(custom_functions).replace("'", "&quot;"),
+            "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
             display.value: True,
             "error": parse_error or missing_input,
@@ -320,7 +320,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     formula_editor = pl.get_boolean_attrib(
-        element, "formula-editor", FORMULA_EDITOR_DEFAULT
+        element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
@@ -343,20 +343,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
 
-    constants_class = psu._Constants()
-    operators: list[str] = list(psu.STANDARD_OPERATORS)
-    operators.extend(custom_functions)
-    operators.extend(constants_class.functions.keys())
-    if allow_trig:
-        operators.extend(constants_class.trig_functions.keys())
-    to_remove = ["Abs", "Min", "Max"]
-    for o in to_remove:
-        operators.remove(o)
-
     # Get submitted answer or return parse_error if it does not exist
     if formula_editor:
-        a_sub = format_submission(
-            data["submitted_answers"].get(name, None), operators, variables
+        a_sub = format_submission_for_sympy(
+            data["submitted_answers"].get(name, None),
+            allow_trig,
+            variables,
+            custom_functions,
         )
     else:
         a_sub = data["submitted_answers"].get(name, None)
@@ -419,8 +412,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission(
-    sub: str | None, functions: list[str], variables: list[str]
+def format_submission_for_sympy(
+    sub: str | None, allow_trig: bool, variables: list[str], custom_functions: list[str]
 ) -> str | None:
     """
     Format raw formula editor input to be compatible with SymPy. This is necessary
@@ -435,14 +428,25 @@ def format_submission(
 
     Args:
         sub: The formula editor input (extracted as plain text)
-        functions: The list of allowed function names in the input
-        variables: The list of allowed variable names in the input
+        allow_trig: Whether trigonometric functions are enabled
+        variables: The list of allowed variable names allowed in the input
+        custom_functions: The list of custom function names allowed in the input
 
     Returns:
         str: The formatted version of the input
     """
     if sub is None:
         return None
+
+    # Preparation: assemble a list of all available functions (default + custom)
+    constants_class = psu._Constants()
+    functions = (
+        list(psu.STANDARD_OPERATORS)
+        + list(constants_class.functions.keys())
+        + custom_functions
+    )
+    if allow_trig:
+        functions += list(constants_class.trig_functions.keys())
 
     # Step 1: Compile list of allowed names
     multi_char_variables = [v for v in variables if len(v) > 1]
