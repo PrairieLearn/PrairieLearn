@@ -2,7 +2,13 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,10 +16,18 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { EnrollmentSchema } from '../../lib/db-types.js';
+import {
+  CourseInstanceSchema,
+  CourseSchema,
+  EnrollmentSchema,
+  InstitutionSchema,
+} from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import {
+  ensureCheckedEnrollment,
   ensureEnrollment,
   selectAndLockEnrollmentById,
   selectOptionalEnrollmentByPendingUid,
@@ -76,6 +90,10 @@ router.get(
       withAuthzData: false,
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.authn_institution.id,
+    });
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -96,6 +114,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
         postContent:
@@ -119,7 +138,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation']),
+      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll', 'enroll']),
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
@@ -169,6 +188,34 @@ router.post(
           agent_user_id: user_id,
           agent_authn_user_id: user_id,
         });
+      });
+    } else if (body.__action === 'unenroll') {
+      await execute(sql.unenroll, {
+        course_instance_id: body.course_instance_id,
+        user_id,
+        req_date: res.locals.req_date,
+      });
+    } else if (body.__action === 'enroll') {
+      const { institution, course, course_instance } = await queryRow(
+        sql.select_course_instance,
+        { course_instance_id: body.course_instance_id },
+        z.object({
+          institution: InstitutionSchema,
+          course: CourseSchema,
+          course_instance: CourseInstanceSchema,
+        }),
+      );
+
+      // Abuse the middleware to authorize the user for the course instance.
+      req.params.course_instance_id = course_instance.id;
+      await authzCourseOrInstance(req, res);
+
+      await ensureCheckedEnrollment({
+        institution,
+        course,
+        course_instance,
+        authz_data: res.locals.authz_data,
+        action_detail: 'explicit_joined',
       });
     }
 
