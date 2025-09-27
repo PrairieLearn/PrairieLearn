@@ -45,8 +45,9 @@ math-field[hide-menu]::part(menu-toggle) {
   display: none;
 }
 
-math-field.is-invalid {
-  background-image: none !important;
+.form-control.is-invalid.no-validation-icon {
+  background-image: none;
+  padding-right: 0.1rem;
 }
 
 math-field::part(menu-toggle) {
