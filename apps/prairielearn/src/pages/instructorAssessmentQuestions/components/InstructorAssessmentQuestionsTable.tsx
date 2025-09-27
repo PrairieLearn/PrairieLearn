@@ -18,6 +18,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
+import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -70,8 +71,8 @@ export function InstructorAssessmentQuestionsTable({
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const handleResetButtonClick = (questionId: string) => {
-    setResetAssessmentQuestionId(questionId);
+  const handleResetButtonClick = (assessmentQuestionId: string) => {
+    setResetAssessmentQuestionId(assessmentQuestionId);
     setShowResetModal(true);
   };
 
@@ -259,12 +260,16 @@ export function InstructorAssessmentQuestionsTable({
           </table>
         </div>
       </div>
-      <ResetQuestionVariantsModal
-        csrfToken={csrfToken}
-        assessmentQuestionId={resetAssessmentQuestionId}
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-      />
+      {assessmentType === 'Homework' ? (
+        <ResetQuestionVariantsModal
+          csrfToken={csrfToken}
+          assessmentQuestionId={resetAssessmentQuestionId}
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+        />
+      ) : (
+        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+      )}
     </>
   );
 }
