@@ -3,14 +3,14 @@
   max-width: 100%;
 }
 
-math-field.gray-bg {
+math-field.read-only {
   background-color: #f0f0f0;
   border-color: #cccccc;
   padding: 0.05rem;
   border-radius: 4px;
 }
 
-math-field.gray-bg::part(menu-toggle) {
+math-field.read-only::part(menu-toggle) {
   display: none !important;
 }
 
@@ -27,8 +27,8 @@ math-field.gray-bg::part(menu-toggle) {
   }
 }
 
-math-field {
-  padding-right: 0.1rem !important;
+math-field.form-control {
+  padding-right: 0.1rem;
 }
 
 math-field::part(content) {

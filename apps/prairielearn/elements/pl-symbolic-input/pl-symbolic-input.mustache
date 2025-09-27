@@ -121,7 +121,7 @@
                 read-only 
                 custom-functions="{{custom_functions}}" 
                 {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}} 
-                class="gray-bg"
+                class="read-only"
             >{{raw_submitted_answer_latex}}</math-field>
         {{/raw_submitted_answer_latex}}
     {{/formula_editor}}
@@ -197,7 +197,7 @@ ${{a_sub}}$
             id="symbolic-input-popover-{{uuid}}"
             {{#allow_trig}}allow-trig="allow-trig"{{/allow_trig}}
             custom-functions="{{custom_functions}}"
-            class="gray-bg"
+            class="read-only"
         >
             {{raw_submitted_answer_latex}}
         </math-field>'
