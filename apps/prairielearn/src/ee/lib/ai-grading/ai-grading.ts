@@ -102,9 +102,9 @@ export async function aiGrade({
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
-    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
-      assessment_question.id,
-    );
+    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+      assessment_question_id: assessment_question.id,
+    });
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
