@@ -240,7 +240,9 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0" style="white-space: pre-wrap;">${explanation}</pre>
+          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}</pre
+          >
         </div>
       </div>
     </div>

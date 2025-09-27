@@ -1342,7 +1342,11 @@
     },
     "costPerMillionPromptTokens": {
       "type": "number",
-      "default": 2.5
+      "default": 1.25
+    },
+    "costPerMillionCachedTokens": {
+      "type": "number",
+      "default": 0.125
     },
     "costPerMillionCompletionTokens": {
       "type": "number",
