@@ -265,7 +265,7 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
     assessment_id: assessment.id,
   });
 
-  if (!assessmentQuestionRows) {
+  if (assessmentQuestionRows.length === 0) {
     return {
       perQuestion: [],
       total: {

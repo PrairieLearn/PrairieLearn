@@ -735,11 +735,11 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): ValidationResult {
 function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
   let { errors, mandatoryPythonCorrectAnswers = new Set<string>() } = checkTag(ast);
 
-  if ('childNodes' in ast && ast.childNodes) {
+  if ('childNodes' in ast) {
     for (const child of ast.childNodes) {
       const childResult = dfsCheckParseTree(child);
       errors = errors.concat(childResult.errors);
-      childResult.mandatoryPythonCorrectAnswers?.forEach((x) =>
+      childResult.mandatoryPythonCorrectAnswers.forEach((x) =>
         mandatoryPythonCorrectAnswers.add(x),
       );
     }
