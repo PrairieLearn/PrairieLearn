@@ -133,6 +133,132 @@ describe('Course instance syncing', () => {
     assert.equal(remainingRule.institution, 'Any');
   });
 
+  describe('syncs access control settings correctly', async () => {
+    const timezone = 'America/New_York';
+
+    // We pick an arbitrary date to use.
+    const date = new Date('2025-09-05T20:52:49.000Z');
+
+    // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
+    // be interpreted in the course instance's timezone.
+    const jsonDate = Temporal.Instant.from(date.toISOString())
+      .toZonedDateTimeISO(timezone)
+      .toPlainDateTime()
+      .toString();
+
+    const schemaMappings: {
+      json: CourseInstanceJsonInput['accessControl'];
+      db: {
+        access_control_published_start_date: Date | null;
+        access_control_published_end_date: Date | null;
+      } | null;
+      errors: string[];
+    }[] = [
+      {
+        json: {},
+        db: {
+          access_control_published_start_date: null,
+          access_control_published_end_date: null,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          publishedEndDate: jsonDate,
+        },
+        db: {
+          access_control_published_start_date: null,
+          access_control_published_end_date: date,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          publishedStartDate: jsonDate,
+          publishedEndDate: jsonDate,
+        },
+        db: {
+          access_control_published_start_date: date,
+          access_control_published_end_date: date,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          publishedStartDate: jsonDate,
+        },
+        db: null,
+        errors: [],
+      },
+      {
+        json: {
+          publishedStartDate: 'not a date',
+          publishedEndDate: jsonDate,
+        },
+        db: null,
+        errors: ['"accessControl.publishedStartDate" is not a valid date.'],
+      },
+      {
+        json: {
+          publishedEndDate: 'not a date',
+        },
+        db: null,
+        errors: ['"accessControl.publishedEndDate" is not a valid date.'],
+      },
+      {
+        json: {
+          publishedStartDate: '2025-12-01T00:00:00',
+          publishedEndDate: '2025-06-01T00:00:00',
+        },
+        db: null,
+        errors: [
+          '"accessControl.publishedStartDate" must be before "accessControl.publishedEndDate".',
+        ],
+      },
+    ];
+
+    let i = 0;
+    for (const { json, db, errors } of schemaMappings) {
+      it(`access control configuration #${i++}`, async () => {
+        const courseData = util.getCourseData();
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.accessControl = json;
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
+        // Remove allowAccess rules since we can't have both allowAccess and accessControl
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
+          util.ASSESSMENT_ID
+        ].allowAccess = [];
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [];
+
+        const courseDir = await util.writeCourseToTempDirectory(courseData);
+        const results = await util.syncCourseData(courseDir);
+        assert.isOk(results.status === 'complete');
+        const courseInstance = results.courseData.courseInstances[util.COURSE_INSTANCE_ID];
+        const courseInstanceErrors = courseInstance.courseInstance.errors;
+        const courseInstanceUUID = courseInstance.courseInstance.uuid;
+        assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
+        assert.isDefined(courseInstanceUUID);
+
+        const syncedCourseInstance = await selectCourseInstanceByUuid({
+          course_id: results.courseId,
+          uuid: courseInstanceUUID,
+        });
+        assert.isOk(syncedCourseInstance);
+
+        if (courseInstanceErrors.length > 0) {
+          return;
+        }
+
+        const result = {
+          access_control_published_start_date:
+            syncedCourseInstance.access_control_published_start_date,
+          access_control_published_end_date: syncedCourseInstance.access_control_published_end_date,
+        };
+
+        assert.deepEqual(result, db);
+      });
+    }
+  });
+
   it('soft-deletes and restores course instances', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const originalCourseInstance = courseData.courseInstances[util.COURSE_INSTANCE_ID];
@@ -664,7 +790,7 @@ describe('Course instance syncing', () => {
         assert.equal(JSON.stringify(courseInstanceErrors), JSON.stringify(errors));
         assert.isDefined(courseInstanceUUID);
 
-        if (db == null) {
+        if (courseInstanceErrors.length > 0) {
           return;
         }
 

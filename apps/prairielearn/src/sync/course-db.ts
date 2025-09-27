@@ -1,3 +1,4 @@
+import assert from 'assert';
 import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
@@ -1079,6 +1080,10 @@ function validateAssessment({
   // instances that instructors will never touch again, as they won't benefit
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
+
+  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `accessControl`.
+  // So further validation will never be done here.
+
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1394,6 +1399,57 @@ function validateCourseInstance({
 
   if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
     warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
+  }
+
+  const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
+  const usingModernAccessControl = courseInstance.accessControl != null;
+
+  if (usingLegacyAllowAccess && usingModernAccessControl) {
+    errors.push('Cannot use both "allowAccess" and "accessControl" in the same course instance.');
+  } else if (usingModernAccessControl) {
+    assert(courseInstance.accessControl != null);
+    const hasPublishedEndDate = courseInstance.accessControl.publishedEndDate != null;
+    const hasPublishedStartDate = courseInstance.accessControl.publishedStartDate != null;
+    if (hasPublishedStartDate && !hasPublishedEndDate) {
+      errors.push(
+        '"accessControl.publishedEndDate" is required if "accessControl.publishedStartDate" is specified.',
+      );
+    }
+    if (!hasPublishedStartDate && hasPublishedEndDate) {
+      errors.push(
+        '"accessControl.publishedStartDate" is required if "accessControl.publishedEndDate" is specified.',
+      );
+    }
+
+    const parsedPublishedStartDate =
+      courseInstance.accessControl.publishedStartDate == null
+        ? null
+        : parseJsonDate(courseInstance.accessControl.publishedStartDate);
+
+    if (hasPublishedStartDate && parsedPublishedStartDate == null) {
+      errors.push('"accessControl.publishedStartDate" is not a valid date.');
+    }
+
+    const parsedPublishedEndDate =
+      courseInstance.accessControl.publishedEndDate == null
+        ? null
+        : parseJsonDate(courseInstance.accessControl.publishedEndDate);
+
+    if (hasPublishedEndDate && parsedPublishedEndDate == null) {
+      errors.push('"accessControl.publishedEndDate" is not a valid date.');
+    }
+
+    if (
+      hasPublishedStartDate &&
+      hasPublishedEndDate &&
+      parsedPublishedStartDate != null &&
+      parsedPublishedEndDate != null &&
+      isAfter(parsedPublishedStartDate, parsedPublishedEndDate)
+    ) {
+      errors.push(
+        '"accessControl.publishedStartDate" must be before "accessControl.publishedEndDate".',
+      );
+    }
   }
 
   let accessibleInFuture = false;
