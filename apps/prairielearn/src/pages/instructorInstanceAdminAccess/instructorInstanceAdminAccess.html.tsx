@@ -37,11 +37,6 @@ export function InstructorInstanceAdminAccess({
 
   // Convert access rules to JSON format for the migration modal
 
-  const hasModernAccessControl =
-    courseInstance.access_control_published_start_date !== null ||
-    courseInstance.access_control_published_end_date !== null ||
-    accessControlExtensions.length > 0;
-
   return (
     <>
       <Hydrate>
@@ -54,7 +49,7 @@ export function InstructorInstanceAdminAccess({
           accessControlExtensions={accessControlExtensions}
         />
       </Hydrate>
-      {!hasModernAccessControl && (
+      {accessRules.length > 0 && (
         <LegacyAccessRuleCard
           accessRules={accessRules}
           showComments={showComments}
@@ -93,17 +88,15 @@ function LegacyAccessRuleCard({
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
         <h1>{courseInstance.long_name} course instance access rules</h1>
-        {hasCourseInstancePermissionEdit &&
-          hasCourseInstancePermissionView &&
-          accessRules.length > 0 && (
-            <Hydrate>
-              <AccessControlMigrationModal
-                accessRules={accessRuleJsonArray}
-                csrfToken={csrfToken}
-                origHash={origHash}
-              />
-            </Hydrate>
-          )}
+        {hasCourseInstancePermissionEdit && hasCourseInstancePermissionView && (
+          <Hydrate>
+            <AccessControlMigrationModal
+              accessRules={accessRuleJsonArray}
+              csrfToken={csrfToken}
+              origHash={origHash}
+            />
+          </Hydrate>
+        )}
       </div>
 
       <div class="table-responsive">

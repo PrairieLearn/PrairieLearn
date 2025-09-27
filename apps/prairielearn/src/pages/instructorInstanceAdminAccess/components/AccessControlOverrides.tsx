@@ -97,7 +97,8 @@ export function AccessControlOverrides({
         <div>
           <h5 class="mb-0">Access Control Extensions</h5>
           <small class="text-muted">
-            If multiple extensions apply, the latest date will take effect.
+            Extend access to specific groups of users beyond the original archive date. If multiple
+            extensions apply, the latest date will take effect.
           </small>
         </div>
         {canEdit && (

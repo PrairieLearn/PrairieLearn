@@ -185,7 +185,7 @@ export function migrateAccessRuleJsonToAccessControl(
   // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
   // We will silently update the dates to the nearest valid date.
   if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
-    rule.startDate = undefined;
+    rule.startDate = '2000-01-01T00:00:00';
   }
 
   // We can't do anything with the end date if it is before 1884.

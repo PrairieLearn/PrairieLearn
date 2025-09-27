@@ -5,6 +5,7 @@ import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -19,7 +20,7 @@ import {
   migrateAccessRuleJsonToAccessControl,
 } from '../../lib/course-instance-access.js';
 import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
@@ -153,8 +154,34 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
+      const parsedBody = z
+        .object({
+          accessControl: z.object({
+            publishedStartDate: z.string().nullable(),
+            publishedEndDate: z.string().nullable(),
+          }),
+        })
+        .parse(req.body);
+
       // Update the access control settings
-      courseInstanceInfo.accessControl = req.body.accessControl;
+      const resolvedAccessControl = {
+        publishedStartDate: propertyValueWithDefault(
+          courseInstanceInfo.accessControl?.publishedStartDate,
+          parsedBody.accessControl.publishedStartDate,
+          (v: string | null) => v === null || v === '',
+        ),
+        publishedEndDate: propertyValueWithDefault(
+          courseInstanceInfo.accessControl?.publishedEndDate,
+          parsedBody.accessControl.publishedEndDate,
+          (v: string | null) => v === null || v === '',
+        ),
+      };
+      const hasAccessControl = Object.values(resolvedAccessControl).some((v) => v !== undefined);
+      if (!hasAccessControl) {
+        courseInstanceInfo.accessControl = undefined;
+      } else {
+        courseInstanceInfo.accessControl = resolvedAccessControl;
+      }
 
       // Format and write the updated JSON
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
