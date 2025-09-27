@@ -121,9 +121,7 @@ function getParamsForAssessment(
           'id' | 'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
         > & {
           qid: QuestionAlternativeJson['id'];
-          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
           allowRealTimeGrading: boolean;
-          jsonAllowRealTimeGrading: boolean | undefined;
           canView: ZoneQuestionJson['canView'];
           canSubmit: ZoneQuestionJson['canSubmit'];
           maxPoints: number | null;
@@ -131,6 +129,15 @@ function getParamsForAssessment(
           maxAutoPoints: number | null;
           autoPoints: number | number[] | null;
           manualPoints: number | null;
+          jsonAllowRealTimeGrading: boolean | undefined;
+          jsonAutoPoints: number | number[] | null;
+          jsonForceMaxPoints: boolean | null;
+          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
+          jsonManualPoints: number | null;
+          jsonMaxPoints: number | null;
+          jsonMaxAutoPoints: number | null;
+          jsonPoints: number | number[] | null;
+          jsonTriesPerVariant: number | null;
         })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionAllowRealTimeGrading =
@@ -150,13 +157,20 @@ function getParamsForAssessment(
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
-            jsonGradeRateMinutes: alternative.gradeRateMinutes,
             allowRealTimeGrading:
               alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading ?? true,
-            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
+            jsonAutoPoints: alternative.autoPoints ?? null,
+            jsonForceMaxPoints: alternative.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: alternative.gradeRateMinutes,
+            jsonManualPoints: alternative.manualPoints ?? null,
+            jsonMaxAutoPoints: alternative.maxAutoPoints ?? null,
+            jsonMaxPoints: alternative.maxPoints ?? null,
+            jsonPoints: alternative.points ?? null,
+            jsonTriesPerVariant: alternative.triesPerVariant ?? null,
           };
         });
       } else if (question.id) {
@@ -172,9 +186,7 @@ function getParamsForAssessment(
             triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            jsonGradeRateMinutes: question.gradeRateMinutes,
             allowRealTimeGrading: questionAllowRealTimeGrading ?? true,
-            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             // If a question has alternatives, the comment is stored on the alternative
@@ -182,6 +194,15 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.comment,
+            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
+            jsonAutoPoints: question.autoPoints ?? null,
+            jsonForceMaxPoints: question.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: question.gradeRateMinutes,
+            jsonManualPoints: question.manualPoints ?? null,
+            jsonMaxPoints: question.maxPoints ?? null,
+            jsonMaxAutoPoints: question.maxAutoPoints ?? null,
+            jsonPoints: question.points ?? null,
+            jsonTriesPerVariant: question.triesPerVariant ?? null,
           },
         ];
       }
@@ -241,12 +262,10 @@ function getParamsForAssessment(
           force_max_points: alternative.forceMaxPoints ?? false,
           tries_per_variant: alternative.triesPerVariant ?? 1,
           grade_rate_minutes: alternative.gradeRateMinutes,
-          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           // This is the "resolved" setting that takes into account configuration at
           // all levels of the assessment hierarchy, with lower levels overriding
           // higher ones.
           allow_real_time_grading: alternative.allowRealTimeGrading,
-          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -259,6 +278,15 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           comment: alternative.comment,
+          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
+          json_auto_points: alternative.jsonAutoPoints,
+          json_force_max_points: alternative.jsonForceMaxPoints,
+          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          json_points: alternative.jsonPoints,
+          json_manual_points: alternative.jsonManualPoints,
+          json_max_points: alternative.jsonMaxPoints,
+          json_max_auto_points: alternative.jsonMaxAutoPoints,
+          json_tries_per_variant: alternative.jsonTriesPerVariant,
         };
       });
 
@@ -266,15 +294,22 @@ function getParamsForAssessment(
         number: alternativeGroupNumber,
         number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
-        json_allow_real_time_grading: question.allowRealTimeGrading,
-        json_grade_rate_minutes: question.gradeRateMinutes,
-        json_can_view: question.canView,
-        json_can_submit: question.canSubmit,
-        json_has_alternatives: !!question.alternatives,
         questions,
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
+        json_allow_real_time_grading: question.allowRealTimeGrading,
+        json_auto_points: question.autoPoints ?? null,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_force_max_points: question.forceMaxPoints ?? null,
+        json_grade_rate_minutes: question.gradeRateMinutes,
+        json_has_alternatives: !!question.alternatives,
+        json_manual_points: question.manualPoints ?? null,
+        json_max_points: question.maxPoints ?? null,
+        json_max_auto_points: question.maxAutoPoints ?? null,
+        json_points: question.points ?? null,
+        json_tries_per_variant: question.triesPerVariant ?? null,
       };
     });
   });
