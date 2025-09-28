@@ -438,7 +438,7 @@ def format_submission_for_sympy(
     if sub is None:
         return None
 
-    # Preparation: assemble a list of all available functions (default + custom)
+    # Step 1: Assemble a list of all available names
     constants_class = psu._Constants()
     functions = (
         list(psu.STANDARD_OPERATORS)
@@ -447,17 +447,16 @@ def format_submission_for_sympy(
     )
     if allow_trig:
         functions += list(constants_class.trig_functions.keys())
-
-    # Step 1: Compile list of allowed names
     multi_char_variables = [v for v in variables if len(v) > 1]
     names = functions + multi_char_variables
-    # Necessary for names that are prefixes of other names, e.g., cos and cosh
-    names = sorted(names, key=len, reverse=True)
 
+    # Necessary for names that are prefixes of other names, e.g., acos and acosh
+    names.sort(key=len, reverse=True)
+
+    print(names)
     # Step 2: Merge allowed names (e.g., "s i n" -> "sin")
     names_found = []
     for name in names:
-        spaced_name = name
         spaced_name = " ".join(list(name))
         if spaced_name in sub:
             sub = sub.replace(spaced_name, name)
@@ -465,7 +464,7 @@ def format_submission_for_sympy(
 
     # Step 3: Protect names that contain numbers (e.g., in custom functions)
     protected_indices = set()
-    for name in names_found:
+    for name in names:
         if re.search(r"\d", name):
             for match in re.finditer(re.escape(name), sub):
                 start = match.start()
