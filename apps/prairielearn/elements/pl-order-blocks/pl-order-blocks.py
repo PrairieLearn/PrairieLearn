@@ -5,6 +5,7 @@ import os
 import random
 from copy import deepcopy
 from typing import TypedDict, no_type_check
+from dag_checker import Multigraph
 
 import chevron
 import lxml.html
@@ -38,7 +39,7 @@ class OrderBlocksAnswerData(TypedDict):
     index: int
     tag: str
     distractor_for: str | None
-    depends: list[str] | list[list[str]]  # only used with DAG grader
+    depends: list[str] | dict[str, list[str]]  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
@@ -212,8 +213,11 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     }
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
+
+    # TODO: this will break the grading if you use correct_answers to display a correct answer 
+    # because the depends graph will be missing nodes in order to collapse the multigraph
     if (
-        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
+        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi
     ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
@@ -614,7 +618,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
             # TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
-                submission, depends_multigraph, final, order_blocks_options.paths, {}
+                submission, depends_multigraph, final, {}
             )
         else:
             # This is so num_initial_correct and true_answer_length is not possibly unbound
