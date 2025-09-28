@@ -29,7 +29,7 @@ def test_format_submission_for_sympy(
     variables: list[str],
     custom_functions: list[str],
     expected: str,
-):
+) -> None:
     out = symbolic_input.format_submission_for_sympy(
         sub, allow_trig, variables, custom_functions
     )
