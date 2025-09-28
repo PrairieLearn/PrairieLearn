@@ -1,4 +1,6 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
+import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
@@ -12,8 +14,6 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
-import { Hydrate } from '../../../lib/preact.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 

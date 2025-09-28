@@ -3372,6 +3372,87 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@postgrestools/cli-aarch64-apple-darwin@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-aarch64-apple-darwin@npm:0.15.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-aarch64-linux-gnu@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-aarch64-linux-gnu@npm:0.15.0"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-aarch64-windows-msvc@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-aarch64-windows-msvc@npm:0.15.0"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-x86_64-apple-darwin@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-x86_64-apple-darwin@npm:0.15.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-x86_64-linux-gnu@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-x86_64-linux-gnu@npm:0.15.0"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-x86_64-linux-musl@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-x86_64-linux-musl@npm:0.15.0"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/cli-x86_64-windows-msvc@npm:0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/cli-x86_64-windows-msvc@npm:0.15.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@postgrestools/postgrestools@npm:^0.15.0":
+  version: 0.15.0
+  resolution: "@postgrestools/postgrestools@npm:0.15.0"
+  dependencies:
+    "@postgrestools/cli-aarch64-apple-darwin": "npm:0.15.0"
+    "@postgrestools/cli-aarch64-linux-gnu": "npm:0.15.0"
+    "@postgrestools/cli-aarch64-windows-msvc": "npm:0.15.0"
+    "@postgrestools/cli-x86_64-apple-darwin": "npm:0.15.0"
+    "@postgrestools/cli-x86_64-linux-gnu": "npm:0.15.0"
+    "@postgrestools/cli-x86_64-linux-musl": "npm:0.15.0"
+    "@postgrestools/cli-x86_64-windows-msvc": "npm:0.15.0"
+  dependenciesMeta:
+    "@postgrestools/cli-aarch64-apple-darwin":
+      optional: true
+    "@postgrestools/cli-aarch64-linux-gnu":
+      optional: true
+    "@postgrestools/cli-aarch64-windows-msvc":
+      optional: true
+    "@postgrestools/cli-x86_64-apple-darwin":
+      optional: true
+    "@postgrestools/cli-x86_64-linux-gnu":
+      optional: true
+    "@postgrestools/cli-x86_64-linux-musl":
+      optional: true
+    "@postgrestools/cli-x86_64-windows-msvc":
+      optional: true
+  bin:
+    postgrestools: bin/postgrestools
+  checksum: 10c0/457c185f192a95c3b13734749540766f674b69dae03e5b67417ae1d973259866cb9cd57170889c058ef29bb12857e12e67351e3438ff9961025213cffe6b6499
+  languageName: node
+  linkType: hard
+
 "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes":
   version: 0.0.0-use.local
   resolution: "@prairielearn/actions-report-image-sizes@workspace:packages/actions-report-image-sizes"
@@ -3636,6 +3717,7 @@ __metadata:
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/utils": "workspace:^"
     "@types/async": "npm:^3.2.25"
     "@types/dockerode": "npm:^3.3.43"
     "@types/fs-extra": "npm:^11.0.4"
@@ -3712,7 +3794,7 @@ __metadata:
     "@types/node": "npm:^22.18.0"
     "@vitest/coverage-v8": "npm:^3.2.4"
     isomorphic-dompurify: "npm:^2.26.0"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.5"
     typescript: "npm:^5.9.2"
@@ -3726,7 +3808,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@vitest/coverage-v8": "npm:^3.2.4"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     tsx: "npm:^4.20.5"
     typescript: "npm:^5.9.2"
@@ -3919,12 +4001,14 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/preact": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/session": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/utils": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.5"
@@ -4088,7 +4172,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.2.0"
-    marked: "npm:^16.2.1"
+    marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
     mathlive: "npm:^0.106.0"
     memorystream: "npm:^0.3.1"
@@ -4187,6 +4271,27 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     original-preact: "npm:preact@^10.27.0"
+    typescript: "npm:^5.9.2"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/preact@workspace:^, @prairielearn/preact@workspace:packages/preact":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/preact@workspace:packages/preact"
+  dependencies:
+    "@prairielearn/browser-utils": "workspace:^"
+    "@prairielearn/compiled-assets": "workspace:^"
+    "@prairielearn/error": "workspace:^"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/utils": "workspace:^"
+    "@types/node": "npm:^22.18.0"
+    clsx: "npm:^2.1.1"
+    preact: "npm:^10.27.0"
+    preact-render-to-string: "npm:^6.6.1"
+    selector-observer: "npm:^2.1.6"
+    superjson: "npm:^2.2.2"
     typescript: "npm:^5.9.2"
   languageName: unknown
   linkType: soft
@@ -4291,6 +4396,19 @@ __metadata:
 "@prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/utils@workspace:^, @prairielearn/utils@workspace:packages/utils":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/utils@workspace:packages/utils"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^22.18.0"
+    "@vitest/coverage-v8": "npm:^3.2.4"
+    tsx: "npm:^4.20.5"
+    typescript: "npm:^5.9.2"
+    vitest: "npm:^3.2.4"
   languageName: unknown
   linkType: soft
 
@@ -13162,12 +13280,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"marked@npm:^16.2.1":
-  version: 16.2.1
-  resolution: "marked@npm:16.2.1"
+"marked@npm:^16.3.0":
+  version: 16.3.0
+  resolution: "marked@npm:16.3.0"
   bin:
     marked: bin/marked.js
-  checksum: 10c0/0f4a259c8a7884a14830f06b4b44c0e5fab27924102f2713606e0627c8473d130ab9070900a40c18b0e8d39ba2f31194ce6931999ba4c7bd3b6240f6cfe9cbb3
+  checksum: 10c0/5a3d7da93d7692014c8764c31dc741fa6ee16d8573788a3b28d041c440e79177c46d786ad7c1fc2b3f5e301d6db32e22da45efd4c00ddbc31caf87bd8e9a673b
   languageName: node
   linkType: hard
 
@@ -15193,6 +15311,7 @@ __metadata:
     "@changesets/cli": "npm:^2.29.6"
     "@eslint-react/eslint-plugin": "npm:^2.0.0-next.164"
     "@html-eslint/eslint-plugin": "npm:^0.46.2"
+    "@postgrestools/postgrestools": "npm:^0.15.0"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@stylistic/eslint-plugin": "npm:^5.2.3"
     "@tanstack/eslint-plugin-query": "npm:^5.83.1"

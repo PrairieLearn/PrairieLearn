@@ -6,7 +6,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type AuthnProvider, InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
-import { type Timezone, formatTimezone } from '../../lib/timezones.js';
+import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export const InstitutionRowSchema = z.object({
   institution: InstitutionSchema,

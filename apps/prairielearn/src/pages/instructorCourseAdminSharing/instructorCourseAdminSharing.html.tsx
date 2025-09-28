@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const SharingSetRowSchema = z.object({
   name: z.string(),

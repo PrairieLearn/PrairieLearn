@@ -23,7 +23,7 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import type { ResLocalsAuthnUser } from './authn.js';
+import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -347,7 +347,7 @@ function buildLocals({
         locals.showTrueAnswer = true;
       }
     }
-    if (!assessment.allow_real_time_grading) {
+    if (assessment_question.allow_real_time_grading === false) {
       locals.showGradeButton = false;
     }
     if (instance_question.allow_grade_left_ms > 0) {
