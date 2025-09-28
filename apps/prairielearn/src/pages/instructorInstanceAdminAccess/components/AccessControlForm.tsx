@@ -4,6 +4,7 @@ import clsx from 'clsx';
 import { useEffect, useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
+import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type {
   CourseInstance,
@@ -15,20 +16,10 @@ import { AccessControlOverrides } from './AccessControlOverrides.js';
 // Create QueryClient outside component to ensure stability
 const queryClient = new QueryClient();
 
-// Helper function to format dates from the database
-const formatDatabaseDate = (date: Date | null): string => {
-  if (!date) return '';
-  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
-    .toZonedDateTimeISO(Temporal.Now.timeZoneId())
-    .toPlainDateTime()
-    .toString()
-    .slice(0, 16);
-};
-
 // Reusable StatusHeader component
 interface StatusHeaderProps {
   status: 'published' | 'unpublished' | 'archived';
-  statusText: string;
+  statusText: string | preact.JSX.Element;
   actionButton?: preact.JSX.Element;
 }
 
@@ -46,14 +37,14 @@ const StatusHeader = ({ status, statusText, actionButton }: StatusHeaderProps) =
   };
 
   return (
-    <div class="mb-3 d-flex justify-content-between align-items-start">
-      <div>
-        <h5 class="mb-2">
+    <div class="mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h5 class="mb-0">
           Status: <span class={statusClasses[status]}>{statusLabels[status]}</span>
         </h5>
-        <p class="text-muted mb-0">{statusText}</p>
+        {actionButton}
       </div>
-      {actionButton}
+      <p class="mb-0">{statusText}</p>
     </div>
   );
 };
@@ -67,6 +58,7 @@ interface DateFieldProps {
   canEdit: boolean;
   required?: boolean;
   validation?: any;
+  timezone: string;
 }
 
 const DateField = ({
@@ -77,23 +69,27 @@ const DateField = ({
   canEdit,
   required = false,
   validation,
+  timezone,
 }: DateFieldProps) => {
   return (
     <div class="mb-3">
       <label class="form-label" for={id}>
-        <strong>{label}</strong>
+        {label}
       </label>
-      <input
-        type="datetime-local"
-        class={clsx('form-control', errors[id] && 'is-invalid')}
-        id={id}
-        disabled={!canEdit}
-        {...register(id, {
-          required: required ? `${label} is required` : false,
-          ...validation,
-        })}
-      />
-      {errors[id] && <div class="invalid-feedback">{errors[id].message}</div>}
+      <div class="input-group">
+        <input
+          type="datetime-local"
+          class={clsx('form-control', errors[id] && 'is-invalid')}
+          id={id}
+          disabled={!canEdit}
+          {...register(id, {
+            required: required ? `${label} is required` : false,
+            ...validation,
+          })}
+        />
+        <span class="input-group-text">{timezone}</span>
+      </div>
+      {errors[id] && <div class="text-danger small mt-1">{errors[id].message}</div>}
     </div>
   );
 };
@@ -108,11 +104,11 @@ interface ActionButtonProps {
   children: preact.JSX.Element | string;
 }
 
-const ActionButton = ({ type, variant, disabled, onClick, title, children }: ActionButtonProps) => {
+const ActionButton = ({ type, variant, disabled, onClick, children }: ActionButtonProps) => {
   const buttonClasses = {
     primary: 'btn btn-primary',
     'outline-danger': 'btn btn-outline-danger',
-    success: 'btn btn-success',
+    success: 'btn btn-primary',
   };
 
   return (
@@ -121,7 +117,6 @@ const ActionButton = ({ type, variant, disabled, onClick, title, children }: Act
       type={type}
       class={buttonClasses[variant]}
       disabled={disabled}
-      title={title}
       onClick={onClick}
     >
       {children}
@@ -177,7 +172,7 @@ export function AccessControlForm({
     handleSubmit,
     watch,
     setValue,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<AccessControlFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -233,8 +228,9 @@ export function AccessControlForm({
       // Handle start date based on radio selection
       let publishDate: string | null = null;
       if (startDateType === 'now') {
-        const now = new Date();
-        publishDate = now.toISOString().slice(0, 16);
+        // Get current time in the course instance's timezone
+        const now = Temporal.Now.zonedDateTimeISO(courseInstance.display_timezone);
+        publishDate = now.toPlainDateTime().toString().slice(0, 16);
       } else if (data.publishDate) {
         publishDate = data.publishDate;
       }
@@ -304,21 +300,16 @@ export function AccessControlForm({
   };
 
   const handleQuickExtend = (days: number) => {
-    const newDate = new Date();
-    newDate.setDate(newDate.getDate() + days);
-    const isoString = newDate.toISOString().slice(0, 16);
-    setValue('archiveDate', isoString);
-    void handleSubmit(onSubmit)();
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'numeric',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    // Get current archive date and add the specified days
+    const currentArchiveDate = watch('archiveDate');
+    if (currentArchiveDate) {
+      // Parse the current archive date and add days in the course instance's timezone
+      const currentDate = Temporal.PlainDateTime.from(currentArchiveDate);
+      const zonedCurrentDate = currentDate.toZonedDateTime(courseInstance.display_timezone);
+      const newDate = zonedCurrentDate.add({ days });
+      const isoString = newDate.toPlainDateTime().toString().slice(0, 16);
+      setNewArchiveDate(isoString);
+    }
   };
 
   if (hasAccessRules) {
@@ -346,17 +337,33 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="published"
-                  statusText={`Course was accessible starting on ${formatDate(formatDatabaseDate(courseInstance.access_control_publish_date))} and will no longer be accessible after ${formatDate(formatDatabaseDate(courseInstance.access_control_archive_date))}.`}
+                  statusText={
+                    <>
+                      Course was accessible starting on{' '}
+                      <FriendlyDate
+                        date={courseInstance.access_control_publish_date!}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                      />{' '}
+                      and will no longer be accessible after{' '}
+                      <FriendlyDate
+                        date={courseInstance.access_control_archive_date!}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                      />
+                      .
+                    </>
+                  }
                   actionButton={
                     canEdit ? (
                       <ActionButton
                         type="button"
                         variant="outline-danger"
-                        disabled={isSubmitting}
-                        title="This will immediately unpublish the course, making it inaccessible to all students."
+                        // TODO: do we want to disable if you set a field to the same value?
+                        disabled={isSubmitting || !isDirty}
                         onClick={handleUnpublish}
                       >
-                        Unpublish Course
+                        Unpublish
                       </ActionButton>
                     ) : undefined
                   }
@@ -370,6 +377,7 @@ export function AccessControlForm({
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
+                  timezone={courseInstance.display_timezone}
                   validation={{
                     validate: (value: string) => {
                       if (!value && archiveDate) {
@@ -386,12 +394,17 @@ export function AccessControlForm({
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
+                  timezone={courseInstance.display_timezone}
                   required={true}
                 />
 
                 {canEdit && (
                   <div class="d-flex gap-2">
-                    <ActionButton type="submit" variant="primary" disabled={isSubmitting}>
+                    <ActionButton
+                      type="submit"
+                      variant="primary"
+                      disabled={isSubmitting || !isDirty}
+                    >
                       {isSubmitting ? 'Saving...' : 'Save'}
                     </ActionButton>
                   </div>
@@ -404,8 +417,32 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="unpublished"
-                  statusText={`Course is currently not accessible.${publishDate && archiveDate ? ` Course will be accessible starting on ${formatDate(publishDate)} and will no longer be accessible after ${formatDate(archiveDate)}.` : ''}`}
+                  statusText={
+                    <>
+                      Course is currently not accessible.
+                      {publishDate && archiveDate && (
+                        <>
+                          {' '}
+                          Course will be accessible starting on{' '}
+                          <FriendlyDate
+                            date={new Date(publishDate)}
+                            timezone={courseInstance.display_timezone}
+                            tooltip={true}
+                          />{' '}
+                          and will no longer be accessible after{' '}
+                          <FriendlyDate
+                            date={new Date(archiveDate)}
+                            timezone={courseInstance.display_timezone}
+                            tooltip={true}
+                          />
+                          .
+                        </>
+                      )}
+                    </>
+                  }
                 />
+
+                <hr class="my-4" />
 
                 <div class="mb-3">
                   <div class="form-label">
@@ -457,6 +494,7 @@ export function AccessControlForm({
                       register={register}
                       errors={errors}
                       canEdit={canEdit}
+                      timezone={courseInstance.display_timezone}
                       required={startDateType === 'scheduled'}
                       validation={{
                         validate: (value: string, formValues: any) => {
@@ -479,12 +517,17 @@ export function AccessControlForm({
                   }}
                   errors={errors}
                   canEdit={canEdit}
+                  timezone={courseInstance.display_timezone}
                   required={true}
                 />
 
                 {canEdit && (
                   <div class="d-flex gap-2">
-                    <ActionButton type="submit" variant="primary" disabled={isSubmitting}>
+                    <ActionButton
+                      type="submit"
+                      variant="primary"
+                      disabled={isSubmitting || (startDateType === 'scheduled' && !isDirty)}
+                    >
                       {isSubmitting
                         ? 'Saving...'
                         : startDateType === 'now'
@@ -501,21 +544,38 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="archived"
-                  statusText={`Course was accessible from ${formatDate(formatDatabaseDate(courseInstance.access_control_publish_date))} to ${formatDate(formatDatabaseDate(courseInstance.access_control_archive_date))} but is no longer accessible.`}
+                  statusText={
+                    <>
+                      Course was accessible from{' '}
+                      <FriendlyDate
+                        date={courseInstance.access_control_publish_date!}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                      />{' '}
+                      to{' '}
+                      <FriendlyDate
+                        date={courseInstance.access_control_archive_date!}
+                        timezone={courseInstance.display_timezone}
+                        tooltip={true}
+                      />{' '}
+                      but is no longer accessible.
+                    </>
+                  }
                   actionButton={
                     canEdit ? (
                       <ActionButton
                         type="button"
                         variant="success"
-                        disabled={isSubmitting}
-                        title="This will open a modal with options to extend the archive date and pick a new date."
+                        disabled={isSubmitting || !isDirty}
                         onClick={handleExtend}
                       >
-                        Extend Access
+                        <span class="text-nowrap">Extend Access</span>
                       </ActionButton>
                     ) : undefined
                   }
                 />
+
+                <hr class="my-4" />
 
                 <DateField
                   id="publishDate"
@@ -523,6 +583,7 @@ export function AccessControlForm({
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
+                  timezone={courseInstance.display_timezone}
                   validation={{
                     validate: (value: string) => {
                       if (!value && archiveDate) {
@@ -539,11 +600,16 @@ export function AccessControlForm({
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
+                  timezone={courseInstance.display_timezone}
                 />
 
                 {canEdit && (
                   <div class="d-flex gap-2">
-                    <ActionButton type="submit" variant="primary" disabled={isSubmitting}>
+                    <ActionButton
+                      type="submit"
+                      variant="primary"
+                      disabled={isSubmitting || !isDirty}
+                    >
                       {isSubmitting ? 'Saving...' : 'Save'}
                     </ActionButton>
                   </div>
@@ -581,7 +647,7 @@ export function AccessControlForm({
           <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
               <div class="modal-header">
-                <h5 class="modal-title">Confirm Unpublish Course</h5>
+                <h5 class="modal-title">Confirm Unpublish</h5>
                 <button
                   type="button"
                   class="btn-close"
@@ -589,11 +655,11 @@ export function AccessControlForm({
                 />
               </div>
               <div class="modal-body">
-                <p class="text-muted mb-3">
+                <p class="mb-3">
                   This will immediately hide the course from all enrolled students. The course will
                   no longer be accessible to anyone.
                 </p>
-                <p class="text-muted mb-0">
+                <p class="mb-0">
                   You can republish the course at any point by setting new start and archive dates.
                 </p>
               </div>
@@ -608,7 +674,7 @@ export function AccessControlForm({
                 <button
                   type="button"
                   class="btn btn-danger"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || !isDirty}
                   onClick={handleUnpublishConfirm}
                 >
                   {isSubmitting ? 'Unpublishing...' : 'Unpublish Course'}
@@ -629,37 +695,39 @@ export function AccessControlForm({
                 <button type="button" class="btn-close" onClick={() => setShowExtendModal(false)} />
               </div>
               <div class="modal-body">
-                <p class="text-muted mb-3">
-                  This will open a modal with options to extend the archive date and pick a new
-                  date.
-                </p>
                 <div class="mb-3">
                   <label class="form-label" for="currentArchiveDate">
-                    <strong>Current Archive Date</strong>
+                    Current archive date
                   </label>
-                  <input
-                    type="datetime-local"
-                    class="form-control"
-                    id="currentArchiveDate"
-                    value={archiveDate}
-                    style={{ backgroundColor: '#f8f9fa' }}
-                    disabled
-                  />
+                  <div class="input-group">
+                    <input
+                      type="datetime-local"
+                      class="form-control"
+                      id="currentArchiveDate"
+                      value={archiveDate}
+                      style={{ backgroundColor: '#f8f9fa' }}
+                      disabled
+                    />
+                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                  </div>
                 </div>
                 <div class="mb-3">
                   <label class="form-label" for="customArchiveDate">
-                    <strong>New Archive Date</strong>
+                    New archive date
                   </label>
-                  <input
-                    type="datetime-local"
-                    class="form-control"
-                    id="customArchiveDate"
-                    value={newArchiveDate}
-                    onChange={(e) => setNewArchiveDate((e.target as HTMLInputElement).value)}
-                  />
+                  <div class="input-group">
+                    <input
+                      type="datetime-local"
+                      class="form-control"
+                      id="customArchiveDate"
+                      value={newArchiveDate}
+                      onChange={(e) => setNewArchiveDate((e.target as HTMLInputElement).value)}
+                    />
+                    <span class="input-group-text">{courseInstance.display_timezone}</span>
+                  </div>
                 </div>
                 <div class="mb-3">
-                  <div class="form-label">Quick Options</div>
+                  <div class="form-label">Quick options</div>
                   <div class="d-flex gap-2 flex-wrap">
                     <button
                       type="button"
@@ -702,7 +770,7 @@ export function AccessControlForm({
                 </button>
                 <button
                   type="button"
-                  class="btn btn-success"
+                  class="btn btn-primary text-nowrap"
                   disabled={!newArchiveDate}
                   onClick={handleExtendSubmit}
                 >

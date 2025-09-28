@@ -93,24 +93,24 @@ export function AccessControlOverrides({
 
   return (
     <>
-      <div class="d-flex align-items-center justify-content-between mb-3">
-        <div>
+      <div class="mb-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 class="mb-0">Access Control Extensions</h5>
-          <small class="text-muted">
-            Extend access to specific groups of users beyond the original archive date. If multiple
-            extensions apply, the latest date will take effect.
-          </small>
+          {canEdit && (
+            <button
+              type="button"
+              class="btn btn-outline-primary btn-sm text-nowrap"
+              disabled={isSubmitting}
+              onClick={() => setShowAddForm(true)}
+            >
+              Add Extension
+            </button>
+          )}
         </div>
-        {canEdit && (
-          <button
-            type="button"
-            class="btn btn-outline-primary btn-sm"
-            disabled={isSubmitting}
-            onClick={() => setShowAddForm(true)}
-          >
-            Add Extension
-          </button>
-        )}
+        <small class="text-muted">
+          Extend access to specific groups of users beyond the original archive date. If multiple
+          extensions apply, the latest date will take effect.
+        </small>
       </div>
 
       {overrides.length === 0 ? (
@@ -363,7 +363,11 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         >
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary" disabled={addOverrideMutation.isPending}>
+        <button
+          type="submit"
+          class="btn btn-primary text-nowrap"
+          disabled={addOverrideMutation.isPending}
+        >
           {addOverrideMutation.isPending ? 'Adding...' : 'Add Extension'}
         </button>
       </div>
