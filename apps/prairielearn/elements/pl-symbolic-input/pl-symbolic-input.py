@@ -453,14 +453,11 @@ def format_submission_for_sympy(
     # Necessary for names that are prefixes of other names, e.g., acos and acosh
     names.sort(key=len, reverse=True)
 
-    print(names)
     # Step 2: Merge allowed names (e.g., "s i n" -> "sin")
-    names_found = []
     for name in names:
         spaced_name = " ".join(list(name))
         if spaced_name in sub:
             sub = sub.replace(spaced_name, name)
-            names_found.append(name)
 
     # Step 3: Protect names that contain numbers (e.g., in custom functions)
     protected_indices = set()
