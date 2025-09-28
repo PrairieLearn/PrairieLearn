@@ -128,7 +128,7 @@ export function DeleteCourseInstanceModal({
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="confirmShortName" class="form-label">
+                  <label for="confirmShortName" class="form-label">
                     Type <strong>{shortName}</strong> to confirm deletion:
                   </label>
                   <input

@@ -1033,7 +1033,20 @@ function validateAssessment({
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
-    if (!allowRealTimeGrading) {
+    const anyRealTimeGradingDisabled = run(() => {
+      if (assessment.allowRealTimeGrading === false) return true;
+      return assessment.zones.some((zone) => {
+        if (zone.allowRealTimeGrading === false) return true;
+        return zone.questions.some((question) => {
+          if (question.allowRealTimeGrading === false) return true;
+          return question.alternatives?.some((alternative) => {
+            return alternative.allowRealTimeGrading === false;
+          });
+        });
+      });
+    });
+
+    if (anyRealTimeGradingDisabled) {
       errors.push('Real-time grading cannot be disabled for Homework-type assessments');
     }
 
@@ -1101,32 +1114,25 @@ function validateAssessment({
   };
   assessment.zones.forEach((zone) => {
     zone.questions.map((zoneQuestion) => {
-      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
-      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
-        errors.push(
-          'Cannot specify an array of multiple point values for a question if real-time grading is disabled',
-        );
-      }
+      const effectiveAlternativeGroupAllowRealTimeGrading =
+        zoneQuestion.allowRealTimeGrading ?? zone.allowRealTimeGrading ?? allowRealTimeGrading;
+
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPointsJson[] = [];
+      let alternatives: (QuestionPointsJson & { allowRealTimeGrading: boolean })[] = [];
       if (zoneQuestion.alternatives && zoneQuestion.id) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          const autoPoints = alternative.autoPoints ?? alternative.points;
-          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
-            errors.push(
-              'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
-            );
-          }
           return {
             points: alternative.points ?? zoneQuestion.points,
             maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
             maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+            allowRealTimeGrading:
+              alternative.allowRealTimeGrading ?? effectiveAlternativeGroupAllowRealTimeGrading,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1138,6 +1144,7 @@ function validateAssessment({
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
+            allowRealTimeGrading: effectiveAlternativeGroupAllowRealTimeGrading,
           },
         ];
       } else {
@@ -1145,6 +1152,16 @@ function validateAssessment({
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          !alternative.allowRealTimeGrading &&
+          ((Array.isArray(alternative.autoPoints) && alternative.autoPoints.length > 1) ||
+            (Array.isArray(alternative.points) && alternative.points.length > 1))
+        ) {
+          errors.push(
+            'Cannot specify an array of multiple point values if real-time grading is disabled',
+          );
+        }
+
         if (
           alternative.points == null &&
           alternative.autoPoints == null &&
@@ -1365,8 +1382,18 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.selfEnrollment.requiresSecretLink !== false) {
-    warnings.push('"selfEnrollment.requiresSecretLink" is not configurable yet.');
+  if (courseInstance.selfEnrollment.beforeDateEnabled !== false) {
+    warnings.push('"selfEnrollment.beforeDateEnabled" is not configurable yet.');
+
+    if (courseInstance.selfEnrollment.beforeDate == null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is required if "selfEnrollment.beforeDateEnabled" is true.',
+      );
+    }
+  }
+
+  if (courseInstance.selfEnrollment.useEnrollmentCode !== false) {
+    warnings.push('"selfEnrollment.useEnrollmentCode" is not configurable yet.');
   }
 
   let accessibleInFuture = false;

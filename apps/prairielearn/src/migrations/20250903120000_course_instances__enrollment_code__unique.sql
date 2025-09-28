@@ -4,4 +4,5 @@ ALTER TABLE course_instances
 DROP COLUMN IF EXISTS enrollment_code;
 
 ALTER TABLE course_instances
+-- squawk-ignore disallowed-unique-constraint
 ADD COLUMN enrollment_code VARCHAR(255) UNIQUE;

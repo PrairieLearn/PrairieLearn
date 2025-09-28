@@ -1,6 +1,14 @@
 import { assert, describe, it } from 'vitest';
 
-import { encodePath } from './uri-util.js';
+import { encodePath as encodePathNormalized } from './uri-util.js';
+import { encodePathNoNormalize } from './uri-util.shared.js';
+
+function encodePath(originalPath: string): string {
+  const client = encodePathNoNormalize(originalPath);
+  const server = encodePathNormalized(originalPath);
+  assert.equal(client, server);
+  return client;
+}
 
 describe('uri-util', () => {
   describe('encodePath', () => {
@@ -20,7 +28,7 @@ describe('uri-util', () => {
     });
 
     it('normalizes paths', () => {
-      assert.equal(encodePath('dirA/../dirB/test.txt'), 'dirB/test.txt');
+      assert.equal(encodePathNormalized('dirA/../dirB/test.txt'), 'dirB/test.txt');
     });
 
     it('encodes same characters as encodeURLComponent except /', () => {
