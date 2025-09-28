@@ -97,25 +97,24 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, list | list[list], bool | None, dict[str, str]]:
+) -> tuple[str, dict[str, list[str]] | list[str], bool | None]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", None)
-    has_colors = "|" in depends
-    paths: dict[str, str] = {}
-    for i, name in enumerate(re.findall(r"\w+:", depends)):
-        paths[tag + str(i)] = name
+    match "|" in depends:
+        case True:
+            edges = {}
+            for i, split in enumerate(depends.split("|")):
+                if colored_edge := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
+                    edges[colored_edge[1]] = [tag.strip() for tag in colored_edge[2].split(",")]
+                else:
+                    color = '*' + f'{i}'
+                    edges[color] = [edge.strip() for edge in split.split(",")]
+            return tag, edges, final
+        case False:
+            tag, edges = get_graph_info(html_tag)
+            return tag, edges, final
 
-    depends = re.sub(r"\w+:", "", depends)
-
-    if has_colors:
-        depends = [
-            [tag.strip() for tag in color.split(",") if color != ""]
-            for color in depends.split("|")
-        ]
-    else:
-        depends = [tag.strip() for tag in depends.split(",")] if depends else []
-    return tag, depends, final, paths
 
 
 class OrderBlocksOptions:
@@ -350,14 +349,11 @@ class AnswerOptions:
     ) -> None:
         self._check_options(html_element, order_block_options.grading_method)
         if order_block_options.is_multi:
-            self.tag, self.depends, self.final, path = get_multigraph_info(
-                html_element
-            )
-            order_block_options.paths.update(path)
+            self.tag, self.depends, self.final = get_multigraph_info(html_element)
             self.final = pl.get_boolean_attrib(html_element, "final", False)
-        else:
+        else: 
             self.tag, self.depends = get_graph_info(html_element)
-            self.final, self.paths = None, None
+            self.final = None
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )
@@ -430,6 +426,8 @@ class AnswerOptions:
                 ],
             )
 
+    def __repr__(self) -> str:
+        return f"{self.tag}: {self.depends}"
 
 def collect_answer_options(
     html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions

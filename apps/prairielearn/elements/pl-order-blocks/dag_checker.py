@@ -2,10 +2,13 @@ import itertools
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Callable, Generator
 from copy import deepcopy
+from typing import TypedDict, Tuple
 import networkx as nx
 
 
-Multigraph = dict[str, Sequence[str | list[str]]]
+ColoredEdges = dict[str, list[str]]
+Edges = list[str]
+Multigraph = dict[str, Edges | ColoredEdges]
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -59,7 +62,6 @@ def solve_dag(
 def solve_multigraph(
     depends_multi_graph: Multigraph,
     final: str,
-    path_names: dict[str, str] = {},
 ) -> list[list[str]]:
     """Solve the given problem
     :param depends_multi_graph: the dependency multi graph specified in the question
@@ -68,7 +70,7 @@ def solve_multigraph(
     """
     graphs = [
         dag_to_nx(graph, {})
-        for graph in collapse_multigraph(depends_multi_graph, final, path_names)
+        for graph in collapse_multigraph(depends_multi_graph, final)
     ]
 
     sort = [list(nx.topological_sort(graph)) for graph in graphs]
@@ -197,15 +199,17 @@ def grade_dag(
 
 def grade_multigraph(
     submission: list[str],
-    depends_multigraph: Multigraph,
+    multigraph: Multigraph,
     final: str,
-    path_names: dict[str, str],
     group_belonging: Mapping[str, str | None],
 ) -> tuple[int, int, Mapping[str, list[str]]]:
     top_sort_correctness = []
     # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
-    collapsed_dags = list(collapse_multigraph(depends_multigraph, final, path_names))
+    collapsed_dags = list(collapse_multigraph(multigraph, final))
+    for i, dag in enumerate(collapsed_dags):
+        print(f"{i}: {dag}")
+
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
@@ -315,9 +319,8 @@ def lcs_partial_credit(
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
 
-
 def dfs_until(
-    halting_condition: Callable[[tuple[str, Sequence[str | list[str]]]], bool],
+    halting_condition: Callable[[tuple[str, ColoredEdges | Edges]], bool],
     graph: Multigraph,
     start: str,
 ) -> tuple[str | None, dict[str, list[str]]]:
@@ -332,18 +335,19 @@ def dfs_until(
     edges the DFS was able to reach before halting.
     :Exception: Will throw an exception if a cycle is found
     """
-    stack = []
-    visited = []
-    traversed = {}
+    stack: list[tuple[str, list[str]]] = []
+    visited: list[str] = []
+    traversed: dict[str, Edges | ColoredEdges] = {}
     stack.append((start, visited))
     while stack:
         curr, visited = stack.pop(0)
         visited.append(curr)
 
-        traversed[curr] = graph[curr]
 
         if halting_condition((curr, graph[curr])):
             return curr, traversed
+
+        traversed[curr] = graph[curr]
 
         for target in graph[curr]:
             # This determines if the proposed target edge is a back edge if so it contains a cycle
@@ -354,12 +358,13 @@ def dfs_until(
 
     return None, traversed
 
+Dag = dict[str, list[str]]
 
 def collapse_multigraph(
-    depends_multi_graph: Multigraph,
+    multigraph: Multigraph,
     final: str,
-    path_names: dict[str, str],
-) -> Generator[dict[str, list[str]], None, None]:
+) -> Generator:
+    print(multigraph)
     """
     :param depends_multi_graph: a dependency graph that contains nodes with multiple colored
     edges or in this our implementation a node which has a list[list[str]].
@@ -368,9 +373,9 @@ def collapse_multigraph(
     :param path_names: a dictionary containing names of
     :yield dag: yields a "fully collapsed" DAG once one has been found.
     """
-    collapsing_graphs = [(depends_multi_graph, "")]
+    collapsing_graphs = [(multigraph, "")]
     while collapsing_graphs:
-        graph, enc_path = collapsing_graphs.pop(0)
+        graph, linked_color = collapsing_graphs.pop(0)
         reason, dag = dfs_until(_is_edges_colored, graph, final)
 
         # DFS halted because source was reached
@@ -379,26 +384,19 @@ def collapse_multigraph(
             continue
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
-        for i, color in enumerate(graph[reason]):
-            # Get the current paths name attached to the node + the nodes numerical position in the graph
-            path = (
-                path_names[reason + str(i)]
-                if reason + str(i) in path_names
-                else ""
-            )
-
-            if enc_path in [path, ""]:
+        for color, edges in graph[reason].items():
+            if color.startswith("*") or linked_color == color or linked_color == "":
                 partially_collapsed = deepcopy(graph)
-                if isinstance(color, list):
-                    partially_collapsed[reason] = color
+                partially_collapsed[reason] = edges
+                
+                # Either linked_color is the same or it is assigned once here
+                collapsing_graphs.append((partially_collapsed, color))
 
-                collapsing_graphs.append((partially_collapsed, path))
 
-
-def _is_edges_colored(value: tuple[str, Sequence[str | list[str]]]) -> bool:
+def _is_edges_colored(value: tuple[str, list[str] | dict[str, list[str]]]) -> bool:
     """a halting condition function for dfs_until, used to check for colored edges."""
     _, edges = value
-    if edges and isinstance(edges[0], list):
+    if edges and isinstance(edges, dict):
         return True
     else:
         return False
