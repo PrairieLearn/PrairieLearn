@@ -208,6 +208,7 @@
     "quilljs-markdown": "^1.2.0",
     "react": "^19.1.1",
     "react-bootstrap": "3.0.0-beta.3",
+    "react-colorful": "^5.6.1",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.62.0",
     "remark-gfm": "^4.0.1",

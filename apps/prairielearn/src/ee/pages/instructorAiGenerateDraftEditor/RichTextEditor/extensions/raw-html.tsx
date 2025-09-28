@@ -144,6 +144,7 @@ export const RawHtml = Node.create({
     // For this to work, we need all the nodes to be matched correctly by the other extensions.
     return [
       {
+        preserveWhitespace: 'full',
         tag: '*',
       },
     ];

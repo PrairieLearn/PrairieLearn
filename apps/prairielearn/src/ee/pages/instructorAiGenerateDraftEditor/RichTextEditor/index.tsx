@@ -25,6 +25,7 @@ import prettier from 'prettier/standalone';
 import { Card, Form } from 'react-bootstrap';
 
 import { DragHandleMenu } from './components/DragHandleMenu.js';
+import { PlCode } from './extensions/pl-code.js';
 import { PlPanel } from './extensions/pl-panel.js';
 import { RawHtml } from './extensions/raw-html.js';
 
@@ -104,6 +105,7 @@ const RichTextEditor = ({
         ListKeymap,
         OrderedList,
         Paragraph,
+        PlCode,
         PlPanel,
         Selection,
         Strike,
