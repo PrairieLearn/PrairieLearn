@@ -200,8 +200,8 @@ export function AccessControlForm({
     const hasStartDate = courseInstance.access_control_publish_date !== null;
     const hasEndDate = courseInstance.access_control_archive_date !== null;
 
-    // TODO: 'now' should put it in the timezone of the course instance.
-    // the dates should be displayed with information about the timezone they are in.
+    // TODO: default the date picker to now() in the timezone of the course instance.
+    // and display the timezone in the date picker.
     if (hasStartDate && hasEndDate) {
       const now = new Date();
       const publishDate = courseInstance.access_control_publish_date!;
