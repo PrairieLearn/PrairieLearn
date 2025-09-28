@@ -43,14 +43,14 @@ export function evaluateCourseInstanceAccess(
   }
 
   // If no start date is set, the course instance is not published
-  if (courseInstance.access_control_published_start_date == null) {
+  if (courseInstance.access_control_publish_date == null) {
     return {
       hasAccess: false,
       reason: 'Course instance is not published',
     };
   }
 
-  if (currentDate < courseInstance.access_control_published_start_date) {
+  if (currentDate < courseInstance.access_control_publish_date) {
     return {
       hasAccess: false,
       reason: 'Course instance is not yet published',
@@ -59,8 +59,8 @@ export function evaluateCourseInstanceAccess(
 
   // Check if course instance has been archived
   if (
-    courseInstance.access_control_published_end_date &&
-    currentDate > courseInstance.access_control_published_end_date
+    courseInstance.access_control_archive_date &&
+    currentDate > courseInstance.access_control_archive_date
   ) {
     return {
       hasAccess: false,
@@ -71,7 +71,7 @@ export function evaluateCourseInstanceAccess(
   // Consider the latest enabled extensions.
   const possibleEndDates = params.accessControlExtensions
     .filter((extension) => extension.enabled)
-    .map((extension) => extension.published_end_date);
+    .map((extension) => extension.archive_date);
 
   if (possibleEndDates.length > 0) {
     const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
@@ -92,7 +92,7 @@ export function evaluateCourseInstanceAccess(
 interface CourseInstanceAccessControlExtensionData {
   enabled: boolean;
   name: string | null;
-  published_end_date: string | null;
+  archive_date: string | null;
   uids: string[];
 }
 
@@ -207,7 +207,7 @@ export function migrateAccessRuleJsonToAccessControl(
     extensions.push({
       enabled: true,
       name: typeof rule.comment === 'string' ? rule.comment : null,
-      published_end_date: rule.endDate ?? null,
+      archive_date: rule.endDate ?? null,
       uids: rule.uids,
     });
   }

@@ -308,9 +308,7 @@ router.post(
                 course_instance_id: res.locals.course_instance.id,
                 enabled: extension.enabled,
                 name: extension.name,
-                published_end_date: extension.published_end_date
-                  ? new Date(extension.published_end_date)
-                  : null,
+                archive_date: extension.archive_date ? new Date(extension.archive_date) : null,
                 enrollment_ids: enrollmentIds,
               });
             }
@@ -323,9 +321,7 @@ router.post(
     } else if (req.body.__action === 'add_override') {
       const name = req.body.name || null;
       const enabled = req.body.enabled === 'true';
-      const published_end_date = req.body.published_end_date
-        ? new Date(req.body.published_end_date)
-        : null;
+      const archive_date = req.body.archive_date ? new Date(req.body.archive_date) : null;
       const uids = req.body.uids
         .split(/[,\n]/)
         .map((uid: string) => uid.trim())
@@ -352,7 +348,7 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         enabled,
         name,
-        published_end_date,
+        archive_date,
         enrollment_ids: enrollmentIds,
       });
 
@@ -387,7 +383,7 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         enabled,
         name: currentExtension.name,
-        published_end_date: currentExtension.published_end_date,
+        archive_date: currentExtension.archive_date,
       });
 
       flash('success', 'Access control extension updated successfully');

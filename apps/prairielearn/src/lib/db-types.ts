@@ -570,8 +570,8 @@ export const CourseSchema = z.object({
 export type Course = z.infer<typeof CourseSchema>;
 
 export const CourseInstanceSchema = z.object({
-  access_control_published_end_date: DateFromISOString.nullable(),
-  access_control_published_start_date: DateFromISOString.nullable(),
+  access_control_archive_date: DateFromISOString.nullable(),
+  access_control_publish_date: DateFromISOString.nullable(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -612,7 +612,7 @@ export const CourseInstanceAccessControlExtensionSchema = z.object({
   enabled: z.boolean(),
   id: IdSchema,
   name: z.string().nullable(),
-  published_end_date: DateFromISOString,
+  archive_date: DateFromISOString,
 });
 export type CourseInstanceAccessControlExtension = z.infer<
   typeof CourseInstanceAccessControlExtensionSchema

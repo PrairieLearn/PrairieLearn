@@ -15,14 +15,14 @@ INSERT INTO
     course_instance_id,
     enabled,
     name,
-    published_end_date
+    archive_date
   )
 VALUES
   (
     $course_instance_id,
     $enabled,
     $name,
-    $published_end_date
+    $archive_date
   )
 RETURNING
   *;

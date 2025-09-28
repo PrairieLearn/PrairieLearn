@@ -149,16 +149,16 @@ describe('Course instance syncing', () => {
     const schemaMappings: {
       json: CourseInstanceJsonInput['accessControl'];
       db: {
-        access_control_published_start_date: Date | null;
-        access_control_published_end_date: Date | null;
+        access_control_publish_date: Date | null;
+        access_control_archive_date: Date | null;
       } | null;
       errors: string[];
     }[] = [
       {
         json: {},
         db: {
-          access_control_published_start_date: null,
-          access_control_published_end_date: null,
+          access_control_publish_date: null,
+          access_control_archive_date: null,
         },
         errors: [],
       },
@@ -167,8 +167,8 @@ describe('Course instance syncing', () => {
           publishedEndDate: jsonDate,
         },
         db: {
-          access_control_published_start_date: null,
-          access_control_published_end_date: date,
+          access_control_publish_date: null,
+          access_control_archive_date: date,
         },
         errors: [],
       },
@@ -178,8 +178,8 @@ describe('Course instance syncing', () => {
           publishedEndDate: jsonDate,
         },
         db: {
-          access_control_published_start_date: date,
-          access_control_published_end_date: date,
+          access_control_publish_date: date,
+          access_control_archive_date: date,
         },
         errors: [],
       },
@@ -249,9 +249,8 @@ describe('Course instance syncing', () => {
         }
 
         const result = {
-          access_control_published_start_date:
-            syncedCourseInstance.access_control_published_start_date,
-          access_control_published_end_date: syncedCourseInstance.access_control_published_end_date,
+          access_control_publish_date: syncedCourseInstance.access_control_publish_date,
+          access_control_archive_date: syncedCourseInstance.access_control_archive_date,
         };
 
         assert.deepEqual(result, db);

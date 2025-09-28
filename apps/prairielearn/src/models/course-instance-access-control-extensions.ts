@@ -48,12 +48,12 @@ export async function insertAccessControlExtension({
   course_instance_id,
   enabled,
   name,
-  published_end_date,
+  archive_date,
 }: {
   course_instance_id: string;
   enabled: boolean;
   name: string | null;
-  published_end_date: Date | null;
+  archive_date: Date | null;
 }): Promise<CourseInstanceAccessControlExtension> {
   return await queryRow(
     sql.insert_access_control_extension,
@@ -61,7 +61,7 @@ export async function insertAccessControlExtension({
       course_instance_id,
       enabled,
       name,
-      published_end_date,
+      archive_date,
     },
     CourseInstanceAccessControlExtensionSchema,
   );
@@ -94,13 +94,13 @@ export async function createAccessControlExtensionWithEnrollments({
   course_instance_id,
   enabled,
   name,
-  published_end_date,
+  archive_date,
   enrollment_ids,
 }: {
   course_instance_id: string;
   enabled: boolean;
   name: string | null;
-  published_end_date: Date | null;
+  archive_date: Date | null;
   enrollment_ids: string[];
 }): Promise<CourseInstanceAccessControlExtension> {
   return await runInTransactionAsync(async () => {
@@ -109,7 +109,7 @@ export async function createAccessControlExtensionWithEnrollments({
       course_instance_id,
       enabled,
       name,
-      published_end_date,
+      archive_date,
     });
 
     // Link to enrollments
@@ -148,13 +148,13 @@ export async function updateAccessControlExtension({
   course_instance_id,
   enabled,
   name,
-  published_end_date,
+  archive_date,
 }: {
   extension_id: string;
   course_instance_id: string;
   enabled: boolean;
   name: string | null;
-  published_end_date: Date | null;
+  archive_date: Date | null;
 }): Promise<CourseInstanceAccessControlExtension> {
   return await queryRow(
     sql.update_access_control_extension,
@@ -163,7 +163,7 @@ export async function updateAccessControlExtension({
       course_instance_id,
       enabled,
       name,
-      published_end_date,
+      archive_date,
     },
     CourseInstanceAccessControlExtensionSchema,
   );

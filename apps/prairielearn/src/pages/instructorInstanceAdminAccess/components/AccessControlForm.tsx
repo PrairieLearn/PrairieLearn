@@ -130,8 +130,8 @@ const ActionButton = ({ type, variant, disabled, onClick, title, children }: Act
 };
 
 interface AccessControlFormValues {
-  publishedStartDate: string;
-  publishedEndDate: string;
+  publishDate: string;
+  archiveDate: string;
 }
 
 interface AccessControlFormProps {
@@ -158,18 +158,14 @@ export function AccessControlForm({
   const [startDateType, setStartDateType] = useState<'now' | 'scheduled'>('now');
 
   const defaultValues: AccessControlFormValues = {
-    publishedStartDate: courseInstance.access_control_published_start_date
-      ? Temporal.Instant.fromEpochMilliseconds(
-          courseInstance.access_control_published_start_date.getTime(),
-        )
+    publishDate: courseInstance.access_control_publish_date
+      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.access_control_publish_date.getTime())
           .toZonedDateTimeISO(courseInstance.display_timezone)
           .toPlainDateTime()
           .toString()
       : '',
-    publishedEndDate: courseInstance.access_control_published_end_date
-      ? Temporal.Instant.fromEpochMilliseconds(
-          courseInstance.access_control_published_end_date.getTime(),
-        )
+    archiveDate: courseInstance.access_control_archive_date
+      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.access_control_archive_date.getTime())
           .toZonedDateTimeISO(courseInstance.display_timezone)
           .toPlainDateTime()
           .toString()
@@ -187,29 +183,29 @@ export function AccessControlForm({
     defaultValues,
   });
 
-  const publishedStartDate = watch('publishedStartDate');
-  const publishedEndDate = watch('publishedEndDate');
+  const publishDate = watch('publishDate');
+  const archiveDate = watch('archiveDate');
 
   // Initialize start date type based on existing data
   useEffect(() => {
-    if (publishedStartDate && publishedStartDate.trim() !== '') {
+    if (publishDate && publishDate.trim() !== '') {
       setStartDateType('scheduled');
     } else {
       setStartDateType('now');
     }
-  }, [publishedStartDate]);
+  }, [publishDate]);
 
   // Determine current state based on dates
   const getAccessControlState = (): 'published' | 'archived' | 'unpublished' => {
-    const hasStartDate = courseInstance.access_control_published_start_date !== null;
-    const hasEndDate = courseInstance.access_control_published_end_date !== null;
+    const hasStartDate = courseInstance.access_control_publish_date !== null;
+    const hasEndDate = courseInstance.access_control_archive_date !== null;
 
     // TODO: 'now' should put it in the timezone of the course instance.
     // the dates should be displayed with information about the timezone they are in.
     if (hasStartDate && hasEndDate) {
       const now = new Date();
-      const startDate = courseInstance.access_control_published_start_date!;
-      const endDate = courseInstance.access_control_published_end_date!;
+      const startDate = courseInstance.access_control_publish_date!;
+      const endDate = courseInstance.access_control_archive_date!;
 
       // Check if archived
       if (endDate <= now) {
@@ -239,17 +235,17 @@ export function AccessControlForm({
       if (startDateType === 'now') {
         const now = new Date();
         startDate = now.toISOString().slice(0, 16);
-      } else if (data.publishedStartDate) {
-        startDate = data.publishedStartDate;
+      } else if (data.publishDate) {
+        startDate = data.publishDate;
       }
 
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'update_access_control',
         accessControl: {
-          publishedStartDate: startDate ? Temporal.PlainDateTime.from(startDate).toString() : null,
-          publishedEndDate: data.publishedEndDate
-            ? Temporal.PlainDateTime.from(data.publishedEndDate).toString()
+          publishDate: startDate ? Temporal.PlainDateTime.from(startDate).toString() : null,
+          archiveDate: data.archiveDate
+            ? Temporal.PlainDateTime.from(data.archiveDate).toString()
             : null,
         },
         orig_hash: origHash,
@@ -282,14 +278,14 @@ export function AccessControlForm({
   };
 
   const handleUnpublishConfirm = async () => {
-    setValue('publishedStartDate', '');
-    setValue('publishedEndDate', '');
+    setValue('publishDate', '');
+    setValue('archiveDate', '');
     setShowUnpublishModal(false);
 
     // Submit the form with empty dates to unpublish
     const formData = {
-      publishedStartDate: '',
-      publishedEndDate: '',
+      publishDate: '',
+      archiveDate: '',
     };
 
     await onSubmit(formData);
@@ -301,7 +297,7 @@ export function AccessControlForm({
 
   const handleExtendSubmit = () => {
     if (newArchiveDate) {
-      setValue('publishedEndDate', newArchiveDate);
+      setValue('archiveDate', newArchiveDate);
       void handleSubmit(onSubmit)();
     }
     setShowExtendModal(false);
@@ -311,7 +307,7 @@ export function AccessControlForm({
     const newDate = new Date();
     newDate.setDate(newDate.getDate() + days);
     const isoString = newDate.toISOString().slice(0, 16);
-    setValue('publishedEndDate', isoString);
+    setValue('archiveDate', isoString);
     void handleSubmit(onSubmit)();
   };
 
@@ -350,7 +346,7 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="published"
-                  statusText={`Course was accessible starting on ${formatDate(formatDatabaseDate(courseInstance.access_control_published_start_date))} and will no longer be accessible after ${formatDate(formatDatabaseDate(courseInstance.access_control_published_end_date))}.`}
+                  statusText={`Course was accessible starting on ${formatDate(formatDatabaseDate(courseInstance.access_control_publish_date))} and will no longer be accessible after ${formatDate(formatDatabaseDate(courseInstance.access_control_archive_date))}.`}
                   actionButton={
                     canEdit ? (
                       <ActionButton
@@ -369,14 +365,14 @@ export function AccessControlForm({
                 <hr class="my-4" />
 
                 <DateField
-                  id="publishedStartDate"
+                  id="publishDate"
                   label="Start Date"
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
                   validation={{
                     validate: (value: string) => {
-                      if (!value && publishedEndDate) {
+                      if (!value && archiveDate) {
                         return 'Start date is required when archive date is set';
                       }
                       return true;
@@ -385,7 +381,7 @@ export function AccessControlForm({
                 />
 
                 <DateField
-                  id="publishedEndDate"
+                  id="archiveDate"
                   label="Archive Date"
                   register={register}
                   errors={errors}
@@ -408,7 +404,7 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="unpublished"
-                  statusText={`Course is currently not accessible.${publishedStartDate && publishedEndDate ? ` Course will be accessible starting on ${formatDate(publishedStartDate)} and will no longer be accessible after ${formatDate(publishedEndDate)}.` : ''}`}
+                  statusText={`Course is currently not accessible.${publishDate && archiveDate ? ` Course will be accessible starting on ${formatDate(publishDate)} and will no longer be accessible after ${formatDate(archiveDate)}.` : ''}`}
                 />
 
                 <div class="mb-3">
@@ -456,15 +452,15 @@ export function AccessControlForm({
 
                   {startDateType === 'scheduled' && (
                     <DateField
-                      id="publishedStartDate"
+                      id="publishDate"
                       label="Scheduled Start Date"
                       register={register}
                       errors={errors}
                       canEdit={canEdit}
                       required={startDateType === 'scheduled'}
                       validation={{
-                        validate: (value: string, { publishedEndDate }) => {
-                          if (!value && publishedEndDate) {
+                        validate: (value: string, formValues: any) => {
+                          if (!value && formValues.archiveDate) {
                             return 'Start date is required when archive date is set';
                           }
                           return true;
@@ -475,11 +471,11 @@ export function AccessControlForm({
                 </div>
 
                 <DateField
-                  id="publishedEndDate"
+                  id="archiveDate"
                   label="Archive Date"
                   register={register}
                   validation={{
-                    deps: ['publishedStartDate'],
+                    deps: ['publishDate'],
                   }}
                   errors={errors}
                   canEdit={canEdit}
@@ -505,7 +501,7 @@ export function AccessControlForm({
               <div class="mb-4">
                 <StatusHeader
                   status="archived"
-                  statusText={`Course was accessible from ${formatDate(formatDatabaseDate(courseInstance.access_control_published_start_date))} to ${formatDate(formatDatabaseDate(courseInstance.access_control_published_end_date))} but is no longer accessible.`}
+                  statusText={`Course was accessible from ${formatDate(formatDatabaseDate(courseInstance.access_control_publish_date))} to ${formatDate(formatDatabaseDate(courseInstance.access_control_archive_date))} but is no longer accessible.`}
                   actionButton={
                     canEdit ? (
                       <ActionButton
@@ -522,14 +518,14 @@ export function AccessControlForm({
                 />
 
                 <DateField
-                  id="publishedStartDate"
+                  id="publishDate"
                   label="Start Date"
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
                   validation={{
                     validate: (value: string) => {
-                      if (!value && publishedEndDate) {
+                      if (!value && archiveDate) {
                         return 'Start date is required when archive date is set';
                       }
                       return true;
@@ -538,7 +534,7 @@ export function AccessControlForm({
                 />
 
                 <DateField
-                  id="publishedEndDate"
+                  id="archiveDate"
                   label="Archive Date"
                   register={register}
                   errors={errors}
@@ -645,7 +641,7 @@ export function AccessControlForm({
                     type="datetime-local"
                     class="form-control"
                     id="currentArchiveDate"
-                    value={publishedEndDate}
+                    value={archiveDate}
                     style={{ backgroundColor: '#f8f9fa' }}
                     disabled
                   />

@@ -32,8 +32,8 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     assessments_group_by: 'Set',
 
     // These are the only fields we care about.
-    access_control_published_start_date: null,
-    access_control_published_end_date: null,
+    access_control_publish_date: null,
+    access_control_archive_date: null,
     ...overrides,
   };
 }
@@ -94,7 +94,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-05-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: startDate,
+      access_control_publish_date: startDate,
     });
     const params = createMockParams();
 
@@ -110,8 +110,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: startDate,
-      access_control_published_end_date: endDate,
+      access_control_publish_date: startDate,
+      access_control_archive_date: endDate,
     });
     const params = createMockParams();
 
@@ -127,8 +127,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: startDate,
-      access_control_published_end_date: endDate,
+      access_control_publish_date: startDate,
+      access_control_archive_date: endDate,
     });
     const params = createMockParams();
 
@@ -143,8 +143,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: startDate,
-      access_control_published_end_date: endDate,
+      access_control_publish_date: startDate,
+      access_control_archive_date: endDate,
     });
     const params = createMockParams();
 
@@ -156,8 +156,8 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('staff bypass all restrictions even when course instance is not published', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: new Date('2024-07-01T00:00:00Z'),
-      access_control_published_end_date: new Date('2024-05-01T00:00:00Z'),
+      access_control_publish_date: new Date('2024-07-01T00:00:00Z'),
+      access_control_archive_date: new Date('2024-05-01T00:00:00Z'),
     });
     const params = createMockParams({ course_role: 'Viewer' });
 
@@ -168,7 +168,7 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('uses current date when no date is provided', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_published_start_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      access_control_publish_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
     });
     const params = createMockParams();
 

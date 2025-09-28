@@ -189,11 +189,7 @@ function OverrideRow({
           <label class="form-check-label">{override.enabled ? 'Enabled' : 'Disabled'}</label>
         </div>
       </td>
-      <td>
-        {override.published_end_date == null
-          ? '—'
-          : formatDate(override.published_end_date, timeZone)}
-      </td>
+      <td>{override.archive_date == null ? '—' : formatDate(override.archive_date, timeZone)}</td>
       <td>
         {canEdit && (
           <button
@@ -213,7 +209,7 @@ function OverrideRow({
 function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
-    published_end_date: '',
+    archive_date: '',
     uids: '',
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -228,7 +224,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         __action: 'add_override',
         name: data.name,
         enabled: 'true',
-        published_end_date: data.published_end_date || '',
+        archive_date: data.archive_date || '',
         uids: data.uids,
       };
 
@@ -325,16 +321,14 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
               type="datetime-local"
               class="form-control"
               id="override-end-date"
-              value={formData.published_end_date}
-              onChange={(e) =>
-                setFormData({ ...formData, published_end_date: e.currentTarget.value })
-              }
+              value={formData.archive_date}
+              onChange={(e) => setFormData({ ...formData, archive_date: e.currentTarget.value })}
             />
             <div class="form-text">
               If set, this extension will automatically disable after this date.
             </div>
-            {errors.published_end_date && (
-              <div class="invalid-feedback d-block">{errors.published_end_date}</div>
+            {errors.archive_date && (
+              <div class="invalid-feedback d-block">{errors.archive_date}</div>
             )}
           </div>
         </div>
