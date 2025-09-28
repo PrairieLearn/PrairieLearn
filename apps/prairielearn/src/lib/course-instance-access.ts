@@ -69,16 +69,16 @@ export function evaluateCourseInstanceAccess(
   }
 
   // Consider the latest enabled extensions.
-  const possibleEndDates = params.accessControlExtensions
+  const possibleArchiveDates = params.accessControlExtensions
     .filter((extension) => extension.enabled)
     .map((extension) => extension.archive_date);
 
-  if (possibleEndDates.length > 0) {
-    const sortedPossibleEndDates = possibleEndDates.sort((a, b) => {
+  if (possibleArchiveDates.length > 0) {
+    const sortedPossibleArchiveDates = possibleArchiveDates.sort((a, b) => {
       return b.getTime() - a.getTime();
     });
 
-    if (currentDate > sortedPossibleEndDates[0]) {
+    if (currentDate > sortedPossibleArchiveDates[0]) {
       return {
         hasAccess: false,
         reason: 'Course instance has been archived',

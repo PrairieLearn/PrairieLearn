@@ -90,11 +90,11 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 
   it('denies access when published start date is enabled and current date is before start date', () => {
-    const startDate = new Date('2024-06-01T00:00:00Z');
+    const publishDate = new Date('2024-06-01T00:00:00Z');
     const currentDate = new Date('2024-05-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: startDate,
+      access_control_publish_date: publishDate,
     });
     const params = createMockParams();
 
@@ -105,13 +105,13 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 
   it('denies access when current date is after published end date', () => {
-    const startDate = new Date('2024-04-01T00:00:00Z');
-    const endDate = new Date('2024-05-01T00:00:00Z');
+    const publishDate = new Date('2024-04-01T00:00:00Z');
+    const archiveDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: startDate,
-      access_control_archive_date: endDate,
+      access_control_publish_date: publishDate,
+      access_control_archive_date: archiveDate,
     });
     const params = createMockParams();
 
@@ -122,13 +122,13 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 
   it('combines start and end date restrictions correctly', () => {
-    const startDate = new Date('2024-05-01T00:00:00Z');
-    const endDate = new Date('2024-07-01T00:00:00Z');
+    const publishDate = new Date('2024-05-01T00:00:00Z');
+    const archiveDate = new Date('2024-07-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: startDate,
-      access_control_archive_date: endDate,
+      access_control_publish_date: publishDate,
+      access_control_archive_date: archiveDate,
     });
     const params = createMockParams();
 
@@ -138,13 +138,13 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 
   it('prioritizes start date restriction over end date restriction', () => {
-    const startDate = new Date('2024-07-01T00:00:00Z');
-    const endDate = new Date('2024-05-01T00:00:00Z');
+    const publishDate = new Date('2024-07-01T00:00:00Z');
+    const archiveDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: startDate,
-      access_control_archive_date: endDate,
+      access_control_publish_date: publishDate,
+      access_control_archive_date: archiveDate,
     });
     const params = createMockParams();
 

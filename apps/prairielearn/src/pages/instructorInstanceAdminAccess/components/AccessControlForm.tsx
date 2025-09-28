@@ -204,16 +204,16 @@ export function AccessControlForm({
     // the dates should be displayed with information about the timezone they are in.
     if (hasStartDate && hasEndDate) {
       const now = new Date();
-      const startDate = courseInstance.access_control_publish_date!;
-      const endDate = courseInstance.access_control_archive_date!;
+      const publishDate = courseInstance.access_control_publish_date!;
+      const archiveDate = courseInstance.access_control_archive_date!;
 
       // Check if archived
-      if (endDate <= now) {
+      if (archiveDate <= now) {
         return 'archived';
       }
 
       // Check if start date is in the future
-      if (startDate > now) {
+      if (publishDate > now) {
         return 'unpublished';
       }
 
@@ -231,19 +231,19 @@ export function AccessControlForm({
     setIsSubmitting(true);
     try {
       // Handle start date based on radio selection
-      let startDate: string | null = null;
+      let publishDate: string | null = null;
       if (startDateType === 'now') {
         const now = new Date();
-        startDate = now.toISOString().slice(0, 16);
+        publishDate = now.toISOString().slice(0, 16);
       } else if (data.publishDate) {
-        startDate = data.publishDate;
+        publishDate = data.publishDate;
       }
 
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'update_access_control',
         accessControl: {
-          publishDate: startDate ? Temporal.PlainDateTime.from(startDate).toString() : null,
+          publishDate: publishDate ? Temporal.PlainDateTime.from(publishDate).toString() : null,
           archiveDate: data.archiveDate
             ? Temporal.PlainDateTime.from(data.archiveDate).toString()
             : null,
