@@ -164,7 +164,7 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          publishedEndDate: jsonDate,
+          archiveDate: jsonDate,
         },
         db: {
           access_control_publish_date: null,
@@ -174,8 +174,8 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          publishedStartDate: jsonDate,
-          publishedEndDate: jsonDate,
+          publishDate: jsonDate,
+          archiveDate: jsonDate,
         },
         db: {
           access_control_publish_date: date,
@@ -185,35 +185,33 @@ describe('Course instance syncing', () => {
       },
       {
         json: {
-          publishedStartDate: jsonDate,
+          publishDate: jsonDate,
         },
         db: null,
         errors: [],
       },
       {
         json: {
-          publishedStartDate: 'not a date',
-          publishedEndDate: jsonDate,
+          publishDate: 'not a date',
+          archiveDate: jsonDate,
         },
         db: null,
-        errors: ['"accessControl.publishedStartDate" is not a valid date.'],
+        errors: ['"accessControl.publishDate" is not a valid date.'],
       },
       {
         json: {
-          publishedEndDate: 'not a date',
+          archiveDate: 'not a date',
         },
         db: null,
-        errors: ['"accessControl.publishedEndDate" is not a valid date.'],
+        errors: ['"accessControl.archiveDate" is not a valid date.'],
       },
       {
         json: {
-          publishedStartDate: '2025-12-01T00:00:00',
-          publishedEndDate: '2025-06-01T00:00:00',
+          publishDate: '2025-12-01T00:00:00',
+          archiveDate: '2025-06-01T00:00:00',
         },
         db: null,
-        errors: [
-          '"accessControl.publishedStartDate" must be before "accessControl.publishedEndDate".',
-        ],
+        errors: ['"accessControl.publishDate" must be before "accessControl.archiveDate".'],
       },
     ];
 

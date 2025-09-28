@@ -33,16 +33,16 @@ const AllowAccessJsonSchema = z
   );
 
 const AccessControlJsonSchema = z.object({
-  publishedStartDate: z
+  publishDate: z
     .string()
     .describe(
-      'When the course instance is published. If specified, publishedEndDate must also be specified.',
+      'When the course instance is published. If specified, archiveDate must also be specified.',
     )
     .optional(),
-  publishedEndDate: z
+  archiveDate: z
     .string()
     .describe(
-      'When the course instance is archived. If specified, publishedStartDate must also be specified.',
+      'When the course instance is archived. If specified, publishDate must also be specified.',
     )
     .optional(),
 });

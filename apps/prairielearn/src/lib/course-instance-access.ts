@@ -197,8 +197,8 @@ export function migrateAccessRuleJsonToAccessControl(
   }
   // Build the new access control configuration
   const accessControl = {
-    publishedStartDate: rule.startDate,
-    publishedEndDate: rule.endDate,
+    publishDate: rule.startDate,
+    archiveDate: rule.endDate,
   };
 
   // Convert UID selectors to extensions

@@ -208,8 +208,8 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
     expect(result).toMatchInlineSnapshot(`
       {
         "accessControl": {
-          "publishedEndDate": "2024-07-01T00:00:00",
-          "publishedStartDate": "2024-05-01T00:00:00",
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
         },
         "extensions": [],
         "success": true,
@@ -269,8 +269,8 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
     expect(result).toMatchInlineSnapshot(`
       {
         "accessControl": {
-          "publishedEndDate": "2024-07-01T00:00:00",
-          "publishedStartDate": "2024-05-01T00:00:00",
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
         },
         "extensions": [
           {
@@ -307,8 +307,8 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
     expect(result).toMatchInlineSnapshot(`
       {
         "accessControl": {
-          "publishedEndDate": "2024-07-01T00:00:00",
-          "publishedStartDate": "2024-05-01T00:00:00",
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
         },
         "extensions": [
           {
@@ -363,8 +363,8 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
     expect(result).toMatchInlineSnapshot(`
       {
         "accessControl": {
-          "publishedEndDate": "2024-07-01T00:00:00",
-          "publishedStartDate": "2024-05-01T00:00:00",
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
         },
         "extensions": [],
         "success": true,

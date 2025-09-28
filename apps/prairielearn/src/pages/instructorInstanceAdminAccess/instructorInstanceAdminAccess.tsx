@@ -157,22 +157,22 @@ router.post(
       const parsedBody = z
         .object({
           accessControl: z.object({
-            publishedStartDate: z.string().nullable(),
-            publishedEndDate: z.string().nullable(),
+            publishDate: z.string().nullable(),
+            archiveDate: z.string().nullable(),
           }),
         })
         .parse(req.body);
 
       // Update the access control settings
       const resolvedAccessControl = {
-        publishedStartDate: propertyValueWithDefault(
-          courseInstanceInfo.accessControl?.publishedStartDate,
-          parsedBody.accessControl.publishedStartDate,
+        publishDate: propertyValueWithDefault(
+          courseInstanceInfo.accessControl?.publishDate,
+          parsedBody.accessControl.publishDate,
           (v: string | null) => v === null || v === '',
         ),
-        publishedEndDate: propertyValueWithDefault(
-          courseInstanceInfo.accessControl?.publishedEndDate,
-          parsedBody.accessControl.publishedEndDate,
+        archiveDate: propertyValueWithDefault(
+          courseInstanceInfo.accessControl?.archiveDate,
+          parsedBody.accessControl.archiveDate,
           (v: string | null) => v === null || v === '',
         ),
       };

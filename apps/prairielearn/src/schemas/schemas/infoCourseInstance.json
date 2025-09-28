@@ -73,12 +73,12 @@
     "accessControl": {
       "type": "object",
       "properties": {
-        "publishedStartDate": {
-          "description": "When the course instance is published. If specified, publishedEndDate must also be specified.",
+        "publishDate": {
+          "description": "When the course instance is published. If specified, archiveDate must also be specified.",
           "type": "string"
         },
-        "publishedEndDate": {
-          "description": "When the course instance is archived. If specified, publishedStartDate must also be specified.",
+        "archiveDate": {
+          "description": "When the course instance is archived. If specified, publishDate must also be specified.",
           "type": "string"
         }
       }
