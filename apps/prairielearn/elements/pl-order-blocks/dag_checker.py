@@ -207,8 +207,6 @@ def grade_multigraph(
     # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))
-    for i, dag in enumerate(collapsed_dags):
-        print(f"{i}: {dag}")
 
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
@@ -364,7 +362,6 @@ def collapse_multigraph(
     multigraph: Multigraph,
     final: str,
 ) -> Generator:
-    print(multigraph)
     """
     :param depends_multi_graph: a dependency graph that contains nodes with multiple colored
     edges or in this our implementation a node which has a list[list[str]].
