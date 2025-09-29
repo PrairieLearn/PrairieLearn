@@ -236,7 +236,7 @@ export const AiGradingJobSchema = z.object({
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   model: z.string(),
-  prompt: z.any(),
+  prompt: z.unknown(),
   prompt_tokens: z.number(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
