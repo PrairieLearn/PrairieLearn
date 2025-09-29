@@ -97,6 +97,15 @@ interface TanstackTableProps<RowDataModel> {
 
 const DEFAULT_FILTER_MAP = {};
 
+/**
+ * A generic component that renders a full-width, resizeable Tanstack Table.
+ * @param params
+ * @param params.table - The table model
+ * @param params.title - The title of the table
+ * @param params.filters - The filters for the table
+ * @param params.rowHeight - The height of the rows in the table
+ * @param params.emptyState - The empty state for the table
+ */
 export function TanstackTable<RowDataModel>({
   table,
   title,
