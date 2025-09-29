@@ -1340,17 +1340,46 @@
       },
       "default": [".venv"]
     },
-    "costPerMillionPromptTokens": {
-      "type": "number",
-      "default": 1.25
-    },
-    "costPerMillionCachedTokens": {
-      "type": "number",
-      "default": 0.125
-    },
-    "costPerMillionCompletionTokens": {
-      "type": "number",
-      "default": 10
+    "costPerMillionTokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07"],
+      "properties": {
+        "gpt-5-2025-08-07": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["input", "cachedInput", "output"],
+          "properties": {
+            "input": {
+              "type": "number",
+              "minimum": 0
+            },
+            "cachedInput": {
+              "type": "number",
+              "minimum": 0
+            },
+            "output": {
+              "type": "number",
+              "minimum": 0
+            }
+          }
+        },
+        "gpt-5-mini-2025-08-07": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        }
+      },
+      "default": {
+        "gpt-5-2025-08-07": {
+          "input": 1.25,
+          "cachedInput": 0.125,
+          "output": 10
+        },
+        "gpt-5-mini-2025-08-07": {
+          "input": 0.25,
+          "cachedInput": 0.025,
+          "output": 2
+        }
+      }
     }
   }
 }
