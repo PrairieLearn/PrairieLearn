@@ -16,6 +16,7 @@ import z from 'zod';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
+import { TanstackTable } from '../../components/TanstackTable.js';
 import {
   NuqsAdapter,
   parseAsColumnPinningState,
@@ -34,7 +35,7 @@ import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { ColumnManager } from './components/ColumnManager.js';
 import { DownloadButton } from './components/DownloadButton.js';
 import { InviteStudentModal } from './components/InviteStudentModal.js';
-import { StudentsTable } from './components/StudentsTable.js';
+import { StatusColumnFilter } from './components/StatusColumnFilter.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -356,10 +357,23 @@ function StudentsCard({
             </div>
           </div>
           <div class="flex-grow-1">
-            <StudentsTable
+            <TanstackTable
               table={table}
-              enrollmentStatusFilter={enrollmentStatusFilter}
-              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+              filters={{
+                enrollment_status: ({ header }) => (
+                  <StatusColumnFilter
+                    columnId={header.column.id}
+                    enrollmentStatusFilter={enrollmentStatusFilter}
+                    setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+                  />
+                ),
+              }}
+              emptyState={
+                <>
+                  <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
+                  <p class="mb-0">No students found matching your search criteria.</p>
+                </>
+              }
             />
           </div>
         </div>

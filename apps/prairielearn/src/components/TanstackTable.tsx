@@ -1,18 +1,9 @@
-import {
-  type Header,
-  type Row,
-  type SortDirection,
-  type Table,
-  flexRender,
-} from '@tanstack/react-table';
+import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
+import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'preact/compat';
-
-import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
-import type { StudentRow } from '../instructorStudents.shared.js';
-
-import { StatusColumnFilter } from './StatusColumnFilter.js';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { JSX } from 'preact/jsx-runtime';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -24,12 +15,12 @@ function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   }
 }
 
-function ResizeHandle({
+function ResizeHandle<RowDataModel>({
   header,
   setColumnSizing,
 }: {
-  header: Header<StudentRow, unknown>;
-  setColumnSizing: Table<StudentRow>['setColumnSizing'];
+  header: Header<RowDataModel, unknown>;
+  setColumnSizing: Table<RowDataModel>['setColumnSizing'];
 }) {
   const minSize = header.column.columnDef.minSize ?? 0;
   const maxSize = header.column.columnDef.maxSize ?? 0;
@@ -88,30 +79,49 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({
+const DefaultEmptyState = (
+  <>
+    <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
+    <p class="mb-0">No results found matching your search criteria.</p>
+  </>
+);
+
+export function TanstackTable<RowDataModel>({
   table,
-  enrollmentStatusFilter,
-  setEnrollmentStatusFilter,
+  filters,
+  // enrollmentStatusFilter,
+  // setEnrollmentStatusFilter,
+  options,
+  emptyState = DefaultEmptyState,
 }: {
-  table: Table<StudentRow>;
-  enrollmentStatusFilter: EnumEnrollmentStatus[];
-  setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
+  table: Table<RowDataModel>;
+  // enrollmentStatusFilter: EnumEnrollmentStatus[];
+  /** setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void; */
+  emptyState?: JSX.Element;
+  options?: {
+    rowHeight: number;
+  };
+  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
 }) {
+  const resolvedOptions = {
+    rowHeight: 42,
+    ...options,
+  };
+
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
-  const rowHeight = 42;
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => rowHeight,
+    estimateSize: () => resolvedOptions.rowHeight,
     overscan: 10,
   });
 
   // Track focused cell for grid navigation
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
 
-  const getVisibleCells = (row: Row<StudentRow>) => [
+  const getVisibleCells = (row: Row<RowDataModel>) => [
     ...row.getLeftVisibleCells(),
     ...row.getCenterVisibleCells(),
   ];
@@ -307,13 +317,14 @@ export function StudentsTable({
                             )}
                           </button>
 
-                          {header.column.id === 'enrollment_status' && canFilter && (
+                          {canFilter && filters[header.column.id]?.({ header })}
+                          {/* {header.column.id === 'enrollment_status' && canFilter && (
                             <StatusColumnFilter
                               columnId={header.column.id}
                               enrollmentStatusFilter={enrollmentStatusFilter}
                               setEnrollmentStatusFilter={setEnrollmentStatusFilter}
                             />
-                          )}
+                          )} */}
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
@@ -338,7 +349,7 @@ export function StudentsTable({
                 const rowIdx = virtualRow.index;
 
                 return (
-                  <tr key={row.id} style={{ height: rowHeight }}>
+                  <tr key={row.id} style={{ height: resolvedOptions.rowHeight }}>
                     {visibleCells.map((cell, colIdx) => (
                       <td
                         key={cell.id}
@@ -414,8 +425,7 @@ export function StudentsTable({
           role="status"
           aria-live="polite"
         >
-          <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-          <p class="mb-0">No students found matching your search criteria.</p>
+          {emptyState}
         </div>
       )}
     </div>
