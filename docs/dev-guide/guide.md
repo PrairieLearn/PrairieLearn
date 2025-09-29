@@ -106,6 +106,26 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 - Buttons should use the `<button>` element when they take actions and the `<a>` element when they are simply links to other pages. We should not use `<a role="button">` to fake a button element. Buttons that do not submit a form should always start with `<button type="button" class="btn ...">`, where `type="button"` specifies that they don't submit.
 
+## HTML accessibility
+
+If you are adding anything more complex than a basic form page, the built-in accessibility checks are likely not enough for checking accessibility. You should use [voiceover (macOS)] or NVDA (windows) to test the page. Some common things to check for:
+
+- Are elements announced correctly?
+- Can you navigate the page using only the keyboard?
+  - tab to get to the next focusable element, enter to activate it
+  - arrow keys work appropriately
+- are the focus indicators visible?
+
+Example bugs from work on the Students table:
+
+- Can you navigate the table with arrow keys?
+- Can you resize the table columns with the arrow keys?
+- Can you activate a modal with enter?
+- Are the voiceover descriptions concise and accurate? Are there voiceover descriptions for all interactive elements (e.g. the resize handle)?
+- Does closing the modal/tabbing out of the modal retain the focused position?
+- Does selecting an option in a dropdown retain it's position after a re-render (e.g. in React)?
+- Are you using the proper ARIA role on menus/toolbars? You should check this with the official role list.
+
 ## SQL usage
 
 - [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
