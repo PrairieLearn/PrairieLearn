@@ -5,6 +5,8 @@ import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
+import { ColumnManager } from './ColumnManager.js';
+
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
     return <i class="bi bi-sort-up-alt" aria-hidden="true" />;
@@ -86,35 +88,35 @@ const DefaultEmptyState = (
   </>
 );
 
+interface TanstackTableProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  rowHeight: number;
+  emptyState?: JSX.Element;
+}
+
 export function TanstackTable<RowDataModel>({
   table,
   filters,
   // enrollmentStatusFilter,
   // setEnrollmentStatusFilter,
-  options,
+  rowHeight = 42,
   emptyState = DefaultEmptyState,
 }: {
   table: Table<RowDataModel>;
   // enrollmentStatusFilter: EnumEnrollmentStatus[];
   /** setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void; */
   emptyState?: JSX.Element;
-  options?: {
-    rowHeight: number;
-  };
+  rowHeight: number;
   filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
 }) {
-  const resolvedOptions = {
-    rowHeight: 42,
-    ...options,
-  };
-
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => resolvedOptions.rowHeight,
+    estimateSize: () => rowHeight,
     overscan: 10,
   });
 
@@ -349,7 +351,7 @@ export function TanstackTable<RowDataModel>({
                 const rowIdx = virtualRow.index;
 
                 return (
-                  <tr key={row.id} style={{ height: resolvedOptions.rowHeight }}>
+                  <tr key={row.id} style={{ height: rowHeight }}>
                     {visibleCells.map((cell, colIdx) => (
                       <td
                         key={cell.id}
@@ -428,6 +430,124 @@ export function TanstackTable<RowDataModel>({
           {emptyState}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A generic component that wraps the TanstackTable component in a card.
+ * @param params
+ * @param params.table - The table model
+ * @param params.title - The title of the card
+ * @param params.headerButtons - The buttons to display in the header
+ * @param params.globalFilter - The state management for the global filter
+ * @param params.globalFilter.value - The value of the global filter
+ * @param params.globalFilter.setValue - The function to set the value of the global filter
+ * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
+ */
+export function TanstackTableCard<RowDataModel>({
+  table,
+  title,
+  headerButtons,
+  globalFilter,
+  tableOptions,
+}: {
+  table: Table<RowDataModel>;
+  title: string;
+  headerButtons: JSX.Element;
+  globalFilter: {
+    value: string;
+    setValue: (value: string) => void;
+  };
+  tableOptions: Omit<TanstackTableProps<RowDataModel>, 'table'>;
+}) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Track screen size for aria-hidden
+  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+
+  useEffect(() => {
+    // TODO: This is a workaround to avoid a hydration mismatch.
+    setIsMediumOrLarger(mediaQuery?.matches ?? true);
+  }, [mediaQuery]);
+
+  useEffect(() => {
+    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
+    mediaQuery?.addEventListener('change', handler);
+    return () => mediaQuery?.removeEventListener('change', handler);
+  }, [mediaQuery]);
+
+  // Focus the search input when Ctrl+F is pressed
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
+          searchInputRef.current.focus();
+          event.preventDefault();
+        }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  return (
+    <div class="card d-flex flex-column h-100">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div>{title}</div>
+          <div class="d-flex gap-2">{headerButtons}</div>
+        </div>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
+          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
+            <div class="input-group">
+              <input
+                ref={searchInputRef}
+                type="text"
+                class="form-control"
+                aria-label="Search by UID, name or email."
+                placeholder="Search by UID, name, email..."
+                value={globalFilter.value}
+                onInput={(e) => {
+                  if (!(e.target instanceof HTMLInputElement)) return;
+                  globalFilter.setValue(e.target.value);
+                }}
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                aria-label="Clear search"
+                title="Clear search"
+                data-bs-toggle="tooltip"
+                onClick={() => globalFilter.setValue('')}
+              >
+                <i class="bi bi-x-circle" aria-hidden="true" />
+              </button>
+            </div>
+            {/* We do this instead of CSS properties for the accessibility checker */}
+            {isMediumOrLarger && <ColumnManager table={table} />}
+          </div>
+          {/* We do this instead of CSS properties for the accessibility checker */}
+          {!isMediumOrLarger && <ColumnManager table={table} />}
+          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
+            <div class="text-muted text-nowrap">
+              Showing {table.getRowModel().rows.length} of {table.getRowCount()}{' '}
+              {title.toLowerCase()}
+            </div>
+          </div>
+        </div>
+        <div class="flex-grow-1">
+          <TanstackTable
+            table={table}
+            filters={tableOptions.filters}
+            rowHeight={tableOptions.rowHeight}
+            emptyState={tableOptions.emptyState}
+          />
+        </div>
+      </div>
     </div>
   );
 }
