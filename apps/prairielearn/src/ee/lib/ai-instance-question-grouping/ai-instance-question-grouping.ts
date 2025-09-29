@@ -2,11 +2,12 @@ import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import type { ResponseInput } from 'openai/resources/responses/responses';
+import type { A } from 'vitest/dist/chunks/environment.d.cL3nLXbE.js';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { formatPrompt } from '../../../lib/ai.js';
+import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -45,6 +46,7 @@ async function aiEvaluateStudentResponse({
   instance_question,
   urlPrefix,
   openai,
+  logger,
 }: {
   course: Course;
   course_instance_id: string;
@@ -53,6 +55,7 @@ async function aiEvaluateStudentResponse({
   instance_question: InstanceQuestion;
   urlPrefix: string;
   openai: OpenAI;
+  logger: AIGradingLogger;
 }) {
   const { submission, variant } = await selectLastVariantAndSubmission(instance_question.id);
   const locals = {
@@ -140,6 +143,8 @@ async function aiEvaluateStudentResponse({
     prompt_cache_key: `assessment_question_${instance_question.assessment_question_id}_grouping`,
     safety_identifier: `course_${course.id}`,
   });
+
+  logResponseUsage({ response, logger });
 
   const completionContent = response.output_parsed;
 
