@@ -1,14 +1,15 @@
 import itertools
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence, Callable, Generator
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
-import networkx as nx
 
+import networkx as nx
 
 ColoredEdge = dict[str, list[str]]
 Edge = list[str]
 Multigraph = dict[str, Edge | ColoredEdge]
 Dag = dict[str, Edge]
+
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -317,6 +318,7 @@ def lcs_partial_credit(
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
 
+
 def dfs_until(
     halting_condition: Callable[[tuple[str, ColoredEdge | Edge]], bool],
     multigraph: Multigraph,
@@ -345,7 +347,7 @@ def dfs_until(
             return curr, traversed
 
         # this is being checked in the halting condition
-        traversed[curr] = multigraph[curr] # type: ignore
+        traversed[curr] = multigraph[curr]  # type: ignore
 
         for target in multigraph[curr]:
             # this determines if the proposed target edge is a back edge if so it contains a cycle
@@ -380,11 +382,11 @@ def collapse_multigraph(
             continue
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
-        for color, edges in graph[reason].items(): # type: ignore
+        for color, edges in graph[reason].items():  # type: ignore
             if color.startswith("*") or linked_color == color or linked_color == "":
                 partially_collapsed = deepcopy(graph)
                 partially_collapsed[reason] = edges
-                
+
                 # Either linked_color is the same or it is assigned once here
                 collapsing_graphs.append((partially_collapsed, color))
 

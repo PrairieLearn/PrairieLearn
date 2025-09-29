@@ -1,12 +1,12 @@
 import pytest
 from dag_checker import (
+    Multigraph,
     dag_to_nx,
     grade_dag,
     grade_multigraph,
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
-    Multigraph
 )
 
 problem_1_dag = {
@@ -187,13 +187,13 @@ problem_5_git: Multigraph = {
     "1": [],
     "2": [],
     "3": [],
-    "4": {'path1': ["2"], 'path2': ["1"]},
-    "5": {'path1': ["4"], 'path2': ["3", "4"]},
+    "4": {"path1": ["2"], "path2": ["1"]},
+    "5": {"path1": ["4"], "path2": ["3", "4"]},
 }
 
 problem_6_final = "3"
 problem_6_cycle: Multigraph = {
-    "1": {'*0': ["2"], '*1': []},
+    "1": {"*0": ["2"], "*1": []},
     "2": ["1"],
     "3": {"*0": ["2"], "*1": ["1"]},
 }

@@ -5,18 +5,17 @@ import os
 import random
 from copy import deepcopy
 from typing import TypedDict, no_type_check
-from dag_checker import Multigraph
 
 import chevron
 import lxml.html
 import prairielearn as pl
 from dag_checker import (
+    Multigraph,
     grade_dag,
     grade_multigraph,
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
-    Multigraph
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
@@ -214,7 +213,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
 
-    # TODO: this will break the grading if you use correct_answers to display a correct answer 
+    # TODO: this will break the grading if you use correct_answers to display a correct answer
     # because the depends graph will be missing nodes in order to collapse the multigraph
     if (
         data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi
