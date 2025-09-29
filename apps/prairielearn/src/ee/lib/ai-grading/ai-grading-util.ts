@@ -45,6 +45,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
 export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-mini-2025-08-07';
 
 export const SubmissionVariantSchema = z.object({
@@ -217,7 +218,6 @@ export async function generatePrompt({
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
-      include_ai_grading_prompts: true,
     }),
     {
       role: 'developer',
@@ -241,7 +241,6 @@ export function containsImageCapture(submission_text: string): boolean {
  * @param options
  * @param options.submission_text - The rendered HTML content of the student's submission.
  * @param options.submitted_answer - The student-submitted answer, potentially containing text and images.
- * @param options.include_ai_grading_prompts - Whether to include AI grading prompts in the message.
  */
 export function generateSubmissionMessage({
   submission_text,
