@@ -15,6 +15,7 @@ import type {
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 import {
   generateSubmissionMessage,
@@ -336,10 +337,15 @@ export async function aiInstanceQuestionGrouping({
           logger.error(err);
         } finally {
           for (const log of logs) {
-            if (log.messageType === 'info') {
-              job.info(log.message);
-            } else if (log.messageType === 'error') {
-              job.error(log.message);
+            switch (log.messageType) {
+              case 'info':
+                job.info(log.message);
+                break;
+              case 'error':
+                job.error(log.message);
+                break;
+              default:
+                assertNever(log.messageType);
             }
           }
         }
