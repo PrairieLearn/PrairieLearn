@@ -101,15 +101,11 @@ export function TanstackTable<RowDataModel>({
   table,
   title,
   filters = DEFAULT_FILTER_MAP,
-  // enrollmentStatusFilter,
-  // setEnrollmentStatusFilter,
   rowHeight = 42,
   emptyState = DefaultEmptyState,
 }: {
   table: Table<RowDataModel>;
   title: string;
-  // enrollmentStatusFilter: EnumEnrollmentStatus[];
-  /** setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void; */
   emptyState?: JSX.Element;
   rowHeight?: number;
   filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
