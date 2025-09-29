@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
@@ -157,9 +157,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  const usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined,
-  );
+  const usersWithoutRoles = groupMembers.filter((member) => !(member.uid in roleAssignments));
 
   return {
     roleAssignments,
@@ -216,7 +214,7 @@ async function selectUserInCourseInstance({
       [user.user_id, course_instance_id],
       z.boolean(),
     )) ||
-    (await getEnrollmentForUserInCourseInstance({
+    (await selectOptionalEnrollmentByUserId({
       course_instance_id,
       user_id: user.user_id,
     }))
@@ -229,7 +227,7 @@ async function selectUserInCourseInstance({
   const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
-    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
       return user;
     }
   }
@@ -645,7 +643,7 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
         userId = groupInfo.groupMembers[0].user_id;
       }

@@ -80,14 +80,36 @@ jobs:
         run: make typecheck-contrib
       - name: Run the TypeScript typechecker for scripts
         run: make typecheck-scripts
+      - name: Start Postgres
+        run: |
+          sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+
+          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          fsync = off
+          full_page_writes = off
+          synchronous_commit = off
+          EOF
+
+          sudo systemctl restart postgresql.service
+      # We must migrate our database before we can typecheck the SQL.
+      - name: Run the SQL typechecker
+        run: |
+          yarn migrate
+          make typecheck-sql
       # Requires `make build` so that `actions-report-image-sizes` is built.
       - name: Run the GitHub Actions linter
         run: make lint-actions
       # Requires Git history and yarn install. Not using the make version
-      # because the base ref is potentially different.
+      # because the base ref is potentially different. Does not run in
+      # changeset-release or dependabot PRs, since they are expected to change
+      # packages without creating a changeset. Also does not run in merge_group
+      # events due to issues with the check for changeset, which can be tricky
+      # in merge branches.
       - name: Check if a changeset is required
-        if: ${{ (github.event_name == 'pull_request' || github.event_name == 'merge_group')
-          && !contains(github.head_ref, 'changeset-release')
+        if: ${{github.event_name == 'pull_request'
+          && !contains(github.event.pull_request.head.ref, 'changeset-release')
           && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
       # This step runs at the end, since it is common for it to fail in

@@ -19,21 +19,22 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
   let elemList, page;
 
-  helperExam.startExam(locals);
+  helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
   describe('1. grade correct answer to question addNumbers', function () {
     describe('setting up the submission data', function () {
       it('should succeed', function () {
         locals.shouldHaveButtons = ['grade', 'save'];
         locals.postAction = 'grade';
-        locals.question = helperExam.questions.addNumbers;
+        locals.question = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers;
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
           instance_question_points: assessmentPoints,
           instance_question_score_perc: (assessmentPoints / 5) * 100,
           assessment_instance_points: assessmentPoints,
-          assessment_instance_score_perc: (assessmentPoints / helperExam.assessmentMaxPoints) * 100,
+          assessment_instance_score_perc:
+            (assessmentPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant) {
           return {
@@ -149,7 +150,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.equal(data[0]['Assessment'], 'Exam 1');
       assert.approximately(data[0]['Score (%)'], locals.assessment_instance.score_perc, 1e-6);
       assert.approximately(data[0]['Points'], locals.assessment_instance.points, 1e-6);
-      assert.approximately(data[0]['Max points'], helperExam.assessmentMaxPoints, 1e-6);
+      assert.approximately(
+        data[0]['Max points'],
+        helperExam.exam1AutomaticTestSuite.maxPoints,
+        1e-6,
+      );
     });
   });
 
@@ -168,7 +173,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert(data.every((entry) => entry['UID'] === 'dev@example.com'));
       assert(data.every((entry) => entry['Assessment'] === 'Exam 1'));
       const questions = data.map((entry) => entry['Question']).sort();
-      const expectedQuestions = helperExam.questionsArray.map((q) => q.qid);
+      const expectedQuestions = helperExam.exam1AutomaticTestSuite.questions.map((q) => q.qid);
       assert.deepEqual(questions, expectedQuestions);
     });
   });

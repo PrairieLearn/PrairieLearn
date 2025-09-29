@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { S3 } from '@aws-sdk/client-s3';
 import {
   DeleteMessageCommand,
@@ -12,11 +14,11 @@ import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { withResolvers } from '@prairielearn/utils';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
-import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
 import { gradingJobStatusUpdated } from './externalGradingSocket.js';
@@ -24,7 +26,7 @@ import { gradingJobStatusUpdated } from './externalGradingSocket.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const abortController = new AbortController();
-const processingFinished = deferredPromise();
+const processingFinished = withResolvers();
 
 export async function init() {
   // If we're not configured to use AWS, don't try to do anything here
@@ -131,7 +133,7 @@ async function loadQueueUrl(sqs: SQSClient): Promise<string> {
 async function processMessage(data: {
   jobId: string;
   event: string;
-  data: {
+  data?: {
     receivedTime: string;
   };
 }) {
@@ -147,6 +149,7 @@ async function processMessage(data: {
     ...data,
   });
   if (data.event === 'job_received') {
+    assert(data.data);
     await sqldb.execute(sql.update_grading_received_time, {
       grading_job_id: jobId,
       received_time: data.data.receivedTime,

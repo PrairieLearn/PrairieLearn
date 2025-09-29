@@ -8,6 +8,7 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
+import pluginQuery from '@tanstack/eslint-plugin-query';
 import vitest from '@vitest/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
@@ -110,6 +111,7 @@ export default tseslint.config([
       '@html-eslint': html,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
+      '@tanstack/query': pluginQuery,
       perfectionist,
       unicorn: eslintPluginUnicorn,
     },
@@ -288,7 +290,7 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', '/_/'],
+          forbid: ['className', 'htmlFor', '/_/'],
         },
       ],
 
@@ -399,22 +401,6 @@ export default tseslint.config([
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
 
-      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
-
-      // We use empty functions in quite a few places, so we'll disable this rule.
-      '@typescript-eslint/no-empty-function': 'off',
-
-      // Look, sometimes we just want to use `any`.
-      '@typescript-eslint/no-explicit-any': 'off',
-
-      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
-      // TODO: fix the violations so we can enable this rule.
-      '@typescript-eslint/no-dynamic-delete': 'off',
-
-      // We use `!` to assert that a value is not `null` or `undefined`.
-      '@typescript-eslint/no-non-null-assertion': 'off',
-
-      // Replaces the standard `no-unused-vars` rule.
       '@stylistic/jsx-curly-brace-presence': [
         'error',
         { children: 'never', propElementValues: 'always', props: 'never' },
@@ -454,17 +440,33 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      // Blocks double-quote strings (unless a single quote is present in the
+      // string) and backticks (unless there is a tag or substitution in place).
+      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+      // We use empty functions in quite a few places, so we'll disable this rule.
+      '@typescript-eslint/no-empty-function': 'off',
+      // Look, sometimes we just want to use `any`.
+      '@typescript-eslint/no-explicit-any': 'off',
+      // This was enabled when we upgraded to `@typescript-eslint/*` v6.
+      // TODO: fix the violations so we can enable this rule.
+      '@typescript-eslint/no-dynamic-delete': 'off',
+      // We use `!` to assert that a value is not `null` or `undefined`.
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // Replaces the standard `no-unused-vars` rule.
       '@typescript-eslint/no-unused-vars': [
         'error',
         {
           args: 'after-used',
-          argsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
+          argsIgnorePattern: '^_', // Args can be _
+          varsIgnorePattern: '^_.', // This includes lodash, which should be considered
         },
       ],
-      // Blocks double-quote strings (unless a single quote is present in the
-      // string) and backticks (unless there is a tag or substitution in place).
-      '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
+
+      // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
+      ...pluginQuery.configs['flat/recommended'][0].rules,
+      '@tanstack/query/no-rest-destructuring': 'error',
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
@@ -605,6 +607,10 @@ export default tseslint.config([
           },
         },
       ],
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
       '@typescript-eslint/only-throw-error': [
         'error',
         {
@@ -637,12 +643,18 @@ export default tseslint.config([
   },
   {
     // TODO: enable this rule for all files.
-    files: ['apps/prairielearn/**/*.test.ts', 'apps/prairielearn/src/tests/**/*.ts'],
+    files: [
+      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
+      'apps/prairielearn/src/components/**/*.{ts,tsx}',
+      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
+      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
+      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
+      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
+      'apps/prairielearn/src/server.ts',
+      'apps/prairielearn/*.config.ts',
+    ],
     rules: {
-      '@typescript-eslint/no-unnecessary-condition': [
-        'error',
-        { allowConstantLoopConditions: 'only-allowed-literals' },
-      ],
+      '@typescript-eslint/no-unnecessary-condition': 'off',
     },
   },
   {

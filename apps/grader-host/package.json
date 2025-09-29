@@ -25,6 +25,7 @@
     "@prairielearn/run": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
+    "@prairielearn/utils": "workspace:^",
     "async": "^3.2.6",
     "byline": "^5.0.0",
     "dockerode": "^4.0.7",

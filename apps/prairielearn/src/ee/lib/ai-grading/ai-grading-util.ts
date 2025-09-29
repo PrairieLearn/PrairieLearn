@@ -16,6 +16,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentQuestionSchema,
@@ -49,7 +50,6 @@ export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-export const GradingResultSchema = z.object({ score: z.number(), feedback: z.string() });
 export const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -113,7 +113,7 @@ export async function generatePrompt({
       {
         role: 'system',
         content:
-          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any." +
+          "You are an instructor for a course, and you are grading a student's response to a question. You are provided several rubric items with a description, explanation, and grader note. You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response. If no rubric items apply, do not select any. You should also include an explanation on why you make these choices." +
           (example_submissions.length > 0
             ? ' I will provide some example student responses and their corresponding selected rubric items.'
             : ''),
@@ -127,7 +127,7 @@ export async function generatePrompt({
     messages.push({
       role: 'system',
       content:
-        "You are an instructor for a course, and you are grading a student's response to a question. You should always return the grade using a JSON object with two properties: score and feedback. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. The feedback should explain why you give this score. Follow any special instructions given by the instructor in the question. Omit the feedback if the student's response is correct." +
+        "You are an instructor for a course, and you are grading a student's response to a question. The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest. Follow any special instructions given by the instructor in the question. Include feedback for the student, but omit the feedback if the student's response is entirely correct. Also include an explanation on why you made these choices." +
         (example_submissions.length > 0
           ? ' I will provide some example student responses and their corresponding scores and feedback.'
           : ''),
@@ -173,6 +173,7 @@ export async function generatePrompt({
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
+      include_ai_grading_prompts: true,
     }),
   );
 
@@ -180,21 +181,37 @@ export async function generatePrompt({
 }
 
 /**
- * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ * Returns true if the text contains any element with a `data-image-capture-uuid` attribute.
  */
-function generateSubmissionMessage({
+export function containsImageCapture(submission_text: string): boolean {
+  return cheerio.load(submission_text)('[data-image-capture-uuid]').length > 0;
+}
+
+/**
+ * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ *
+ * @param options
+ * @param options.submission_text - The rendered HTML content of the student's submission.
+ * @param options.submitted_answer - The student-submitted answer, potentially containing text and images.
+ * @param options.include_ai_grading_prompts - Whether to include AI grading prompts in the message.
+ */
+export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  include_ai_grading_prompts,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  include_ai_grading_prompts: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (include_ai_grading_prompts) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response: \n<response>\n',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -218,31 +235,38 @@ function generateSubmissionMessage({
           submissionTextSegment = '';
         }
 
-        const options = $submission_html(node).data('options') as Record<string, string>;
-        const submittedImageName = options.submitted_file_name;
-        if (!submittedImageName) {
-          // If no submitted filename is available, no image was captured.
-          message_content.push({
-            type: 'text',
-            text: `Image capture with ${options.file_name} was not captured.`,
-          });
-          return;
-        }
+        const fileName = run(() => {
+          // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+          const submittedFileName = $submission_html(node).data('file-name');
+          if (submittedFileName && typeof submittedFileName === 'string') {
+            return submittedFileName.trim();
+          }
 
-        // submitted_answer contains the base-64 encoded image data for the image capture.
+          // Old style, where we have to pick the filename out of the `data-options` attribute.
+          const options = $submission_html(node).data('options') as Record<string, string>;
 
+          return options?.submitted_file_name;
+        });
+
+        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
 
-        if (!submitted_answer[submittedImageName]) {
-          throw new Error(`Image name ${submittedImageName} not found in submitted answers.`);
+        if (!submitted_answer[fileName]) {
+          // If the submitted answer doesn't contain the image, the student likely
+          // didn't capture an image.
+          message_content.push({
+            type: 'text',
+            text: `Image capture with ${fileName} was not captured.`,
+          });
+          return;
         }
 
         message_content.push({
           type: 'image_url',
           image_url: {
-            url: submitted_answer[submittedImageName],
+            url: submitted_answer[fileName],
           },
         });
       } else {
@@ -257,10 +281,12 @@ function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (include_ai_grading_prompts) {
+    message_content.push({
+      type: 'text',
+      text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    });
+  }
 
   return {
     role: 'user',
@@ -349,12 +375,18 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export async function selectInstanceQuestionsForAssessmentQuestion(
-  assessment_question_id: string,
-): Promise<InstanceQuestion[]> {
+export async function selectInstanceQuestionsForAssessmentQuestion({
+  assessment_question_id,
+  closed_instance_questions_only = false,
+  ungrouped_instance_questions_only = false,
+}: {
+  assessment_question_id: string;
+  closed_instance_questions_only?: boolean;
+  ungrouped_instance_questions_only?: boolean;
+}): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    { assessment_question_id },
+    { assessment_question_id, closed_instance_questions_only, ungrouped_instance_questions_only },
     InstanceQuestionSchema,
   );
 }

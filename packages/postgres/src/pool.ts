@@ -4,7 +4,7 @@ import { Readable, Transform } from 'node:stream';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { DatabaseError, type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
 
@@ -175,6 +175,9 @@ export class PostgresPool {
     pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
+    if (this.pool != null) {
+      throw new Error('Postgres pool already initialized');
+    }
     this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
@@ -831,6 +834,17 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
+  async queryCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
+
+  async queryCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
+
   /**
    * Returns an {@link CursorIterator} that can be used to iterate over the
    * results of the query in batches, which is useful for large result sets.
@@ -838,9 +852,11 @@ export class PostgresPool {
    */
   async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
-    params: QueryParams,
-    model: Model,
+    paramsOrSchema: Model | QueryParams,
+    maybeModel?: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
     return this.queryCursorInternal(sql, params, model);
   }
 
@@ -853,6 +869,7 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
+    let rowKeys: string[] | null = null;
     const iterator: CursorIterator<z.infer<Model>> = {
       async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
@@ -869,10 +886,15 @@ export class PostgresPool {
               break;
             }
 
+            if (rowKeys === null) {
+              rowKeys = Object.keys(rows[0] ?? {});
+            }
+            const flattened =
+              rowKeys.length === 1 ? rows.map((row) => row[(rowKeys as string[])[0]]) : rows;
             if (model) {
-              yield z.array(model).parse(rows);
+              yield z.array(model).parse(flattened);
             } else {
-              yield rows;
+              yield flattened;
             }
           }
         } catch (err: any) {
@@ -965,6 +987,40 @@ export class PostgresPool {
     const schema = `${truncPrefix}_${timestamp}_${suffix}`;
     await this.setSearchSchema(schema);
     return schema;
+  }
+
+  /**
+   * Deletes all schemas starting with the given prefix.
+   *
+   * @param prefix The prefix of the schemas to delete.
+   */
+  async clearSchemasStartingWith(prefix: string): Promise<void> {
+    // Sanity check against deleting public, pg_, information_schema, etc.
+    if (prefix === 'public' || prefix.startsWith('pg_') || prefix === 'information_schema') {
+      throw new Error(`Cannot clear schema starting with ${prefix}`);
+    }
+    // Sanity check against a bad prefix.
+    if (prefix.length < 4) {
+      throw new Error(`Prefix is too short: ${prefix}`);
+    }
+
+    await this.queryAsync(
+      `DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname LIKE ${escapeLiteral(prefix + '%')}
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;`,
+      {},
+    );
   }
 
   /** The number of established connections. */

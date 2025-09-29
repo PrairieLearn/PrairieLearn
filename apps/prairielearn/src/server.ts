@@ -1261,7 +1261,7 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/student',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/enrollment',
     (await import('./pages/instructorStudentDetail/instructorStudentDetail.js')).default,
   );
   app.use(
@@ -1451,6 +1451,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
+  // Perform auth for all student-facing instance question routes.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
+    (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+    (await import('./middlewares/studentAssessmentAccess.js')).default,
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
@@ -1458,27 +1465,6 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/externalImageCapture/variant/:variant_id(\\d+)',
     (await import('./pages/externalImageCapture/externalImageCapture.js')).default(),
-  );
-
-  if (config.devMode) {
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
-      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
-    );
-    app.use(
-      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
-      (await import('./pages/jobSequence/jobSequence.js')).default,
-    );
-  }
-
-  // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
-    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
-    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for questions
@@ -1511,6 +1497,27 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/text',
     (await import('./pages/legacyQuestionText/legacyQuestionText.js')).default,
+  );
+
+  if (config.devMode) {
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
+      (await import('./pages/instructorLoadFromDisk/instructorLoadFromDisk.js')).default,
+    );
+    app.use(
+      '/pl/course_instance/:course_instance_id(\\d+)/jobSequence',
+      (await import('./pages/jobSequence/jobSequence.js')).default,
+    );
+  }
+
+  // Global client files
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+    (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
@@ -1968,7 +1975,10 @@ export async function initExpress(): Promise<Express> {
   // if no earlier routes matched, this will match and generate a 404 error
   app.use((await import('./middlewares/notFound.js')).default);
 
-  app.use((await import('./middlewares/redirectEffectiveAccessDenied.js')).default);
+  app.use(
+    (await import('./middlewares/redirectEffectiveAccessDenied.js'))
+      .redirectEffectiveAccessDeniedErrorHandler,
+  );
 
   // This is not a true error handler; it just implements support for
   // "throwing" redirects.
@@ -2320,15 +2330,47 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     // `config.runMigrations`. This allows us to use the same config when
     // running migrations as we do when we start the server.
     if (config.runMigrations || argv['migrate-and-exit']) {
-      await migrations.init(
-        [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
-        'prairielearn',
-      );
+      await migrations.init({
+        directories: [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+        project: 'prairielearn',
+      });
+    }
 
-      if (argv['migrate-and-exit']) {
-        logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-        process.exit(0);
-      }
+    // We create and activate a random DB schema name
+    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
+    // after we have run the migrations but before we create
+    // the sprocs. This means all tables (from migrations) are
+    // in the public schema, but all sprocs are in the random
+    // schema. Every server invocation thus has its own copy
+    // of its sprocs, allowing us to update servers while old
+    // servers are still running. See docs/dev-guide/guide.md for
+    // more info.
+    //
+    // We use the combination of instance ID and port number to uniquely
+    // identify each server; in some cases, we're running multiple instances
+    // on the same physical host.
+    //
+    // The schema prefix should not exceed 28 characters; this is due to
+    // the underlying Postgres limit of 63 characters for schema names.
+    // Currently, EC2 instance IDs are 19 characters long, and we use
+    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+    // of those ever get longer, we have a little wiggle room. Nonetheless,
+    // we'll check to make sure we don't exceed the limit and fail fast if
+    // we do.
+    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+    if (schemaPrefix.length > 28) {
+      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+    }
+    if (config.devMode && !argv['migrate-and-exit']) {
+      await sqldb.clearSchemasStartingWith(schemaPrefix);
+    }
+
+    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
+    await sprocs.init();
+
+    if (argv['migrate-and-exit']) {
+      logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+      process.exit(0);
     }
 
     // Collect metrics on our Postgres connection pools.
@@ -2402,34 +2444,6 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       { valueType: opentelemetry.ValueType.INT, interval: 1000 },
       () => codeCaller.getMetrics().pending,
     );
-
-    // We create and activate a random DB schema name
-    // (https://www.postgresql.org/docs/current/ddl-schemas.html)
-    // after we have run the migrations but before we create
-    // the sprocs. This means all tables (from migrations) are
-    // in the public schema, but all sprocs are in the random
-    // schema. Every server invocation thus has its own copy
-    // of its sprocs, allowing us to update servers while old
-    // servers are still running. See docs/dev-guide.md for
-    // more info.
-    //
-    // We use the combination of instance ID and port number to uniquely
-    // identify each server; in some cases, we're running multiple instances
-    // on the same physical host.
-    //
-    // The schema prefix should not exceed 28 characters; this is due to
-    // the underlying Postgres limit of 63 characters for schema names.
-    // Currently, EC2 instance IDs are 19 characters long, and we use
-    // 4-digit port numbers, so this will be safe (19+1+4=24). If either
-    // of those ever get longer, we have a little wiggle room. Nonetheless,
-    // we'll check to make sure we don't exceed the limit and fail fast if
-    // we do.
-    const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
-    if (schemaPrefix.length > 28) {
-      throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
-    }
-    await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
-    await sprocs.init();
 
     if (config.runBatchedMigrations) {
       // Now that all migrations have been run, we can start executing any

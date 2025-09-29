@@ -4,6 +4,8 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  EnrollmentSchema,
+  SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 
@@ -37,7 +39,8 @@ export const GradebookRowSchema = z.object({
   uid: UserSchema.shape.uid,
   uin: UserSchema.shape.uin,
   user_name: UserSchema.shape.name,
-  role: z.enum(['Staff', 'Student', 'None']),
+  role: SprocUsersGetDisplayedRoleSchema,
+  enrollment_id: EnrollmentSchema.shape.id.nullable(),
   scores: z.record(
     AssessmentSchema.shape.id,
     z.object({

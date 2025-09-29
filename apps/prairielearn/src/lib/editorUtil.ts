@@ -1,5 +1,7 @@
 import * as path from 'path';
 
+import z from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
 import { type FileDetails, type FileMetadata, FileType } from './editorUtil.types.js';
@@ -75,14 +77,22 @@ export async function getFileMetadataForPath(
       return { syncErrors: null, syncWarnings: null, uuid: null, type: FileType.File };
   }
 
-  const res = await sqldb.queryZeroOrOneRowAsync(query, queryParams);
-  if (res.rowCount === 0) {
+  const res = await sqldb.queryOptionalRow(
+    query,
+    queryParams,
+    z.object({
+      sync_errors: z.string().nullable(),
+      sync_warnings: z.string().nullable(),
+      uuid: z.string().nullable(),
+    }),
+  );
+  if (res === null) {
     return { syncErrors: null, syncWarnings: null, uuid: null, type: details.type };
   }
   return {
-    syncErrors: res.rows[0].sync_errors,
-    syncWarnings: res.rows[0].sync_warnings,
-    uuid: res.rows[0].uuid,
+    syncErrors: res.sync_errors,
+    syncWarnings: res.sync_warnings,
+    uuid: res.uuid,
     type: details.type,
   };
 }

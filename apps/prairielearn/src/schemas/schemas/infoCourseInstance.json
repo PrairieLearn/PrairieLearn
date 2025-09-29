@@ -33,6 +33,31 @@
       "type": "boolean",
       "deprecated": true
     },
+    "selfEnrollment": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "description": "If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.",
+          "type": "boolean",
+          "default": true
+        },
+        "beforeDate": {
+          "description": "Before this date, self-enrollment is enabled if beforeDateEnabled is true. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on enabled property.",
+          "type": "string"
+        },
+        "beforeDateEnabled": {
+          "description": "If true, self-enrollment is enabled before the beforeDate. If false, self-enrollment is controlled by the enabled property.",
+          "type": "boolean",
+          "default": false
+        },
+        "useEnrollmentCode": {
+          "description": "If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.",
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "default": {}
+    },
     "hideInEnrollPage": {
       "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
       "type": "boolean",

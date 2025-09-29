@@ -313,6 +313,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if normalize_whitespace:
         code = dedent(code).rstrip()
 
+    if data["ai_grading"]:
+        # Return just the raw code for AI grading.
+        #
+        # As we're never actually rendering this as HTML, we don't have to think
+        # carefully about escaping. We can also introduce leading/trailing newlines
+        # to make it easier for a human to read.
+        return f"<pre><code>\n{code.strip()}\n</code></pre>"
+
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
     pygments_style = get_style_by_name(style_name)
