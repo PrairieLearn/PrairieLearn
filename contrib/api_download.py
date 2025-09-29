@@ -47,13 +47,12 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     print("successfully ensured directory existence")
 
-    session = requests.Session()
-
-    logfilename = os.path.join(args.output_dir, "download_log.txt")
-    print(f"opening log file {logfilename} ...")
-    with open(logfilename, "a" if args.resume else "w") as logfile:
-        print("successfully opened log file")
-        download_course_instance(args, session, logfile)
+    with requests.Session() as session:
+        logfilename = os.path.join(args.output_dir, "download_log.txt")
+        print(f"opening log file {logfilename} ...")
+        with open(logfilename, "a" if args.resume else "w") as logfile:
+            print("successfully opened log file")
+            download_course_instance(args, session, logfile)
 
 
 def download_course_instance(
