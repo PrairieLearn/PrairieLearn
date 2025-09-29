@@ -2,14 +2,13 @@ import itertools
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence, Callable, Generator
 from copy import deepcopy
-from typing import TypedDict, Tuple
 import networkx as nx
 
 
-ColoredEdges = dict[str, list[str]]
-Edges = list[str]
-Multigraph = dict[str, Edges | ColoredEdges]
-Dag = dict[str, Edges]
+ColoredEdge = dict[str, list[str]]
+Edge = list[str]
+Multigraph = dict[str, Edge | ColoredEdge]
+Dag = dict[str, Edge]
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -319,7 +318,7 @@ def lcs_partial_credit(
     return deletions_needed + insertions_needed
 
 def dfs_until(
-    halting_condition: Callable[[tuple[str, ColoredEdges | Edges]], bool],
+    halting_condition: Callable[[tuple[str, ColoredEdge | Edge]], bool],
     multigraph: Multigraph,
     start: str,
 ) -> tuple[str | None, Dag]:
@@ -390,7 +389,7 @@ def collapse_multigraph(
                 collapsing_graphs.append((partially_collapsed, color))
 
 
-def _is_edges_colored(value: tuple[str, list[str] | dict[str, list[str]]]) -> bool:
+def _is_edges_colored(value: tuple[str, Edge | ColoredEdge]) -> bool:
     """a halting condition function for dfs_until, used to check for colored edges."""
     _, edges = value
     if edges and isinstance(edges, dict):
