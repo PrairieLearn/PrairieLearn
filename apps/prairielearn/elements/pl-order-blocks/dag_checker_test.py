@@ -207,7 +207,7 @@ problem_7_optional_source: Multigraph = {
 }
 
 
-def test_solve_multigraph():
+def test_solve_multigraph() -> None:
     problem_4_solutions = solve_multigraph(problem_4_sum, problem_4_final)
     for solution in problem_4_solutions:
         assert (
@@ -225,7 +225,7 @@ def test_solve_multigraph():
         )
 
     # Contains a cycle and should fail.
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match=r"Cycle encountered druing collapse of multigraph."):
         solve_multigraph(problem_6_cycle, problem_6_final)
 
     problem_7_solutions = solve_multigraph(problem_7_optional_source, problem_7_final)

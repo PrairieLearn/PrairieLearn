@@ -324,6 +324,9 @@ def dfs_until(
     multigraph: Multigraph,
     start: str,
 ) -> tuple[str | None, Dag]:
+    # ruff throws an error for sphinx style doc strings with exception raising
+    # this doc string has to be ignored until implemented
+    # currently a todo in https://github.com/astral-sh/ruff/issues/12434
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
@@ -333,8 +336,8 @@ def dfs_until(
     :param start: the starting point for the search.
     :return: the reason or node that halted the search with the nodes and their corresponding
     edges the DFS was able to reach before halting.
-    :Exception: Will throw an exception if a cycle is found
-    """
+    :raises ValueError: If a cycle is found in the multigraph.
+    """  # noqa: DOC501 (false positive)
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []
     traversed: Dag = {}
@@ -352,7 +355,7 @@ def dfs_until(
         for target in multigraph[curr]:
             # this determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
-                raise Exception("Cycle encountered druing collapse of multigraph.")
+                raise ValueError("Cycle encountered druing collapse of multigraph.")
             if target not in visited:
                 stack.insert(0, (target, deepcopy(visited)))
 
@@ -383,7 +386,7 @@ def collapse_multigraph(
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
         for color, edges in graph[reason].items():  # type: ignore
-            if color.startswith("*") or linked_color == color or linked_color == "":
+            if color.startswith("*") or linked_color in (color, ""):
                 partially_collapsed = deepcopy(graph)
                 partially_collapsed[reason] = edges
 
@@ -394,7 +397,4 @@ def collapse_multigraph(
 def _is_edges_colored(value: tuple[str, Edge | ColoredEdge]) -> bool:
     """a halting condition function for dfs_until, used to check for colored edges."""
     _, edges = value
-    if edges and isinstance(edges, dict):
-        return True
-    else:
-        return False
+    return bool(edges and isinstance(edges, dict))
