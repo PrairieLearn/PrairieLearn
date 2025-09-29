@@ -475,6 +475,7 @@ export async function generateQuestion({
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
       authnUserId,
+      model: QUESTION_GENERATION_OPENAI_MODEL,
       usage: response.usage,
     });
 
@@ -691,6 +692,7 @@ async function regenInternal({
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
     authnUserId,
+    model: QUESTION_GENERATION_OPENAI_MODEL,
     usage: response.usage,
   });
 
