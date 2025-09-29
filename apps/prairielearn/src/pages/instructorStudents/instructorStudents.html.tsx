@@ -275,7 +275,7 @@ function StudentsCard({
             />
             {enrollmentManagementEnabled && (
               <Button
-                variant="primary"
+                variant="light"
                 disabled={!authzData.has_course_instance_permission_edit}
                 onClick={() => setShowInvite(true)}
               >
