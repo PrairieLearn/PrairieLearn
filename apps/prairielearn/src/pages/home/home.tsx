@@ -2,13 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import {
-  execute,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -16,23 +10,17 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import {
-  CourseInstanceSchema,
-  CourseSchema,
-  EnrollmentSchema,
-  InstitutionSchema,
-} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { insertAuditEvent } from '../../models/audit-event.js';
+import { selectInstanceAndCourseAndInstitution } from '../../models/course-instances.js';
 import {
   ensureCheckedEnrollment,
   ensureEnrollment,
-  selectAndLockEnrollmentById,
   selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUid,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
-import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -156,55 +144,51 @@ router.post(
         action_detail: 'invitation_accepted',
       });
     } else if (body.__action === 'reject_invitation') {
-      await runInTransactionAsync(async () => {
-        const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
-          course_instance_id: body.course_instance_id,
-          pending_uid: uid,
-        });
+      const enrollment = await selectOptionalEnrollmentByPendingUid({
+        course_instance_id: body.course_instance_id,
+        pending_uid: uid,
+      });
 
-        if (!oldEnrollment) {
-          throw new Error('Could not find enrollment to reject');
-        }
-        await selectAndLockUserById(user_id);
-        await selectAndLockEnrollmentById(oldEnrollment.id);
+      if (!enrollment) {
+        throw new Error('Could not find enrollment to reject');
+      }
 
-        const newEnrollment = await queryRow(
-          sql.reject_invitation,
-          {
-            enrollment_id: oldEnrollment.id,
-          },
-          EnrollmentSchema,
-        );
+      const hasAccess = await callRow(
+        'check_course_instance_access',
+        [user_id, body.course_instance_id, res.locals.req_date],
+        z.boolean(),
+      );
 
-        await insertAuditEvent({
-          table_name: 'enrollments',
-          action: 'update',
-          action_detail: 'invitation_rejected',
-          subject_user_id: null,
-          course_instance_id: body.course_instance_id,
-          row_id: newEnrollment.id,
-          old_row: oldEnrollment,
-          new_row: newEnrollment,
-          agent_user_id: user_id,
-          agent_authn_user_id: user_id,
-        });
+      if (!hasAccess) {
+        throw new Error('User does not have access to the course instance');
+      }
+
+      await setEnrollmentStatus({
+        enrollment_id: enrollment.id,
+        status: 'rejected',
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
       });
     } else if (body.__action === 'unenroll') {
-      await execute(sql.unenroll, {
+      const enrollment = await selectOptionalEnrollmentByUid({
         course_instance_id: body.course_instance_id,
-        user_id,
-        req_date: res.locals.req_date,
+        uid,
+      });
+
+      if (!enrollment) {
+        throw new Error('Could not find enrollment to unenroll');
+      }
+
+      await setEnrollmentStatus({
+        enrollment_id: enrollment.id,
+        status: 'removed',
+        agent_user_id: user_id,
+        agent_authn_user_id: user_id,
       });
     } else if (body.__action === 'enroll') {
-      const { institution, course, course_instance } = await queryRow(
-        sql.select_course_instance,
-        { course_instance_id: body.course_instance_id },
-        z.object({
-          institution: InstitutionSchema,
-          course: CourseSchema,
-          course_instance: CourseInstanceSchema,
-        }),
-      );
+      const { institution, course, course_instance } = await selectInstanceAndCourseAndInstitution({
+        course_instance_id: body.course_instance_id,
+      });
 
       // Abuse the middleware to authorize the user for the course instance.
       req.params.course_instance_id = course_instance.id;

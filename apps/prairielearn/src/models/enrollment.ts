@@ -7,6 +7,7 @@ import {
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -429,14 +430,16 @@ export async function selectAndLockEnrollmentById(id: string) {
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
  */
-export async function setEnrollmentStatusBlocked({
+export async function setEnrollmentStatus({
   enrollment_id,
   agent_user_id,
   agent_authn_user_id,
+  status,
 }: {
   enrollment_id: string;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
+  status: 'rejected' | 'blocked' | 'removed';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
@@ -446,14 +449,27 @@ export async function setEnrollmentStatusBlocked({
 
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
-      { enrollment_id, status: 'blocked' },
+      { enrollment_id, status },
       EnrollmentSchema,
     );
+
+    const action_detail = run(() => {
+      switch (status) {
+        case 'blocked':
+          return 'blocked';
+        case 'rejected':
+          return 'invitation_rejected';
+        case 'removed':
+          return 'removed';
+        default:
+          assertNever(status);
+      }
+    });
 
     await insertAuditEvent({
       table_name: 'enrollments',
       action: 'update',
-      action_detail: 'blocked',
+      action_detail,
       row_id: newEnrollment.id,
       old_row: oldEnrollment,
       new_row: newEnrollment,
