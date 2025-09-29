@@ -628,16 +628,15 @@ export function RubricRow({
       }}
     >
       <td class="text-nowrap align-middle">
-        <span
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           class="btn btn-sm btn-ghost"
           style={{ cursor: 'grab' }}
-          draggable={true}
+          draggable="true"
           onDragStart={onDragStart}
         >
           <i class="fas fa-arrows-up-down" />
-        </span>
+        </button>
         <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
           <i class="fas fa-arrow-up" />
         </button>
