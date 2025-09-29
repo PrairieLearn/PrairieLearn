@@ -470,13 +470,7 @@ export async function generateQuestion({
     job.data.questionQid = saveResults.question_qid;
 
     // Aggregate usage information.
-    usage.input_tokens += response.usage?.input_tokens ?? 0;
-    usage.input_tokens_details.cached_tokens +=
-      response.usage?.input_tokens_details?.cached_tokens ?? 0;
-    usage.output_tokens += response.usage?.output_tokens ?? 0;
-    usage.output_tokens_details.reasoning_tokens +=
-      response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
-    usage.total_tokens += response.usage?.total_tokens ?? 0;
+    usage = mergeUsage(usage, response.usage);
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
@@ -515,6 +509,7 @@ export async function generateQuestion({
         jobSequenceId: serverJob.jobSequenceId,
       });
 
+      // Aggregate usage information.
       usage = mergeUsage(usage, newUsage);
     }
 
