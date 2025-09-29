@@ -285,7 +285,11 @@ function StudentsCard({
             )}
           </>
         }
-        globalFilter={{ value: globalFilter, setValue: setGlobalFilter }}
+        globalFilter={{
+          value: globalFilter,
+          setValue: setGlobalFilter,
+          placeholder: 'Search by UID, name, email...',
+        }}
         tableOptions={{
           filters: {
             enrollment_status: ({ header }) => (

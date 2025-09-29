@@ -90,25 +90,29 @@ const DefaultEmptyState = (
 
 interface TanstackTableProps<RowDataModel> {
   table: Table<RowDataModel>;
-  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
-  rowHeight: number;
+  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  rowHeight?: number;
   emptyState?: JSX.Element;
 }
 
+const DEFAULT_FILTER_MAP = {};
+
 export function TanstackTable<RowDataModel>({
   table,
-  filters,
+  title,
+  filters = DEFAULT_FILTER_MAP,
   // enrollmentStatusFilter,
   // setEnrollmentStatusFilter,
   rowHeight = 42,
   emptyState = DefaultEmptyState,
 }: {
   table: Table<RowDataModel>;
+  title: string;
   // enrollmentStatusFilter: EnumEnrollmentStatus[];
   /** setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void; */
   emptyState?: JSX.Element;
-  rowHeight: number;
-  filters: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  rowHeight?: number;
+  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
@@ -238,7 +242,7 @@ export function TanstackTable<RowDataModel>({
           <table
             class="table table-hover mb-0 border border-top-0"
             style={{ tableLayout: 'fixed' }}
-            aria-label="Students"
+            aria-label={title}
             role="grid"
           >
             <thead>
@@ -320,13 +324,6 @@ export function TanstackTable<RowDataModel>({
                           </button>
 
                           {canFilter && filters[header.column.id]?.({ header })}
-                          {/* {header.column.id === 'enrollment_status' && canFilter && (
-                            <StatusColumnFilter
-                              columnId={header.column.id}
-                              enrollmentStatusFilter={enrollmentStatusFilter}
-                              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
-                            />
-                          )} */}
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
@@ -440,9 +437,10 @@ export function TanstackTable<RowDataModel>({
  * @param params.table - The table model
  * @param params.title - The title of the card
  * @param params.headerButtons - The buttons to display in the header
- * @param params.globalFilter - The state management for the global filter
- * @param params.globalFilter.value - The value of the global filter
- * @param params.globalFilter.setValue - The function to set the value of the global filter
+ * @param params.globalFilter - State management for the global filter
+ * @param params.globalFilter.value
+ * @param params.globalFilter.setValue
+ * @param params.globalFilter.placeholder
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
  */
 export function TanstackTableCard<RowDataModel>({
@@ -458,8 +456,9 @@ export function TanstackTableCard<RowDataModel>({
   globalFilter: {
     value: string;
     setValue: (value: string) => void;
+    placeholder: string;
   };
-  tableOptions: Omit<TanstackTableProps<RowDataModel>, 'table'>;
+  tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -508,8 +507,8 @@ export function TanstackTableCard<RowDataModel>({
                 ref={searchInputRef}
                 type="text"
                 class="form-control"
-                aria-label="Search by UID, name or email."
-                placeholder="Search by UID, name, email..."
+                aria-label={globalFilter.placeholder}
+                placeholder={globalFilter.placeholder}
                 value={globalFilter.value}
                 onInput={(e) => {
                   if (!(e.target instanceof HTMLInputElement)) return;
@@ -540,12 +539,7 @@ export function TanstackTableCard<RowDataModel>({
           </div>
         </div>
         <div class="flex-grow-1">
-          <TanstackTable
-            table={table}
-            filters={tableOptions.filters}
-            rowHeight={tableOptions.rowHeight}
-            emptyState={tableOptions.emptyState}
-          />
+          <TanstackTable table={table} title={title} {...tableOptions} />
         </div>
       </div>
     </div>
