@@ -5,6 +5,7 @@ import re
 import lxml.html
 import prairielearn as pl
 from lxml.etree import _Comment
+from dag_checker import Edges, ColoredEdges
 
 
 class GroupInfo(TypedDict):
@@ -97,7 +98,7 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, dict[str, list[str]] | list[str], bool | None]:
+) -> tuple[str, ColoredEdges | Edges, bool | None]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", None)
@@ -105,9 +106,10 @@ def get_multigraph_info(
         case True:
             edges = {}
             for i, split in enumerate(depends.split("|")):
-                if colored_edge := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
-                    edges[colored_edge[1]] = [tag.strip() for tag in colored_edge[2].split(",")]
+                if linked_color := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
+                    edges[linked_color[1]] = [tag.strip() for tag in linked_color[2].split(",")]
                 else:
+                    # assign colors by index prefixed with a '*' which is a reserved character
                     color = '*' + f'{i}'
                     edges[color] = [edge.strip() for edge in split.split(",")]
             return tag, edges, final

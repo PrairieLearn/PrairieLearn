@@ -9,6 +9,7 @@ import networkx as nx
 ColoredEdges = dict[str, list[str]]
 Edges = list[str]
 Multigraph = dict[str, Edges | ColoredEdges]
+Dag = dict[str, Edges]
 
 def validate_grouping(
     graph: nx.DiGraph, group_belonging: Mapping[str, str | None]
@@ -202,7 +203,7 @@ def grade_multigraph(
     multigraph: Multigraph,
     final: str,
     group_belonging: Mapping[str, str | None],
-) -> tuple[int, int, Mapping[str, list[str]]]:
+) -> tuple[int, int, Dag]:
     top_sort_correctness = []
     # TODO add grouping correctness for block groups grading
     # grouping_correctness = []
@@ -319,11 +320,11 @@ def lcs_partial_credit(
 
 def dfs_until(
     halting_condition: Callable[[tuple[str, ColoredEdges | Edges]], bool],
-    graph: Multigraph,
+    multigraph: Multigraph,
     start: str,
-) -> tuple[str | None, dict[str, list[str]]]:
+) -> tuple[str | None, Dag]:
     """
-    Depth-First searches a graph until a node meets some specified requirements and then halts
+    Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
     :param halting_condition: function that takes a node and it's edges and returns a boolean determining
     if the node fulfills the requirements to halt the search.
@@ -335,20 +336,20 @@ def dfs_until(
     """
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []
-    traversed: dict[str, Edges | ColoredEdges] = {}
+    traversed: Dag = {}
     stack.append((start, visited))
     while stack:
         curr, visited = stack.pop(0)
         visited.append(curr)
 
-
-        if halting_condition((curr, graph[curr])):
+        if halting_condition((curr, multigraph[curr])):
             return curr, traversed
 
-        traversed[curr] = graph[curr]
+        # this is being checked in the halting condition
+        traversed[curr] = multigraph[curr] # type: ignore
 
-        for target in graph[curr]:
-            # This determines if the proposed target edge is a back edge if so it contains a cycle
+        for target in multigraph[curr]:
+            # this determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
                 raise Exception("Cycle encountered druing collapse of multigraph.")
             if target not in visited:
@@ -356,19 +357,18 @@ def dfs_until(
 
     return None, traversed
 
-Dag = dict[str, list[str]]
 
 def collapse_multigraph(
     multigraph: Multigraph,
     final: str,
-) -> Generator:
+) -> Generator[Dag]:
     """
-    :param depends_multi_graph: a dependency graph that contains nodes with multiple colored
-    edges or in this our implementation a node which has a list[list[str]].
+    :param multigraph: a dependency graph that contains nodes with multiple colored
+    edges.
     :param final: the sink in the multigraph, necessary to know the sink so that we have
     a starting point for the DFS to search for DAGs through the multigraph.
     :param path_names: a dictionary containing names of
-    :yield dag: yields a "fully collapsed" DAG once one has been found.
+    :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
     """
     collapsing_graphs = [(multigraph, "")]
     while collapsing_graphs:
@@ -381,7 +381,7 @@ def collapse_multigraph(
             continue
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
-        for color, edges in graph[reason].items():
+        for color, edges in graph[reason].items(): # type: ignore
             if color.startswith("*") or linked_color == color or linked_color == "":
                 partially_collapsed = deepcopy(graph)
                 partially_collapsed[reason] = edges
