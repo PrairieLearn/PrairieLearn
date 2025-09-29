@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -180,6 +182,9 @@ function findLatestRevisionIndexForPrompt(
   prompts: AiQuestionGenerationPrompt[],
   currentIndex: number,
 ): number {
+  // This should never happen, but we'll be extra safe here.
+  assert(prompts[currentIndex].prompt_type !== 'auto_revision');
+
   let targetIndex = currentIndex;
 
   for (let nextIndex = currentIndex + 1; nextIndex < prompts.length; nextIndex += 1) {
