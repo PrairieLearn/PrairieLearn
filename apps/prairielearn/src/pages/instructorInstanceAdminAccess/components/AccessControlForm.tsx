@@ -39,9 +39,9 @@ const StatusHeader = ({ status, statusText, actionButton }: StatusHeaderProps) =
   return (
     <div class="mb-3">
       <div class="d-flex justify-content-between align-items-center mb-2">
-        <h5 class="mb-0">
+        <h4 class="mb-0">
           Status: <span class={statusClasses[status]}>{statusLabels[status]}</span>
-        </h5>
+        </h4>
         {actionButton}
       </div>
       <p class="mb-0">{statusText}</p>
@@ -360,7 +360,7 @@ export function AccessControlForm({
                         type="button"
                         variant="outline-danger"
                         // TODO: do we want to disable if you set a field to the same value?
-                        disabled={isSubmitting || !isDirty}
+                        disabled={isSubmitting}
                         onClick={handleUnpublish}
                       >
                         Unpublish
@@ -370,10 +370,11 @@ export function AccessControlForm({
                 />
 
                 <hr class="my-4" />
+                <h5 class="mb-2">Configure access control</h5>
 
                 <DateField
                   id="publishDate"
-                  label="Start Date"
+                  label="Publish Date"
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
@@ -420,33 +421,35 @@ export function AccessControlForm({
                   statusText={
                     <>
                       Course is currently not accessible.
-                      {publishDate && archiveDate && (
-                        <>
-                          {' '}
-                          Course will be accessible starting on{' '}
-                          <FriendlyDate
-                            date={new Date(publishDate)}
-                            timezone={courseInstance.display_timezone}
-                            tooltip={true}
-                          />{' '}
-                          and will no longer be accessible after{' '}
-                          <FriendlyDate
-                            date={new Date(archiveDate)}
-                            timezone={courseInstance.display_timezone}
-                            tooltip={true}
-                          />
-                          .
-                        </>
-                      )}
+                      {courseInstance.access_control_publish_date &&
+                        courseInstance.access_control_archive_date && (
+                          <>
+                            {' '}
+                            Course will be accessible starting on{' '}
+                            <FriendlyDate
+                              date={courseInstance.access_control_publish_date}
+                              timezone={courseInstance.display_timezone}
+                              tooltip={true}
+                            />{' '}
+                            and will no longer be accessible after{' '}
+                            <FriendlyDate
+                              date={courseInstance.access_control_archive_date}
+                              timezone={courseInstance.display_timezone}
+                              tooltip={true}
+                            />
+                            .
+                          </>
+                        )}
                     </>
                   }
                 />
 
                 <hr class="my-4" />
+                <h5 class="mb-2">Configure access control</h5>
 
                 <div class="mb-3">
                   <div class="form-label">
-                    <strong>Start Date</strong>
+                    <strong>Publish Date</strong>
                   </div>
                   <div class="mb-3">
                     <div class="form-check">
@@ -490,7 +493,7 @@ export function AccessControlForm({
                   {startDateType === 'scheduled' && (
                     <DateField
                       id="publishDate"
-                      label="Scheduled Start Date"
+                      label="Scheduled Publish Date"
                       register={register}
                       errors={errors}
                       canEdit={canEdit}
@@ -566,7 +569,7 @@ export function AccessControlForm({
                       <ActionButton
                         type="button"
                         variant="success"
-                        disabled={isSubmitting || !isDirty}
+                        disabled={isSubmitting}
                         onClick={handleExtend}
                       >
                         <span class="text-nowrap">Extend Access</span>
@@ -575,11 +578,11 @@ export function AccessControlForm({
                   }
                 />
 
-                <hr class="my-4" />
+                <div class="mb-4">Configure ac</div>
 
                 <DateField
                   id="publishDate"
-                  label="Start Date"
+                  label="Publish Date"
                   register={register}
                   errors={errors}
                   canEdit={canEdit}
@@ -674,7 +677,7 @@ export function AccessControlForm({
                 <button
                   type="button"
                   class="btn btn-danger"
-                  disabled={isSubmitting || !isDirty}
+                  disabled={isSubmitting}
                   onClick={handleUnpublishConfirm}
                 >
                   {isSubmitting ? 'Unpublishing...' : 'Unpublish Course'}
