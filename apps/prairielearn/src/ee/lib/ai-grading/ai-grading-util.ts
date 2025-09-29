@@ -114,7 +114,6 @@ export async function generatePrompt({
       role: 'developer',
       content: formatPrompt([
         "You are an instructor for a course, and you are grading a student's response to a question.",
-        'The score should be an integer between 0 and 100, with 0 being the lowest and 100 being the highest.',
         'Follow any special instructions given by the instructor in the question.',
         "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
         'Also include an explanation on why you made these choices.',

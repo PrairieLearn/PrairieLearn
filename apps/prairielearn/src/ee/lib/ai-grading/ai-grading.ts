@@ -429,7 +429,14 @@ export async function aiGrade({
             .describe(
               'Student-facing feedback on their submission. Address the student as "you". Use an empty string if the student\'s response is entirely correct.',
             ),
-          score: z.number().min(0).max(100),
+          score: z
+            .number()
+            .int()
+            .min(0)
+            .max(100)
+            .describe(
+              'Score as an integer between 0 and 100, where 0 is the lowest and 100 is the highest.',
+            ),
         });
 
         const response = await openai.responses.parse({
