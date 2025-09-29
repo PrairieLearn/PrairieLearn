@@ -216,7 +216,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     # TODO: this will break the grading if you use correct_answers to display a correct answer
     # because the depends graph will be missing nodes in order to collapse the multigraph
     if (
-        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi
+        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
     ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
@@ -543,7 +543,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     answer_name = order_blocks_options.answers_name
     student_answer = data["submitted_answers"][answer_name]
     grading_method = order_blocks_options.grading_method
-    true_answer_list = data["correct_answers"][answer_name]
+
+    # need all answer blocks to properly collapse the multigraph structure
+    if order_blocks_options.is_multi:
+        true_answer_list = data["params"][answer_name]
+    else:
+        true_answer_list = data["correct_answers"][answer_name]
 
     final_score = 0
     feedback = ""
