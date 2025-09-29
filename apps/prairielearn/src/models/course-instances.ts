@@ -46,6 +46,16 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
+export async function selectCourseInstanceByEnrollmentCode(
+  enrollment_code: string,
+): Promise<CourseInstance | null> {
+  return queryOptionalRow(
+    sql.select_course_instance_by_enrollment_code,
+    { enrollment_code },
+    CourseInstanceSchema,
+  );
+}
+
 /**
  * Returns all course instances to which the given user has staff access.
  *

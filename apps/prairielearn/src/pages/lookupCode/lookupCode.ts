@@ -3,12 +3,10 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { selectCourseInstanceByEnrollmentCode } from '../../models/course-instances.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const LookupCodeSchema = z.object({
   code: z.string().min(1).max(255),
@@ -21,11 +19,7 @@ router.get(
     const { code } = LookupCodeSchema.parse(req.query);
 
     // Look up the course instance by enrollment code
-    const courseInstance = await sqldb.queryRow(
-      sql.select_course_instance_by_enrollment_code,
-      { enrollment_code: code },
-      CourseInstanceSchema.nullable(),
-    );
+    const courseInstance = await selectCourseInstanceByEnrollmentCode(code);
 
     if (!courseInstance) {
       throw new HttpStatusError(404, 'Course instance not found');
