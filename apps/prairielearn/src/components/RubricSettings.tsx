@@ -633,6 +633,7 @@ export function RubricRow({
           tabIndex={0}
           class="btn btn-sm btn-ghost"
           style={{ cursor: 'grab' }}
+          draggable={true}
           onDragStart={onDragStart}
         >
           <i class="fas fa-arrows-up-down" />
