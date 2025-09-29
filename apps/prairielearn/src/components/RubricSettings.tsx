@@ -45,6 +45,7 @@ export function RubricSettings({
   const [startingPoints, setStartingPoints] = useState<number>(rubricData?.starting_points ?? 0);
   const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
+  const [tagForGrading, setTagForGrading] = useState<boolean>(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -288,6 +289,7 @@ export function RubricSettings({
         grader_note: it.grader_note,
         always_show_to_students: it.always_show_to_students,
       })),
+      tag_for_grading: tagForGrading,
     };
 
     const res = await fetch(window.location.pathname, {
