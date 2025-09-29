@@ -1,11 +1,11 @@
+import re
 from enum import Enum
 from typing import TypedDict
-import re
 
 import lxml.html
 import prairielearn as pl
+from dag_checker import ColoredEdge, Edge
 from lxml.etree import _Comment
-from dag_checker import Edges, ColoredEdges
 
 
 class GroupInfo(TypedDict):
@@ -98,7 +98,7 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, ColoredEdges | Edges, bool | None]:
+) -> tuple[str, ColoredEdge | Edge, bool | None]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", None)
@@ -110,13 +110,12 @@ def get_multigraph_info(
                     edges[linked_color[1]] = [tag.strip() for tag in linked_color[2].split(",")]
                 else:
                     # assign colors by index prefixed with a '*' which is a reserved character
-                    color = '*' + f'{i}'
+                    color = "*" + f"{i}"
                     edges[color] = [edge.strip() for edge in split.split(",")]
             return tag, edges, final
         case False:
             tag, edges = get_graph_info(html_tag)
             return tag, edges, final
-
 
 
 class OrderBlocksOptions:
@@ -353,7 +352,7 @@ class AnswerOptions:
         if order_block_options.is_multi:
             self.tag, self.depends, self.final = get_multigraph_info(html_element)
             self.final = pl.get_boolean_attrib(html_element, "final", False)
-        else: 
+        else:
             self.tag, self.depends = get_graph_info(html_element)
             self.final = None
         self.correct = pl.get_boolean_attrib(
@@ -430,6 +429,7 @@ class AnswerOptions:
 
     def __repr__(self) -> str:
         return f"{self.tag}: {self.depends}"
+
 
 def collect_answer_options(
     html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
