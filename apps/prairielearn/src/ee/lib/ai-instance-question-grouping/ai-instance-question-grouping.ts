@@ -2,7 +2,6 @@ import * as async from 'async';
 import { OpenAI } from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import type { ResponseInput } from 'openai/resources/responses/responses';
-import type { A } from 'vitest/dist/chunks/environment.d.cL3nLXbE.js';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -33,7 +32,8 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-mini-2025-08-07';
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL =
+  'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.
@@ -275,6 +275,7 @@ export async function aiInstanceQuestionGrouping({
         instance_question,
         urlPrefix,
         openai,
+        logger,
       });
 
       await updateAiInstanceQuestionGroup({

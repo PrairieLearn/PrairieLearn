@@ -27,6 +27,7 @@ import type OpenAI from 'openai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
+import { QUESTION_GENERATION_OPENAI_MODEL } from '../ee/lib/aiQuestionGeneration.js';
 import { calculateResponseCost } from '../lib/ai.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -86,6 +87,9 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   await execute(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,
     authn_user_id: authnUserId,
-    cost_ai_question_generation: calculateResponseCost(usage),
+    cost_ai_question_generation: calculateResponseCost({
+      model: QUESTION_GENERATION_OPENAI_MODEL,
+      usage,
+    }),
   });
 }

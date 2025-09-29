@@ -18,6 +18,12 @@ const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 
 const IS_VITE = (import.meta as any).env?.MODE === 'development';
 export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
 
+const TokenPricingSchema = z.object({
+  input: z.number().nonnegative(),
+  cachedInput: z.number().nonnegative(),
+  output: z.number().nonnegative(),
+});
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -589,13 +595,17 @@ export const ConfigSchema = z.object({
    * Will be resolved relative to the repository root.
    */
   pythonVenvSearchPaths: z.string().array().default(['.venv']),
-  /**
-   * For the `gpt-5-2025-08-07` model as of 25 September 2025, in US dollars.
-   * Prices obtained from https://openai.com/api/pricing/.
-   */
-  costPerMillionPromptTokens: z.number().default(1.25),
-  costPerMillionCachedTokens: z.number().default(0.125),
-  costPerMillionCompletionTokens: z.number().default(10),
+  costPerMillionTokens: z
+    .object({
+      'gpt-5-2025-08-07': TokenPricingSchema,
+      'gpt-5-mini-2025-08-07': TokenPricingSchema,
+    })
+    .default({
+      // Prices current as of 2025-09-25. Values obtained from
+      // https://openai.com/api/pricing/
+      'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
+      'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+    }),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -10,6 +10,7 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import {
+  QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   generateQuestion,
@@ -108,13 +109,14 @@ router.post(
       const approxPromptCost = approximatePromptCost(req.body.prompt);
 
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
         res.send(
           RateLimitExceeded({
             // If the user has more tokens than the threshold of 100 tokens,
             // they can shorten their message to avoid exceeding the rate limit.
             canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost >
-              config.costPerMillionPromptTokens * 100,
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
           }),
         );
         return;
@@ -131,8 +133,7 @@ router.post(
 
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
-        promptTokens: result.promptTokens ?? 0,
-        completionTokens: result.completionTokens ?? 0,
+        usage: result.usage,
         intervalCost,
       });
 

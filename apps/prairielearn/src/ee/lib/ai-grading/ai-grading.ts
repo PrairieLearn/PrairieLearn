@@ -27,7 +27,7 @@ import * as questionServers from '../../../question-servers/index.js';
 
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  OPEN_AI_MODEL,
+  AI_GRADING_OPENAI_MODEL,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
@@ -311,7 +311,7 @@ export async function aiGrade({
         });
 
         const response = await openai.responses.parse({
-          model: OPEN_AI_MODEL,
+          model: AI_GRADING_OPENAI_MODEL,
           input,
           text: {
             format: zodTextFormat(RubricGradingResultSchema, 'score'),
@@ -440,7 +440,7 @@ export async function aiGrade({
         });
 
         const response = await openai.responses.parse({
-          model: OPEN_AI_MODEL,
+          model: AI_GRADING_OPENAI_MODEL,
           input,
           text: {
             format: zodTextFormat(GradingResultSchema, 'score'),

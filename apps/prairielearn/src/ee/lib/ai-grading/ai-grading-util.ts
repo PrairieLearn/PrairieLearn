@@ -46,7 +46,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const OPEN_AI_MODEL: OpenAI.Chat.ChatModel = 'gpt-5-mini-2025-08-07';
+export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -451,10 +451,10 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    model: OPEN_AI_MODEL,
+    model: AI_GRADING_OPENAI_MODEL,
     prompt_tokens: response.usage?.input_tokens ?? 0,
     completion_tokens: response.usage?.output_tokens ?? 0,
-    cost: calculateResponseCost(response.usage),
+    cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
     course_id,
     course_instance_id,
   });

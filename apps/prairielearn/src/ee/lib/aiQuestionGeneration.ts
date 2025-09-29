@@ -10,7 +10,13 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
-import { formatPrompt, logResponseUsage } from '../../lib/ai.js';
+import {
+  calculateResponseCost,
+  emptyUsage,
+  formatPrompt,
+  logResponseUsage,
+  mergeUsage,
+} from '../../lib/ai.js';
 import * as b64Util from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
@@ -27,12 +33,13 @@ import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
+import { AI_GRADING_OPENAI_MODEL } from './ai-grading/ai-grading-util.js';
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAI.Chat.ChatModel;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -251,17 +258,24 @@ export async function getAiQuestionGenerationCache() {
  * Approximate the cost of the prompt, in US dollars.
  * Accounts for the cost of prompt, system, and completion tokens.
  */
-export function approximatePromptCost(prompt: string) {
+export function approximatePromptCost({
+  model,
+  prompt,
+}: {
+  model: keyof (typeof config)['costPerMillionTokens'];
+  prompt: string;
+}) {
+  const modelPricing = config.costPerMillionTokens[model];
+
   // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
   // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
   // Also, on average, we generate 3750 system tokens per prompt.
-  const approxPromptAndSystemTokenCost =
-    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
+  const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
 
   // On average, we generate 250 completion tokens per prompt.
-  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+  const approxOutputTokenCost = (250 * modelPricing.output) / 1e6;
 
-  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
+  return approxInputTokenCost + approxOutputTokenCost;
 }
 
 /**
@@ -288,21 +302,19 @@ export async function getIntervalUsage({ userId }: { userId: number }) {
  */
 export async function addCompletionCostToIntervalUsage({
   userId,
-  promptTokens,
-  completionTokens,
+  usage,
   intervalCost,
 }: {
   userId: number;
-  promptTokens: number;
-  completionTokens: number;
+  usage: OpenAI.Responses.ResponseUsage | undefined;
   intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
 
-  const completionCost =
-    (config.costPerMillionPromptTokens * promptTokens +
-      config.costPerMillionCompletionTokens * completionTokens) /
-    1e6;
+  const completionCost = calculateResponseCost({
+    model: AI_GRADING_OPENAI_MODEL,
+    usage,
+  });
 
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
@@ -346,13 +358,10 @@ export async function generateQuestion({
    */
   context: string | undefined;
   /**
-   * The number of tokens in the prompt provided to the LLM.
+   * Usage details for prompt tokens. If auto-regeneration was triggered,
+   * includes sum across all prompts.
    */
-  promptTokens: number | undefined;
-  /**
-   * The number of completion tokens generated as output by the LLM.
-   */
-  completionTokens: number | undefined;
+  usage: OpenAI.Responses.ResponseUsage;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -360,6 +369,8 @@ export async function generateQuestion({
     description: 'Generate a question with AI',
     authnUserId,
   });
+
+  let usage = emptyUsage();
 
   const jobData = await serverJob.execute(async (job) => {
     const context = await makeContext(client, prompt, [], authnUserId);
@@ -389,7 +400,7 @@ export async function generateQuestion({
     job.info(`\n\n${chalk.bold('Prompt:')}\n\n${prompt}`);
 
     const response = await client.responses.create({
-      model: MODEL_NAME,
+      model: QUESTION_GENERATION_OPENAI_MODEL,
       instructions,
       input: prompt,
       reasoning: {
@@ -458,8 +469,14 @@ export async function generateQuestion({
     job.data.questionId = saveResults.question_id;
     job.data.questionQid = saveResults.question_qid;
 
-    job.data.promptTokens = response.usage?.input_tokens;
-    job.data.completionTokens = response.usage?.output_tokens;
+    // Aggregate usage information.
+    usage.input_tokens += response.usage?.input_tokens ?? 0;
+    usage.input_tokens_details.cached_tokens +=
+      response.usage?.input_tokens_details?.cached_tokens ?? 0;
+    usage.output_tokens += response.usage?.output_tokens ?? 0;
+    usage.output_tokens_details.reasoning_tokens +=
+      response.usage?.output_tokens_details?.reasoning_tokens ?? 0;
+    usage.total_tokens += response.usage?.total_tokens ?? 0;
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
@@ -480,7 +497,7 @@ export async function generateQuestion({
       errors.length > 0 &&
       typeof job.data.questionQid === 'string'
     ) {
-      await regenInternal({
+      const { usage: newUsage } = await regenInternal({
         job,
         client,
         authnUserId,
@@ -497,7 +514,13 @@ export async function generateQuestion({
         questionQid: saveResults.question_qid,
         jobSequenceId: serverJob.jobSequenceId,
       });
+
+      usage = mergeUsage(usage, newUsage);
     }
+
+    job.data.promptTokens = usage.input_tokens;
+    job.data.completionTokens = usage.output_tokens;
+    job.data.usage = usage;
   });
 
   return {
@@ -506,8 +529,7 @@ export async function generateQuestion({
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
-    promptTokens: jobData.data.promptTokens,
-    completionTokens: jobData.data.completionTokens,
+    usage,
   };
 }
 
@@ -577,7 +599,7 @@ async function regenInternal({
   userId: string;
   hasCoursePermissionEdit: boolean;
   jobSequenceId: string;
-}) {
+}): Promise<{ usage: OpenAI.Responses.ResponseUsage | undefined }> {
   let tags: string[] = [];
   if (originalHTML) {
     const ast = parse5.parseFragment(originalHTML);
@@ -608,7 +630,7 @@ async function regenInternal({
   job.info(`${chalk.bold('Revision prompt:')}\n\n${revisionPrompt}`);
 
   const response = await client.responses.create({
-    model: MODEL_NAME,
+    model: QUESTION_GENERATION_OPENAI_MODEL,
     instructions,
     input: revisionPrompt,
     reasoning: {
@@ -668,11 +690,8 @@ async function regenInternal({
 
   if (result.status === 'error') {
     job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
-    return;
+    return { usage: response.usage };
   }
-
-  job.data.promptTokens = response.usage?.input_tokens;
-  job.data.completionTokens = response.usage?.output_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
@@ -685,9 +704,11 @@ async function regenInternal({
 
   errors.push(...(await checkRender(result.status, errors, courseId, userId, questionId)));
 
+  let usage = response.usage;
+
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
-    await regenInternal({
+    const { usage: newUsage } = await regenInternal({
       job,
       client,
       authnUserId,
@@ -704,7 +725,12 @@ async function regenInternal({
       hasCoursePermissionEdit,
       jobSequenceId,
     });
+
+    // Aggregate usage information.
+    usage = mergeUsage(usage, newUsage);
   }
+
+  return { usage };
 }
 
 /**
@@ -737,8 +763,7 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
-  promptTokens: number | undefined;
-  completionTokens: number | undefined;
+  usage: OpenAI.Responses.ResponseUsage | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -749,9 +774,11 @@ export async function regenerateQuestion(
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
+  const usage = emptyUsage();
+
   const jobData = await serverJob.execute(async (job) => {
     job.data.questionQid = questionQid;
-    await regenInternal({
+    const { usage: newUsage } = await regenInternal({
       job,
       client,
       authnUserId,
@@ -768,13 +795,18 @@ export async function regenerateQuestion(
       hasCoursePermissionEdit,
       jobSequenceId: serverJob.jobSequenceId,
     });
+
+    mergeUsage(usage, newUsage);
+
+    job.data.promptTokens = usage?.input_tokens;
+    job.data.completionTokens = usage?.output_tokens;
+    job.data.usage = usage;
   });
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
-    promptTokens: jobData.data.promptTokens,
-    completionTokens: jobData.data.completionTokens,
+    usage,
   };
 }
