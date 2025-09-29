@@ -704,7 +704,7 @@ export function RubricRow({
         <input
           type="number"
           class="form-control"
-          style="width:4rem"
+          style="width:5rem"
           step="any"
           disabled={!editMode}
           value={item.points}
