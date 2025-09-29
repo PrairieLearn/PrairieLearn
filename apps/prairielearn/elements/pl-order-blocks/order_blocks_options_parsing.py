@@ -107,7 +107,9 @@ def get_multigraph_info(
             edges = {}
             for i, split in enumerate(depends.split("|")):
                 if linked_color := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
-                    edges[linked_color[1]] = [tag.strip() for tag in linked_color[2].split(",")]
+                    edges[linked_color[1]] = [
+                        tag.strip() for tag in linked_color[2].split(",")
+                    ]
                 else:
                     # assign colors by index prefixed with a '*' which is a reserved character
                     color = "*" + f"{i}"
