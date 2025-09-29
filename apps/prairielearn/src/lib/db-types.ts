@@ -236,7 +236,7 @@ export const AiGradingJobSchema = z.object({
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   model: z.string(),
-  prompt: z.any(),
+  prompt: z.unknown(),
   prompt_tokens: z.number(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -264,7 +264,6 @@ export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_personal_notes: z.boolean(),
-  allow_real_time_grading: z.unknown(), // TODO: This column is being removed
   assessment_module_id: IdSchema.nullable(),
   assessment_set_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),
@@ -844,6 +843,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
+  ai_instance_question_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),
@@ -862,6 +862,7 @@ export const InstanceQuestionSchema = z.object({
   is_ai_graded: z.boolean(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
+  manual_instance_question_group_id: IdSchema.nullable(),
   manual_points: z.number().nullable(),
   max_submission_score: z.number().nullable(),
   modified_at: DateFromISOString,
@@ -885,6 +886,14 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const InstanceQuestionGroupSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  instance_question_group_description: z.string(),
+  instance_question_group_name: z.string(),
+});
+export type InstanceQuestionGroup = z.infer<typeof InstanceQuestionGroupSchema>;
 
 export const InstitutionAuthnProviderSchema = null;
 
@@ -1536,6 +1545,7 @@ export const TableNames = [
   'group_users',
   'groups',
   'instance_questions',
+  'instance_question_groups',
   'institution_administrators',
   'institution_authn_providers',
   'institutions',
