@@ -538,7 +538,7 @@ export function TanstackTableCard<RowDataModel>({
           {!isMediumOrLarger && <ColumnManager table={table} />}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
-              Showing {table.getRowModel().rows.length} of {table.getRowCount()}{' '}
+              Showing {table.getRowModel().rows.length} of {table.getCoreRowModel().rows.length}{' '}
               {title.toLowerCase()}
             </div>
           </div>
