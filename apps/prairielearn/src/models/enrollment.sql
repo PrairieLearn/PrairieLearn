@@ -90,3 +90,19 @@ FROM
 WHERE
   id = $id
 FOR NO KEY UPDATE;
+
+-- BLOCK set_enrollment_status
+UPDATE enrollments
+SET
+  status = $status
+WHERE
+  id = $enrollment_id
+RETURNING
+  *;
+
+-- BLOCK delete_enrollment_by_id
+DELETE FROM enrollments
+WHERE
+  id = $enrollment_id
+RETURNING
+  *;
