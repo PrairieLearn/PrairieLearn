@@ -9,7 +9,8 @@
   },
   "private": true,
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./*.css": "./dist/*.css"
   },
   "scripts": {
     "build": "tsc && (cd src; rsync -R **/*.css ../dist/)",
