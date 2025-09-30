@@ -14,18 +14,18 @@ WHERE
   AND q.deleted_at IS NULL
   AND q.qid IS NOT NULL
 ORDER BY
-  -- Put UIDs with numeric suffixes first. This orders expected QIDs of the form
-  -- `__drafts__/draft_###` before unexpected QIDs like `__drafts__/draft_extra`.
+  -- Order expected QIDs of the form `__drafts__/draft_###` before unexpected
+  -- QIDs like `__drafts__/draft_extra`.
   (
     CASE
-      WHEN substring(q.qid, 18) ~ '^[0-9]+$' THEN 0
+      WHEN q.qid ~ '^__drafts__/draft_[0-9]+$' THEN 0
       ELSE 1
     END
   ) ASC,
   -- Order numeric QIDs numerically.
   (
     CASE
-      WHEN substring(q.qid, 18) ~ '^[0-9]+$' THEN substring(q.qid, 18)::numeric
+      WHEN q.qid ~ '^__drafts__/draft_[0-9]+$' THEN regexp_replace(q.qid, '^__drafts__/draft_', '')::numeric
       ELSE NULL
     END
   ) ASC,
