@@ -86,9 +86,12 @@ const HideQuestionsDateControlJsonSchema = z
       .describe(
         'Whether to enable the ability for revealing hidden questions after assessment completion',
       ),
-    showAgainDate: DateFromISOString.optional().describe(
-      'Date as ISO String for when to unhide questions to students after assessment completion',
-    ),
+    showAgainDate: z
+      .string()
+      .optional()
+      .describe(
+        'Date as ISO String for when to unhide questions to students after assessment completion',
+      ),
     hideAgainDateEnabled: z
       .boolean()
       .nullable()
@@ -96,9 +99,12 @@ const HideQuestionsDateControlJsonSchema = z
       .describe(
         'Whether to enable the ability for re-hiding revealed questions after assessment completion',
       ),
-    hideAgainDate: DateFromISOString.optional().describe(
-      'Date as ISO String for when to rehide questions to students after assessment completion',
-    ),
+    hideAgainDate: z
+      .string()
+      .optional()
+      .describe(
+        'Date as ISO String for when to rehide questions to students after assessment completion',
+      ),
   })
   .optional();
 
@@ -109,9 +115,10 @@ const HideScoreDateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Whether to enable the ability to show hidden scores after assessment completion'),
-    showAgainDate: DateFromISOString.optional().describe(
-      'Date as ISO String for when to reveal hidden scores after assessment completion',
-    ),
+    showAgainDate: z
+      .string()
+      .optional()
+      .describe('Date as ISO String for when to reveal hidden scores after assessment completion'),
   })
   .optional();
 
