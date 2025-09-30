@@ -1,4 +1,11 @@
 columns
+    access_control_id: bigint not null
     credit: integer not null
     date: timestamp with time zone not null
-    role_id: bigint not null
+    id: bigint not null default nextval('access_control_late_deadline_id_seq'::regclass)
+
+indexes
+    access_control_late_deadline_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    access_control_late_deadline_access_control_id_fkey: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE

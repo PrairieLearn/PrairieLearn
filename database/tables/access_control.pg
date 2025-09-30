@@ -6,7 +6,7 @@ columns
     after_complete_hide_score_before_date: timestamp with time zone
     after_complete_hide_score_before_date_enabled: boolean
     assessment_id: bigint not null
-    block_acesss: boolean
+    block_access: boolean
     course_instance_id: bigint not null
     date_control_after_last_deadline_allow_submissions: boolean
     date_control_after_last_deadline_credit: integer
@@ -35,4 +35,7 @@ foreign-key constraints
     access_control_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    access_control_early_deadline: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_late_deadline: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_prairietest_exam: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE
     access_control_target: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE

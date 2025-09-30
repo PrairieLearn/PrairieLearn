@@ -1,9 +1,11 @@
 columns
     access_control_id: bigint not null
+    id: bigint not null default nextval('access_control_target_id_seq'::regclass)
     target_id: bigint not null
     target_type: permission_scope not null
 
 indexes
+    access_control_target_pkey: PRIMARY KEY (id) USING btree (id)
     idx_rolepermission_lookup: USING btree (access_control_id, target_type)
 
 foreign-key constraints
