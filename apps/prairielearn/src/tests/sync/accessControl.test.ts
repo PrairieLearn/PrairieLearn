@@ -260,7 +260,7 @@ describe('Inherited fields cannot have values', () => {
     });
 
     results.forEach((result, index) => {
-      console.log(result);
+      // log(result);
       assert.notDeepEqual(
         result.errors,
         [],

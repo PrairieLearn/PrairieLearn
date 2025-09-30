@@ -1418,7 +1418,7 @@ export function validateAccessControlArray({
   errors: string[];
 }[] {
   return accessControlJsonArray.map((accessControlJson, index) => {
-    const { warnings, errors } = validateaccessControl({ accessControlJson });
+    const { warnings, errors } = validateAccessControl({ accessControlJson });
 
     return {
       index,
@@ -1428,7 +1428,7 @@ export function validateAccessControlArray({
   });
 }
 
-export function validateaccessControl({
+export function validateAccessControl({
   accessControlJson,
 }: {
   accessControlJson: AccessControlJsonInput;
@@ -1440,72 +1440,87 @@ export function validateaccessControl({
     return { warnings, errors };
   }
 
-  // Validate that a field does not have a value while {field}_enabled is NULL
-  const validateEnabledFieldConstraints = (data: AccessControlJsonInput, errors: string[]) => {
-    // Find {field}_enabled fields
-    const validateEnabledPairsInObject = (obj: any, context: string) => {
-      if (!obj || typeof obj !== 'object') return;
+  const enabledFieldPairs = [
+    // dateControl fields
+    { enabledField: 'dateControl.releaseDateEnabled', valueField: 'dateControl.releaseDate' },
+    { enabledField: 'dateControl.dueDateEnabled', valueField: 'dateControl.dueDate' },
+    { enabledField: 'dateControl.earlyDeadlinesEnabled', valueField: 'dateControl.earlyDeadlines' },
+    { enabledField: 'dateControl.lateDeadlinesEnabled', valueField: 'dateControl.lateDeadlines' },
+    {
+      enabledField: 'dateControl.durationMinutesEnabled',
+      valueField: 'dateControl.durationMinutes',
+    },
+    { enabledField: 'dateControl.passwordEnabled', valueField: 'dateControl.password' },
+    {
+      enabledField: 'dateControl.afterLastDeadline.creditEnabled',
+      valueField: 'dateControl.afterLastDeadline.credit',
+    },
 
-      const enabledFields = Object.keys(obj).filter((key) => key.endsWith('Enabled'));
+    // afterComplete fields
+    {
+      enabledField: 'afterComplete.hideQuestionsDateControl.showAgainDateEnabled',
+      valueField: 'afterComplete.hideQuestionsDateControl.showAgainDate',
+    },
+    {
+      enabledField: 'afterComplete.hideQuestionsDateControl.hideAgainDateEnabled',
+      valueField: 'afterComplete.hideQuestionsDateControl.hideAgainDate',
+    },
+    {
+      enabledField: 'afterComplete.hideScoreDateControl.showAgainDateEnabled',
+      valueField: 'afterComplete.hideScoreDateControl.showAgainDate',
+    },
+  ];
 
-      for (const enabledField of enabledFields) {
-        if (obj[enabledField] === null) {
-          // Find corresponding value field and check if there is a value
-          const valueField = enabledField.replace(/Enabled$/, '');
+  // List of all enabled fields that cannot be null at assignment level
+  // Extract just the enabled fields from the pairs
+  const assignmentLevelEnabledFields = enabledFieldPairs.map((pair) => pair.enabledField);
+  // const assignmentLevelEnabledFields = [
+  //   'dateControl.releaseDateEnabled',
+  //   'dateControl.dueDateEnabled',
+  //   'dateControl.earlyDeadlinesEnabled',
+  //   'dateControl.lateDeadlinesEnabled',
+  //   'dateControl.durationMinutesEnabled',
+  //   'dateControl.passwordEnabled',
+  //   'dateControl.afterLastDeadline.creditEnabled',
+  //   'afterComplete.hideQuestionsDateControl.showAgainDateEnabled',
+  //   'afterComplete.hideQuestionsDateControl.hideAgainDateEnabled',
+  //   'afterComplete.hideScoreDateControl.showAgainDateEnabled',
+  // ];
 
-          if (obj[valueField] !== undefined) {
-            errors.push(
-              `When ${enabledField} is null, ${valueField} cannot be populated (in ${context})`,
-            );
-          }
-        }
-      }
-    };
-
-    // Recursively validate all nested objects
-    const validateObjectRecursively = (obj: any, path: string[] = []) => {
-      if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return;
-
-      const context = path.length > 0 ? path.join('.') : 'root';
-      validateEnabledPairsInObject(obj, context);
-
-      // Recurse
-      for (const [key, value] of Object.entries(obj)) {
-        if (value && typeof value === 'object' && !Array.isArray(value)) {
-          validateObjectRecursively(value, [...path, key]);
-        }
-      }
-    };
-
-    validateObjectRecursively(data);
+  // path => object value
+  const getNestedValue = (obj: any, path: string): any => {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
   };
 
-  // Helper function to validate assignment-level constraints
+  // validate that enabled fields don't have values when enabled is null
+  const validateEnabledFieldConstraints = (data: AccessControlJsonInput, errors: string[]) => {
+    for (const { enabledField, valueField } of enabledFieldPairs) {
+      const enabledValue = getNestedValue(data, enabledField);
+      const fieldValue = getNestedValue(data, valueField);
+
+      if (enabledValue === null && fieldValue !== undefined) {
+        errors.push(`When ${enabledField} is null, ${valueField} cannot be populated`);
+      }
+    }
+  };
+
+  // validate assignment-level constraints: no null enabled fields allowed
   const validateAssignmentLevelConstraints = (data: AccessControlJsonInput, errors: string[]) => {
     const isAssignmentLevel = !data?.targets || data.targets.length === 0;
 
     if (isAssignmentLevel) {
-      const checkForNullEnabledFields = (obj: any, errors: string[], path: string[] = []) => {
-        if (!obj || typeof obj !== 'object') return;
+      for (const enabledFieldPath of assignmentLevelEnabledFields) {
+        const enabledValue = getNestedValue(data, enabledFieldPath);
 
-        for (const [key, value] of Object.entries(obj)) {
-          const currentPath = [...path, key];
-
-          if (key.endsWith('Enabled') && value === null) {
-            errors.push(
-              `Assignment-level permissions cannot have null *Enabled fields (found null ${key} at ${currentPath.join('.')})`,
-            );
-          } else if (typeof value === 'object' && value !== null) {
-            checkForNullEnabledFields(value, errors, currentPath);
-          }
+        if (enabledValue === null) {
+          errors.push(
+            `Assignment-level permissions cannot have null *Enabled fields (found null ${enabledFieldPath})`,
+          );
         }
-      };
-
-      checkForNullEnabledFields(data, errors);
+      }
     }
   };
 
-  // Run validations
   validateEnabledFieldConstraints(accessControlJson, errors);
   validateAssignmentLevelConstraints(accessControlJson, errors);
 
