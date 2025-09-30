@@ -33,10 +33,12 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
-import { DownloadButton } from './components/DownloadButton.js';
+import { TanstackTableDownloadButton } from '@prairielearn/ui';
 import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { StatusColumnFilter } from './components/StatusColumnFilter.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { formatDate } from '@prairielearn/formatter';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -221,6 +223,9 @@ function StudentsCard({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
+  const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
+  const filenameBase = `${filenamePrefix}students`;
+
   const table = useReactTable({
     data: students,
     columns,
@@ -268,11 +273,23 @@ function StudentsCard({
         title="Students"
         headerButtons={
           <>
-            <DownloadButton
-              students={students}
+            <TanstackTableDownloadButton
               table={table}
-              course={course}
-              courseInstance={courseInstance}
+              filenameBase={filenameBase}
+              singularLabel="student"
+              mapRowToData={(row) => {
+                return {
+                  uid: row.user?.uid ?? row.enrollment.pending_uid,
+                  name: row.user?.name ?? null,
+                  email: row.user?.email ?? null,
+                  status: row.enrollment.status,
+                  first_joined_at: row.enrollment.first_joined_at
+                    ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                        includeTz: false,
+                      })
+                    : null,
+                };
+              }}
             />
             {enrollmentManagementEnabled && (
               <Button

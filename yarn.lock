@@ -4393,6 +4393,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/ui@workspace:packages/ui"
   dependencies:
+    "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@tanstack/react-table": "npm:^8.21.3"
@@ -4400,6 +4401,7 @@ __metadata:
     "@tanstack/table-core": "npm:^8.21.3"
     "@types/node": "npm:^22.18.0"
     clsx: "npm:^2.1.1"
+    csv-stringify: "npm:^6.6.0"
     react-bootstrap: "npm:^3.0.0-beta.3"
     typescript: "npm:^5.9.2"
   languageName: unknown
