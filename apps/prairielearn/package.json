@@ -59,6 +59,7 @@
     "@prairielearn/session": "workspace:^",
     "@prairielearn/signed-token": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
+    "@prairielearn/ui": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "@prairielearn/workspace-utils": "workspace:^",
     "@prairielearn/zod": "workspace:^",

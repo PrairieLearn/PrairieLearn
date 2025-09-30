@@ -3998,6 +3998,7 @@ __metadata:
     "@prairielearn/session": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/ui": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@prairielearn/zod": "workspace:^"
@@ -4388,6 +4389,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/ui@workspace:^, @prairielearn/ui@workspace:packages/ui":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/ui@workspace:packages/ui"
+  dependencies:
+    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@tanstack/react-table": "npm:^8.21.3"
+    "@tanstack/react-virtual": "npm:^3.13.12"
+    "@tanstack/table-core": "npm:^8.21.3"
+    "@types/node": "npm:^22.18.0"
+    react-bootstrap: "npm:^3.0.0-beta.3"
+    typescript: "npm:^5.9.2"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/utils@workspace:^, @prairielearn/utils@workspace:packages/utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/utils@workspace:packages/utils"
@@ -4597,6 +4613,25 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: 10c0/0b492902d89c39acc6727cdba1088ca8a08d0a28c8dfff4732cbc6097f639f92aa8985df43dc94349bd09e1568e58baf01291cd6d2cecd239b22c7398b31ae46
+  languageName: node
+  linkType: hard
+
+"@restart/ui@npm:^2.0.0-beta.10":
+  version: 2.0.0-beta.10
+  resolution: "@restart/ui@npm:2.0.0-beta.10"
+  dependencies:
+    "@babel/runtime": "npm:^7.26.7"
+    "@popperjs/core": "npm:^2.11.8"
+    "@restart/hooks": "npm:^0.6.2"
+    "@types/warning": "npm:^3.0.3"
+    dequal: "npm:^2.0.3"
+    dom-helpers: "npm:^6.0.1"
+    uncontrollable: "npm:^9.0.0"
+    warning: "npm:^4.0.3"
+  peerDependencies:
+    react: ">=18.0.0"
+    react-dom: ">=18.0.0"
+  checksum: 10c0/ab6788191783c4e72c3973f18f91431e84251450f6e61750279168472e1eafd75840925fedd203143ca004b64487540c827a39a3a5180c89edcbeb14862c92df
   languageName: node
   linkType: hard
 
@@ -15933,6 +15968,31 @@ __metadata:
     "@types/react":
       optional: true
   checksum: 10c0/e76c13248a333b5744e61ffe3b2d26a7a1fef54091e0e4d33c74ea41fc5d9cd162c79636780b406ca556d104df538c37c823b440446200ed3c94fd9bff60316c
+  languageName: node
+  linkType: hard
+
+"react-bootstrap@npm:^3.0.0-beta.3":
+  version: 3.0.0-beta.5
+  resolution: "react-bootstrap@npm:3.0.0-beta.5"
+  dependencies:
+    "@babel/runtime": "npm:^7.27.0"
+    "@restart/hooks": "npm:^0.6.2"
+    "@restart/ui": "npm:^2.0.0-beta.10"
+    "@types/react-transition-group": "npm:^4.4.12"
+    clsx: "npm:^2.1.1"
+    dom-helpers: "npm:^6.0.1"
+    invariant: "npm:^2.2.4"
+    react-transition-group: "npm:^4.4.5"
+    uncontrollable: "npm:^9.0.0"
+    warning: "npm:^4.0.3"
+  peerDependencies:
+    "@types/react": ">=18.3.12"
+    react: ">=18.3.1"
+    react-dom: ">=18.3.1"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+  checksum: 10c0/89c586cef482b9550b0eeb26cec894711cdb193aada234b52898f3f0c7a657f9849564cc4c2af2b55d8613efcfaf41269a43465a0a0b692f94c3d9176fe47697
   languageName: node
   linkType: hard
 
