@@ -433,7 +433,7 @@ def format_submission_for_sympy(
         custom_functions: The list of custom function names allowed in the input
 
     Returns:
-        str: The formatted version of the input
+        str | None: The formatted version of the input (or none if the input is none)
     """
     if sub is None:
         return None
