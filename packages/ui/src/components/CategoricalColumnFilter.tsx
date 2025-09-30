@@ -18,41 +18,42 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
 }
 /**
  * A component that allows the user to filter a categorical column. State is managed by the parent component.
+ * The filter mode always defaults to "include".
  *
  * @param params
  * @param params.columnId - The ID of the column
  * @param params.columnLabel - The label of the column, e.g. "Status"
- * @param params.allValues - The values to filter by
+ * @param params.allColumnValues - The values to filter by
  * @param params.renderValueLabel - A function that renders the label for a value
- * @param params.valuesFilter - The current state of the filter
- * @param params.setValuesFilter - A function that sets the state of the filter
+ * @param params.columnValuesFilter - The current state of the column filter
+ * @param params.setColumnValuesFilter - A function that sets the state of the column filter
  */
 export function CategoricalColumnFilter<T extends readonly any[]>({
   columnId,
   columnLabel,
-  allValues,
+  allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
-  valuesFilter,
-  setValuesFilter,
+  columnValuesFilter,
+  setColumnValuesFilter,
 }: {
   columnId: string;
   columnLabel: string;
-  allValues: T;
+  allColumnValues: T;
   renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
-  valuesFilter: T[number][];
-  setValuesFilter: (value: T[number][]) => void;
+  columnValuesFilter: T[number][];
+  setColumnValuesFilter: (value: T[number][]) => void;
 }) {
   const [mode, setModeQuery] = useState<'include' | 'exclude'>('include');
 
   const selected = useMemo(
-    () => computeSelected(allValues, mode, new Set(valuesFilter)),
-    [mode, valuesFilter, allValues],
+    () => computeSelected(allColumnValues, mode, new Set(columnValuesFilter)),
+    [mode, columnValuesFilter, allColumnValues],
   );
 
   const apply = (newMode: 'include' | 'exclude', newSelected: Set<T[number]>) => {
-    const selected = computeSelected(allValues, newMode, newSelected);
+    const selected = computeSelected(allColumnValues, newMode, newSelected);
     setModeQuery(newMode);
-    setValuesFilter(Array.from(selected));
+    setColumnValuesFilter(Array.from(selected));
   };
 
   const toggleSelected = (value: T[number]) => {
@@ -110,7 +111,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
           </div>
 
           <div class="list-group list-group-flush">
-            {allValues.map((value) => {
+            {allColumnValues.map((value) => {
               const isSelected = selected.has(value);
               return (
                 <div key={value} class="list-group-item d-flex align-items-center gap-3">
@@ -118,11 +119,11 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
                     class="form-check-input"
                     type="checkbox"
                     checked={isSelected}
-                    id={`status-${value}`}
+                    id={`${columnId}-${value}`}
                     readOnly
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label" for={`status-${value}`}>
+                  <label class="form-check-label" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

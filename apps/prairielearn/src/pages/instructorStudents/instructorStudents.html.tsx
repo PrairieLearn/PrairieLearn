@@ -308,12 +308,12 @@ function StudentsCard({
               <CategoricalColumnFilter
                 columnId={header.column.id}
                 columnLabel="Status"
-                allValues={STATUS_VALUES}
+                allColumnValues={STATUS_VALUES}
                 renderValueLabel={({ value }) => (
                   <EnrollmentStatusIcon type="text" status={value} />
                 )}
-                valuesFilter={enrollmentStatusFilter}
-                setValuesFilter={setEnrollmentStatusFilter}
+                columnValuesFilter={enrollmentStatusFilter}
+                setColumnValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },
