@@ -144,33 +144,31 @@ const AfterCompleteJsonSchema = z
   })
   .optional();
 
-export const AccessControlJsonSchema = z
-  .object({
-    name: z.string().optional().describe('Name for AccessControl rule'),
-    targets: z
-      .array(z.string())
-      .optional()
-      .describe('Array of (User, Access Control Group) ids this set targets'),
-    enabled: z
-      .boolean()
-      .optional()
-      .describe('Whether this set of permissions is enabled')
-      .default(true), // default true if not set
-    blockAccess: z
-      .boolean()
-      .optional()
-      .describe('Short circuit for whether the targets should have access to the assessment')
-      .default(false), // default false if not set
+export const AccessControlJsonSchema = z.object({
+  name: z.string().optional().describe('Name for AccessControl rule'),
+  targets: z
+    .array(z.string())
+    .optional()
+    .describe('Array of (User, Access Control Group) ids this set targets'),
+  enabled: z
+    .boolean()
+    .optional()
+    .describe('Whether this set of permissions is enabled')
+    .default(true), // default true if not set
+  blockAccess: z
+    .boolean()
+    .optional()
+    .describe('Short circuit for whether the targets should have access to the assessment')
+    .default(false), // default false if not set
 
-    listBeforeRelease: z
-      .boolean()
-      .optional()
-      .describe('Whether students can see the title and click into the assessment before release'),
-    dateControl: DateControlJsonSchema,
-    prairieTestControl: PrairieTestControlJsonSchema,
-    afterComplete: AfterCompleteJsonSchema,
-  })
-  .optional();
+  listBeforeRelease: z
+    .boolean()
+    .optional()
+    .describe('Whether students can see the title and click into the assessment before release'),
+  dateControl: DateControlJsonSchema,
+  prairieTestControl: PrairieTestControlJsonSchema,
+  afterComplete: AfterCompleteJsonSchema,
+});
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
 export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;
