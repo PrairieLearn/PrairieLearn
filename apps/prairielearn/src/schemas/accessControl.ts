@@ -139,7 +139,7 @@ const AfterCompleteJsonSchema = z
         'Whether to enable settings controlling score visibility after assessment completion',
       ),
     hideScoreDateControl: HideScoreDateControlJsonSchema.describe(
-      'Settings controlling question visibility after assessment completion',
+      'Settings controlling score visibility after assessment completion',
     ),
   })
   .optional();
