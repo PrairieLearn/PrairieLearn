@@ -2,6 +2,8 @@
 
 UI components shared between PrairieLearn and PrairieTest.
 
+TODO: how to share CSS?
+
 ## Usage
 
 ### TanstackTableCard
