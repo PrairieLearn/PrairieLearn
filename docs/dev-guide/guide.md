@@ -121,7 +121,7 @@ Example bugs from work on the Students table:
 - Can you navigate the table with arrow keys?
 - Can you resize the table columns with the arrow keys?
 - Can you activate a modal with enter?
-- Are the voiceover descriptions concise and accurate? Are there voiceover descriptions for all interactive elements (e.g. the resize handle)?
+- Are the announced descriptions concise and accurate? Are there announced descriptions for all interactive elements (e.g. the resize handle)?
 - Does closing the modal/tabbing out of the modal retain the focused position?
 - Does selecting an option in a dropdown retain it's position after a re-render (e.g. in React)?
 - Are you using the proper ARIA role on menus/toolbars? You should check this with the official role list.
