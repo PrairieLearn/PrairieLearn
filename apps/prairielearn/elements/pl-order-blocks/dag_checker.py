@@ -202,7 +202,9 @@ def grade_multigraph(
     submission: list[str],
     multigraph: Multigraph,
     final: str,
-    group_belonging: Mapping[str, str | None] = {},  # TODO: add grouping correctness for block groups grading
+    group_belonging: Mapping[
+        str, str | None
+    ] = {},  # TODO: add grouping correctness for block groups grading
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))

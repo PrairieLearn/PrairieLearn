@@ -215,7 +215,10 @@ def prepare(html: str, data: pl.QuestionData) -> None:
 
     # TODO: this will break the grading if you use correct_answers to sovle a correct answer
     # because the depends graph will be missing nodes in order to collapse the multigraph
-    if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi:
+    if (
+        data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
+        and not order_blocks_options.is_multi
+    ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
             order_blocks_options.grading_method,
@@ -393,9 +396,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             ordering_message = "in the specified order"
         check_indentation = order_blocks_options.indentation
-        required_indents = {
-            block["indent"] for block in correct_answers
-        }
+        required_indents = {block["indent"] for block in correct_answers}
         indentation_message = ""
         if check_indentation:
             if -1 not in required_indents:
@@ -403,16 +404,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             elif len(required_indents) > 1:
                 indentation_message = ", some blocks require correct indentation"
 
-        distractors = get_distractors(
-            data["params"][answer_name], correct_answers
-        )
+        distractors = get_distractors(data["params"][answer_name], correct_answers)
 
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
                 "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
             }
-            for solution in (solve_problem(correct_answers, grading_method, is_multi) if order_blocks_options.is_multi else correct_answers)
+            for solution in (
+                solve_problem(correct_answers, grading_method, is_multi)
+                if order_blocks_options.is_multi
+                else correct_answers
+            )
         ]
 
         html_params = {
@@ -721,7 +724,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
-        answer = solve_problem(correct_answers, grading_method, is_multi) if order_block_options.is_multi else correct_answers
+        answer = (
+            solve_problem(correct_answers, grading_method, is_multi)
+            if order_block_options.is_multi
+            else correct_answers
+        )
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": 1,
@@ -732,7 +739,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = solve_problem(correct_answers, grading_method, is_multi) if order_block_options.is_multi else correct_answers
+        answer = (
+            solve_problem(correct_answers, grading_method, is_multi)
+            if order_block_options.is_multi
+            else correct_answers
+        )
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
