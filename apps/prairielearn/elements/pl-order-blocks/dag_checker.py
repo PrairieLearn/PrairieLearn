@@ -202,18 +202,15 @@ def grade_multigraph(
     submission: list[str],
     multigraph: Multigraph,
     final: str,
-    group_belonging: Mapping[str, str | None],
+    group_belonging: Mapping[str, str | None] = {},  # TODO: add grouping correctness for block groups grading
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
-    # TODO add grouping correctness for block groups grading
-    # grouping_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))
 
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
         top_sort_correctness.append(check_topological_sorting(sub, graph))
-        # grouping_correctness.append(check_grouping(submission, group_belonging))
 
     max_correct = max(top_sort_correctness)
     max_index = top_sort_correctness.index(max_correct)

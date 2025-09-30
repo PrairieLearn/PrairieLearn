@@ -213,9 +213,9 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     data_copy["partial_scores"] = {}
     grade(html, data_copy)
 
-    # TODO: this will break the grading if you use correct_answers to display a correct answer
+    # TODO: this will break the grading if you use correct_answers to sovle a correct answer
     # because the depends graph will be missing nodes in order to collapse the multigraph
-    if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1:
+    if data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1 and not order_blocks_options.is_multi:
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
             order_blocks_options.grading_method,
@@ -239,6 +239,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     answer_name = order_blocks_options.answers_name
     inline = order_blocks_options.inline
     dropzone_layout = order_blocks_options.solution_placement
+    correct_answers = data["correct_answers"][answer_name]
+    is_multi = order_blocks_options.is_multi
 
     block_formatting = (
         "pl-order-blocks-code"
@@ -392,7 +394,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ordering_message = "in the specified order"
         check_indentation = order_blocks_options.indentation
         required_indents = {
-            block["indent"] for block in data["correct_answers"][answer_name]
+            block["indent"] for block in correct_answers
         }
         indentation_message = ""
         if check_indentation:
@@ -402,7 +404,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 indentation_message = ", some blocks require correct indentation"
 
         distractors = get_distractors(
-            data["params"][answer_name], data["correct_answers"][answer_name]
+            data["params"][answer_name], correct_answers
         )
 
         question_solution = [
@@ -410,7 +412,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "inner_html": solution["inner_html"],
                 "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
             }
-            for solution in data["correct_answers"][answer_name]
+            for solution in (solve_problem(correct_answers, grading_method, is_multi) if order_blocks_options.is_multi else correct_answers)
         ]
 
         html_params = {
@@ -541,12 +543,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     answer_name = order_blocks_options.answers_name
     student_answer = data["submitted_answers"][answer_name]
     grading_method = order_blocks_options.grading_method
-
-    # need all answer blocks to properly collapse the multigraph structure
-    if order_blocks_options.is_multi:
-        true_answer_list = data["params"][answer_name]
-    else:
-        true_answer_list = data["correct_answers"][answer_name]
+    true_answer_list = data["correct_answers"][answer_name]
 
     final_score = 0
     feedback = ""
@@ -616,14 +613,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         # MGRAPH
         elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
+            # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)
 
             # TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
-                submission, depends_multigraph, final, {}
+                submission, depends_multigraph, final
             )
         else:
-            # This is so num_initial_correct and true_answer_length is not possibly unbound
+            # this is so num_initial_correct and true_answer_length is not possibly unbound
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
@@ -710,6 +708,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     grading_method = order_block_options.grading_method
     answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
+    correct_answers = data["correct_answers"][answer_name]
+    is_multi = order_block_options.is_multi
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -721,7 +721,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
-        answer = data["correct_answers"][answer_name]
+        answer = solve_problem(correct_answers, grading_method, is_multi) if order_block_options.is_multi else correct_answers
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
             "score": 1,
@@ -732,7 +732,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = deepcopy(data["correct_answers"][answer_name])
+        answer = solve_problem(correct_answers, grading_method, is_multi) if order_block_options.is_multi else correct_answers
         answer.pop(0)
         score = 0
         if grading_method is GradingMethodType.UNORDERED or (
@@ -753,7 +753,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             first_wrong_is_distractor = answer[first_wrong]["uuid"] in {
                 block["uuid"]
                 for block in get_distractors(
-                    data["params"][answer_name], data["correct_answers"][answer_name]
+                    data["params"][answer_name], correct_answers
                 )
             }
             feedback = construct_feedback(
