@@ -8,7 +8,6 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  type Author,
   AuthorSchema,
   QuestionAuthorSchema,
   QuestionSchema,
@@ -18,6 +17,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { updateCourseSharingName } from '../../models/course.js';
 import {
   type QuestionJsonInput,
   type TagJsonInput,
@@ -27,8 +27,6 @@ import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
 
 import * as util from './util.js';
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Makes an empty question.
@@ -316,16 +314,16 @@ describe('Question syncing', () => {
 
   it('syncs authors with origin course', async () => {
     await features.enable('question-sharing');
-    const courseData = util.getCourseData();
+    const sharingCourseData = util.getCourseData();
+    sharingCourseData.questions = {}; // To prevent duplicate QIDs
+    const sharingCourseSync = await util.writeAndSyncCourseData(sharingCourseData);
+    await updateCourseSharingName({
+      course_id: sharingCourseSync.syncResults.courseId,
+      sharing_name: 'SHARING 101',
+    });
+
     const consumingCourseData = util.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
-    consumingCourseData.questions = {}; // To prevent duplicate QIDs
-
-    await util.writeAndSyncCourseData(consumingCourseData);
-    await sqldb.execute(sql.set_sharing_name, {
-      course_name: consumingCourseData.course.name,
-      sharing_name: 'CONSUMING 101 SHARED',
-    });
 
     const newAuthor = {
       name: 'Example',
@@ -333,19 +331,22 @@ describe('Question syncing', () => {
       orcid: '0000-0000-0000-0001',
     };
     const newAuthorWithOriginCourse = {
-      originCourse: 'CONSUMING 101 SHARED',
+      originCourse: 'SHARING 101',
     };
 
-    if (!courseData.questions[util.QUESTION_ID].authors) {
-      courseData.questions[util.QUESTION_ID].authors = [];
+    if (!consumingCourseData.questions[util.QUESTION_ID].authors) {
+      consumingCourseData.questions[util.QUESTION_ID].authors = [];
     }
-    courseData.questions[util.QUESTION_ID].authors.push(newAuthor, newAuthorWithOriginCourse);
+    consumingCourseData.questions[util.QUESTION_ID].authors.push(
+      newAuthor,
+      newAuthorWithOriginCourse,
+    );
 
-    const courseDir = await util.writeCourseToTempDirectory(courseData);
-    await util.syncCourseData(courseDir);
+    await util.writeAndSyncCourseData(consumingCourseData);
 
     const originalSyncedQuestion = await findSyncedQuestion(util.QUESTION_ID);
     assert.ok(originalSyncedQuestion);
+    assert.isNull(originalSyncedQuestion.sync_errors);
 
     // Check that the author was added to the authors table
     const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
@@ -355,7 +356,7 @@ describe('Question syncing', () => {
         a.email === newAuthor.email &&
         a.orcid === newAuthor.orcid.replaceAll('-', ''),
     );
-    const author2 = authors.find((a) => a.origin_course === '1'); // Any easy way to avoid hardcoding the number?
+    const author2 = authors.find((a) => a.origin_course === sharingCourseSync.syncResults.courseId);
     assert.ok(author1);
     assert.ok(author2);
     assert.notDeepEqual(author1, author2);
