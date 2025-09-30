@@ -235,7 +235,7 @@ export function IssuePanel({
     user_uid: User['uid'];
     formatted_date: string;
   };
-  course_instance: CourseInstance;
+  course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
 }) {
@@ -414,7 +414,7 @@ interface QuestionFooterResLocals {
   instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
-  authz_result: Record<string, any>;
+  authz_result: Record<string, any> | null;
   group_config: GroupConfig | null;
   group_info: GroupInfo | null;
   group_role_permissions: {
@@ -921,7 +921,7 @@ function CopyQuestionModal({
   return Modal({
     id: 'copyQuestionModal',
     title: 'Copy question',
-    formAction: questionCopyTargets[0]?.copy_url ?? '',
+    formAction: questionCopyTargets.at(0)?.copy_url ?? '',
     formClass: 'js-copy-question-form',
     body:
       questionCopyTargets.length === 0
@@ -961,12 +961,12 @@ function CopyQuestionModal({
       <input
         type="hidden"
         name="__csrf_token"
-        value="${questionCopyTargets[0]?.__csrf_token ?? ''}"
+        value="${questionCopyTargets.at(0)?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="question_id" value="${question.id}" />
       <input type="hidden" name="course_id" value="${course.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${questionCopyTargets?.length > 0
+      ${questionCopyTargets.length > 0
         ? html`
             <button type="submit" name="__action" value="copy_question" class="btn btn-primary">
               Copy question

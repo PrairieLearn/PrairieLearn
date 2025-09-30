@@ -106,7 +106,7 @@ async function checkRender(
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
   return ((locals as any).issues as Issue[])
-    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
+    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
       return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
@@ -192,7 +192,7 @@ function extractFromCompletion(
 
   job.info(`completion is ${completionText}`);
 
-  job.info(`used ${completion?.usage?.total_tokens} OpenAI tokens to generate response.`);
+  job.info(`used ${completion.usage?.total_tokens} OpenAI tokens to generate response.`);
 
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
@@ -370,21 +370,21 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     const results = extractFromCompletion(completion, job);
-    const html = results?.html;
+    const html = results.html;
 
     let errors: string[] = [];
     if (html && typeof html === 'string') {
-      errors = validateHTML(html, !!results?.python);
+      errors = validateHTML(html, !!results.python);
     } else {
       errors = ['Please generate a question.html file.'];
     }
 
     const files = {};
-    if (results?.html) {
-      files['question.html'] = results?.html;
+    if (results.html) {
+      files['question.html'] = results.html;
     }
-    if (results?.python) {
-      files['server.py'] = results?.python;
+    if (results.python) {
+      files['server.py'] = results.python;
     }
 
     const courseFilesClient = getCourseFilesClient();
@@ -417,8 +417,8 @@ Keep in mind you are not just generating an example; you are generating an actua
         user_prompt: prompt,
         system_prompt: sysPrompt,
         response: completion.choices[0].message.content,
-        html: results?.html,
-        python: results?.python,
+        html: results.html,
+        python: results.python,
         errors,
         completion,
         job_sequence_id: serverJob.jobSequenceId,
@@ -440,18 +440,14 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     job.data.html = html;
-    job.data.python = results?.python;
+    job.data.python = results.python;
     job.data.context = context;
 
     errors.push(
       ...(await checkRender(saveResults.status, errors, courseId, userId, saveResults.question_id)),
     );
 
-    if (
-      saveResults.status === 'success' &&
-      errors.length > 0 &&
-      typeof job.data.questionQid === 'string'
-    ) {
+    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
       await regenInternal({
         job,
         client,
@@ -459,7 +455,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
-        originalPython: typeof results?.python === 'string' ? results?.python : undefined,
+        originalPython: results.python,
         remainingAttempts: NUM_TOTAL_ATTEMPTS - 1,
         isAutomated: true,
         questionId: saveResults.question_id,
@@ -539,7 +535,7 @@ async function regenInternal({
   authnUserId: string;
   originalPrompt: string;
   revisionPrompt: string;
-  originalHTML: string;
+  originalHTML: string | undefined;
   originalPython: string | undefined;
   remainingAttempts: number;
   isAutomated: boolean;
@@ -606,8 +602,8 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   const results = extractFromCompletion(completion, job);
 
-  const html = results?.html || originalHTML;
-  const python = results?.python || originalPython;
+  const html = results.html || originalHTML;
+  const python = results.python || originalPython;
 
   let errors: string[] = [];
 
