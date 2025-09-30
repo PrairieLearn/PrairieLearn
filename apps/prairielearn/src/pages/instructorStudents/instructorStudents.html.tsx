@@ -14,6 +14,7 @@ import { useMemo, useState } from 'preact/compat';
 import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import z from 'zod';
 
+import { formatDate } from '@prairielearn/formatter';
 import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -32,11 +33,10 @@ import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/sa
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentModal } from './components/InviteStudentModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
-import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { formatDate } from '@prairielearn/formatter';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
