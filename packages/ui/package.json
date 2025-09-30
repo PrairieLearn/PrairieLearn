@@ -12,7 +12,7 @@
     ".": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && (cd src; rsync -R **/*.css ../dist/)",
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
