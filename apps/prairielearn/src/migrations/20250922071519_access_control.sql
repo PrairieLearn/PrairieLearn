@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS access_control_early_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit NUMBER NOT NULL
+  credit INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_late_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit NUMBER NOT NULL
+  credit INT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (

@@ -17,7 +17,7 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
-import type { AccessControlJsonInput } from '../schemas/accessControl.js'; // TODO: I don't think this is the proper way to do this, but I'm not sure how to get the type her otherwise
+import type { AccessControlJson } from '../schemas/accessControl.js'; // TODO: I don't think this is the proper way to do this, but I'm not sure how to get the type her otherwise
 import {
   type AssessmentJson,
   type AssessmentSetJson,
@@ -1411,7 +1411,7 @@ function validateCourseInstance({
 export function validateAccessControlArray({
   accessControlJsonArray,
 }: {
-  accessControlJsonArray: AccessControlJsonInput[];
+  accessControlJsonArray: AccessControlJson[];
 }): {
   index: number;
   warnings: string[];
@@ -1431,7 +1431,7 @@ export function validateAccessControlArray({
 export function validateAccessControl({
   accessControlJson,
 }: {
-  accessControlJson: AccessControlJsonInput;
+  accessControlJson: AccessControlJson;
 }): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1489,7 +1489,7 @@ export function validateAccessControl({
   };
 
   // validate that enabled fields don't have values when enabled is null
-  const validateEnabledFieldConstraints = (data: AccessControlJsonInput, errors: string[]) => {
+  const validateEnabledFieldConstraints = (data: AccessControlJson, errors: string[]) => {
     for (const { enabledField, valueField } of enabledFieldPairs) {
       const enabledValue = getNestedValue(data, enabledField);
       const fieldValue = getNestedValue(data, valueField);
@@ -1501,7 +1501,7 @@ export function validateAccessControl({
   };
 
   // validate assignment-level constraints: no null enabled fields allowed
-  const validateAssignmentLevelConstraints = (data: AccessControlJsonInput, errors: string[]) => {
+  const validateAssignmentLevelConstraints = (data: AccessControlJson, errors: string[]) => {
     const isAssignmentLevel = !data?.targets || data.targets.length === 0;
 
     if (isAssignmentLevel) {
@@ -1518,7 +1518,7 @@ export function validateAccessControl({
   };
 
   // validate that all date fields contain valid dates
-  const validateDateFields = (data: AccessControlJsonInput, errors: string[]) => {
+  const validateDateFields = (data: AccessControlJson, errors: string[]) => {
     for (const dateFieldPath of dateFields) {
       const dateValue = getNestedValue(data, dateFieldPath);
 

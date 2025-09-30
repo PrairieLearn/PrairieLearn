@@ -264,7 +264,7 @@ export const AccessControlSchema = z.object({
 
 export const AccessControlEarlyDeadlineSchema = z.object({
   access_control_id: IdSchema,
-  credit: z.number(),
+  credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
 });
@@ -284,7 +284,7 @@ export const AccessControlGroupSchema = z.object({
 
 export const AccessControlLateDeadlineSchema = z.object({
   access_control_id: IdSchema,
-  credit: IdSchema,
+  credit: z.number().int(),
   date: DateFromISOString,
   id: IdSchema,
 });
