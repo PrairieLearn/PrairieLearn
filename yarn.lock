@@ -3500,6 +3500,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
+    csv-stringify: "npm:^6.6.0"
     js-base64: "npm:^3.7.8"
     typescript: "npm:^5.9.2"
   languageName: unknown
@@ -4401,7 +4402,6 @@ __metadata:
     "@tanstack/table-core": "npm:^8.21.3"
     "@types/node": "npm:^22.18.0"
     clsx: "npm:^2.1.1"
-    csv-stringify: "npm:^6.6.0"
     react-bootstrap: "npm:^3.0.0-beta.3"
     typescript: "npm:^5.9.2"
   languageName: unknown
