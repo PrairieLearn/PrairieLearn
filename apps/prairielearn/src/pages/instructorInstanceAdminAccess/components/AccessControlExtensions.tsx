@@ -1,6 +1,6 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
-import { Alert } from 'react-bootstrap';
+import { Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -9,23 +9,23 @@ import {
   type CourseInstanceAccessControlExtension,
 } from '../../../lib/db-types.js';
 
-interface AccessControlOverridesProps {
+interface AccessControlExtensionsProps {
   courseInstance: CourseInstance;
-  overrides: CourseInstanceAccessControlExtension[];
+  extensions: CourseInstanceAccessControlExtension[];
   canEdit: boolean;
   csrfToken: string;
 }
 
-export function AccessControlOverrides({
+export function AccessControlExtensions({
   courseInstance,
-  overrides,
+  extensions,
   canEdit,
   csrfToken,
-}: AccessControlOverridesProps) {
+}: AccessControlExtensionsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleDelete = async (overrideId: string) => {
+  const handleDelete = async (extensionId: string) => {
     // eslint-disable-next-line no-alert
     if (!confirm('Are you sure you want to delete this extension?')) {
       return;
@@ -35,8 +35,8 @@ export function AccessControlOverrides({
     try {
       const requestBody = {
         __csrf_token: csrfToken,
-        __action: 'delete_override',
-        override_id: overrideId,
+        __action: 'delete_extension',
+        extension_id: extensionId,
       };
 
       const response = await fetch(window.location.pathname, {
@@ -61,13 +61,13 @@ export function AccessControlOverrides({
     }
   };
 
-  const handleToggleEnabled = async (overrideId: string, enabled: boolean) => {
+  const handleToggleEnabled = async (extensionId: string, enabled: boolean) => {
     setIsSubmitting(true);
     try {
       const requestBody = {
         __csrf_token: csrfToken,
-        __action: 'toggle_override',
-        override_id: overrideId,
+        __action: 'toggle_extension',
+        extension_id: extensionId,
         enabled: enabled.toString(),
       };
 
@@ -116,11 +116,12 @@ export function AccessControlOverrides({
         </small>
       </div>
 
-      {overrides.length === 0 && !showAddForm ? (
+      {extensions.length === 0 && !showAddForm && (
         <div class="text-center text-muted mb-3">
           <p class="mb-0">No access control extensions configured.</p>
         </div>
-      ) : (
+      )}
+      {extensions.length > 0 && (
         <div class="table-responsive">
           <table class="table table-sm table-hover" aria-label="Access control extensions">
             <thead>
@@ -132,13 +133,14 @@ export function AccessControlOverrides({
               </tr>
             </thead>
             <tbody>
-              {overrides.map((override) => (
-                <OverrideRow
-                  key={override.id}
-                  override={override}
+              {extensions.map((extension) => (
+                <ExtensionRow
+                  key={extension.id}
+                  extension={extension}
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
                   isSubmitting={isSubmitting}
+                  courseInstanceArchiveDate={courseInstance.access_control_archive_date}
                   onDelete={handleDelete}
                   onToggleEnabled={handleToggleEnabled}
                 />
@@ -154,7 +156,7 @@ export function AccessControlOverrides({
             <h6 class="mb-0">Add Access Control Extension</h6>
           </div>
           <div class="card-body">
-            <AddOverrideForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
+            <AddExtensionForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
           </div>
         </div>
       )}
@@ -162,38 +164,64 @@ export function AccessControlOverrides({
   );
 }
 
-function OverrideRow({
-  override,
+function ExtensionRow({
+  extension,
   timeZone,
   canEdit,
   onDelete,
   onToggleEnabled,
   isSubmitting,
+  courseInstanceArchiveDate,
 }: {
-  override: CourseInstanceAccessControlExtension;
+  extension: CourseInstanceAccessControlExtension;
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
   onToggleEnabled: (id: string, enabled: boolean) => void;
   isSubmitting: boolean;
+  courseInstanceArchiveDate: Date | null;
 }) {
+  // Check if extension archive date is before the course instance archive date
+  const isBeforeInstanceArchiveDate =
+    extension.archive_date &&
+    courseInstanceArchiveDate &&
+    new Date(extension.archive_date) < new Date(courseInstanceArchiveDate);
+
   return (
     <tr>
-      <td>{override.name || <em class="text-muted">Unnamed extension</em>}</td>
+      <td>{extension.name || <em class="text-muted">Unnamed extension</em>}</td>
       <td>
         <div class="form-check form-switch">
           <input
             class="form-check-input"
             type="checkbox"
-            checked={override.enabled}
+            checked={extension.enabled}
             disabled={!canEdit || isSubmitting}
-            onChange={(e) => onToggleEnabled(override.id, e.currentTarget.checked)}
+            onChange={(e) => onToggleEnabled(extension.id, e.currentTarget.checked)}
           />
-          <label class="form-check-label">{override.enabled ? 'Enabled' : 'Disabled'}</label>
+          <label class="form-check-label">{extension.enabled ? 'Enabled' : 'Disabled'}</label>
         </div>
       </td>
       <td>
-        {override.archive_date == null ? '—' : formatDateFriendly(override.archive_date, timeZone)}
+        {formatDateFriendly(extension.archive_date, timeZone)}
+        {isBeforeInstanceArchiveDate && (
+          <>
+            {' '}
+            <OverlayTrigger
+              placement="top"
+              overlay={
+                <Tooltip id={`tooltip-${extension.id}`}>
+                  This date will be ignored, it is before the overall archive date
+                </Tooltip>
+              }
+            >
+              <i
+                class="fas fa-exclamation-triangle text-warning"
+                aria-label="Warning: This date will be ignored"
+              />
+            </OverlayTrigger>
+          </>
+        )}
       </td>
       <td>
         {canEdit && (
@@ -201,7 +229,7 @@ function OverrideRow({
             type="button"
             class="btn btn-sm btn-outline-danger"
             disabled={isSubmitting}
-            onClick={() => onDelete(override.id)}
+            onClick={() => onDelete(extension.id)}
           >
             Delete
           </button>
@@ -211,7 +239,7 @@ function OverrideRow({
   );
 }
 
-function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
+function AddExtensionForm({ csrfToken, onClose }: { csrfToken: string; onClose: () => void }) {
   const [formData, setFormData] = useState({
     name: '',
     archive_date: '',
@@ -220,13 +248,11 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showError, setShowError] = useState(false);
 
-  const queryClient = useQueryClient();
-
-  const addOverrideMutation = useMutation({
+  const addExtensionMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
       const requestBody = {
         __csrf_token: csrfToken,
-        __action: 'add_override',
+        __action: 'add_extension',
         name: data.name,
         enabled: 'true',
         archive_date: data.archive_date || '',
@@ -242,36 +268,43 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       });
 
       if (!response.ok) {
-        let errorData;
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+        // Get the response body as text first
+        const responseText = await response.text();
+
         try {
-          errorData = await response.json();
+          // Try to parse as JSON
+          const errorData = JSON.parse(responseText);
+
+          // Handle field-specific errors
+          if (errorData.errors) {
+            setErrors(errorData.errors);
+            setShowError(true);
+            throw new Error('Validation errors occurred');
+          }
+
+          // Handle general error with message
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          }
         } catch {
-          errorData = { message: `HTTP ${response.status}: ${response.statusText}` };
+          // If JSON parsing fails, use the text response as the error message
+          if (responseText?.trim()) {
+            errorMessage = responseText;
+          }
         }
 
-        // Handle field-specific errors
-        if (errorData.errors) {
-          setErrors(errorData.errors);
-          setShowError(true);
-          throw new Error('Validation errors occurred');
-        }
-
-        // Handle general error
-        if (errorData.message) {
-          setErrors({ general: errorData.message });
-          setShowError(true);
-          throw new Error(errorData.message);
-        }
-
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        setErrors({ general: errorMessage });
+        setShowError(true);
+        throw new Error(errorMessage);
       }
 
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch the page data
-      void queryClient.invalidateQueries({ queryKey: ['instructorInstanceAdminAccess'] });
-      onClose();
+      // Reload the page to show the new extension
+      window.location.reload();
     },
     onError: (error: Error) => {
       console.error('Error adding extension:', error);
@@ -286,7 +319,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
     e.preventDefault();
     setErrors({});
     setShowError(false);
-    addOverrideMutation.mutate(formData);
+    addExtensionMutation.mutate(formData);
   };
 
   return (
@@ -300,13 +333,13 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       <div class="row">
         <div class="col-md-12">
           <div class="mb-3">
-            <label for="override-name" class="form-label">
+            <label for="extension-name" class="form-label">
               Name
             </label>
             <input
               type="text"
               class="form-control"
-              id="override-name"
+              id="extension-name"
               value={formData.name}
               placeholder="Optional name for this extension"
               onChange={(e) => setFormData({ ...formData, name: e.currentTarget.value })}
@@ -319,14 +352,15 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       <div class="row">
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="override-archive-date" class="form-label">
+            <label for="extension-archive-date" class="form-label">
               Archive Date
             </label>
             <input
               type="datetime-local"
               class="form-control"
-              id="override-archive-date"
+              id="extension-archive-date"
               value={formData.archive_date}
+              required
               onChange={(e) => setFormData({ ...formData, archive_date: e.currentTarget.value })}
             />
             {errors.archive_date && (
@@ -336,20 +370,20 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         </div>
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="override-uids" class="form-label">
+            <label for="extension-uids" class="form-label">
               User UIDs
             </label>
             <textarea
               class="form-control"
-              id="override-uids"
+              id="extension-uids"
               rows={3}
               value={formData.uids}
-              placeholder="Enter UIDs, one per line or separated by commas"
+              placeholder="user@example.com, another@example.com"
               required
               onChange={(e) => setFormData({ ...formData, uids: e.currentTarget.value })}
             />
             <div class="form-text">
-              Enter the UIDs of users who should have this extension applied.
+              Enter email addresses (UIDs) of users, one per line or separated by commas.
             </div>
             {errors.uids && <div class="invalid-feedback d-block">{errors.uids}</div>}
           </div>
@@ -360,7 +394,7 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         <button
           type="button"
           class="btn btn-secondary"
-          disabled={addOverrideMutation.isPending}
+          disabled={addExtensionMutation.isPending}
           onClick={onClose}
         >
           Cancel
@@ -368,9 +402,9 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
         <button
           type="submit"
           class="btn btn-primary text-nowrap"
-          disabled={addOverrideMutation.isPending}
+          disabled={addExtensionMutation.isPending}
         >
-          {addOverrideMutation.isPending ? 'Adding...' : 'Add Extension'}
+          {addExtensionMutation.isPending ? 'Adding...' : 'Add Extension'}
         </button>
       </div>
     </form>

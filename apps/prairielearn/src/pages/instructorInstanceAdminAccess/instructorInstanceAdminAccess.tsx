@@ -203,7 +203,8 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
 
       flash('success', 'Access control settings updated successfully');
@@ -288,7 +289,8 @@ router.post(
       } catch (fileError) {
         console.error('Error migrating access rules:', fileError);
 
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return;
       }
 
       // Insert extensions if any were generated from the migration
@@ -318,7 +320,7 @@ router.post(
 
       flash('success', 'Access rules migrated to access control successfully');
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'add_override') {
+    } else if (req.body.__action === 'add_extension') {
       const name = req.body.name || null;
       const enabled = req.body.enabled === 'true';
       const archive_date = req.body.archive_date ? new Date(req.body.archive_date) : null;
@@ -328,8 +330,17 @@ router.post(
         .filter((uid: string) => uid.length > 0);
 
       if (uids.length === 0) {
-        // TODO: handle errors better.
-        throw new error.HttpStatusError(400, 'At least one UID is required');
+        res.status(400).json({ message: 'At least one UID is required' });
+        return;
+      }
+
+      // Validate that all UIDs are in email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalidUids = uids.filter((uid) => !emailRegex.test(uid));
+      if (invalidUids.length > 0) {
+        const errorMessage = `Invalid email format for UIDs: ${invalidUids.join(', ')}`;
+        res.status(400).json({ message: errorMessage });
+        return;
       }
 
       // Get enrollment IDs for the UIDs
@@ -339,7 +350,8 @@ router.post(
       });
 
       if (enrollments.length === 0) {
-        throw new error.HttpStatusError(400, 'No enrollments found for the provided UIDs');
+        res.status(400).json({ message: 'No enrollments found for any of the provided UIDs' });
+        return;
       }
 
       const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
@@ -352,42 +364,43 @@ router.post(
         enrollment_ids: enrollmentIds,
       });
 
-      flash('success', 'Access control extension added successfully');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'delete_override') {
-      const override_id = req.body.override_id;
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'delete_extension') {
+      const extension_id = req.body.extension_id;
 
       await deleteAccessControlExtension({
-        extension_id: override_id,
+        extension_id,
         course_instance_id: res.locals.course_instance.id,
       });
 
-      flash('success', 'Access control extension deleted successfully');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'toggle_override') {
-      const override_id = req.body.override_id;
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'toggle_extension') {
+      const extension_id = req.body.extension_id;
       const enabled = req.body.enabled === 'true';
 
       // Get the current extension to preserve other fields
       const currentExtensions = await selectAccessControlExtensionsByCourseInstance(
         res.locals.course_instance.id,
       );
-      const currentExtension = currentExtensions.find((e) => e.id === override_id);
+      const currentExtension = currentExtensions.find((e) => e.id === extension_id);
 
       if (!currentExtension) {
-        throw new error.HttpStatusError(404, 'Extension not found');
+        res.status(404).json({ message: 'Extension not found' });
+        return;
       }
 
       await updateAccessControlExtension({
-        extension_id: override_id,
+        extension_id,
         course_instance_id: res.locals.course_instance.id,
         enabled,
         name: currentExtension.name,
         archive_date: currentExtension.archive_date,
       });
 
-      flash('success', 'Access control extension updated successfully');
-      res.redirect(req.originalUrl);
+      res.status(200).json({ success: true });
+      return;
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }

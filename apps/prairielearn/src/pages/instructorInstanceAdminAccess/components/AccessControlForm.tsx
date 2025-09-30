@@ -11,7 +11,7 @@ import type {
   CourseInstanceAccessControlExtension,
 } from '../../../lib/db-types.js';
 
-import { AccessControlOverrides } from './AccessControlOverrides.js';
+import { AccessControlExtensions } from './AccessControlExtensions.js';
 
 // Create QueryClient outside component to ensure stability
 const queryClient = new QueryClient();
@@ -642,9 +642,9 @@ export function AccessControlForm({
             <>
               <hr class="my-4" />
               <QueryClientProviderDebug client={queryClient} isDevMode={false}>
-                <AccessControlOverrides
+                <AccessControlExtensions
                   courseInstance={courseInstance}
-                  overrides={accessControlExtensions}
+                  extensions={accessControlExtensions}
                   canEdit={canEdit}
                   csrfToken={csrfToken}
                 />
