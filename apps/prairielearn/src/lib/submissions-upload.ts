@@ -1,4 +1,3 @@
-import csvtojson from 'csvtojson';
 import { parseISO } from 'date-fns';
 import memoize from 'p-memoize';
 import * as streamifier from 'streamifier';
@@ -11,6 +10,7 @@ import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
+import { createCsvParser } from './csv.js';
 import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -114,13 +114,13 @@ export async function uploadSubmissions(
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
-    const csvConverter = csvtojson();
-    await csvConverter.fromStream(csvStream).subscribe(async (rawJson, number) => {
-      const lineNumber = number + 2;
-      job.verbose(`Processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`);
+    const csvParser = createCsvParser(csvStream, { lowercaseHeader: false });
+    for await (const { info, record } of csvParser) {
+      const lineNumber = info.lines;
+      job.verbose(`Processing CSV line ${lineNumber}: ${JSON.stringify(record)}`);
 
       try {
-        const row = SubmissionCsvRowSchema.parse(rawJson);
+        const row = SubmissionCsvRowSchema.parse(record);
 
         // For simplicity, we're not handling group work until it's needed.
         if (row['Group name']) throw new Error('Group work is not supported yet');
@@ -198,7 +198,7 @@ export async function uploadSubmissions(
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${lineNumber}: ${JSON.stringify(rawJson)}`);
+        job.error(`Error processing CSV line ${lineNumber}: ${JSON.stringify(record)}`);
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
@@ -209,7 +209,7 @@ export async function uploadSubmissions(
           job.error(String(err));
         }
       }
-    });
+    }
 
     if (errorCount === 0) {
       job.info(`Successfully processed ${successCount} submissions, with no errors`);
