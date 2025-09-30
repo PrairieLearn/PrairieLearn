@@ -13,8 +13,8 @@
     "./*.css": "./dist/*.css"
   },
   "scripts": {
-    "build": "tsc && (cd src; rsync -R **/*.css ../dist/)",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsc && tscp",
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
@@ -28,6 +28,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.18.0",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "typescript-cp": "^0.1.9"
   }
 }
