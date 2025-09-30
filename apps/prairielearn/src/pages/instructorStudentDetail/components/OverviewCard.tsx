@@ -56,7 +56,7 @@ export function OverviewCard({
         <div class="d-flex align-items-center justify-content-between">
           <h2 class="d-flex align-items-center">
             {user?.name ?? enrollment.pending_uid}
-            <EnrollmentStatusIcon class="badge bg-secondary ms-2 fs-6" status={enrollment.status} />
+            <EnrollmentStatusIcon type="badge" class="ms-2 fs-6" status={enrollment.status} />
           </h2>
           {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && enrollment && (
             <div class="d-flex gap-2 align-items-center">

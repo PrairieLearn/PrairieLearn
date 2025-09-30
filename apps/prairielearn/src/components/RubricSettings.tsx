@@ -1,7 +1,8 @@
-import clsx from 'clsx';
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
+import { Modal } from 'react-bootstrap';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
+import { downloadAsJSON } from '../lib/client/downloads.js';
 import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
 import type { RubricData } from '../lib/manualGrading.types.js';
 
@@ -14,11 +15,13 @@ export function RubricSettings({
   rubricData,
   csrfToken,
   aiGradingStats,
+  context,
 }: {
   assessmentQuestion: AssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
+  context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
   const wasUsingRubric = Boolean(rubricData);
@@ -33,7 +36,6 @@ export function RubricSettings({
   }));
 
   // Define states
-  const [editMode, setEditMode] = useState(false);
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
@@ -43,6 +45,9 @@ export function RubricSettings({
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
+  const [showImportModal, setShowImportModal] = useState<boolean>(false);
+  const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
+  const rubricFile = useRef<HTMLInputElement>(null);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -139,14 +144,124 @@ export function RubricSettings({
     setMinPoints(rubricData?.min_points ?? 0);
     setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
     setSettingsError(null);
-    setEditMode(false);
+  };
+
+  const exportRubric = () => {
+    const rubricData = {
+      max_extra_points: maxExtraPoints,
+      min_points: minPoints,
+      replace_auto_points: replaceAutoPoints,
+      starting_points: startingPoints,
+      max_points: assessmentQuestion.max_points,
+      max_manual_points: assessmentQuestion.max_manual_points,
+      max_auto_points: assessmentQuestion.max_auto_points,
+      rubric_items: rubricItems.map((it, idx) => ({
+        order: idx,
+        points: it.points ? Number(it.points) : null,
+        description: it.description,
+        explanation: it.explanation ?? '',
+        grader_note: it.grader_note ?? '',
+        always_show_to_students: it.always_show_to_students,
+      })),
+    };
+
+    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } = context;
+    const exportFileName =
+      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
+        /[^a-zA-Z0-9_-]/g,
+        '_',
+      ) + '.json';
+    downloadAsJSON(rubricData, exportFileName);
+  };
+
+  /**
+   * Rounds the points for a rubric item to two decimal places
+   * @param points original points
+   * @returns rounded points
+   */
+  function roundPoints(points: number) {
+    return Math.round(Number(points) * 100) / 100;
+  }
+
+  const resetImportModal = () => {
+    setShowImportModal(false);
+    setImportModalWarning(null);
+  };
+
+  const importRubric = async () => {
+    const input = rubricFile.current;
+    if (!input?.files || input.files.length === 0) {
+      setImportModalWarning('Please select a file to import.');
+      return;
+    }
+    const file = input.files[0];
+
+    try {
+      const fileContent = await file.text();
+      if (fileContent.trim() === '') {
+        return;
+      }
+      let parsedData;
+      try {
+        parsedData = JSON.parse(fileContent);
+      } catch {
+        setImportModalWarning('Error parsing JSON file, please check the file format.');
+        return;
+      }
+
+      // This factor scales the imported rubric point values to ensure that they
+      // are correctly aligned with the point values of the recipient question.
+      let scaleFactor = 1;
+
+      if (!parsedData.max_auto_points || parsedData.replace_auto_points) {
+        // If the rubric does not use auto points, or if it replaces auto points,
+        // then the scale factor is based on max_points (the total point gs of the rubric)
+        const maxPoints = assessmentQuestion.max_points ?? 0;
+
+        if (maxPoints > 0 && parsedData.max_points) {
+          scaleFactor = maxPoints / parsedData.max_points;
+        }
+      } else {
+        // If the rubric uses auto points and does not replace them, it
+        // applies only to the manual points of the assessment question.
+        // Therefore, we base the scale factor on max_manual_points.
+        const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
+
+        if (maxManualPoints > 0 && parsedData.max_manual_points) {
+          scaleFactor = maxManualPoints / parsedData.max_manual_points;
+        }
+      }
+      setMaxExtraPoints(roundPoints((parsedData.max_extra_points || 0) * scaleFactor));
+      setMinPoints(roundPoints((parsedData.min_points || 0) * scaleFactor));
+      setReplaceAutoPoints(Boolean(parsedData.replace_auto_points));
+      setStartingPoints(roundPoints((parsedData.starting_points || 0) * scaleFactor));
+
+      const rubricItems = parsedData.rubric_items;
+      if (!rubricItems || !Array.isArray(rubricItems)) {
+        setImportModalWarning('Invalid rubric data format. Expected rubric_items to be an array.');
+        return;
+      }
+
+      const scaledRubricItems: RubricItemData[] = [];
+      for (const rubricItem of rubricItems) {
+        scaledRubricItems.push({
+          ...rubricItem,
+          points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+        });
+      }
+      setRubricItems(scaledRubricItems);
+      resetImportModal();
+    } catch {
+      setImportModalWarning('Error reading file content.');
+    }
   };
 
   const submitSettings = async (use_rubric: boolean) => {
     // Performs validation on the required inputs
     if (use_rubric) {
-      const required =
-        document.querySelectorAll<HTMLInputElement>('#rubric-editing input[required]') ?? [];
+      const required = document.querySelectorAll<HTMLInputElement>(
+        '#rubric-editing input[required]',
+      );
       const isValid = Array.from(required).every((input) => input.reportValidity());
       if (!isValid) {
         return;
@@ -157,7 +272,7 @@ export function RubricSettings({
       __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: rubricData?.modified_at?.toString() ?? '',
+      modified_at: rubricData?.modified_at.toString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,
@@ -221,7 +336,6 @@ export function RubricSettings({
                       <input
                         class="form-check-input"
                         type="radio"
-                        disabled={!editMode}
                         checked={!replaceAutoPoints}
                         onChange={() => {
                           setReplaceAutoPoints(false);
@@ -241,7 +355,6 @@ export function RubricSettings({
                       <input
                         class="form-check-input"
                         type="radio"
-                        disabled={!editMode}
                         checked={replaceAutoPoints}
                         onChange={() => {
                           setReplaceAutoPoints(true);
@@ -267,7 +380,6 @@ export function RubricSettings({
                   <input
                     class="form-check-input"
                     type="radio"
-                    disabled={!editMode}
                     checked={startingPoints === 0}
                     onChange={() => setStartingPoints(0)}
                   />
@@ -279,7 +391,6 @@ export function RubricSettings({
                   <input
                     class="form-check-input"
                     type="radio"
-                    disabled={!editMode}
                     checked={startingPoints !== 0}
                     onChange={() =>
                       setStartingPoints(
@@ -304,7 +415,6 @@ export function RubricSettings({
                 <input
                   class="form-control"
                   type="number"
-                  disabled={!editMode}
                   value={minPoints}
                   onInput={(e: any) => setMinPoints(Number(e.target.value))}
                 />
@@ -316,7 +426,6 @@ export function RubricSettings({
                 <input
                   class="form-control"
                   type="number"
-                  disabled={!editMode}
                   value={maxExtraPoints}
                   onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
                 />
@@ -345,7 +454,6 @@ export function RubricSettings({
                   <RubricRow
                     key={it.id ?? `row-${idx}`}
                     item={it}
-                    editMode={editMode}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     deleteRow={() => deleteRow(idx)}
@@ -384,14 +492,78 @@ export function RubricSettings({
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
           </div>
         ))}
-        <div class="mb-3">
+        <div class="mb-3 gap-1 d-flex">
+          <button type="button" class="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
+            Add item
+          </button>
+          <button type="button" class="btn btn-sm btn-primary" onClick={exportRubric}>
+            <i class="fas fa-download" />
+            Export rubric
+          </button>
+          <button
+            id="import-rubric-button"
+            type="button"
+            class="btn btn-sm btn-primary"
+            onClick={() => setShowImportModal(!showImportModal)}
+          >
+            <i class="fas fa-upload" />
+            Import rubric
+          </button>
+          <Modal show={showImportModal} size="lg" onHide={() => resetImportModal()}>
+            <Modal.Header closeButton>
+              <Modal.Title>Import rubric settings</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              <label class="form-label" for="rubric-settings-file-input">
+                Choose file
+              </label>
+              <input
+                ref={rubricFile}
+                type="file"
+                name="file"
+                class="form-control"
+                id="rubric-settings-file-input"
+                accept="application/json,.json"
+                required
+              />
+              {importModalWarning && (
+                <div
+                  key={importModalWarning}
+                  class="alert alert-warning alert-dismissible fade show"
+                  role="alert"
+                >
+                  {importModalWarning}
+                  <button
+                    type="button"
+                    class="btn-close"
+                    aria-label="Close"
+                    onClick={() => setImportModalWarning(null)}
+                  />
+                </div>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              <button type="button" class="btn btn-secondary" onClick={() => resetImportModal()}>
+                Cancel
+              </button>
+              <button
+                id="upload-rubric-file-button"
+                type="button"
+                class="btn btn-primary"
+                onClick={() => importRubric()}
+              >
+                Upload file
+              </button>
+            </Modal.Footer>
+          </Modal>
           <button
             type="button"
-            class="btn btn-secondary"
-            disabled={!editMode}
-            onClick={addRubricItemRow}
+            class="btn btn-sm btn-ghost"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
           >
-            Add item
+            <i class="fas fa-circle-info" />
           </button>
         </div>
         {settingsError && (
@@ -416,20 +588,12 @@ export function RubricSettings({
               Delete rubric
             </button>
           )}
-          {!editMode ? (
-            <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
-              Edit rubric
-            </button>
-          ) : (
-            <>
-              <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
-                Cancel
-              </button>
-              <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
-                Save
-              </button>
-            </>
-          )}
+          <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
+            Discard changes
+          </button>
+          <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+            Save
+          </button>
         </div>
       </div>
     </div>
@@ -438,7 +602,6 @@ export function RubricSettings({
 
 export function RubricRow({
   item,
-  editMode,
   showAiGradingStats,
   submissionCount,
   deleteRow,
@@ -449,7 +612,6 @@ export function RubricRow({
   onDragOver,
 }: {
   item: RubricItemData;
-  editMode: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
   deleteRow: () => void;
@@ -467,39 +629,25 @@ export function RubricRow({
       }}
     >
       <td class="text-nowrap align-middle">
-        <span
-          role="button"
-          tabIndex={editMode ? 0 : -1}
-          aria-disabled={!editMode}
-          class={`btn btn-sm btn-ghost ${clsx({ disabled: !editMode })}`}
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost"
           style={{ cursor: 'grab' }}
-          draggable={editMode}
+          // @ts-expect-error See https://github.com/preactjs/preact-render-to-string/issues/429
+          draggable="true"
           onDragStart={onDragStart}
         >
           <i class="fas fa-arrows-up-down" />
-        </span>
-        <button
-          type="button"
-          class="visually-hidden"
-          disabled={!editMode}
-          aria-label="Move up"
-          onClick={moveUp}
-        >
+        </button>
+        <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
           <i class="fas fa-arrow-up" />
         </button>
-        <button
-          type="button"
-          class="visually-hidden"
-          disabled={!editMode}
-          aria-label="Move down"
-          onClick={moveDown}
-        >
+        <button type="button" class="visually-hidden" aria-label="Move down" onClick={moveDown}>
           <i class="fas fa-arrow-down" />
         </button>
         <button
           type="button"
           class="btn btn-sm btn-ghost text-danger"
-          disabled={!editMode}
           aria-label="Delete"
           onClick={deleteRow}
         >
@@ -511,9 +659,8 @@ export function RubricRow({
         <input
           type="number"
           class="form-control"
-          style="width:4rem"
+          style="width:5rem"
           step="any"
-          disabled={!editMode}
           value={item.points}
           aria-label="Points"
           required
@@ -525,7 +672,6 @@ export function RubricRow({
         <input
           type="text"
           class="form-control"
-          disabled={!editMode}
           maxLength={100}
           style="min-width:15rem"
           value={item.description}
@@ -538,7 +684,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
@@ -551,7 +696,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
@@ -567,7 +711,6 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              disabled={!editMode}
               checked={item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
@@ -579,7 +722,6 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              disabled={!editMode}
               checked={!item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
