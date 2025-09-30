@@ -106,7 +106,10 @@ router.post(
         userId: res.locals.authn_user.user_id,
       });
 
-      const approxPromptCost = approximatePromptCost(req.body.prompt);
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
 
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
         const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
