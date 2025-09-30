@@ -66,6 +66,7 @@
           }
         }
       },
+      "maxItems": 10,
       "default": []
     },
     "clientFiles": {
