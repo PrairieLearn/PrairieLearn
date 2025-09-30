@@ -204,5 +204,13 @@ describe('editors', () => {
       const property = propertyValueWithDefault(true, false, true);
       assert.equal(property, false);
     });
+    it('should write false if the default value is false if this is a UI boolean', () => {
+      const property = propertyValueWithDefault(true, false, false, { isUIBoolean: true });
+      assert.equal(property, false);
+    });
+    it('should write undefined if the default value is true if this is a UI boolean', () => {
+      const property = propertyValueWithDefault(false, true, true, { isUIBoolean: true });
+      assert.equal(property, undefined);
+    });
   });
 });

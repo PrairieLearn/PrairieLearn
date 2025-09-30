@@ -266,6 +266,7 @@ router.post(
         courseInstanceInfo.selfEnrollment?.enabled,
         parsedBody.self_enrollment_enabled,
         true,
+        { isUIBoolean: true },
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
@@ -276,6 +277,7 @@ router.post(
         courseInstanceInfo.selfEnrollment?.beforeDateEnabled,
         parsedBody.self_enrollment_enabled_before_date_enabled,
         false,
+        { isUIBoolean: true },
       );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
