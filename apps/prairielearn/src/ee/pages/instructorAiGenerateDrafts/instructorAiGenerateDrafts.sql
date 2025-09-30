@@ -14,7 +14,23 @@ WHERE
   AND q.deleted_at IS NULL
   AND q.qid IS NOT NULL
 ORDER BY
-  qid ASC;
+  -- Put UIDs with numeric suffixes first. This orders expected QIDs of the form
+  -- `__drafts__/draft_###` before unexpected QIDs like `__drafts__/draft_extra`.
+  (
+    CASE
+      WHEN substring(q.qid, 18) ~ '^[0-9]+$' THEN 0
+      ELSE 1
+    END
+  ) ASC,
+  -- Order numeric QIDs numerically.
+  (
+    CASE
+      WHEN substring(q.qid, 18) ~ '^[0-9]+$' THEN substring(q.qid, 18)::numeric
+      ELSE NULL
+    END
+  ) ASC,
+  -- Use lexicographic order as a final tiebreaker.
+  q.qid ASC;
 
 -- BLOCK select_draft_questions_by_course_id
 SELECT
