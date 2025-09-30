@@ -50,7 +50,12 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Whether to enable duration minutes'),
-    durationMinutes: z.number().optional().describe('Desired duration limit for assessment'),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe('Desired duration limit for assessment'),
     passwordEnabled: z.boolean().nullable().optional().describe('Whether to enable password'),
     password: z.string().optional().describe('Password for assessment'),
   })

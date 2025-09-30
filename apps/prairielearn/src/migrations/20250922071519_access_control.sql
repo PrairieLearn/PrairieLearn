@@ -46,7 +46,8 @@ CREATE INDEX idx_sections_on_course_instance_id ON access_control_groups (course
 CREATE TABLE IF NOT EXISTS access_control_group_member (
   id BIGSERIAL PRIMARY KEY,
   group_id BIGINT NOT NULL REFERENCES access_control_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  user_id BIGINT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
+  user_id BIGINT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  UNIQUE (group_id, user_id)
 );
 
 CREATE TABLE IF NOT EXISTS access_control_target (
@@ -62,14 +63,14 @@ CREATE TABLE IF NOT EXISTS access_control_early_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit int NOT NULL
+  credit NUMBER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_late_deadline (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
-  credit int NOT NULL
+  credit NUMBER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (
