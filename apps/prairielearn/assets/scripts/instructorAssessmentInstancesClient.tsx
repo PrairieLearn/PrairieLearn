@@ -848,7 +848,7 @@ onDocumentReady(() => {
       has_open_instance,
       has_closed_instance,
       action: 'set_time_limit_all',
-      time_remaining: '',
+      time_remaining: time_limit_list.length > 0 ? '' : 'No time limits',
     };
     if (remaining_time_max < 60) {
       time_limit_totals.time_remaining = 'Less than a minute';
