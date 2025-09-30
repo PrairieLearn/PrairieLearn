@@ -725,9 +725,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # correct answers, we should check them at random instead of just the provided solution
     elif data["test_type"] == "correct":
         answer = (
-            solve_problem(correct_answers, grading_method, is_multi)
+            solve_problem(deepcopy(correct_answers), grading_method, is_multi)
             if order_block_options.is_multi
-            else correct_answers
+            else deepcopy(correct_answers)
         )
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
         data["partial_scores"][answer_name] = {
@@ -740,9 +740,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
         answer = (
-            solve_problem(correct_answers, grading_method, is_multi)
+            solve_problem(deepcopy(correct_answers), grading_method, is_multi)
             if order_block_options.is_multi
-            else correct_answers
+            else deepcopy(correct_answers)
         )
         answer.pop(0)
         score = 0
