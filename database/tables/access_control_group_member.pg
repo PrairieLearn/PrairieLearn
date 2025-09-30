@@ -5,6 +5,7 @@ columns
 
 indexes
     access_control_group_member_pkey: PRIMARY KEY (id) USING btree (id)
+    access_control_group_member_group_id_user_id_key: UNIQUE (group_id, user_id) USING btree (group_id, user_id)
 
 foreign-key constraints
     access_control_group_member_group_id_fkey: FOREIGN KEY (group_id) REFERENCES access_control_groups(id) ON UPDATE CASCADE ON DELETE CASCADE
