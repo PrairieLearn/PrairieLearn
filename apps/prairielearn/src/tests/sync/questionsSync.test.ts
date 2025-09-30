@@ -8,6 +8,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type Author,
   AuthorSchema,
   QuestionAuthorSchema,
   QuestionSchema,
@@ -377,30 +378,46 @@ describe('Question syncing', () => {
 
   it('records an error if "authors" object is invalid', async () => {
     const courseData = util.getCourseData();
-    const invalidAuthors = [
+    const invalidAuthorTests = [
       {
-        orcid: '1111-1111-1111-1111', // Invalid checksum
+        author: {
+          name: 'Example',
+        },
+        expectedError:
+          /At least one of "email", "orcid", or "originCourse" is required for each author/,
       },
       {
-        name: 'Example', // Name only authors not allowed
+        author: {
+          orcid: '1111-1111-1111-1111',
+        },
+        expectedError: /The author ORCID identifier "1111-1111-1111-1111" has an invalid checksum/,
       },
       {
-        email: 'noemail', // Invalid email
+        author: {
+          email: 'noemail',
+        },
+        expectedError: /The author email address "noemail" is invalid/,
       },
       {
-        originCourse: 'NONEXISTENT', // Non-existent origin course
+        author: {
+          originCourse: 'NONEXISTENT',
+        },
+        expectedError:
+          /The author origin course with the sharing name "NONEXISTENT" does not exist/,
       },
     ];
 
-    for (const author of invalidAuthors) {
+    for (const testCase of invalidAuthorTests) {
+      await helperDb.resetDatabase();
       courseData.questions[util.QUESTION_ID].authors = [];
-      courseData.questions[util.QUESTION_ID].authors.push(author);
+      courseData.questions[util.QUESTION_ID].authors.push(testCase.author);
       const courseDir = await util.writeCourseToTempDirectory(courseData);
       await util.syncCourseData(courseDir);
       const syncedQuestions = await util.dumpTableWithSchema('questions', QuestionSchema);
       const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
       assert.isDefined(syncedQuestion);
       assert.isNotNull(syncedQuestion.sync_errors);
+      assert.match(syncedQuestion.sync_errors, testCase.expectedError);
     }
   });
 

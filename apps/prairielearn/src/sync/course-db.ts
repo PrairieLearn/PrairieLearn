@@ -882,7 +882,7 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
       affectedQuestions.forEach((question) => {
         infofile.addError(
           questionInfos[question],
-          `The author origin course with the sharing name ${sharingName} does not exist`,
+          `The author origin course with the sharing name "${sharingName}" does not exist`,
         );
       });
     }
@@ -1068,7 +1068,7 @@ async function validateQuestion({
       if (author.orcid) {
         if (!validateORCID(author.orcid)) {
           errors.push(
-            `The author ORCID identifier ${author.orcid} has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
+            `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
           );
         }
       }
@@ -1076,7 +1076,7 @@ async function validateQuestion({
         const parsedEmail = z.string().email().safeParse(author.email);
 
         if (!parsedEmail.success) {
-          errors.push(`The author email address ${author.email} is invalid`);
+          errors.push(`The author email address "${author.email}" is invalid`);
         }
       }
       // Origin courses are validated in bulk loadQuestions, and skipped here.
