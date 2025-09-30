@@ -1,4 +1,3 @@
-import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 
@@ -37,7 +36,6 @@ export function RubricSettings({
   }));
 
   // Define states
-  const [editMode, setEditMode] = useState(false);
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
     rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
@@ -147,7 +145,6 @@ export function RubricSettings({
     setMinPoints(rubricData?.min_points ?? 0);
     setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
     setSettingsError(null);
-    setEditMode(false);
   };
 
   const exportRubric = () => {
@@ -341,7 +338,6 @@ export function RubricSettings({
                       <input
                         class="form-check-input"
                         type="radio"
-                        disabled={!editMode}
                         checked={!replaceAutoPoints}
                         onChange={() => {
                           setReplaceAutoPoints(false);
@@ -361,7 +357,6 @@ export function RubricSettings({
                       <input
                         class="form-check-input"
                         type="radio"
-                        disabled={!editMode}
                         checked={replaceAutoPoints}
                         onChange={() => {
                           setReplaceAutoPoints(true);
@@ -387,7 +382,6 @@ export function RubricSettings({
                   <input
                     class="form-check-input"
                     type="radio"
-                    disabled={!editMode}
                     checked={startingPoints === 0}
                     onChange={() => setStartingPoints(0)}
                   />
@@ -399,7 +393,6 @@ export function RubricSettings({
                   <input
                     class="form-check-input"
                     type="radio"
-                    disabled={!editMode}
                     checked={startingPoints !== 0}
                     onChange={() =>
                       setStartingPoints(
@@ -424,7 +417,6 @@ export function RubricSettings({
                 <input
                   class="form-control"
                   type="number"
-                  disabled={!editMode}
                   value={minPoints}
                   onInput={(e: any) => setMinPoints(Number(e.target.value))}
                 />
@@ -436,7 +428,6 @@ export function RubricSettings({
                 <input
                   class="form-control"
                   type="number"
-                  disabled={!editMode}
                   value={maxExtraPoints}
                   onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
                 />
@@ -465,7 +456,6 @@ export function RubricSettings({
                   <RubricRow
                     key={it.id ?? `row-${idx}`}
                     item={it}
-                    editMode={editMode}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
                     deleteRow={() => deleteRow(idx)}
@@ -505,20 +495,10 @@ export function RubricSettings({
           </div>
         ))}
         <div class="mb-3 gap-1 d-flex">
-          <button
-            type="button"
-            class="btn btn-sm btn-secondary"
-            disabled={!editMode}
-            onClick={addRubricItemRow}
-          >
+          <button type="button" class="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
             Add item
           </button>
-          <button
-            type="button"
-            class="btn btn-sm btn-primary"
-            disabled={!editMode}
-            onClick={exportRubric}
-          >
+          <button type="button" class="btn btn-sm btn-primary" onClick={exportRubric}>
             <i class="fas fa-download" />
             Export rubric
           </button>
@@ -526,7 +506,6 @@ export function RubricSettings({
             id="import-rubric-button"
             type="button"
             class="btn btn-sm btn-primary"
-            disabled={!editMode}
             onClick={() => setShowImportModal(!showImportModal)}
           >
             <i class="fas fa-upload" />
@@ -582,7 +561,6 @@ export function RubricSettings({
           <button
             type="button"
             class="btn btn-sm btn-ghost"
-            disabled={!editMode}
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
             data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
@@ -612,20 +590,12 @@ export function RubricSettings({
               Delete rubric
             </button>
           )}
-          {!editMode ? (
-            <button type="button" class="btn btn-secondary" onClick={() => setEditMode(true)}>
-              Edit rubric
-            </button>
-          ) : (
-            <>
-              <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
-                Cancel
-              </button>
-              <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
-                Save
-              </button>
-            </>
-          )}
+          <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
+            Discard changes
+          </button>
+          <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+            Save
+          </button>
         </div>
       </div>
     </div>
@@ -634,7 +604,6 @@ export function RubricSettings({
 
 export function RubricRow({
   item,
-  editMode,
   showAiGradingStats,
   submissionCount,
   deleteRow,
@@ -645,7 +614,6 @@ export function RubricRow({
   onDragOver,
 }: {
   item: RubricItemData;
-  editMode: boolean;
   showAiGradingStats: boolean;
   submissionCount: number;
   deleteRow: () => void;
@@ -663,39 +631,25 @@ export function RubricRow({
       }}
     >
       <td class="text-nowrap align-middle">
-        <span
-          role="button"
-          tabIndex={editMode ? 0 : -1}
-          aria-disabled={!editMode}
-          class={`btn btn-sm btn-ghost ${clsx({ disabled: !editMode })}`}
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost"
           style={{ cursor: 'grab' }}
-          draggable={editMode}
+          // @ts-expect-error See https://github.com/preactjs/preact-render-to-string/issues/429
+          draggable="true"
           onDragStart={onDragStart}
         >
           <i class="fas fa-arrows-up-down" />
-        </span>
-        <button
-          type="button"
-          class="visually-hidden"
-          disabled={!editMode}
-          aria-label="Move up"
-          onClick={moveUp}
-        >
+        </button>
+        <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
           <i class="fas fa-arrow-up" />
         </button>
-        <button
-          type="button"
-          class="visually-hidden"
-          disabled={!editMode}
-          aria-label="Move down"
-          onClick={moveDown}
-        >
+        <button type="button" class="visually-hidden" aria-label="Move down" onClick={moveDown}>
           <i class="fas fa-arrow-down" />
         </button>
         <button
           type="button"
           class="btn btn-sm btn-ghost text-danger"
-          disabled={!editMode}
           aria-label="Delete"
           onClick={deleteRow}
         >
@@ -709,7 +663,6 @@ export function RubricRow({
           class="form-control"
           style="width:5rem"
           step="any"
-          disabled={!editMode}
           value={item.points}
           aria-label="Points"
           required
@@ -721,7 +674,6 @@ export function RubricRow({
         <input
           type="text"
           class="form-control"
-          disabled={!editMode}
           maxLength={100}
           style="min-width:15rem"
           value={item.description}
@@ -734,7 +686,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
@@ -747,7 +698,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          disabled={!editMode}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
@@ -763,7 +713,6 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              disabled={!editMode}
               checked={item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
@@ -775,7 +724,6 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              disabled={!editMode}
               checked={!item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
