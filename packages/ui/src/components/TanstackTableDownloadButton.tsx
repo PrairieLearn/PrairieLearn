@@ -57,49 +57,49 @@ export function TanstackTableDownloadButton<RowDataModel>({
         Download
       </button>
       <ul class="dropdown-menu" role="menu" aria-label="Download options">
-        {allRowsJSON.length > 0 && (
-          <li role="presentation">
-            <button
-              class="dropdown-item"
-              type="button"
-              role="menuitem"
-              aria-label={`Download all ${pluralLabel} as CSV file`}
-              onClick={() => downloadJSONAsCSV(allRowsJSON, `${filenameBase}.csv`)}
-            >
-              All {pluralLabel} as CSV
-            </button>
-          </li>
-        )}
+        <li role="presentation">
+          <button
+            class="dropdown-item"
+            type="button"
+            role="menuitem"
+            aria-label={`Download all ${pluralLabel} as CSV file`}
+            disabled={allRowsJSON.length === 0}
+            onClick={() => downloadJSONAsCSV(allRowsJSON, `${filenameBase}.csv`)}
+          >
+            All {pluralLabel} as CSV
+          </button>
+        </li>
         <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download all ${pluralLabel} as JSON file`}
+            disabled={allRowsJSON.length === 0}
             onClick={() => downloadAsJSON(allRowsJSON, `${filenameBase}.json`)}
           >
             All {pluralLabel} as JSON
           </button>
         </li>
-        {filteredRowsJSON.length > 0 && (
-          <li role="presentation">
-            <button
-              class="dropdown-item"
-              type="button"
-              role="menuitem"
-              aria-label={`Download filtered ${pluralLabel} as CSV file`}
-              onClick={() => downloadJSONAsCSV(filteredRowsJSON, `${filenameBase}_filtered.csv`)}
-            >
-              Filtered {pluralLabel} as CSV
-            </button>
-          </li>
-        )}
+        <li role="presentation">
+          <button
+            class="dropdown-item"
+            type="button"
+            role="menuitem"
+            aria-label={`Download filtered ${pluralLabel} as CSV file`}
+            disabled={filteredRowsJSON.length === 0}
+            onClick={() => downloadJSONAsCSV(filteredRowsJSON, `${filenameBase}_filtered.csv`)}
+          >
+            Filtered {pluralLabel} as CSV
+          </button>
+        </li>
         <li role="presentation">
           <button
             class="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download filtered ${pluralLabel} as JSON file`}
+            disabled={filteredRowsJSON.length === 0}
             onClick={() => downloadAsJSON(filteredRowsJSON, `${filenameBase}_filtered.json`)}
           >
             Filtered {pluralLabel} as JSON
