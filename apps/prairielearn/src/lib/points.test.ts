@@ -11,6 +11,10 @@ describe('roundPoints', () => {
     expect(roundPoints(0.3125)).toBe(0.3125);
   });
 
+  it('handles a large number', () => {
+    expect(roundPoints(1.23e40)).toBe(1.23e40);
+  });
+
   it('truncates long decimal places', () => {
     expect(roundPoints(0.31256789)).toBe(0.312568);
   });
