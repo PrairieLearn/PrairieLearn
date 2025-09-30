@@ -14,9 +14,10 @@ import { useMemo, useState } from 'preact/compat';
 import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import z from 'zod';
 
+import { TanstackTableCard } from '@prairielearn/ui';
+
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
-import { TanstackTableCard } from '../../components/TanstackTable.js';
 import {
   NuqsAdapter,
   parseAsColumnPinningState,
