@@ -114,7 +114,7 @@ If you are adding anything more complex than a basic form page, the automated ac
 - Can you navigate the page using only the keyboard?
   - tab to get to the next focusable element, enter to activate it
   - arrow keys work appropriately
-- are the focus indicators visible?
+- Are the focus indicators visible?
 
 Example bugs from work on the Students table:
 
