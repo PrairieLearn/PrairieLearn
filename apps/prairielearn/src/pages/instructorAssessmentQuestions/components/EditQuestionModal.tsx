@@ -18,9 +18,10 @@ export function EditQuestionModal({
   onHide: () => void;
   handleUpdateQuestion: (updatedQuestion: any, gradingMethod?: 'auto' | 'manual') => void;
   assessmentType: 'Homework' | 'Exam';
-  questionDisplayName: (question: StaffAssessmentQuestionRow) => string;
+  questionDisplayName: string;
   addQuestion?: boolean;
 }) {
+  console.log('EditQuestionModal question', question);
   const [autoGraded, setAutoGraded] = useState(
     question ? question.assessment_question.max_manual_points === 0 : true,
   );
@@ -42,7 +43,7 @@ export function EditQuestionModal({
               id="qidInput"
               name="qid"
               aria-describedby="qidHelp"
-              value={addQuestion ? question.question.qid || '' : questionDisplayName(question)}
+              value={questionDisplayName}
               onChange={(e) => {
                 if (question) {
                   question.question.qid = (e.target as HTMLInputElement).value;
