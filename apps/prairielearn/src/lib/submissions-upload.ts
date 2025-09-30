@@ -116,8 +116,7 @@ export async function uploadSubmissions(
     });
     const csvParser = createCsvParser(csvStream, { lowercaseHeader: false });
     for await (const { info, record } of csvParser) {
-      const lineNumber = info.lines;
-      job.verbose(`Processing CSV line ${lineNumber}: ${JSON.stringify(record)}`);
+      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
 
       try {
         const row = SubmissionCsvRowSchema.parse(record);
@@ -198,7 +197,7 @@ export async function uploadSubmissions(
         successCount++;
       } catch (err) {
         errorCount++;
-        job.error(`Error processing CSV line ${lineNumber}: ${JSON.stringify(record)}`);
+        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
         if (err instanceof z.ZodError) {
           job.error(
             `Validation Error: ${err.errors
