@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { Hydrate } from '@prairielearn/preact/server';
@@ -171,6 +173,31 @@ export function InstructorAiGenerateDraftEditor({
   `.toString();
 }
 
+/**
+ * Returns the index of the prompt that represents the latest revision that would have been shown
+ * to the user after the prompt at the specified index. This specifically addresses the case where
+ * one or more `auto_revision` prompts follow an `initial` or `human_revision` prompt.
+ */
+function findLatestRevisionIndexForPrompt(
+  prompts: AiQuestionGenerationPrompt[],
+  currentIndex: number,
+): number {
+  // This should never happen, but we'll be extra safe here.
+  assert(prompts[currentIndex].prompt_type !== 'auto_revision');
+
+  let targetIndex = currentIndex;
+
+  for (let nextIndex = currentIndex + 1; nextIndex < prompts.length; nextIndex += 1) {
+    if (prompts[nextIndex].prompt_type !== 'auto_revision') {
+      break;
+    }
+
+    targetIndex = nextIndex;
+  }
+
+  return targetIndex;
+}
+
 function PromptHistory({
   prompts,
   urlPrefix,
@@ -182,12 +209,14 @@ function PromptHistory({
   csrfToken: string;
   showJobLogs: boolean;
 }) {
-  return prompts.map((prompt, index, filteredPrompts) => {
-    // TODO: Once we can upgrade to Bootstrap 5.3, we can use the official
-    // `bg-secondary-subtle` class instead of the custom styles here.
+  return prompts.map((prompt, index) => {
+    // Exclude auto-revision prompts from the visible history (we still use them internally to
+    // determine what to revert to).
+    if (prompt.prompt_type === 'auto_revision') return '';
+
     return html`
       <div class="d-flex flex-row-reverse">
-        <div class="p-3 mb-2 rounded" style="background: #e2e3e5; max-width: 90%">
+        <div class="p-3 mb-2 rounded bg-secondary-subtle" style="max-width: 90%">
           ${run(() => {
             // We'll special-case these two "prompts" and show a custom italic
             // message
@@ -237,13 +266,15 @@ function PromptHistory({
           </div>
         </div>
         ${run(() => {
-          // There's no point showing an option to revert to the most recent prompt.
-          if (index === filteredPrompts.length - 1) return '';
+          const revertTargetIndex = findLatestRevisionIndexForPrompt(prompts, index);
+          const revertTargetPrompt = prompts[revertTargetIndex];
+
+          if (revertTargetIndex === prompts.length - 1) return '';
 
           return html`
             <form method="post">
               <input type="hidden" name="__action" value="revert_edit_version" />
-              <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
+              <input type="hidden" name="unsafe_prompt_id" value="${revertTargetPrompt.id}" />
               <input type="hidden" name="__csrf_token" value="${csrfToken}" />
               <button
                 type="submit"
