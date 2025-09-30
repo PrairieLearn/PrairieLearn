@@ -1,6 +1,10 @@
 import { assert, describe, it } from 'vitest';
 
-import type { AccessControlJsonInput } from '../../schemas/accessControl.js';
+import {
+  type AccessControlJson,
+  type AccessControlJsonInput,
+  AccessControlJsonSchema,
+} from '../../schemas/accessControl.js';
 import { validateAccessControlArray } from '../../sync/course-db.js';
 
 describe('Valid configs', () => {
@@ -148,8 +152,11 @@ describe('Valid configs', () => {
   ];
 
   it('should pass validation for valid access control configs (no warnings or errors)', () => {
+    const parsedAccessControlExamples: AccessControlJson[] = validAccessControlExamples.map(
+      (example) => AccessControlJsonSchema.parse(example),
+    );
     const results = validateAccessControlArray({
-      accessControlJsonArray: validAccessControlExamples,
+      accessControlJsonArray: parsedAccessControlExamples,
     });
 
     results.forEach((result, index) => {
@@ -197,8 +204,10 @@ describe('Assignment-Level controls should have no inheritance', () => {
   ];
 
   it('should fail assignment-level validation due to null *Enabled fields', () => {
+    const parsedAssignmentLevelInvalidExamples: AccessControlJson[] =
+      assignmentLevelInvalidExamples.map((example) => AccessControlJsonSchema.parse(example));
     const results = validateAccessControlArray({
-      accessControlJsonArray: assignmentLevelInvalidExamples,
+      accessControlJsonArray: parsedAssignmentLevelInvalidExamples,
     });
 
     results.forEach((result, index) => {
@@ -255,8 +264,11 @@ describe('Inherited fields cannot have values', () => {
   ];
 
   it('should fail enabled field constraint validation (null enabled but value present)', () => {
+    const parsedEnabledMismatchExamples: AccessControlJson[] = enabledMismatchExamples.map(
+      (example) => AccessControlJsonSchema.parse(example),
+    );
     const results = validateAccessControlArray({
-      accessControlJsonArray: enabledMismatchExamples,
+      accessControlJsonArray: parsedEnabledMismatchExamples,
     });
 
     results.forEach((result, index) => {
@@ -308,8 +320,11 @@ describe('Date fields must be dates', () => {
   ];
 
   it('should fail date check', () => {
+    const parsedDateInvalidExamples: AccessControlJson[] = dateInvalidExamples.map((example) =>
+      AccessControlJsonSchema.parse(example),
+    );
     const results = validateAccessControlArray({
-      accessControlJsonArray: dateInvalidExamples,
+      accessControlJsonArray: parsedDateInvalidExamples,
     });
 
     results.forEach((result, index) => {
