@@ -33,7 +33,6 @@ import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
-import { AI_GRADING_OPENAI_MODEL } from './ai-grading/ai-grading-util.js';
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
 
@@ -220,8 +219,8 @@ function extractFromResponse(
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
 
-  const html = completionText?.match(htmlSelector)?.groups?.code;
-  const python = completionText?.match(pythonSelector)?.groups?.code;
+  const html = completionText.match(htmlSelector)?.groups?.code;
+  const python = completionText.match(pythonSelector)?.groups?.code;
 
   const out: { html?: string; python?: string } = {};
 
@@ -312,7 +311,7 @@ export async function addCompletionCostToIntervalUsage({
   const cache = await getAiQuestionGenerationCache();
 
   const completionCost = calculateResponseCost({
-    model: AI_GRADING_OPENAI_MODEL,
+    model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
 
@@ -457,8 +456,8 @@ export async function generateQuestion({
         user_prompt: prompt,
         system_prompt: instructions,
         response: response.output_text,
-        html: results?.html,
-        python: results?.python,
+        html: results.html,
+        python: results.python,
         errors,
         completion: response,
         job_sequence_id: serverJob.jobSequenceId,
@@ -791,8 +790,8 @@ export async function regenerateQuestion(
 
     mergeUsage(usage, newUsage);
 
-    job.data.promptTokens = usage?.input_tokens;
-    job.data.completionTokens = usage?.output_tokens;
+    job.data.promptTokens = usage.input_tokens;
+    job.data.completionTokens = usage.output_tokens;
     job.data.usage = usage;
   });
 
