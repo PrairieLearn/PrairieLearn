@@ -588,7 +588,7 @@ export function RubricSettings({
             </button>
           )}
           <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
-            Reset
+            Discard changes
           </button>
           <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
             Save
