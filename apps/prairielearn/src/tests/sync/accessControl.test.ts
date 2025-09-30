@@ -10,18 +10,18 @@ describe('Valid configs', () => {
       dateControl: {
         enabled: true,
         releaseDateEnabled: true,
-        releaseDate: new Date('2024-03-14T00:01'),
+        releaseDate: '2024-03-14T00:01',
         dueDateEnabled: true,
-        dueDate: new Date('2024-03-21T23:59'),
+        dueDate: '2024-03-21T23:59',
         earlyDeadlinesEnabled: true,
         earlyDeadlines: [
-          { date: new Date('2024-03-17T23:59'), credit: 120 },
-          { date: new Date('2024-03-20T23:59'), credit: 110 },
+          { date: '2024-03-17T23:59', credit: 120 },
+          { date: '2024-03-20T23:59', credit: 110 },
         ],
         lateDeadlinesEnabled: true,
         lateDeadlines: [
-          { date: new Date('2024-03-23T23:59'), credit: 80 },
-          { date: new Date('2024-03-30T23:59'), credit: 50 },
+          { date: '2024-03-23T23:59', credit: 80 },
+          { date: '2024-03-30T23:59', credit: 50 },
         ],
         afterLastDeadline: {
           allowSubmissions: true,
@@ -36,9 +36,9 @@ describe('Valid configs', () => {
       dateControl: {
         enabled: true,
         releaseDateEnabled: true,
-        releaseDate: new Date('2024-03-14T00:01'),
+        releaseDate: '2024-03-14T00:01',
         dueDateEnabled: true,
-        dueDate: new Date('2024-03-21T23:59'),
+        dueDate: '2024-03-21T23:59',
         durationMinutesEnabled: true,
         durationMinutes: 60,
       },
@@ -46,7 +46,7 @@ describe('Valid configs', () => {
         hideQuestions: true,
         hideQuestionsDateControl: {
           showAgainDateEnabled: true,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
         },
       },
     },
@@ -61,12 +61,12 @@ describe('Valid configs', () => {
         hideQuestions: true,
         hideQuestionsDateControl: {
           showAgainDateEnabled: true,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
         },
         hideScore: true,
         hideScoreDateControl: {
           showAgainDateEnabled: true,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
         },
       },
     },
@@ -76,8 +76,8 @@ describe('Valid configs', () => {
       targets: ['student1'],
       dateControl: {
         enabled: true,
-        releaseDate: new Date('2024-03-14T00:01'),
-        dueDate: new Date('2024-03-21T23:59'),
+        releaseDate: '2024-03-14T00:01',
+        dueDate: '2024-03-21T23:59',
       },
       prairieTestControl: {
         enabled: false,
@@ -114,8 +114,8 @@ describe('Valid configs', () => {
     // Example 8: Cheat sheet upload + read-only PrairieTest
     {
       dateControl: {
-        releaseDate: new Date('2024-03-14T00:01'),
-        dueDate: new Date('2024-03-21T23:59'),
+        releaseDate: '2024-03-14T00:01',
+        dueDate: '2024-03-21T23:59',
       },
       prairieTestControl: {
         exams: [{ examUuid: '1', readOnly: true }],
@@ -128,9 +128,9 @@ describe('Valid configs', () => {
         hideQuestions: false,
         hideQuestionsDateControl: {
           showAgainDateEnabled: true,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
           hideAgainDateEnabled: true,
-          hideAgainDate: new Date('2024-03-25T23:59'),
+          hideAgainDate: '2024-03-25T23:59',
         },
       },
     },
@@ -138,8 +138,8 @@ describe('Valid configs', () => {
     // Example 10: Non-real-time grading, hide score
     {
       dateControl: {
-        releaseDate: new Date('2024-03-14T00:01'),
-        dueDate: new Date('2024-03-21T23:59'),
+        releaseDate: '2024-03-14T00:01',
+        dueDate: '2024-03-21T23:59',
       },
       afterComplete: {
         hideScore: true,
@@ -173,7 +173,7 @@ describe('Assignment-Level controls should have no inheritance', () => {
     {
       dateControl: {
         dueDateEnabled: null,
-        dueDate: new Date('2024-03-21T23:59'),
+        dueDate: '2024-03-21T23:59',
       },
     },
 
@@ -181,7 +181,7 @@ describe('Assignment-Level controls should have no inheritance', () => {
     {
       dateControl: {
         releaseDateEnabled: null,
-        releaseDate: new Date('2024-03-14T00:01'),
+        releaseDate: '2024-03-14T00:01',
       },
     },
 
@@ -190,7 +190,7 @@ describe('Assignment-Level controls should have no inheritance', () => {
       afterComplete: {
         hideQuestionsDateControl: {
           showAgainDateEnabled: null,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
         },
       },
     },
@@ -218,7 +218,7 @@ describe('Inherited fields cannot have values', () => {
       targets: ['target1'],
       dateControl: {
         earlyDeadlinesEnabled: null,
-        earlyDeadlines: [{ date: new Date('2024-03-17T23:59'), credit: 100 }],
+        earlyDeadlines: [{ date: '2024-03-17T23:59', credit: 100 }],
       },
     },
 
@@ -248,7 +248,7 @@ describe('Inherited fields cannot have values', () => {
       afterComplete: {
         hideQuestionsDateControl: {
           showAgainDateEnabled: null,
-          showAgainDate: new Date('2024-03-23T23:59'),
+          showAgainDate: '2024-03-23T23:59',
         },
       },
     },
