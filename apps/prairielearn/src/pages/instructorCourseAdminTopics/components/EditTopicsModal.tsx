@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
+import { TopicBadge } from '../../../components/TopicBadge.js';
 import { type Topic } from '../../../lib/db-types.js';
 import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
@@ -39,6 +40,14 @@ export function EditTopicsModal({
       <Modal.Body>
         {selectedTopic ? (
           <>
+            <div class="d-flex flex-column align-items-center mb-4">
+              <TopicBadge
+                topic={{
+                  name: selectedTopic.name || 'Topic preview',
+                  color: selectedTopic.color,
+                }}
+              />
+            </div>
             <div class="mb-3">
               <label class="form-label" for="topicName">
                 Name
@@ -61,23 +70,36 @@ export function EditTopicsModal({
               <label class="form-label" for="topicColor">
                 Color
               </label>
-              <select
-                class={clsx('form-select', invalidColor && 'is-invalid')}
-                id="topicColor"
-                value={selectedTopic.color ?? 'Select a color'}
-                onChange={(e) =>
-                  setSelectedTopic({
-                    ...selectedTopic,
-                    color: (e.target as HTMLSelectElement)?.value ?? 'gray1',
-                  })
-                }
-              >
-                {ColorJsonSchema.options.map((color) => (
-                  <option key={color} value={color}>
-                    {color}
-                  </option>
-                ))}
-              </select>
+              <div class="d-flex gap-2">
+                <select
+                  class={clsx('form-select', invalidColor && 'is-invalid')}
+                  id="topicColor"
+                  value={selectedTopic.color ?? 'Select a color'}
+                  onChange={(e) =>
+                    setSelectedTopic({
+                      ...selectedTopic,
+                      color: (e.target as HTMLSelectElement)?.value ?? 'gray1',
+                    })
+                  }
+                >
+                  {ColorJsonSchema.options.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+                <svg width="32" height="32" class="flex-shrink-0">
+                  <rect
+                    width="32"
+                    height="32"
+                    style={{
+                      fill: `var(--color-${selectedTopic.color ?? 'gray1'})`,
+                      rx: 'var(--bs-border-radius)',
+                      ry: 'var(--bs-border-radius)',
+                    }}
+                  />
+                </svg>
+              </div>
               {invalidColor && <div class="invalid-feedback">Topic color is required</div>}
             </div>
             <div class="mb-3">
@@ -100,7 +122,7 @@ export function EditTopicsModal({
         ) : null}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" class="btn btn-primary mr-2" onClick={handleSubmit}>
+        <button type="button" class="btn btn-primary me-2" onClick={handleSubmit}>
           {addTopic ? 'Add topic' : 'Update topic'}
         </button>
         <button type="button" class="btn btn-secondary" onClick={() => setShowModal(false)}>

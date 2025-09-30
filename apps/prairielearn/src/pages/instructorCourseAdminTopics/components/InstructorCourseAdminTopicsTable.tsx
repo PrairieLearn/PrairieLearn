@@ -109,14 +109,10 @@ export function InstructorCourseAdminTopicsTable({
           <table class="table table-sm table-hover table-striped" aria-label="Topics">
             <thead>
               <tr>
-                {editMode && allowEdit ? (
-                  <>
-                    <th style="width: 1%">
-                      <span class="visually-hidden">Edit and Delete</span>
-                    </th>
-                  </>
-                ) : (
-                  ''
+                {editMode && allowEdit && (
+                  <th style="width: 1%">
+                    <span class="visually-hidden">Edit and Delete</span>
+                  </th>
                 )}
                 <th>Number</th>
                 <th>Name</th>

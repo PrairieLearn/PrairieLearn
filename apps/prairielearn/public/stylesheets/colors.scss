@@ -46,6 +46,12 @@ $custom-colors: (
   'gray3': #505050,
 );
 
+:root {
+  @each $color, $value in $custom-colors {
+    --color-#{$color}: #{$value};
+  }
+}
+
 .btn.btn-badge {
   --bs-badge-padding-x: #{$badge-padding-x};
   --bs-badge-padding-y: #{$badge-padding-y};
