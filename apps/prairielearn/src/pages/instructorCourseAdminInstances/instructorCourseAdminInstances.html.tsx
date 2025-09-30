@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { formatDateYMDHM } from '@prairielearn/formatter';
+import { formatDate, formatDateYMDHM, formatTz } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
@@ -101,43 +101,22 @@ export function InstructorCourseAdminInstances({
                     <tr>
                       <th>Long Name</th>
                       <th>CIID</th>
-                      <th id="earliest-access-date">
-                        Earliest Access Date
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-light"
-                          aria-label="Information about Earliest Access Date"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-placement="bottom"
-                          data-bs-html="true"
-                          data-bs-title="Earliest Access Date"
-                          data-bs-content="${PopoverStartDate()}"
-                        >
-                          <i class="far fa-question-circle" aria-hidden="true"></i>
-                        </button>
-                      </th>
-                      <th id="latest-access-date">
-                        Latest Access Date
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-light"
-                          aria-label="Information about Latest Access Date"
-                          data-bs-toggle="popover"
-                          data-bs-container="body"
-                          data-bs-placement="bottom"
-                          data-bs-html="true"
-                          data-bs-title="Latest Access Date"
-                          data-bs-content="${PopoverEndDate()}"
-                        >
-                          <i class="far fa-question-circle" aria-hidden="true"></i>
-                        </button>
-                      </th>
+                      <th>Published Date</th>
+                      <th>Archived Date</th>
                       <th>Students</th>
                     </tr>
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
+                      console.log(row);
+                      const isLegacyPublishDate = row.access_control_publish_date === null;
+                      const isLegacyArchiveDate = row.access_control_archive_date === null;
+                      const publishDate = row.access_control_publish_date
+                        ? `${formatDate(row.access_control_publish_date, row.display_timezone)}`
+                        : row.formatted_start_date;
+                      const archiveDate = row.access_control_archive_date
+                        ? `${formatDate(row.access_control_archive_date, row.display_timezone)}`
+                        : row.formatted_end_date;
                       return html`
                         <tr>
                           <td class="align-left">
@@ -158,8 +137,46 @@ export function InstructorCourseAdminInstances({
                             >
                           </td>
                           <td class="align-left">${row.short_name}</td>
-                          <td class="align-left">${row.formatted_start_date}</td>
-                          <td class="align-left">${row.formatted_end_date}</td>
+                          <td class="align-left">
+                            ${publishDate}
+                            ${isLegacyPublishDate
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-xs btn-ghost"
+                                    aria-label="Information about Published Date"
+                                    data-bs-toggle="popover"
+                                    data-bs-container="body"
+                                    data-bs-placement="bottom"
+                                    data-bs-html="true"
+                                    data-bs-title="Earliest Access Date"
+                                    data-bs-content="${PopoverStartDate()}"
+                                  >
+                                    <i class="far fa-question-circle" aria-hidden="true"></i>
+                                  </button>
+                                `
+                              : ''}
+                          </td>
+                          <td class="align-left">
+                            ${archiveDate}
+                            ${isLegacyArchiveDate
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-xs btn-ghost"
+                                    aria-label="Information about Archived Date"
+                                    data-bs-toggle="popover"
+                                    data-bs-container="body"
+                                    data-bs-placement="bottom"
+                                    data-bs-html="true"
+                                    data-bs-title="Latest Access Date"
+                                    data-bs-content="${PopoverEndDate()}"
+                                  >
+                                    <i class="far fa-question-circle" aria-hidden="true"></i>
+                                  </button>
+                                `
+                              : ''}
+                          </td>
                           <td class="align-middle">${row.enrollment_count}</td>
                         </tr>
                       `;
