@@ -14,9 +14,11 @@ async function copyToClipboard(text: string) {
 function SelfEnrollmentLink({
   selfEnrollLink,
   csrfToken,
+  canEdit,
 }: {
   selfEnrollLink: string;
   csrfToken: string;
+  canEdit: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -53,16 +55,18 @@ function SelfEnrollmentLink({
               <i class="bi bi-qr-code-scan" />
             </Button>
           </OverlayTrigger>
-          <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
-            <Button
-              size="sm"
-              variant="outline-secondary"
-              aria-label="Generate new self-enrollment link"
-              onClick={() => setShowConfirm(true)}
-            >
-              <i class="bi bi-arrow-repeat" />
-            </Button>
-          </OverlayTrigger>
+          {canEdit && (
+            <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
+              <Button
+                size="sm"
+                variant="outline-secondary"
+                aria-label="Generate new self-enrollment link"
+                onClick={() => setShowConfirm(true)}
+              >
+                <i class="bi bi-arrow-repeat" />
+              </Button>
+            </OverlayTrigger>
+          )}
         </InputGroup>
         <small class="form-text text-muted">
           Students can use this link to immediately enroll in the course. Students can also enroll
@@ -247,7 +251,11 @@ export function SelfEnrollmentSettings({
       </div>
 
       {selfEnrollmentEnabled && enrollmentManagementEnabled && selfEnrollmentUseEnrollmentCode ? (
-        <SelfEnrollmentLink selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
+        <SelfEnrollmentLink
+          selfEnrollLink={selfEnrollLink}
+          csrfToken={csrfToken}
+          canEdit={canEdit}
+        />
       ) : (
         <StudentLinkSharing
           studentLink={studentLink}

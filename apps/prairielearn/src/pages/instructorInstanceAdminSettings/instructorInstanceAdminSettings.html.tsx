@@ -71,7 +71,7 @@ export function InstructorInstanceAdminSettings({
     register,
     reset,
     control,
-    formState: { isDirty, errors, isValid },
+    formState: { isDirty, errors },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -225,7 +225,7 @@ export function InstructorInstanceAdminSettings({
                 class="btn btn-primary mb-2"
                 name="__action"
                 value="update_configuration"
-                disabled={!isDirty || !isValid}
+                disabled={!isDirty}
               >
                 Save
               </button>
