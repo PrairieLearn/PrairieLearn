@@ -128,7 +128,7 @@ export function InstructorCourseAdminTopicsTable({
               {topicsState.map((topic, index) => {
                 return (
                   <tr key={topic.name}>
-                    {editMode && allowEdit ? (
+                    {editMode && allowEdit && (
                       <td class="align-middle">
                         <div class="d-flex align-items-center">
                           <button
@@ -149,8 +149,6 @@ export function InstructorCourseAdminTopicsTable({
                           </button>
                         </div>
                       </td>
-                    ) : (
-                      ''
                     )}
                     <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
