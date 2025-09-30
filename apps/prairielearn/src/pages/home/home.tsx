@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
@@ -13,6 +12,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import { assertNever } from '../../lib/types.js';
 import { insertAuditEvent } from '../../models/audit-event.js';
 import {
   ensureEnrollment,
@@ -175,8 +175,7 @@ router.post(
         });
         break;
       default:
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
-        throw new error.HttpStatusError(400, `unknown __action: ${body.__action}`);
+        assertNever(body.__action);
     }
 
     res.redirect(req.originalUrl);
