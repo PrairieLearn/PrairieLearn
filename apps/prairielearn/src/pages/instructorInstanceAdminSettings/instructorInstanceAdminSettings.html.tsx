@@ -71,7 +71,8 @@ export function InstructorInstanceAdminSettings({
     register,
     reset,
     control,
-    formState: { isDirty, errors },
+    trigger,
+    formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
     defaultValues,
@@ -86,7 +87,18 @@ export function InstructorInstanceAdminSettings({
         <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
-        <form method="POST" name="edit-course-instance-settings-form">
+        <form
+          method="POST"
+          name="edit-course-instance-settings-form"
+          onSubmit={async (e) => {
+            if (!isValid) {
+              // Trigger all the validation rules
+              await trigger();
+              e.preventDefault();
+              return;
+            }
+          }}
+        >
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
           <div class="mb-3">
