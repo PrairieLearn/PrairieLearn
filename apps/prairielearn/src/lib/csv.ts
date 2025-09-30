@@ -17,18 +17,16 @@ export function createCsvParser(
     integerColumns,
     floatColumns,
     lowercaseHeader = true,
-    maxRecordSize = 10000,
+    ...customOptions
   }: {
     integerColumns?: string[];
     floatColumns?: string[];
     lowercaseHeader?: boolean;
-    maxRecordSize?: number;
-  } = {},
+  } & Options = {},
 ): Parser {
   return stream.pipe(
     parse({
       ...DEFAULT_CSV_PARSE_OPTIONS,
-      maxRecordSize,
       cast: (value, context) => {
         if (value === '') return null;
         if (context.header) return lowercaseHeader ? value.toLowerCase() : value;
@@ -37,6 +35,7 @@ export function createCsvParser(
         if (floatColumns?.includes(context.column.toString())) return Number.parseFloat(value);
         return value;
       },
+      ...customOptions,
     }),
   );
 }

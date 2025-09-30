@@ -114,7 +114,10 @@ export async function uploadSubmissions(
     const csvStream = streamifier.createReadStream(csvFile.buffer, {
       encoding: 'utf8',
     });
-    const csvParser = createCsvParser(csvStream, { lowercaseHeader: false });
+    const csvParser = createCsvParser(csvStream, {
+      lowercaseHeader: false,
+      maxRecordSize: 1 << 20, // 1MB (should be plenty for a single line)
+    });
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
 
