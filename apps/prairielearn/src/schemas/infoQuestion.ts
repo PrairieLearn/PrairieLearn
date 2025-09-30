@@ -50,6 +50,7 @@ export const QuestionAuthorJsonSchema = z
     name: z
       .string()
       .describe('A human-readable name of a question author.')
+      .trim()
       .min(3)
       .max(255)
       .optional(),

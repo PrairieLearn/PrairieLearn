@@ -505,7 +505,7 @@ export async function loadCourseInfo({
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
     zodSchema: schemas.CourseJsonSchema,
-    validate: () => Promise.resolve({ warnings: [], errors: [] }),
+    validate: () => ({ warnings: [], errors: [] }),
   });
 
   if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
@@ -683,7 +683,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -718,7 +718,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
 
   loadedJson.data = result.data;
 
-  const validationResult = await validate(loadedJson.data);
+  const validationResult = validate(loadedJson.data);
   if (validationResult.errors.length > 0) {
     infofile.addErrors(loadedJson, validationResult.errors);
     return loadedJson;
@@ -748,7 +748,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => Promise<{ warnings: string[]; errors: string[] }>;
+  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -1013,13 +1013,13 @@ function validateORCID(orcid: string): boolean {
   return digits[15] === checkDigit;
 }
 
-async function validateQuestion({
+function validateQuestion({
   question,
   sharingEnabled,
 }: {
   question: QuestionJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1073,6 +1073,7 @@ async function validateQuestion({
         }
       }
       if (author.email) {
+        // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
         const parsedEmail = z.string().email().safeParse(author.email);
 
         if (!parsedEmail.success) {
@@ -1096,7 +1097,7 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
-async function validateAssessment({
+function validateAssessment({
   assessment,
   questions,
   sharingEnabled,
@@ -1106,7 +1107,7 @@ async function validateAssessment({
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
@@ -1427,13 +1428,13 @@ async function validateAssessment({
   return { warnings, errors };
 }
 
-async function validateCourseInstance({
+function validateCourseInstance({
   courseInstance,
   sharingEnabled,
 }: {
   courseInstance: CourseInstanceJson;
   sharingEnabled: boolean;
-}): Promise<{ warnings: string[]; errors: string[] }> {
+}): { warnings: string[]; errors: string[] } {
   const warnings: string[] = [];
   const errors: string[] = [];
 
