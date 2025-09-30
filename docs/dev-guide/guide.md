@@ -123,7 +123,7 @@ Example bugs from work on the Students table:
 - Can you activate a modal with enter?
 - Are the announced descriptions concise and accurate? Are there announced descriptions for all interactive elements (e.g. the resize handle)?
 - Does closing the modal/tabbing out of the modal retain the focused position?
-- Does selecting an option in a dropdown retain it's position after a re-render (e.g. in React)?
+- Is the same item still focused in a dropdown after an action that would cause a re-render of the dropdown?
 - Are you using the proper ARIA role on menus/toolbars? You should check this with the official role list.
 
 ## SQL usage
