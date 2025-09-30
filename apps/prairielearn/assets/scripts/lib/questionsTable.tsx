@@ -233,8 +233,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent?.trim()}`,
+          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent.trim()}`,
         );
       });
     },
