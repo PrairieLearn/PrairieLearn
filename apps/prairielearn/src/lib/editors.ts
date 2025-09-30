@@ -209,6 +209,12 @@ export function propertyValueWithDefault(
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   // If the existing value is undefined, we want to write the new value if it differs from the default value.
   if (existingValue === undefined) {
     if (!isNewDefault) {
@@ -216,11 +222,8 @@ export function propertyValueWithDefault(
     }
     // Otherwise, we want to write undefined.
   } else {
-    // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
-    const writeFalse = isUIBoolean && defaultValue === false;
-
-    // If the existing value is not the default value, and the new value is the default value, and we are not writing false, we want to write undefined.
-    if (!isExistingDefault && isNewDefault && !writeFalse) {
+    // If the existing value is not the default value, and the new value is the default value, we want to write undefined.
+    if (!isExistingDefault && isNewDefault) {
       return undefined;
     } else {
       return newValue;
