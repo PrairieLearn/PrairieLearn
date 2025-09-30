@@ -1471,21 +1471,17 @@ export function validateAccessControl({
     },
   ];
 
-  // List of all enabled fields that cannot be null at assignment level
-  // Extract just the enabled fields from the pairs
+  // list of all date fields
+  const dateFields = [
+    'dateControl.releaseDate',
+    'dateControl.dueDate',
+    'afterComplete.hideQuestionsDateControl.showAgainDate',
+    'afterComplete.hideQuestionsDateControl.hideAgainDate',
+    'afterComplete.hideScoreDateControl.showAgainDate',
+  ];
+
+  // list of all enabled fields that cannot be null at assignment level; extract just the enabled fields from the pairs
   const assignmentLevelEnabledFields = enabledFieldPairs.map((pair) => pair.enabledField);
-  // const assignmentLevelEnabledFields = [
-  //   'dateControl.releaseDateEnabled',
-  //   'dateControl.dueDateEnabled',
-  //   'dateControl.earlyDeadlinesEnabled',
-  //   'dateControl.lateDeadlinesEnabled',
-  //   'dateControl.durationMinutesEnabled',
-  //   'dateControl.passwordEnabled',
-  //   'dateControl.afterLastDeadline.creditEnabled',
-  //   'afterComplete.hideQuestionsDateControl.showAgainDateEnabled',
-  //   'afterComplete.hideQuestionsDateControl.hideAgainDateEnabled',
-  //   'afterComplete.hideScoreDateControl.showAgainDateEnabled',
-  // ];
 
   // path => object value
   const getNestedValue = (obj: any, path: string): any => {
@@ -1521,8 +1517,52 @@ export function validateAccessControl({
     }
   };
 
+  // validate that all date fields contain valid dates
+  const validateDateFields = (data: AccessControlJsonInput, errors: string[]) => {
+    for (const dateFieldPath of dateFields) {
+      const dateValue = getNestedValue(data, dateFieldPath);
+
+      if (dateValue !== undefined && dateValue !== null) {
+        const parsedDate = parseJsonDate(dateValue);
+        if (parsedDate === null) {
+          errors.push(`Invalid date format for ${dateFieldPath}: "${dateValue}"`);
+        }
+      }
+    }
+
+    // validate dates in earlyDeadlines and lateDeadlines arrays
+    const earlyDeadlines = getNestedValue(data, 'dateControl.earlyDeadlines');
+    if (Array.isArray(earlyDeadlines)) {
+      earlyDeadlines.forEach((deadline, index) => {
+        if (deadline?.date) {
+          const parsedDate = parseJsonDate(deadline.date);
+          if (parsedDate === null) {
+            errors.push(
+              `Invalid date format for dateControl.earlyDeadlines[${index}].date: "${deadline.date}"`,
+            );
+          }
+        }
+      });
+    }
+
+    const lateDeadlines = getNestedValue(data, 'dateControl.lateDeadlines');
+    if (Array.isArray(lateDeadlines)) {
+      lateDeadlines.forEach((deadline, index) => {
+        if (deadline?.date) {
+          const parsedDate = parseJsonDate(deadline.date);
+          if (parsedDate === null) {
+            errors.push(
+              `Invalid date format for dateControl.lateDeadlines[${index}].date: "${deadline.date}"`,
+            );
+          }
+        }
+      });
+    }
+  };
+
   validateEnabledFieldConstraints(accessControlJson, errors);
   validateAssignmentLevelConstraints(accessControlJson, errors);
+  validateDateFields(accessControlJson, errors);
 
   return { warnings, errors };
 }
