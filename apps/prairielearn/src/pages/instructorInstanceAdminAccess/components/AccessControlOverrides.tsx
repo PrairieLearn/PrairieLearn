@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
+import { formatDateFriendly } from '@prairielearn/formatter';
+
 import {
   type CourseInstance,
   type CourseInstanceAccessControlExtension,
@@ -108,12 +110,13 @@ export function AccessControlOverrides({
           )}
         </div>
         <small class="text-muted">
-          Extend access to specific groups of users beyond the original archive date. If multiple
-          extensions apply, the latest date will take effect.
+          Extend access to specific users beyond the original archive date. If multiple extensions
+          apply to a user, the latest extension date will take effect. If an extension is before the
+          archive date, it will be ignored.
         </small>
       </div>
 
-      {overrides.length === 0 ? (
+      {overrides.length === 0 && !showAddForm ? (
         <div class="text-center text-muted mb-3">
           <p class="mb-0">No access control extensions configured.</p>
         </div>
@@ -124,7 +127,7 @@ export function AccessControlOverrides({
               <tr>
                 <th>Name</th>
                 <th>Status</th>
-                <th>End Date</th>
+                <th>Archive Date</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -189,7 +192,9 @@ function OverrideRow({
           <label class="form-check-label">{override.enabled ? 'Enabled' : 'Disabled'}</label>
         </div>
       </td>
-      <td>{override.archive_date == null ? '—' : formatDate(override.archive_date, timeZone)}</td>
+      <td>
+        {override.archive_date == null ? '—' : formatDateFriendly(override.archive_date, timeZone)}
+      </td>
       <td>
         {canEdit && (
           <button
@@ -314,19 +319,16 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       <div class="row">
         <div class="col-md-6">
           <div class="mb-3">
-            <label for="override-end-date" class="form-label">
-              End Date (Optional)
+            <label for="override-archive-date" class="form-label">
+              Archive Date
             </label>
             <input
               type="datetime-local"
               class="form-control"
-              id="override-end-date"
+              id="override-archive-date"
               value={formData.archive_date}
               onChange={(e) => setFormData({ ...formData, archive_date: e.currentTarget.value })}
             />
-            <div class="form-text">
-              If set, this extension will automatically disable after this date.
-            </div>
             {errors.archive_date && (
               <div class="invalid-feedback d-block">{errors.archive_date}</div>
             )}
@@ -373,18 +375,4 @@ function AddOverrideForm({ csrfToken, onClose }: { csrfToken: string; onClose: (
       </div>
     </form>
   );
-}
-
-/**
- * Helper function to format dates
- */
-function formatDate(date: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date);
 }

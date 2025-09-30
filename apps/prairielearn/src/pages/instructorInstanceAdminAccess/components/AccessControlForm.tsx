@@ -31,13 +31,6 @@ function instantToString(instant: Temporal.Instant, timezone: string): string {
   return instant.toZonedDateTimeISO(timezone).toPlainDateTime().toString();
 }
 
-function dateToString(date: Date, timezone: string): string {
-  return Temporal.Instant.fromEpochMilliseconds(date.getTime())
-    .toZonedDateTimeISO(timezone)
-    .toPlainDateTime()
-    .toString();
-}
-
 /** Helper function to add weeks to a datetime string. */
 function addWeeksToDatetime(
   instant: Temporal.Instant,
