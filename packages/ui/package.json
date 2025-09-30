@@ -20,6 +20,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@tanstack/react-virtual": "^3.13.12",
     "@tanstack/table-core": "^8.21.3",
+    "clsx": "^2.1.1",
     "react-bootstrap": "^3.0.0-beta.3"
   },
   "devDependencies": {
