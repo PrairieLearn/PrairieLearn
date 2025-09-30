@@ -1,6 +1,6 @@
 # `@prairielearn/ui`
 
-UI components shared between PrairieLearn and PrairieTest.
+UI components and styles shared between PrairieLearn and PrairieTest.
 
 ## Examples
 
