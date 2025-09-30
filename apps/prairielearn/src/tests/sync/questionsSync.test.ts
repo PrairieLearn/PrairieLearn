@@ -5,8 +5,6 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import {
   AuthorSchema,
   QuestionAuthorSchema,
