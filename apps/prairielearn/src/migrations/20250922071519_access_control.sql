@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS access_control (
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
   assessment_id BIGINT NOT NULL REFERENCES assessments (id) ON DELETE CASCADE ON UPDATE CASCADE, --  which assessment to apply this to
   enabled boolean,
-  block_acesss boolean,
+  block_access boolean,
   list_before_release boolean,
   -- dateControl fields
   date_control_enabled boolean,
@@ -44,11 +44,13 @@ CREATE TABLE IF NOT EXISTS access_control_groups (
 CREATE INDEX idx_sections_on_course_instance_id ON access_control_groups (course_instance_id);
 
 CREATE TABLE IF NOT EXISTS access_control_group_member (
+  id BIGSERIAL PRIMARY KEY,
   group_id BIGINT NOT NULL REFERENCES access_control_groups (id) ON DELETE CASCADE ON UPDATE CASCADE,
   user_id BIGINT NOT NULL REFERENCES users (user_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS access_control_target (
+  id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   target_type permission_scope NOT NULL,
   target_id BIGINT NOT NULL -- assessments(id), Group(id), users(user_id)
@@ -57,19 +59,22 @@ CREATE TABLE IF NOT EXISTS access_control_target (
 CREATE INDEX idx_rolepermission_lookup ON access_control_target (access_control_id, target_type);
 
 CREATE TABLE IF NOT EXISTS access_control_early_deadline (
-  role_id BIGINT NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_late_deadline (
-  role_id BIGINT NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   date TIMESTAMP WITH TIME ZONE NOT NULL,
   credit int NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (
-  role_id BIGINT NOT NULL,
+  id BIGSERIAL PRIMARY KEY,
+  access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
   exam_id BIGINT NOT NULL REFERENCES exams (exam_id) ON DELETE CASCADE ON UPDATE CASCADE,
   read_only boolean
 );

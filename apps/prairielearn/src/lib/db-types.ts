@@ -229,7 +229,7 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 
 export const AccessControlSchema = z.object({
   assessment_id: IdSchema,
-  block_acesss: z.boolean(),
+  block_access: z.boolean(),
   course_instance_id: IdSchema,
   enabled: z.boolean(),
   id: IdSchema, // BIGSERIAL primary key, optional on insert
@@ -263,37 +263,42 @@ export const AccessControlSchema = z.object({
 });
 
 export const AccessControlEarlyDeadlineSchema = z.object({
-  credit: IdSchema,
+  access_control_id: IdSchema,
+  credit: z.number(),
   date: DateFromISOString,
-  role_id: IdSchema,
+  id: IdSchema,
 });
 
 export const AccessControlGroupMemberSchema = z.object({
   group_id: IdSchema,
+  id: IdSchema,
   user_id: IdSchema,
 });
 
 export const AccessControlGroupSchema = z.object({
   course_instance_id: IdSchema,
-  description: z.string(),
+  description: z.string().nullable(),
   id: IdSchema,
-  name: z.string(),
+  name: z.string().nullable(),
 });
 
 export const AccessControlLateDeadlineSchema = z.object({
+  access_control_id: IdSchema,
   credit: IdSchema,
   date: DateFromISOString,
-  role_id: IdSchema,
+  id: IdSchema,
 });
 
 export const AccessControlPrairietestExamSchema = z.object({
+  access_control_id: IdSchema,
   exam_id: IdSchema,
+  id: IdSchema,
   read_only: z.boolean(),
-  role_id: IdSchema,
 });
 
 export const AccessControlTargetSchema = z.object({
   access_control_id: IdSchema,
+  id: IdSchema,
   target_id: IdSchema,
   target_type: z.enum(['assessment', 'group', 'individual']),
 });

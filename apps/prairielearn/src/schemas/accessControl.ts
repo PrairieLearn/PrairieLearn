@@ -2,20 +2,16 @@ import { z } from 'zod';
 
 // json schema
 
-export const DeadlineEntryJsonSchema = z
-  .object({
-    date: z.string().describe('Date as ISO String for additional deadline'),
-    credit: z.number().describe('Amount of credit as a percent to allow'),
-  })
-  .optional();
+export const DeadlineEntryJsonSchema = z.object({
+  date: z.string().describe('Date as ISO String for additional deadline'),
+  credit: z.number().describe('Amount of credit as a percent to allow'),
+});
 
-const AfterLastDeadlineJsonSchema = z
-  .object({
-    allowSubmissions: z.boolean().optional(),
-    creditEnabled: z.boolean().nullable().optional(),
-    credit: z.number().optional(),
-  })
-  .optional();
+const AfterLastDeadlineJsonSchema = z.object({
+  allowSubmissions: z.boolean().optional(),
+  creditEnabled: z.boolean().nullable().optional(),
+  credit: z.number().optional(),
+});
 
 const DateControlJsonSchema = z
   .object({
@@ -48,7 +44,7 @@ const DateControlJsonSchema = z
       .describe('Array of late deadlines with credit as percentages'),
     afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
       'Controls for assessment behaviour after last deadline',
-    ),
+    ).optional(),
     durationMinutesEnabled: z
       .boolean()
       .nullable()
@@ -60,12 +56,10 @@ const DateControlJsonSchema = z
   })
   .optional();
 
-const ExamJsonSchema = z
-  .object({
-    examUuid: z.string().describe('UUID of associated PrairieTest exam'),
-    readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
-  })
-  .optional();
+const ExamJsonSchema = z.object({
+  examUuid: z.string().describe('UUID of associated PrairieTest exam'),
+  readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+});
 
 const PrairieTestControlJsonSchema = z
   .object({
