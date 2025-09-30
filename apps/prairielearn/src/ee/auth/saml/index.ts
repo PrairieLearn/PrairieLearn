@@ -89,7 +89,7 @@ export const strategy = new MultiSamlStrategy(
       // an optional "strict" mode. This is done by including the value
       // `strict` in the `RelayState` parameter of the SAML request, which
       // will also be included in the SAML response.
-      const relayState = req.query?.RelayState || req.body?.RelayState || '';
+      const relayState = req.query.RelayState || req.body?.RelayState || '';
       const relayStateItems = relayState.split(',');
       const strictMode = relayStateItems.includes('strict');
 

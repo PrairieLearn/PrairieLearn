@@ -243,7 +243,7 @@ export function generateSubmissionMessage({
           }
 
           // Old style, where we have to pick the filename out of the `data-options` attribute.
-          const options = $submission_html(node).data('options') as Record<string, string>;
+          const options = $submission_html(node).data('options') as Record<string, string> | null;
 
           return options?.submitted_file_name;
         });
@@ -251,6 +251,10 @@ export function generateSubmissionMessage({
         // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
+        }
+
+        if (!fileName) {
+          throw new Error('No file name found.');
         }
 
         if (!submitted_answer[fileName]) {
