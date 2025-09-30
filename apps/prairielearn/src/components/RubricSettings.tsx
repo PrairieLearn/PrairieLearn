@@ -59,10 +59,11 @@ export function RubricSettings({
     return { totalPositive: roundPoints(pos), totalNegative: roundPoints(neg) };
   }, [rubricItems, startingPoints]);
 
-  const maxPoints =
+  const maxPoints = roundPoints(
     (replaceAutoPoints
       ? (assessmentQuestion.max_points ?? 0)
-      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints;
+      : (assessmentQuestion.max_manual_points ?? 0)) + maxExtraPoints,
+  );
 
   const pointsWarnings: string[] = useMemo(() => {
     const warnings: string[] = [];
