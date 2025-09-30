@@ -120,7 +120,6 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
                     type="checkbox"
                     checked={isSelected}
                     id={`${columnId}-${value}`}
-                    readOnly
                     onChange={() => toggleSelected(value)}
                   />
                   <label class="form-check-label" for={`${columnId}-${value}`}>
