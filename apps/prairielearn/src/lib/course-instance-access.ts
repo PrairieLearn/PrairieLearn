@@ -155,8 +155,11 @@ export function convertAccessRuleToJson(
  * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
  */
 export function migrateAccessRuleJsonToAccessControl(
-  accessRules: AccessRuleJson[],
+  originalAccessRules: AccessRuleJson[],
 ): AccessControlMigrationResponse {
+  // Make a deep copy of the access rules
+  const accessRules = structuredClone(originalAccessRules);
+
   // Must have exactly one rule
   if (accessRules.length !== 1) {
     return {

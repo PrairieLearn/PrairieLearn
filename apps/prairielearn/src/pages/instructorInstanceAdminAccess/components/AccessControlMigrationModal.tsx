@@ -97,9 +97,9 @@ export function AccessControlMigrationModal({
                     </div>
 
                     <div class="alert alert-info" role="alert">
-                      <strong>Note:</strong> This will replace the legacy access rules with the new
-                      access control system. The legacy access rules will be removed and cannot be
-                      recovered.
+                      <strong>Note:</strong> This will replace the legacy access rules in{' '}
+                      <code>infoCourseInstance.json</code> with the new access control system. The
+                      legacy access rules will be removed, and recoverable via Git operations.
                     </div>
                   </>
                 )}
