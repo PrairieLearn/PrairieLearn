@@ -14,7 +14,7 @@ import { useMemo, useState } from 'preact/compat';
 import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import z from 'zod';
 
-import { TanstackTableCard } from '@prairielearn/ui';
+import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -33,9 +33,7 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
-import { TanstackTableDownloadButton } from '@prairielearn/ui';
 import { InviteStudentModal } from './components/InviteStudentModal.js';
-import { StatusColumnFilter } from './components/StatusColumnFilter.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { formatDate } from '@prairielearn/formatter';
@@ -223,9 +221,6 @@ function StudentsCard({
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
   );
 
-  const filenamePrefix = courseInstanceFilenamePrefix(courseInstance, course);
-  const filenameBase = `${filenamePrefix}students`;
-
   const table = useReactTable({
     data: students,
     columns,
@@ -271,26 +266,25 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
+        downloadButtonOptions={{
+          filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
+          singularLabel: 'student',
+          mapRowToData: (row) => {
+            return {
+              uid: row.user?.uid ?? row.enrollment.pending_uid,
+              name: row.user?.name ?? null,
+              email: row.user?.email ?? null,
+              status: row.enrollment.status,
+              first_joined_at: row.enrollment.first_joined_at
+                ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                    includeTz: false,
+                  })
+                : null,
+            };
+          },
+        }}
         headerButtons={
           <>
-            <TanstackTableDownloadButton
-              table={table}
-              filenameBase={filenameBase}
-              singularLabel="student"
-              mapRowToData={(row) => {
-                return {
-                  uid: row.user?.uid ?? row.enrollment.pending_uid,
-                  name: row.user?.name ?? null,
-                  email: row.user?.email ?? null,
-                  status: row.enrollment.status,
-                  first_joined_at: row.enrollment.first_joined_at
-                    ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-                        includeTz: false,
-                      })
-                    : null,
-                };
-              }}
-            />
             {enrollmentManagementEnabled && (
               <Button
                 variant="light"
@@ -311,10 +305,15 @@ function StudentsCard({
         tableOptions={{
           filters: {
             enrollment_status: ({ header }) => (
-              <StatusColumnFilter
+              <CategoricalColumnFilter
                 columnId={header.column.id}
-                enrollmentStatusFilter={enrollmentStatusFilter}
-                setEnrollmentStatusFilter={setEnrollmentStatusFilter}
+                columnLabel="Status"
+                allValues={STATUS_VALUES}
+                renderValueLabel={({ value }) => (
+                  <EnrollmentStatusIcon type="text" status={value} />
+                )}
+                valuesFilter={enrollmentStatusFilter}
+                setValuesFilter={setEnrollmentStatusFilter}
               />
             ),
           },

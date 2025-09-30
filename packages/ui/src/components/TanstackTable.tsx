@@ -6,6 +6,10 @@ import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
 import { ColumnManager } from './ColumnManager.js';
+import {
+  TanstackTableDownloadButton,
+  type TanstackTableDownloadButtonProps,
+} from './TanstackTableDownloadButton.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -447,6 +451,7 @@ export function TanstackTable<RowDataModel>({
  * @param params.globalFilter.setValue
  * @param params.globalFilter.placeholder
  * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
+ * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
  */
 export function TanstackTableCard<RowDataModel>({
   table,
@@ -454,6 +459,7 @@ export function TanstackTableCard<RowDataModel>({
   headerButtons,
   globalFilter,
   tableOptions,
+  downloadButtonOptions = null,
 }: {
   table: Table<RowDataModel>;
   title: string;
@@ -464,6 +470,7 @@ export function TanstackTableCard<RowDataModel>({
     placeholder: string;
   };
   tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
+  downloadButtonOptions?: Omit<TanstackTableDownloadButtonProps<RowDataModel>, 'table'> | null;
 }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -501,7 +508,13 @@ export function TanstackTableCard<RowDataModel>({
       <div class="card-header bg-primary text-white">
         <div class="d-flex align-items-center justify-content-between gap-2">
           <div>{title}</div>
-          <div class="d-flex gap-2">{headerButtons}</div>
+          <div class="d-flex gap-2">
+            {headerButtons}
+
+            {downloadButtonOptions && (
+              <TanstackTableDownloadButton table={table} {...downloadButtonOptions} />
+            )}
+          </div>
         </div>
       </div>
       <div class="card-body d-flex flex-column">

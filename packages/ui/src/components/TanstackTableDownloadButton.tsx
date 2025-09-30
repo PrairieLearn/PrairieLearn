@@ -2,6 +2,12 @@ import type { Table } from '@tanstack/react-table';
 
 import { downloadAsCSV, downloadAsJSON } from '@prairielearn/browser-utils';
 
+export interface TanstackTableDownloadButtonProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  filenameBase: string;
+  mapRowToData: (row: RowDataModel) => Record<string, string | number | null> | null;
+  singularLabel: string;
+}
 /**
  * @param params
  * @param params.singularLabel - What you are downloading, e.g. "student"
@@ -17,12 +23,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
   filenameBase,
   mapRowToData,
   singularLabel,
-}: {
-  table: Table<RowDataModel>;
-  filenameBase: string;
-  mapRowToData: (row: RowDataModel) => Record<string, string | number | null> | null;
-  singularLabel: string;
-}) {
+}: TanstackTableDownloadButtonProps<RowDataModel>) {
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
   const allRowsJSON = allRows.map(mapRowToData).filter((row) => row !== null);
   const filteredRows = table.getRowModel().rows.map((row) => row.original);
