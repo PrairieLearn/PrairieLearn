@@ -1479,13 +1479,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@cortex-js/compute-engine@npm:0.28.0":
-  version: 0.28.0
-  resolution: "@cortex-js/compute-engine@npm:0.28.0"
+"@cortex-js/compute-engine@npm:0.29.1":
+  version: 0.29.1
+  resolution: "@cortex-js/compute-engine@npm:0.29.1"
   dependencies:
     complex-esm: "npm:^2.1.1-esm1"
     decimal.js: "npm:^10.4.3"
-  checksum: 10c0/729f2eca199fbbae465516eb1753775a9cf766cea544081ab8c6a5bc41a8b43eeb24b20f0c077f246ada8a2cea9f93021ad7c9c454c1bdc32be7263b1d7d0a8e
+  checksum: 10c0/4f192c698006373b9f977cce878bda153c5f81f34dc7705a79f829197f92ef6a10768abffb8d517bf81904151201334d446089c276be0874e54a1459277722ac
   languageName: node
   linkType: hard
 
@@ -4174,7 +4174,7 @@ __metadata:
     lru-cache: "npm:^11.2.0"
     marked: "npm:^16.3.0"
     mathjax: "npm:^3.2.2"
-    mathlive: "npm:^0.106.0"
+    mathlive: "npm:^0.107.1"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
     mime: "npm:^4.0.7"
@@ -13303,12 +13303,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mathlive@npm:^0.106.0":
-  version: 0.106.0
-  resolution: "mathlive@npm:0.106.0"
+"mathlive@npm:^0.107.1":
+  version: 0.107.1
+  resolution: "mathlive@npm:0.107.1"
   dependencies:
-    "@cortex-js/compute-engine": "npm:0.28.0"
-  checksum: 10c0/a4d1a25f60c00d9f4cc488e949b39f8835036eed1391443a5dea88335b56694bc867c39850fd72fffa26978eee9f6d8c2ce3992212243c33a156c2f6fd77c7c8
+    "@cortex-js/compute-engine": "npm:0.29.1"
+  checksum: 10c0/c5fd65f17c5dd90ff39583425dd1edf9a8b6138063cc446e547586bd77225d23f5529001aba46e36a36ee5a17ca449e9c6c108b50eba88d3d7d06407275a626d
   languageName: node
   linkType: hard
 
