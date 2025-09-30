@@ -4112,7 +4112,6 @@ __metadata:
     crypto-js: "npm:^4.2.0"
     csv-parse: "npm:^6.1.0"
     csv-stringify: "npm:^6.6.0"
-    csvtojson: "npm:^2.0.10"
     d3: "npm:^7.9.0"
     date-fns: "npm:^4.1.0"
     date-fns-tz: "npm:^3.2.0"
@@ -8056,7 +8055,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.5.1, bluebird@npm:~3.7.2":
+"bluebird@npm:~3.7.2":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 10c0/680de03adc54ff925eaa6c7bb9a47a0690e8b5de60f4792604aae8ed618c65e6b63a7893b57ca924beaf53eee69c5af4f8314148c08124c550fe1df1add897d2
@@ -9061,19 +9060,6 @@ __metadata:
   version: 6.6.0
   resolution: "csv-stringify@npm:6.6.0"
   checksum: 10c0/2e5b14ff1e434aba7b8cae74faa0329c1d967654820f2ae3f358a660b5887ab623224ed8eb7f3ab6d0f7342663c965ca079ca420b6046210709f72e8aec87d94
-  languageName: node
-  linkType: hard
-
-"csvtojson@npm:^2.0.10":
-  version: 2.0.10
-  resolution: "csvtojson@npm:2.0.10"
-  dependencies:
-    bluebird: "npm:^3.5.1"
-    lodash: "npm:^4.17.3"
-    strip-bom: "npm:^2.0.0"
-  bin:
-    csvtojson: ./bin/csvtojson
-  checksum: 10c0/0a35e035db845c93768b5e1bf606d2d2ca5dadd36dd974474c6f54ed689fdbbb7fa21b723b2e1eb7fde9aa5d5d1e3e83d2162f1b8cb419fa7e0e196ec263a176
   languageName: node
   linkType: hard
 
@@ -12289,13 +12275,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-utf8@npm:^0.2.0":
-  version: 0.2.1
-  resolution: "is-utf8@npm:0.2.1"
-  checksum: 10c0/3ed45e5b4ddfa04ed7e32c63d29c61b980ecd6df74698f45978b8c17a54034943bcbffb6ae243202e799682a66f90fef526f465dd39438745e9fe70794c1ef09
-  languageName: node
-  linkType: hard
-
 "is-what@npm:^4.1.8":
   version: 4.1.16
   resolution: "is-what@npm:4.1.16"
@@ -13041,7 +13020,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.3, lodash@npm:^4.17.5":
+"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.5":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
@@ -17133,15 +17112,6 @@ __metadata:
   dependencies:
     ansi-regex: "npm:^6.0.1"
   checksum: 10c0/a198c3762e8832505328cbf9e8c8381de14a4fa50a4f9b2160138158ea88c0f5549fb50cb13c651c3088f47e63a108b34622ec18c0499b6c8c3a5ddf6b305ac4
-  languageName: node
-  linkType: hard
-
-"strip-bom@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "strip-bom@npm:2.0.0"
-  dependencies:
-    is-utf8: "npm:^0.2.0"
-  checksum: 10c0/4fcbb248af1d5c1f2d710022b7d60245077e7942079bfb7ef3fc8c1ae78d61e96278525ba46719b15ab12fced5c7603777105bc898695339d7c97c64d300ed0b
   languageName: node
   linkType: hard
 
