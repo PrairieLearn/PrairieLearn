@@ -173,6 +173,7 @@ export async function generatePrompt({
     generateSubmissionMessage({
       submission_text,
       submitted_answer,
+      include_ai_grading_prompts: true,
     }),
   );
 
@@ -188,20 +189,29 @@ export function containsImageCapture(submission_text: string): boolean {
 
 /**
  * Parses the student's answer and the HTML of the student's submission to generate a message for the AI model.
+ *
+ * @param options
+ * @param options.submission_text - The rendered HTML content of the student's submission.
+ * @param options.submitted_answer - The student-submitted answer, potentially containing text and images.
+ * @param options.include_ai_grading_prompts - Whether to include AI grading prompts in the message.
  */
-function generateSubmissionMessage({
+export function generateSubmissionMessage({
   submission_text,
   submitted_answer,
+  include_ai_grading_prompts,
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
+  include_ai_grading_prompts: boolean;
 }): ChatCompletionMessageParam {
   const message_content: ChatCompletionContentPart[] = [];
 
-  message_content.push({
-    type: 'text',
-    text: 'The student submitted the following response: \n<response>\n',
-  });
+  if (include_ai_grading_prompts) {
+    message_content.push({
+      type: 'text',
+      text: 'The student submitted the following response: \n<response>\n',
+    });
+  }
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -275,10 +285,12 @@ function generateSubmissionMessage({
     });
   }
 
-  message_content.push({
-    type: 'text',
-    text: '\n</response>\nHow would you grade this? Please return the JSON object.',
-  });
+  if (include_ai_grading_prompts) {
+    message_content.push({
+      type: 'text',
+      text: '\n</response>\nHow would you grade this? Please return the JSON object.',
+    });
+  }
 
   return {
     role: 'user',
@@ -367,12 +379,18 @@ export function parseAiRubricItems({
   return { appliedRubricItems, appliedRubricDescription };
 }
 
-export async function selectInstanceQuestionsForAssessmentQuestion(
-  assessment_question_id: string,
-): Promise<InstanceQuestion[]> {
+export async function selectInstanceQuestionsForAssessmentQuestion({
+  assessment_question_id,
+  closed_instance_questions_only = false,
+  ungrouped_instance_questions_only = false,
+}: {
+  assessment_question_id: string;
+  closed_instance_questions_only?: boolean;
+  ungrouped_instance_questions_only?: boolean;
+}): Promise<InstanceQuestion[]> {
   return await queryRows(
     sql.select_instance_questions_for_assessment_question,
-    { assessment_question_id },
+    { assessment_question_id, closed_instance_questions_only, ungrouped_instance_questions_only },
     InstanceQuestionSchema,
   );
 }

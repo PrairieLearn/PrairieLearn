@@ -115,7 +115,6 @@ export function QuestionContainer({
       aiGradingInfo?.prompt
         ? AIGradingPrompt({
             prompt: aiGradingInfo.prompt,
-            promptImageUrls: aiGradingInfo.promptImageUrls,
           })
         : ''}
       ${submissions.length > 0
@@ -165,13 +164,7 @@ export function QuestionContainer({
   `;
 }
 
-function AIGradingPrompt({
-  prompt,
-  promptImageUrls,
-}: {
-  prompt: string;
-  promptImageUrls: string[];
-}) {
+function AIGradingPrompt({ prompt }: { prompt: string }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -189,29 +182,12 @@ function AIGradingPrompt({
           <i class="fa fa-angle-up ms-1 expand-icon"></i>
         </button>
       </div>
-      <div class="js-submission-body js-collapsible-card-body collapse" id="ai-grading-prompt-body">
-        <ul class="list-group list-group-flush">
-          <li class="list-group-item my-0">
-            <h5 class="card-title mt-2 mb-3">Raw prompt</h5>
-            <pre class="mb-0"><code>${prompt}</code></pre>
-          </li>
-          <li class="list-group-item my-0">
-            ${promptImageUrls.length > 0
-              ? html`
-                  <h5 class="card-title mt-2 mb-3">Prompt images</h5>
-                  ${promptImageUrls.map(
-                    (url, index) =>
-                      html`<img
-                        src="${url}"
-                        alt="Image ${index + 1} in the AI grading prompt"
-                        class="img-fluid mb-2"
-                        style="max-height: 600px"
-                      />`,
-                  )}
-                `
-              : ''}
-          </li>
-        </ul>
+      <div
+        class="card-body collapse js-submission-body js-collapsible-card-body"
+        id="ai-grading-prompt-body"
+      >
+        <h5 class="card-title">Raw prompt</h5>
+        <pre class="mb-0"><code>${prompt}</code></pre>
       </div>
     </div>
   `;
