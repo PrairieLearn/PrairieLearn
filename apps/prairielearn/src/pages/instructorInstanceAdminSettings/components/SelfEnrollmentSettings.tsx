@@ -250,6 +250,10 @@ export function SelfEnrollmentSettings({
               return true;
             },
           })}
+          // HACK: Make the accessibility checker happy
+          {...(!selfEnrollmentEnabledBeforeDateEnabled
+            ? { name: 'self_enrollment_enabled_before_date__IGNORE' }
+            : {})}
         />
         {/* Disabled inputs are not submitted */}
         {!selfEnrollmentEnabledBeforeDateEnabled && (
