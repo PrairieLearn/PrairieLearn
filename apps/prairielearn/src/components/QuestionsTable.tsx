@@ -201,6 +201,17 @@ export function QuestionsTable({
                   >
                     External Grading Image
                   </th>
+                  <th
+                    data-field="workspace_image"
+                    data-sortable="true"
+                    data-class="align-middle text-nowrap"
+                    data-filter-control="select"
+                    data-filter-control-placeholder="(All Images)"
+                    data-visible="false"
+                    data-switchable="true"
+                  >
+                    Workspace Image
+                  </th>
                   ${course_instances.map(
                     (course_instance) =>
                       html` <th
