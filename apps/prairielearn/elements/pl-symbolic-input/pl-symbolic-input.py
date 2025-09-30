@@ -470,12 +470,14 @@ def format_submission_for_sympy(
 
     # Step 4: Add spaces between all letter->number pairs that are not custom names
     i = 1
+    offset = 0
     while i < len(sub):
-        if i in protected_indices:
+        if (i - offset) in protected_indices:
             i += 1
             continue
         if sub[i].isdigit() and sub[i - 1].isalpha():
             sub = sub[:i] + " " + sub[i:]
+            offset += 1  # Account for extra space in protected_indices
             i += 1  # Skip over the just inserted space
         i += 1
     return sub

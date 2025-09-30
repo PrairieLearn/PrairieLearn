@@ -21,6 +21,7 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
         # Custom functions
         ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
         ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
+        ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
     ],
 )
 def test_format_submission_for_sympy(
