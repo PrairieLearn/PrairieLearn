@@ -1,7 +1,7 @@
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { type Control, useWatch } from 'react-hook-form';
+import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
@@ -110,6 +110,7 @@ function SelfEnrollmentLink({
 
 export function SelfEnrollmentSettings({
   control,
+  trigger,
   canEdit,
   enrollmentManagementEnabled,
   studentLink,
@@ -117,6 +118,7 @@ export function SelfEnrollmentSettings({
   csrfToken,
 }: {
   control: Control<SettingsFormValues>;
+  trigger: UseFormTrigger<SettingsFormValues>;
   canEdit: boolean;
   enrollmentManagementEnabled: boolean;
   studentLink: string;
@@ -230,7 +232,13 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={!canEdit}
-          {...control.register('self_enrollment_enabled_before_date_enabled')}
+          {...control.register('self_enrollment_enabled_before_date_enabled', {
+            onChange: async (event) => {
+              if (!event.target.checked) {
+                await trigger('self_enrollment_enabled_before_date');
+              }
+            },
+          })}
           name="self_enrollment_enabled_before_date_enabled"
         />
         <label class="form-check-label" for="disable_self_enrollment_after_date">

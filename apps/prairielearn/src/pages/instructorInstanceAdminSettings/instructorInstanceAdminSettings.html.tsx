@@ -212,6 +212,7 @@ export function InstructorInstanceAdminSettings({
           <SelfEnrollmentSettings
             canEdit={canEdit}
             control={control}
+            trigger={trigger}
             enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
             selfEnrollLink={selfEnrollLink}
