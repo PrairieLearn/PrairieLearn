@@ -1,12 +1,10 @@
 import { z } from 'zod';
 
-import { DateFromISOString } from '@prairielearn/zod';
-
-export { DateFromISOString };
+// json schema
 
 export const DeadlineEntryJsonSchema = z
   .object({
-    date: DateFromISOString.describe('Date as ISO String for additional deadline'),
+    date: z.string().describe('Date as ISO String for additional deadline'),
     credit: z.number().describe('Amount of credit as a percent to allow'),
   })
   .optional();
@@ -27,9 +25,9 @@ const DateControlJsonSchema = z
       .nullable()
       .optional()
       .describe('Whether to enable release date'),
-    releaseDate: DateFromISOString.optional().describe('Deadline date as ISO String'),
+    releaseDate: z.string().optional().describe('Deadline date as ISO String'),
     dueDateEnabled: z.boolean().nullable().optional().describe('Whether to enable due date'),
-    dueDate: DateFromISOString.optional().describe('Due date as ISO String'),
+    dueDate: z.string().optional().describe('Due date as ISO String'),
     earlyDeadlinesEnabled: z
       .boolean()
       .nullable()
