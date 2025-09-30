@@ -163,19 +163,18 @@ export async function aiGrade({
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
 
     const instance_questions = all_instance_questions.filter((instance_question) => {
-      if (mode === 'human_graded') {
-        // Things that have been graded by a human
-        return instanceQuestionGradingJobs[instance_question.id]?.some(
-          (job) => job.grading_method === 'Manual',
-        );
-      } else if (mode === 'all') {
-        // Everything
-        return true;
-      } else if (mode === 'selected') {
-        // Things that have been selected by checkbox
-        return instance_question_ids?.includes(instance_question.id);
-      } else {
-        assertNever(mode);
+      switch (mode) {
+        case 'human_graded':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return instanceQuestionGradingJobs[instance_question.id]?.some(
+            (job) => job.grading_method === 'Manual',
+          );
+        case 'all':
+          return true;
+        case 'selected':
+          return instance_question_ids?.includes(instance_question.id);
+        default:
+          assertNever(mode);
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
@@ -193,6 +192,7 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
       );
@@ -562,10 +562,15 @@ export async function aiGrade({
           logger.error(err);
         } finally {
           for (const log of logs) {
-            if (log.messageType === 'info') {
-              job.info(log.message);
-            } else if (log.messageType === 'error') {
-              job.error(log.message);
+            switch (log.messageType) {
+              case 'info':
+                job.info(log.message);
+                break;
+              case 'error':
+                job.error(log.message);
+                break;
+              default:
+                assertNever(log.messageType);
             }
           }
         }
