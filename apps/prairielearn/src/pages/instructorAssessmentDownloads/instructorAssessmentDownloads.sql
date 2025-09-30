@@ -19,7 +19,7 @@ WITH
       users_get_displayed_role (u.user_id, ci.id) AS role,
       substring(
         u.uid
-        from
+        FROM
           '^[^@]+'
       ) AS username,
       ai.score_perc,
@@ -160,8 +160,8 @@ WITH
     WHERE
       ai.assessment_id = $assessment_id
     ORDER BY
-      g.id,
-      u.user_id,
+      g.id ASC,
+      u.user_id ASC,
       ai.number DESC
   ),
   final_submissions AS (
@@ -199,8 +199,8 @@ WITH
       JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
       JOIN zones AS z ON (z.id = ag.zone_id)
     ORDER BY
-      ai.id,
-      q.qid,
+      ai.id ASC,
+      q.qid ASC,
       s.date DESC
   )
 SELECT
@@ -274,7 +274,7 @@ WITH
                     rgi.points
                   )
                 ),
-                '[]'::JSONB
+                '[]'::jsonb
               )
             )
           FROM

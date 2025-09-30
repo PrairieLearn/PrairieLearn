@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import { config } from '../../../lib/config.js';
 import {
@@ -23,10 +24,11 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  GradingResultSchema,
   OPEN_AI_MODEL,
   OPEN_AI_TEMPERATURE,
+  containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -100,9 +102,9 @@ export async function aiGrade({
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
-    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion(
-      assessment_question.id,
-    );
+    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+      assessment_question_id: assessment_question.id,
+    });
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
@@ -127,22 +129,21 @@ export async function aiGrade({
     }
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
+    const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+
     const instance_questions = all_instance_questions.filter((instance_question) => {
-      if (mode === 'human_graded') {
-        // Things that have been graded by a human
-        return (
-          !instance_question.requires_manual_grading &&
-          instance_question.status !== 'unanswered' &&
-          !instance_question.is_ai_graded
-        );
-      } else if (mode === 'all') {
-        // Everything
-        return true;
-      } else if (mode === 'selected') {
-        // Things that have been selected by checkbox
-        return instance_question_ids?.includes(instance_question.id);
-      } else {
-        assertNever(mode);
+      switch (mode) {
+        case 'human_graded':
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+          return instanceQuestionGradingJobs[instance_question.id]?.some(
+            (job) => job.grading_method === 'Manual',
+          );
+        case 'all':
+          return true;
+        case 'selected':
+          return instance_question_ids?.includes(instance_question.id);
+        default:
+          assertNever(mode);
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
@@ -160,6 +161,11 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
+        (job) => job.grading_method === 'Manual',
+      );
+
       const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
 
       const locals = {
@@ -196,13 +202,30 @@ export async function aiGrade({
       }
       const submission_text = submission_embedding.submission_text;
 
-      const example_submissions = await selectClosestSubmissionInfo({
-        submission_id: submission.id,
-        assessment_question_id: assessment_question.id,
-        embedding: submission_embedding.embedding,
-        limit: 5,
+      const example_submissions = await run(async () => {
+        // We're currently disabling RAG for submissions that deal with images.
+        // It won't make sense to pull graded examples for such questions until we
+        // have a strategy for finding similar example submissions based on the
+        // contents of the images.
+        //
+        // Note that this means we're still computing and storing the submission
+        // text and embeddings for such submissions, even though they won't be used
+        // for RAG. While this means we're unnecessarily spending money on actually
+        // generating the embeddings, it does mean that we don't have to special-case
+        // image-based questions in the embedding generation code, which keeps things
+        // simpler overall.
+        if (containsImageCapture(submission_text)) return [];
+
+        return await selectClosestSubmissionInfo({
+          submission_id: submission.id,
+          assessment_question_id: assessment_question.id,
+          embedding: submission_embedding.embedding,
+          limit: 5,
+        });
       });
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
+
+      // Log things for visibility and auditing.
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length > 0 ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
       for (const example of example_submissions) {
         gradedExampleInfo += `\n- ${example.instance_question_id}`;
       }
@@ -228,9 +251,14 @@ export async function aiGrade({
             }),
           );
         }
+
+        // OpenAI will take the property descriptions into account. See the
+        // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
           rubric_items: RubricGradingItemsSchema,
         });
+
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -252,7 +280,7 @@ export async function aiGrade({
               ai_rubric_items: response.parsed.rubric_items,
               rubric_items,
             });
-            if (instance_question.requires_manual_grading) {
+            if (shouldUpdateScore) {
               // Requires grading: update instance question score
               const manual_rubric_data = {
                 rubric_id: rubric_items[0].rubric_id,
@@ -339,6 +367,18 @@ export async function aiGrade({
           return false;
         }
       } else {
+        // OpenAI will take the property descriptions into account. See the
+        // examples here: https://platform.openai.com/docs/guides/structured-outputs
+        const GradingResultSchema = z.object({
+          explanation: z.string().describe('Instructor-facing explanation of the grading decision'),
+          feedback: z
+            .string()
+            .describe(
+              'Student-facing feedback on their submission. Address the student as "you". Use an empty string if the student\'s response is entirely correct.',
+            ),
+          score: z.number().min(0).max(100),
+        });
+
         const completion = await openai.chat.completions.parse({
           messages,
           model: OPEN_AI_MODEL,
@@ -357,7 +397,7 @@ export async function aiGrade({
           if (response.parsed) {
             const score = response.parsed.score;
 
-            if (instance_question.requires_manual_grading) {
+            if (shouldUpdateScore) {
               // Requires grading: update instance question score
               const feedback = response.parsed.feedback;
               await runInTransactionAsync(async () => {
@@ -459,10 +499,15 @@ export async function aiGrade({
           logger.error(err);
         } finally {
           for (const log of logs) {
-            if (log.messageType === 'info') {
-              job.info(log.message);
-            } else if (log.messageType === 'error') {
-              job.error(log.message);
+            switch (log.messageType) {
+              case 'info':
+                job.info(log.message);
+                break;
+              case 'error':
+                job.error(log.message);
+                break;
+              default:
+                assertNever(log.messageType);
             }
           }
         }

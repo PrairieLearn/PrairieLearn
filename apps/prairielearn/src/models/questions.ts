@@ -3,8 +3,8 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  AssessmentsFormatForQuestionSchema,
   SharingSetSchema,
+  SprocAssessmentsFormatForQuestionSchema,
   TagSchema,
   TopicSchema,
 } from '../lib/db-types.js';
@@ -25,7 +25,7 @@ const QuestionsPageDataSchema = z.object({
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
-  assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
+  assessments: SprocAssessmentsFormatForQuestionSchema.nullable().optional(),
 });
 export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 

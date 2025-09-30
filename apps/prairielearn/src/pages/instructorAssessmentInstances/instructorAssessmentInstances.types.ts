@@ -1,6 +1,12 @@
 import { z } from 'zod';
 
-import { AssessmentInstanceSchema, GroupSchema, IdSchema, UserSchema } from '../../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  GroupSchema,
+  IdSchema,
+  SprocUsersGetDisplayedRoleSchema,
+  UserSchema,
+} from '../../lib/db-types.js';
 
 export const AssessmentInstanceRowSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -21,7 +27,7 @@ export const AssessmentInstanceRowSchema = z.object({
   number: AssessmentInstanceSchema.shape.number,
   open: AssessmentInstanceSchema.shape.open,
   points: AssessmentInstanceSchema.shape.points,
-  role: z.string(),
+  role: SprocUsersGetDisplayedRoleSchema,
   score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
   time_remaining_sec: z.number().nullable(),
   time_remaining: z.string(),

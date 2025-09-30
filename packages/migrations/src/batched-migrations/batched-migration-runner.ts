@@ -2,7 +2,7 @@ import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import {
   type BatchedMigrationJobRow,
@@ -103,7 +103,7 @@ export class BatchedMigrationRunner {
   }
 
   private async startJob(job: BatchedMigrationJobRow) {
-    await queryAsync(sql.start_batched_migration_job, { id: job.id });
+    await execute(sql.start_batched_migration_job, { id: job.id });
     const jobRange = `[${job.min_value}, ${job.max_value}]`;
     const migrationRange = `[${this.migration.min_value}, ${this.migration.max_value}]`;
     this.log(`Started job ${job.id} for range ${jobRange} in ${migrationRange}`);
@@ -124,7 +124,7 @@ export class BatchedMigrationRunner {
     status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>,
     data?: unknown,
   ) {
-    await queryAsync(sql.finish_batched_migration_job, {
+    await execute(sql.finish_batched_migration_job, {
       id: job.id,
       status,
       data: this.serializeJobData(data),

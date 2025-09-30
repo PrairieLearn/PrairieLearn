@@ -3,7 +3,7 @@ SELECT
   *
 FROM
   pl_courses
-where
+WHERE
   id = $course_id;
 
 -- BLOCK select_course_by_instance_id
@@ -11,7 +11,7 @@ SELECT
   c.*
 FROM
   course_instances AS ci
-  JOIN pl_courses AS c on ci.course_id = c.id
+  JOIN pl_courses AS c ON ci.course_id = c.id
 WHERE
   ci.id = $course_instance_id;
 
@@ -79,7 +79,7 @@ WITH
 SELECT
   *
 FROM
-  select_course sc
+  select_course
 UNION ALL
 SELECT
   *

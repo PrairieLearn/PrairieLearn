@@ -127,7 +127,7 @@ export function InstructorInstanceAdminLti13({
               <div class="dropdown mb-2">
                 <button
                   type="button"
-                  class="btn dropdown-toggle border border-gray w-100 text-start pe-4"
+                  class="btn dropdown-toggle border w-100 text-start pe-4"
                   data-bs-toggle="dropdown"
                   aria-haspopup="true"
                   aria-expanded="false"

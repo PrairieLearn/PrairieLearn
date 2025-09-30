@@ -3,12 +3,13 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { UserSchema } from '../../lib/db-types.js';
+import { SprocUsersSelectOrInsertSchema, UserSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getUserParams(user_id: string) {
+async function getUserParams(user_id: string | null) {
+  assert.ok(user_id);
   return await sqldb.queryRow(
     'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $user_id;',
     { user_id },
@@ -26,14 +27,11 @@ async function usersSelectOrInsert(
   authn_provider_name: string | null = null,
   institution_id: string | null = null,
 ) {
-  return sqldb.callAsync('users_select_or_insert', [
-    user.uid,
-    user.name,
-    user.uin,
-    user.email,
-    authn_provider_name,
-    institution_id,
-  ]);
+  return await sqldb.callRow(
+    'users_select_or_insert',
+    [user.uid, user.name, user.uin, user.email, authn_provider_name, institution_id],
+    SprocUsersSelectOrInsertSchema,
+  );
 }
 
 const baseUser = {
@@ -49,18 +47,16 @@ describe('sproc users_select_or_insert tests', () => {
   afterAll(helperDb.after);
 
   test.sequential('create new user', async () => {
-    const result = await usersSelectOrInsert(baseUser);
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(baseUser);
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(baseUser, fromdb);
   });
 
   test.sequential('create new user again, confirm info is the same', async () => {
-    const result = await usersSelectOrInsert(baseUser);
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(baseUser);
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(baseUser, fromdb);
@@ -72,16 +68,15 @@ describe('sproc users_select_or_insert tests', () => {
       name: 'J.R. User',
     };
 
-    const result = await usersSelectOrInsert(user);
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(user);
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
   });
 
   test.sequential('add an institution for host.com', async () => {
-    await sqldb.queryAsync(sql.insert_host_com_institution, []);
+    await sqldb.execute(sql.insert_host_com_institution);
   });
 
   test.sequential('user 1 updates institution_id', async () => {
@@ -91,9 +86,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '100');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '100');
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -107,9 +101,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '100');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '100');
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -123,9 +116,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '100');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '100');
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -140,9 +132,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '100',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '100');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 1);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '100');
+    assert.equal(user_id, '1');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -156,16 +147,15 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 2);
+    const { user_id } = await usersSelectOrInsert(user, 'Shibboleth');
+    assert.equal(user_id, '2');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
   });
 
   test.sequential('add an institution for example.com', async () => {
-    await sqldb.queryAsync(sql.insert_example_com_institution, []);
+    await sqldb.execute(sql.insert_example_com_institution);
   });
 
   test.sequential('user 2 logs in via Google', async () => {
@@ -176,9 +166,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 2);
+    const { user_id } = await usersSelectOrInsert(user, 'Google', '200');
+    assert.equal(user_id, '2');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(
@@ -199,9 +188,9 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const userResult = await usersSelectOrInsert(user, 'Azure');
-    assert.equal(userResult.rows[0].result, 'invalid_authn_provider');
-    assert.isNull(userResult.rows[0].user_id);
+    const { result, user_id } = await usersSelectOrInsert(user, 'Azure');
+    assert.equal(result, 'invalid_authn_provider');
+    assert.isNull(user_id);
   });
 
   test.sequential('user 3 create under Google', async () => {
@@ -212,9 +201,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 3);
+    const { user_id } = await usersSelectOrInsert(user, 'Google', '200');
+    assert.equal(user_id, '3');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -228,9 +216,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 3);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '200');
+    assert.equal(user_id, '3');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -244,9 +231,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'Google', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 3);
+    const { user_id } = await usersSelectOrInsert(user, 'Google', '200');
+    assert.equal(user_id, '3');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(
@@ -267,9 +253,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const result = await usersSelectOrInsert(user, 'SAML', '200');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 4);
+    const { user_id } = await usersSelectOrInsert(user, 'SAML', '200');
+    assert.equal(user_id, '4');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -283,9 +268,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '1',
     };
 
-    const result = await usersSelectOrInsert(user, 'Shibboleth');
-    const user_id = result.rows[0].user_id;
-    assert.equal(user_id, 4);
+    const { user_id } = await usersSelectOrInsert(user, 'Shibboleth');
+    assert.equal(user_id, '4');
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
@@ -319,10 +303,8 @@ describe('sproc users_select_or_insert tests', () => {
       institution_id: '200',
     };
 
-    const firstResult = await usersSelectOrInsert(firstUser, 'SAML', '100');
-    const firstUserId = firstResult.rows[0].user_id;
-    const secondResult = await usersSelectOrInsert(secondUser, 'SAML', '200');
-    const secondUserId = secondResult.rows[0].user_id;
+    const { user_id: firstUserId } = await usersSelectOrInsert(firstUser, 'SAML', '100');
+    const { user_id: secondUserId } = await usersSelectOrInsert(secondUser, 'SAML', '200');
 
     // Ensure two distinct users were created.
     assert.notEqual(firstUserId, secondUserId);

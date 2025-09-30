@@ -9,8 +9,8 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -26,6 +26,7 @@ import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   type DraftEdit,
@@ -38,12 +39,21 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_edit'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners: [],
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',
@@ -59,6 +69,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_edit',
+          },
           courseOwners,
           pageTitle: 'File editor',
           requiredPermissions: 'Editor',
@@ -122,7 +137,7 @@ router.get(
       }
 
       if (draftEdit.jobSequence) {
-        if (draftEdit.jobSequence?.status === 'Running') {
+        if (draftEdit.jobSequence.status === 'Running') {
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).
@@ -274,7 +289,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await execute(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({

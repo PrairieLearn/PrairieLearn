@@ -15,7 +15,7 @@ VALUES
     $assessment_id,
     $user_id,
     $instance_number,
-    false -- Assume closed by default when recreating
+    FALSE -- Assume closed by default when recreating
   )
 RETURNING
   id AS assessment_instance_id;
@@ -42,6 +42,7 @@ RETURNING
 INSERT INTO
   variants (
     course_id,
+    course_instance_id,
     instance_question_id,
     question_id,
     authn_user_id,
@@ -55,6 +56,7 @@ INSERT INTO
 VALUES
   (
     $course_id,
+    $course_instance_id,
     $instance_question_id,
     $question_id,
     $authn_user_id,

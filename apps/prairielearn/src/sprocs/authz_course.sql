@@ -4,8 +4,8 @@ CREATE FUNCTION
         course_id bigint,
         is_administrator boolean,
         allow_example_course_override boolean,
-        req_course_role enum_course_role default NULL
-    ) returns jsonb
+        req_course_role enum_course_role DEFAULT NULL
+    ) RETURNS jsonb
 AS $$
 DECLARE
     course_role enum_course_role;

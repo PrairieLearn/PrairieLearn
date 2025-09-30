@@ -15,18 +15,6 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    if (
-      !(
-        res.locals.authz_data.authn_has_course_permission_preview ||
-        res.locals.authz_data.authn_has_course_instance_permission_view
-      )
-    ) {
-      throw new HttpStatusError(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      );
-    }
-
     const courseRoles = await queryRow(
       sql.select,
       {
@@ -39,8 +27,8 @@ router.get(
 
     let ipAddress = req.ip;
     // Trim out IPv6 wrapper on IPv4 addresses
-    if (ipAddress.substring(0, 7) === '::ffff:') {
-      ipAddress = ipAddress.substring(7);
+    if (ipAddress?.slice(0, 7) === '::ffff:') {
+      ipAddress = ipAddress.slice(7);
     }
 
     res.send(InstructorEffectiveUser({ resLocals: res.locals, ipAddress, courseRoles }));
@@ -50,18 +38,6 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (
-      !(
-        res.locals.authz_data.authn_has_course_permission_preview ||
-        res.locals.authz_data.authn_has_course_instance_permission_view
-      )
-    ) {
-      throw new HttpStatusError(
-        403,
-        'Access denied (must be course previewer or student data viewer)',
-      );
-    }
-
     if (req.body.__action === 'reset') {
       clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
       clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
@@ -104,7 +80,7 @@ router.post(
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
     } else {
-      throw new HttpStatusError(400, 'unknown action: ' + res.locals.__action);
+      throw new HttpStatusError(400, 'unknown action: ' + req.body.__action);
     }
   }),
 );

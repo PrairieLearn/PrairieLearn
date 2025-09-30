@@ -58,9 +58,9 @@ const questionMarked = await createMarkedInstance({
 });
 
 export function processQuestion(html: string) {
-  return html.replace(regex, (_match, originalContents: string) => {
+  return html.replaceAll(regex, (_match, originalContents: string) => {
     // We'll handle escapes before we pass off the string to our Markdown pipeline
-    const decodedContents = originalContents.replace(
+    const decodedContents = originalContents.replaceAll(
       escapeRegex,
       (_match, prefix: string, hashes: string) => {
         return `${prefix}${'#'.repeat(hashes.length - 1)}>`;

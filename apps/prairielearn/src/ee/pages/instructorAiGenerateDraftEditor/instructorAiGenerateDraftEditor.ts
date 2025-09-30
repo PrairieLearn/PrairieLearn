@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -21,12 +21,12 @@ import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
-  getAiQuestionGenerationCache,
   getIntervalUsage,
   regenerateQuestion,
 } from '../../lib/aiQuestionGeneration.js';
@@ -40,15 +40,13 @@ import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEdit
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-const aiQuestionGenerationCache = getAiQuestionGenerationCache();
-
 async function saveGeneratedQuestion(
   res: Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
   title?: string,
   qid?: string,
-): Promise<string> {
+): Promise<{ question_id: string; qid: string }> {
   const files = {};
 
   if (htmlFileContents) {
@@ -75,7 +73,7 @@ async function saveGeneratedQuestion(
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  return result.question_id;
+  return { question_id: result.question_id, qid: result.question_qid };
 }
 
 async function saveRevisedQuestion({
@@ -133,7 +131,7 @@ async function saveRevisedQuestion({
 
   const response = `\`\`\`html\n${html}\`\`\`\n\`\`\`python\n${python}\`\`\``;
 
-  await queryAsync(sql.insert_ai_question_generation_prompt, {
+  await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
     prompting_user_id: authn_user.user_id,
     prompt_type: promptType,
@@ -168,7 +166,7 @@ router.use(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -203,8 +201,10 @@ router.get(
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
+    const richTextEditorEnabled = await features.enabledFromLocals('rich-text-editor', res.locals);
+
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals as any, {
+    await getAndRenderVariant(variant_id, null, res.locals, {
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
@@ -218,6 +218,7 @@ router.get(
         resLocals: res.locals,
         prompts,
         question: res.locals.question,
+        richTextEditorEnabled,
         variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
       }),
     );
@@ -258,12 +259,11 @@ router.post(
         AiQuestionGenerationPromptSchema,
       );
 
-      if (prompts.length < 1) {
+      if (prompts.length === 0) {
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
       const intervalCost = await getIntervalUsage({
-        aiQuestionGenerationCache,
         userId: res.locals.authn_user.user_id,
       });
 
@@ -295,8 +295,7 @@ router.post(
         res.locals.authz_data.has_course_permission_edit,
       );
 
-      addCompletionCostToIntervalUsage({
-        aiQuestionGenerationCache,
+      await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
         promptTokens: result.promptTokens ?? 0,
         completionTokens: result.completionTokens ?? 0,
@@ -331,7 +330,7 @@ router.post(
       }
 
       // TODO: any membership checks needed here?
-      const qid = await saveGeneratedQuestion(
+      const { question_id, qid } = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
         prompts[prompts.length - 1].python || undefined,
@@ -358,7 +357,7 @@ router.post(
 
       flash('success', `Your question is ready for use as ${qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,

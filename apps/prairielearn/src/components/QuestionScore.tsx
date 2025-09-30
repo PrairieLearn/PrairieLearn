@@ -246,12 +246,23 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
 export function ExamQuestionStatus({
   instance_question,
   assessment_question,
+  realTimeGradingPartiallyDisabled,
 }: {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
   };
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
+  >;
+  /**
+   * On exam with mixed real-time grading settings, this flag allows us to
+   * differentiate between questions that are saved and which can be graded by
+   * clicking the "Grade N saved answers" button and those that cannot
+   * (because real-time grading is disabled).
+   */
+  realTimeGradingPartiallyDisabled?: boolean;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -282,11 +293,24 @@ export function ExamQuestionStatus({
     incorrect: 'danger',
   };
 
+  const { badgeText, badgeColor } = run(() => {
+    if (
+      realTimeGradingPartiallyDisabled &&
+      instance_question.status === 'saved' &&
+      !assessment_question.allow_real_time_grading
+    ) {
+      return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
+    }
+
+    return {
+      badgeText: instance_question.status,
+      badgeColor: badge_color[instance_question.status ?? 'unanswered'],
+    };
+  });
+
   return html`
     <span class="align-middle">
-      <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
-        ${instance_question.status}
-      </span>
+      <span class="badge text-bg-${badgeColor}">${badgeText}</span>
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
@@ -518,9 +542,6 @@ function QuestionValue({
           If you score 100% on your next submission, you will be awarded an additional
           ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
         </p>
-      `);
-
-      parts.push(html`
         <p class="mb-0">
           If you score less than 100% on your next submission, you will be awarded an additional
           <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
@@ -547,20 +568,14 @@ function QuestionValue({
           If you score 100% on your next submission, you will be awarded an additional
           ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
         </p>
-      `);
-
-      parts.push(
-        html`<p>
+        <p>
           If you score between ${formatPoints(bestCurrentScore)}% and 100% on your next submission,
           you will be awarded an additional
           <code>
             ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
           </code>
           points.
-        </p>`,
-      );
-
-      parts.push(html`
+        </p>
         <p class="mb-0">
           If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
           will not be awarded any additional points for that submission.

@@ -9,7 +9,7 @@ import formatXml from 'xml-formatter';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {
@@ -85,7 +85,7 @@ router.post(
           privateKey = keys.serviceKey;
         }
 
-        await queryAsync(sql.insert_institution_saml_provider, {
+        await execute(sql.insert_institution_saml_provider, {
           institution_id: req.params.institution_id,
           sso_login_url: req.body.sso_login_url,
           issuer: req.body.issuer,
@@ -107,7 +107,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete') {
-      await queryAsync(sql.delete_institution_saml_provider, {
+      await execute(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
         // For audit logs
         authn_user_id: res.locals.authn_user.user_id,

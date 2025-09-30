@@ -28,7 +28,7 @@ DECLARE
     grading_method enum_grading_method;
     new_correct boolean;
 BEGIN
-    PERFORM grading_jobs_lock(grading_job_id);
+    -- Assumes grading job is already locked by caller.
 
     -- ######################################################################
     -- get the variant and related objects

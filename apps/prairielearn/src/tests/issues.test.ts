@@ -3,6 +3,7 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 
@@ -29,7 +30,7 @@ function doTest(issuesUrl: string, label: string) {
     let questionUrl;
 
     test.sequential('should report issues to a question', async () => {
-      const questionId = (await sqldb.queryOneRowAsync(sql.select_question_id, [])).rows[0].id;
+      const questionId = await sqldb.queryRow(sql.select_question_id, IdSchema);
       questionUrl = `${baseUrl}/course_instance/1/instructor/question/${questionId}/preview`;
       let res = await fetch(questionUrl);
       const $ = cheerio.load(await res.text());
@@ -80,8 +81,8 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 3, 'Expected three open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 3, 'Expected three open issues');
     });
 
     test.sequential('should close issues matching a query', async () => {
@@ -109,8 +110,8 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 2, 'Expected two open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 2, 'Expected two open issues');
     });
 
     test.sequential('should close all open issues', async () => {
@@ -137,8 +138,8 @@ function doTest(issuesUrl: string, label: string) {
       });
       assert.equal(res.status, 200);
 
-      const result = await sqldb.queryAsync(sql.select_open_issues, []);
-      assert.equal(result.rowCount, 0, 'Expected zero open issues');
+      const rowCount = await sqldb.execute(sql.select_open_issues);
+      assert.equal(rowCount, 0, 'Expected zero open issues');
     });
   });
 }

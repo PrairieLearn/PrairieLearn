@@ -5,7 +5,7 @@ export const DAY_IN_MILLISECONDS = 24 * HOUR_IN_MILLISECONDS;
 
 /**
  * Makes an interval (in milliseconds).
- *
+ * @param param
  * @param param.days The number of days in the interval.
  * @param param.hours The number of hours in the interval.
  * @param param.minutes The number of minutes in the interval.
@@ -89,6 +89,7 @@ export function formatIntervalRelative(
  * Format an interval (in milliseconds) to a human-readable string like HH:MM or +HH:MM.
  *
  * @param interval Time interval in milliseconds.
+ * @param options
  * @param options.signed Whether to include the sign in the output.
  * @returns Human-readable string representing the interval in minutes.
  */

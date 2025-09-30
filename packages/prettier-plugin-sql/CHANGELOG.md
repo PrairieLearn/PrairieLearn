@@ -1,5 +1,23 @@
 # @prairielearn/prettier-plugin-sql
 
+## 2.1.10
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 2.1.9
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 2.1.8
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 2.1.7
 
 ### Patch Changes

@@ -1,15 +1,15 @@
 CREATE FUNCTION
     instance_questions_points_homework(
         IN instance_question_id bigint,
-        IN submission_score DOUBLE PRECISION,
-        OUT open BOOLEAN,
+        IN submission_score double precision,
+        OUT open boolean,
         OUT status enum_instance_question_status,
-        OUT auto_points DOUBLE PRECISION,
-        OUT highest_submission_score DOUBLE PRECISION,
-        OUT current_value DOUBLE PRECISION,
-        OUT points_list DOUBLE PRECISION[],
-        OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_auto_points DOUBLE PRECISION
+        OUT auto_points double precision,
+        OUT highest_submission_score double precision,
+        OUT current_value double precision,
+        OUT points_list double precision[],
+        OUT variants_points_list double precision[],
+        OUT max_auto_points double precision
     )
 AS $$
 DECLARE
@@ -73,17 +73,17 @@ BEGIN
     END LOOP;
     auto_points := least(auto_points, aq.max_auto_points);
 
-    -- status
     IF auto_points >= aq.max_auto_points AND aq.max_manual_points = 0 THEN
+        -- If the student has achieved the maximum possible points, and there
+        -- are no manual points: status is complete.
         status := 'complete';
-    ELSIF correct AND iq.status != 'complete' THEN
+    ELSIF highest_submission_score >= 1.0 AND iq.status != 'complete' THEN
+        -- Current variant, or some previous variant, got 100%, and the
+        -- question is not yet complete: status is correct.
         status := 'correct';
     ELSE
-        -- use current status unless it's 'unanswered' or 'saved'
-        status := iq.status;
-        IF iq.status IN ('unanswered', 'saved') THEN
-            status := 'incorrect';
-        END IF;
+        -- Student has not yet achieved 100% in any variant: status is incorrect.
+        status := 'incorrect';
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;

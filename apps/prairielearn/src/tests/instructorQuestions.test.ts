@@ -5,6 +5,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { QuestionSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 import {
@@ -70,11 +71,10 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   describe('the database', function () {
     let questions;
     it('should contain questions', async () => {
-      const result = await sqldb.queryAsync(sql.select_questions, []);
-      if (result.rowCount === 0) {
+      questions = await sqldb.queryRows(sql.select_questions, QuestionSchema);
+      if (questions.length === 0) {
         throw new Error('no questions in DB');
       }
-      questions = result.rows;
     });
 
     for (const testQuestion of testQuestions) {

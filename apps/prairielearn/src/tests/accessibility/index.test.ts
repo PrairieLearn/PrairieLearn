@@ -13,6 +13,8 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { assertNever } from '../../lib/types.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -27,7 +29,7 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 async function loadPageJsdom(url: string): Promise<{ text: string; jsdom: JSDOM }> {
   const text = await fetch(url).then((res) => {
     if (!res.ok) {
-      throw new Error(`Error loading page: ${res.status}`);
+      throw new Error(`Error loading page "${url}": ${res.status}`);
     }
     return res.text();
   });
@@ -110,7 +112,7 @@ async function checkPage(url: string) {
     result.messages = result.messages.filter((m) => {
       // This doesn't appear to be an actual issue and isn't flagged by
       // other tools like https://validator.w3.org/nu.
-      if (m.message.match(/<tt> element is not permitted as content under <(small|strong)>/)) {
+      if (/<tt> element is not permitted as content under <(small|strong)>/.test(m.message)) {
         return false;
       }
 
@@ -196,10 +198,7 @@ const SKIP_ROUTES = [
 
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/raw_data.json',
-  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
-  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_drafts/generation_logs.json',
-  '/pl/course/:course_id/ai_generate_question_drafts/generation_logs.json',
+  /\.json$/,
 
   // Static assets.
   '/assets/elements/:cachebuster/*',
@@ -342,6 +341,7 @@ const SKIP_ROUTES = [
   // in order to create a workspace.
   // TODO: open a question and create a workspace so we can test this page.
   /^\/pl\/workspace\//,
+  /^\/pl\/public\/workspace\//,
 
   // TODO: run a query so we can test this page.
   '/pl/administrator/query/:query',
@@ -373,7 +373,7 @@ function shouldSkipPath(path) {
     } else if (r instanceof RegExp) {
       return r.test(path);
     } else {
-      throw new Error(`Invalid route: ${r}`);
+      assertNever(r);
     }
   });
 }
@@ -401,7 +401,6 @@ describe('accessibility', () => {
 
     const news_item_id = await sqldb.queryRow(
       'SELECT id FROM news_items ORDER BY id ASC LIMIT 1',
-      {},
       IdSchema,
     );
 
@@ -417,6 +416,20 @@ describe('accessibility', () => {
       IdSchema,
     );
 
+    const user_id = await sqldb.queryRow(
+      'SELECT user_id FROM users WHERE uid = $uid',
+      { uid: 'dev@example.com' },
+      IdSchema,
+    );
+
+    const enrollment = await ensureEnrollment({
+      course_instance_id: '1',
+      user_id,
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
+    });
+
     await features.enable('question-sharing');
 
     routeParams = {
@@ -424,19 +437,20 @@ describe('accessibility', () => {
       news_item_id,
       assessment_id,
       question_id,
+      user_id,
+      enrollment_id: enrollment!.id,
     };
 
-    await sqldb.queryOneRowAsync(
-      'UPDATE questions SET share_publicly = true WHERE id = $question_id',
-      { question_id: routeParams.question_id },
-    );
+    await sqldb.executeRow('UPDATE questions SET share_publicly = true WHERE id = $question_id', {
+      question_id: routeParams.question_id,
+    });
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
       { assessment_id: routeParams.assessment_id },
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE course_instances SET share_source_publicly = true WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
@@ -447,7 +461,7 @@ describe('accessibility', () => {
       IdSchema,
     );
 
-    await sqldb.queryOneRowAsync(
+    await sqldb.executeRow(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );

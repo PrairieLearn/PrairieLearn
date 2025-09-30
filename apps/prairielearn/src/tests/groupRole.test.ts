@@ -5,11 +5,18 @@ import fs from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import {
+  AssessmentSchema,
+  GroupConfigSchema,
+  GroupRoleSchema,
+  GroupUserRoleSchema,
+} from '../lib/db-types.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -94,14 +101,16 @@ async function verifyRoleAssignmentsInDatabase(
 ) {
   const expected = roleAssignments
     .map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
+      user_id: groupUserId.toString(),
+      group_role_id: roleId.toString(),
     }))
-    .sort((a, b) => a.user_id - b.user_id || a.group_role_id - b.group_role_id);
-  const result = await sqldb.queryAsync(sql.select_group_user_roles, {
-    assessment_id: assessmentId,
-  });
-  assert.sameDeepMembers(result.rows, expected);
+    .sort((a, b) => +a.user_id - +b.user_id || +a.group_role_id - +b.group_role_id);
+  const result = await sqldb.queryRows(
+    sql.select_group_user_roles,
+    { assessment_id: assessmentId },
+    GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+  );
+  assert.sameDeepMembers(result, expected);
 }
 
 /**
@@ -188,42 +197,47 @@ describe(
     });
 
     test.sequential('contains a group-based homework assessment with roles', async function () {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, []);
-      assert.lengthOf(result.rows, 1);
-      assert.notEqual(result.rows[0].id, undefined);
-      locals.assessment_id = result.rows[0].id;
+      locals.assessment_id = await sqldb.queryRow(
+        sql.select_group_work_assessment_with_roles,
+        IdSchema,
+      );
       locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
     });
 
     test.sequential('contains a group-based homework assessment without roles', async function () {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment_without_roles, []);
-      assert.lengthOf(result.rows, 1);
-      assert.notEqual(result.rows[0].id, undefined);
-      assert.equal(result.rows[0].has_roles, false);
-      locals.assessment_id_without_roles = result.rows[0].id;
+      const result = await sqldb.queryRow(
+        sql.select_group_work_assessment_without_roles,
+        z.object({
+          id: AssessmentSchema.shape.id,
+          has_roles: GroupConfigSchema.shape.has_roles,
+        }),
+      );
+      assert.equal(result.has_roles, false);
+      locals.assessment_id_without_roles = result.id;
       locals.assessmentUrlWithoutRoles =
         locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
     });
 
     test.sequential('contains the 4 group roles for the assessment', async function () {
-      const params = {
-        assessment_id: locals.assessment_id,
-      };
-      const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
-      assert.lengthOf(result.rows, 4);
-      locals.groupRoles = result.rows;
+      const result = await sqldb.queryRows(
+        sql.select_assessment_group_roles,
+        { assessment_id: locals.assessment_id },
+        GroupRoleSchema,
+      );
+      assert.lengthOf(result, 4);
+      locals.groupRoles = result;
 
       // Store roles by name for later tests
-      const manager = result.rows.find((row) => row.role_name === 'Manager');
+      const manager = result.find((row) => row.role_name === 'Manager');
       assert.isDefined(manager);
 
-      const recorder = result.rows.find((row) => row.role_name === 'Recorder');
+      const recorder = result.find((row) => row.role_name === 'Recorder');
       assert.isDefined(recorder);
 
-      const reflector = result.rows.find((row) => row.role_name === 'Reflector');
+      const reflector = result.find((row) => row.role_name === 'Reflector');
       assert.isDefined(reflector);
 
-      const contributor = result.rows.find((row) => row.role_name === 'Contributor');
+      const contributor = result.find((row) => row.role_name === 'Contributor');
       assert.isDefined(contributor);
 
       locals.manager = manager;
@@ -320,12 +334,12 @@ describe(
 
         const res = await fetch(locals.assessmentUrl);
         assert.isOk(res.ok);
-        const result = await sqldb.queryAsync(sql.select_group_user_roles, {
+        const result = await sqldb.execute(sql.select_group_user_roles, {
           assessment_id: locals.assessment_id,
         });
 
         // Since there are no users currently in the group, there must be no role assignments
-        assert.lengthOf(result.rows, 0);
+        assert.equal(result, 0);
       },
     );
 
@@ -934,13 +948,14 @@ describe(
 
         // Assert that the recorder role is given to either the second or fourth user because
         // they previously had non-required roles
-        const params = {
-          assessment_id: locals.assessment_id,
-        };
-        const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-        assert.lengthOf(result.rows, 4);
+        const result = await sqldb.queryRows(
+          sql.select_group_user_roles,
+          { assessment_id: locals.assessment_id },
+          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+        );
+        assert.lengthOf(result, 4);
 
-        const secondUserRoles = result.rows.filter(
+        const secondUserRoles = result.filter(
           (row) => row.user_id === locals.studentUsers[1].user_id,
         );
         assert.isTrue(secondUserRoles.length === 1);
@@ -951,13 +966,14 @@ describe(
             secondUserRole.group_role_id === locals.contributor.id,
         );
 
-        const roleUpdates = secondUserRole.id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
+        const roleUpdates =
+          secondUserRole.user_id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
         const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
           group_role_id: roleId,
         }));
 
-        assert.sameDeepMembers(expected, result.rows);
+        assert.sameDeepMembers(expected, result);
         locals.roleUpdates = roleUpdates;
       },
     );
@@ -1068,13 +1084,15 @@ describe(
         ];
 
         // Assert that the reflector role is given to either first or second user
-        const result = await sqldb.queryAsync(sql.select_group_user_roles, {
-          assessment_id: locals.assessment_id,
-        });
-        assert.lengthOf(result.rows, 3);
+        const result = await sqldb.queryRows(
+          sql.select_group_user_roles,
+          { assessment_id: locals.assessment_id },
+          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+        );
+        assert.lengthOf(result, 3);
 
         // Get all roles for first user
-        const firstUserRoleUpdates = result.rows.filter(
+        const firstUserRoleUpdates = result.filter(
           (row) => row.user_id === locals.studentUsers[0].user_id,
         );
         assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
@@ -1085,7 +1103,7 @@ describe(
           group_role_id: roleId,
         }));
 
-        assert.sameDeepMembers(expected, result.rows);
+        assert.sameDeepMembers(expected, result);
         locals.roleUpdates = roleUpdates;
       },
     );
@@ -1230,27 +1248,29 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       { name: 'Contributor' },
     ];
     await changeGroupRolesConfig(tempTestCourseDir.path, groupRoles);
-    const groupRolesResult = await sqldb.queryAsync(sql.select_assessment_group_roles, {
-      assessment_id: assessmentId,
-    });
-    assert.lengthOf(groupRolesResult.rows, 4);
-    locals.groupRoles = groupRolesResult.rows;
+    const groupRolesResult = await sqldb.queryRows(
+      sql.select_assessment_group_roles,
+      { assessment_id: assessmentId },
+      GroupRoleSchema,
+    );
+    assert.lengthOf(groupRolesResult, 4);
+    locals.groupRoles = groupRolesResult;
 
-    const manager = groupRolesResult.rows.find((row) => row.role_name === 'Manager');
+    const manager = groupRolesResult.find((row) => row.role_name === 'Manager');
     assert.isDefined(manager);
     locals.manager = manager;
 
-    const recorder = groupRolesResult.rows.find((row) => row.role_name === 'Recorder');
+    const recorder = groupRolesResult.find((row) => row.role_name === 'Recorder');
     assert.isDefined(recorder);
     assert.equal(2, recorder.minimum);
     assert.equal(2, recorder.maximum);
     locals.recorder = recorder;
 
-    const reflector = groupRolesResult.rows.find((row) => row.role_name === 'Reflector');
+    const reflector = groupRolesResult.find((row) => row.role_name === 'Reflector');
     assert.isDefined(reflector);
     locals.reflector = reflector;
 
-    const contributor = groupRolesResult.rows.find((row) => row.role_name === 'Contributor');
+    const contributor = groupRolesResult.find((row) => row.role_name === 'Contributor');
     assert.isDefined(contributor);
     locals.contributor = contributor;
 
@@ -1694,26 +1714,27 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     test.sequential(
       'should have correct role configuration in the database after first user leaves',
       async function () {
-        const params = {
-          assessment_id: assessmentId,
-        };
-        const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+        const result = await sqldb.queryRows(
+          sql.select_group_user_roles,
+          { assessment_id: assessmentId },
+          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+        );
 
         // Ensure that there are two recorder assignments, one manager, and one reflector, and no contributors
         assert.lengthOf(
-          result.rows.filter(({ group_role_id }) => group_role_id === locals.manager.id),
+          result.filter(({ group_role_id }) => group_role_id === locals.manager.id),
           1,
         );
         assert.lengthOf(
-          result.rows.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
+          result.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
           2,
         );
         assert.lengthOf(
-          result.rows.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
+          result.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
           1,
         );
         assert.lengthOf(
-          result.rows.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
+          result.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
           0,
         );
       },
@@ -1737,32 +1758,34 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
   });
 
   test.sequential('should contain a group-based homework assessment with roles', async function () {
-    const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, []);
-    assert.lengthOf(result.rows, 1);
-    assert.notEqual(result.rows[0].id, undefined);
-    locals.assessment_id = result.rows[0].id;
+    const assessment_id = await sqldb.queryRow(
+      sql.select_group_work_assessment_with_roles,
+      IdSchema,
+    );
+    locals.assessment_id = assessment_id;
     locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
   });
 
   test.sequential('should contain the 4 group roles for the assessment', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
-    assert.lengthOf(result.rows, 4);
-    locals.groupRoles = result.rows;
+    const result = await sqldb.queryRows(
+      sql.select_assessment_group_roles,
+      { assessment_id: locals.assessment_id },
+      GroupRoleSchema,
+    );
+    assert.lengthOf(result, 4);
+    locals.groupRoles = result;
 
     // Store roles by name for later tests
-    const manager = result.rows.find((row) => row.role_name === 'Manager');
+    const manager = result.find((row) => row.role_name === 'Manager');
     assert.isDefined(manager);
 
-    const recorder = result.rows.find((row) => row.role_name === 'Recorder');
+    const recorder = result.find((row) => row.role_name === 'Recorder');
     assert.isDefined(recorder);
 
-    const reflector = result.rows.find((row) => row.role_name === 'Reflector');
+    const reflector = result.find((row) => row.role_name === 'Reflector');
     assert.isDefined(reflector);
 
-    const contributor = result.rows.find((row) => row.role_name === 'Contributor');
+    const contributor = result.find((row) => row.role_name === 'Contributor');
     assert.isDefined(contributor);
 
     locals.manager = manager;
@@ -1776,7 +1799,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     assert.lengthOf(locals.studentUsers, 5);
   });
 
-  test.sequential('should setup group info', async function () {
+  test.sequential('should setup group info', function () {
     locals.groupId = '1';
     locals.groupName = '1';
     locals.groupMembers = locals.studentUsers.map((user) => ({
@@ -1949,7 +1972,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment?.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );

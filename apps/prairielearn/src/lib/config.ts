@@ -12,6 +12,12 @@ import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 export const DEV_MODE = process.env.NODE_ENV !== 'production';
 
+// We don't compare against 'test' since we use the 'MODE' environment variable
+// for running a subset of our tests.
+const IS_VITEST = (import.meta as any).env && (import.meta as any).env.MODE !== 'development';
+const IS_VITE = (import.meta as any).env?.MODE === 'development';
+export const DEV_EXECUTION_MODE = IS_VITEST ? 'test' : IS_VITE ? 'hmr' : 'dev';
+
 export const STANDARD_COURSE_DIRS = [
   '/course',
   '/course2',
@@ -314,7 +320,6 @@ export const ConfigSchema = z.object({
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   cacheKeyPrefix: z.string().default('prairielearn-cache:'),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
-  hasLti: z.boolean().default(false),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
     .array(
@@ -635,7 +640,7 @@ export async function loadConfig(paths: string[]) {
   }
 }
 
-export async function resetConfig() {
+export function resetConfig() {
   loader.reset();
 }
 

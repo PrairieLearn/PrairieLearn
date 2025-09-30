@@ -1,18 +1,19 @@
 /**
  * Replace special characters in string with underscores.
  *
- * @param {String} s - The string to sanitize.
- * @return {String} A sanitized version of s.
+ * @param s - The string to sanitize.
+ * @returns A sanitized version of s.
  */
 export function sanitizeString(s: string): string {
-  return s.replace(/[^a-zA-Z0-9-]/g, '_');
+  return s.replaceAll(/[^a-zA-Z0-9-]/g, '_');
 }
 
 /**
  * Construct a sanitized filename prefix for a course.
  *
- * @param {Object} course - The course database object.
- * @return {String} The sanitized prefix string.
+ * @param course - The course database object.
+ * @param course.short_name - The short name of the course.
+ * @returns The sanitized prefix string.
  */
 export function courseFilenamePrefix(course: { short_name: string }): string {
   const prefix = sanitizeString(course.short_name) + '_';
@@ -22,9 +23,11 @@ export function courseFilenamePrefix(course: { short_name: string }): string {
 /**
  * Construct a sanitized filename prefix for a course instance.
  *
- * @param {Object} course_instance - The course_instance database object.
- * @param {Object} course - The course database object.
- * @return {String} The sanitized prefix string.
+ * @param course_instance - The course_instance database object.
+ * @param course_instance.short_name - The short name of the course instance.
+ * @param course - The course database object.
+ * @param course.short_name - The short name of the course.
+ * @returns The sanitized prefix string.
  */
 export function courseInstanceFilenamePrefix(
   course_instance: {
@@ -39,11 +42,15 @@ export function courseInstanceFilenamePrefix(
 /**
  * Construct a sanitized filename prefix for an assessment.
  *
- * @param {Object} assessment - The assessment database object.
- * @param {Object} assessment_set - The assessment_set database object.
- * @param {Object} course_instance - The course_instance database object.
- * @param {Object} course - The course database object.
- * @return {String} The sanitized prefix string.
+ * @param assessment - The assessment database object.
+ * @param assessment.number - The number of the assessment.
+ * @param assessment_set - The assessment_set database object.
+ * @param assessment_set.abbreviation - The abbreviation of the assessment set.
+ * @param course_instance - The course_instance database object.
+ * @param course_instance.short_name - The short name of the course instance.
+ * @param course - The course database object.
+ * @param course.short_name - The short name of the course.
+ * @returns The sanitized prefix string.
  */
 export function assessmentFilenamePrefix(
   assessment: {
@@ -70,9 +77,11 @@ export function assessmentFilenamePrefix(
 /**
  * Construct a sanitized filename prefix for a question.
  *
- * @param {Object} question - The question database object.
- * @param {Object} course - The course database object.
- * @return {String} The sanitized prefix string.
+ * @param question - The question database object.
+ * @param question.qid - The question ID.
+ * @param course - The course database object.
+ * @param course.short_name - The short name of the course.
+ * @returns The sanitized prefix string.
  */
 export function questionFilenamePrefix(
   question: {

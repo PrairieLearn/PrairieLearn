@@ -21,7 +21,7 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -79,16 +79,10 @@ router.get(
       ).toString();
     }
 
-    let assessmentGHLink: string | null = null;
-    if (res.locals.course.example_course) {
-      // The example course is not found at the root of its repository, so its path is hardcoded
-      assessmentGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
-    } else if (res.locals.course.repository) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        assessmentGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`;
-      }
-    }
+    const assessmentGHLink = courseRepoContentUrl(
+      res.locals.course,
+      `courseInstances/${res.locals.course_instance.short_name}/assessments/${res.locals.assessment.tid}`,
+    );
 
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;

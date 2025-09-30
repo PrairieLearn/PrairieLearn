@@ -1,7 +1,13 @@
 import { z } from 'zod';
 
 import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
-import { AssessmentQuestionSchema, InstanceQuestionSchema } from '../../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  IdSchema,
+  type InstanceQuestionGroup,
+  InstanceQuestionSchema,
+} from '../../../lib/db-types.js';
+import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_open: z.boolean(),
@@ -11,6 +17,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   assessment_question: AssessmentQuestionSchema,
   user_or_group_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
+  rubric_grading_item_ids: z.array(IdSchema),
 });
 export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
@@ -32,4 +39,6 @@ export interface InstanceQuestionTableData {
   maxAutoPoints: number | null;
   aiGradingMode: boolean;
   csrfToken: string;
+  rubric_data: RubricData | null;
+  instanceQuestionGroups: InstanceQuestionGroup[];
 }

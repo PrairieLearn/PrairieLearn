@@ -1,11 +1,11 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadge } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { type Tag } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminTags({
   resLocals,
@@ -28,7 +28,7 @@ export function InstructorCourseAdminTags({
     content: html`
       ${renderHtml(
         <CourseSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
+          authzData={resLocals.authz_data}
           course={resLocals.course}
           urlPrefix={resLocals.urlPrefix}
         />,

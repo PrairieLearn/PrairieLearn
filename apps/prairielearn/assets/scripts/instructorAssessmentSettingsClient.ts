@@ -5,7 +5,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(function () {
-  const tidField = document.querySelector('input[name="aid"]') as HTMLInputElement;
+  const tidField = document.querySelector<HTMLInputElement>('input[name="aid"]')!;
   const otherTids = tidField.dataset.otherValues?.split(',') ?? [];
   const assessmentSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-assessment-settings-form"]',

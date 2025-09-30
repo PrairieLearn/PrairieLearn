@@ -125,9 +125,9 @@ INSERT INTO
 SELECT
   (chunk ->> 'type')::enum_chunk_type,
   $course_id,
-  q.id,
-  ci.id,
-  a.id,
+  q.id AS question_id,
+  ci.id AS course_instance_id,
+  a.id AS assessment_id,
   (chunk ->> 'uuid')::uuid
 FROM
   JSON_ARRAY_ELEMENTS($chunks) AS chunk (json)

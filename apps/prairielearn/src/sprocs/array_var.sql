@@ -5,7 +5,7 @@ CREATE TYPE mean_and_index AS (mean DOUBLE PRECISION, index DOUBLE PRECISION);
 
 CREATE FUNCTION online_mean_sfunc (
         prev_mean_and_index mean_and_index,
-        input DOUBLE PRECISION
+        input double precision
     ) RETURNS mean_and_index AS $$
 DECLARE
     prev_mean DOUBLE PRECISION;
@@ -28,16 +28,16 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE FUNCTION online_mean_ffunc(
         mean_and_index mean_and_index
-    ) RETURNS DOUBLE PRECISION AS $$
+    ) RETURNS double precision AS $$
 BEGIN
     RETURN mean_and_index.mean;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE AGGREGATE online_mean (DOUBLE PRECISION) (
-    STYPE = mean_and_index,
-    SFUNC = online_mean_sfunc,
-    FINALFUNC = online_mean_ffunc
+    stype = mean_and_index,
+    sfunc = online_mean_sfunc,
+    finalfunc = online_mean_ffunc
 );
 
 -------------------------------- ONLINE VARIANCE --------------------------------
@@ -47,7 +47,7 @@ CREATE TYPE mean_and_var_and_index AS (mean DOUBLE PRECISION, variance DOUBLE PR
 
 CREATE FUNCTION online_var_sfunc (
         prev_state mean_and_var_and_index,
-        input DOUBLE PRECISION
+        input double precision
     ) RETURNS mean_and_var_and_index AS $$
 DECLARE
     prev_mean DOUBLE PRECISION;
@@ -74,16 +74,16 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE FUNCTION online_var_ffunc(
         state mean_and_var_and_index
-    ) RETURNS DOUBLE PRECISION AS $$
+    ) RETURNS double precision AS $$
 BEGIN
     RETURN state.variance;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE AGGREGATE online_var (DOUBLE PRECISION) (
-    STYPE = mean_and_var_and_index,
-    SFUNC = online_var_sfunc,
-    FINALFUNC = online_var_ffunc
+    stype = mean_and_var_and_index,
+    sfunc = online_var_sfunc,
+    finalfunc = online_var_ffunc
 );
 
 ------------------------------ ONLINE ARRAY VARIANCE ------------------------------
@@ -91,7 +91,7 @@ CREATE AGGREGATE online_var (DOUBLE PRECISION) (
 
 CREATE FUNCTION array_var_sfunc (
         prev_state mean_and_var_and_index[],
-        input DOUBLE PRECISION[]
+        input double precision[]
     ) RETURNS mean_and_var_and_index[] AS $$
 DECLARE
     new_state mean_and_var_and_index[];
@@ -116,7 +116,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE FUNCTION array_var_ffunc(
         state mean_and_var_and_index[]
-    ) RETURNS DOUBLE PRECISION[] AS $$
+    ) RETURNS double precision[] AS $$
 DECLARE
     result DOUBLE PRECISION[];
 BEGIN
@@ -133,7 +133,7 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE AGGREGATE array_var (DOUBLE PRECISION[]) (
-    STYPE = mean_and_var_and_index[],
-    SFUNC = array_var_sfunc,
-    FINALFUNC = array_var_ffunc
+    stype = mean_and_var_and_index[],
+    sfunc = array_var_sfunc,
+    finalfunc = array_var_ffunc
 );

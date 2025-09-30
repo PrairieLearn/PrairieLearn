@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // usage:
 // $ tsx gen-jsonschema.mts [check]
 

@@ -10,6 +10,7 @@ import {
   uploadInstanceQuestionScores,
 } from '../../lib/score-upload.js';
 import { uploadSubmissions } from '../../lib/submissions-upload.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   InstructorAssessmentUploads,
@@ -21,10 +22,11 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const uploadJobSequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },

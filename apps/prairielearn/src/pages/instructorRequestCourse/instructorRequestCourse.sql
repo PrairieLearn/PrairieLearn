@@ -102,4 +102,4 @@ FROM
   course_requests AS cr
 WHERE
   cr.user_id = $user_id
-  AND cr.created_at BETWEEN NOW() - INTERVAL '24 HOURS' AND NOW();
+  AND cr.created_at BETWEEN NOW() - interval '24 HOURS' AND NOW();

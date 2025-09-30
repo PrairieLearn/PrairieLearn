@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 
-import { createTRPCProxyClient, httpLink } from '@trpc/client';
-import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+import { createTRPCProxyClient, httpLink, unstable_localLink } from '@trpc/client';
 import * as jose from 'jose';
 
 import { type CourseFilesRouter, courseFilesRouter } from '../api/trpc/index.js';
@@ -12,19 +11,9 @@ export type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFi
 
 function getCourseFilesLink() {
   if (config.courseFilesApiTransport === 'process') {
-    // Based on code from the following issue:
-    // https://github.com/trpc/trpc/issues/3768
-    return httpLink({
-      // Dummy URL; won't actually be used.
-      url: 'https://local',
-      async fetch(...args) {
-        return await fetchRequestHandler({
-          endpoint: '',
-          req: new Request(...args),
-          router: courseFilesRouter,
-          createContext: () => ({ jwt: null, bypassJwt: true }),
-        });
-      },
+    return unstable_localLink({
+      router: courseFilesRouter,
+      createContext: async () => ({ jwt: null, bypassJwt: true }),
     });
   }
 

@@ -15,6 +15,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { type QuestionsPageData, selectQuestionsForCourse } from '../../models/questions.js';
@@ -55,7 +56,7 @@ async function getTemplateQuestionsExampleCourse() {
   });
 
   const templateQuestions = Object.entries(questions)
-    .map(([qid, question]) => ({ qid, title: question?.data?.title }))
+    .map(([qid, question]) => ({ qid, title: question.data?.title }))
     .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
     qid: string;
     title: string;
@@ -90,6 +91,10 @@ async function getTemplateQuestions(questions: QuestionsPageData[]) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async function (req, res) {
     if (!res.locals.authz_data.has_course_permission_preview) {
       // Access denied, but instead of sending them to an error page, we'll show
@@ -98,6 +103,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -147,6 +157,10 @@ router.get(
 // want to jump through hoops to get a question ID from a QID.
 router.get(
   '/qid/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny
     // access after the redirect, but doing this will allow us to avoid
@@ -159,6 +173,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',

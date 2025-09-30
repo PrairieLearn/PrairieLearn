@@ -54,8 +54,8 @@ WITH
       COUNT(*) AS workspace_count,
       sum(
         extract(
-          epoch
-          from
+          EPOCH
+          FROM
             w.launching_duration + w.running_duration
         ) / 3600.0
       ) AS workspace_hours
@@ -82,8 +82,8 @@ WITH
       COUNT(*) AS external_grading_count,
       sum(
         extract(
-          epoch
-          from
+          EPOCH
+          FROM
             gj.grading_finished_at - gj.grading_received_at
         ) / 3600.0
       ) AS external_grading_hours

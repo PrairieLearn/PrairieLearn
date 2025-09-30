@@ -38,6 +38,10 @@ export async function selectOrInsertUserByUid(uid: string): Promise<User> {
   return await queryRow(sql.select_or_insert_user_by_uid, { uid }, UserSchema);
 }
 
+export async function updateUserUid({ user_id, uid }: { user_id: string; uid: string }) {
+  return await queryRow(sql.update_user_uid, { user_id, uid }, UserSchema);
+}
+
 export async function generateUsers(count: number): Promise<User[]> {
   const users: User[] = [];
   while (users.length < count) {

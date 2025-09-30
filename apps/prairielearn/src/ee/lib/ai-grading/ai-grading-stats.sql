@@ -28,7 +28,7 @@ WITH
           variants AS v
           JOIN submissions AS s ON s.variant_id = v.id
         WHERE
-          v.instance_question_id = ANY ($instance_question_ids::BIGINT[])
+          v.instance_question_id = ANY ($instance_question_ids::bigint[])
       ) ranked
     WHERE
       rn = 1

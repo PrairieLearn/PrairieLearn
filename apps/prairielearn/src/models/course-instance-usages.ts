@@ -23,7 +23,7 @@
  * `duration` for compute usage.
  */
 
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { computeCompletionCost } from '../lib/ai.js';
 
@@ -31,7 +31,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Update the course instance usages for a submission.
- *
+ * @param param
  * @param param.submission_id The ID of the submission.
  * @param param.user_id The user ID of the submission.
  */
@@ -42,7 +42,7 @@ export async function updateCourseInstanceUsagesForSubmission({
   submission_id: string;
   user_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_submission, {
+  await execute(sql.update_course_instance_usages_for_submission, {
     submission_id,
     user_id,
   });
@@ -51,6 +51,7 @@ export async function updateCourseInstanceUsagesForSubmission({
 /**
  * Update the course instance usages for external grading job.
  *
+ * @param param
  * @param param.grading_job_id The ID of the grading job.
  */
 export async function updateCourseInstanceUsagesForGradingJob({
@@ -58,7 +59,7 @@ export async function updateCourseInstanceUsagesForGradingJob({
 }: {
   grading_job_id: string;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_external_grading, {
+  await execute(sql.update_course_instance_usages_for_external_grading, {
     grading_job_id,
   });
 }
@@ -66,7 +67,11 @@ export async function updateCourseInstanceUsagesForGradingJob({
 /**
  * Update the course instance usages for an AI question generation prompt.
  *
- * @param param.prompt_id The ID of the AI question generation prompt.
+ * @param param
+ * @param param.promptId The ID of the AI question generation prompt.
+ * @param param.authnUserId The ID of the user who generated the prompt.
+ * @param param.promptTokens The number of tokens used in the prompt.
+ * @param param.completionTokens The number of tokens used in the completion.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,
@@ -79,7 +84,7 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptTokens?: number;
   completionTokens?: number;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_ai_question_generation, {
+  await execute(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,
     authn_user_id: authnUserId,
     cost_ai_question_generation: computeCompletionCost({

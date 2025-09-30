@@ -2,7 +2,13 @@ import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { Cache } from '@prairielearn/cache';
-import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
@@ -100,7 +106,7 @@ async function checkRender(
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
   return ((locals as any).issues as Issue[])
-    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
+    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
       return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
@@ -147,7 +153,7 @@ export async function makeContext(
   );
 
   // Ensure that documentation for at least one element is always included.
-  const elementDoc = await queryRow(
+  const elementDoc = await queryOptionalRow(
     sql.select_nearby_documents_from_file,
     {
       embedding: vectorToString(embedding),
@@ -156,6 +162,11 @@ export async function makeContext(
     },
     QuestionGenerationContextEmbeddingSchema,
   );
+  if (elementDoc == null) {
+    throw new Error(
+      'Document embeddings not found. Ensure you have generated embeddings in the administrator settings page.',
+    );
+  }
   if (numAdditionalDocs > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
     // Override the last (least relevant) doc.
     docs[numAdditionalDocs - 1] = elementDoc;
@@ -181,7 +192,7 @@ function extractFromCompletion(
 
   job.info(`completion is ${completionText}`);
 
-  job.info(`used ${completion?.usage?.total_tokens} OpenAI tokens to generate response.`);
+  job.info(`used ${completion.usage?.total_tokens} OpenAI tokens to generate response.`);
 
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
@@ -189,16 +200,16 @@ function extractFromCompletion(
   const html = completionText?.match(htmlSelector)?.groups?.code;
   const python = completionText?.match(pythonSelector)?.groups?.code;
 
-  const out = {};
+  const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
     job.info(`extracted html file: ${html}`);
-    out['html'] = html;
+    out.html = html;
   }
 
   if (python !== undefined) {
     job.info(`extracted python file: ${python}`);
-    out['python'] = python;
+    out.python = python;
   }
 
   return out;
@@ -208,11 +219,11 @@ function extractFromCompletion(
  * Returns the AI question generation cache used for rate limiting.
  */
 let aiQuestionGenerationCache: Cache | undefined;
-export function getAiQuestionGenerationCache() {
+export async function getAiQuestionGenerationCache() {
   // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
   if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
   aiQuestionGenerationCache = new Cache();
-  aiQuestionGenerationCache.init({
+  await aiQuestionGenerationCache.init({
     type: config.nonVolatileCacheType,
     keyPrefix: config.cacheKeyPrefix,
     redisUrl: config.nonVolatileRedisUrl,
@@ -251,32 +262,27 @@ const intervalLengthMs = 3600 * 1000;
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({
-  aiQuestionGenerationCache,
-  userId,
-}: {
-  aiQuestionGenerationCache: Cache;
-  userId: number;
-}) {
-  return (await aiQuestionGenerationCache.get(getIntervalUsageKey(userId))) ?? 0;
+export async function getIntervalUsage({ userId }: { userId: number }) {
+  const cache = await getAiQuestionGenerationCache();
+  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  aiQuestionGenerationCache,
   userId,
   promptTokens,
   completionTokens,
   intervalCost,
 }: {
-  aiQuestionGenerationCache: Cache;
   userId: number;
   promptTokens: number;
   completionTokens: number;
   intervalCost: number;
 }) {
+  const cache = await getAiQuestionGenerationCache();
+
   const completionCost =
     (config.costPerMillionPromptTokens * promptTokens +
       config.costPerMillionCompletionTokens * completionTokens) /
@@ -285,22 +291,18 @@ export async function addCompletionCostToIntervalUsage({
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
 
-  aiQuestionGenerationCache.set(
-    getIntervalUsageKey(userId),
-    intervalCost + completionCost,
-    timeRemainingInInterval,
-  );
+  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
 }
 
 /**
  * Generates the HTML and Python code for a new question using an LLM.
- *
- * @param client The OpenAI client to use.
- * @param courseId The ID of the current course.
- * @param authnUserId The authenticated user's ID.
- * @param prompt The prompt for how to generate a question.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.client The OpenAI client to use.
+ * @param params.courseId The ID of the current course.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.prompt The prompt for how to generate a question.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
@@ -358,7 +360,6 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     job.info(`system prompt is: ${sysPrompt}`);
 
-    // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
       model: MODEL_NAME,
       messages: [
@@ -369,23 +370,21 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     const results = extractFromCompletion(completion, job);
-    const html = results?.html;
+    const html = results.html;
 
     let errors: string[] = [];
     if (html && typeof html === 'string') {
-      errors = validateHTML(html, false, !!results?.python);
+      errors = validateHTML(html, !!results.python);
     } else {
       errors = ['Please generate a question.html file.'];
     }
 
     const files = {};
-
-    if (results?.html) {
-      files['question.html'] = results?.html;
+    if (results.html) {
+      files['question.html'] = results.html;
     }
-
-    if (results?.python) {
-      files['server.py'] = results?.python;
+    if (results.python) {
+      files['server.py'] = results.python;
     }
 
     const courseFilesClient = getCourseFilesClient();
@@ -404,7 +403,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       return;
     }
 
-    await queryAsync(sql.insert_draft_question_metadata, {
+    await execute(sql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
       creator_id: authnUserId,
     });
@@ -418,8 +417,8 @@ Keep in mind you are not just generating an example; you are generating an actua
         user_prompt: prompt,
         system_prompt: sysPrompt,
         response: completion.choices[0].message.content,
-        html: results?.html,
-        python: results?.python,
+        html: results.html,
+        python: results.python,
         errors,
         completion,
         job_sequence_id: serverJob.jobSequenceId,
@@ -427,11 +426,11 @@ Keep in mind you are not just generating an example; you are generating an actua
       IdSchema,
     );
 
-    job.data['questionId'] = saveResults.question_id;
-    job.data['questionQid'] = saveResults.question_qid;
+    job.data.questionId = saveResults.question_id;
+    job.data.questionQid = saveResults.question_qid;
 
-    job.data['promptTokens'] = completion.usage?.prompt_tokens;
-    job.data['completionTokens'] = completion.usage?.completion_tokens;
+    job.data.promptTokens = completion.usage?.prompt_tokens;
+    job.data.completionTokens = completion.usage?.completion_tokens;
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
@@ -441,18 +440,14 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     job.data.html = html;
-    job.data.python = results?.python;
+    job.data.python = results.python;
     job.data.context = context;
 
     errors.push(
       ...(await checkRender(saveResults.status, errors, courseId, userId, saveResults.question_id)),
     );
 
-    if (
-      saveResults.status === 'success' &&
-      errors.length > 0 &&
-      typeof job.data.questionQid === 'string'
-    ) {
+    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
       await regenInternal({
         job,
         client,
@@ -460,7 +455,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
-        originalPython: typeof results?.python === 'string' ? results?.python : undefined,
+        originalPython: results.python,
         remainingAttempts: NUM_TOTAL_ATTEMPTS - 1,
         isAutomated: true,
         questionId: saveResults.question_id,
@@ -501,19 +496,22 @@ function traverseForTagNames(ast: any): Set<string> {
 
 /**
  * Revises a question using the LLM based on user input.
- *
- * @param client The OpenAI client to use.
- * @param authnUserId The authenticated user's ID.
- * @param originalPrompt The prompt creating the original generation.
- * @param revisionPrompt A prompt with user instructions on how to revise the question.
- * @param originalHTML The question.html file to revise.
- * @param originalPython The server.py file to revise.
- * @param remainingAttempts Number of times that regen could be called.
- * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
- * @param questionQid The qid of the question to edit.
- * @param courseId The ID of the current course.
- * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params
+ * @param params.job The server job to use.
+ * @param params.client The OpenAI client to use.
+ * @param params.authnUserId The authenticated user's ID.
+ * @param params.originalPrompt The prompt creating the original generation.
+ * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param params.originalHTML The question.html file to revise.
+ * @param params.originalPython The server.py file to revise.
+ * @param params.remainingAttempts Number of times that regen could be called.
+ * @param params.isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
+ * @param params.questionId The ID of the question to edit.
+ * @param params.questionQid The qid of the question to edit.
+ * @param params.courseId The ID of the current course.
+ * @param params.userId The ID of the generating/saving user.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params.jobSequenceId The ID of the server job.
  */
 async function regenInternal({
   job,
@@ -537,7 +535,7 @@ async function regenInternal({
   authnUserId: string;
   originalPrompt: string;
   revisionPrompt: string;
-  originalHTML: string;
+  originalHTML: string | undefined;
   originalPython: string | undefined;
   remainingAttempts: number;
   isAutomated: boolean;
@@ -593,8 +591,6 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   job.info(`system prompt is: ${sysPrompt}`);
 
-  // TODO [very important]: normalize to prevent prompt injection attacks
-
   const completion = await client.chat.completions.create({
     model: MODEL_NAME,
     messages: [
@@ -606,13 +602,13 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   const results = extractFromCompletion(completion, job);
 
-  const html = results?.html || originalHTML;
-  const python = results?.python || originalPython;
+  const html = results.html || originalHTML;
+  const python = results.python || originalPython;
 
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!python);
+    errors = validateHTML(html, !!python);
   }
 
   const ai_question_generation_prompt_id = await queryRow(
@@ -634,11 +630,10 @@ Keep in mind you are not just generating an example; you are generating an actua
   );
 
   const files: Record<string, string> = {};
-  if (results?.html) {
+  if (html) {
     files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
-
-  if (results?.python && python !== undefined) {
+  if (python) {
     files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 
@@ -658,8 +653,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     return;
   }
 
-  job.data['promptTokens'] = completion.usage?.prompt_tokens;
-  job.data['completionTokens'] = completion.usage?.completion_tokens;
+  job.data.promptTokens = completion.usage?.prompt_tokens;
+  job.data.completionTokens = completion.usage?.completion_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
@@ -705,6 +700,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
+ * @param questionQid The qid of the question to edit.
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
@@ -737,7 +733,7 @@ export async function regenerateQuestion(
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.data['questionQid'] = questionQid;
+    job.data.questionQid = questionQid;
     await regenInternal({
       job,
       client,

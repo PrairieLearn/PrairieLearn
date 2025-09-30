@@ -1,8 +1,8 @@
 CREATE FUNCTION
     scores_to_points_array(
-        IN submission_scores DOUBLE PRECISION[],
-        IN points_list DOUBLE PRECISION[],
-        OUT submission_points DOUBLE PRECISION[]
+        IN submission_scores double precision[],
+        IN points_list double precision[],
+        OUT submission_points double precision[]
     )
 AS $$
 DECLARE

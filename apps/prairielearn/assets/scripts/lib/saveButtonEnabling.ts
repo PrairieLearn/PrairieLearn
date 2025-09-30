@@ -59,8 +59,10 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
     checkDifferences();
   });
 
-  // Check if any values have changed, as indicated by a `true` value in `valueHasChanged`.
-  // If so, enable the save button and return. If there are no changes, disable the save button.
+  /**
+   * Check if any values have changed, as indicated by a `true` value in `valueHasChanged`.
+   * If so, enable the save button and return. If there are no changes, disable the save button.
+   */
   function checkDifferences() {
     for (const element in valueHasChanged) {
       if (valueHasChanged[element] === true) {

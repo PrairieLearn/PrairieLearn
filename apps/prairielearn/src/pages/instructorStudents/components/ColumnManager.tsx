@@ -98,15 +98,15 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const handleTogglePin = (columnId: string) => {
-    const currentLeft = table.getState().columnPinning?.left ?? [];
+    const currentLeft = table.getState().columnPinning.left ?? [];
     const isPinned = currentLeft.includes(columnId);
     let newLeft: string[];
     if (isPinned) {
       newLeft = currentLeft.filter((id) => id !== columnId);
     } else {
       const columnOrder = table.getAllLeafColumns().map((c) => c.id);
-      const newPinned = [...currentLeft, columnId];
-      newLeft = columnOrder.filter((id) => newPinned.includes(id));
+      const newPinned = new Set([...currentLeft, columnId]);
+      newLeft = columnOrder.filter((id) => newPinned.has(id));
     }
     table.setColumnPinning({ left: newLeft, right: [] });
     setActiveElementId(`${columnId}-pin`);
@@ -134,11 +134,7 @@ export function ColumnManager({ table }: { table: Table<StudentRow> }) {
 
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (activeElementId) {
-      const element = document.getElementById(activeElementId);
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
-      if (element) {
-        (element as HTMLElement).focus();
-      }
+      document.getElementById(activeElementId)?.focus();
     }
   }, [activeElementId]);
 

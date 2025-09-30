@@ -175,9 +175,7 @@ function LoginPageContainer({
 function ShibLoginButton() {
   return html`
     <a class="btn btn-shib d-block position-relative" href="/pl/shibcallback">
-      ${config.shibLinkLogo != null
-        ? html`<img src="${config.shibLinkLogo}" class="social-icon" alt="" />`
-        : html`<span class="social-icon"></span>`}
+      <img src="${config.shibLinkLogo}" class="social-icon" alt="" />
       <span class="fw-bold">${config.shibLinkText}</span>
     </a>
   `;

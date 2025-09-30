@@ -20,6 +20,7 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { Assessment } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 import type {
   QuestionAlternativeJson,
@@ -28,6 +29,7 @@ import type {
 } from '../../../schemas/infoAssessment.js';
 
 import { EditQuestionModal } from './EditQuestionModal.js';
+import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -665,8 +667,8 @@ export function InstructorAssessmentQuestionsTable({
   const [addQuestion, setAddQuestion] = useState(false);
   const [selectedQuestionDisplayName, setSelectedQuestionDisplayName] = useState<string>('');
 
-  const handleResetButtonClick = (questionId: string) => {
-    setResetAssessmentQuestionId(questionId);
+  const handleResetButtonClick = (assessmentQuestionId: string) => {
+    setResetAssessmentQuestionId(assessmentQuestionId);
     setShowResetModal(true);
   };
 
@@ -832,9 +834,9 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol =
-    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
-    1;
+  const showAdvanceScorePercCol = questionRows.some(
+    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+  );
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -916,12 +918,16 @@ export function InstructorAssessmentQuestionsTable({
           </table>
         </div>
       </div>
-      <ResetQuestionVariantsModal
-        csrfToken={csrfToken}
-        assessmentQuestionId={resetAssessmentQuestionId}
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-      />
+      {assessmentType === 'Homework' ? (
+        <ResetQuestionVariantsModal
+          csrfToken={csrfToken}
+          assessmentQuestionId={resetAssessmentQuestionId}
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+        />
+      ) : (
+        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+      )}
       {editMode && selectedQuestion ? (
         <EditQuestionModal
           question={selectedQuestion}

@@ -37,11 +37,11 @@ interface TestQuestionResults {
   stats: TestResultStats;
 }
 
-type TestType = 'correct' | 'incorrect' | 'invalid';
+export const TEST_TYPES = ['correct', 'incorrect', 'invalid'] as const;
+export type TestType = (typeof TEST_TYPES)[number];
 
 /**
- * Internal worker for testVariant(). Do not call directly.
- * @protected
+ * Creates the data for a test submission.
  *
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
@@ -49,16 +49,16 @@ type TestType = 'correct' | 'incorrect' | 'invalid';
  * @param test_type - The type of test to run.
  * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
- * @returns The submission ID.
+ * @returns The test submission data, as well as a flag indicating if there was a fatal issue.
  */
-async function createTestSubmission(
+export async function createTestSubmissionData(
   variant: Variant,
   question: Question,
   variant_course: Course,
   test_type: TestType,
   user_id: string,
   authn_user_id: string,
-): Promise<string> {
+): Promise<{ data: questionServers.TestResultData; hasFatalIssue: boolean }> {
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.test) {
     throw new Error('Question type does not support testing, must be Freeform');
@@ -85,6 +85,35 @@ async function createTestSubmission(
   );
 
   if (hasFatalIssue) data.gradable = false;
+  return { data, hasFatalIssue };
+}
+
+/**
+ * Internal worker for testVariant(). Do not call directly.
+ * @param variant - The variant to submit to.
+ * @param question - The question for the variant.
+ * @param variant_course - The course for the variant.
+ * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
+ * @param authn_user_id - The currently authenticated user.
+ * @returns The submission ID.
+ */
+async function createTestSubmission(
+  variant: Variant,
+  question: Question,
+  variant_course: Course,
+  test_type: TestType,
+  user_id: string,
+  authn_user_id: string,
+): Promise<string> {
+  const { data, hasFatalIssue } = await createTestSubmissionData(
+    variant,
+    question,
+    variant_course,
+    test_type,
+    user_id,
+    authn_user_id,
+  );
 
   // We discard the returned updated variant here. We don't need it later in
   // this function, and the caller of this function will re-select the variant
@@ -129,8 +158,6 @@ async function createTestSubmission(
 
 /**
  * Internal worker for testVariant(). Do not call directly.
- * @protected
- *
  * @param expected_submission - Generated reference submission data.
  * @param test_submission - Computed submission to be tested.
  * @returns A list of errors encountered during comparison.
@@ -171,8 +198,6 @@ function compareSubmissions(expected_submission: Submission, test_submission: Su
 /**
  * Internal worker for _testQuestion(). Do not call directly.
  * Tests a question variant. Issues will be inserted into the issues table.
- * @protected
- *
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
@@ -210,15 +235,16 @@ async function testVariant(
     question,
     course,
   );
-  await gradeVariant(
-    updated_variant,
-    test_submission_id,
+  await gradeVariant({
+    variant: updated_variant,
+    check_submission_id: test_submission_id,
     question,
-    course,
+    variant_course: course,
     user_id,
     authn_user_id,
-    true,
-  );
+    ignoreGradeRateLimit: true,
+    ignoreRealTimeGradingDisabled: true,
+  });
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -245,9 +271,11 @@ async function testVariant(
  * Test a question. Issues will be inserted into the issues table.
  *
  * @param question - The question for the variant.
+ * @param course_instance - The course instance for the variant.
  * @param variant_course - The course for the variant.
- * @param authn_user_id - The currently authenticated user.
  * @param test_type - The type of test to run.
+ * @param authn_user_id - The currently authenticated user.
+ * @param user_id - The current effective user.
  */
 async function testQuestion(
   question: Question,
@@ -267,7 +295,7 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const course_instance_id = (course_instance && course_instance.id) || null;
+  const course_instance_id = course_instance?.id || null;
   const options = {};
   const require_open = true;
   const client_fingerprint_id = null;
@@ -331,11 +359,10 @@ async function testQuestion(
 /**
  * Internal worker for _testQuestion(). Do not call directly.
  * Runs a single test.
- * @protected
- *
  * @param logger - The server job to run within.
  * @param showDetails - Whether to display test data details.
  * @param question - The question for the variant.
+ * @param course_instance - The course instance for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
  * @param user_id - The current effective user.
@@ -416,7 +443,7 @@ async function runTest(
  * @param course - The course for the variant.
  * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
- * @return The job sequence ID.
+ * @returns The job sequence ID.
  */
 export async function startTestQuestion(
   count: number,
@@ -428,7 +455,6 @@ export async function startTestQuestion(
   authn_user_id: string,
 ): Promise<string> {
   let success = true;
-  const test_types: TestType[] = ['correct', 'incorrect', 'invalid'] as const;
 
   const serverJob = await createServerJob({
     courseId: course.id,
@@ -441,9 +467,10 @@ export async function startTestQuestion(
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array(count * test_types.length).keys()) {
-      const type = test_types[iter % test_types.length];
-      job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
+    for (const iter of Array.from({ length: count * TEST_TYPES.length }).keys()) {
+      const type = TEST_TYPES[iter % TEST_TYPES.length];
+      const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
+      job.verbose(`Test ${testIterationIndex}, type ${type}`);
       const result = await runTest(
         job,
         showDetails,
@@ -455,9 +482,7 @@ export async function startTestQuestion(
         authn_user_id,
       );
       success = success && result.success;
-      if (result.stats) {
-        stats.push(result.stats);
-      }
+      stats.push(result.stats);
     }
 
     function printStats(label: string, key: keyof TestResultStats) {

@@ -6,6 +6,7 @@ columns
 
 indexes
     lti13_users_pkey: PRIMARY KEY (id) USING btree (id)
+    lti13_users_lti13_instance_id_sub_key: UNIQUE (lti13_instance_id, sub) USING btree (lti13_instance_id, sub)
     lti13_users_user_id_lti13_instance_id_key: UNIQUE (user_id, lti13_instance_id) USING btree (user_id, lti13_instance_id)
     lti13_users_user_id_lti13_instance_id_idx: USING btree (user_id, lti13_instance_id)
 

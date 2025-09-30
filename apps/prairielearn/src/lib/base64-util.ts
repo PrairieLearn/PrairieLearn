@@ -9,8 +9,8 @@ export function b64EncodeUnicode(str: string) {
   // (3) convert raw bytes to Base64
   try {
     return btoa(
-      encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, (match, p1) => {
-        return String.fromCharCode(parseInt('0x' + p1, 16));
+      encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (match, p1) => {
+        return String.fromCharCode(Number.parseInt('0x' + p1, 16));
       }),
     );
   } catch {

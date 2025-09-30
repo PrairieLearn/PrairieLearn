@@ -269,7 +269,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
     afterAll(helperServer.after);
 
     beforeAll(async () => {
-      await sqldb.queryAsync(sql.update_course_repository, {
+      await sqldb.execute(sql.update_course_repository, {
         course_path: courseLiveDir,
         course_repository: courseOriginDir,
       });

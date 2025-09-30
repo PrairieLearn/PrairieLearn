@@ -228,8 +228,8 @@ WHERE
   s.id = $unsafe_submission_id
   AND q.id = $question_id
   AND (
-    $instance_question_id::BIGINT IS NULL
-    OR iq.id = $instance_question_id::BIGINT
+    $instance_question_id::bigint IS NULL
+    OR iq.id = $instance_question_id::bigint
   )
   AND v.id = $variant_id;
 

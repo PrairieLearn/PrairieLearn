@@ -107,7 +107,7 @@ onDocumentReady(() => {
 
     // If MathJax is loaded on this page, attempt to typeset any math
     // that may be in the popover.
-    if (container && typeof window.MathJax !== 'undefined') {
+    if (container && window.MathJax !== undefined) {
       window.MathJax.typesetPromise([container]);
     }
   });
@@ -135,7 +135,7 @@ onDocumentReady(() => {
       target.addEventListener('hide.bs.popover', removeFocusTrap);
 
       // Attempt to place focus on the correct item inside the popover.
-      const popoverBody = container.querySelector('.popover-body') as HTMLElement;
+      const popoverBody = container.querySelector<HTMLElement>('.popover-body')!;
       focusFirstFocusableChild(popoverBody);
     }
   });

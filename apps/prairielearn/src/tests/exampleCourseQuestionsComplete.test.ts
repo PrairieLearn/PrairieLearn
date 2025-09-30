@@ -226,7 +226,7 @@ const internallyGradedQuestions = allQuestionDirs
   .map((dir) => {
     const infoPath = join(dir, 'info.json');
     const info = fs.readJsonSync(infoPath);
-    const relativePath = dir.substring(questionsPath.length + 1);
+    const relativePath = dir.slice(Math.max(0, questionsPath.length + 1));
     return {
       path: dir,
       relativePath,
@@ -235,7 +235,7 @@ const internallyGradedQuestions = allQuestionDirs
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
-      q !== null && !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
+      !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
 const course = {
@@ -246,12 +246,12 @@ const course = {
 const questionModule = questionServers.getModule('Freeform');
 
 // TODO: support '_files'
-const unsupportedQuestions = ['element/fileEditor', 'element/codeDocumentation'];
+const unsupportedQuestions = new Set(['element/fileEditor', 'element/codeDocumentation']);
 
-const accessibilitySkip = [
+const accessibilitySkip = new Set([
   // Extremely large question
   'element/dataframe',
-];
+]);
 
 describe('Internally graded question lifecycle tests', { timeout: 60_000 }, function () {
   const originalProcessQuestionsInServer = config.features['process-questions-in-server'];
@@ -268,7 +268,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
   internallyGradedQuestions.forEach(({ relativePath, info }) => {
     it(`should succeed for ${relativePath}`, async function (context) {
-      if (unsupportedQuestions.includes(relativePath)) {
+      if (unsupportedQuestions.has(relativePath)) {
         context.skip();
       }
       const question = {
@@ -325,7 +325,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       await validateHtml(questionHtml);
 
       // Validate accessibility
-      if (!accessibilitySkip.includes(relativePath)) {
+      if (!accessibilitySkip.has(relativePath)) {
         await validateAxe(questionHtml);
       }
 
@@ -353,7 +353,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
       assert.isEmpty(parseIssues, 'Parse should not produce any issues');
 
-      assert.isEmpty(parseData.format_errors ?? {}, 'Parse should not have any formatting errors');
+      assert.isEmpty(parseData.format_errors, 'Parse should not have any formatting errors');
 
       // 5. Grade
       const gradeResult = await questionModule.grade(

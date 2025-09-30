@@ -21,7 +21,11 @@ import {
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectAssessments, selectAssessmentsCursor } from '../../models/assessment.js';
+import {
+  type AssessmentRow,
+  selectAssessments,
+  selectAssessmentsCursor,
+} from '../../models/assessment.js';
 
 import { AssessmentStats, InstructorAssessments } from './instructorAssessments.html.js';
 
@@ -116,7 +120,7 @@ router.get(
         course_instance_id: res.locals.course_instance.id,
       });
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentRow>({
         header: true,
         columns: [
           'Course',
@@ -152,7 +156,7 @@ router.get(
             res.locals.course.short_name,
             res.locals.course_instance.short_name,
             record.name,
-            record.assessment_number,
+            record.number, // assessment number
             record.label,
             record.title,
             record.tid,

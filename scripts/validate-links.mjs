@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import glob from 'fast-glob';
 import fs from 'fs-extra';
 

@@ -20,7 +20,7 @@ WITH
 SELECT
   file -> 'contents' AS contents
 FROM
-  submission_with_file AS s
+  submission_with_file
 WHERE
   file ->> 'name' = $file_name
 LIMIT

@@ -143,7 +143,7 @@
                     const notebook = nb.parse(JSON.parse(text));
                     const rendered = notebook.render();
 
-                    notebookPreview.appendChild(rendered);
+                    notebookPreview.append(rendered);
                     notebookPreview.classList.remove('d-none');
 
                     // Typeset any math that might be in the notebook.

@@ -8,7 +8,7 @@ import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-
 
 type AbstractConfig = Record<string, unknown>;
 
-interface ConfigSource {
+export interface ConfigSource {
   load: (existingConfig: AbstractConfig) => Promise<AbstractConfig>;
 }
 

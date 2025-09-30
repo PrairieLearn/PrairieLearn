@@ -47,7 +47,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap"> ${i.name ?? `#${i.id}`} </span>
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;
@@ -95,7 +95,7 @@ function LTI13Instance(
         </button>
       </p>
 
-      <div class="modal fade" id="instanceData" tabindex="-1" aria-hidden="true">
+      <div class="modal fade" id="instanceData" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">

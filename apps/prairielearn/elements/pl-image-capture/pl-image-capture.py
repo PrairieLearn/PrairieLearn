@@ -5,6 +5,7 @@
 # because it is tightly coupled with logic within PrairieLearn's web server.
 
 import base64
+import html
 import json
 import urllib.parse
 from io import BytesIO
@@ -62,12 +63,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else None
     )
 
+    if data["ai_grading"]:
+        if data["panel"] == "question":
+            return ""
+
+        uuid = html.escape(pl.get_uuid())
+        name = html.escape(file_name)
+
+        # The AI grading rendering process will recursively strip any nodes that
+        # don't contain text. Usually this is fine, but in this case this node
+        # really only serves to provide a filename and data attribute for the
+        # AI grading system to pick up on.
+        #
+        # To avoid this node being stripped, we just include the filename as text.
+        return f'<div data-image-capture-uuid="{uuid}" data-file-name="{name}">{name}</div>'
+
     html_params = {
         "uuid": pl.get_uuid(),
         "file_name": file_name,
         "editable": data["editable"] and data["panel"] == "question",
         "mobile_capture_enabled": mobile_capture_enabled,
-        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     image_capture_options = {
@@ -78,6 +93,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "mobile_capture_enabled": mobile_capture_enabled,
         "editable": html_params["editable"],
         "external_image_capture_url": external_image_capture_url,
+        "external_image_capture_available": external_image_capture_url is not None,
     }
 
     html_params["image_capture_options_json"] = json.dumps(image_capture_options)

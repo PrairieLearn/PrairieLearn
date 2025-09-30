@@ -3,12 +3,12 @@
 
 CREATE FUNCTION
     histogram_sfunc (
-        state INTEGER[],
-        val DOUBLE PRECISION,
-        min DOUBLE PRECISION,
-        max DOUBLE PRECISION,
-        nbuckets INTEGER
-    ) RETURNS INTEGER[] AS $$
+        state integer[],
+        val double precision,
+        min double precision,
+        max double precision,
+        nbuckets integer
+    ) RETURNS integer[] AS $$
 DECLARE
     bucket INTEGER;
 BEGIN
@@ -33,6 +33,6 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 -- Tell Postgres how to use the new function
 CREATE AGGREGATE histogram (DOUBLE PRECISION, DOUBLE PRECISION, DOUBLE PRECISION, INTEGER) (
-    SFUNC = histogram_sfunc,
-    STYPE = INTEGER[]
+    sfunc = histogram_sfunc,
+    stype = INTEGER[]
 );

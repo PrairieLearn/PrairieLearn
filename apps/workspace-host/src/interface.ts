@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -87,7 +89,7 @@ app.get(
 
     let db_status: string | null | undefined;
     try {
-      await sqldb.queryAsync(sql.update_load_count, {
+      await sqldb.execute(sql.update_load_count, {
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
@@ -194,7 +196,7 @@ async
       logger.verbose(
         `Connecting to database ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`,
       );
-      const idleErrorHandler = function (err) {
+      const idleErrorHandler = function (err: Error) {
         logger.error('idle client error', err);
         // https://github.com/PrairieLearn/PrairieLearn/issues/2396
         process.exit(1);
@@ -210,17 +212,19 @@ async
     async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
     async () => {
-      // Set up a periodic pruning of containers that shouldn't exist.
-      //
-      // Note that this updates the load count. The cron job that kills workspace
-      // hosts will only kill hosts that have a load count of 0. This should ensure
-      // that we never kill a host before its had a chance to spin down all its
-      // containers (and flush their logs and record their disk usage).
+      /**
+       * Set up a periodic pruning of containers that shouldn't exist.
+       *
+       *  Note that this updates the load count. The cron job that kills workspace
+       *  hosts will only kill hosts that have a load count of 0. This should ensure
+       *  that we never kill a host before its had a chance to spin down all its
+       * containers (and flush their logs and record their disk usage).
+       */
       async function pruneContainersTimeout() {
         try {
           await pruneStoppedContainers();
           await pruneRunawayContainers();
-          await sqldb.queryAsync(sql.update_load_count, {
+          await sqldb.execute(sql.update_load_count, {
             instance_id: workspace_server_settings.instance_id,
           });
         } catch (err) {
@@ -236,7 +240,7 @@ async
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
-      await sqldb.queryAsync(sql.insert_workspace_hosts, {
+      await sqldb.execute(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
       });
@@ -252,7 +256,7 @@ async
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
           await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
-          await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+          await sqldb.execute(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
           });
@@ -315,13 +319,13 @@ async function pruneStoppedContainers() {
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
     } catch {
       // No container
-      await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+      await sqldb.execute(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
         instance_id: workspace_server_settings.instance_id,
       });
       return;
     }
-    await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
+    await sqldb.execute(sql.clear_workspace_on_shutdown, {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
     });
@@ -352,7 +356,7 @@ async function pruneRunawayContainers() {
   await async.each(running_workspaces, async (container_info) => {
     if (container_info.Names.length !== 1) return;
     // Remove the preceding forward slash
-    const name = container_info.Names[0].substring(1);
+    const name = container_info.Names[0].slice(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
     const container = docker.getContainer(container_info.Id);
     const containerWorkspaceId = container_info.Labels['prairielearn.workspace-id'];
@@ -440,7 +444,7 @@ async function markSelfUnhealthy(reason: Error | string) {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
-    await sqldb.queryAsync(sql.mark_host_unhealthy, params);
+    await sqldb.execute(sql.mark_host_unhealthy, params);
     logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
@@ -455,7 +459,7 @@ async function markSelfUnhealthy(reason: Error | string) {
  * - local_name (container name)
  * - remote_name (subdirectory name on disk)
  * @param workspace_id Workspace ID to search by.
- * @return Workspace object, as described above.
+ * @returns Workspace object, as described above.
  */
 async function _getWorkspace(workspace_id: string | number): Promise<Workspace> {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
@@ -473,10 +477,10 @@ const _allocateContainerPortMutex = new Mutex();
 
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
- * @return Port that was allocated to the workspace.
+ * @returns Port that was allocated to the workspace.
  */
 async function _allocateContainerPort(workspace_id: string | number): Promise<number> {
-  // Check if a port is considered free in the database
+  /** Check if a port is considered free in the database */
   async function check_port_db(port: number) {
     const params = {
       instance_id: workspace_server_settings.instance_id,
@@ -486,7 +490,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     return !result.rows[0].port_used;
   }
 
-  // Spin up a server to check if a port is free
+  /** Spin up a server to check if a port is free */
   async function check_port_server(port: number) {
     return new Promise((res) => {
       const server = net.createServer();
@@ -524,7 +528,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
     if (!done || !port) {
       throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
     }
-    await sqldb.queryAsync(sql.set_workspace_launch_port, {
+    await sqldb.execute(sql.set_workspace_launch_port, {
       workspace_id,
       launch_port: port,
       instance_id: workspace_server_settings.instance_id,
@@ -574,7 +578,7 @@ function _checkServer(workspace: Workspace): Promise<void> {
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
  * @param workspace_id Workspace ID to search by.
- * @return Workspace launch settings.
+ * @returns Workspace launch settings.
  */
 async function _getWorkspaceSettings(workspace_id: string | number): Promise<WorkspaceSettings> {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
@@ -671,7 +675,7 @@ async function _pullImage(workspace: Workspace) {
 
   const progressDetails = await _getCachedProgressDetails(workspace_image);
 
-  const progressDetailsInit = {};
+  const progressDetailsInit: ProgressDetails = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
@@ -802,7 +806,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
   try {
     await fs.access(workspaceJobPath);
   } catch (err) {
-    throw Error('Could not access workspace files.', { cause: err });
+    throw new Error('Could not access workspace files.', { cause: err });
   }
 
   await fs.chown(
@@ -853,7 +857,7 @@ async function _createContainer(workspace: Workspace): Promise<Docker.Container>
     },
   });
 
-  await sqldb.queryAsync(sql.update_load_count, {
+  await sqldb.execute(sql.update_load_count, {
     instance_id: workspace_server_settings.instance_id,
   });
 
@@ -881,7 +885,7 @@ function safeUpdateWorkspaceState(
   });
 }
 
-// Called by the main server the first time a workspace is used by a user
+/** Called by the main server the first time a workspace is used by a user */
 async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
@@ -892,7 +896,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     launch_uuid: uuid,
     instance_id: workspace_server_settings.instance_id,
   };
-  await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
+  await sqldb.execute(sql.set_workspace_launch_uuid, params);
 
   const { version, course_id, institution_id } = (
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
@@ -983,7 +987,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
         }
 
         const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
-        await sqldb.queryAsync(sql.update_workspace_hostname, {
+        await sqldb.execute(sql.update_workspace_hostname, {
           workspace_id: workspace.id,
           hostname,
         });
@@ -1023,7 +1027,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
   const workspaceSettings = await _getWorkspaceSettings(workspace_id);
-  const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+  const timestamp = new Date().toISOString().replaceAll(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 

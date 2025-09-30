@@ -17,8 +17,8 @@ SELECT
 FROM
   (
     VALUES
-      (true),
-      (false)
+      (TRUE),
+      (FALSE)
   ) AS tmp (open)
   LEFT JOIN counts USING (open)
 ORDER BY
@@ -89,7 +89,14 @@ SELECT
   COALESCE(ci.display_timezone, c.display_timezone) AS display_timezone,
   a.id AS assessment_id,
   CASE
-    WHEN i.assessment_id IS NOT NULL THEN assessments_format (i.assessment_id)
+    WHEN i.assessment_id IS NOT NULL THEN JSONB_BUILD_OBJECT(
+      'label',
+      aset.abbreviation || a.number,
+      'assessment_id',
+      a.id,
+      'color',
+      aset.color
+    )
   END AS assessment,
   iq.assessment_instance_id,
   q.qid AS question_qid,
@@ -97,13 +104,14 @@ SELECT
   u.name AS user_name,
   u.email AS user_email,
   v.variant_seed,
-  COUNT(*) OVER ()::INTEGER AS issue_count
+  COUNT(*) OVER ()::integer AS issue_count
 FROM
   selected_issues
   JOIN issues AS i ON (i.id = selected_issues.issue_id)
   JOIN pl_courses AS c ON (c.id = i.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
   LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
+  LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN questions AS q ON (q.id = i.question_id)
   LEFT JOIN users AS u ON (u.user_id = i.user_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = i.instance_question_id)
@@ -128,7 +136,7 @@ WITH
       i.course_id = $course_id
       AND i.course_caused
       AND i.open IS TRUE
-      AND i.id = ANY ($issue_ids::BIGINT[])
+      AND i.id = ANY ($issue_ids::bigint[])
     RETURNING
       i.id,
       i.open

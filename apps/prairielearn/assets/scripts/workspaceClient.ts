@@ -40,7 +40,7 @@ onDocumentReady(function () {
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
-  const failedMessage = document.getElementById('failed-message') as HTMLElement;
+  const failedMessage = document.getElementById('failed-message')!;
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
@@ -65,7 +65,6 @@ onDocumentReady(function () {
   };
 
   function setMessage(message: string) {
-    console.log('message', message);
     messageBadge.textContent = message;
     failedMessage.textContent = message;
     if (message) {
@@ -110,20 +109,17 @@ onDocumentReady(function () {
   }
 
   socket.on('change:state', (msg) => {
-    console.log('change:state, msg =', msg);
     setState(msg.state);
     setMessage(msg.message);
   });
 
   socket.on('change:message', (msg) => {
-    console.log('change:message, msg =', msg);
     setMessage(msg.message);
   });
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
     socket.emit('joinWorkspace', (msg: any) => {
-      console.log('joinWorkspace, msg =', msg);
       if (msg.errorMessage) {
         setMessage('Error joining workspace: ' + msg.errorMessage);
       } else {
@@ -143,9 +139,7 @@ onDocumentReady(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      socket.emit('heartbeat', (msg: any) => {
-        console.log('heartbeat, msg =', msg);
-      });
+      socket.emit('heartbeat');
     }
   }, heartbeatIntervalSec * 1000);
 

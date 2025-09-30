@@ -8,7 +8,7 @@ import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 
 import { contains } from '@prairielearn/path-utils';
-import { loadSqlEquiv, queryAsync, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOneRowAsync, queryRow } from '@prairielearn/postgres';
 import { IntervalSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -37,7 +37,7 @@ export function emitMessageForWorkspace(
 /**
  * Updates a workspace's current message.
  *
- * @param id The workspace's id.
+ * @param workspace_id The workspace's id.
  * @param message The workspace's new message.
  * @param toDatabase Whether to write the message to the database.
  */
@@ -46,7 +46,7 @@ export async function updateWorkspaceMessage(
   message: string,
   toDatabase = true,
 ): Promise<void> {
-  if (toDatabase) await queryAsync(sql.update_workspace_message, { workspace_id, message });
+  if (toDatabase) await execute(sql.update_workspace_message, { workspace_id, message });
   emitMessageForWorkspace(workspace_id, 'change:message', {
     workspace_id,
     message,
@@ -56,7 +56,7 @@ export async function updateWorkspaceMessage(
 /**
  * Updates a workspace's current state and message.
  *
- * @param id The workspace's id.
+ * @param workspace_id The workspace's id.
  * @param state The workspace's new state.
  * @param message The workspace's new message.
  */
@@ -144,7 +144,7 @@ export async function updateWorkspaceDiskUsage(
 
   // We'll compute the size for all versions of the workspace so that we don't need
   // to separately store the size for each version.
-  const version = Number.parseInt(workspace.version, 10);
+  const version = Number.parseInt(workspace.version);
 
   let totalSize = 0;
   for (let i = 1; i <= version; i++) {
@@ -156,7 +156,7 @@ export async function updateWorkspaceDiskUsage(
     totalSize += size ?? 0;
   }
 
-  await queryAsync(sql.update_workspace_disk_usage_bytes, {
+  await execute(sql.update_workspace_disk_usage_bytes, {
     workspace_id,
     disk_usage_bytes: totalSize,
   });
@@ -211,9 +211,9 @@ export const workspaceFastGlobDefaultOptions = {
 
 /**
  * Update the course instance usages for workspace usage.
- *
+ * @param param
  * @param param.workspace_id The ID of the workspace.
- * @param param.duration The usage duration (in milliseconds).
+ * @param param.duration_milliseconds The usage duration (in milliseconds).
  */
 export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id,
@@ -222,7 +222,7 @@ export async function updateCourseInstanceUsagesForWorkspace({
   workspace_id: string | number;
   duration_milliseconds: number;
 }) {
-  await queryAsync(sql.update_course_instance_usages_for_workspace, {
+  await execute(sql.update_course_instance_usages_for_workspace, {
     workspace_id,
     duration_milliseconds,
   });

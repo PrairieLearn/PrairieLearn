@@ -14,7 +14,12 @@ import {
   StaffTopicSchema,
   StaffZoneSchema,
 } from '../lib/client/safe-db-types.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../lib/db-types.js';
+import {
+  type AssessmentQuestion,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+} from '../lib/db-types.js';
 
 const AssessmentQuestionRowMetaSchema = z.object({
   start_new_zone: z.boolean(),
@@ -54,6 +59,28 @@ export const StaffAssessmentQuestionRowSchema =
   RawStaffAssessmentQuestionRowSchema.brand<'StaffAssessmentQuestionRow'>();
 export type StaffAssessmentQuestionRow = z.infer<typeof StaffAssessmentQuestionRowSchema>;
 
+export async function selectAssessmentQuestionById(id: string): Promise<AssessmentQuestion> {
+  return await sqldb.queryRow(
+    sql.select_assessment_question_by_id,
+    { id },
+    AssessmentQuestionSchema,
+  );
+}
+
+export async function selectAssessmentQuestionByQuestionId({
+  assessment_id,
+  question_id,
+}: {
+  assessment_id: string;
+  question_id: string;
+}): Promise<AssessmentQuestion> {
+  return await sqldb.queryRow(
+    sql.select_assessment_question_by_question_id,
+    { assessment_id, question_id },
+    AssessmentQuestionSchema,
+  );
+}
+
 export async function selectAssessmentQuestions({
   assessment_id,
 }: {
@@ -87,5 +114,5 @@ export async function selectAssessmentQuestions({
     prevZoneId = row.zone.id;
     prevAltGroupId = row.alternative_group.id;
   }
-  return result as StaffAssessmentQuestionRow[];
+  return result;
 }

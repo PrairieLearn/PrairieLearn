@@ -141,7 +141,7 @@ export function createSessionMiddleware(options: SessionOptions) {
             domain: options.cookie?.domain,
             sameSite: options.cookie?.sameSite ?? false,
             expires: req.session.getExpirationDate(),
-            ...(options.cookie?.writeOverrides?.[i] ?? {}),
+            ...options.cookie?.writeOverrides?.[i],
           });
         });
       }

@@ -60,7 +60,8 @@
             }
           ]
         }
-      }
+      },
+      "default": {}
     },
     "assessmentSets": {
       "description": "Assessment sets.",

@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../lib/config.js';
+import { WorkspaceSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -13,10 +14,12 @@ async function stopLaunchedTimeoutWorkspaces() {
     valueType: ValueType.INT,
   });
 
-  const result = await sqldb.queryAsync(sql.select_launched_timeout_workspaces, {
-    launched_timeout_sec: config.workspaceLaunchedTimeoutSec,
-  });
-  for (const workspace of result.rows) {
+  const workspaces = await sqldb.queryRows(
+    sql.select_launched_timeout_workspaces,
+    { launched_timeout_sec: config.workspaceLaunchedTimeoutSec },
+    WorkspaceSchema,
+  );
+  for (const workspace of workspaces) {
     logger.verbose(`workspaceTimeoutStop: launched timeout for workspace_id = ${workspace.id}`);
     await workspaceUtils.updateWorkspaceState(
       workspace.id,
@@ -35,10 +38,12 @@ async function stopHeartbeatTimeoutWorkspaces() {
     valueType: ValueType.INT,
   });
 
-  const result = await sqldb.queryAsync(sql.select_heartbeat_timeout_workspaces, {
-    heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec,
-  });
-  for (const workspace of result.rows) {
+  const workspaces = await sqldb.queryRows(
+    sql.select_heartbeat_timeout_workspaces,
+    { heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec },
+    WorkspaceSchema,
+  );
+  for (const workspace of workspaces) {
     logger.verbose(`workspaceTimeoutStop: heartbeat timeout for workspace_id = ${workspace.id}`);
     await workspaceUtils.updateWorkspaceState(
       workspace.id,
@@ -57,10 +62,11 @@ async function stopInLaunchingTimeoutWorkspaces() {
     valueType: ValueType.INT,
   });
 
-  const result = await sqldb.queryAsync(sql.select_in_launching_timeout_workspaces, {
-    in_launching_timeout_sec: config.workspaceInLaunchingTimeoutSec,
-  });
-  const workspaces = result.rows;
+  const workspaces = await sqldb.queryRows(
+    sql.select_in_launching_timeout_workspaces,
+    { in_launching_timeout_sec: config.workspaceInLaunchingTimeoutSec },
+    WorkspaceSchema,
+  );
   for (const workspace of workspaces) {
     // these are errors because timeouts should have been enforced
     // by the workspace hosts

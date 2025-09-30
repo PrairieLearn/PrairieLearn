@@ -55,8 +55,6 @@ export function validateJSON(json: object, schema: object) {
 export async function readInfoJSON(jsonFilename: string, schema: object): Promise<any> {
   const json = await readJSON(jsonFilename);
 
-  if (!schema) return json;
-
   try {
     validateJSON(json, schema);
     return json;

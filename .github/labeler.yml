@@ -17,9 +17,7 @@ python:
       - any-glob-to-any-file:
           - 'apps/prairielearn/python/**'
           - 'apps/prairielearn/elements/**/*.py'
-          - 'requirements.txt'
           - 'pyproject.toml'
-          - 'docs/requirements.txt'
 
 tooling:
   - changed-files:
@@ -37,7 +35,7 @@ autograder-python:
 preact:
   - changed-files:
       - any-glob-to-any-file:
-          - 'apps/prairielearn/assets/scripts/esm-bundles/react-fragments/*.ts'
+          - 'apps/prairielearn/assets/scripts/esm-bundles/hydrated-components/*.ts'
 schema:
   - changed-files:
       - any-glob-to-any-file:

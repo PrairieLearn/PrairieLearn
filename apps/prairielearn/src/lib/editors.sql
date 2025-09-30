@@ -19,7 +19,9 @@ FROM
   course_instances AS ci
 WHERE
   ci.course_id = $course_id
-  AND ci.deleted_at IS NULL;
+  AND ci.deleted_at IS NULL
+  -- Course instances with sync errors may have null long names
+  AND ci.long_name IS NOT NULL;
 
 -- BLOCK select_question_titles_for_course
 SELECT
@@ -28,7 +30,9 @@ FROM
   questions AS q
 WHERE
   q.course_id = $course_id
-  AND q.deleted_at IS NULL;
+  AND q.deleted_at IS NULL
+  -- Questions with sync errors may have null titles
+  AND q.title IS NOT NULL;
 
 -- BLOCK select_question_uuids_for_course
 SELECT
@@ -39,7 +43,9 @@ WHERE
   -- We deliberately do not filter by deleted_at here. We want to fetch UUIDs
   -- even for deleted question so that we can avoid using the same UUID for a
   -- new question.
-  q.course_id = $course_id;
+  q.course_id = $course_id
+  -- Questions with sync errors may have null UUIDs
+  AND q.uuid IS NOT NULL;
 
 -- BLOCK update_draft_number
 UPDATE pl_courses

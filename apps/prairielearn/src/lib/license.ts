@@ -10,5 +10,5 @@ import { config } from './config.js';
  * @returns Whether or not the server has access to Enterprise Edition features.
  */
 export function isEnterprise() {
-  return config.isEnterprise ?? false;
+  return config.isEnterprise;
 }

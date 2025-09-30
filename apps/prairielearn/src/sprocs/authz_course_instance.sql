@@ -4,8 +4,8 @@ CREATE FUNCTION
         course_instance_id bigint,
         is_administrator boolean,
         req_date timestamptz,
-        req_course_instance_role enum_course_instance_role default NULL
-    ) returns jsonb
+        req_course_instance_role enum_course_instance_role DEFAULT NULL
+    ) RETURNS jsonb
 AS $$
 DECLARE
     course_instance_role enum_course_instance_role;
@@ -71,7 +71,8 @@ BEGIN
             enrollments AS e
         WHERE
             e.user_id = authz_course_instance.user_id
-            AND e.course_instance_id = authz_course_instance.course_instance_id;
+            AND e.course_instance_id = authz_course_instance.course_instance_id
+            AND e.status = 'joined';
 
         has_student_access_with_enrollment := FOUND;
 

@@ -1,5 +1,23 @@
 # @prairielearn/preact-cjs
 
+## 1.1.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 1.1.2
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.1.1
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 1.1.0
 
 ### Minor Changes

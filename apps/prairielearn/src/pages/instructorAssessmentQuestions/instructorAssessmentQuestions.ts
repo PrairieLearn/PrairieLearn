@@ -8,6 +8,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { HttpStatusError } from '@prairielearn/error';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor, MultiEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -121,6 +122,11 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
+      if (res.locals.assessment.type === 'Exam') {
+        // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
+        throw new HttpStatusError(403, 'Cannot reset variants for Exam assessments');
+      }
+
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
@@ -316,7 +322,7 @@ router.post(
       flash('success', 'Assessment questions updated successfully');
       return res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

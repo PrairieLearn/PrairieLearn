@@ -31,6 +31,6 @@ WHERE
 SELECT
   am.*
 FROM
-  assessment_modules as am
+  assessment_modules AS am
 WHERE
   am.course_id = $course_id;
