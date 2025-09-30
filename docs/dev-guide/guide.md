@@ -108,7 +108,7 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 ## HTML accessibility
 
-If you are adding anything more complex than a basic form page, the built-in accessibility checks are likely not enough for checking accessibility. You should use [voiceover (macOS)] or NVDA (windows) to test the page. Some common things to check for:
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. Some common things to check for:
 
 - Are elements announced correctly?
 - Can you navigate the page using only the keyboard?
