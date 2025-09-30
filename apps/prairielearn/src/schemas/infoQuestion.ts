@@ -212,7 +212,7 @@ export const QuestionJsonSchema = z
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
       .optional()
       .default([]),
-    authors: z.array(QuestionAuthorJsonSchema).optional().default([]),
+    authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
       .describe('The list of question files accessible by the client.')

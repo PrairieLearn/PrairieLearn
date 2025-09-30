@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -243,7 +244,9 @@ export async function findCoursesBySharingNames(
   for (const name of sharing_names) result.set(name, null);
 
   for (const row of rows) {
-    // This condition is only for the type checker - since we looked up by sharing name, all found courses will have sharing names set
+    // We looked up the courses by sharing name, so this should hold for all courses
+    assert(row.sharing_name);
+
     if (row.sharing_name) {
       result.set(row.sharing_name, row);
     }

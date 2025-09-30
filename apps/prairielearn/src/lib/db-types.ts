@@ -503,6 +503,15 @@ export const AuthnProviderSchema = z.object({
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
+export const AuthorSchema = z.object({
+  author_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: IdSchema,
+  orcid: z.string().nullable(),
+  origin_course: IdSchema.nullable(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
+
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
 
@@ -1345,15 +1354,6 @@ export const TagSchema = z.object({
   number: z.number().nullable(),
 });
 export type Tag = z.infer<typeof TagSchema>;
-
-export const AuthorSchema = z.object({
-  author_name: z.string().nullable(),
-  email: z.string().nullable(),
-  id: IdSchema,
-  orcid: z.string().nullable(),
-  origin_course: IdSchema.nullable(),
-});
-export type Author = z.infer<typeof AuthorSchema>;
 
 export const TimeSeriesSchema = null;
 

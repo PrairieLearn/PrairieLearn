@@ -1,5 +1,5 @@
 columns
-    author_name: text
+    author_name: character varying(255)
     email: character varying(255)
     id: bigint not null default nextval('authors_id_seq'::regclass)
     orcid: character varying(16)

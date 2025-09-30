@@ -274,7 +274,7 @@ describe('Question syncing', () => {
     assert.ok(syncedQuestionTag);
   });
 
-  it('puts authors into database', async () => {
+  it('syncs authors', async () => {
     const courseData = util.getCourseData();
     const newAuthor = {
       name: 'Example',
@@ -313,7 +313,7 @@ describe('Question syncing', () => {
     assert.ok(questionAuthor);
   });
 
-  it('puts authors with origin course into database', async () => {
+  it('syncs authors with origin course', async () => {
     await features.enable('question-sharing');
     const courseData = util.getCourseData();
     const consumingCourseData = util.getCourseData();
@@ -375,7 +375,7 @@ describe('Question syncing', () => {
     assert.ok(questionAuthor2);
   });
 
-  it('records a warning if "authors" object is invalid', async () => {
+  it('records an error if "authors" object is invalid', async () => {
     const courseData = util.getCourseData();
     const invalidAuthors = [
       {
@@ -437,7 +437,7 @@ describe('Question syncing', () => {
     assert.isUndefined(questionAuthor);
   });
 
-  it('adds authors that are shared between questions', async () => {
+  it('syncs authors that are shared between questions', async () => {
     const courseData = util.getCourseData();
     const newAuthor = {
       name: 'Example',

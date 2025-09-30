@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS authors (
   id BIGSERIAL PRIMARY KEY,
-  author_name TEXT,
+  author_name VARCHAR(255),
   orcid VARCHAR(16),
   email VARCHAR(255),
   origin_course BIGINT REFERENCES pl_courses (id) ON UPDATE CASCADE ON DELETE SET NULL,
