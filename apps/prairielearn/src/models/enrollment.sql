@@ -84,7 +84,6 @@ WHERE
   u.uid = ANY ($uids)
   AND e.course_instance_id = $course_instance_id;
 
-
 -- BLOCK invite_new_enrollment
 INSERT INTO
   enrollments (course_instance_id, status, pending_uid)

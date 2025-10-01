@@ -11,12 +11,7 @@ WHERE
 
 -- BLOCK insert_access_control_extension
 INSERT INTO
-  course_instance_access_control_extensions (
-    course_instance_id,
-    enabled,
-    name,
-    archive_date
-  )
+  course_instance_access_control_extensions (course_instance_id, enabled, name, archive_date)
 VALUES
   (
     $course_instance_id,
@@ -57,8 +52,12 @@ SELECT
   COALESCE(
     json_agg(
       json_build_object('uid', u.uid, 'name', u.name)
-      ORDER BY u.uid
-    ) FILTER (WHERE u.uid IS NOT NULL),
+      ORDER BY
+        u.uid
+    ) FILTER (
+      WHERE
+        u.uid IS NOT NULL
+    ),
     '[]'::json
   ) AS user_data
 FROM

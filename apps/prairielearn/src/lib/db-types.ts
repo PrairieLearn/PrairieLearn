@@ -608,11 +608,11 @@ export const CourseInstanceAccessRuleSchema = z.object({
 export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
 
 export const CourseInstanceAccessControlExtensionSchema = z.object({
+  archive_date: DateFromISOString,
   course_instance_id: IdSchema,
   enabled: z.boolean(),
   id: IdSchema,
   name: z.string().nullable(),
-  archive_date: DateFromISOString,
 });
 export type CourseInstanceAccessControlExtension = z.infer<
   typeof CourseInstanceAccessControlExtensionSchema
