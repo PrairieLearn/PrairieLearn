@@ -44,7 +44,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-  "pytest-cov==6.2.1",
+  "pytest-cov==7.0.0",
   "pytest-repeat==0.9.4",
   "pytest-github-actions-annotate-failures==0.3.0",
   "pytest==8.4.2",
