@@ -3724,7 +3724,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/formatter@workspace:packages/formatter":
+"@prairielearn/formatter@workspace:^, @prairielearn/formatter@workspace:packages/formatter":
   version: 0.0.0-use.local
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
@@ -4030,6 +4030,7 @@ __metadata:
     "@prairielearn/express-list-endpoints": "workspace:^"
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/flash": "workspace:^"
+    "@prairielearn/formatter": "workspace:^"
     "@prairielearn/html": "workspace:^"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/markdown": "workspace:^"
@@ -4043,6 +4044,7 @@ __metadata:
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/preact": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/session": "workspace:^"
