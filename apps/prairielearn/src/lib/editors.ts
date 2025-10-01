@@ -194,7 +194,7 @@ export function getUniqueNames({
  * a default value.
  *
  * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
- * For example, `beforeDateEnabled` is a UI boolean that controls the visibility of the `beforeDate` field.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
 export function propertyValueWithDefault(
   existingValue: any,
