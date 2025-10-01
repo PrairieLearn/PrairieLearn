@@ -219,7 +219,7 @@ router.get(
         prompts,
         question: res.locals.question,
         richTextEditorEnabled,
-        variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),
     );
   }),

@@ -47,7 +47,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ?? `#${i.id}`} </span>
+                  <span style="white-space: nowrap">${i.name}</span>{' '}
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;
@@ -121,7 +121,7 @@ function LTI13Instance(
         |
         <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
         (${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-        key${instance.keystore?.keys?.length === 1 ? '' : 's'})
+        key${instance.keystore?.keys.length === 1 ? '' : 's'})
       </p>
 
       <hr />
@@ -250,9 +250,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
 
       <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
       contains ${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-      key${instance.keystore?.keys?.length === 1 ? '' : 's'}.<br />
+      key${instance.keystore?.keys.length === 1 ? '' : 's'}.<br />
       <ul>
-        ${instance.keystore?.keys?.map((k) => {
+        ${instance.keystore?.keys.map((k) => {
           return html`<li>
             <form method="POST">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

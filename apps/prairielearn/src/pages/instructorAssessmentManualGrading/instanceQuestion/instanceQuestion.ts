@@ -106,6 +106,12 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
+    // TODO: This may not be needed.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (res.locals.instance_question == null) {
+      throw new error.HttpStatusError(404, 'Instance question not found');
+    }
+
     const instance_question = res.locals.instance_question as InstanceQuestion;
 
     const instanceQuestionGroup = await run(async () => {
@@ -118,10 +124,6 @@ router.get(
       }
       return null;
     });
-
-    if (instance_question == null) {
-      throw new error.HttpStatusError(404, 'Instance question not found');
-    }
 
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
@@ -378,6 +380,7 @@ router.post(
     );
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions =
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
@@ -443,6 +446,7 @@ router.post(
       );
     } else if (body.__action === 'next_instance_question') {
       req.session.skip_graded_submissions =
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
 
       const use_instance_question_groups = await run(async () => {

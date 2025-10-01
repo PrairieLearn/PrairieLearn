@@ -25,11 +25,6 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * ascending order, checks if the logs are considered expired.
  */
 function areContainerLogsExpired(workspaceLogs: WorkspaceLogRow[]): boolean {
-  if (config.workspaceLogsExpirationDays === null) {
-    // Expiration is disabled.
-    return false;
-  }
-
   if (workspaceLogs.length === 0) return false;
   const firstLog = workspaceLogs[0];
   // @ts-expect-error -- We need to mark `workspace_logs.date` as non-nullable.
