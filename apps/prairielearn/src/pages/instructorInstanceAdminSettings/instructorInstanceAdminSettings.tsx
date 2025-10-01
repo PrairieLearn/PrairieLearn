@@ -291,9 +291,19 @@ router.post(
           selfEnrollmentBeforeDateEnabled ??
           selfEnrollmentBeforeDate) !== undefined;
 
+      const {
+        course_instance: courseInstance,
+        course,
+        institution,
+      } = getCourseInstanceContext(res.locals, 'instructor');
+      const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+        institution_id: institution.id,
+        course_id: course.id,
+        course_instance_id: courseInstance.id,
+      });
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
-      if (hasSelfEnrollmentSettings) {
+      if (hasSelfEnrollmentSettings && enrollmentManagementEnabled) {
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
