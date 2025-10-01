@@ -69,25 +69,14 @@ The raw history of student answers can also be accessed in the "Data" column of 
 
 You need to give the student access to both the course instance itself for the completed semester and the specific assessments within that course instance.
 
-For example, suppose Fall 2017 is the completed semester, and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
+First, for the course instance, create a extension for the student:
 
-First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
+1. Go to the course instance's **Publishing** page (Admin → Publishing)
+2. Click **Add Extension** to create a new extension
+3. Enter the student's UID and set the new archive date
+4. Save the extension
 
-```json title="infoCourseInstance.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2017-08-19T00:00:01",
-      "endDate": "2017-12-31T23:59:59"
-    },
-    {
-      "uids": ["student@example.com"],
-      "startDate": "2018-02-01T00:00:01",
-      "endDate": "2018-02-28T23:59:59"
-    }
-  ]
-}
-```
+This will allow the student to access the course instance beyond the original archive date.
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 

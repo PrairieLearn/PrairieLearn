@@ -364,98 +364,58 @@ function ExtensionTableRow({
     <tr>
       <td class="col-1">
         {editingExtensionId === extension.id ? (
-          <div class="d-flex align-items-center gap-2">
-            <input
-              type="text"
-              class="form-control form-control-sm"
-              value={editingName}
-              autoFocus
-              onChange={(e) => onEditingNameChange((e.target as HTMLInputElement).value)}
-              onBlur={() => onSaveName(extension.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onSaveName(extension.id);
-                } else if (e.key === 'Escape') {
-                  onCancelEdit();
-                }
-              }}
-            />
-          </div>
+          <input
+            type="text"
+            class="form-control form-control-sm"
+            value={editingExtensionData.name}
+            onChange={(e) =>
+              onEditingExtensionDataChange({
+                ...editingExtensionData,
+                name: (e.target as HTMLInputElement).value,
+              })
+            }
+          />
+        ) : extension.name ? (
+          <strong>{extension.name}</strong>
         ) : (
-          <div class="d-flex align-items-center gap-2">
-            {extension.name ? (
-              <strong>{extension.name}</strong>
-            ) : (
-              <span class="text-muted">Unnamed</span>
-            )}
-            {canEdit && (
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                title="Edit name"
-                disabled={isSubmitting}
-                onClick={() => onEditName(extension.id, extension.name)}
-              >
-                <i class="fas fa-pencil-alt" aria-hidden="true" />
-              </button>
-            )}
-          </div>
+          <span class="text-muted">Unnamed</span>
         )}
       </td>
       <td class="col-1">
-        {editingDateExtensionId === extension.id ? (
-          <div class="d-flex align-items-center gap-2">
-            <input
-              type="date"
-              class="form-control form-control-sm"
-              value={editingDate}
-              autoFocus
-              onChange={(e) => onEditingDateChange((e.target as HTMLInputElement).value)}
-              onBlur={() => onSaveDate(extension.id)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  onSaveDate(extension.id);
-                } else if (e.key === 'Escape') {
-                  onCancelEditDate();
-                }
-              }}
-            />
-          </div>
+        {editingExtensionId === extension.id ? (
+          <input
+            type="date"
+            class="form-control form-control-sm"
+            value={editingExtensionData.archiveDate}
+            onChange={(e) =>
+              onEditingExtensionDataChange({
+                ...editingExtensionData,
+                archiveDate: (e.target as HTMLInputElement).value,
+              })
+            }
+          />
         ) : (
-          <div class="d-flex align-items-center gap-2">
-            <span>
-              {formatDateFriendly(extension.archive_date, timeZone)}
-              {isBeforeInstanceArchiveDate && (
-                <>
-                  {' '}
-                  <OverlayTrigger
-                    placement="top"
-                    overlay={
-                      <Tooltip id={`tooltip-${extension.id}`}>
-                        This date will be ignored, it is before the overall archive date
-                      </Tooltip>
-                    }
-                  >
-                    <i
-                      class="fas fa-exclamation-triangle text-warning"
-                      aria-label="Warning: This date will be ignored"
-                    />
-                  </OverlayTrigger>
-                </>
-              )}
-            </span>
-            {canEdit && (
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-secondary"
-                title="Edit archive date"
-                disabled={isSubmitting}
-                onClick={() => onEditDate(extension.id, extension.archive_date)}
-              >
-                <i class="fas fa-pencil-alt" aria-hidden="true" />
-              </button>
+          <span>
+            {formatDateFriendly(extension.archive_date, timeZone)}
+            {isBeforeInstanceArchiveDate && (
+              <>
+                {' '}
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id={`tooltip-${extension.id}`}>
+                      This date will be ignored, it is before the overall archive date
+                    </Tooltip>
+                  }
+                >
+                  <i
+                    class="fas fa-exclamation-triangle text-warning"
+                    aria-label="Warning: This date will be ignored"
+                  />
+                </OverlayTrigger>
+              </>
             )}
-          </div>
+          </span>
         )}
       </td>
       <td class="col-3">
@@ -493,7 +453,7 @@ function ExtensionTableRow({
                           {user.name || '—'}
                         </a>
                       </OverlayTrigger>
-                      {canEdit && (
+                      {canEdit && editingExtensionId === extension.id && (
                         <button
                           type="button"
                           class="btn btn-sm btn-outline-danger"
@@ -582,16 +542,49 @@ function ExtensionTableRow({
         </div>
       </td>
       <td class="col-1">
-        {canEdit && (
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-danger"
-            disabled={isSubmitting}
-            onClick={() => onDelete(extension.id)}
-          >
-            Delete
-          </button>
-        )}
+        <div class="d-flex gap-1">
+          {canEdit && (
+            <>
+              {editingExtensionId === extension.id ? (
+                <>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-success"
+                    disabled={isSubmitting}
+                    onClick={() => onSaveExtension(extension.id)}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    disabled={isSubmitting}
+                    onClick={onCancelEdit}
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  class="btn btn-sm btn-outline-primary"
+                  disabled={isSubmitting}
+                  onClick={() => onEditExtension(extension)}
+                >
+                  Edit
+                </button>
+              )}
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                disabled={isSubmitting}
+                onClick={() => onDelete(extension.id)}
+              >
+                Delete
+              </button>
+            </>
+          )}
+        </div>
       </td>
     </tr>
   );

@@ -9,7 +9,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, execute, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -289,6 +289,20 @@ router.post(
 
       await execute(sql.update_publishing_extension_date, {
         extension_id,
+        archive_date,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'update_extension') {
+      const extension_id = req.body.extension_id;
+      const name = req.body.name || '';
+      const archive_date = req.body.archive_date || '';
+
+      await execute(sql.update_extension, {
+        extension_id,
+        name,
         archive_date,
         course_instance_id: res.locals.course_instance.id,
       });

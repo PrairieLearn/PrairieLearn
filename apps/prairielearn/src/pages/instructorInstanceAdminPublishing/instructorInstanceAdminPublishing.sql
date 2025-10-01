@@ -30,6 +30,15 @@ WHERE
   id = $extension_id
   AND course_instance_id = $course_instance_id;
 
+-- BLOCK update_extension
+UPDATE course_instance_publishing_extensions
+SET
+  name = $name,
+  archive_date = CASE WHEN $archive_date = '' THEN NULL ELSE $archive_date::timestamp END
+WHERE
+  id = $extension_id
+  AND course_instance_id = $course_instance_id;
+
 -- BLOCK add_user_to_extension
 INSERT INTO course_instance_publishing_enrollment_extensions (
   course_instance_publishing_extension_id,

@@ -1,14 +1,35 @@
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to [course staff](../course/index.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
+By default, course instances and assessments are only accessible to [course staff](../course/index.md#course-staff). For course instances, you can use the `publishing` configuration to set basic availability dates, and the `allowAccess` option for more advanced access control. For assessments, the `allowAccess` option is used in the `infoAssessment.json` files.
 
 ## Two levels of access control for assessments
 
 In PrairieLearn there are two levels of access control for students to gain access to assessments:
 
-1. First, a student must have access to the **course instance**. This access is granted with the `allowAccess` rules in [infoCourseInstance.json](../courseInstance.md). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
+1. First, a student must have access to the **course instance**. This access is controlled by the `publishing` configuration in [infoCourseInstance.json](../courseInstance.md) for basic date-based access, and with [publishing extensions](../courseInstance.md#controlling-access-by-uid). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
+
+??? note "`allowAccess` rules for course instances"
+
+    `allowAccess` rules for course instances are deprecated. Instead, use [publishing extensions](../courseInstance.md#publishing-extensions).
 
 2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
+
+## Publishing configuration for course instances
+
+For course instances, you can control access using the `publishing` configuration in `infoCourseInstance.json`. This allows you to set when the course instance becomes available (`publishDate`) and when it becomes unavailable (`archiveDate`):
+
+```json title="infoCourseInstance.json"
+{
+  "publishing": {
+    "publishDate": "2015-01-19T00:00:01",
+    "archiveDate": "2015-05-13T23:59:59"
+  }
+}
+```
+
+This can be edited on the **Publishing** page (Course Instance → Settings → Publishing).
+
+Both `publishDate` and `archiveDate` must be specified together. If you only want to set one date, you can set the other to `null` or omit the `publishing` configuration entirely.
 
 ## `allowAccess` format
 
@@ -263,16 +284,14 @@ In the example above, from January 1st to February 15th, students can see the as
 
 ```json
 {
-  "allowAccess": [
-    {
-      "startDate": "2014-08-19T00:00:01",
-      "endDate": "2014-12-22T23:59:59"
-    }
-  ]
+  "publishing": {
+    "publishDate": "2014-08-19T00:00:01",
+    "archiveDate": "2014-12-22T23:59:59"
+  }
 }
 ```
 
-The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
+The above `publishing` configuration is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
 
 ### Exam example
 
