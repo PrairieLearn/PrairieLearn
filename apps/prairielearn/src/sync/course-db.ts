@@ -1436,10 +1436,6 @@ export function validateAccessControl({
   const warnings: string[] = [];
   const errors: string[] = [];
 
-  if (!accessControlJson) {
-    return { warnings, errors };
-  }
-
   const enabledFieldPairs = [
     // dateControl fields
     { enabledField: 'dateControl.releaseDateEnabled', valueField: 'dateControl.releaseDate' },
