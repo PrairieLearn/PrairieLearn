@@ -4,8 +4,8 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
-import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstance, type CourseInstancePublishingRule } from '../../lib/db-types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-access-control-extensions.types.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
@@ -23,8 +23,8 @@ export function InstructorInstanceAdminAccess({
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
   hasCourseInstancePermissionEdit: boolean;
-  accessRules: CourseInstanceAccessRule[];
-  accessControlExtensions: CourseInstanceAccessControlExtensionWithUsers[];
+  accessRules: CourseInstancePublishingRule[];
+  accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;
   origHash: string;
 }) {
@@ -70,7 +70,7 @@ function LegacyAccessRuleCard({
   csrfToken,
   origHash,
 }: {
-  accessRules: CourseInstanceAccessRule[];
+  accessRules: CourseInstancePublishingRule[];
   showComments: boolean;
   courseInstance: CourseInstance;
   hasCourseInstancePermissionView: boolean;
@@ -134,7 +134,7 @@ function AccessRuleRow({
   hasCourseInstancePermissionView,
   showComments,
 }: {
-  accessRule: CourseInstanceAccessRule;
+  accessRule: CourseInstancePublishingRule;
   timeZone: string;
   hasCourseInstancePermissionView: boolean;
   showComments: boolean;

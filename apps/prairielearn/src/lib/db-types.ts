@@ -583,8 +583,6 @@ export const CourseSchema = z.object({
 export type Course = z.infer<typeof CourseSchema>;
 
 export const CourseInstanceSchema = z.object({
-  access_control_archive_date: DateFromISOString.nullable(),
-  access_control_publish_date: DateFromISOString.nullable(),
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
@@ -595,6 +593,8 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  publishing_archive_date: DateFromISOString.nullable(),
+  publishing_publish_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
   self_enrollment_enabled_before_date_enabled: z.boolean(),
@@ -608,7 +608,7 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
-export const CourseInstanceAccessRuleSchema = z.object({
+export const CourseInstancePublishingRuleSchema = z.object({
   course_instance_id: IdSchema,
   end_date: DateFromISOString.nullable(),
   id: IdSchema,
@@ -618,26 +618,25 @@ export const CourseInstanceAccessRuleSchema = z.object({
   start_date: DateFromISOString.nullable(),
   uids: z.string().array().nullable(),
 });
-export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
 
-export const CourseInstanceAccessControlExtensionSchema = z.object({
+export const CourseInstancePublishingExtensionSchema = z.object({
   archive_date: DateFromISOString,
   course_instance_id: IdSchema,
-  enabled: z.boolean(),
   id: IdSchema,
   name: z.string().nullable(),
 });
-export type CourseInstanceAccessControlExtension = z.infer<
-  typeof CourseInstanceAccessControlExtensionSchema
+export type CourseInstancePublishingExtension = z.infer<
+  typeof CourseInstancePublishingExtensionSchema
 >;
 
-export const CourseInstanceAccessControlEnrollmentExtensionSchema = z.object({
-  course_instance_access_control_extension_id: IdSchema,
+export const CourseInstancePublishingEnrollmentExtensionSchema = z.object({
+  course_instance_publishing_extension_id: IdSchema,
   enrollment_id: IdSchema,
   id: IdSchema,
 });
-export type CourseInstanceAccessControlEnrollmentExtension = z.infer<
-  typeof CourseInstanceAccessControlEnrollmentExtensionSchema
+export type CourseInstancePublishingEnrollmentExtension = z.infer<
+  typeof CourseInstancePublishingEnrollmentExtensionSchema
 >;
 
 export const CourseInstancePermissionSchema = z.object({

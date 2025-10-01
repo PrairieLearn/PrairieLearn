@@ -3,13 +3,13 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseInstancePublishingRuleSchema, IdSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const CiarTestResultSchema = z.object({
-  ...CourseInstanceAccessRuleSchema.shape,
+  ...CourseInstancePublishingRuleSchema.shape,
   authorized: z.boolean(),
   user_institution_id: IdSchema.nullable(),
   course_institution_id: IdSchema.nullable(),

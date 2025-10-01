@@ -108,13 +108,13 @@ export function InstructorCourseAdminInstances({
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
-                      const isLegacyPublishDate = row.access_control_publish_date === null;
-                      const isLegacyArchiveDate = row.access_control_archive_date === null;
-                      const publishDate = row.access_control_publish_date
-                        ? `${formatDate(row.access_control_publish_date, row.display_timezone)}`
+                      const isLegacyPublishDate = row.publishing_publish_date === null;
+                      const isLegacyArchiveDate = row.publishing_archive_date === null;
+                      const publishDate = row.publishing_publish_date
+                        ? `${formatDate(row.publishing_publish_date, row.display_timezone)}`
                         : row.formatted_start_date;
-                      const archiveDate = row.access_control_archive_date
-                        ? `${formatDate(row.access_control_archive_date, row.display_timezone)}`
+                      const archiveDate = row.publishing_archive_date
+                        ? `${formatDate(row.publishing_archive_date, row.display_timezone)}`
                         : row.formatted_end_date;
                       return html`
                         <tr>

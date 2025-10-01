@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-import { CourseInstanceAccessControlExtensionSchema } from '../lib/db-types.js';
+import { CourseInstancePublishingExtensionSchema } from '../lib/db-types.js';
 
-export const CourseInstanceAccessControlExtensionWithUsersSchema =
-  CourseInstanceAccessControlExtensionSchema.extend({
+export const CourseInstancePublishingExtensionWithUsersSchema =
+  CourseInstancePublishingExtensionSchema.extend({
     user_data: z.array(z.object({ uid: z.string(), name: z.string().nullable() })),
   });
-export type CourseInstanceAccessControlExtensionWithUsers = z.infer<
-  typeof CourseInstanceAccessControlExtensionWithUsersSchema
+export type CourseInstancePublishingExtensionWithUsers = z.infer<
+  typeof CourseInstancePublishingExtensionWithUsersSchema
 >;

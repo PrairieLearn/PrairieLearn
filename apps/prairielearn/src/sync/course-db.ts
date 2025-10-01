@@ -1402,41 +1402,37 @@ function validateCourseInstance({
   }
 
   const usingLegacyAllowAccess = courseInstance.allowAccess.length > 0;
-  const usingModernAccessControl = courseInstance.accessControl != null;
+  const usingModernPublishing = courseInstance.publishing != null;
 
-  if (usingLegacyAllowAccess && usingModernAccessControl) {
-    errors.push('Cannot use both "allowAccess" and "accessControl" in the same course instance.');
-  } else if (usingModernAccessControl) {
-    assert(courseInstance.accessControl != null);
-    const hasArchiveDate = courseInstance.accessControl.archiveDate != null;
-    const hasPublishDate = courseInstance.accessControl.publishDate != null;
+  if (usingLegacyAllowAccess && usingModernPublishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (usingModernPublishing) {
+    assert(courseInstance.publishing != null);
+    const hasArchiveDate = courseInstance.publishing.archiveDate != null;
+    const hasPublishDate = courseInstance.publishing.publishDate != null;
     if (hasPublishDate && !hasArchiveDate) {
-      errors.push(
-        '"accessControl.archiveDate" is required if "accessControl.publishDate" is specified.',
-      );
+      errors.push('"publishing.archiveDate" is required if "publishing.publishDate" is specified.');
     }
     if (!hasPublishDate && hasArchiveDate) {
-      errors.push(
-        '"accessControl.publishDate" is required if "accessControl.archiveDate" is specified.',
-      );
+      errors.push('"publishing.publishDate" is required if "publishing.archiveDate" is specified.');
     }
 
     const parsedPublishDate =
-      courseInstance.accessControl.publishDate == null
+      courseInstance.publishing.publishDate == null
         ? null
-        : parseJsonDate(courseInstance.accessControl.publishDate);
+        : parseJsonDate(courseInstance.publishing.publishDate);
 
     if (hasPublishDate && parsedPublishDate == null) {
-      errors.push('"accessControl.publishDate" is not a valid date.');
+      errors.push('"publishing.publishDate" is not a valid date.');
     }
 
     const parsedArchiveDate =
-      courseInstance.accessControl.archiveDate == null
+      courseInstance.publishing.archiveDate == null
         ? null
-        : parseJsonDate(courseInstance.accessControl.archiveDate);
+        : parseJsonDate(courseInstance.publishing.archiveDate);
 
     if (hasArchiveDate && parsedArchiveDate == null) {
-      errors.push('"accessControl.archiveDate" is not a valid date.');
+      errors.push('"publishing.archiveDate" is not a valid date.');
     }
 
     if (

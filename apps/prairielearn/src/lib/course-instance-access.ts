@@ -1,11 +1,11 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { type AccessControlJson, type AccessRuleJson } from '../schemas/infoCourseInstance.js';
+import { type PublishingJson, type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstance,
-  type CourseInstanceAccessControlExtension,
-  type CourseInstanceAccessRule,
+  type CourseInstancePublishingExtension,
+  type CourseInstancePublishingRule,
   type EnumCourseInstanceRole,
   type EnumCourseRole,
   type EnumMode,
@@ -17,7 +17,7 @@ export interface CourseInstanceAccessParams {
   course_role: EnumCourseRole;
   mode_reason: EnumModeReason;
   mode: EnumMode;
-  accessControlExtensions: CourseInstanceAccessControlExtension[];
+  accessControlExtensions: CourseInstancePublishingExtension[];
 }
 
 /**
@@ -43,14 +43,14 @@ export function evaluateCourseInstanceAccess(
   }
 
   // If no start date is set, the course instance is not published
-  if (courseInstance.access_control_publish_date == null) {
+  if (courseInstance.publishing_publish_date == null) {
     return {
       hasAccess: false,
       reason: 'Course instance is not published',
     };
   }
 
-  if (currentDate < courseInstance.access_control_publish_date) {
+  if (currentDate < courseInstance.publishing_publish_date) {
     return {
       hasAccess: false,
       reason: 'Course instance is not yet published',
@@ -59,8 +59,8 @@ export function evaluateCourseInstanceAccess(
 
   // Check if course instance has been archived
   if (
-    courseInstance.access_control_archive_date &&
-    currentDate > courseInstance.access_control_archive_date
+    courseInstance.publishing_archive_date &&
+    currentDate > courseInstance.publishing_archive_date
   ) {
     return {
       hasAccess: false,
@@ -98,7 +98,7 @@ interface CourseInstanceAccessControlExtensionData {
 
 export interface AccessControlMigrationResult {
   success: true;
-  accessControl: AccessControlJson;
+  accessControl: PublishingJson;
   extensions: CourseInstanceAccessControlExtensionData[];
 }
 
@@ -122,7 +122,7 @@ const toIsoString = (date: Date, timezone: string) => {
  * Converts a database CourseInstanceAccessRule to the AccessRuleJson format.
  */
 export function convertAccessRuleToJson(
-  accessRule: CourseInstanceAccessRule,
+  accessRule: CourseInstancePublishingRule,
   courseInstanceTimezone: string,
 ): AccessRuleJson {
   const json: AccessRuleJson = {};

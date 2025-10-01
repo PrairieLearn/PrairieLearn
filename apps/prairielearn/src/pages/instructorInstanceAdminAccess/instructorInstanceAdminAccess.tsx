@@ -19,7 +19,7 @@ import {
   convertAccessRuleToJson,
   migrateAccessRuleJsonToAccessControl,
 } from '../../lib/course-instance-access.js';
-import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
+import { CourseInstancePublishingRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -44,7 +44,7 @@ router.get(
     const accessRules = await queryRows(
       sql.course_instance_access_rules,
       { course_instance_id: res.locals.course_instance.id },
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     );
 
     const accessControlExtensions = await selectAccessControlExtensionsWithUsersByCourseInstance(
@@ -129,7 +129,7 @@ router.post(
       const accessRules = await queryRows(
         sql.course_instance_access_rules,
         { course_instance_id: res.locals.course_instance.id },
-        CourseInstanceAccessRuleSchema,
+        CourseInstancePublishingRuleSchema,
       );
 
       if (accessRules.length > 0) {
@@ -164,24 +164,24 @@ router.post(
         })
         .parse(req.body);
 
-      // Update the access control settings
-      const resolvedAccessControl = {
+      // Update the publishing settings
+      const resolvedPublishing = {
         publishDate: propertyValueWithDefault(
-          courseInstanceInfo.accessControl?.publishDate,
+          courseInstanceInfo.publishing?.publishDate,
           parsedBody.accessControl.publishDate,
           (v: string | null) => v === null || v === '',
         ),
         archiveDate: propertyValueWithDefault(
-          courseInstanceInfo.accessControl?.archiveDate,
+          courseInstanceInfo.publishing?.archiveDate,
           parsedBody.accessControl.archiveDate,
           (v: string | null) => v === null || v === '',
         ),
       };
-      const hasAccessControl = Object.values(resolvedAccessControl).some((v) => v !== undefined);
-      if (!hasAccessControl) {
-        courseInstanceInfo.accessControl = undefined;
+      const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
+      if (!hasPublishing) {
+        courseInstanceInfo.publishing = undefined;
       } else {
-        courseInstanceInfo.accessControl = resolvedAccessControl;
+        courseInstanceInfo.publishing = resolvedPublishing;
       }
 
       // Format and write the updated JSON
@@ -217,7 +217,7 @@ router.post(
       const accessRules = await queryRows(
         sql.course_instance_access_rules,
         { course_instance_id: res.locals.course_instance.id },
-        CourseInstanceAccessRuleSchema,
+        CourseInstancePublishingRuleSchema,
       );
 
       if (accessRules.length === 0) {
@@ -255,12 +255,12 @@ router.post(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
 
-      // Add the access control settings
-      if (!courseInstanceInfo.accessControl) {
-        courseInstanceInfo.accessControl = {};
+      // Add the publishing settings
+      if (!courseInstanceInfo.publishing) {
+        courseInstanceInfo.publishing = {};
       }
 
-      courseInstanceInfo.accessControl = migrationResult.accessControl;
+      courseInstanceInfo.publishing = migrationResult.accessControl;
 
       // Remove the allowAccess rules
       if (courseInstanceInfo.allowAccess) {

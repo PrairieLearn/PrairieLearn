@@ -7,15 +7,15 @@ import {
 } from '@prairielearn/postgres';
 
 import {
-  type CourseInstanceAccessControlEnrollmentExtension,
-  CourseInstanceAccessControlEnrollmentExtensionSchema,
-  type CourseInstanceAccessControlExtension,
-  CourseInstanceAccessControlExtensionSchema,
+  type CourseInstancePublishingEnrollmentExtension,
+  CourseInstancePublishingEnrollmentExtensionSchema,
+  type CourseInstancePublishingExtension,
+  CourseInstancePublishingExtensionSchema,
 } from '../lib/db-types.js';
 
 import {
-  type CourseInstanceAccessControlExtensionWithUsers,
-  CourseInstanceAccessControlExtensionWithUsersSchema,
+  type CourseInstancePublishingExtensionWithUsers,
+  CourseInstancePublishingExtensionWithUsersSchema,
 } from './course-instance-access-control-extensions.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -25,11 +25,11 @@ const sql = loadSqlEquiv(import.meta.url);
  */
 export async function selectAccessControlExtensionsByEnrollmentId(
   enrollment_id: string,
-): Promise<CourseInstanceAccessControlExtension[]> {
+): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
     sql.select_access_control_extensions_by_enrollment_id,
     { enrollment_id },
-    CourseInstanceAccessControlExtensionSchema,
+    CourseInstancePublishingExtensionSchema,
   );
 }
 
@@ -38,11 +38,11 @@ export async function selectAccessControlExtensionsByEnrollmentId(
  */
 export async function selectAccessControlExtensionsByCourseInstance(
   course_instance_id: string,
-): Promise<CourseInstanceAccessControlExtension[]> {
+): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
     sql.select_access_control_extensions_by_course_instance,
     { course_instance_id },
-    CourseInstanceAccessControlExtensionSchema,
+    CourseInstancePublishingExtensionSchema,
   );
 }
 
@@ -51,11 +51,11 @@ export async function selectAccessControlExtensionsByCourseInstance(
  */
 export async function selectAccessControlExtensionsWithUsersByCourseInstance(
   course_instance_id: string,
-): Promise<CourseInstanceAccessControlExtensionWithUsers[]> {
+): Promise<CourseInstancePublishingExtensionWithUsers[]> {
   return await queryRows(
     sql.select_access_control_extensions_with_uids_by_course_instance,
     { course_instance_id },
-    CourseInstanceAccessControlExtensionWithUsersSchema,
+    CourseInstancePublishingExtensionWithUsersSchema,
   );
 }
 
@@ -72,7 +72,7 @@ export async function insertAccessControlExtension({
   enabled: boolean;
   name: string | null;
   archive_date: Date | null;
-}): Promise<CourseInstanceAccessControlExtension> {
+}): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
     sql.insert_access_control_extension,
     {
@@ -81,7 +81,7 @@ export async function insertAccessControlExtension({
       name,
       archive_date,
     },
-    CourseInstanceAccessControlExtensionSchema,
+    CourseInstancePublishingExtensionSchema,
   );
 }
 
@@ -94,14 +94,14 @@ export async function insertAccessControlEnrollmentExtension({
 }: {
   course_instance_access_control_extension_id: string;
   enrollment_id: string;
-}): Promise<CourseInstanceAccessControlEnrollmentExtension> {
+}): Promise<CourseInstancePublishingEnrollmentExtension> {
   return await queryRow(
     sql.insert_access_control_enrollment_extension,
     {
       course_instance_access_control_extension_id,
       enrollment_id,
     },
-    CourseInstanceAccessControlEnrollmentExtensionSchema,
+    CourseInstancePublishingEnrollmentExtensionSchema,
   );
 }
 
@@ -120,7 +120,7 @@ export async function createAccessControlExtensionWithEnrollments({
   name: string | null;
   archive_date: Date | null;
   enrollment_ids: string[];
-}): Promise<CourseInstanceAccessControlExtension> {
+}): Promise<CourseInstancePublishingExtension> {
   return await runInTransactionAsync(async () => {
     // Create the extension
     const extension = await insertAccessControlExtension({
@@ -173,7 +173,7 @@ export async function updateAccessControlExtension({
   enabled: boolean;
   name: string | null;
   archive_date: Date | null;
-}): Promise<CourseInstanceAccessControlExtension> {
+}): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
     sql.update_access_control_extension,
     {
@@ -183,6 +183,6 @@ export async function updateAccessControlExtension({
       name,
       archive_date,
     },
-    CourseInstanceAccessControlExtensionSchema,
+    CourseInstancePublishingExtensionSchema,
   );
 }

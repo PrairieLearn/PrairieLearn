@@ -14,7 +14,7 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  CourseInstanceAccessRuleSchema,
+  CourseInstancePublishingRuleSchema,
   CourseInstanceSchema,
   EnrollmentSchema,
   QuestionSchema,
@@ -358,7 +358,7 @@ export async function captureDatabaseSnapshot() {
     tags: await dumpTableWithSchema('tags', TagSchema),
     courseInstanceAccessRules: await dumpTableWithSchema(
       'course_instance_access_rules',
-      CourseInstanceAccessRuleSchema,
+      CourseInstancePublishingRuleSchema,
     ),
     assessmentAccessRules: await dumpTableWithSchema(
       'assessment_access_rules',

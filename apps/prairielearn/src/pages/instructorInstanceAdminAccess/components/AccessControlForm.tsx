@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
 
 import { AccessControlExtensions } from './AccessControlExtensions.js';
 
@@ -73,7 +73,7 @@ interface AccessControlFormProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  accessControlExtensions: CourseInstanceAccessControlExtensionWithUsers[];
+  accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
 }
 
 export function AccessControlForm({
@@ -88,23 +88,23 @@ export function AccessControlForm({
 
   // Compute current status from database values
   const currentStatus = computeStatus(
-    courseInstance.access_control_publish_date,
-    courseInstance.access_control_archive_date,
+    courseInstance.publishing_publish_date,
+    courseInstance.publishing_archive_date,
   );
 
   // Track user-selected status (defaults to current)
   const [selectedStatus, setSelectedStatus] = useState<AccessControlStatus>(currentStatus);
 
   const defaultValues: AccessControlFormValues = {
-    publishDate: courseInstance.access_control_publish_date
-      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.access_control_publish_date.getTime())
+    publishDate: courseInstance.publishing_publish_date
+      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.publishing_publish_date.getTime())
           .toZonedDateTimeISO(courseInstance.display_timezone)
           .toPlainDateTime()
           .toString()
           .slice(0, 16)
       : '',
-    archiveDate: courseInstance.access_control_archive_date
-      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.access_control_archive_date.getTime())
+    archiveDate: courseInstance.publishing_archive_date
+      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.publishing_archive_date.getTime())
           .toZonedDateTimeISO(courseInstance.display_timezone)
           .toPlainDateTime()
           .toString()
@@ -127,11 +127,11 @@ export function AccessControlForm({
   const archiveDate = watch('archiveDate');
 
   // Store original values from database
-  const originalPublishInstant = courseInstance.access_control_publish_date
-    ? instantFromDate(courseInstance.access_control_publish_date)
+  const originalPublishInstant = courseInstance.publishing_publish_date
+    ? instantFromDate(courseInstance.publishing_publish_date)
     : null;
-  const originalArchiveInstant = courseInstance.access_control_archive_date
-    ? instantFromDate(courseInstance.access_control_archive_date)
+  const originalArchiveInstant = courseInstance.publishing_archive_date
+    ? instantFromDate(courseInstance.publishing_archive_date)
     : null;
 
   // Update form values when status changes

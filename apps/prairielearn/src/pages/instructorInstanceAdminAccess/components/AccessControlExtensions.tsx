@@ -5,11 +5,11 @@ import { Alert, ListGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { type CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
 
 interface AccessControlExtensionsProps {
   courseInstance: CourseInstance;
-  extensions: CourseInstanceAccessControlExtensionWithUsers[];
+  extensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
 }
@@ -129,7 +129,7 @@ export function AccessControlExtensions({
               timeZone={courseInstance.display_timezone}
               canEdit={canEdit}
               isSubmitting={isSubmitting}
-              courseInstanceArchiveDate={courseInstance.access_control_archive_date}
+              courseInstanceArchiveDate={courseInstance.publishing_archive_date}
               onDelete={handleDelete}
               onToggleEnabled={handleToggleEnabled}
             />
@@ -162,7 +162,7 @@ function ExtensionListItem({
   courseInstanceArchiveDate,
 }: {
   idx: number;
-  extension: CourseInstanceAccessControlExtensionWithUsers;
+  extension: CourseInstancePublishingExtensionWithUsers;
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
@@ -213,7 +213,7 @@ function ExtensionListItem({
                   <strong>Students with extension ({extension.user_data.length})</strong>
                 </summary>
                 <div class="mt-2">
-                  {extension.user_data.map((user) => (
+                  {extension.user_data.map((user: { uid: string; name: string | null }) => (
                     <span key={user.uid} class="badge bg-secondary me-1 mb-1">
                       {user.name ? `${user.name} (${user.uid})` : user.uid}
                     </span>
@@ -237,7 +237,9 @@ function ExtensionListItem({
                 class="btn btn-sm btn-outline-secondary"
                 title="Copy UIDs as comma-separated list"
                 onClick={() => {
-                  const uids = extension.user_data.map((user) => user.uid).join(', ');
+                  const uids = extension.user_data
+                    .map((user: { uid: string; name: string | null }) => user.uid)
+                    .join(', ');
                   navigator.clipboard
                     .writeText(uids)
                     .then(() => {

@@ -6,7 +6,7 @@ import {
   evaluateCourseInstanceAccess,
   migrateAccessRuleJsonToAccessControl,
 } from './course-instance-access.js';
-import { type CourseInstance, type CourseInstanceAccessRule } from './db-types.js';
+import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
   return {
@@ -32,8 +32,8 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     assessments_group_by: 'Set',
 
     // These are the only fields we care about.
-    access_control_publish_date: null,
-    access_control_archive_date: null,
+    publishing_publish_date: null,
+    publishing_archive_date: null,
     ...overrides,
   };
 }
@@ -94,7 +94,7 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-05-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: publishDate,
+      publishing_publish_date: publishDate,
     });
     const params = createMockParams();
 
@@ -110,8 +110,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: publishDate,
-      access_control_archive_date: archiveDate,
+      publishing_publish_date: publishDate,
+      publishing_archive_date: archiveDate,
     });
     const params = createMockParams();
 
@@ -127,8 +127,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: publishDate,
-      access_control_archive_date: archiveDate,
+      publishing_publish_date: publishDate,
+      publishing_archive_date: archiveDate,
     });
     const params = createMockParams();
 
@@ -143,8 +143,8 @@ describe('evaluateCourseInstanceAccess', () => {
     const currentDate = new Date('2024-06-01T00:00:00Z');
 
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: publishDate,
-      access_control_archive_date: archiveDate,
+      publishing_publish_date: publishDate,
+      publishing_archive_date: archiveDate,
     });
     const params = createMockParams();
 
@@ -156,8 +156,8 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('staff bypass all restrictions even when course instance is not published', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: new Date('2024-07-01T00:00:00Z'),
-      access_control_archive_date: new Date('2024-05-01T00:00:00Z'),
+      publishing_publish_date: new Date('2024-07-01T00:00:00Z'),
+      publishing_archive_date: new Date('2024-05-01T00:00:00Z'),
     });
     const params = createMockParams({ course_role: 'Viewer' });
 
@@ -168,7 +168,7 @@ describe('evaluateCourseInstanceAccess', () => {
 
   it('uses current date when no date is provided', () => {
     const courseInstance = createMockCourseInstance({
-      access_control_publish_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
+      publishing_publish_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
     });
     const params = createMockParams();
 
@@ -181,8 +181,8 @@ describe('evaluateCourseInstanceAccess', () => {
 
 describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + migrateAccessRuleJsonToAccessControl)', () => {
   function createMockAccessRule(
-    overrides: Partial<CourseInstanceAccessRule> = {},
-  ): CourseInstanceAccessRule {
+    overrides: Partial<CourseInstancePublishingRule> = {},
+  ): CourseInstancePublishingRule {
     return {
       id: '1',
       course_instance_id: '1',
@@ -218,7 +218,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
   });
 
   it('fails when there are no access rules', () => {
-    const accessRules: CourseInstanceAccessRule[] = [];
+    const accessRules: CourseInstancePublishingRule[] = [];
 
     // Convert to JSON format first
     const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));
@@ -375,8 +375,8 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
 describe('convertAccessRuleToJson', () => {
   function createMockAccessRule(
-    overrides: Partial<CourseInstanceAccessRule> = {},
-  ): CourseInstanceAccessRule {
+    overrides: Partial<CourseInstancePublishingRule> = {},
+  ): CourseInstancePublishingRule {
     return {
       id: '1',
       course_instance_id: '1',

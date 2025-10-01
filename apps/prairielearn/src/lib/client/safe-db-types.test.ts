@@ -70,8 +70,8 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
 };
 
 const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
-  access_control_archive_date: null,
-  access_control_publish_date: null,
+  publishing_archive_date: null,
+  publishing_publish_date: null,
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,

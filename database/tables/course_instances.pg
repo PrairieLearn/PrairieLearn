@@ -1,6 +1,4 @@
 columns
-    access_control_archive_date: timestamp with time zone
-    access_control_publish_date: timestamp with time zone
     assessments_group_by: enum_assessment_grouping not null default 'Set'::enum_assessment_grouping
     course_id: bigint not null
     deleted_at: timestamp with time zone
@@ -11,6 +9,8 @@ columns
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text
+    publishing_archive_date: timestamp with time zone
+    publishing_publish_date: timestamp with time zone
     self_enrollment_enabled: boolean default true
     self_enrollment_enabled_before_date: timestamp with time zone
     self_enrollment_enabled_before_date_enabled: boolean default false
@@ -37,9 +37,9 @@ referenced by
     assessments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     audit_events: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     chunks: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_instance_access_control_extensions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_access_rules: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_permissions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_publishing_extensions: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_required_plans: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id)
     course_instance_usages: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
