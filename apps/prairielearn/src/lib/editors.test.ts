@@ -179,29 +179,54 @@ describe('editors', () => {
     });
   });
 
-  describe('propertyValueWithDefault', () => {
+  // TODO: remove this once reviewer is convinced this change is sound.
+  describe('propertyValueWithDefault (old)', () => {
+    const propertyValueWithDefaultOld = (_, newValue, defaultValue) =>
+      propertyValueWithDefault(newValue, defaultValue);
     it('should return the new value if it differs from the default value', () => {
-      const property = propertyValueWithDefault('Existing', 'New', 'Default');
+      const property = propertyValueWithDefaultOld('Existing', 'New', 'Default');
       assert.equal(property, 'New');
     });
     it('should return undefined if the new value is the same as the default value', () => {
-      const property = propertyValueWithDefault('Existing', 'Default', 'Default');
+      const property = propertyValueWithDefaultOld('Existing', 'Default', 'Default');
       assert.equal(property, undefined);
     });
     it('should return the new value if it differs from the default value, even if the existing value is undefined', () => {
-      const property = propertyValueWithDefault(undefined, 'New', 'Default');
+      const property = propertyValueWithDefaultOld(undefined, 'New', 'Default');
       assert.equal(property, 'New');
     });
     it('should return the new value if it differs from the default value, even if the default value is null', () => {
-      const property = propertyValueWithDefault('Existing', null, 'Default');
+      const property = propertyValueWithDefaultOld('Existing', null, 'Default');
       assert.equal(property, null);
     });
     it('should return the new value if it differs from the default value, even if the values are numbers', () => {
-      const property = propertyValueWithDefault(0, 1, 0);
+      const property = propertyValueWithDefaultOld(0, 1, 0);
       assert.equal(property, 1);
     });
     it('should return the new value if it differs from the default value, even if the values are booleans', () => {
-      const property = propertyValueWithDefault(true, false, true);
+      const property = propertyValueWithDefaultOld(true, false, true);
+      assert.equal(property, false);
+    });
+  });
+  describe('propertyValueWithDefault (new)', () => {
+    it('should return the new value if it differs from the default value', () => {
+      const property = propertyValueWithDefault('New', 'Default');
+      assert.equal(property, 'New');
+    });
+    it('should return undefined if the new value is the same as the default value', () => {
+      const property = propertyValueWithDefault('Default', 'Default');
+      assert.equal(property, undefined);
+    });
+    it('should return the new value if it differs from the default value, even if the new value is null', () => {
+      const property = propertyValueWithDefault(null, 'Default');
+      assert.equal(property, null);
+    });
+    it('should return the new value if it differs from the default value, even if the values are numbers', () => {
+      const property = propertyValueWithDefault(1, 0);
+      assert.equal(property, 1);
+    });
+    it('should return the new value if it differs from the default value, even if the values are booleans', () => {
+      const property = propertyValueWithDefault(false, true);
       assert.equal(property, false);
     });
   });

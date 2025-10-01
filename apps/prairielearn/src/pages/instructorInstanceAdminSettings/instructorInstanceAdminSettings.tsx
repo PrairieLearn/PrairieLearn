@@ -233,17 +233,14 @@ router.post(
       );
       courseInstanceInfo.longName = req.body.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
-        courseInstanceInfo.timezone,
         req.body.display_timezone,
         res.locals.course.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
-        courseInstanceInfo.groupAssessmentsBy,
         req.body.group_assessments_by,
         'Set',
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
-        courseInstanceInfo.hideInEnrollPage,
         req.body.hide_in_enroll_page === 'on',
         false,
       );
