@@ -8,7 +8,6 @@ import { run } from '@prairielearn/run';
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
   AlternativeGroupHeader,
-  AssessmentQuestionHeaders,
   AssessmentQuestionNumber,
   ZoneHeader,
 } from '../../../components/AssessmentQuestions.js';
@@ -20,7 +19,6 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { Assessment } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 import type {
   QuestionAlternativeJson,
@@ -262,9 +260,13 @@ function mapQuestions(
       canSubmit: row.alternative_group.json_can_submit ?? [],
       gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
       numberChoose: row.alternative_group.number_choose ?? 1,
-      // TODO: are we missing a `json_tries_per_variant` column here?
-      // We'll default to 1 for now to make progress, but we'll need to address this.
-      triesPerVariant: 1,
+      triesPerVariant: row.alternative_group.json_tries_per_variant ?? 1,
+      points: row.alternative_group.json_points ?? undefined,
+      autoPoints: row.alternative_group.json_auto_points ?? undefined,
+      maxPoints: row.alternative_group.json_max_points ?? undefined,
+      maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
+      manualPoints: row.alternative_group.json_manual_points ?? undefined,
+      forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
     };
 
     if (row.alternative_group.json_has_alternatives) {
@@ -276,13 +278,18 @@ function mapQuestions(
       zones[row.zone.number - 1].questions[row.alternative_group.number - 1].alternatives[
         row.assessment_question.number_in_alternative_group - 1
       ] = {
-        // missing json properties: points, autoPoints, maxPoints, maxAutoPoints, manualPoints, forceMaxPoints, triesPerVariant
         comment: row.assessment_question.json_comment ?? undefined,
         id: questionDisplayName(course, row),
-        forceMaxPoints: row.assessment_question.force_max_points ?? undefined,
-        triesPerVariant: row.assessment_question.tries_per_variant ?? 1,
+        forceMaxPoints: row.assessment_question.json_force_max_points ?? undefined,
+        triesPerVariant: row.assessment_question.json_tries_per_variant ?? undefined,
         advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
         gradeRateMinutes: row.assessment_question.grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.assessment_question.json_allow_real_time_grading ?? undefined,
+        points: row.assessment_question.json_points ?? undefined,
+        autoPoints: row.assessment_question.json_auto_points ?? undefined,
+        maxPoints: row.assessment_question.json_max_points ?? undefined,
+        maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
+        manualPoints: row.assessment_question.json_manual_points ?? undefined,
       };
     } else {
       zones[row.zone.number - 1].questions[row.alternative_group.number - 1].id =
@@ -328,7 +335,6 @@ function AssessmentQuestion({
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const question = questionMap[questionId];
-  console.log(question);
 
   return (
     <Fragment>
@@ -340,7 +346,6 @@ function AssessmentQuestion({
                 class="btn btn-sm btn-secondary"
                 type="button"
                 onClick={() => {
-                  console.log('question', question);
                   handleEditQuestion(question);
                 }}
               >
@@ -686,7 +691,6 @@ export function InstructorAssessmentQuestionsTable({
     alternativeNumber?: number;
   }) => {
     setAddQuestion(false);
-    console.log('handleEditQuestion question', question);
     setSelectedQuestion(question);
     setSelectedQuestionDisplayName(questionDisplayName);
     setSelectedQuestionPosition({

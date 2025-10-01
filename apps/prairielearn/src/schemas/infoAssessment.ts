@@ -160,8 +160,6 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
 });
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
 
-export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
-
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   points: PointsJsonSchema.optional(),
