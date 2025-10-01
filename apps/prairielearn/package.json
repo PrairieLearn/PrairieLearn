@@ -207,7 +207,7 @@
     "quill": "2.0.2",
     "quilljs-markdown": "^1.2.0",
     "react": "^19.1.1",
-    "react-bootstrap": "3.0.0-beta.3",
+    "react-bootstrap": "3.0.0-beta.5",
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.63.0",
     "remark-gfm": "^4.0.1",

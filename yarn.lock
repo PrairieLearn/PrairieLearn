@@ -4248,7 +4248,7 @@ __metadata:
     quill: "npm:2.0.2"
     quilljs-markdown: "npm:^1.2.0"
     react: "npm:^19.1.1"
-    react-bootstrap: "npm:3.0.0-beta.3"
+    react-bootstrap: "npm:3.0.0-beta.5"
     react-dom: "npm:^19.1.1"
     react-hook-form: "npm:^7.63.0"
     remark-gfm: "npm:^4.0.1"
@@ -4650,9 +4650,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@restart/ui@npm:^2.0.0-beta.6":
-  version: 2.0.0-beta.6
-  resolution: "@restart/ui@npm:2.0.0-beta.6"
+"@restart/ui@npm:^2.0.0-beta.10":
+  version: 2.0.0-beta.10
+  resolution: "@restart/ui@npm:2.0.0-beta.10"
   dependencies:
     "@babel/runtime": "npm:^7.26.7"
     "@popperjs/core": "npm:^2.11.8"
@@ -4665,7 +4665,7 @@ __metadata:
   peerDependencies:
     react: ">=18.0.0"
     react-dom: ">=18.0.0"
-  checksum: 10c0/fd1bf9826c1a1bd5ff2eeeddff5ea6093a26f89ad9b8cb629dd33890c7e484f334b5daf8ebce3f34a12e4af75f5cf19cf0b89f1556c4284ad6191cb356620a31
+  checksum: 10c0/ab6788191783c4e72c3973f18f91431e84251450f6e61750279168472e1eafd75840925fedd203143ca004b64487540c827a39a3a5180c89edcbeb14862c92df
   languageName: node
   linkType: hard
 
@@ -16013,13 +16013,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-bootstrap@npm:3.0.0-beta.3":
-  version: 3.0.0-beta.3
-  resolution: "react-bootstrap@npm:3.0.0-beta.3"
+"react-bootstrap@npm:3.0.0-beta.5":
+  version: 3.0.0-beta.5
+  resolution: "react-bootstrap@npm:3.0.0-beta.5"
   dependencies:
     "@babel/runtime": "npm:^7.27.0"
     "@restart/hooks": "npm:^0.6.2"
-    "@restart/ui": "npm:^2.0.0-beta.6"
+    "@restart/ui": "npm:^2.0.0-beta.10"
     "@types/react-transition-group": "npm:^4.4.12"
     clsx: "npm:^2.1.1"
     dom-helpers: "npm:^6.0.1"
@@ -16034,7 +16034,7 @@ __metadata:
   peerDependenciesMeta:
     "@types/react":
       optional: true
-  checksum: 10c0/e76c13248a333b5744e61ffe3b2d26a7a1fef54091e0e4d33c74ea41fc5d9cd162c79636780b406ca556d104df538c37c823b440446200ed3c94fd9bff60316c
+  checksum: 10c0/89c586cef482b9550b0eeb26cec894711cdb193aada234b52898f3f0c7a657f9849564cc4c2af2b55d8613efcfaf41269a43465a0a0b692f94c3d9176fe47697
   languageName: node
   linkType: hard
 
