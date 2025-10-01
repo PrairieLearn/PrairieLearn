@@ -132,7 +132,6 @@ ignore = [
   "FURB140", # reimplemented-starmap (confusing)
   "ISC003",  # explicit-string-concatenation
   "NPY002",  # numpy-legacy-random (we use `np.random.*` in many places)
-  "PD901",   # pandas-df-variable-name (we use `df` in many places)
   "PLC0415", # import-outside-top-level
   "PLC1901", # compare-to-empty-string
   "PLC2701", # import-private-name
