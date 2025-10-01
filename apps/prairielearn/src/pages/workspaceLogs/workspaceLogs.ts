@@ -29,6 +29,7 @@ function areContainerLogsExpired(workspaceLogs: WorkspaceLogRow[]): boolean {
     // Expiration is disabled.
     return false;
   }
+
   if (workspaceLogs.length === 0) return false;
   const firstLog = workspaceLogs[0];
   // @ts-expect-error -- We need to mark `workspace_logs.date` as non-nullable.
