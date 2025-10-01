@@ -271,8 +271,8 @@ export function approximatePromptCost({
   // Also, on average, we generate 3750 system tokens per prompt.
   const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
 
-  // On average, we generate 250 completion tokens per prompt.
-  const approxOutputTokenCost = (250 * modelPricing.output) / 1e6;
+  // On average, we generate 1000 completion tokens per prompt. This includes reasoning tokens.
+  const approxOutputTokenCost = (1000 * modelPricing.output) / 1e6;
 
   return approxInputTokenCost + approxOutputTokenCost;
 }
