@@ -86,7 +86,7 @@ UPDATE course_instance_access_control_extensions
 SET
   enabled = $enabled,
   name = $name,
-  published_end_date = $published_end_date
+  archive_date = $archive_date
 WHERE
   id = $extension_id
   AND course_instance_id = $course_instance_id

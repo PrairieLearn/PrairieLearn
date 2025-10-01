@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { formatDate, formatDateYMDHM, formatTz } from '@prairielearn/formatter';
+import { formatDate, formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
@@ -108,7 +108,6 @@ export function InstructorCourseAdminInstances({
                   </thead>
                   <tbody>
                     ${courseInstances.map((row) => {
-                      console.log(row);
                       const isLegacyPublishDate = row.access_control_publish_date === null;
                       const isLegacyArchiveDate = row.access_control_archive_date === null;
                       const publishDate = row.access_control_publish_date

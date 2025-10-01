@@ -276,7 +276,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           {
             "enabled": true,
             "name": "Test comment",
-            "published_end_date": "2024-07-01T00:00:00",
+            "archive_date": "2024-07-01T00:00:00",
             "uids": [
               "user1@example.com",
               "user2@example.com",
@@ -314,7 +314,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
           {
             "enabled": true,
             "name": null,
-            "published_end_date": "2024-07-01T00:00:00",
+            "archive_date": "2024-07-01T00:00:00",
             "uids": [
               "user1@example.com",
             ],

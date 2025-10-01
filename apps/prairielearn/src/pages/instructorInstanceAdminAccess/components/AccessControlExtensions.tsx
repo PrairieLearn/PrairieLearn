@@ -5,7 +5,7 @@ import { Alert, ListGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { type CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
 
 interface AccessControlExtensionsProps {
   courseInstance: CourseInstance;
@@ -121,9 +121,10 @@ export function AccessControlExtensions({
       )}
       {extensions.length > 0 && (
         <ListGroup>
-          {extensions.map((extension) => (
+          {extensions.map((extension, idx) => (
             <ExtensionListItem
               key={extension.id}
+              idx={idx}
               extension={extension}
               timeZone={courseInstance.display_timezone}
               canEdit={canEdit}
@@ -151,6 +152,7 @@ export function AccessControlExtensions({
 }
 
 function ExtensionListItem({
+  idx,
   extension,
   timeZone,
   canEdit,
@@ -159,6 +161,7 @@ function ExtensionListItem({
   isSubmitting,
   courseInstanceArchiveDate,
 }: {
+  idx: number;
   extension: CourseInstanceAccessControlExtensionWithUsers;
   timeZone: string;
   canEdit: boolean;
@@ -178,19 +181,7 @@ function ExtensionListItem({
       <div class="d-flex justify-content-between align-items-start">
         <div class="flex-grow-1">
           <div class="d-flex align-items-center mb-2">
-            <h6 class="mb-0 me-3">
-              {extension.name || <em class="text-muted">Unnamed extension</em>}
-            </h6>
-            <div class="form-check form-switch">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                checked={extension.enabled}
-                disabled={!canEdit || isSubmitting}
-                onChange={(e) => onToggleEnabled(extension.id, e.currentTarget.checked)}
-              />
-              <label class="form-check-label">{extension.enabled ? 'Enabled' : 'Disabled'}</label>
-            </div>
+            <h4 class="mb-0 me-3">{extension.name || `Extension ${idx + 1}`}</h4>
           </div>
 
           <div class="mb-2">
@@ -216,23 +207,59 @@ function ExtensionListItem({
           </div>
 
           <div>
-            <strong>Users ({extension.user_data.length}):</strong>
             {extension.user_data.length > 0 ? (
-              <div class="mt-1">
-                {extension.user_data.map((user) => (
-                  <span key={user.uid} class="badge bg-secondary me-1 mb-1">
-                    {user.name ? `${user.name} (${user.uid})` : user.uid}
-                  </span>
-                ))}
-              </div>
+              <details>
+                <summary class="mb-1">
+                  <strong>Students with extension ({extension.user_data.length})</strong>
+                </summary>
+                <div class="mt-2">
+                  {extension.user_data.map((user) => (
+                    <span key={user.uid} class="badge bg-secondary me-1 mb-1">
+                      {user.name ? `${user.name} (${user.uid})` : user.uid}
+                    </span>
+                  ))}
+                </div>
+              </details>
             ) : (
-              <span class="text-muted ms-1">No users assigned</span>
+              <div class="mb-1">
+                <strong>Students with extension (0)</strong>
+                <span class="text-muted ms-2">No users assigned</span>
+              </div>
             )}
           </div>
         </div>
 
         {canEdit && (
-          <div class="ms-3">
+          <div class="ms-3 d-flex gap-2">
+            {extension.user_data.length > 0 && (
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                title="Copy UIDs as comma-separated list"
+                onClick={() => {
+                  const uids = extension.user_data.map((user) => user.uid).join(', ');
+                  navigator.clipboard
+                    .writeText(uids)
+                    .then(() => {
+                      // Could add a toast notification here if desired
+                    })
+                    .catch((err) => {
+                      console.error('Failed to copy UIDs:', err);
+                    });
+                }}
+              >
+                <i class="fas fa-copy" aria-hidden="true" />
+                Copy UIDs
+              </button>
+            )}
+            <button
+              type="button"
+              class={`btn btn-sm ${extension.enabled ? 'btn-outline-danger' : 'btn-outline-success'}`}
+              disabled={isSubmitting}
+              onClick={() => onToggleEnabled(extension.id, !extension.enabled)}
+            >
+              {extension.enabled ? 'Disable' : 'Enable'}
+            </button>
             <button
               type="button"
               class="btn btn-sm btn-outline-danger"

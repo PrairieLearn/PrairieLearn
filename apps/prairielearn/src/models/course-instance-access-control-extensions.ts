@@ -1,5 +1,3 @@
-import z from 'zod';
-
 import {
   execute,
   loadSqlEquiv,
@@ -15,15 +13,12 @@ import {
   CourseInstanceAccessControlExtensionSchema,
 } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(import.meta.url);
+import {
+  type CourseInstanceAccessControlExtensionWithUsers,
+  CourseInstanceAccessControlExtensionWithUsersSchema,
+} from './course-instance-access-control-extensions.types.js';
 
-const CourseInstanceAccessControlExtensionWithUsersSchema =
-  CourseInstanceAccessControlExtensionSchema.extend({
-    user_data: z.array(z.object({ uid: z.string(), name: z.string().nullable() })),
-  });
-export type CourseInstanceAccessControlExtensionWithUsers = z.infer<
-  typeof CourseInstanceAccessControlExtensionWithUsersSchema
->;
+const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Finds all access control extensions that apply to a specific enrollment.

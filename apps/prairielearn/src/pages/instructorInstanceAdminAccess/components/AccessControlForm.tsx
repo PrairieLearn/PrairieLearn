@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
 
 import { AccessControlExtensions } from './AccessControlExtensions.js';
 

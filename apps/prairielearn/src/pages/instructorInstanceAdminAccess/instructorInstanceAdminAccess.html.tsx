@@ -5,7 +5,7 @@ import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
 import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
-import { type CourseInstanceAccessControlExtensionWithUsers } from '../../models/course-instance-access-control-extensions.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../models/course-instance-access-control-extensions.types.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
