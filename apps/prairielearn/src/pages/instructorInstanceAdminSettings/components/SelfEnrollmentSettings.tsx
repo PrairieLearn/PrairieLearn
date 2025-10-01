@@ -180,7 +180,7 @@ export function SelfEnrollmentSettings({
           {...control.register('show_in_enroll_page', {
             validate: (value, { self_enrollment_enabled }) => {
               if (!self_enrollment_enabled && value) {
-                return 'Self-enrollment must be allowed in order to show on the enrollment page. This option is going away soon.';
+                return '"Allow self-enrollment" must be checked in order to select "Show on enrollment page"';
               }
               return true;
             },
