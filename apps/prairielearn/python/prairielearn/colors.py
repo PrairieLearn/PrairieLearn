@@ -93,7 +93,7 @@ class PrairieLearnColor(sRGB):
         if match:
             # See if we can find the name
             name = match.group(1)
-            values = PL_COLORS_NAME_MAP.get(name.lower(), None)
+            values = PL_COLORS_NAME_MAP.get(name.lower())
 
             if values is not None:
                 # Normalize back to 0 - 1
