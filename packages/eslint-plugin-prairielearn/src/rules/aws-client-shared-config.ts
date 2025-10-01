@@ -21,6 +21,7 @@ import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
  * we're properly configuring AWS SDK clients.
  */
 export default ESLintUtils.RuleCreator.withoutDocs({
+  name: 'aws-client-shared-config',
   meta: {
     type: 'problem',
     messages: {
