@@ -4,11 +4,8 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
-import {
-  type CourseInstance,
-  type CourseInstanceAccessControlExtension,
-  type CourseInstanceAccessRule,
-} from '../../lib/db-types.js';
+import { type CourseInstance, type CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../models/course-instance-access-control-extensions.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { AccessControlForm } from './components/AccessControlForm.js';
@@ -27,7 +24,7 @@ export function InstructorInstanceAdminAccess({
   hasCourseInstancePermissionView: boolean;
   hasCourseInstancePermissionEdit: boolean;
   accessRules: CourseInstanceAccessRule[];
-  accessControlExtensions: CourseInstanceAccessControlExtension[];
+  accessControlExtensions: CourseInstanceAccessControlExtensionWithUsers[];
   csrfToken: string;
   origHash: string;
 }) {

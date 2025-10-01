@@ -1,3 +1,5 @@
+import z from 'zod';
+
 import {
   execute,
   loadSqlEquiv,
@@ -14,6 +16,14 @@ import {
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const CourseInstanceAccessControlExtensionWithUsersSchema =
+  CourseInstanceAccessControlExtensionSchema.extend({
+    user_data: z.array(z.object({ uid: z.string(), name: z.string().nullable() })),
+  });
+export type CourseInstanceAccessControlExtensionWithUsers = z.infer<
+  typeof CourseInstanceAccessControlExtensionWithUsersSchema
+>;
 
 /**
  * Finds all access control extensions that apply to a specific enrollment.
@@ -38,6 +48,19 @@ export async function selectAccessControlExtensionsByCourseInstance(
     sql.select_access_control_extensions_by_course_instance,
     { course_instance_id },
     CourseInstanceAccessControlExtensionSchema,
+  );
+}
+
+/**
+ * Finds all access control extensions for a course instance with user data.
+ */
+export async function selectAccessControlExtensionsWithUsersByCourseInstance(
+  course_instance_id: string,
+): Promise<CourseInstanceAccessControlExtensionWithUsers[]> {
+  return await queryRows(
+    sql.select_access_control_extensions_with_uids_by_course_instance,
+    { course_instance_id },
+    CourseInstanceAccessControlExtensionWithUsersSchema,
   );
 }
 

@@ -6,10 +6,8 @@ import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type {
-  CourseInstance,
-  CourseInstanceAccessControlExtension,
-} from '../../../lib/db-types.js';
+import type { CourseInstance } from '../../../lib/db-types.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.js';
 
 import { AccessControlExtensions } from './AccessControlExtensions.js';
 
@@ -73,7 +71,7 @@ interface AccessControlFormProps {
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  accessControlExtensions: CourseInstanceAccessControlExtension[];
+  accessControlExtensions: CourseInstanceAccessControlExtensionWithUsers[];
 }
 
 export function AccessControlForm({

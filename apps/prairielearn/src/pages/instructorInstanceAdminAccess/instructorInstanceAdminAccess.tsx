@@ -27,6 +27,7 @@ import {
   createAccessControlExtensionWithEnrollments,
   deleteAccessControlExtension,
   selectAccessControlExtensionsByCourseInstance,
+  selectAccessControlExtensionsWithUsersByCourseInstance,
   updateAccessControlExtension,
 } from '../../models/course-instance-access-control-extensions.js';
 import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
@@ -46,7 +47,7 @@ router.get(
       CourseInstanceAccessRuleSchema,
     );
 
-    const accessControlExtensions = await selectAccessControlExtensionsByCourseInstance(
+    const accessControlExtensions = await selectAccessControlExtensionsWithUsersByCourseInstance(
       res.locals.course_instance.id,
     );
 

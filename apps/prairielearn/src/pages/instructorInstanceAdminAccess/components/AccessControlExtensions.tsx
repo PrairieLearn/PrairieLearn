@@ -1,17 +1,15 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
-import { Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, ListGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
-import {
-  type CourseInstance,
-  type CourseInstanceAccessControlExtension,
-} from '../../../lib/db-types.js';
+import { type CourseInstance } from '../../../lib/db-types.js';
+import { type CourseInstanceAccessControlExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.js';
 
 interface AccessControlExtensionsProps {
   courseInstance: CourseInstance;
-  extensions: CourseInstanceAccessControlExtension[];
+  extensions: CourseInstanceAccessControlExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
 }
@@ -122,32 +120,20 @@ export function AccessControlExtensions({
         </div>
       )}
       {extensions.length > 0 && (
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Access control extensions">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Status</th>
-                <th>Archive Date</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {extensions.map((extension) => (
-                <ExtensionRow
-                  key={extension.id}
-                  extension={extension}
-                  timeZone={courseInstance.display_timezone}
-                  canEdit={canEdit}
-                  isSubmitting={isSubmitting}
-                  courseInstanceArchiveDate={courseInstance.access_control_archive_date}
-                  onDelete={handleDelete}
-                  onToggleEnabled={handleToggleEnabled}
-                />
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <ListGroup>
+          {extensions.map((extension) => (
+            <ExtensionListItem
+              key={extension.id}
+              extension={extension}
+              timeZone={courseInstance.display_timezone}
+              canEdit={canEdit}
+              isSubmitting={isSubmitting}
+              courseInstanceArchiveDate={courseInstance.access_control_archive_date}
+              onDelete={handleDelete}
+              onToggleEnabled={handleToggleEnabled}
+            />
+          ))}
+        </ListGroup>
       )}
 
       {showAddForm && (
@@ -164,7 +150,7 @@ export function AccessControlExtensions({
   );
 }
 
-function ExtensionRow({
+function ExtensionListItem({
   extension,
   timeZone,
   canEdit,
@@ -173,7 +159,7 @@ function ExtensionRow({
   isSubmitting,
   courseInstanceArchiveDate,
 }: {
-  extension: CourseInstanceAccessControlExtension;
+  extension: CourseInstanceAccessControlExtensionWithUsers;
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
@@ -188,54 +174,77 @@ function ExtensionRow({
     new Date(extension.archive_date) < new Date(courseInstanceArchiveDate);
 
   return (
-    <tr>
-      <td>{extension.name || <em class="text-muted">Unnamed extension</em>}</td>
-      <td>
-        <div class="form-check form-switch">
-          <input
-            class="form-check-input"
-            type="checkbox"
-            checked={extension.enabled}
-            disabled={!canEdit || isSubmitting}
-            onChange={(e) => onToggleEnabled(extension.id, e.currentTarget.checked)}
-          />
-          <label class="form-check-label">{extension.enabled ? 'Enabled' : 'Disabled'}</label>
-        </div>
-      </td>
-      <td>
-        {formatDateFriendly(extension.archive_date, timeZone)}
-        {isBeforeInstanceArchiveDate && (
-          <>
-            {' '}
-            <OverlayTrigger
-              placement="top"
-              overlay={
-                <Tooltip id={`tooltip-${extension.id}`}>
-                  This date will be ignored, it is before the overall archive date
-                </Tooltip>
-              }
-            >
-              <i
-                class="fas fa-exclamation-triangle text-warning"
-                aria-label="Warning: This date will be ignored"
+    <ListGroup.Item>
+      <div class="d-flex justify-content-between align-items-start">
+        <div class="flex-grow-1">
+          <div class="d-flex align-items-center mb-2">
+            <h6 class="mb-0 me-3">
+              {extension.name || <em class="text-muted">Unnamed extension</em>}
+            </h6>
+            <div class="form-check form-switch">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                checked={extension.enabled}
+                disabled={!canEdit || isSubmitting}
+                onChange={(e) => onToggleEnabled(extension.id, e.currentTarget.checked)}
               />
-            </OverlayTrigger>
-          </>
-        )}
-      </td>
-      <td>
+              <label class="form-check-label">{extension.enabled ? 'Enabled' : 'Disabled'}</label>
+            </div>
+          </div>
+
+          <div class="mb-2">
+            <strong>Archive Date:</strong> {formatDateFriendly(extension.archive_date, timeZone)}
+            {isBeforeInstanceArchiveDate && (
+              <>
+                {' '}
+                <OverlayTrigger
+                  placement="top"
+                  overlay={
+                    <Tooltip id={`tooltip-${extension.id}`}>
+                      This date will be ignored, it is before the overall archive date
+                    </Tooltip>
+                  }
+                >
+                  <i
+                    class="fas fa-exclamation-triangle text-warning"
+                    aria-label="Warning: This date will be ignored"
+                  />
+                </OverlayTrigger>
+              </>
+            )}
+          </div>
+
+          <div>
+            <strong>Users ({extension.user_data.length}):</strong>
+            {extension.user_data.length > 0 ? (
+              <div class="mt-1">
+                {extension.user_data.map((user) => (
+                  <span key={user.uid} class="badge bg-secondary me-1 mb-1">
+                    {user.name ? `${user.name} (${user.uid})` : user.uid}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span class="text-muted ms-1">No users assigned</span>
+            )}
+          </div>
+        </div>
+
         {canEdit && (
-          <button
-            type="button"
-            class="btn btn-sm btn-outline-danger"
-            disabled={isSubmitting}
-            onClick={() => onDelete(extension.id)}
-          >
-            Delete
-          </button>
+          <div class="ms-3">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-danger"
+              disabled={isSubmitting}
+              onClick={() => onDelete(extension.id)}
+            >
+              Delete
+            </button>
+          </div>
         )}
-      </td>
-    </tr>
+      </div>
+    </ListGroup.Item>
   );
 }
 
