@@ -350,7 +350,7 @@ export const ConfigSchema = z.object({
    * logs to cheaper storage tiers or evict them entirely after a certain
    * amount of time.
    */
-  workspaceLogsExpirationDays: z.number().default(120),
+  workspaceLogsExpirationDays: z.number().default(120).nullable(),
   workspaceAuthzCookieMaxAgeMilliseconds: z.number().default(60 * 1000),
   workspaceJobsDirectoryOwnerUid: z.number().default(0),
   workspaceJobsDirectoryOwnerGid: z.number().default(0),

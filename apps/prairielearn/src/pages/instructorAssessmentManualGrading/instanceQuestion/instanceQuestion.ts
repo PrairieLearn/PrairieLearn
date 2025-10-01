@@ -373,9 +373,7 @@ router.post(
       qs.parse(qs.stringify(req.body), { parseArrays: false }),
     );
     if (body.__action === 'add_manual_grade') {
-      req.session.skip_graded_submissions =
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -439,9 +437,7 @@ router.post(
         }),
       );
     } else if (body.__action === 'next_instance_question') {
-      req.session.skip_graded_submissions =
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-        body.skip_graded_submissions ?? req.session.skip_graded_submissions ?? true;
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =

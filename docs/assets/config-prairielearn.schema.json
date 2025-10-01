@@ -731,8 +731,15 @@
       "default": 60
     },
     "workspaceLogsExpirationDays": {
-      "type": "number",
-      "default": 120
+      "anyOf": [
+        {
+          "type": "number",
+          "default": 120
+        },
+        {
+          "type": "null"
+        }
+      ]
     },
     "workspaceAuthzCookieMaxAgeMilliseconds": {
       "type": "number",
