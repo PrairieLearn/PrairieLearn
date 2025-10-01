@@ -5,21 +5,21 @@ import { Alert, ListGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { formatDateFriendly } from '@prairielearn/formatter';
 
 import { type CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 
-interface AccessControlExtensionsProps {
+interface PublishingExtensionsProps {
   courseInstance: CourseInstance;
   extensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
 }
 
-export function AccessControlExtensions({
+export function PublishingExtensions({
   courseInstance,
   extensions,
   canEdit,
   csrfToken,
-}: AccessControlExtensionsProps) {
+}: PublishingExtensionsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,38 +59,6 @@ export function AccessControlExtensions({
     }
   };
 
-  const handleToggleEnabled = async (extensionId: string, enabled: boolean) => {
-    setIsSubmitting(true);
-    try {
-      const requestBody = {
-        __csrf_token: csrfToken,
-        __action: 'toggle_extension',
-        extension_id: extensionId,
-        enabled: enabled.toString(),
-      };
-
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        throw new Error('Failed to toggle extension');
-      }
-    } catch (error) {
-      console.error('Error toggling extension:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to toggle extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <>
       <div class="mb-3">
@@ -116,7 +84,7 @@ export function AccessControlExtensions({
 
       {extensions.length === 0 && !showAddForm && (
         <div class="text-center text-muted mb-3">
-          <p class="mb-0">No access control extensions configured.</p>
+          <p class="mb-0">No extensions configured.</p>
         </div>
       )}
       {extensions.length > 0 && (
@@ -131,7 +99,6 @@ export function AccessControlExtensions({
               isSubmitting={isSubmitting}
               courseInstanceArchiveDate={courseInstance.publishing_archive_date}
               onDelete={handleDelete}
-              onToggleEnabled={handleToggleEnabled}
             />
           ))}
         </ListGroup>
@@ -140,7 +107,7 @@ export function AccessControlExtensions({
       {showAddForm && (
         <div class="card mt-3">
           <div class="card-header">
-            <h6 class="mb-0">Add Access Control Extension</h6>
+            <h6 class="mb-0">Add Extension</h6>
           </div>
           <div class="card-body">
             <AddExtensionForm csrfToken={csrfToken} onClose={() => setShowAddForm(false)} />
@@ -157,7 +124,6 @@ function ExtensionListItem({
   timeZone,
   canEdit,
   onDelete,
-  onToggleEnabled,
   isSubmitting,
   courseInstanceArchiveDate,
 }: {
@@ -166,7 +132,6 @@ function ExtensionListItem({
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
-  onToggleEnabled: (id: string, enabled: boolean) => void;
   isSubmitting: boolean;
   courseInstanceArchiveDate: Date | null;
 }) {
@@ -256,14 +221,6 @@ function ExtensionListItem({
             )}
             <button
               type="button"
-              class={`btn btn-sm ${extension.enabled ? 'btn-outline-danger' : 'btn-outline-success'}`}
-              disabled={isSubmitting}
-              onClick={() => onToggleEnabled(extension.id, !extension.enabled)}
-            >
-              {extension.enabled ? 'Disable' : 'Enable'}
-            </button>
-            <button
-              type="button"
               class="btn btn-sm btn-outline-danger"
               disabled={isSubmitting}
               onClick={() => onDelete(extension.id)}
@@ -328,7 +285,7 @@ function AddExtensionForm({ csrfToken, onClose }: { csrfToken: string; onClose: 
           }
         } catch {
           // If JSON parsing fails, use the text response as the error message
-          if (responseText?.trim()) {
+          if (responseText.trim()) {
             errorMessage = responseText;
           }
         }

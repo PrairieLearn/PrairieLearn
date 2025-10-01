@@ -7,14 +7,14 @@ import { useForm } from 'react-hook-form';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 
-import { AccessControlExtensions } from './AccessControlExtensions.js';
+import { PublishingExtensions } from './PublishingExtensions.js';
 
 // Create QueryClient outside component to ensure stability
 const queryClient = new QueryClient();
 
-type AccessControlStatus = 'unpublished' | 'publish_scheduled' | 'published' | 'archived';
+type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published' | 'archived';
 
 /** Helper function to get current time in course timezone. */
 function nowInTimezone(timezone: string): Temporal.Instant {
@@ -41,7 +41,7 @@ function addWeeksToDatetime(
 }
 
 /** Helper to compute status from dates and current time. */
-function computeStatus(publishDate: Date | null, archiveDate: Date | null): AccessControlStatus {
+function computeStatus(publishDate: Date | null, archiveDate: Date | null): PublishingStatus {
   if (!publishDate && !archiveDate) {
     return 'unpublished';
   }
@@ -62,12 +62,12 @@ function computeStatus(publishDate: Date | null, archiveDate: Date | null): Acce
   return 'unpublished';
 }
 
-interface AccessControlFormValues {
+interface PublishingFormValues {
   publishDate: string;
   archiveDate: string;
 }
 
-interface AccessControlFormProps {
+interface PublishingFormProps {
   courseInstance: CourseInstance;
   hasAccessRules: boolean;
   canEdit: boolean;
@@ -76,14 +76,14 @@ interface AccessControlFormProps {
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
 }
 
-export function AccessControlForm({
+export function PublishingForm({
   courseInstance,
   hasAccessRules,
   canEdit,
   csrfToken,
   origHash,
   accessControlExtensions,
-}: AccessControlFormProps) {
+}: PublishingFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Compute current status from database values
@@ -93,9 +93,9 @@ export function AccessControlForm({
   );
 
   // Track user-selected status (defaults to current)
-  const [selectedStatus, setSelectedStatus] = useState<AccessControlStatus>(currentStatus);
+  const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(currentStatus);
 
-  const defaultValues: AccessControlFormValues = {
+  const defaultValues: PublishingFormValues = {
     publishDate: courseInstance.publishing_publish_date
       ? Temporal.Instant.fromEpochMilliseconds(courseInstance.publishing_publish_date.getTime())
           .toZonedDateTimeISO(courseInstance.display_timezone)
@@ -118,7 +118,7 @@ export function AccessControlForm({
     watch,
     setValue,
     formState: { errors },
-  } = useForm<AccessControlFormValues>({
+  } = useForm<PublishingFormValues>({
     mode: 'onChange',
     defaultValues,
   });
@@ -135,7 +135,7 @@ export function AccessControlForm({
     : null;
 
   // Update form values when status changes
-  const handleStatusChange = (newStatus: AccessControlStatus) => {
+  const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
     const now = nowInTimezone(courseInstance.display_timezone);
@@ -239,7 +239,7 @@ export function AccessControlForm({
     }
   };
 
-  const onSubmit = async (data: AccessControlFormValues) => {
+  const onSubmit = async (data: PublishingFormValues) => {
     if (!canEdit) return;
 
     setIsSubmitting(true);
@@ -673,7 +673,7 @@ export function AccessControlForm({
             <>
               <hr class="my-4" />
               <QueryClientProviderDebug client={queryClient} isDevMode={false}>
-                <AccessControlExtensions
+                <PublishingExtensions
                   courseInstance={courseInstance}
                   extensions={accessControlExtensions}
                   canEdit={canEdit}
@@ -688,4 +688,4 @@ export function AccessControlForm({
   );
 }
 
-AccessControlForm.displayName = 'AccessControlForm';
+PublishingForm.displayName = 'PublishingForm';

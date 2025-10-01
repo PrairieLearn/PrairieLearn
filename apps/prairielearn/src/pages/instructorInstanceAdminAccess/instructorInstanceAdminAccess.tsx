@@ -24,12 +24,10 @@ import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
-  createAccessControlExtensionWithEnrollments,
-  deleteAccessControlExtension,
-  selectAccessControlExtensionsByCourseInstance,
-  selectAccessControlExtensionsWithUsersByCourseInstance,
-  updateAccessControlExtension,
-} from '../../models/course-instance-access-control-extensions.js';
+  createPublishingExtensionWithEnrollments,
+  deletePublishingExtension,
+  selectPublishingExtensionsWithUsersByCourseInstance,
+} from '../../models/course-instance-publishing-extensions.js';
 import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
@@ -47,7 +45,7 @@ router.get(
       CourseInstancePublishingRuleSchema,
     );
 
-    const accessControlExtensions = await selectAccessControlExtensionsWithUsersByCourseInstance(
+    const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
       res.locals.course_instance.id,
     );
 
@@ -307,9 +305,8 @@ router.post(
             if (enrollments.length > 0) {
               const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
-              await createAccessControlExtensionWithEnrollments({
+              await createPublishingExtensionWithEnrollments({
                 course_instance_id: res.locals.course_instance.id,
-                enabled: extension.enabled,
                 name: extension.name,
                 archive_date: extension.archive_date ? new Date(extension.archive_date) : null,
                 enrollment_ids: enrollmentIds,
@@ -323,7 +320,6 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_extension') {
       const name = req.body.name || null;
-      const enabled = req.body.enabled === 'true';
       const archive_date = req.body.archive_date ? new Date(req.body.archive_date) : null;
       const uids = req.body.uids
         .split(/[,\n]/)
@@ -357,9 +353,8 @@ router.post(
 
       const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
-      await createAccessControlExtensionWithEnrollments({
+      await createPublishingExtensionWithEnrollments({
         course_instance_id: res.locals.course_instance.id,
-        enabled,
         name,
         archive_date,
         enrollment_ids: enrollmentIds,
@@ -370,34 +365,9 @@ router.post(
     } else if (req.body.__action === 'delete_extension') {
       const extension_id = req.body.extension_id;
 
-      await deleteAccessControlExtension({
+      await deletePublishingExtension({
         extension_id,
         course_instance_id: res.locals.course_instance.id,
-      });
-
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'toggle_extension') {
-      const extension_id = req.body.extension_id;
-      const enabled = req.body.enabled === 'true';
-
-      // Get the current extension to preserve other fields
-      const currentExtensions = await selectAccessControlExtensionsByCourseInstance(
-        res.locals.course_instance.id,
-      );
-      const currentExtension = currentExtensions.find((e) => e.id === extension_id);
-
-      if (!currentExtension) {
-        res.status(404).json({ message: 'Extension not found' });
-        return;
-      }
-
-      await updateAccessControlExtension({
-        extension_id,
-        course_instance_id: res.locals.course_instance.id,
-        enabled,
-        name: currentExtension.name,
-        archive_date: currentExtension.archive_date,
       });
 
       res.status(200).json({ success: true });

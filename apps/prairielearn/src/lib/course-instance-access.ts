@@ -69,9 +69,9 @@ export function evaluateCourseInstanceAccess(
   }
 
   // Consider the latest enabled extensions.
-  const possibleArchiveDates = params.accessControlExtensions
-    .filter((extension) => extension.enabled)
-    .map((extension) => extension.archive_date);
+  const possibleArchiveDates = params.accessControlExtensions.map(
+    (extension) => extension.archive_date,
+  );
 
   if (possibleArchiveDates.length > 0) {
     const sortedPossibleArchiveDates = possibleArchiveDates.sort((a, b) => {

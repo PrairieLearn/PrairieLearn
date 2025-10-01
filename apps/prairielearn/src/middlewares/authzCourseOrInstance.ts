@@ -24,7 +24,7 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { selectAccessControlExtensionsByEnrollmentId } from '../models/course-instance-access-control-extensions.js';
+import { selectPublishingExtensionsByEnrollmentId } from '../models/course-instance-publishing-extensions.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
@@ -166,7 +166,7 @@ async function checkCourseOrInstanceAccess(params: {
     });
 
     const accessControlExtensions = enrollment
-      ? await selectAccessControlExtensionsByEnrollmentId(enrollment.id)
+      ? await selectPublishingExtensionsByEnrollmentId(enrollment.id)
       : [];
     // TODO: Deal with overrides. this will have to happen outside of this function.
     const result = evaluateCourseInstanceAccess(authzData.course_instance, {

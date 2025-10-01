@@ -16,14 +16,14 @@ import {
 import {
   type CourseInstancePublishingExtensionWithUsers,
   CourseInstancePublishingExtensionWithUsersSchema,
-} from './course-instance-access-control-extensions.types.js';
+} from './course-instance-publishing-extensions.types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Finds all access control extensions that apply to a specific enrollment.
+ * Finds all publishing extensions that apply to a specific enrollment.
  */
-export async function selectAccessControlExtensionsByEnrollmentId(
+export async function selectPublishingExtensionsByEnrollmentId(
   enrollment_id: string,
 ): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
@@ -34,9 +34,9 @@ export async function selectAccessControlExtensionsByEnrollmentId(
 }
 
 /**
- * Finds all access control extensions for a course instance.
+ * Finds all publishing extensions for a course instance.
  */
-export async function selectAccessControlExtensionsByCourseInstance(
+export async function selectPublishingExtensionsByCourseInstance(
   course_instance_id: string,
 ): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
@@ -47,9 +47,9 @@ export async function selectAccessControlExtensionsByCourseInstance(
 }
 
 /**
- * Finds all access control extensions for a course instance with user data.
+ * Finds all publishing extensions for a course instance with user data.
  */
-export async function selectAccessControlExtensionsWithUsersByCourseInstance(
+export async function selectPublishingExtensionsWithUsersByCourseInstance(
   course_instance_id: string,
 ): Promise<CourseInstancePublishingExtensionWithUsers[]> {
   return await queryRows(
@@ -60,16 +60,14 @@ export async function selectAccessControlExtensionsWithUsersByCourseInstance(
 }
 
 /**
- * Creates a new access control extension for a course instance.
+ * Creates a new publishing extension for a course instance.
  */
-export async function insertAccessControlExtension({
+export async function insertPublishingExtension({
   course_instance_id,
-  enabled,
   name,
   archive_date,
 }: {
   course_instance_id: string;
-  enabled: boolean;
   name: string | null;
   archive_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
@@ -77,7 +75,6 @@ export async function insertAccessControlExtension({
     sql.insert_access_control_extension,
     {
       course_instance_id,
-      enabled,
       name,
       archive_date,
     },
@@ -86,9 +83,9 @@ export async function insertAccessControlExtension({
 }
 
 /**
- * Links an access control extension to a specific enrollment.
+ * Links a publishing extension to a specific enrollment.
  */
-export async function insertAccessControlEnrollmentExtension({
+export async function insertPublishingEnrollmentExtension({
   course_instance_access_control_extension_id,
   enrollment_id,
 }: {
@@ -106,33 +103,30 @@ export async function insertAccessControlEnrollmentExtension({
 }
 
 /**
- * Creates an access control extension with enrollment links in a transaction.
+ * Creates a publishing extension with enrollment links in a transaction.
  */
-export async function createAccessControlExtensionWithEnrollments({
+export async function createPublishingExtensionWithEnrollments({
   course_instance_id,
-  enabled,
   name,
   archive_date,
   enrollment_ids,
 }: {
   course_instance_id: string;
-  enabled: boolean;
   name: string | null;
   archive_date: Date | null;
   enrollment_ids: string[];
 }): Promise<CourseInstancePublishingExtension> {
   return await runInTransactionAsync(async () => {
     // Create the extension
-    const extension = await insertAccessControlExtension({
+    const extension = await insertPublishingExtension({
       course_instance_id,
-      enabled,
       name,
       archive_date,
     });
 
     // Link to enrollments
     for (const enrollment_id of enrollment_ids) {
-      await insertAccessControlEnrollmentExtension({
+      await insertPublishingEnrollmentExtension({
         course_instance_access_control_extension_id: extension.id,
         enrollment_id,
       });
@@ -143,9 +137,9 @@ export async function createAccessControlExtensionWithEnrollments({
 }
 
 /**
- * Deletes an access control extension.
+ * Deletes a publishing extension.
  */
-export async function deleteAccessControlExtension({
+export async function deletePublishingExtension({
   extension_id,
   course_instance_id,
 }: {
@@ -159,18 +153,16 @@ export async function deleteAccessControlExtension({
 }
 
 /**
- * Updates an access control extension.
+ * Updates a publishing extension.
  */
-export async function updateAccessControlExtension({
+export async function updatePublishingExtension({
   extension_id,
   course_instance_id,
-  enabled,
   name,
   archive_date,
 }: {
   extension_id: string;
   course_instance_id: string;
-  enabled: boolean;
   name: string | null;
   archive_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
@@ -179,7 +171,6 @@ export async function updateAccessControlExtension({
     {
       extension_id,
       course_instance_id,
-      enabled,
       name,
       archive_date,
     },

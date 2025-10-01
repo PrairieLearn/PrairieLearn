@@ -5,11 +5,11 @@ import { CommentPopover } from '../../components/CommentPopover.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { convertAccessRuleToJson } from '../../lib/course-instance-access.js';
 import { type CourseInstance, type CourseInstancePublishingRule } from '../../lib/db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-access-control-extensions.types.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-publishing-extensions.types.js';
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
-import { AccessControlForm } from './components/AccessControlForm.js';
-import { AccessControlMigrationModal } from './components/AccessControlMigrationModal.js';
+import { PublishingForm } from './components/PublishingForm.js';
+import { AccessControlMigrationModal } from './components/PublishingMigrationModal.js';
 
 export function InstructorInstanceAdminAccess({
   accessRules,
@@ -37,7 +37,7 @@ export function InstructorInstanceAdminAccess({
   return (
     <>
       <Hydrate>
-        <AccessControlForm
+        <PublishingForm
           courseInstance={courseInstance}
           hasAccessRules={accessRules.length > 0}
           canEdit={hasCourseInstancePermissionEdit}
