@@ -91,7 +91,7 @@ export async function close() {
 
   // Close the adapters. This will remove the pub/sub subscriptions to ensure we
   // don't receive any more messages from Redis.
-  await Promise.all(adapters.map((adapter) => adapter.close()));
+  await Promise.all(adapters.map((adapter) => adapter.close()) as Promise<void>[]);
 
   // Close any remaining client connections.
   io.engine.close();
