@@ -485,7 +485,7 @@ function ExtensionTableRow({
                     )}
                   </button>
                 )}
-                {canEdit && (
+                {canEdit && editingExtensionId === extension.id && (
                   <div class="d-flex align-items-center gap-1">
                     {addingUserToExtension === extension.id ? (
                       <>
