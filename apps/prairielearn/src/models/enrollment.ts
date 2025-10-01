@@ -30,7 +30,44 @@ import { generateUsers, selectAndLockUserById } from './user.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Changes the status of an invited enrollment to joined.
+ * If the enrollment is not tied to a user, the user_id can be provided to tie it to a user.
+ * Otherwise, you should not provide a user_id.
+ */
+export async function enrollUserInCourseInstance({
+  enrollment_id,
+  user_id,
+  agent_user_id,
+  agent_authn_user_id,
+  action_detail,
+}: {
+  enrollment_id: string;
+  user_id?: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
+  action_detail: SupportedActionsForTable<'enrollments'>;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const enrollment = await selectAndLockEnrollmentById(enrollment_id);
+    if (user_id && enrollment.user_id) {
+      throw new Error('Enrollment is already tied to a user');
+    }
+
+    const user_id_to_use = user_id ?? enrollment.user_id;
+    if (!user_id_to_use) {
+      throw new Error('User ID is required to enroll a user into a course instance');
+    }
+
+    return await dangerouslyEnrollUserInCourseInstance({
+      enrollment_id,
+      user_id: user_id_to_use,
+      agent_user_id,
+      agent_authn_user_id,
+      action_detail,
+    });
+  });
+}
+/**
+ * Changes the status of an enrollment to joined.
  *
  * Function callers should hold a lock on the enrollment.
  */
@@ -315,6 +352,7 @@ async function dangerouslyInviteExistingEnrollment({
     row_id: newEnrollment.id,
     old_row: oldEnrollment,
     new_row: newEnrollment,
+    subject_user_id: null,
     agent_user_id,
     agent_authn_user_id,
   });
@@ -399,4 +437,116 @@ export async function inviteStudentByUid({
 
 export async function selectAndLockEnrollmentById(id: string) {
   return await queryRow(sql.select_and_lock_enrollment_by_id, { id }, EnrollmentSchema);
+}
+
+/**
+ * Sets the status of an enrollment.
+ * This function updates the enrollment status without any additional WHERE clauses
+ * for course_instance_id or current status.
+ *
+ * The function will lock the enrollment row and create an audit event based on the status change.
+ */
+export async function setEnrollmentStatusBlocked({
+  enrollment_id,
+  agent_user_id,
+  agent_authn_user_id,
+}: {
+  enrollment_id: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
+    if (oldEnrollment.user_id) {
+      await selectAndLockUserById(oldEnrollment.user_id);
+    }
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id, status: 'blocked' },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      table_name: 'enrollments',
+      action: 'update',
+      action_detail: 'blocked',
+      row_id: newEnrollment.id,
+      old_row: oldEnrollment,
+      new_row: newEnrollment,
+      agent_user_id,
+      agent_authn_user_id,
+    });
+
+    return newEnrollment;
+  });
+}
+
+/**
+ * Deletes an enrollment.
+ */
+export async function deleteEnrollmentById({
+  enrollment_id,
+  agent_user_id,
+  action_detail,
+  agent_authn_user_id,
+}: {
+  enrollment_id: string;
+  agent_user_id: string | null;
+  action_detail: SupportedActionsForTable<'enrollments'>;
+  agent_authn_user_id: string | null;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
+
+    const deletedEnrollment = await queryRow(
+      sql.delete_enrollment_by_id,
+      { enrollment_id },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      table_name: 'enrollments',
+      action: 'delete',
+      action_detail,
+      row_id: oldEnrollment.id,
+      old_row: oldEnrollment,
+      new_row: null,
+      subject_user_id: null,
+      course_instance_id: oldEnrollment.course_instance_id,
+      agent_user_id,
+      agent_authn_user_id,
+    });
+
+    return deletedEnrollment;
+  });
+}
+
+/**
+ * Invites an enrollment by id, given a pending uid.
+ */
+export async function inviteEnrollmentById({
+  enrollment_id,
+  agent_user_id,
+  agent_authn_user_id,
+  pending_uid,
+}: {
+  enrollment_id: string;
+  agent_user_id: string | null;
+  agent_authn_user_id: string | null;
+  pending_uid: string;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const enrollment = await selectAndLockEnrollmentById(enrollment_id);
+    if (enrollment.user_id) {
+      await selectAndLockUserById(enrollment.user_id);
+    }
+
+    return await dangerouslyInviteExistingEnrollment({
+      enrollment_id,
+      agent_user_id,
+      pending_uid,
+      agent_authn_user_id,
+    });
+  });
 }

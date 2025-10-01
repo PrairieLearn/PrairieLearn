@@ -88,12 +88,12 @@ export function PageLayout({
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const courseAdminSettingsNavSubPages = navPageTabs.course_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a course admin settings subpage, show ContextNavigation
-      if (navContext.subPage && courseAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && courseAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
@@ -101,12 +101,12 @@ export function PageLayout({
     } else if (navContext.page === 'instance_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a instance admin settings subpage, show ContextNavigation
-      if (navContext.subPage && instanceAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && instanceAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;

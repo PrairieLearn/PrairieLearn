@@ -138,6 +138,7 @@ export function StudentsTable({
     };
 
     const next = adjacentCells[e.key];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!next) {
       return;
     }
