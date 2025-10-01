@@ -52,11 +52,11 @@ export function calculateResponseCost({
   const inputTokenCost = modelPricing.input / 10 ** 6;
   const outputTokenCost = modelPricing.output / 10 ** 6;
 
-  return (
-    inputTokens * inputTokenCost +
-    cachedInputTokens * cachedInputTokenCost +
-    outputTokens * outputTokenCost
-  );
+  const cachedInputCost = cachedInputTokens * cachedInputTokenCost;
+  const inputCost = inputTokens * inputTokenCost;
+  const outputCost = outputTokens * outputTokenCost;
+
+  return cachedInputCost + inputCost + outputCost;
 }
 
 export function emptyUsage(): OpenAI.Responses.ResponseUsage {

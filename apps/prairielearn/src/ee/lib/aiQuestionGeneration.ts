@@ -219,19 +219,19 @@ function extractFromResponse(
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
 
-  const html = completionText.match(htmlSelector)?.groups?.code;
-  const python = completionText.match(pythonSelector)?.groups?.code;
+  const html = completionText.match(htmlSelector)?.groups?.code.trim();
+  const python = completionText.match(pythonSelector)?.groups?.code.trim();
 
   const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
-    job.info(`\nextracted question.html:\n\n\`\`\`${html}\`\`\`\n\n`);
-    out.html = html;
+    job.info(`\nextracted question.html:\n\n\`\`\`\n${html}\n\`\`\`\n\n`);
+    out.html = html + '\n';
   }
 
   if (python !== undefined) {
-    job.info(`\nextracted server.py:\n\n\`\`\`${python}\`\`\`\n\n`);
-    out.python = python;
+    job.info(`\nextracted server.py:\n\n\`\`\`\n${python}\n\`\`\`\n\n`);
+    out.python = python + '\n';
   }
 
   return out;
