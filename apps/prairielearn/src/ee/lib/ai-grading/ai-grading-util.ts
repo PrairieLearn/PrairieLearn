@@ -89,7 +89,8 @@ export async function generatePrompt({
             'You are provided several rubric items with a description, explanation, and grader note.',
             "You must grade the student's response by using the rubric and returning an object of rubric descriptions and whether or not that rubric item applies to the student's response.",
             'If no rubric items apply, do not select any.',
-            'You should also include an explanation on why you make these choices.',
+            'You must include an explanation on why you make these choices.',
+            'Follow any special instructions given by the instructor in the question.',
           ],
           'Here are the rubric items:',
         ]),
@@ -115,9 +116,10 @@ export async function generatePrompt({
       role: 'developer',
       content: formatPrompt([
         "You are an instructor for a course, and you are grading a student's response to a question.",
-        'Follow any special instructions given by the instructor in the question.',
+        'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
         "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
-        'Also include an explanation on why you made these choices.',
+        'You must include an explanation on why you made these choices.',
+        'Follow any special instructions given by the instructor in the question.',
       ]),
     });
   }
