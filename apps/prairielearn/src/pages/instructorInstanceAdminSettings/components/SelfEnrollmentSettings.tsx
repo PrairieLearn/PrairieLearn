@@ -168,7 +168,7 @@ export function SelfEnrollmentSettings({
           Allow self-enrollment
         </label>
         <div class="small text-muted">
-          Allow students to enroll themselves in this course instance.
+          If not checked, students will need to be invited to this course instance.
         </div>
       </div>
 
@@ -180,7 +180,7 @@ export function SelfEnrollmentSettings({
           {...control.register('show_in_enroll_page', {
             validate: (value, { self_enrollment_enabled }) => {
               if (!self_enrollment_enabled && value) {
-                return 'Self-enrollment must be allowed when show on enrollment page is enabled.';
+                return 'Self-enrollment must be allowed in order to show on the enrollment page. This option is going away soon.';
               }
               return true;
             },
@@ -250,6 +250,7 @@ export function SelfEnrollmentSettings({
           aria-label="Self-enrollment enabled before date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
           disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled}
+          step="1"
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
               if (self_enrollment_enabled_before_date_enabled && !value) {
@@ -259,11 +260,12 @@ export function SelfEnrollmentSettings({
             },
           })}
           // HACK: Make the accessibility checker happy
+          // See https://gitlab.com/html-validate/html-validate/-/issues/294
           {...(!selfEnrollmentEnabledBeforeDateEnabled
             ? { name: 'self_enrollment_enabled_before_date__IGNORE' }
             : {})}
         />
-        {/* Disabled inputs are not submitted */}
+        {/* Disabled inputs are not submitted in a HTTP POST request. However, we still want to send the updated value. */}
         {!selfEnrollmentEnabledBeforeDateEnabled && (
           <input
             type="hidden"

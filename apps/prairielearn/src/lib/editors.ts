@@ -193,7 +193,7 @@ export function getUniqueNames({
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
  *
- * You should set `isUIBoolean` to true if the property is a UI boolean that controls the visibility of another field.
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
  * For example, `beforeDateEnabled` is a UI boolean that controls the visibility of the `beforeDate` field.
  */
 export function propertyValueWithDefault(
@@ -215,14 +215,12 @@ export function propertyValueWithDefault(
     return false;
   }
 
-  // If the existing value is undefined, we want to write the new value if it differs from the default value.
   if (existingValue === undefined) {
     if (!isNewDefault) {
       return newValue;
     }
-    // Otherwise, we want to write undefined.
+    return undefined;
   } else {
-    // If the existing value is not the default value, and the new value is the default value, we want to write undefined.
     if (!isExistingDefault && isNewDefault) {
       return undefined;
     } else {
