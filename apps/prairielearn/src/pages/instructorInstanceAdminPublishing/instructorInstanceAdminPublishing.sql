@@ -25,7 +25,10 @@ WHERE
 -- BLOCK update_publishing_extension_date
 UPDATE course_instance_publishing_extensions
 SET
-  archive_date = CASE WHEN $archive_date = '' THEN NULL ELSE $archive_date::timestamp END
+  archive_date = CASE
+    WHEN $archive_date = '' THEN NULL
+    ELSE $archive_date::timestamp
+  END
 WHERE
   id = $extension_id
   AND course_instance_id = $course_instance_id;
@@ -34,18 +37,23 @@ WHERE
 UPDATE course_instance_publishing_extensions
 SET
   name = $name,
-  archive_date = CASE WHEN $archive_date = '' THEN NULL ELSE $archive_date::timestamp END
+  archive_date = CASE
+    WHEN $archive_date = '' THEN NULL
+    ELSE $archive_date::timestamp
+  END
 WHERE
   id = $extension_id
   AND course_instance_id = $course_instance_id;
 
 -- BLOCK add_user_to_extension
-INSERT INTO course_instance_publishing_enrollment_extensions (
+INSERT INTO
+  course_instance_publishing_enrollment_extensions (
+    course_instance_publishing_extension_id,
+    enrollment_id
+  )
+VALUES
+  ($extension_id, $enrollment_id)
+ON CONFLICT (
   course_instance_publishing_extension_id,
   enrollment_id
-)
-VALUES (
-  $extension_id,
-  $enrollment_id
-)
-ON CONFLICT (course_instance_publishing_extension_id, enrollment_id) DO NOTHING;
+) DO NOTHING;

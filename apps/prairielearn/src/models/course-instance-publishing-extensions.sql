@@ -13,11 +13,7 @@ WHERE
 INSERT INTO
   course_instance_publishing_extensions (course_instance_id, name, archive_date)
 VALUES
-  (
-    $course_instance_id,
-    $name,
-    $archive_date
-  )
+  ($course_instance_id, $name, $archive_date)
 RETURNING
   *;
 
@@ -50,7 +46,14 @@ SELECT
   ci_extensions.*,
   COALESCE(
     json_agg(
-      json_build_object('uid', u.uid, 'name', u.name, 'enrollment_id', e.id)
+      json_build_object(
+        'uid',
+        u.uid,
+        'name',
+        u.name,
+        'enrollment_id',
+        e.id
+      )
       ORDER BY
         u.uid
     ) FILTER (

@@ -8,6 +8,12 @@ import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { CourseInstance } from '../../../lib/db-types.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
+import {
+  addWeeksToDatetime,
+  instantFromDate,
+  instantToString,
+  nowInTimezone,
+} from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
@@ -15,30 +21,6 @@ import { PublishingExtensions } from './PublishingExtensions.js';
 const queryClient = new QueryClient();
 
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published' | 'archived';
-
-/** Helper function to get current time in course timezone. */
-function nowInTimezone(timezone: string): Temporal.Instant {
-  return Temporal.Now.zonedDateTimeISO(timezone).toInstant();
-}
-
-function instantFromDate(date: Date): Temporal.Instant {
-  return Temporal.Instant.fromEpochMilliseconds(date.getTime());
-}
-
-function instantToString(instant: Temporal.Instant, timezone: string): string {
-  // Remove seconds from the string
-  // TODO: allow seconds
-  return instant.toZonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16);
-}
-
-/** Helper function to add weeks to a datetime string. */
-function addWeeksToDatetime(
-  instant: Temporal.Instant,
-  weeks: number,
-  timezone: string,
-): Temporal.Instant {
-  return instant.toZonedDateTimeISO(timezone).add({ weeks }).toInstant();
-}
 
 /** Helper to compute status from dates and current time. */
 function computeStatus(publishDate: Date | null, archiveDate: Date | null): PublishingStatus {
@@ -458,6 +440,7 @@ export function PublishingForm({
                         type="datetime-local"
                         class={clsx('form-control', errors.publishDate && 'is-invalid')}
                         id="publishDate"
+                        step="1"
                         disabled={!canEdit}
                         {...register('publishDate', {
                           validate: validatePublishDate,
@@ -491,6 +474,7 @@ export function PublishingForm({
                         type="datetime-local"
                         class={clsx('form-control', errors.archiveDate && 'is-invalid')}
                         id="archiveDate"
+                        step="1"
                         disabled={!canEdit}
                         {...register('archiveDate', {
                           validate: validateArchiveDate,
@@ -588,6 +572,7 @@ export function PublishingForm({
                         type="datetime-local"
                         class={clsx('form-control', errors.archiveDate && 'is-invalid')}
                         id="archiveDate"
+                        step="1"
                         disabled={!canEdit}
                         {...register('archiveDate', {
                           validate: validateArchiveDate,

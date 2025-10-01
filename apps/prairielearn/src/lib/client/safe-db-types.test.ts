@@ -70,8 +70,6 @@ const minimalStudentCourse: z.input<typeof StudentCourseSchema> = {
 };
 
 const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
-  publishing_archive_date: null,
-  publishing_publish_date: null,
   assessments_group_by: 'Set',
   course_id: '1',
   deleted_at: null,
@@ -82,6 +80,8 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   id: '3',
   json_comment: null,
   long_name: null,
+  publishing_archive_date: null,
+  publishing_publish_date: null,
   self_enrollment_enabled: true,
   self_enrollment_enabled_before_date: null,
   self_enrollment_enabled_before_date_enabled: false,

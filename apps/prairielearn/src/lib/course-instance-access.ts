@@ -89,7 +89,6 @@ export function evaluateCourseInstanceAccess(
   return { hasAccess: true };
 }
 
-
 const toIsoString = (date: Date, timezone: string) => {
   return Temporal.Instant.fromEpochMilliseconds(date.getTime())
     .toZonedDateTimeISO(timezone)
@@ -128,4 +127,3 @@ export function convertAccessRuleToJson(
 
   return json;
 }
-

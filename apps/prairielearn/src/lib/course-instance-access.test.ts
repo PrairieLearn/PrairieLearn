@@ -178,7 +178,6 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 });
 
-
 describe('convertAccessRuleToJson', () => {
   function createMockAccessRule(
     overrides: Partial<CourseInstancePublishingRule> = {},
