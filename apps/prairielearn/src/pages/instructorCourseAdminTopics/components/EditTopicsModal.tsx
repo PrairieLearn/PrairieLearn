@@ -35,7 +35,7 @@ export function EditTopicsModal({
   return (
     <Modal show={show} onHide={() => setShowModal(false)}>
       <Modal.Header closeButton>
-        <Modal.Title>{addTopic ? 'Add Topic' : 'Edit Topic'}</Modal.Title>
+        <Modal.Title>{addTopic ? 'Add topic' : 'Edit topic'}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {selectedTopic ? (
@@ -70,7 +70,7 @@ export function EditTopicsModal({
               <label class="form-label" for="topicColor">
                 Color
               </label>
-              <div class="d-flex gap-2">
+              <div class="d-flex gap-2 align-items-center">
                 <select
                   class={clsx('form-select', invalidColor && 'is-invalid')}
                   id="topicColor"
@@ -88,7 +88,15 @@ export function EditTopicsModal({
                     </option>
                   ))}
                 </select>
-                <svg width="32" height="32" class="flex-shrink-0">
+                <svg
+                  viewBox="0 0 32 32"
+                  // `form-control-color` provides the correct sizing. We override the
+                  // cursor and padding to make it appear just as a plain, non-interactive
+                  // color swatch.
+                  class="form-control-color p-0"
+                  style={{ cursor: 'default' }}
+                  aria-hidden="true"
+                >
                   <rect
                     width="32"
                     height="32"
@@ -106,7 +114,8 @@ export function EditTopicsModal({
               <label class="form-label" for="topicDescription">
                 Description
               </label>
-              <textarea
+              <input
+                type="text"
                 class="form-control"
                 id="topicDescription"
                 value={selectedTopic.description}

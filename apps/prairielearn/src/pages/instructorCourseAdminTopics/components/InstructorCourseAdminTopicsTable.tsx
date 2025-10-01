@@ -5,6 +5,7 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
 import { type StaffTopic } from '../../../lib/client/safe-db-types.js';
 import { type Topic } from '../../../lib/db-types.js';
+import { ColorJsonSchema } from '../../../schemas/infoCourse.js';
 
 import { EditTopicsModal } from './EditTopicsModal.js';
 
@@ -61,7 +62,11 @@ export function InstructorCourseAdminTopicsTable({
 
   const handleNewTopic = () => {
     setAddTopic(true);
-    setSelectedTopic(emptyTopic);
+    setSelectedTopic({
+      ...emptyTopic,
+      // Pick a random initial color.
+      color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
+    });
     setShowModal(true);
   };
 
