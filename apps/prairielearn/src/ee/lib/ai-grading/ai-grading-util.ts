@@ -174,27 +174,27 @@ export async function generatePrompt({
         input.push({
           role: 'user',
           content: formatPrompt([
-            '[BEGIN EXAMPLE_SUBMISSION]',
+            '<example-submission>',
             example.submission_text,
-            '[END EXAMPLE_SUBMISSION]',
-            '[BEGIN SELECTED_RUBRIC_ITEMS]',
+            '</example-submission>',
+            '<selected-rubric-items>',
             run(() => {
               if (rubric_grading_items.length === 0) {
                 return 'No rubric items were selected for this example student response.';
               }
               return rubric_grading_items.map((item) => `- ${item.description}`).join('\n');
             }),
-            '[END SELECTED_RUBRIC_ITEMS]',
+            '</selected-rubric-items>',
           ]),
         });
       } else {
         input.push({
           role: 'user',
           content: formatPrompt([
-            '[BEGIN EXAMPLE_SUBMISSION]',
+            '<example-submission>',
             example.submission_text,
-            '[END EXAMPLE_SUBMISSION]',
-            '[BEGIN GRADING_RESULT]',
+            '</example-submission>',
+            '<grading-result>',
             JSON.stringify(
               {
                 score: example.score_perc,
@@ -203,7 +203,7 @@ export async function generatePrompt({
               null,
               2,
             ),
-            '[END GRADING_RESULT]',
+            '</grading-result>',
           ]),
         });
       }
