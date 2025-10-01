@@ -106,12 +106,6 @@ router.get(
       ? await selectUserById(res.locals.instance_question.last_grader)
       : null;
 
-    // TODO: This may not be needed.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (res.locals.instance_question == null) {
-      throw new error.HttpStatusError(404, 'Instance question not found');
-    }
-
     const instance_question = res.locals.instance_question as InstanceQuestion;
 
     const instanceQuestionGroup = await run(async () => {
