@@ -43,7 +43,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
   columnValuesFilter: T[number][];
   setColumnValuesFilter: (value: T[number][]) => void;
 }) {
-  const [mode, setModeQuery] = useState<'include' | 'exclude'>('include');
+  const [mode, setMode] = useState<'include' | 'exclude'>('include');
 
   const selected = useMemo(
     () => computeSelected(allColumnValues, mode, new Set(columnValuesFilter)),
@@ -52,7 +52,7 @@ export function CategoricalColumnFilter<T extends readonly any[]>({
 
   const apply = (newMode: 'include' | 'exclude', newSelected: Set<T[number]>) => {
     const selected = computeSelected(allColumnValues, newMode, newSelected);
-    setModeQuery(newMode);
+    setMode(newMode);
     setColumnValuesFilter(Array.from(selected));
   };
 

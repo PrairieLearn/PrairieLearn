@@ -163,7 +163,7 @@ export function TanstackTable<RowDataModel>({
     };
 
     const next = adjacentCells[e.key];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
     if (!next) {
       return;
     }
@@ -483,6 +483,7 @@ export function TanstackTableCard<RowDataModel>({
 
   useEffect(() => {
     // TODO: This is a workaround to avoid a hydration mismatch.
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setIsMediumOrLarger(mediaQuery?.matches ?? true);
   }, [mediaQuery]);
 
