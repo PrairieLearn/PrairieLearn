@@ -1,5 +1,5 @@
 import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
 
-import { AccessControlMigrationModal } from '../../../../src/pages/instructorInstanceAdminAccess/components/PublishingMigrationModal.js';
+import { PublishingMigrationModal } from '../../../../src/pages/instructorInstanceAdminPublishing/components/PublishingMigrationModal.js';
 
-registerHydratedComponent(AccessControlMigrationModal);
+registerHydratedComponent(PublishingMigrationModal);

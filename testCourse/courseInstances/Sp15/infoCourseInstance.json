@@ -1,5 +1,5 @@
 {
   "uuid": "31a69dd9-81a1-4b17-b578-2098d20fb57a",
   "longName": "Spring 2015",
-  "accessControl": { "publishDate": "2025-10-01T11:34:00", "archiveDate": "2026-02-04T11:34:00" }
+  "publishing": { "publishDate": "2025-10-01T11:34:00", "archiveDate": "2026-02-04T11:34:00" }
 }

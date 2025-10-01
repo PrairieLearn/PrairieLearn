@@ -1081,7 +1081,7 @@ function validateAssessment({
   // from fixing things. So, we'll only show some warnings for course instances
   // which are accessible either now or any time in the future.
 
-  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `accessControl`.
+  // NOTE (@reteps): We are deprecating `allowAccess` in favor of `publishing`.
   // So further validation will never be done here.
 
   if (!courseInstanceExpired) {
@@ -1442,7 +1442,7 @@ function validateCourseInstance({
       parsedArchiveDate != null &&
       isAfter(parsedPublishDate, parsedArchiveDate)
     ) {
-      errors.push('"accessControl.publishDate" must be before "accessControl.archiveDate".');
+      errors.push('"publishing.publishDate" must be before "publishing.archiveDate".');
     }
   }
 

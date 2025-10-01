@@ -4,7 +4,7 @@ import {
   type CourseInstanceAccessParams,
   convertAccessRuleToJson,
   evaluateCourseInstanceAccess,
-  migrateAccessRuleJsonToAccessControl,
+  migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.js';
 import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
 
@@ -46,7 +46,7 @@ function createMockParams(
     mode: 'Public',
     course_instance_role: 'None',
     course_role: 'None',
-    accessControlExtensions: [],
+    publishingExtensions: [],
     ...overrides,
   };
 }
@@ -179,7 +179,7 @@ describe('evaluateCourseInstanceAccess', () => {
   });
 });
 
-describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + migrateAccessRuleJsonToAccessControl)', () => {
+describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleToJson + migrateAccessRuleJsonToPublishingConfiguration)', () => {
   function createMockAccessRule(
     overrides: Partial<CourseInstancePublishingRule> = {},
   ): CourseInstancePublishingRule {
@@ -203,15 +203,15 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
-    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+    const result = migrateAccessRuleJsonToPublishingConfiguration([accessRuleJson]);
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "accessControl": {
+        "extensions": [],
+        "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
-        "extensions": [],
         "success": true,
       }
     `);
@@ -222,7 +222,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));
-    const result = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
+    const result = migrateAccessRuleJsonToPublishingConfiguration(accessRuleJsonArray);
 
     expect(result).toMatchInlineSnapshot(`
       {
@@ -240,7 +240,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJsonArray = accessRules.map((rule) => convertAccessRuleToJson(rule, 'UTC'));
-    const result = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
+    const result = migrateAccessRuleJsonToPublishingConfiguration(accessRuleJsonArray);
 
     expect(result).toMatchInlineSnapshot(`
       {
@@ -264,25 +264,25 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
-    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+    const result = migrateAccessRuleJsonToPublishingConfiguration([accessRuleJson]);
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "accessControl": {
-          "archiveDate": "2024-07-01T00:00:00",
-          "publishDate": "2024-05-01T00:00:00",
-        },
         "extensions": [
           {
+            "archive_date": "2024-07-01T00:00:00",
             "enabled": true,
             "name": "Test comment",
-            "archive_date": "2024-07-01T00:00:00",
             "uids": [
               "user1@example.com",
               "user2@example.com",
             ],
           },
         ],
+        "publishingConfiguration": {
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
+        },
         "success": true,
       }
     `);
@@ -302,24 +302,24 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
-    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+    const result = migrateAccessRuleJsonToPublishingConfiguration([accessRuleJson]);
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "accessControl": {
-          "archiveDate": "2024-07-01T00:00:00",
-          "publishDate": "2024-05-01T00:00:00",
-        },
         "extensions": [
           {
+            "archive_date": "2024-07-01T00:00:00",
             "enabled": true,
             "name": null,
-            "archive_date": "2024-07-01T00:00:00",
             "uids": [
               "user1@example.com",
             ],
           },
         ],
+        "publishingConfiguration": {
+          "archiveDate": "2024-07-01T00:00:00",
+          "publishDate": "2024-05-01T00:00:00",
+        },
         "success": true,
       }
     `);
@@ -335,7 +335,7 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
-    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+    const result = migrateAccessRuleJsonToPublishingConfiguration([accessRuleJson]);
 
     expect(result).toMatchInlineSnapshot(`
       {
@@ -358,15 +358,15 @@ describe('migrateAccessRulesToAccessControl (using convertAccessRuleToJson + mig
 
     // Convert to JSON format first
     const accessRuleJson = convertAccessRuleToJson(accessRules[0], 'UTC');
-    const result = migrateAccessRuleJsonToAccessControl([accessRuleJson]);
+    const result = migrateAccessRuleJsonToPublishingConfiguration([accessRuleJson]);
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "accessControl": {
+        "extensions": [],
+        "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
         },
-        "extensions": [],
         "success": true,
       }
     `);

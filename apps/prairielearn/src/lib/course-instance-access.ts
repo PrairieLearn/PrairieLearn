@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { type PublishingJson, type AccessRuleJson } from '../schemas/infoCourseInstance.js';
+import { type AccessRuleJson, type PublishingJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstance,
@@ -17,7 +17,7 @@ export interface CourseInstanceAccessParams {
   course_role: EnumCourseRole;
   mode_reason: EnumModeReason;
   mode: EnumMode;
-  accessControlExtensions: CourseInstancePublishingExtension[];
+  publishingExtensions: CourseInstancePublishingExtension[];
 }
 
 /**
@@ -69,7 +69,7 @@ export function evaluateCourseInstanceAccess(
   }
 
   // Consider the latest enabled extensions.
-  const possibleArchiveDates = params.accessControlExtensions.map(
+  const possibleArchiveDates = params.publishingExtensions.map(
     (extension) => extension.archive_date,
   );
 
@@ -89,27 +89,27 @@ export function evaluateCourseInstanceAccess(
   return { hasAccess: true };
 }
 
-interface CourseInstanceAccessControlExtensionData {
+interface CourseInstancePublishingExtensionData {
   enabled: boolean;
   name: string | null;
   archive_date: string | null;
   uids: string[];
 }
 
-export interface AccessControlMigrationResult {
+export interface PublishingConfigurationMigrationResult {
   success: true;
-  accessControl: PublishingJson;
-  extensions: CourseInstanceAccessControlExtensionData[];
+  publishingConfiguration: PublishingJson;
+  extensions: CourseInstancePublishingExtensionData[];
 }
 
-export interface AccessControlMigrationError {
+export interface PublishingConfigurationMigrationError {
   success: false;
   error: string;
 }
 
-export type AccessControlMigrationResponse =
-  | AccessControlMigrationResult
-  | AccessControlMigrationError;
+export type PublishingConfigurationMigrationResponse =
+  | PublishingConfigurationMigrationResult
+  | PublishingConfigurationMigrationError;
 
 const toIsoString = (date: Date, timezone: string) => {
   return Temporal.Instant.fromEpochMilliseconds(date.getTime())
@@ -151,12 +151,12 @@ export function convertAccessRuleToJson(
 }
 
 /**
- * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new access control format.
+ * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new publishing configuration format.
  * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
  */
-export function migrateAccessRuleJsonToAccessControl(
+export function migrateAccessRuleJsonToPublishingConfiguration(
   originalAccessRules: AccessRuleJson[],
-): AccessControlMigrationResponse {
+): PublishingConfigurationMigrationResponse {
   // Make a deep copy of the access rules
   const accessRules = structuredClone(originalAccessRules);
 
@@ -199,13 +199,13 @@ export function migrateAccessRuleJsonToAccessControl(
     };
   }
   // Build the new access control configuration
-  const accessControl = {
+  const publishingConfiguration = {
     publishDate: rule.startDate,
     archiveDate: rule.endDate,
   };
 
   // Convert UID selectors to extensions
-  const extensions: CourseInstanceAccessControlExtensionData[] = [];
+  const extensions: CourseInstancePublishingExtensionData[] = [];
   if (rule.uids && rule.uids.length > 0) {
     extensions.push({
       enabled: true,
@@ -217,7 +217,7 @@ export function migrateAccessRuleJsonToAccessControl(
 
   return {
     success: true,
-    accessControl,
+    publishingConfiguration,
     extensions,
   };
 }

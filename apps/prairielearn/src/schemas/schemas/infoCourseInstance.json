@@ -70,7 +70,7 @@
       "properties": {},
       "deprecated": true
     },
-    "accessControl": {
+    "publishing": {
       "type": "object",
       "properties": {
         "publishDate": {

@@ -165,7 +165,7 @@ async function checkCourseOrInstanceAccess(params: {
       course_instance_id: authzData.course_instance.id,
     });
 
-    const accessControlExtensions = enrollment
+    const publishingExtensions = enrollment
       ? await selectPublishingExtensionsByEnrollmentId(enrollment.id)
       : [];
     // TODO: Deal with overrides. this will have to happen outside of this function.
@@ -174,7 +174,7 @@ async function checkCourseOrInstanceAccess(params: {
       course_instance_role: authzData.permissions_course_instance.course_instance_role,
       mode_reason: authzData.mode_reason,
       mode: authzData.mode,
-      accessControlExtensions,
+      publishingExtensions,
     });
     if (!result.hasAccess) {
       return {

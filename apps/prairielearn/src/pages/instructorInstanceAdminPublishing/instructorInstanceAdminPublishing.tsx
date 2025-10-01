@@ -17,7 +17,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import {
   convertAccessRuleToJson,
-  migrateAccessRuleJsonToAccessControl,
+  migrateAccessRuleJsonToPublishingConfiguration,
 } from '../../lib/course-instance-access.js';
 import { CourseInstancePublishingRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
@@ -31,7 +31,7 @@ import {
 import { getEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.js';
 
-import { InstructorInstanceAdminAccess } from './instructorInstanceAdminAccess.html.js';
+import { InstructorInstanceAdminPublishing } from './instructorInstanceAdminPublishing.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -95,7 +95,7 @@ router.get(
               course={res.locals.course}
               urlPrefix={res.locals.urlPrefix}
             />
-            <InstructorInstanceAdminAccess
+            <InstructorInstanceAdminPublishing
               accessRules={accessRules}
               accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
@@ -228,7 +228,7 @@ router.post(
       );
 
       // Calculate the migration
-      const migrationResult = migrateAccessRuleJsonToAccessControl(accessRuleJsonArray);
+      const migrationResult = migrateAccessRuleJsonToPublishingConfiguration(accessRuleJsonArray);
 
       if (!migrationResult.success) {
         throw new error.HttpStatusError(
@@ -258,7 +258,7 @@ router.post(
         courseInstanceInfo.publishing = {};
       }
 
-      courseInstanceInfo.publishing = migrationResult.accessControl;
+      courseInstanceInfo.publishing = migrationResult.publishingConfiguration;
 
       // Remove the allowAccess rules
       if (courseInstanceInfo.allowAccess) {

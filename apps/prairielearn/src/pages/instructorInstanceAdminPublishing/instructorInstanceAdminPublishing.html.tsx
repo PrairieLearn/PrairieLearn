@@ -9,9 +9,9 @@ import { type CourseInstancePublishingExtensionWithUsers } from '../../models/co
 import { type AccessRuleJson } from '../../schemas/infoCourseInstance.js';
 
 import { PublishingForm } from './components/PublishingForm.js';
-import { AccessControlMigrationModal } from './components/PublishingMigrationModal.js';
+import { PublishingMigrationModal } from './components/PublishingMigrationModal.js';
 
-export function InstructorInstanceAdminAccess({
+export function InstructorInstanceAdminPublishing({
   accessRules,
   accessControlExtensions,
   courseInstance,
@@ -87,7 +87,7 @@ function LegacyAccessRuleCard({
         <h1>{courseInstance.long_name} course instance access rules</h1>
         {hasCourseInstancePermissionEdit && hasCourseInstancePermissionView && (
           <Hydrate>
-            <AccessControlMigrationModal
+            <PublishingMigrationModal
               accessRules={accessRuleJsonArray}
               csrfToken={csrfToken}
               origHash={origHash}

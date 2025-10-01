@@ -149,16 +149,16 @@ describe('Course instance syncing', () => {
     const schemaMappings: {
       json: CourseInstanceJsonInput['publishing'];
       db: {
-        access_control_publish_date: Date | null;
-        access_control_archive_date: Date | null;
+        publishing_publish_date: Date | null;
+        publishing_archive_date: Date | null;
       } | null;
       errors: string[];
     }[] = [
       {
         json: {},
         db: {
-          access_control_publish_date: null,
-          access_control_archive_date: null,
+          publishing_publish_date: null,
+          publishing_archive_date: null,
         },
         errors: [],
       },
@@ -166,11 +166,8 @@ describe('Course instance syncing', () => {
         json: {
           archiveDate: jsonDate,
         },
-        db: {
-          access_control_publish_date: null,
-          access_control_archive_date: date,
-        },
-        errors: [],
+        db: null,
+        errors: ['"publishing.publishDate" is required if "publishing.archiveDate" is specified.'],
       },
       {
         json: {
@@ -178,8 +175,8 @@ describe('Course instance syncing', () => {
           archiveDate: jsonDate,
         },
         db: {
-          access_control_publish_date: date,
-          access_control_archive_date: date,
+          publishing_publish_date: date,
+          publishing_archive_date: date,
         },
         errors: [],
       },
@@ -188,7 +185,7 @@ describe('Course instance syncing', () => {
           publishDate: jsonDate,
         },
         db: null,
-        errors: [],
+        errors: ['"publishing.archiveDate" is required if "publishing.publishDate" is specified.'],
       },
       {
         json: {
@@ -196,14 +193,14 @@ describe('Course instance syncing', () => {
           archiveDate: jsonDate,
         },
         db: null,
-        errors: ['"accessControl.publishDate" is not a valid date.'],
+        errors: ['"publishing.publishDate" is not a valid date.'],
       },
       {
         json: {
           archiveDate: 'not a date',
         },
         db: null,
-        errors: ['"accessControl.archiveDate" is not a valid date.'],
+        errors: ['"publishing.publishDate" is required if "publishing.archiveDate" is specified.', '"publishing.archiveDate" is not a valid date.'],
       },
       {
         json: {
@@ -211,7 +208,7 @@ describe('Course instance syncing', () => {
           archiveDate: '2025-06-01T00:00:00',
         },
         db: null,
-        errors: ['"accessControl.publishDate" must be before "accessControl.archiveDate".'],
+        errors: ['"publishing.publishDate" must be before "publishing.archiveDate".'],
       },
     ];
 
@@ -221,10 +218,7 @@ describe('Course instance syncing', () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.publishing = json;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
-        // Remove allowAccess rules since we can't have both allowAccess and accessControl
-        courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
-          util.ASSESSMENT_ID
-        ].allowAccess = [];
+        // Remove allowAccess rules since we can't have both allowAccess and publishing
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = [];
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -247,8 +241,8 @@ describe('Course instance syncing', () => {
         }
 
         const result = {
-          access_control_publish_date: syncedCourseInstance.publishing_publish_date,
-          access_control_archive_date: syncedCourseInstance.publishing_archive_date,
+          publishing_publish_date: syncedCourseInstance.publishing_publish_date,
+          publishing_archive_date: syncedCourseInstance.publishing_archive_date,
         };
 
         assert.deepEqual(result, db);

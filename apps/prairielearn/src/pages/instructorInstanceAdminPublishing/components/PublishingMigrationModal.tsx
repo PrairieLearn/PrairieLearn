@@ -1,24 +1,24 @@
 import { useState } from 'preact/compat';
 
-import { migrateAccessRuleJsonToAccessControl } from '../../../lib/course-instance-access.js';
+import { migrateAccessRuleJsonToPublishingConfiguration } from '../../../lib/course-instance-access.js';
 import type { AccessRuleJson } from '../../../schemas/infoCourseInstance.js';
 
-interface AccessControlMigrationModalProps {
+interface PublishingMigrationModalProps {
   accessRules: AccessRuleJson[];
   csrfToken: string;
   origHash: string;
 }
 
-export function AccessControlMigrationModal({
+export function PublishingMigrationModal({
   accessRules,
   csrfToken,
   origHash,
-}: AccessControlMigrationModalProps) {
+}: PublishingMigrationModalProps) {
   const [showMigrationModal, setShowMigrationModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Attempt migration with the provided access rules
-  const migrationResult = migrateAccessRuleJsonToAccessControl(accessRules);
+  const migrationResult = migrateAccessRuleJsonToPublishingConfiguration(accessRules);
 
   const handleConfirm = async () => {
     if (!migrationResult.success) return;
@@ -92,7 +92,7 @@ export function AccessControlMigrationModal({
                     <div class="mb-4">
                       <h6>New Access Control Configuration</h6>
                       <pre class="bg-light p-3 rounded">
-                        <code>{JSON.stringify(migrationResult.accessControl, null, 2)}</code>
+                        <code>{JSON.stringify(migrationResult.publishingConfiguration, null, 2)}</code>
                       </pre>
                     </div>
 
@@ -131,4 +131,4 @@ export function AccessControlMigrationModal({
   );
 }
 
-AccessControlMigrationModal.displayName = 'AccessControlMigrationModal';
+PublishingMigrationModal.displayName = 'PublishingMigrationModal';
