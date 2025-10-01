@@ -6808,7 +6808,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:^22.18.8":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:^22.18.0, @types/node@npm:^22.18.8":
   version: 22.18.8
   resolution: "@types/node@npm:22.18.8"
   dependencies:
@@ -16002,32 +16002,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-bootstrap@npm:3.0.0-beta.5":
-  version: 3.0.0-beta.5
-  resolution: "react-bootstrap@npm:3.0.0-beta.5"
-  dependencies:
-    "@babel/runtime": "npm:^7.27.0"
-    "@restart/hooks": "npm:^0.6.2"
-    "@restart/ui": "npm:^2.0.0-beta.10"
-    "@types/react-transition-group": "npm:^4.4.12"
-    clsx: "npm:^2.1.1"
-    dom-helpers: "npm:^6.0.1"
-    invariant: "npm:^2.2.4"
-    react-transition-group: "npm:^4.4.5"
-    uncontrollable: "npm:^9.0.0"
-    warning: "npm:^4.0.3"
-  peerDependencies:
-    "@types/react": ">=18.3.12"
-    react: ">=18.3.1"
-    react-dom: ">=18.3.1"
-  peerDependenciesMeta:
-    "@types/react":
-      optional: true
-  checksum: 10c0/89c586cef482b9550b0eeb26cec894711cdb193aada234b52898f3f0c7a657f9849564cc4c2af2b55d8613efcfaf41269a43465a0a0b692f94c3d9176fe47697
-  languageName: node
-  linkType: hard
-
-"react-bootstrap@npm:^3.0.0-beta.3":
+"react-bootstrap@npm:3.0.0-beta.5, react-bootstrap@npm:^3.0.0-beta.3":
   version: 3.0.0-beta.5
   resolution: "react-bootstrap@npm:3.0.0-beta.5"
   dependencies:
@@ -17914,7 +17889,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.9.3":
+"typescript@npm:^5.9.2, typescript@npm:^5.9.3":
   version: 5.9.3
   resolution: "typescript@npm:5.9.3"
   bin:
@@ -17924,7 +17899,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.9.2#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.9.3#optional!builtin<compat/typescript>":
   version: 5.9.3
   resolution: "typescript@patch:typescript@npm%3A5.9.3#optional!builtin<compat/typescript>::version=5.9.3&hash=5786d5"
   bin:
