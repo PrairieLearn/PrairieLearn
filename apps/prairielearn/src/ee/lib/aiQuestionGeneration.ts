@@ -762,7 +762,7 @@ export async function regenerateQuestion(
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
-  const usage = emptyUsage();
+  let usage = emptyUsage();
 
   const jobData = await serverJob.execute(async (job) => {
     job.data.questionQid = questionQid;
@@ -784,7 +784,7 @@ export async function regenerateQuestion(
       jobSequenceId: serverJob.jobSequenceId,
     });
 
-    mergeUsage(usage, newUsage);
+    usage = mergeUsage(usage, newUsage);
 
     job.data.promptTokens = usage.input_tokens;
     job.data.completionTokens = usage.output_tokens;
