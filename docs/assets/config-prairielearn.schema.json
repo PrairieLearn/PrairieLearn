@@ -1155,7 +1155,7 @@
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07"],
+      "required": ["gpt-5-2025-08-07", "gpt-5-mini-2025-08-07", "gpt-4o-2024-11-20"],
       "properties": {
         "gpt-5-2025-08-07": {
           "type": "object",
@@ -1178,6 +1178,9 @@
         },
         "gpt-5-mini-2025-08-07": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
+        },
+        "gpt-4o-2024-11-20": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-5-2025-08-07"
         }
       },
       "default": {
@@ -1190,6 +1193,11 @@
           "input": 0.25,
           "cachedInput": 0.025,
           "output": 2
+        },
+        "gpt-4o-2024-11-20": {
+          "input": 2.5,
+          "cachedInput": 1.25,
+          "output": 10
         }
       }
     }
