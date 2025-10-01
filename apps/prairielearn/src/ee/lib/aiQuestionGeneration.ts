@@ -38,7 +38,10 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAI.Chat.ChatModel;
+// We're still using `4o` for question generation as it seems to have better
+// cost/performance characteristics. We'll revisit moving to a newer model in
+// the future.
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAI.Chat.ChatModel;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -402,9 +405,6 @@ export async function generateQuestion({
       model: QUESTION_GENERATION_OPENAI_MODEL,
       instructions,
       input: prompt,
-      reasoning: {
-        effort: 'low',
-      },
       safety_identifier: openAiUserFromAuthn(authnUserId),
     });
 
@@ -624,10 +624,6 @@ async function regenInternal({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     instructions,
     input: revisionPrompt,
-    reasoning: {
-      // Use higher reasoning effort for revisions.
-      effort: 'medium',
-    },
     safety_identifier: openAiUserFromAuthn(authnUserId),
   });
 

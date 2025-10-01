@@ -599,12 +599,14 @@ export const ConfigSchema = z.object({
     .object({
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5-mini-2025-08-07': TokenPricingSchema,
+      'gpt-4o-2024-11-20': TokenPricingSchema,
     })
     .default({
       // Prices current as of 2025-09-25. Values obtained from
       // https://openai.com/api/pricing/
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
       'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
+      'gpt-4o-2024-11-20': { input: 2.5, cachedInput: 1.25, output: 10 },
     }),
 });
 
