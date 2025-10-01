@@ -23,9 +23,12 @@
  * `duration` for compute usage.
  */
 
+import type OpenAI from 'openai';
+
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { computeCompletionCost } from '../lib/ai.js';
+import { calculateResponseCost } from '../lib/ai.js';
+import type { config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -70,26 +73,23 @@ export async function updateCourseInstanceUsagesForGradingJob({
  * @param param
  * @param param.promptId The ID of the AI question generation prompt.
  * @param param.authnUserId The ID of the user who generated the prompt.
- * @param param.promptTokens The number of tokens used in the prompt.
- * @param param.completionTokens The number of tokens used in the completion.
+ * @param param.model The OpenAI model used for the prompt.
+ * @param param.usage The usage object returned by the OpenAI API.
  */
 export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   promptId,
   authnUserId,
-  promptTokens = 0,
-  completionTokens = 0,
+  model,
+  usage,
 }: {
   promptId: string;
   authnUserId: string;
-  promptTokens?: number;
-  completionTokens?: number;
+  model: keyof (typeof config)['costPerMillionTokens'];
+  usage: OpenAI.Responses.ResponseUsage | undefined;
 }) {
   await execute(sql.update_course_instance_usages_for_ai_question_generation, {
     prompt_id: promptId,
     authn_user_id: authnUserId,
-    cost_ai_question_generation: computeCompletionCost({
-      promptTokens,
-      completionTokens,
-    }),
+    cost_ai_question_generation: calculateResponseCost({ model, usage }),
   });
 }

@@ -71,8 +71,7 @@ router.get(
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
         courseInstanceId: courseInstance.id,
-        // TODO: after the enrollment code backfill, this should be non-nullable
-        enrollmentCode: courseInstance.enrollment_code ?? '',
+        enrollmentCode: courseInstance.enrollment_code,
       }),
       host,
     ).href;
@@ -147,7 +146,7 @@ router.get(
             </Hydrate>
             <Hydrate>
               <DeleteCourseInstanceModal
-                shortName={courseInstance.short_name ?? ''}
+                shortName={courseInstance.short_name}
                 enrolledCount={enrollmentCount}
                 csrfToken={pageContext.__csrf_token}
               />

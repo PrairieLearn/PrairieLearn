@@ -327,7 +327,7 @@ router.post(
     });
 
     // Get the target_link out of the LTI request and redirect.
-    res.redirect(ltiClaim.target_link_uri ?? '/pl');
+    res.redirect(ltiClaim.target_link_uri);
   }),
 );
 
