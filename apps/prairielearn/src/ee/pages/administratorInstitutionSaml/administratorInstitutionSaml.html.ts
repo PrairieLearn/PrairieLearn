@@ -21,7 +21,7 @@ export function AdministratorInstitutionSaml({
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
   const missingAttributeMappings =
-    !samlProvider?.uid_attribute || !samlProvider?.uin_attribute || !samlProvider?.name_attribute;
+    !samlProvider?.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
 
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
