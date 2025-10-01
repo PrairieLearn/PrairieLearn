@@ -1,5 +1,13 @@
 # @prairielearn/config
 
+## 3.1.9
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/aws-imds@2.0.20
+
 ## 3.1.8
 
 ### Patch Changes
