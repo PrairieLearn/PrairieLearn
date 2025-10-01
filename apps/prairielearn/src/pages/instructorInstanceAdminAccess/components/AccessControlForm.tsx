@@ -26,7 +26,9 @@ function instantFromDate(date: Date): Temporal.Instant {
 }
 
 function instantToString(instant: Temporal.Instant, timezone: string): string {
-  return instant.toZonedDateTimeISO(timezone).toPlainDateTime().toString();
+  // Remove seconds from the string
+  // TODO: allow seconds
+  return instant.toZonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16);
 }
 
 /** Helper function to add weeks to a datetime string. */
@@ -144,24 +146,41 @@ export function AccessControlForm({
       setValue('publishDate', '');
       setValue('archiveDate', '');
     } else if (newStatus === 'publish_scheduled') {
-      // Set publish date to now + 1 week if original is not set or in the past
+      // Set publish date to now + 1 week if current publish date is not set or in the past
       let newPublishInstant: Temporal.Instant;
-      if (originalPublishInstant === null || originalPublishInstant <= now) {
+      const currentPublishDate = publishDate;
+
+      if (!currentPublishDate) {
+        // No publish date set, use one week from now
         newPublishInstant = oneWeekLater;
         setValue(
           'publishDate',
           instantToString(newPublishInstant, courseInstance.display_timezone),
         );
       } else {
-        newPublishInstant = originalPublishInstant;
-        setValue(
-          'publishDate',
-          instantToString(newPublishInstant, courseInstance.display_timezone),
-        );
+        // Check if current publish date is in the past
+        const currentPublishInstant = Temporal.PlainDateTime.from(currentPublishDate)
+          .toZonedDateTime(courseInstance.display_timezone)
+          .toInstant();
+
+        if (Temporal.Instant.compare(currentPublishInstant, now) <= 0) {
+          // Current publish date is in the past, set to one week from now
+          newPublishInstant = oneWeekLater;
+          setValue(
+            'publishDate',
+            instantToString(newPublishInstant, courseInstance.display_timezone),
+          );
+        } else {
+          // Current publish date is in the future, keep it
+          newPublishInstant = currentPublishInstant;
+        }
       }
 
       // Update archive date if it's not set, or if the new publish date is >= archive date
-      if (originalArchiveInstant === null || newPublishInstant >= originalArchiveInstant) {
+      if (
+        originalArchiveInstant === null ||
+        Temporal.Instant.compare(newPublishInstant, originalArchiveInstant) >= 0
+      ) {
         setValue(
           'archiveDate',
           instantToString(eighteenWeeksLater, courseInstance.display_timezone),
@@ -174,7 +193,10 @@ export function AccessControlForm({
       }
     } else if (newStatus === 'published') {
       // Set publish date to now if original was in the past or not set
-      if (originalPublishInstant === null || originalPublishInstant > now) {
+      if (
+        originalPublishInstant === null ||
+        Temporal.Instant.compare(originalPublishInstant, now) > 0
+      ) {
         setValue('publishDate', instantToString(now, courseInstance.display_timezone));
       } else {
         setValue(
@@ -182,20 +204,30 @@ export function AccessControlForm({
           instantToString(originalPublishInstant, courseInstance.display_timezone),
         );
       }
-      // Set archive date to now + 1 week if original was in the past or not set
-      if (originalArchiveInstant === null || originalArchiveInstant <= now) {
-        setValue('archiveDate', instantToString(oneWeekLater, courseInstance.display_timezone));
+      // Set archive date to now + 18 weeks if original was in the past or not set
+      if (
+        originalArchiveInstant === null ||
+        Temporal.Instant.compare(originalArchiveInstant, now) <= 0
+      ) {
+        setValue(
+          'archiveDate',
+          instantToString(eighteenWeeksLater, courseInstance.display_timezone),
+        );
       } else {
         setValue(
           'archiveDate',
           instantToString(originalArchiveInstant, courseInstance.display_timezone),
         );
       }
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (newStatus === 'archived') {
       // Set archive date to now
       setValue('archiveDate', instantToString(now, courseInstance.display_timezone));
       // Use original publish date if it's before the archive date
-      if (originalPublishInstant !== null && originalPublishInstant < now) {
+      if (
+        originalPublishInstant !== null &&
+        Temporal.Instant.compare(originalPublishInstant, now) < 0
+      ) {
         setValue(
           'publishDate',
           instantToString(originalPublishInstant, courseInstance.display_timezone),
@@ -307,7 +339,7 @@ export function AccessControlForm({
     <>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Access Control</h1>
+          <h1>Publishing</h1>
         </div>
         <div class="card-body">
           {!canEdit && (
@@ -371,7 +403,8 @@ export function AccessControlForm({
                     }}
                   />
                   <label class="form-check-label" for="status-publish-scheduled">
-                    Publish Scheduled
+                    Scheduled to be published
+                    {/* Published at a scheduled future date */}
                   </label>
                 </div>
                 {selectedStatus === 'publish_scheduled' && publishDate && archiveDate && (

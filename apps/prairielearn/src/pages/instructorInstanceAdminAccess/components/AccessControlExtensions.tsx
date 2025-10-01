@@ -95,7 +95,7 @@ export function AccessControlExtensions({
     <>
       <div class="mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
-          <h5 class="mb-0">Access Control Extensions</h5>
+          <h5 class="mb-0">Extensions</h5>
           {canEdit && (
             <button
               type="button"
