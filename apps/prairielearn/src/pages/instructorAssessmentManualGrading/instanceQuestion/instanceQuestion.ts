@@ -171,14 +171,28 @@ router.get(
         // try to avoid errors when extracting the explanation. Note that for some
         // time, the explanation wasn't included in the completion at all, so it
         // may legitimately be missing.
+        //
+        // The responses API changed the format here. We'll need to handle both the
+        // old and new formats.
         const explanation = run(() => {
           const completion = ai_grading_job_data.completion;
-          if (completion == null) return null;
+          if (!completion) return null;
 
-          const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-          if (typeof explanation !== 'string') return null;
+          if (completion.choices) {
+            const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
 
-          return explanation.trim() || null;
+            return explanation.trim() || null;
+          }
+
+          if (completion.output_parsed) {
+            const explanation = completion?.output_parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
+
+            return explanation.trim() || null;
+          }
+
+          return null;
         });
 
         aiGradingInfo = {
