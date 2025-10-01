@@ -25,7 +25,7 @@ export function EditTopicsModal({
   function handleSubmit() {
     setInvalidName(!selectedTopic?.name);
     setInvalidColor(!selectedTopic?.color);
-    if (!selectedTopic?.name || !selectedTopic?.color) {
+    if (!selectedTopic?.name || !selectedTopic.color) {
       return;
     } else {
       handleModalUpdate();
@@ -51,7 +51,7 @@ export function EditTopicsModal({
                 onChange={(e) =>
                   setSelectedTopic({
                     ...selectedTopic,
-                    name: (e.target as HTMLInputElement)?.value,
+                    name: (e.target as HTMLInputElement).value,
                   })
                 }
               />
@@ -64,11 +64,11 @@ export function EditTopicsModal({
               <select
                 class={clsx('form-select', invalidColor && 'is-invalid')}
                 id="topicColor"
-                value={selectedTopic.color ?? 'Select a color'}
+                value={selectedTopic.color}
                 onChange={(e) =>
                   setSelectedTopic({
                     ...selectedTopic,
-                    color: (e.target as HTMLSelectElement)?.value ?? 'gray1',
+                    color: (e.target as HTMLSelectElement).value,
                   })
                 }
               >
@@ -91,7 +91,7 @@ export function EditTopicsModal({
                 onChange={(e) =>
                   setSelectedTopic({
                     ...selectedTopic,
-                    description: (e.target as HTMLTextAreaElement)?.value,
+                    description: (e.target as HTMLTextAreaElement).value,
                   })
                 }
               />

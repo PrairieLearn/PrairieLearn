@@ -91,7 +91,7 @@ export function InstructorStudentDetail({
                 <EnrollmentStatusIcon type="badge" class="ms-2 fs-6" status={enrollment.status} />
               )}
             </h2>
-            {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && enrollment && (
+            {hasCourseInstancePermissionEdit && enrollmentManagementEnabled && (
               <div class="d-flex gap-2 align-items-center">
                 {enrollment.status === 'joined' && (
                   <form method="POST">
@@ -157,7 +157,7 @@ export function InstructorStudentDetail({
               </div>
             </>
           )}
-          {enrollment?.first_joined_at && (
+          {enrollment.first_joined_at && (
             <div class="d-flex">
               <div class="fw-bold me-1">First joined:</div>
               <FriendlyDate
