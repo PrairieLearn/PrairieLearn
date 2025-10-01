@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 
-import { type AccessRuleJson, type PublishingJson } from '../schemas/infoCourseInstance.js';
+import { type AccessRuleJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstance,
@@ -89,27 +89,6 @@ export function evaluateCourseInstanceAccess(
   return { hasAccess: true };
 }
 
-interface CourseInstancePublishingExtensionData {
-  enabled: boolean;
-  name: string | null;
-  archive_date: string | null;
-  uids: string[];
-}
-
-export interface PublishingConfigurationMigrationResult {
-  success: true;
-  publishingConfiguration: PublishingJson;
-  extensions: CourseInstancePublishingExtensionData[];
-}
-
-export interface PublishingConfigurationMigrationError {
-  success: false;
-  error: string;
-}
-
-export type PublishingConfigurationMigrationResponse =
-  | PublishingConfigurationMigrationResult
-  | PublishingConfigurationMigrationError;
 
 const toIsoString = (date: Date, timezone: string) => {
   return Temporal.Instant.fromEpochMilliseconds(date.getTime())
@@ -150,74 +129,3 @@ export function convertAccessRuleToJson(
   return json;
 }
 
-/**
- * Attempts to migrate legacy access rules (in AccessRuleJson format) to the new publishing configuration format.
- * Migrates if there is exactly one rule with valid dates. UID selectors are converted to overrides.
- */
-export function migrateAccessRuleJsonToPublishingConfiguration(
-  originalAccessRules: AccessRuleJson[],
-): PublishingConfigurationMigrationResponse {
-  // Make a deep copy of the access rules
-  const accessRules = structuredClone(originalAccessRules);
-
-  // Must have exactly one rule
-  if (accessRules.length !== 1) {
-    return {
-      success: false,
-      error: `Expected exactly 1 access rule, but found ${accessRules.length}`,
-    };
-  }
-
-  const rule = accessRules[0];
-
-  // Must have both dates or neither
-  if (!rule.startDate && !rule.endDate) {
-    return {
-      success: false,
-      error: 'Cannot migrate access rules without start or end dates.',
-    };
-  }
-
-  if ((rule.startDate && !rule.endDate) || (!rule.startDate && rule.endDate)) {
-    return {
-      success: false,
-      error: 'Access rules must have both start and end dates, or neither.',
-    };
-  }
-
-  // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
-  // We will silently update the dates to the nearest valid date.
-  if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
-    rule.startDate = '2000-01-01T00:00:00';
-  }
-
-  // We can't do anything with the end date if it is before 1884.
-  if (rule.endDate && new Date(rule.endDate).getFullYear() < 1884) {
-    return {
-      success: false,
-      error: 'Cannot migrate the end date, it is too old.',
-    };
-  }
-  // Build the new access control configuration
-  const publishingConfiguration = {
-    publishDate: rule.startDate,
-    archiveDate: rule.endDate,
-  };
-
-  // Convert UID selectors to extensions
-  const extensions: CourseInstancePublishingExtensionData[] = [];
-  if (rule.uids && rule.uids.length > 0) {
-    extensions.push({
-      enabled: true,
-      name: typeof rule.comment === 'string' ? rule.comment : null,
-      archive_date: rule.endDate ?? null,
-      uids: rule.uids,
-    });
-  }
-
-  return {
-    success: true,
-    publishingConfiguration,
-    extensions,
-  };
-}

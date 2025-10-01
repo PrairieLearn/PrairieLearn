@@ -1,9 +1,10 @@
 import { useMutation } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
-import { Alert, ListGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
+import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type CourseInstance } from '../../../lib/db-types.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 
@@ -22,6 +23,14 @@ export function PublishingExtensions({
 }: PublishingExtensionsProps) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingExtensionId, setEditingExtensionId] = useState<string | null>(null);
+  const [editingExtensionData, setEditingExtensionData] = useState<{
+    name: string;
+    archiveDate: string;
+  }>({ name: '', archiveDate: '' });
+  const [addingUserToExtension, setAddingUserToExtension] = useState<string | null>(null);
+  const [newUserUid, setNewUserUid] = useState('');
+  const [showAllStudents, setShowAllStudents] = useState<Set<string>>(new Set());
 
   const handleDelete = async (extensionId: string) => {
     // eslint-disable-next-line no-alert
@@ -59,6 +68,156 @@ export function PublishingExtensions({
     }
   };
 
+  const handleRemoveStudent = async (extensionId: string, uid: string) => {
+    // eslint-disable-next-line no-alert
+    if (!confirm('Are you sure you want to remove this student from the extension?')) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('__action', 'remove_student_from_extension');
+      formData.append('extension_id', extensionId);
+      formData.append('uid', uid);
+
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        throw new Error('Failed to remove student from extension');
+      }
+    } catch (error) {
+      console.error('Error removing student from extension:', error);
+      // eslint-disable-next-line no-alert
+      alert('Failed to remove student from extension. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditExtension = (extension: CourseInstancePublishingExtensionWithUsers) => {
+    setEditingExtensionId(extension.id);
+    // Convert Date to YYYY-MM-DD format for date input
+    let archiveDate = '';
+    if (extension.archive_date) {
+      const year = extension.archive_date.getFullYear();
+      const month = String(extension.archive_date.getMonth() + 1).padStart(2, '0');
+      const day = String(extension.archive_date.getDate()).padStart(2, '0');
+      archiveDate = `${year}-${month}-${day}`;
+    }
+    setEditingExtensionData({
+      name: extension.name || '',
+      archiveDate,
+    });
+  };
+
+  const handleSaveExtension = async (extensionId: string) => {
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('__action', 'update_extension');
+      formData.append('extension_id', extensionId);
+      formData.append('name', editingExtensionData.name.trim() || '');
+      formData.append('archive_date', editingExtensionData.archiveDate || '');
+
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        throw new Error('Failed to update extension');
+      }
+    } catch (error) {
+      console.error('Error updating extension:', error);
+      // eslint-disable-next-line no-alert
+      alert('Failed to update extension. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+      setEditingExtensionId(null);
+      setEditingExtensionData({ name: '', archiveDate: '' });
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExtensionId(null);
+    setEditingExtensionData({ name: '', archiveDate: '' });
+  };
+
+  const handleAddUserToExtension = (extensionId: string) => {
+    setAddingUserToExtension(extensionId);
+    setNewUserUid('');
+  };
+
+  const handleSaveUserToExtension = async (extensionId: string) => {
+    if (!newUserUid.trim()) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('__action', 'add_user_to_extension');
+      formData.append('extension_id', extensionId);
+      formData.append('uid', newUserUid.trim());
+
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        window.location.reload();
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add user to extension');
+      }
+    } catch (error) {
+      console.error('Error adding user to extension:', error);
+      // eslint-disable-next-line no-alert
+      alert(
+        `Failed to add user to extension: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+    } finally {
+      setIsSubmitting(false);
+      setAddingUserToExtension(null);
+      setNewUserUid('');
+    }
+  };
+
+  const handleCancelAddUser = () => {
+    setAddingUserToExtension(null);
+    setNewUserUid('');
+  };
+
+  const handleToggleShowAllStudents = (extensionId: string) => {
+    setShowAllStudents((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(extensionId)) {
+        newSet.delete(extensionId);
+      } else {
+        newSet.add(extensionId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <>
       <div class="mb-3">
@@ -88,20 +247,48 @@ export function PublishingExtensions({
         </div>
       )}
       {extensions.length > 0 && (
-        <ListGroup>
-          {extensions.map((extension, idx) => (
-            <ExtensionListItem
-              key={extension.id}
-              idx={idx}
-              extension={extension}
-              timeZone={courseInstance.display_timezone}
-              canEdit={canEdit}
-              isSubmitting={isSubmitting}
-              courseInstanceArchiveDate={courseInstance.publishing_archive_date}
-              onDelete={handleDelete}
-            />
-          ))}
-        </ListGroup>
+        <div class="table-responsive">
+          <table class="table table-striped">
+            <thead>
+              <tr>
+                <th class="col-1">Extension Name</th>
+                <th class="col-1">Archive Date</th>
+                <th class="col-3">Students</th>
+                <th class="col-1">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {extensions.map((extension, idx) => (
+                <ExtensionTableRow
+                  key={extension.id}
+                  idx={idx}
+                  extension={extension}
+                  courseInstance={courseInstance}
+                  timeZone={courseInstance.display_timezone}
+                  canEdit={canEdit}
+                  isSubmitting={isSubmitting}
+                  courseInstanceArchiveDate={courseInstance.publishing_archive_date}
+                  editingExtensionId={editingExtensionId}
+                  editingExtensionData={editingExtensionData}
+                  addingUserToExtension={addingUserToExtension}
+                  newUserUid={newUserUid}
+                  showAllStudents={showAllStudents}
+                  onDelete={handleDelete}
+                  onRemoveStudent={handleRemoveStudent}
+                  onEditExtension={handleEditExtension}
+                  onSaveExtension={handleSaveExtension}
+                  onCancelEdit={handleCancelEdit}
+                  onEditingExtensionDataChange={setEditingExtensionData}
+                  onAddUserToExtension={handleAddUserToExtension}
+                  onSaveUserToExtension={handleSaveUserToExtension}
+                  onCancelAddUser={handleCancelAddUser}
+                  onNewUserUidChange={setNewUserUid}
+                  onToggleShowAllStudents={handleToggleShowAllStudents}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {showAddForm && (
@@ -118,22 +305,54 @@ export function PublishingExtensions({
   );
 }
 
-function ExtensionListItem({
+function ExtensionTableRow({
   idx,
   extension,
+  courseInstance,
   timeZone,
   canEdit,
   onDelete,
+  onRemoveStudent,
   isSubmitting,
   courseInstanceArchiveDate,
+  editingExtensionId,
+  editingExtensionData,
+  onEditExtension,
+  onSaveExtension,
+  onCancelEdit,
+  onEditingExtensionDataChange,
+  addingUserToExtension,
+  newUserUid,
+  onAddUserToExtension,
+  onSaveUserToExtension,
+  onCancelAddUser,
+  onNewUserUidChange,
+  showAllStudents,
+  onToggleShowAllStudents,
 }: {
   idx: number;
   extension: CourseInstancePublishingExtensionWithUsers;
+  courseInstance: CourseInstance;
   timeZone: string;
   canEdit: boolean;
   onDelete: (id: string) => void;
+  onRemoveStudent: (extensionId: string, uid: string) => void;
   isSubmitting: boolean;
   courseInstanceArchiveDate: Date | null;
+  editingExtensionId: string | null;
+  editingExtensionData: { name: string; archiveDate: string };
+  onEditExtension: (extension: CourseInstancePublishingExtensionWithUsers) => void;
+  onSaveExtension: (extensionId: string) => void;
+  onCancelEdit: () => void;
+  onEditingExtensionDataChange: (data: { name: string; archiveDate: string }) => void;
+  addingUserToExtension: string | null;
+  newUserUid: string;
+  onAddUserToExtension: (extensionId: string) => void;
+  onSaveUserToExtension: (extensionId: string) => void;
+  onCancelAddUser: () => void;
+  onNewUserUidChange: (uid: string) => void;
+  showAllStudents: Set<string>;
+  onToggleShowAllStudents: (extensionId: string) => void;
 }) {
   // Check if extension archive date is before the course instance archive date
   const isBeforeInstanceArchiveDate =
@@ -142,95 +361,239 @@ function ExtensionListItem({
     new Date(extension.archive_date) < new Date(courseInstanceArchiveDate);
 
   return (
-    <ListGroup.Item>
-      <div class="d-flex justify-content-between align-items-start">
-        <div class="flex-grow-1">
-          <div class="d-flex align-items-center mb-2">
-            <h4 class="mb-0 me-3">{extension.name || `Extension ${idx + 1}`}</h4>
+    <tr>
+      <td class="col-1">
+        {editingExtensionId === extension.id ? (
+          <div class="d-flex align-items-center gap-2">
+            <input
+              type="text"
+              class="form-control form-control-sm"
+              value={editingName}
+              autoFocus
+              onChange={(e) => onEditingNameChange((e.target as HTMLInputElement).value)}
+              onBlur={() => onSaveName(extension.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onSaveName(extension.id);
+                } else if (e.key === 'Escape') {
+                  onCancelEdit();
+                }
+              }}
+            />
           </div>
-
-          <div class="mb-2">
-            <strong>Archive Date:</strong> {formatDateFriendly(extension.archive_date, timeZone)}
-            {isBeforeInstanceArchiveDate && (
-              <>
-                {' '}
-                <OverlayTrigger
-                  placement="top"
-                  overlay={
-                    <Tooltip id={`tooltip-${extension.id}`}>
-                      This date will be ignored, it is before the overall archive date
-                    </Tooltip>
-                  }
-                >
-                  <i
-                    class="fas fa-exclamation-triangle text-warning"
-                    aria-label="Warning: This date will be ignored"
-                  />
-                </OverlayTrigger>
-              </>
-            )}
-          </div>
-
-          <div>
-            {extension.user_data.length > 0 ? (
-              <details>
-                <summary class="mb-1">
-                  <strong>Students with extension ({extension.user_data.length})</strong>
-                </summary>
-                <div class="mt-2">
-                  {extension.user_data.map((user: { uid: string; name: string | null }) => (
-                    <span key={user.uid} class="badge bg-secondary me-1 mb-1">
-                      {user.name ? `${user.name} (${user.uid})` : user.uid}
-                    </span>
-                  ))}
-                </div>
-              </details>
+        ) : (
+          <div class="d-flex align-items-center gap-2">
+            {extension.name ? (
+              <strong>{extension.name}</strong>
             ) : (
-              <div class="mb-1">
-                <strong>Students with extension (0)</strong>
-                <span class="text-muted ms-2">No users assigned</span>
-              </div>
+              <span class="text-muted">Unnamed</span>
             )}
-          </div>
-        </div>
-
-        {canEdit && (
-          <div class="ms-3 d-flex gap-2">
-            {extension.user_data.length > 0 && (
+            {canEdit && (
               <button
                 type="button"
                 class="btn btn-sm btn-outline-secondary"
-                title="Copy UIDs as comma-separated list"
-                onClick={() => {
-                  const uids = extension.user_data
-                    .map((user: { uid: string; name: string | null }) => user.uid)
-                    .join(', ');
-                  navigator.clipboard
-                    .writeText(uids)
-                    .then(() => {
-                      // Could add a toast notification here if desired
-                    })
-                    .catch((err) => {
-                      console.error('Failed to copy UIDs:', err);
-                    });
-                }}
+                title="Edit name"
+                disabled={isSubmitting}
+                onClick={() => onEditName(extension.id, extension.name)}
               >
-                <i class="fas fa-copy" aria-hidden="true" />
-                Copy UIDs
+                <i class="fas fa-pencil-alt" aria-hidden="true" />
               </button>
             )}
-            <button
-              type="button"
-              class="btn btn-sm btn-outline-danger"
-              disabled={isSubmitting}
-              onClick={() => onDelete(extension.id)}
-            >
-              Delete
-            </button>
           </div>
         )}
-      </div>
-    </ListGroup.Item>
+      </td>
+      <td class="col-1">
+        {editingDateExtensionId === extension.id ? (
+          <div class="d-flex align-items-center gap-2">
+            <input
+              type="date"
+              class="form-control form-control-sm"
+              value={editingDate}
+              autoFocus
+              onChange={(e) => onEditingDateChange((e.target as HTMLInputElement).value)}
+              onBlur={() => onSaveDate(extension.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  onSaveDate(extension.id);
+                } else if (e.key === 'Escape') {
+                  onCancelEditDate();
+                }
+              }}
+            />
+          </div>
+        ) : (
+          <div class="d-flex align-items-center gap-2">
+            <span>
+              {formatDateFriendly(extension.archive_date, timeZone)}
+              {isBeforeInstanceArchiveDate && (
+                <>
+                  {' '}
+                  <OverlayTrigger
+                    placement="top"
+                    overlay={
+                      <Tooltip id={`tooltip-${extension.id}`}>
+                        This date will be ignored, it is before the overall archive date
+                      </Tooltip>
+                    }
+                  >
+                    <i
+                      class="fas fa-exclamation-triangle text-warning"
+                      aria-label="Warning: This date will be ignored"
+                    />
+                  </OverlayTrigger>
+                </>
+              )}
+            </span>
+            {canEdit && (
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary"
+                title="Edit archive date"
+                disabled={isSubmitting}
+                onClick={() => onEditDate(extension.id, extension.archive_date)}
+              >
+                <i class="fas fa-pencil-alt" aria-hidden="true" />
+              </button>
+            )}
+          </div>
+        )}
+      </td>
+      <td class="col-3">
+        <div class="d-flex flex-wrap align-items-center gap-2">
+          {(() => {
+            const isShowingAll = showAllStudents.has(extension.id);
+            const studentsToShow = isShowingAll
+              ? extension.user_data
+              : extension.user_data.slice(0, 3);
+            const hasMoreStudents = extension.user_data.length > 3;
+
+            return (
+              <>
+                {studentsToShow.map(
+                  (user: { uid: string; name: string | null; enrollment_id: string }) => (
+                    <div key={user.uid} class="d-flex align-items-center gap-1">
+                      <OverlayTrigger
+                        placement="top"
+                        overlay={
+                          <Tooltip
+                            id={`tooltip-${user.enrollment_id}`}
+                            style={{ whiteSpace: 'nowrap', width: 'auto' }}
+                          >
+                            {user.uid}
+                          </Tooltip>
+                        }
+                      >
+                        <a
+                          href={getStudentEnrollmentUrl(
+                            `/pl/course_instance/${courseInstance.id}/instructor`,
+                            user.enrollment_id,
+                          )}
+                          class="text-decoration-none"
+                        >
+                          {user.name || '—'}
+                        </a>
+                      </OverlayTrigger>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-danger"
+                          disabled={isSubmitting}
+                          title="Remove student from extension"
+                          onClick={() => onRemoveStudent(extension.id, user.uid)}
+                        >
+                          <i class="fas fa-times" aria-hidden="true" />
+                        </button>
+                      )}
+                    </div>
+                  ),
+                )}
+                {hasMoreStudents && (
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-outline-secondary"
+                    onClick={() => onToggleShowAllStudents(extension.id)}
+                  >
+                    {isShowingAll ? (
+                      <>
+                        <i class="fas fa-chevron-up" aria-hidden="true" /> Show Less
+                      </>
+                    ) : (
+                      <>
+                        <i class="fas fa-chevron-down" aria-hidden="true" /> +
+                        {extension.user_data.length - 3} More
+                      </>
+                    )}
+                  </button>
+                )}
+                {canEdit && (
+                  <div class="d-flex align-items-center gap-1">
+                    {addingUserToExtension === extension.id ? (
+                      <>
+                        <input
+                          type="text"
+                          class="form-control form-control-sm"
+                          placeholder="Enter UID"
+                          value={newUserUid}
+                          autoFocus
+                          onChange={(e) => onNewUserUidChange((e.target as HTMLInputElement).value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              onSaveUserToExtension(extension.id);
+                            } else if (e.key === 'Escape') {
+                              onCancelAddUser();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-success"
+                          disabled={isSubmitting || !newUserUid.trim()}
+                          title="Add user to extension"
+                          onClick={() => onSaveUserToExtension(extension.id)}
+                        >
+                          <i class="fas fa-plus" aria-hidden="true" />
+                        </button>
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-secondary"
+                          disabled={isSubmitting}
+                          title="Cancel"
+                          onClick={onCancelAddUser}
+                        >
+                          <i class="fas fa-times" aria-hidden="true" />
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-success"
+                        disabled={isSubmitting}
+                        title="Add user to extension"
+                        onClick={() => onAddUserToExtension(extension.id)}
+                      >
+                        <i class="fas fa-plus" aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </div>
+      </td>
+      <td class="col-1">
+        {canEdit && (
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            disabled={isSubmitting}
+            onClick={() => onDelete(extension.id)}
+          >
+            Delete
+          </button>
+        )}
+      </td>
+    </tr>
   );
 }
 

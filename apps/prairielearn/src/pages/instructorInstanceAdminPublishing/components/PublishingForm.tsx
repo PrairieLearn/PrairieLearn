@@ -283,8 +283,9 @@ export function PublishingForm({
   const handleAddWeek = (field: 'publishDate' | 'archiveDate') => {
     const currentValue = field === 'publishDate' ? publishDate : archiveDate;
     if (currentValue) {
+      const currentDate = new Date(currentValue);
       const newValue = addWeeksToDatetime(
-        Temporal.Instant.from(currentValue),
+        instantFromDate(currentDate),
         1,
         courseInstance.display_timezone,
       );
@@ -337,352 +338,347 @@ export function PublishingForm({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>Publishing</h1>
-        </div>
-        <div class="card-body">
-          {!canEdit && (
-            <div class="alert alert-info" role="alert">
-              You do not have permission to edit access control settings.
-            </div>
-          )}
+      <div class="mb-4">
+        <h4 class="mb-4">Publishing</h4>
 
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
+        {!canEdit && (
+          <div class="alert alert-info" role="alert">
+            You do not have permission to edit access control settings.
+          </div>
+        )}
 
-            {/* Status Radio Buttons */}
-            <div class="mb-4">
-              <h5 class="mb-3">Status</h5>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
 
-              {/* Unpublished */}
-              <div class="mb-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="status"
-                    id="status-unpublished"
-                    value="unpublished"
-                    checked={selectedStatus === 'unpublished'}
-                    disabled={!canEdit}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.checked) {
-                        handleStatusChange('unpublished');
-                      }
-                    }}
-                  />
-                  <label class="form-check-label" for="status-unpublished">
-                    Unpublished
-                  </label>
-                </div>
-                {selectedStatus === 'unpublished' && (
-                  <div class="ms-4 mt-1 small text-muted">
-                    Course is not accessible by any students.
-                  </div>
-                )}
-              </div>
-
-              {/* Publish Scheduled */}
-              <div class="mb-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="status"
-                    id="status-publish-scheduled"
-                    value="publish_scheduled"
-                    checked={selectedStatus === 'publish_scheduled'}
-                    disabled={!canEdit}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.checked) {
-                        handleStatusChange('publish_scheduled');
-                      }
-                    }}
-                  />
-                  <label class="form-check-label" for="status-publish-scheduled">
-                    Scheduled to be published
-                    {/* Published at a scheduled future date */}
-                  </label>
-                </div>
-                {selectedStatus === 'publish_scheduled' && publishDate && archiveDate && (
-                  <div class="ms-4 mt-1 small text-muted">
-                    The course will be published at{' '}
-                    <FriendlyDate
-                      date={
-                        new Date(
-                          Temporal.PlainDateTime.from(publishDate).toZonedDateTime(
-                            courseInstance.display_timezone,
-                          ).epochMilliseconds,
-                        )
-                      }
-                      timezone={courseInstance.display_timezone}
-                      tooltip={true}
-                      options={{ timeFirst: true }}
-                    />{' '}
-                    and will be archived at{' '}
-                    <FriendlyDate
-                      date={
-                        new Date(
-                          Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
-                            courseInstance.display_timezone,
-                          ).epochMilliseconds,
-                        )
-                      }
-                      timezone={courseInstance.display_timezone}
-                      tooltip={true}
-                      options={{ timeFirst: true }}
-                    />
-                    .
-                  </div>
-                )}
-                {selectedStatus === 'publish_scheduled' && (
-                  <div class="ms-4 mt-2">
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="publishDate">
-                          Publish Date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!publishDate}
-                            onClick={() => handleAddWeek('publishDate')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.publishDate && 'is-invalid')}
-                          id="publishDate"
-                          disabled={!canEdit}
-                          {...register('publishDate', {
-                            validate: validatePublishDate,
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.publishDate && (
-                        <div class="text-danger small mt-1">{errors.publishDate.message}</div>
-                      )}
-                    </div>
-
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="archiveDate">
-                          Archive Date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!archiveDate}
-                            onClick={() => handleAddWeek('archiveDate')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.archiveDate && 'is-invalid')}
-                          id="archiveDate"
-                          disabled={!canEdit}
-                          {...register('archiveDate', {
-                            validate: validateArchiveDate,
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.archiveDate && (
-                        <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Published */}
-              <div class="mb-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="status"
-                    id="status-published"
-                    value="published"
-                    checked={selectedStatus === 'published'}
-                    disabled={!canEdit}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.checked) {
-                        handleStatusChange('published');
-                      }
-                    }}
-                  />
-                  <label class="form-check-label" for="status-published">
-                    Published
-                  </label>
-                </div>
-                {selectedStatus === 'published' && publishDate && archiveDate && (
-                  <div class="ms-4 mt-1 small text-muted">
-                    The course{' '}
-                    {currentStatus === 'published'
-                      ? new Date(publishDate) <= new Date()
-                        ? 'was'
-                        : 'will be'
-                      : 'will be'}{' '}
-                    published at{' '}
-                    <FriendlyDate
-                      date={
-                        new Date(
-                          Temporal.PlainDateTime.from(publishDate).toZonedDateTime(
-                            courseInstance.display_timezone,
-                          ).epochMilliseconds,
-                        )
-                      }
-                      timezone={courseInstance.display_timezone}
-                      tooltip={true}
-                      options={{ timeFirst: true }}
-                    />{' '}
-                    and will be archived at{' '}
-                    <FriendlyDate
-                      date={
-                        new Date(
-                          Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
-                            courseInstance.display_timezone,
-                          ).epochMilliseconds,
-                        )
-                      }
-                      timezone={courseInstance.display_timezone}
-                      tooltip={true}
-                      options={{ timeFirst: true }}
-                    />
-                    .
-                  </div>
-                )}
-                {selectedStatus === 'published' && (
-                  <div class="ms-4 mt-2">
-                    <div class="mb-3">
-                      <div class="d-flex justify-content-between align-items-center">
-                        <label class="form-label mb-0" for="archiveDate">
-                          Archive Date
-                        </label>
-                        {canEdit && (
-                          <button
-                            type="button"
-                            class="btn btn-sm btn-outline-primary"
-                            disabled={!archiveDate}
-                            onClick={() => handleAddWeek('archiveDate')}
-                          >
-                            +1 week
-                          </button>
-                        )}
-                      </div>
-                      <div class="input-group mt-2">
-                        <input
-                          type="datetime-local"
-                          class={clsx('form-control', errors.archiveDate && 'is-invalid')}
-                          id="archiveDate"
-                          disabled={!canEdit}
-                          {...register('archiveDate', {
-                            validate: validateArchiveDate,
-                          })}
-                        />
-                        <span class="input-group-text">{courseInstance.display_timezone}</span>
-                      </div>
-                      {errors.archiveDate && (
-                        <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Archived */}
-              <div class="mb-3">
-                <div class="form-check">
-                  <input
-                    class="form-check-input"
-                    type="radio"
-                    name="status"
-                    id="status-archived"
-                    value="archived"
-                    checked={selectedStatus === 'archived'}
-                    disabled={!canEdit}
-                    onChange={(e) => {
-                      const target = e.target as HTMLInputElement;
-                      if (target.checked) {
-                        handleStatusChange('archived');
-                      }
-                    }}
-                  />
-                  <label class="form-check-label" for="status-archived">
-                    Archived
-                  </label>
-                </div>
-                {selectedStatus === 'archived' && archiveDate && (
-                  <div class="ms-4 mt-1 small text-muted">
-                    The course {currentStatus === 'archived' ? 'was' : 'will be'} archived at{' '}
-                    <FriendlyDate
-                      date={
-                        new Date(
-                          Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
-                            courseInstance.display_timezone,
-                          ).epochMilliseconds,
-                        )
-                      }
-                      timezone={courseInstance.display_timezone}
-                      tooltip={true}
-                      options={{ timeFirst: true }}
-                    />
-                    .
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Save and Cancel Buttons */}
-            {canEdit && (
-              <div class="d-flex gap-2">
-                <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  onClick={() => {
-                    window.location.reload();
+          {/* Status Radio Buttons */}
+          <div class="mb-4">
+            {/* Unpublished */}
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="status"
+                  id="status-unpublished"
+                  value="unpublished"
+                  checked={selectedStatus === 'unpublished'}
+                  disabled={!canEdit}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                      handleStatusChange('unpublished');
+                    }
                   }}
-                >
-                  Cancel
-                </button>
-              </div>
-            )}
-          </form>
-
-          {/* Access Control Extensions Section */}
-          {selectedStatus !== 'unpublished' && (
-            <>
-              <hr class="my-4" />
-              <QueryClientProviderDebug client={queryClient} isDevMode={false}>
-                <PublishingExtensions
-                  courseInstance={courseInstance}
-                  extensions={accessControlExtensions}
-                  canEdit={canEdit}
-                  csrfToken={csrfToken}
                 />
-              </QueryClientProviderDebug>
-            </>
+                <label class="form-check-label" for="status-unpublished">
+                  Unpublished
+                </label>
+              </div>
+              {selectedStatus === 'unpublished' && (
+                <div class="ms-4 mt-1 small text-muted">
+                  Course is not accessible by any students.
+                </div>
+              )}
+            </div>
+
+            {/* Publish Scheduled */}
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="status"
+                  id="status-publish-scheduled"
+                  value="publish_scheduled"
+                  checked={selectedStatus === 'publish_scheduled'}
+                  disabled={!canEdit}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                      handleStatusChange('publish_scheduled');
+                    }
+                  }}
+                />
+                <label class="form-check-label" for="status-publish-scheduled">
+                  Scheduled to be published
+                  {/* Published at a scheduled future date */}
+                </label>
+              </div>
+              {selectedStatus === 'publish_scheduled' && publishDate && archiveDate && (
+                <div class="ms-4 mt-1 small text-muted">
+                  The course will be published at{' '}
+                  <FriendlyDate
+                    date={
+                      new Date(
+                        Temporal.PlainDateTime.from(publishDate).toZonedDateTime(
+                          courseInstance.display_timezone,
+                        ).epochMilliseconds,
+                      )
+                    }
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />{' '}
+                  and will be archived at{' '}
+                  <FriendlyDate
+                    date={
+                      new Date(
+                        Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
+                          courseInstance.display_timezone,
+                        ).epochMilliseconds,
+                      )
+                    }
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />
+                  .
+                </div>
+              )}
+              {selectedStatus === 'publish_scheduled' && (
+                <div class="ms-4 mt-2">
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <label class="form-label mb-0" for="publishDate">
+                        Publish Date
+                      </label>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          disabled={!publishDate}
+                          onClick={() => handleAddWeek('publishDate')}
+                        >
+                          +1 week
+                        </button>
+                      )}
+                    </div>
+                    <div class="input-group mt-2">
+                      <input
+                        type="datetime-local"
+                        class={clsx('form-control', errors.publishDate && 'is-invalid')}
+                        id="publishDate"
+                        disabled={!canEdit}
+                        {...register('publishDate', {
+                          validate: validatePublishDate,
+                        })}
+                      />
+                      <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    </div>
+                    {errors.publishDate && (
+                      <div class="text-danger small mt-1">{errors.publishDate.message}</div>
+                    )}
+                  </div>
+
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <label class="form-label mb-0" for="archiveDate">
+                        Archive Date
+                      </label>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          disabled={!archiveDate}
+                          onClick={() => handleAddWeek('archiveDate')}
+                        >
+                          +1 week
+                        </button>
+                      )}
+                    </div>
+                    <div class="input-group mt-2">
+                      <input
+                        type="datetime-local"
+                        class={clsx('form-control', errors.archiveDate && 'is-invalid')}
+                        id="archiveDate"
+                        disabled={!canEdit}
+                        {...register('archiveDate', {
+                          validate: validateArchiveDate,
+                        })}
+                      />
+                      <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    </div>
+                    {errors.archiveDate && (
+                      <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Published */}
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="status"
+                  id="status-published"
+                  value="published"
+                  checked={selectedStatus === 'published'}
+                  disabled={!canEdit}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                      handleStatusChange('published');
+                    }
+                  }}
+                />
+                <label class="form-check-label" for="status-published">
+                  Published
+                </label>
+              </div>
+              {selectedStatus === 'published' && publishDate && archiveDate && (
+                <div class="ms-4 mt-1 small text-muted">
+                  The course{' '}
+                  {currentStatus === 'published'
+                    ? new Date(publishDate) <= new Date()
+                      ? 'was'
+                      : 'will be'
+                    : 'will be'}{' '}
+                  published at{' '}
+                  <FriendlyDate
+                    date={
+                      new Date(
+                        Temporal.PlainDateTime.from(publishDate).toZonedDateTime(
+                          courseInstance.display_timezone,
+                        ).epochMilliseconds,
+                      )
+                    }
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />{' '}
+                  and will be archived at{' '}
+                  <FriendlyDate
+                    date={
+                      new Date(
+                        Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
+                          courseInstance.display_timezone,
+                        ).epochMilliseconds,
+                      )
+                    }
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />
+                  .
+                </div>
+              )}
+              {selectedStatus === 'published' && (
+                <div class="ms-4 mt-2">
+                  <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <label class="form-label mb-0" for="archiveDate">
+                        Archive Date
+                      </label>
+                      {canEdit && (
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-primary"
+                          disabled={!archiveDate}
+                          onClick={() => handleAddWeek('archiveDate')}
+                        >
+                          +1 week
+                        </button>
+                      )}
+                    </div>
+                    <div class="input-group mt-2">
+                      <input
+                        type="datetime-local"
+                        class={clsx('form-control', errors.archiveDate && 'is-invalid')}
+                        id="archiveDate"
+                        disabled={!canEdit}
+                        {...register('archiveDate', {
+                          validate: validateArchiveDate,
+                        })}
+                      />
+                      <span class="input-group-text">{courseInstance.display_timezone}</span>
+                    </div>
+                    {errors.archiveDate && (
+                      <div class="text-danger small mt-1">{errors.archiveDate.message}</div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Archived */}
+            <div class="mb-3">
+              <div class="form-check">
+                <input
+                  class="form-check-input"
+                  type="radio"
+                  name="status"
+                  id="status-archived"
+                  value="archived"
+                  checked={selectedStatus === 'archived'}
+                  disabled={!canEdit}
+                  onChange={(e) => {
+                    const target = e.target as HTMLInputElement;
+                    if (target.checked) {
+                      handleStatusChange('archived');
+                    }
+                  }}
+                />
+                <label class="form-check-label" for="status-archived">
+                  Archived
+                </label>
+              </div>
+              {selectedStatus === 'archived' && archiveDate && (
+                <div class="ms-4 mt-1 small text-muted">
+                  The course {currentStatus === 'archived' ? 'was' : 'will be'} archived at{' '}
+                  <FriendlyDate
+                    date={
+                      new Date(
+                        Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
+                          courseInstance.display_timezone,
+                        ).epochMilliseconds,
+                      )
+                    }
+                    timezone={courseInstance.display_timezone}
+                    tooltip={true}
+                    options={{ timeFirst: true }}
+                  />
+                  .
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Save and Cancel Buttons */}
+          {canEdit && (
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
+                {isSubmitting ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                type="button"
+                class="btn btn-secondary"
+                onClick={() => {
+                  window.location.reload();
+                }}
+              >
+                Cancel
+              </button>
+            </div>
           )}
-        </div>
+        </form>
+
+        {/* Access Control Extensions Section */}
+        {selectedStatus !== 'unpublished' && (
+          <>
+            <hr class="my-4" />
+            <QueryClientProviderDebug client={queryClient} isDevMode={false}>
+              <PublishingExtensions
+                courseInstance={courseInstance}
+                extensions={accessControlExtensions}
+                canEdit={canEdit}
+                csrfToken={csrfToken}
+              />
+            </QueryClientProviderDebug>
+          </>
+        )}
       </div>
     </>
   );

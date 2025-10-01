@@ -9,16 +9,12 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, execute, queryRows } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
-import {
-  convertAccessRuleToJson,
-  migrateAccessRuleJsonToPublishingConfiguration,
-} from '../../lib/course-instance-access.js';
 import { CourseInstancePublishingRuleSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -39,24 +35,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const accessRules = await queryRows(
-      sql.course_instance_access_rules,
-      { course_instance_id: res.locals.course_instance.id },
-      CourseInstancePublishingRuleSchema,
-    );
-
     const accessControlExtensions = await selectPublishingExtensionsWithUsersByCourseInstance(
       res.locals.course_instance.id,
     );
 
     const {
-      authz_data: {
-        has_course_instance_permission_view: hasCourseInstancePermissionView,
-        has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
-      },
+      authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
     } = getPageContext(res.locals);
 
-    assert(hasCourseInstancePermissionView !== undefined);
     assert(hasCourseInstancePermissionEdit !== undefined);
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
@@ -78,11 +64,11 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
-        pageTitle: 'Access',
+        pageTitle: 'Publishing',
         navContext: {
           type: 'instructor',
           page: 'instance_admin',
-          subPage: 'access',
+          subPage: 'publishing',
         },
         options: {
           fullWidth: true,
@@ -96,10 +82,8 @@ router.get(
               urlPrefix={res.locals.urlPrefix}
             />
             <InstructorInstanceAdminPublishing
-              accessRules={accessRules}
               accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
-              hasCourseInstancePermissionView={hasCourseInstancePermissionView}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
@@ -208,116 +192,6 @@ router.post(
 
       flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'migrate_access_rules') {
-      // Starting migration of access rules to access control
-
-      // Get the existing access rules from the database
-      const accessRules = await queryRows(
-        sql.course_instance_access_rules,
-        { course_instance_id: res.locals.course_instance.id },
-        CourseInstancePublishingRuleSchema,
-      );
-
-      if (accessRules.length === 0) {
-        throw new error.HttpStatusError(400, 'No access rules found to migrate');
-      }
-
-      // Convert access rules to JSON format
-      const accessRuleJsonArray = accessRules.map((rule) =>
-        convertAccessRuleToJson(rule, res.locals.course_instance.display_timezone),
-      );
-
-      // Calculate the migration
-      const migrationResult = migrateAccessRuleJsonToPublishingConfiguration(accessRuleJsonArray);
-
-      if (!migrationResult.success) {
-        throw new error.HttpStatusError(
-          400,
-          `Cannot migrate access rules: ${migrationResult.error}`,
-        );
-      }
-
-      // Read the existing infoCourseInstance.json file
-      const infoCourseInstancePath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'infoCourseInstance.json',
-      );
-
-      if (!(await fs.pathExists(infoCourseInstancePath))) {
-        throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
-      }
-
-      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
-        await fs.readFile(infoCourseInstancePath, 'utf8'),
-      );
-
-      // Add the publishing settings
-      if (!courseInstanceInfo.publishing) {
-        courseInstanceInfo.publishing = {};
-      }
-
-      courseInstanceInfo.publishing = migrationResult.publishingConfiguration;
-
-      // Remove the allowAccess rules
-      if (courseInstanceInfo.allowAccess) {
-        delete courseInstanceInfo.allowAccess;
-      }
-
-      // Course instance info has been updated with access control settings
-
-      // Format and write the updated JSON
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
-
-      const paths = getPaths(undefined, res.locals);
-      const editor = new FileModifyEditor({
-        locals: res.locals as any,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: infoCourseInstancePath,
-        editContents: b64EncodeUnicode(formattedJson),
-        origHash: req.body.orig_hash,
-      });
-
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch (fileError) {
-        console.error('Error migrating access rules:', fileError);
-
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        return;
-      }
-
-      // Insert extensions if any were generated from the migration
-      if (migrationResult.extensions.length > 0) {
-        for (const extension of migrationResult.extensions) {
-          if (extension.uids && extension.uids.length > 0) {
-            // Get enrollment IDs for the UIDs
-            const enrollments = await getEnrollmentsByUidsInCourseInstance({
-              uids: extension.uids,
-              course_instance_id: res.locals.course_instance.id,
-            });
-
-            if (enrollments.length > 0) {
-              const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
-
-              await createPublishingExtensionWithEnrollments({
-                course_instance_id: res.locals.course_instance.id,
-                name: extension.name,
-                archive_date: extension.archive_date ? new Date(extension.archive_date) : null,
-                enrollment_ids: enrollmentIds,
-              });
-            }
-          }
-        }
-      }
-
-      flash('success', 'Access rules migrated to access control successfully');
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_extension') {
       const name = req.body.name || null;
       const archive_date = req.body.archive_date ? new Date(req.body.archive_date) : null;
@@ -368,6 +242,80 @@ router.post(
       await deletePublishingExtension({
         extension_id,
         course_instance_id: res.locals.course_instance.id,
+      });
+
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'remove_student_from_extension') {
+      const extension_id = req.body.extension_id;
+      const uid = req.body.uid;
+
+      // Get the enrollment ID for the UID
+      const enrollments = await getEnrollmentsByUidsInCourseInstance({
+        uids: [uid],
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      if (enrollments.length === 0) {
+        res.status(400).json({ message: 'No enrollment found for the provided UID' });
+        return;
+      }
+
+      const enrollment_id = enrollments[0].id;
+
+      // Remove the enrollment from the extension
+      await execute(sql.remove_student_from_extension, {
+        extension_id,
+        enrollment_id,
+      });
+
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'update_extension_name') {
+      const extension_id = req.body.extension_id;
+      const name = req.body.name || null;
+
+      await execute(sql.update_publishing_extension_name, {
+        extension_id,
+        name,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'update_extension_date') {
+      const extension_id = req.body.extension_id;
+      const archive_date = req.body.archive_date || '';
+
+      await execute(sql.update_publishing_extension_date, {
+        extension_id,
+        archive_date,
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      res.status(200).json({ success: true });
+      return;
+    } else if (req.body.__action === 'add_user_to_extension') {
+      const extension_id = req.body.extension_id;
+      const uid = req.body.uid;
+
+      // Get the enrollment ID for the UID
+      const enrollments = await getEnrollmentsByUidsInCourseInstance({
+        uids: [uid],
+        course_instance_id: res.locals.course_instance.id,
+      });
+
+      if (enrollments.length === 0) {
+        res.status(400).json({ message: 'No enrollment found for the provided UID' });
+        return;
+      }
+
+      const enrollment_id = enrollments[0].id;
+
+      // Add the enrollment to the extension
+      await execute(sql.add_user_to_extension, {
+        extension_id,
+        enrollment_id,
       });
 
       res.status(200).json({ success: true });

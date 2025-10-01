@@ -27,7 +27,7 @@ export async function selectPublishingExtensionsByEnrollmentId(
   enrollment_id: string,
 ): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
-    sql.select_access_control_extensions_by_enrollment_id,
+    sql.select_publishing_extensions_by_enrollment_id,
     { enrollment_id },
     CourseInstancePublishingExtensionSchema,
   );
@@ -40,7 +40,7 @@ export async function selectPublishingExtensionsByCourseInstance(
   course_instance_id: string,
 ): Promise<CourseInstancePublishingExtension[]> {
   return await queryRows(
-    sql.select_access_control_extensions_by_course_instance,
+    sql.select_publishing_extensions_by_course_instance,
     { course_instance_id },
     CourseInstancePublishingExtensionSchema,
   );
@@ -53,7 +53,7 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance(
   course_instance_id: string,
 ): Promise<CourseInstancePublishingExtensionWithUsers[]> {
   return await queryRows(
-    sql.select_access_control_extensions_with_uids_by_course_instance,
+    sql.select_publishing_extensions_with_uids_by_course_instance,
     { course_instance_id },
     CourseInstancePublishingExtensionWithUsersSchema,
   );
@@ -72,7 +72,7 @@ export async function insertPublishingExtension({
   archive_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
-    sql.insert_access_control_extension,
+    sql.insert_publishing_extension,
     {
       course_instance_id,
       name,
@@ -86,16 +86,16 @@ export async function insertPublishingExtension({
  * Links a publishing extension to a specific enrollment.
  */
 export async function insertPublishingEnrollmentExtension({
-  course_instance_access_control_extension_id,
+  course_instance_publishing_extension_id,
   enrollment_id,
 }: {
-  course_instance_access_control_extension_id: string;
+  course_instance_publishing_extension_id: string;
   enrollment_id: string;
 }): Promise<CourseInstancePublishingEnrollmentExtension> {
   return await queryRow(
-    sql.insert_access_control_enrollment_extension,
+    sql.insert_publishing_enrollment_extension,
     {
-      course_instance_access_control_extension_id,
+      course_instance_publishing_extension_id,
       enrollment_id,
     },
     CourseInstancePublishingEnrollmentExtensionSchema,
@@ -127,7 +127,7 @@ export async function createPublishingExtensionWithEnrollments({
     // Link to enrollments
     for (const enrollment_id of enrollment_ids) {
       await insertPublishingEnrollmentExtension({
-        course_instance_access_control_extension_id: extension.id,
+        course_instance_publishing_extension_id: extension.id,
         enrollment_id,
       });
     }
@@ -146,7 +146,7 @@ export async function deletePublishingExtension({
   extension_id: string;
   course_instance_id: string;
 }): Promise<void> {
-  await execute(sql.delete_access_control_extension, {
+  await execute(sql.delete_publishing_extension, {
     extension_id,
     course_instance_id,
   });
@@ -167,7 +167,7 @@ export async function updatePublishingExtension({
   archive_date: Date | null;
 }): Promise<CourseInstancePublishingExtension> {
   return await queryRow(
-    sql.update_access_control_extension,
+    sql.update_publishing_extension,
     {
       extension_id,
       course_instance_id,

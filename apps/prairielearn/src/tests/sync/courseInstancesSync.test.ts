@@ -200,7 +200,10 @@ describe('Course instance syncing', () => {
           archiveDate: 'not a date',
         },
         db: null,
-        errors: ['"publishing.publishDate" is required if "publishing.archiveDate" is specified.', '"publishing.archiveDate" is not a valid date.'],
+        errors: [
+          '"publishing.publishDate" is required if "publishing.archiveDate" is specified.',
+          '"publishing.archiveDate" is not a valid date.',
+        ],
       },
       {
         json: {
