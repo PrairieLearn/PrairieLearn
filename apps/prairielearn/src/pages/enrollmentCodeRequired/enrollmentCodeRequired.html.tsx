@@ -8,11 +8,7 @@ interface EnrollmentCodeForm {
   code3: string;
 }
 
-interface EnrollmentCodeRequiredProps {
-  csrfToken: string;
-}
-
-export function EnrollmentCodeRequired({ csrfToken }: EnrollmentCodeRequiredProps) {
+export function EnrollmentCodeRequired({ csrfToken }: { csrfToken: string }) {
   const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>({
     mode: 'onChange',
     defaultValues: {

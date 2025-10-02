@@ -7,44 +7,6 @@ import {
   type UseFormWatch,
 } from 'react-hook-form';
 
-/**
- * EnrollmentCodeInput - A reusable component for entering enrollment codes in three parts.
- *
- * This component integrates with react-hook-form and should be used within an existing form.
- * It provides three input fields for entering enrollment codes in the format XXX-XXX-XXXX.
- *
- * @example
- * ```tsx
- * const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>();
- *
- * <form onSubmit={handleSubmit(onSubmit)}>
- *   <EnrollmentCodeInput
- *     register={register}
- *     setValue={setValue}
- *     watch={watch}
- *     code1Field="code1"
- *     code2Field="code2"
- *     code3Field="code3"
- *     error={error}
- *     disabled={isSubmitting}
- *   />
- *   <button type="submit">Submit</button>
- * </form>
- * ```
- */
-interface EnrollmentCodeInputProps<T extends FieldValues> {
-  register: UseFormRegister<T>;
-  setValue: UseFormSetValue<T>;
-  watch: UseFormWatch<T>;
-  code1Field: Path<T>;
-  code2Field: Path<T>;
-  code3Field: Path<T>;
-  error?: string;
-  autoFocus?: boolean;
-  disabled?: boolean;
-  class?: string;
-}
-
 export function EnrollmentCodeInput<T extends FieldValues>({
   register,
   setValue,
@@ -56,7 +18,18 @@ export function EnrollmentCodeInput<T extends FieldValues>({
   autoFocus = false,
   disabled = false,
   class: className = '',
-}: EnrollmentCodeInputProps<T>) {
+}: {
+  register: UseFormRegister<T>;
+  setValue: UseFormSetValue<T>;
+  watch: UseFormWatch<T>;
+  code1Field: Path<T>;
+  code2Field: Path<T>;
+  code3Field: Path<T>;
+  error?: string;
+  autoFocus?: boolean;
+  disabled?: boolean;
+  class?: string;
+}) {
   const input1Ref = useRef<HTMLInputElement>(null);
   const input2Ref = useRef<HTMLInputElement>(null);
   const input3Ref = useRef<HTMLInputElement>(null);

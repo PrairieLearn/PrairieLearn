@@ -32,7 +32,7 @@ export function Enroll({
       page: 'enroll',
     },
     headContent: compiledScriptTag('enrollClient.ts'),
-    preContent: html` ${AddCourseModal({ csrfToken: resLocals.__csrf_token })} `,
+    preContent: AddCourseModal({ csrfToken: resLocals.__csrf_token }),
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

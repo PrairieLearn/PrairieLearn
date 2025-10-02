@@ -182,8 +182,6 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   hide_in_enroll_page: true,
   id: true,
   long_name: true,
-  self_enrollment_enabled: true,
-  self_enrollment_use_enrollment_code: true,
   short_name: true,
 });
 export const StudentCourseInstanceSchema =

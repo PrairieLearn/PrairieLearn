@@ -101,8 +101,6 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   hide_in_enroll_page: null,
   id: '3',
   long_name: null,
-  self_enrollment_enabled: true,
-  self_enrollment_use_enrollment_code: false,
   short_name: null,
 };
 

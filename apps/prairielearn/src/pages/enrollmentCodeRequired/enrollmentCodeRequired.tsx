@@ -16,23 +16,11 @@ import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
 const router = Router();
 
-/**
- * This is the route handler for /join/code and /join.
- * This route is used if the user accesses a page where they require an enrollment code, but don't have one, or when they have an enrollment code.
- *
- * If they were redirected here, it will have a url param named `url`.
- *
- *  if the current URL contains a correct enrollment code, and there is URL state, send them to that URL.
- *  If it is correct without state, send them to the assessments page for that course instance. Otherwise if it is not correct, render
- * a page for them to enter an enrollment code.
- * On that page, check if the code is valid for that course instance.
- * If it is, redirect them to /join/XXX?url=current (if we have a current URL, otherwise just /join/XXX).
- */
-
 router.get(
   '/:code?',
   asyncHandler(async (req, res) => {
     const code = req.params.code as string | undefined;
+    // If they were redirected here, it will have a url param named `url`.
     const { url } = req.query;
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
@@ -61,7 +49,7 @@ router.get(
           action_detail: 'implicit_joined',
         });
       }
-      // redirect to the assessments page
+      // redirect to a different page, which will have proper authorization.
       if (redirectUrl != null) {
         res.redirect(redirectUrl);
       } else {

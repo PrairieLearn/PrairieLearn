@@ -88,7 +88,6 @@ export function Home({
             <EmptyStateCards
               urlPrefix={urlPrefix}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
-              csrfToken={csrfToken}
             />
           </Hydrate>
         )}
@@ -239,11 +238,9 @@ function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListPr
 function EmptyStateCards({
   urlPrefix,
   enrollmentManagementEnabled,
-  csrfToken,
 }: {
   urlPrefix: string;
   enrollmentManagementEnabled: boolean;
-  csrfToken: string;
 }) {
   const [show, setShow] = useState(false);
 
