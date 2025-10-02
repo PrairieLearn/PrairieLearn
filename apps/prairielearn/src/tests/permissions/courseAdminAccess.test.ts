@@ -1,3 +1,4 @@
+import * as cheerio from 'cheerio';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import z from 'zod';
 
@@ -207,20 +208,14 @@ function runTest(context) {
   });
 
   test.sequential('can delete user', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=course-content-access-form-3]',
-    );
+    const __csrf_token = extractCSRFTokenFromPopover(response, '#course-permission-button-3');
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_delete',
-        __csrf_token: context.__csrf_token,
+        __csrf_token,
         user_id: '3',
       }),
       headers,
@@ -251,20 +246,14 @@ function runTest(context) {
   });
 
   test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=course-content-access-form-4]',
-    );
+    const __csrf_token = extractCSRFTokenFromPopover(response, '#course-permission-button-4');
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_update_role',
-        __csrf_token: context.__csrf_token,
+        __csrf_token,
         user_id: '4',
         course_role: 'Owner',
       }),
@@ -568,20 +557,14 @@ function runTest(context) {
   });
 
   test.sequential('can change course role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
+    let response = await helperClient.fetchCheerio(context.pageUrl, { headers });
     assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFToken(
-      context,
-      response.$,
-      'form[name=course-content-access-form-4]',
-    );
+    const __csrf_token = extractCSRFTokenFromPopover(response, '#course-permission-button-4');
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'course_permissions_update_role',
-        __csrf_token: context.__csrf_token,
+        __csrf_token,
         user_id: '4',
         course_role: 'Editor',
       }),
@@ -622,3 +605,15 @@ describe(
     runTest(context);
   },
 );
+
+function extractCSRFTokenFromPopover(
+  response: helperClient.CheerioResponse,
+  buttonSelector: string,
+) {
+  const button = response.$(buttonSelector);
+  assert.lengthOf(button, 1);
+  const popoverContent = button.attr('data-bs-content');
+  assert.isDefined(popoverContent);
+  const popoverCheerio = cheerio.load(popoverContent);
+  return helperClient.getCSRFToken(popoverCheerio('form'));
+}

@@ -591,7 +591,7 @@ function CoursePermissionButton({
   if (!canChangeCourseRole) {
     return html`
       <button
-        id="courseContentDropdown-${courseUser.user.user_id}"
+        id="course-permission-button-${courseUser.user.user_id}"
         type="button"
         class="btn btn-sm btn-outline-primary disabled"
         disabled
@@ -693,7 +693,7 @@ function CoursePermissionButton({
   return html`
     <div class="btn-group btn-group-sm" role="group">
       <button
-        id="courseContentDropdown-${courseUser.user.user_id}"
+        id="course-permission-button-${courseUser.user.user_id}"
         type="button"
         class="btn btn-sm btn-outline-primary dropdown-toggle"
         data-bs-toggle="popover"
