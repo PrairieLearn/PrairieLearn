@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 
 import { type Response } from 'express';
@@ -145,7 +144,7 @@ async function initiateFileTransfer({
   // directly. This would allow us to completely get rid of the endpoints ending in
   // 'copy_public_*' and the file_transfers database table.
 
-  const f = randomUUID();
+  const f = crypto.randomUUID();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
     from_course_id: fromCourse.id,

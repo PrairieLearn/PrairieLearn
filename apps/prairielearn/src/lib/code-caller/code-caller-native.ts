@@ -1,7 +1,6 @@
 import { type ChildProcess } from 'child_process';
 import * as child_process from 'node:child_process';
 import { type SpawnOptions } from 'node:child_process';
-import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
@@ -140,7 +139,7 @@ export class CodeCallerNative implements CodeCaller {
    */
   private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
-    this.uuid = randomUUID();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 

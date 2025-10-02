@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/dot-notation */
-import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -659,7 +658,8 @@ async function createSharedCourse() {
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
     sharingCourseData.courseInstances['Fa19'].assessments['test'],
   );
-  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = randomUUID();
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] =
+    crypto.randomUUID();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

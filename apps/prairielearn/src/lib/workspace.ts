@@ -1,6 +1,5 @@
 import { promises as fsPromises } from 'fs';
 import { ok as assert } from 'node:assert';
-import { randomUUID } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
@@ -377,7 +376,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   const root = config.workspaceHomeDirRoot;
   const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${randomUUID()}`;
+  const sourcePath = `${destinationPath}-${crypto.randomUUID()}`;
 
   const { fileGenerationErrors } = await generateWorkspaceFiles({
     serverFilesCoursePath,

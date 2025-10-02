@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
@@ -269,7 +268,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
-  const cronUuid = randomUUID();
+  const cronUuid = crypto.randomUUID();
   logger.verbose('cron: jobs starting', { cronUuid });
 
   for (const job of jobsList) {

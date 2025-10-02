@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -890,7 +889,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-  const uuid = randomUUID();
+  const uuid = crypto.randomUUID();
   const params = {
     workspace_id,
     launch_uuid: uuid,

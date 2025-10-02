@@ -7,7 +7,6 @@ import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 /* eslint-enable import-x/order */
 
-import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -385,7 +384,7 @@ export async function initExpress(): Promise<Express> {
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
-    res.locals.response_id = randomUUID();
+    res.locals.response_id = crypto.randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });

@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/dot-notation */
-import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -22,7 +21,7 @@ import * as util from './util.js';
  */
 function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
-    uuid: randomUUID(),
+    uuid: crypto.randomUUID(),
     title: 'Test question',
     type: 'v3',
     topic: courseData.course.topics[0].name,

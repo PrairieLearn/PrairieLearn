@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/dot-notation */
-import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
@@ -21,7 +20,7 @@ import * as util from './util.js';
 function makeCourseInstance(): util.CourseInstanceData {
   return {
     courseInstance: {
-      uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       longName: 'Test course instance',
     },
     assessments: {},

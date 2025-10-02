@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/dot-notation */
-import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -46,7 +45,7 @@ function makeAssessment(
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
-    uuid: randomUUID(),
+    uuid: crypto.randomUUID(),
     type,
     title: 'Test assessment',
     set: assessmentSet,

@@ -105,8 +105,8 @@ router.post(
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
       }
 
-  const name = req.body.token_name;
-  const token = crypto.randomUUID();
+      const name = req.body.token_name;
+      const token = crypto.randomUUID();
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
       await sqldb.execute(sql.insert_access_token, {

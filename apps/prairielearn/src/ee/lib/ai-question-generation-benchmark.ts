@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import { execa } from 'execa';
@@ -198,7 +197,7 @@ export async function benchmarkAiQuestionGeneration({
     const courseTitle = `AI Question Generation Benchmark ${Date.now()}`;
     const courseName = `ai-question-generation-benchmark-${Date.now()}`;
     await fs.writeJson(path.join(courseDirectory.path, 'infoCourse.json'), {
-  uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       name: courseName,
       title: courseTitle,
       topics: [],

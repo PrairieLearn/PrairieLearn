@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -45,7 +43,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
   ];
   course.courseInstances[COURSE_INSTANCE_ID].assessments = {
     'homework-1': {
-      uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       title: 'Homework 1',
       type: 'Homework',
       set: 'Homeworks',
@@ -53,7 +51,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '1',
     },
     'exam-1': {
-      uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       title: 'Exam 1',
       type: 'Exam',
       set: 'Exams',
@@ -61,7 +59,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '1',
     },
     'homework-2': {
-      uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       title: 'Homework 2',
       type: 'Homework',
       set: 'Homeworks',
@@ -69,7 +67,7 @@ describe('Course with assessments grouped by Set vs Module', { timeout: 60_000 }
       number: '2',
     },
     'exam-2': {
-      uuid: randomUUID(),
+      uuid: crypto.randomUUID(),
       title: 'Exam 2',
       type: 'Exam',
       set: 'Exams',

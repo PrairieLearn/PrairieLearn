@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import * as os from 'node:os';
 import * as path from 'node:path';
 
@@ -159,7 +158,7 @@ export class CodeCallerContainer implements CodeCaller {
 
   private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
-    this.uuid = randomUUID();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 

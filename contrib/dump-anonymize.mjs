@@ -1,7 +1,6 @@
 // usage:
 // $ node dump-anonymize.mjs <data-dump-folder> <anonymous-output-folder>
 
-import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -12,7 +11,7 @@ const outfolder = process.argv[3];
 
 function getUUID(map, key) {
   if (!map[key]) {
-    map[key] = randomUUID();
+    map[key] = crypto.randomUUID();
   }
   return map[key];
 }

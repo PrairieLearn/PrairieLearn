@@ -1,6 +1,5 @@
 import assert from 'assert';
 import * as child_process from 'child_process';
-import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
 import * as util from 'util';
@@ -681,7 +680,7 @@ export async function createAndUploadChunks(
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
 
     // Generate a UUId for this chunk
-    const chunkUuid = randomUUID();
+    const chunkUuid = crypto.randomUUID();
 
     // Let's create a tarball for this chunk and send it off to S3
     const tarball = tar.create(

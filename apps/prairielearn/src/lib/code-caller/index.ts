@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import * as os from 'node:os';
 
 import debugfn from 'debug';
@@ -168,7 +167,7 @@ export async function withCodeCaller<T>(
     });
   }
 
-  const jobUuid = randomUUID();
+  const jobUuid = crypto.randomUUID();
   load.startJob('python_callback_waiting', jobUuid);
 
   const codeCaller = await pool.acquire();

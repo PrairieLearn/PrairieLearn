@@ -1,5 +1,3 @@
-import { randomUUID } from 'node:crypto';
-
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -40,7 +38,7 @@ async function insertWorkspaceHost(id: string | number, state = 'launching') {
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
     {
       id,
-  instance_id: randomUUID(),
+      instance_id: crypto.randomUUID(),
       state,
     },
     WorkspaceHostSchema,
