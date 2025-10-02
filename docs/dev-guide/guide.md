@@ -111,24 +111,23 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
 
 - Are elements announced correctly?
-  - Do you have appropriate `aria-label` / `alt` attributes?
-- Can you navigate the page using only the keyboard?
-  - tab to get to the next focusable element, enter to activate it
-  - arrow keys work appropriately
-- Are the focus indicators visible?
+  - Do elements have appropriate `aria-label` / `alt` attributes?
+  - Are descriptions concise and accurate?
+  - Do menus, toolbars, and other UI elements have appropriate [ARIA roles](https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles)?
+- Can a user navigate the page using only the keyboard?
+  - Tab should move between focusable elements.
+  - Space or Enter should activate buttons/links.
+  - Arrow keys should navigate within components like dropdowns and tables.
+  - Actions that require dragging with a mouse should have keyboard alternatives.
+- Is focus managed correctly?
+  - Is focus correctly trapped within modals and other dialogs?
+  - Is focus position retained during re-renders?
+- Are focus indicators visible?
 - Is the page layout logical and easy to understand?
-
 - Will users with visual impairments be able to use the page?
-  - Do you have at least a 3:1 contrast ratio between text and background colors?
-  - Do you have appropriate spacing between elements?
-
-- Can you navigate the table with arrow keys?
-- Can you resize the table columns with the arrow keys?
-- Can you activate a modal with enter?
-- Are the announced descriptions concise and accurate? Are there announced descriptions for all interactive elements (e.g. the resize handle)?
-- Does closing the modal/tabbing out of the modal retain the focused position?
-- Is the same item still focused in a dropdown after an action that would cause a re-render of the dropdown?
-- Are you using the proper ARIA role on menus/toolbars? You should check this with the official role list.
+  - Is there at least a 4.5:1 contrast ratio between text and background colors?
+  - Is there at least a 3:1 contrast ratio between UI elements and background colors?
+  - Is there appropriate spacing between elements?
 
 ## SQL usage
 
