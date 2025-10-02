@@ -1,8 +1,15 @@
 import { useState } from 'preact/compat';
 import { Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { EnrollmentCodeInput } from '../../components/EnrollmentCodeInput.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
+
+interface EnrollmentCodeForm {
+  code1: string;
+  code2: string;
+  code3: string;
+}
 
 interface EnrollmentCodeModalProps {
   show: boolean;
@@ -13,8 +20,18 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | undefined>();
 
+  const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>({
+    mode: 'onChange',
+    defaultValues: {
+      code1: '',
+      code2: '',
+      code3: '',
+    },
+  });
+
   // Submit the enrollment code
-  const handleSubmit = async (fullCode: string) => {
+  const onSubmit = async (data: EnrollmentCodeForm) => {
+    const fullCode = `${data.code1}${data.code2}${data.code3}`;
     setIsSubmitting(true);
     setError(undefined);
 
@@ -49,38 +66,40 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        <EnrollmentCodeInput
-          onSubmit={handleSubmit}
-          isSubmitting={isSubmitting}
-          error={error}
-          autoFocus={show}
-        />
-      </Modal.Body>
-      <Modal.Footer>
-        <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
-          Cancel
-        </button>
-        <button
-          type="submit"
-          form="enrollment-code-form"
-          class="btn btn-primary"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? (
-            <>
-              <span
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              />
-              Looking up code...
-            </>
-          ) : (
-            'Join Course'
-          )}
-        </button>
-      </Modal.Footer>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Modal.Body>
+          <EnrollmentCodeInput
+            register={register}
+            setValue={setValue}
+            watch={watch}
+            code1Field="code1"
+            code2Field="code2"
+            code3Field="code3"
+            error={error}
+            autoFocus={false}
+            disabled={isSubmitting}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <span
+                  class="spinner-border spinner-border-sm me-2"
+                  role="status"
+                  aria-hidden="true"
+                />
+                Looking up code...
+              </>
+            ) : (
+              'Join Course'
+            )}
+          </button>
+        </Modal.Footer>
+      </form>
     </Modal>
   );
 }

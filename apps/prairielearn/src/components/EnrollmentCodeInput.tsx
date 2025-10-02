@@ -1,47 +1,65 @@
 import { useEffect, useRef } from 'preact/compat';
-import { type SubmitHandler, useForm } from 'react-hook-form';
+import {
+  type FieldValues,
+  type Path,
+  type UseFormRegister,
+  type UseFormSetValue,
+  type UseFormWatch,
+} from 'react-hook-form';
 
-interface EnrollmentCodeForm {
-  code1: string;
-  code2: string;
-  code3: string;
-}
-
-interface EnrollmentCodeInputProps {
-  onSubmit: (fullCode: string) => Promise<void>;
-  isSubmitting?: boolean;
+/**
+ * EnrollmentCodeInput - A reusable component for entering enrollment codes in three parts.
+ *
+ * This component integrates with react-hook-form and should be used within an existing form.
+ * It provides three input fields for entering enrollment codes in the format XXX-XXX-XXXX.
+ *
+ * @example
+ * ```tsx
+ * const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>();
+ *
+ * <form onSubmit={handleSubmit(onSubmit)}>
+ *   <EnrollmentCodeInput
+ *     register={register}
+ *     setValue={setValue}
+ *     watch={watch}
+ *     code1Field="code1"
+ *     code2Field="code2"
+ *     code3Field="code3"
+ *     error={error}
+ *     disabled={isSubmitting}
+ *   />
+ *   <button type="submit">Submit</button>
+ * </form>
+ * ```
+ */
+interface EnrollmentCodeInputProps<T extends FieldValues> {
+  register: UseFormRegister<T>;
+  setValue: UseFormSetValue<T>;
+  watch: UseFormWatch<T>;
+  code1Field: Path<T>;
+  code2Field: Path<T>;
+  code3Field: Path<T>;
   error?: string;
   autoFocus?: boolean;
+  disabled?: boolean;
   class?: string;
 }
 
-export function EnrollmentCodeInput({
-  onSubmit,
-  isSubmitting = false,
+export function EnrollmentCodeInput<T extends FieldValues>({
+  register,
+  setValue,
+  watch,
+  code1Field,
+  code2Field,
+  code3Field,
   error,
   autoFocus = false,
+  disabled = false,
   class: className = '',
-}: EnrollmentCodeInputProps) {
+}: EnrollmentCodeInputProps<T>) {
   const input1Ref = useRef<HTMLInputElement>(null);
   const input2Ref = useRef<HTMLInputElement>(null);
   const input3Ref = useRef<HTMLInputElement>(null);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    watch,
-    setError,
-    clearErrors,
-    formState: { errors },
-  } = useForm<EnrollmentCodeForm>({
-    mode: 'onChange',
-    defaultValues: {
-      code1: '',
-      code2: '',
-      code3: '',
-    },
-  });
 
   const watchedValues = watch();
 
@@ -53,28 +71,19 @@ export function EnrollmentCodeInput({
     }
   }, [autoFocus]);
 
-  // Clear errors when error prop changes
-  useEffect(() => {
-    if (error) {
-      setError('root.serverError', { message: error });
-    } else {
-      clearErrors('root.serverError');
-    }
-  }, [error, setError, clearErrors]);
-
   // Validate and format input - only alphanumeric, uppercase
   const formatInput = (value: string): string => {
     return value.replaceAll(/[^A-Za-z0-9]/g, '').toUpperCase();
   };
 
   // Handle input change for individual fields
-  const handleInputChange = (value: string, field: keyof EnrollmentCodeForm) => {
+  const handleInputChange = (value: string, field: Path<T>) => {
     const formatted = formatInput(value);
-    setValue(field, formatted, { shouldValidate: true });
+    setValue(field, formatted as any, { shouldValidate: true });
 
-    if (field === 'code1' && formatted.length === 3 && input2Ref.current) {
+    if (field === code1Field && formatted.length === 3 && input2Ref.current) {
       input2Ref.current.focus();
-    } else if (field === 'code2' && formatted.length === 3 && input3Ref.current) {
+    } else if (field === code2Field && formatted.length === 3 && input3Ref.current) {
       input3Ref.current.focus();
     }
   };
@@ -91,14 +100,14 @@ export function EnrollmentCodeInput({
       const part2 = formatted.slice(3, 6);
       const part3 = formatted.slice(6, 10);
 
-      setValue('code1', part1, { shouldValidate: true });
-      setValue('code2', part2, { shouldValidate: true });
-      setValue('code3', part3, { shouldValidate: true });
+      setValue(code1Field, part1 as any, { shouldValidate: true });
+      setValue(code2Field, part2 as any, { shouldValidate: true });
+      setValue(code3Field, part3 as any, { shouldValidate: true });
     }
   };
 
   // Handle key navigation
-  const handleKeyDown = (e: KeyboardEvent, field: keyof EnrollmentCodeForm) => {
+  const handleKeyDown = (e: KeyboardEvent, field: Path<T>) => {
     const target = e.target as HTMLInputElement;
     const cursorPosition = target.selectionStart ?? 0;
     const valueLength = target.value.length;
@@ -106,11 +115,11 @@ export function EnrollmentCodeInput({
     const fields = [
       {
         currentRef: input1Ref.current!,
-        value: watchedValues.code1,
-        field: 'code1' as const,
+        value: watchedValues[code1Field],
+        field: code1Field,
       },
-      { currentRef: input2Ref.current!, value: watchedValues.code2, field: 'code2' as const },
-      { currentRef: input3Ref.current!, value: watchedValues.code3, field: 'code3' as const },
+      { currentRef: input2Ref.current!, value: watchedValues[code2Field], field: code2Field },
+      { currentRef: input3Ref.current!, value: watchedValues[code3Field], field: code3Field },
     ];
 
     const fieldIndex = fields.findIndex((f) => f.field === field);
@@ -141,17 +150,11 @@ export function EnrollmentCodeInput({
     }
   };
 
-  // Submit the enrollment code
-  const handleFormSubmit: SubmitHandler<EnrollmentCodeForm> = async (data) => {
-    const fullCode = `${data.code1}${data.code2}${data.code3}`;
-    await onSubmit(fullCode);
-  };
-
   return (
-    <form id="enrollment-code-form" class={className} onSubmit={handleSubmit(handleFormSubmit)}>
-      {errors.root?.serverError && (
+    <div class={className}>
+      {error && (
         <div class="alert alert-danger" role="alert">
-          {errors.root.serverError.message}
+          {error}
         </div>
       )}
       <div class="mb-3">
@@ -165,20 +168,20 @@ export function EnrollmentCodeInput({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="ABC"
-            disabled={isSubmitting}
-            {...register('code1', {
+            disabled={disabled}
+            {...register(code1Field, {
               required: 'First part is required',
               pattern: {
                 value: /^[A-Z0-9]{3}$/,
                 message: 'Must be 3 alphanumeric characters',
               },
-              onChange: (e) => handleInputChange(e.target.value, 'code1'),
+              onChange: (e) => handleInputChange(e.target.value, code1Field),
             })}
             ref={(e) => {
               input1Ref.current = e;
-              register('code1').ref(e);
+              register(code1Field).ref(e);
             }}
-            onKeyDown={(e) => handleKeyDown(e, 'code1')}
+            onKeyDown={(e) => handleKeyDown(e, code1Field)}
             onPaste={handlePaste}
           />
           <span class="text-muted">-</span>
@@ -188,20 +191,20 @@ export function EnrollmentCodeInput({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="DEF"
-            disabled={isSubmitting}
-            {...register('code2', {
+            disabled={disabled}
+            {...register(code2Field, {
               required: 'Second part is required',
               pattern: {
                 value: /^[A-Z0-9]{3}$/,
                 message: 'Must be 3 alphanumeric characters',
               },
-              onChange: (e) => handleInputChange(e.target.value, 'code2'),
+              onChange: (e) => handleInputChange(e.target.value, code2Field),
             })}
             ref={(e) => {
               input2Ref.current = e;
-              register('code2').ref(e);
+              register(code2Field).ref(e);
             }}
-            onKeyDown={(e) => handleKeyDown(e, 'code2')}
+            onKeyDown={(e) => handleKeyDown(e, code2Field)}
             onPaste={handlePaste}
           />
           <span class="text-muted">-</span>
@@ -211,20 +214,20 @@ export function EnrollmentCodeInput({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={4}
             placeholder="GHIJ"
-            disabled={isSubmitting}
-            {...register('code3', {
+            disabled={disabled}
+            {...register(code3Field, {
               required: 'Third part is required',
               pattern: {
                 value: /^[A-Z0-9]{4}$/,
                 message: 'Must be 4 alphanumeric characters',
               },
-              onChange: (e) => handleInputChange(e.target.value, 'code3'),
+              onChange: (e) => handleInputChange(e.target.value, code3Field),
             })}
             ref={(e) => {
               input3Ref.current = e;
-              register('code3').ref(e);
+              register(code3Field).ref(e);
             }}
-            onKeyDown={(e) => handleKeyDown(e, 'code3')}
+            onKeyDown={(e) => handleKeyDown(e, code3Field)}
             onPaste={handlePaste}
           />
         </div>
@@ -233,6 +236,6 @@ export function EnrollmentCodeInput({
           course.
         </div>
       </div>
-    </form>
+    </div>
   );
 }
