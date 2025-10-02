@@ -118,7 +118,7 @@ If you are adding anything more complex than a basic form page, the automated ac
 - Are the focus indicators visible?
 - Is the page layout logical and easy to understand?
 
-- Will users with visual impairments be able to use the page? (More generally, we must follow)
+- Will users with visual impairments be able to use the page?
   - Do you have at least a 3:1 contrast ratio between text and background colors?
   - Do you have appropriate spacing between elements?
 
