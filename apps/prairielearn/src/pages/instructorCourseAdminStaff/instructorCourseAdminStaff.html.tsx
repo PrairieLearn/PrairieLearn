@@ -387,12 +387,6 @@ function StaffTable({
         </thead>
         <tbody>
           ${courseUsers.map((courseUser) => {
-            // Cannot change the course role of yourself (or of the
-            // user you are emulating) unless you are an administrator.
-            const canChangeCourseRole =
-              (courseUser.user.user_id !== authnUser.user_id &&
-                courseUser.user.user_id !== user.user_id) ||
-              isAdministrator;
             return html`
               <tr>
                 <td class="align-middle">${courseUser.user.uid}</td>
@@ -400,137 +394,16 @@ function StaffTable({
                   ${courseUser.user.name ?? html`<span class="text-danger">Unknown user</span>`}
                 </td>
                 <td class="align-middle">
-                  ${!canChangeCourseRole
-                    ? html`
-                        <button
-                          id="courseContentDropdown-${courseUser.user.user_id}"
-                          type="button"
-                          class="btn btn-sm btn-outline-primary disabled"
-                          disabled
-                        >
-                          ${courseUser.course_permission.course_role}
-                        </button>
-                      `
-                    : html`
-                        <form
-                          name="course-content-access-form-${courseUser.user.user_id}"
-                          method="POST"
-                        >
-                          <input
-                            type="hidden"
-                            name="__action"
-                            value="course_permissions_update_role"
-                          />
-                          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-                          <div class="btn-group btn-group-sm" role="group">
-                            <button
-                              id="courseContentDropdown-${courseUser.user.user_id}"
-                              type="button"
-                              class="btn btn-sm btn-outline-primary dropdown-toggle"
-                              data-bs-toggle="dropdown"
-                              data-bs-boundary="body"
-                              aria-haspopup="true"
-                              aria-expanded="false"
-                            >
-                              ${courseUser.course_permission.course_role}
-                            </button>
-                            <div
-                              class="dropdown-menu"
-                              aria-labelledby="courseContentDropdown-${courseUser.user.user_id}"
-                              style="width: 35em;"
-                            >
-                              <div class="dropdown-header text-wrap">
-                                <p>
-                                  Users with course content access can see aggregate student data
-                                  (e.g., mean scores), but cannot see the names or scores of
-                                  individual students without also having student data access to a
-                                  particular course instance.
-                                </p>
-                              </div>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item mt-2"
-                                type="submit"
-                                name="course_role"
-                                value="None"
-                              >
-                                <div class="text-wrap">
-                                  <h6>None</h6>
-                                  <p class="small">Cannot see any course content.</p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Previewer"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Previewer</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see but not close issues. Cannot see any code or configuration
-                                    files.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Viewer"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Viewer</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see but not close issues. Can see and download but not edit all
-                                    code and configuration files.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Editor"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Editor</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see and close issues. Can see, download, and edit all code and
-                                    configuration files. Can sync course files to and from the
-                                    GitHub repository.
-                                  </p>
-                                </div>
-                              </button>
-                              <div class="dropdown-divider"></div>
-                              <button
-                                class="dropdown-item"
-                                type="submit"
-                                name="course_role"
-                                value="Owner"
-                              >
-                                <div class="text-wrap">
-                                  <h6>Owner</h6>
-                                  <p class="small">
-                                    Can see all questions, course instances, and assessments. Can
-                                    see and close issues. Can see, download, and edit all code and
-                                    configuration files. Can sync course files to and from the
-                                    GitHub repository. Can add and remove course staff and can
-                                    change access roles.
-                                  </p>
-                                </div>
-                              </button>
-                            </div>
-                          </div>
-                        </form>
-                      `}
+                  ${CoursePermissionButton({
+                    // Cannot change the course role of yourself (or of the
+                    // user you are emulating) unless you are an administrator.
+                    canChangeCourseRole:
+                      (courseUser.user.user_id !== authnUser.user_id &&
+                        courseUser.user.user_id !== user.user_id) ||
+                      isAdministrator,
+                    courseUser,
+                    csrfToken,
+                  })}
                 </td>
                 <td class="align-middle">
                   ${courseUser.course_instance_roles
@@ -701,6 +574,139 @@ function StaffTable({
           })}
         </tbody>
       </table>
+    </div>
+  `;
+}
+
+function CoursePermissionButton({
+  canChangeCourseRole,
+  courseUser,
+  csrfToken,
+}: {
+  canChangeCourseRole: boolean;
+  courseUser: CourseUsersRow;
+  csrfToken: string;
+}) {
+  const currentRole = courseUser.course_permission.course_role;
+  if (!canChangeCourseRole) {
+    return html`
+      <button
+        id="courseContentDropdown-${courseUser.user.user_id}"
+        type="button"
+        class="btn btn-sm btn-outline-primary disabled"
+        disabled
+      >
+        ${currentRole}
+      </button>
+    `;
+  }
+
+  const popoverContent = html`
+    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
+      <input type="hidden" name="__action" value="course_permissions_update_role" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <div class="list-group overflow-auto" role="group" style="width: 35em; max-height: 100vh;">
+        <div class="list-group-item disabled">
+          <p>
+            Users with course content access can see aggregate student data (e.g., mean scores), but
+            cannot see the names or scores of individual students without also having student data
+            access to a particular course instance.
+          </p>
+        </div>
+        <button
+          class="list-group-item list-group-item-action ${currentRole === 'None' ? 'active' : ''}"
+          type="submit"
+          name="course_role"
+          value="None"
+        >
+          <div class="text-wrap">
+            <h6>None</h6>
+            <p class="small">Cannot see any course content.</p>
+          </div>
+        </button>
+        <button
+          class="list-group-item list-group-item-action ${currentRole === 'Previewer'
+            ? 'active'
+            : ''}"
+          type="submit"
+          name="course_role"
+          value="Previewer"
+        >
+          <div class="text-wrap">
+            <h6>Previewer</h6>
+            <p class="small">
+              Can see all questions, course instances, and assessments. Can see but not close
+              issues. Cannot see any code or configuration files.
+            </p>
+          </div>
+        </button>
+        <button
+          class="list-group-item list-group-item-action ${currentRole === 'Viewer' ? 'active' : ''}"
+          type="submit"
+          name="course_role"
+          value="Viewer"
+        >
+          <div class="text-wrap">
+            <h6>Viewer</h6>
+            <p class="small">
+              Can see all questions, course instances, and assessments. Can see but not close
+              issues. Can see and download but not edit all code and configuration files.
+            </p>
+          </div>
+        </button>
+        <button
+          class="list-group-item list-group-item-action ${currentRole === 'Editor' ? 'active' : ''}"
+          type="submit"
+          name="course_role"
+          value="Editor"
+        >
+          <div class="text-wrap">
+            <h6>Editor</h6>
+            <p class="small">
+              Can see all questions, course instances, and assessments. Can see and close issues.
+              Can see, download, and edit all code and configuration files. Can sync course files to
+              and from the GitHub repository.
+            </p>
+          </div>
+        </button>
+        <button
+          class="list-group-item list-group-item-action ${currentRole === 'Owner' ? 'active' : ''}"
+          type="submit"
+          name="course_role"
+          value="Owner"
+        >
+          <div class="text-wrap">
+            <h6>Owner</h6>
+            <p class="small">
+              Can see all questions, course instances, and assessments. Can see and close issues.
+              Can see, download, and edit all code and configuration files. Can sync course files to
+              and from the GitHub repository. Can add and remove course staff and can change access
+              roles.
+            </p>
+          </div>
+        </button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <div class="btn-group btn-group-sm" role="group">
+      <button
+        id="courseContentDropdown-${courseUser.user.user_id}"
+        type="button"
+        class="btn btn-sm btn-outline-primary dropdown-toggle"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-custom-class="popover-no-padding"
+        data-bs-content="${escapeHtml(popoverContent)}"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        ${courseUser.course_permission.course_role}
+      </button>
     </div>
   `;
 }
