@@ -3,10 +3,10 @@ import { z } from 'zod';
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Modal } from '../../components/Modal.html.js';
-import { Navbar } from '../../components/Navbar.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Modal } from '../../components/Modal.js';
+import { Navbar } from '../../components/Navbar.js';
+import { PageLayout } from '../../components/PageLayout.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -31,7 +31,7 @@ export function Enroll({
       type: 'plain',
       page: 'enroll',
     },
-    headContent: [compiledScriptTag('enrollClient.ts')],
+    headContent: compiledScriptTag('enrollClient.ts'),
     preContent: html`
       ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
       ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
@@ -41,57 +41,59 @@ export function Enroll({
         <div class="card-header bg-primary text-white">
           <h1>Courses</h1>
         </div>
-        <table class="table table-sm table-hover table-striped" aria-label="Courses">
-          <tbody>
-            ${courseInstances.map((course_instance) => {
-              return html`
-                <tr>
-                  <td class="align-middle">${course_instance.label}</td>
-                  ${course_instance.instructor_access
-                    ? html`
-                        <td class="align-middle text-center" colspan="2">
-                          <span class="badge text-bg-info">instructor access</span>
-                        </td>
-                      `
-                    : html`
-                        <td>
-                          ${!course_instance.enrolled
-                            ? html`
-                                <button
-                                  type="button"
-                                  class="btn btn-sm btn-info"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#add-course-modal"
-                                  data-course-instance-id="${course_instance.course_instance_id}"
-                                  data-course-instance-short-label="${course_instance.short_label}"
-                                >
-                                  Add course
-                                </button>
-                              `
-                            : ''}
-                        </td>
-                        <td>
-                          ${course_instance.enrolled
-                            ? html`
-                                <button
-                                  type="button"
-                                  class="btn btn-sm btn-danger"
-                                  data-bs-toggle="modal"
-                                  data-bs-target="#remove-course-modal"
-                                  data-course-instance-id="${course_instance.course_instance_id}"
-                                  data-course-instance-short-label="${course_instance.short_label}"
-                                >
-                                  Remove course
-                                </button>
-                              `
-                            : ''}
-                        </td>
-                      `}
-                </tr>
-              `;
-            })}
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover table-striped" aria-label="Courses">
+            <tbody>
+              ${courseInstances.map((course_instance) => {
+                return html`
+                  <tr>
+                    <td class="align-middle">${course_instance.label}</td>
+                    ${course_instance.instructor_access
+                      ? html`
+                          <td class="align-middle text-center" colspan="2">
+                            <span class="badge text-bg-info">instructor access</span>
+                          </td>
+                        `
+                      : html`
+                          <td>
+                            ${!course_instance.enrolled
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-info"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#add-course-modal"
+                                    data-course-instance-id="${course_instance.course_instance_id}"
+                                    data-course-instance-short-label="${course_instance.short_label}"
+                                  >
+                                    Add course
+                                  </button>
+                                `
+                              : ''}
+                          </td>
+                          <td>
+                            ${course_instance.enrolled
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-sm btn-danger"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#remove-course-modal"
+                                    data-course-instance-id="${course_instance.course_instance_id}"
+                                    data-course-instance-short-label="${course_instance.short_label}"
+                                  >
+                                    Remove course
+                                  </button>
+                                `
+                              : ''}
+                          </td>
+                        `}
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     `,
   });

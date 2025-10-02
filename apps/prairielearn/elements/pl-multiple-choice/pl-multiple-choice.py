@@ -38,7 +38,7 @@ class AnswerTuple(NamedTuple):
     correct: bool
     html: str
     feedback: str | None
-    score: float
+    score: float | None
 
 
 SCORE_INCORRECT_DEFAULT = 0.0
@@ -83,18 +83,14 @@ def categorize_options(
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, "feedback", FEEDBACK_DEFAULT)
 
-            default_score = (
-                SCORE_CORRECT_DEFAULT if correct else SCORE_INCORRECT_DEFAULT
-            )
-            score = pl.get_float_attrib(child, "score", default_score)
+            score = pl.get_float_attrib(child, "score", None)
 
-            if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
+            if score is not None and not (
+                SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT
+            ):
                 raise ValueError(
                     f"Score {score} is invalid, must be in the range [0.0, 1.0]."
                 )
-
-            if correct and score != SCORE_CORRECT_DEFAULT:
-                raise ValueError("Correct answers must give full credit.")
 
             answer_tuple = AnswerTuple(
                 next(index_counter), correct, child_html, child_feedback, score
@@ -139,7 +135,7 @@ def categorize_options(
                     correct=True,
                     html=text,
                     feedback=None,
-                    score=SCORE_CORRECT_DEFAULT,
+                    score=None,
                 )
             )
 
@@ -150,7 +146,7 @@ def categorize_options(
                     correct=False,
                     html=text,
                     feedback=None,
-                    score=SCORE_INCORRECT_DEFAULT,
+                    score=None,
                 )
             )
 
@@ -218,6 +214,11 @@ def prepare_answers_to_display(
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
+    if aota is AotaNotaType.CORRECT and nota is AotaNotaType.CORRECT:
+        raise ValueError(
+            'pl-multiple-choice element cannot have both "all-of-the-above" and "none-of-the-above" set to "correct"'
+        )
+
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
         raise ValueError(
@@ -230,23 +231,21 @@ def prepare_answers_to_display(
             'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
         )
 
-    if len_correct == 0:
-        # If no correct option is provided, 'None of the above' will always
-        # be correct, and 'All of the above' always incorrect
-        if nota is AotaNotaType.RANDOM:
-            nota = AotaNotaType.CORRECT
+    # If no correct option is provided, a random 'None of the above' will be
+    # treated as correct
+    if len_correct == 0 and nota is AotaNotaType.RANDOM:
+        nota = AotaNotaType.CORRECT
 
-        if aota is AotaNotaType.RANDOM:
-            aota = AotaNotaType.INCORRECT
+    # If no incorrect option is provided, a random 'All of the above' will be
+    # treated as correct
+    if len_incorrect == 0 and aota is AotaNotaType.RANDOM:
+        aota = AotaNotaType.CORRECT
 
-    if len_incorrect == 0:
-        # 'All of the above' will always be correct when no incorrect option is
-        # provided, while still never both True
-        if aota is AotaNotaType.RANDOM:
-            aota = AotaNotaType.CORRECT
-
-        if nota is AotaNotaType.RANDOM:
-            nota = AotaNotaType.INCORRECT
+    # 'All of the above' and 'None of the above' cannot both be correct.
+    if aota is AotaNotaType.CORRECT and nota is not AotaNotaType.FALSE:
+        nota = AotaNotaType.INCORRECT
+    if nota is AotaNotaType.CORRECT and aota is not AotaNotaType.FALSE:
+        aota = AotaNotaType.INCORRECT
 
     # 1. Pick the choice(s) to display
     # determine if user provides number-answers
@@ -264,7 +263,7 @@ def prepare_answers_to_display(
     expected_num_answers = number_answers
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
-        # min number if 'All of the above' is correct
+        # max number if 'All of the above' is correct
         number_answers = min(len_correct, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
@@ -272,18 +271,22 @@ def prepare_answers_to_display(
                 f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
             )
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
-        # if nota correct
+        # max number if 'None of the above' is correct
         number_answers = min(len_incorrect, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise ValueError(
                 f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
             )
-    # this is the case for
-    # - 'All of the above' is incorrect
-    # - 'None of the above' is incorrect
-    # - nota and aota disabled
-    number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
+    elif aota is not AotaNotaType.CORRECT:
+        # 'None of the above' does not exist or is not correct, so:
+        # - If 'All of the above' is correct, we rely on the limits set by the
+        #   previous conditional.
+        # - If 'All of the above' is incorrect or not used, we limit ourselves
+        #   to one correct answer and as many incorrect answers as needed.
+        # - If 'All of the above' is random, we choose the lower bound, so that
+        #   the number of answers is stable regardless of the random choice.
+        number_answers = min(1 + len_incorrect, number_answers)
 
     if nota is AotaNotaType.RANDOM or aota is AotaNotaType.RANDOM:
         # Either 'None of the above' or 'All of the above' is correct
@@ -310,9 +313,6 @@ def prepare_answers_to_display(
         number_correct = 0
         number_incorrect = number_answers
     else:
-        # PROOF: by the above probability, if len_correct == 0, then nota_correct
-        # conversely; if not nota_correct, then len_correct != 0. Since len_correct
-        # is none negative, this means len_correct >= 1.
         number_correct = 1
         number_incorrect = max(0, number_answers - number_correct)
 
@@ -326,6 +326,13 @@ def prepare_answers_to_display(
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
+
+    # If 'All of the above' is correct, set all other answers to incorrect.
+    if aota is AotaNotaType.CORRECT:
+        sampled_answers = [
+            AnswerTuple(a.idx, False, a.html, a.feedback, a.score)
+            for a in sampled_answers
+        ]
 
     # 3. Sort sampled choices based on user preference.
     if order_type is OrderType.FIXED:
@@ -344,40 +351,42 @@ def prepare_answers_to_display(
     # Add 'All of the above' option after shuffling
     if aota is not AotaNotaType.FALSE:
         aota_text = "All of these" if use_inline_display else "All of the above"
-        aota_default_score = (
-            SCORE_CORRECT_DEFAULT
-            if aota is AotaNotaType.CORRECT
-            else SCORE_INCORRECT_DEFAULT
-        )
         sampled_answers.append(
             AnswerTuple(
                 len_total,
                 aota is AotaNotaType.CORRECT,
                 aota_text,
                 aota_feedback,
-                aota_default_score,
+                None,
             )
         )
 
     # Add 'None of the above' option after shuffling
     if nota is not AotaNotaType.FALSE:
         nota_text = "None of these" if use_inline_display else "None of the above"
-        nota_default_score = (
-            SCORE_CORRECT_DEFAULT
-            if nota is AotaNotaType.CORRECT
-            else SCORE_INCORRECT_DEFAULT
-        )
         sampled_answers.append(
             AnswerTuple(
                 len_total + 1,
                 nota is AotaNotaType.CORRECT,
                 nota_text,
                 nota_feedback,
-                nota_default_score,
+                None,
             )
         )
 
-    return sampled_answers
+    # Set the score for each answer that does not have an explicit score.
+    return [
+        AnswerTuple(
+            a.idx,
+            a.correct,
+            a.html,
+            a.feedback,
+            a.score
+            if a.score is not None
+            else (SCORE_CORRECT_DEFAULT if a.correct else SCORE_INCORRECT_DEFAULT),
+        )
+        for a in sampled_answers
+    ]
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -461,8 +470,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         display_type=get_display_type(element),
     )
 
-    # Write to data. Because 'All of the above' is below all the correct choice(s) when it's
-    # true, the variable correct_answer will save it as correct, and overwriting previous choice(s).
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None

@@ -5,7 +5,7 @@ SELECT
   q.title,
   q.qid,
   q.id AS question_id,
-  admin_assessment_question_number (aq.id) as number,
+  admin_assessment_question_number (aq.id) AS number,
   ai.client_fingerprint_id_change_count,
   iq.some_submission,
   iq.some_perfect_submission,
@@ -50,10 +50,6 @@ WHERE
 -- BLOCK select_instance_questions
 SELECT
   iq.*,
-  -- Convert modified_at to a text representation suitable for
-  -- PostgreSQL so it can be properly interpreted when a grade
-  -- update POST is received back.
-  CAST(iq.modified_at AS TEXT) AS modified_at,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
   z.id AS zone_id,
   z.title AS zone_title,
@@ -63,7 +59,7 @@ SELECT
   to_jsonb(aq) AS assessment_question,
   qo.row_order,
   qo.question_number,
-  admin_assessment_question_number (aq.id) as instructor_question_number,
+  admin_assessment_question_number (aq.id) AS instructor_question_number,
   z.max_points AS zone_max_points,
   (z.max_points IS NOT NULL) AS zone_has_max_points,
   z.best_questions AS zone_best_questions,

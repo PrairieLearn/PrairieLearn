@@ -1,7 +1,7 @@
 import { formatDateYMD } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import type { NewsItem } from '../../lib/db-types.js';
 
 export function NewsItem({
@@ -54,9 +54,11 @@ export function NewsItem({
       </article>
 
       <aside>
-        <p class="text-right small border-top mt-5 pt-3">
+        <p class="text-end small border-top mt-5 pt-3">
           Want to help make PrairieLearn better? It's open source and contributions are welcome
-          <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a>!
+          <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank" rel="noreferrer"
+            >on GitHub</a
+          >!
         </p>
       </aside>
     `,

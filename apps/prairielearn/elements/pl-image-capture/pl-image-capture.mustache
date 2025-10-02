@@ -1,0 +1,318 @@
+<script>
+$(function() {
+    new window.PLImageCapture("{{uuid}}");
+});
+</script>
+
+<div 
+  id="image-capture-{{uuid}}" 
+  class="image-capture-card card mb-3 bg-light" 
+  data-options="{{image_capture_options_json}}" 
+  data-image-capture-uuid="{{uuid}}"
+>
+  <div class="card-header">
+    Image capture
+  </div>
+  <div 
+    class="js-capture-preview-container"  
+  >
+    {{#editable}}
+    <input
+      class="js-hidden-capture-input"
+      type="hidden"
+      name="{{file_name}}"
+      data-skip-unload-check="true"
+    />
+    <input
+      class="js-hidden-original-capture-input"
+      type="hidden"
+      name="{{file_name}}"
+      data-skip-unload-check="true"
+      disabled
+    />
+    <input 
+      class="js-hidden-capture-changed-flag"
+      type="hidden"
+      name="{{file_name}}_changed"
+      value="false"
+      disabled
+    />
+    {{/editable}}
+    <div class="position-relative">
+      <div class="js-uploaded-image-container position-relative">
+        <div
+          class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center"
+        >
+          <div class="spinning-wheel spinner-border">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+      </div>
+      {{^editable}}
+      <div class="js-zoom-buttons position-absolute top-0 end-0 m-2 d-none">
+        <button 
+          type="button"
+          class="js-enhance-handwriting-button btn btn-light border"
+          title="Toggle handwriting enhancement"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Toggle handwriting enhancement"
+        >
+          <i class="bi bi-magic"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-viewer-rotate-clockwise-button btn btn-light border"
+          title="Rotate clockwise"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Rotate clockwise"
+        >
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-zoom-in-button btn btn-light border"
+          title="Zoom in"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          aria-label="Zoom in"
+        >
+          <i class="bi bi-zoom-in"></i>
+        </button>
+        <button 
+          type="button" 
+          class="js-zoom-out-button btn btn-light border"
+          title="Zoom out"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          aria-label="Zoom out"
+        >
+          <i class="bi bi-zoom-out"></i>
+        </button>
+      </div>
+      {{/editable}}
+    </div>
+    {{#editable}}
+    <div class="d-flex gap-2 flex-wrap p-2 justify-content-end border-top">
+      <button
+        type="button"
+        class="js-crop-rotate-button btn btn-secondary btn-sm d-none"
+      >
+        <i class="bi bi-crop me-1"></i>
+        Crop/rotate
+      </button>
+      <div class="js-capture-buttons-horizontal d-flex gap-2 flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="js-capture-with-local-camera-button btn btn-info btn-sm"
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          <span>Use webcam</span>
+        </button>
+        {{#mobile_capture_enabled}}
+        <button 
+          type="button" 
+          class="js-capture-with-mobile-device-button btn btn-info btn-sm"
+        >
+          <i class="bi bi-qr-code-scan me-1"></i>
+          <span>Use phone</span>
+        </button>
+        {{/mobile_capture_enabled}}
+      </div>
+      {{#mobile_capture_enabled}}
+        <div class="js-capture-buttons-dropdown dropdown d-none">
+          <button 
+            id="retake-dropdown-button" 
+            type="button" 
+            class="btn btn-sm btn-info dropdown-toggle" 
+            aria-expanded="false" 
+            data-bs-toggle="dropdown" 
+            data-bs-auto-close="outside"
+          >
+            Retake...
+          </button>
+          <ul class="dropdown-menu" aria-labelledby="retake-dropdown-button">
+            <li>
+              <button
+                type="button"
+                class="js-capture-with-local-camera-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-camera-fill me-1"></i>
+                <span>Use webcam</span>
+              </button>
+            </li>
+            <li>
+              <button 
+                type="button" 
+                class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
+              >
+                <i class="bi bi-qr-code-scan me-1"></i>
+                <span>Use phone</span>
+              </button>
+            </li>
+          </ul>
+        </div>
+      {{/mobile_capture_enabled}}
+      <button
+        type="button"
+        class="js-delete-captured-image-button btn btn-sm btn-danger d-none"
+        data-bs-toggle="popover"
+        data-bs-container="body"
+        data-bs-html="true"
+        data-bs-placement="auto"
+        data-bs-title="Confirm deletion"
+        data-bs-content='
+        <div class="w-100">
+          <p class="text-muted">
+            Are you sure? This will delete your image permanently.
+          </p>
+          <div class="d-flex justify-content-end gap-2">
+            <button id="confirm-delete-{{uuid}}" class="btn btn-danger btn-sm" data-bs-dismiss="popover">Delete</button>
+            <button class="btn btn-secondary btn-sm" data-bs-dismiss="popover">Cancel</button>
+          </div>
+        </div>
+        '
+      >
+        <i class="bi bi-trash-fill me-1"></i>
+        <span>Delete</span>
+      </button>
+    </div>
+  </div>
+  {{/editable}}
+  {{#editable}}
+  <div class="js-local-camera-capture-container d-none flex-column">
+    <div class="position-relative border-bottom">
+      <video
+        class="js-local-camera-video d-block w-100 bg-body-secondary"
+        autoplay
+        playsinline
+      ></video>
+      <div
+        class="js-local-camera-error-message position-absolute top-50 start-50 translate-middle text-center text-muted px-2 d-none"
+        style="pointer-events: none;"
+      >
+      </div>
+    </div>
+    <div class="d-flex p-2 gap-2 justify-content-end align-items-center flex-wrap">
+      <p class="js-local-camera-instructions text-muted my-0 me-auto small">
+        Make sure your photo is clear, well-lit, and shows all your work legibly. 
+        <br/>
+        Later, you can crop or rotate the image as needed.
+      </p>
+      <div class="d-flex align-items-center gap-2">
+        <button 
+          type="button"
+          class="js-cancel-local-camera-button btn btn-secondary btn-sm"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button"
+          class="js-capture-local-camera-image-button btn btn-info btn-sm" 
+          disabled
+        >
+          <i class="bi bi-camera-fill me-1"></i>
+          Capture image
+        </button>
+      </div>
+      <canvas
+        class="js-local-camera-image-preview w-100 bg-body-secondary border-bottom d-none"
+      >
+    </div>
+  </div>
+  <div class="js-crop-rotate-container d-none">
+    <div class="js-cropper-container">
+      <img class="js-cropper-base-image w-100" alt="Captured image" />
+    </div>
+    <div class="d-flex align-items-center gap-2 p-2 flex-wrap justify-content-end">
+      <div class="d-flex align-items-center gap-2">
+        <label for="rotation-slider-{{uuid}}" class="text-muted text-nowrap mb-0 me-1 small">
+          Rotation: 
+        </label>
+        <input 
+          id="rotation-slider-{{uuid}}"
+          type="range" 
+          class="js-rotation-slider form-range mx-2" 
+          style="max-width: 200px; min-width: 100px;" 
+          min="-45" 
+          max="45" 
+          step="1" 
+          value="0"
+        />  
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <button 
+          type="button"
+          class="js-rotate-clockwise-button btn btn-light border btn-sm"
+          title="Rotate clockwise"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          aria-label="Rotate clockwise"
+        >
+          <i class="bi bi-arrow-clockwise"></i>
+        </button>
+        <button 
+          type="button"
+          class="js-rotate-counterclockwise-button btn btn-light border btn-sm"
+          title="Rotate counterclockwise"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Rotate counterclockwise"
+        >
+          <i class="bi bi-arrow-counterclockwise"></i>
+        </button>
+
+        <button 
+          type="button"
+          class="js-flip-horizontal-button btn btn-light border btn-sm"
+          title="Flip horizontally"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Flip horizontally"
+        >
+          <i class="bi bi-symmetry-vertical"></i>
+        </button>
+        <button 
+          type="button"
+          class="js-flip-vertical-button btn btn-light border btn-sm"
+          title="Flip vertically"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top"
+          aria-label="Flip vertically"
+        >
+          <i class="bi bi-symmetry-horizontal"></i>
+        </button>
+
+        <button 
+          type="button" 
+          class="js-crop-rotate-reset-button btn btn-danger btn-sm"
+          title="Reset crop/rotation"
+          data-bs-toggle="tooltip"
+          data-bs-placement="top" 
+          data-bs-trigger="hover"
+          aria-label="Reset crop/rotation"
+        >
+          Reset
+        </button>
+      </div>
+      <div class="d-flex align-items-center gap-2 justify-content-end flex-wrap">
+        <button 
+          type="button"
+          class="js-cancel-crop-rotate-button btn btn-secondary btn-sm"
+        >
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          class="js-apply-changes-button btn btn-info btn-sm"
+        >
+          <i class="bi bi-check2 me-1"></i>
+          Apply changes
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  {{/editable}}
+</div>

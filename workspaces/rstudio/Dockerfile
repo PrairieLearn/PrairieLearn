@@ -44,8 +44,8 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.5.0
-ARG CACHEBUST=2025-05-15-14-16-41
+FROM rocker/rstudio:4.5.1
+ARG CACHEBUST=2025-09-15-14-16-01
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.

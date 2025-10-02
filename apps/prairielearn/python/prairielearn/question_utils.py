@@ -5,6 +5,7 @@ from prairielearn import ...
 ```
 """
 
+import base64
 import math
 from typing import Any, Literal, TypedDict
 
@@ -203,17 +204,35 @@ def add_files_format_error(data: QuestionData, error: str) -> None:
 def add_submitted_file(
     data: QuestionData,
     file_name: str,
-    base64_contents: str,
+    base64_contents: str | None = None,
     *,
+    raw_contents: str | bytes | bytearray | None = None,
     mimetype: str | None = None,
 ) -> None:
     """Add a submitted file to the data dictionary.
+
+    Raises:
+        ValueError: If neither `base64_contents` nor `raw_contents` is provided.
 
     Examples:
         >>> add_submitted_file(data, "foo.txt", "base64-contents", mimetype="text/plain")
         >>> data["submitted_answers"]
         {"_files": [{"name": "foo.txt", "contents": "base64-contents", "mimetype": "text/plain"}]}
+        >>> add_submitted_file(data, "bar.txt", raw_contents="raw contents")
+        >>> data["submitted_answers"]
+        {"_files": [{"name": "foo.txt", "contents": "base64-contents", "mimetype": "text/plain"},
+                    {"name": "bar.txt", "contents": "cmF3IGNvbnRlbnRz"}]}
     """
+    if base64_contents is None:
+        # If raw_contents is None, raise an error
+        if raw_contents is None:
+            raise ValueError(
+                "No content provided for file. Either base64_contents or raw_contents must be provided."
+            )
+        # If raw_contents is provided, encode it to base64
+        if isinstance(raw_contents, str):
+            raw_contents = raw_contents.encode("utf-8")
+        base64_contents = base64.b64encode(raw_contents).decode("utf-8")
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):

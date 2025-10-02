@@ -5,9 +5,12 @@
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
+    "dorzey.vscode-sqlfluff",
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
-    "tamasfe.even-better-toml"
+    "supabase.postgrestools",
+    "tamasfe.even-better-toml",
+    "vitest.explorer"
   ]
 }

@@ -22,27 +22,54 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
+## Format specification
+
+| Property                                                          | Type    | Description                                                                                                                               |
+| ----------------------------------------------------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `uuid`                                                            | string  | [Unique identifier](../uuid.md). (Required; no default)                                                                                   |
+| [`type`](#assessment-types)                                       | string  | Either `"Homework"` or `"Exam"`. (Required; no default)                                                                                   |
+| `title`                                                           | string  | The title of the assessment (e.g., `"Derivatives and integrals"`). (Required; no default)                                                 |
+| `set`                                                             | string  | Which assessment set this belongs to (e.g., `"Quiz"`, `"Practice Quiz"`). (Required; no default)                                          |
+| [`number`](#assessment-naming)                                    | string  | The number of the assessment within the set (e.g., `"1"`, `"2B"`). (Required; no default)                                                 |
+| [`module`](#grouping-assessments-by-modules)                      | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (Optional; default: `"Default"`)                                          |
+| [`allowAccess`](../accessControl/index.md)                        | array   | List of access rules. (Optional; default: no student access)                                                                              |
+| [`zones`](#question-specification)                                | array   | Specification of zones and questions. (Optional; default: none)                                                                           |
+| `text`                                                            | string  | HTML text shown on the assessment overview page. (Optional; default: none)                                                                |
+| `multipleInstance`                                                | boolean | Whether to allow students to create whole new attempts at the entire assessment. (Optional; default: `false`)                             |
+| `maxPoints`                                                       | number  | The maximum points that can be earned. (Optional; default: sum of zone max points)                                                        |
+| [`maxBonusPoints`](#assessment-points)                            | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (Optional; default: 0)                                     |
+| [`shuffleQuestions`](#question-order-randomization)               | boolean | Whether to randomize the question order. (Optional; default: `false` for Homework-type assessments, `true` for Exam-type assessments)     |
+| `autoClose`                                                       | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (Optional; default: `true`)                       |
+| `allowIssueReporting`                                             | boolean | Whether to allow students to report question issues. (Optional; default: `true`)                                                          |
+| `allowPersonalNotes`                                              | boolean | Whether to allow students to add personal notes. (Optional; default: `true`)                                                              |
+| `constantQuestionValue`                                           | boolean | Whether to disable the question value boost on correct solutions (Homework only). (Optional; default: `false`)                            |
+| `allowRealTimeGrading`                                            | boolean | Whether to grade questions in real time (Exams only). (Optional; default: `true`)                                                         |
+| `requireHonorCode`                                                | boolean | Whether to require students to agree to the honor code (Exams only). (Optional; default: `true`)                                          |
+| `honorCode`                                                       | string  | Custom text to be specified for the honor code (Exams only). (Optional; default: none)                                                    |
+| `advanceScorePerc`                                                | number  | Minimum score percentage require to advance to the next question (Exams only). (Optional; default: 0)                                     |
+| `gradeRateMinutes`                                                | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (Optional; default: 0)                               |
+| [`groupWork`](#enabling-group-work-for-collaborative-assessments) | boolean | Whether the assessment will support group work. (Optional; default: `false`)                                                              |
+| `groupMaxSize`                                                    | number  | Maximum number of students in a group. (Optional; default: none)                                                                          |
+| `groupMinSize`                                                    | number  | Minimum number of students in a group. (Optional; default: none)                                                                          |
+| [`groupRoles`](#enabling-custom-group-roles)                      | array   | Array of custom user roles in a group. (Optional; default: none)                                                                          |
+| `canSubmit`                                                       | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (Optional; default: none) |
+| `canView`                                                         | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (Optional; default: none)   |
+| `studentGroupCreate`                                              | boolean | Whether students can create groups. (Optional; default: `false`)                                                                          |
+| `studentGroupJoin`                                                | boolean | Whether students can join groups. (Optional; default: `false`)                                                                            |
+| `studentGroupLeave`                                               | boolean | Whether students can leave groups. (Optional; default: `false`)                                                                           |
+| `studentGroupChooseName`                                          | boolean | Whether students can choose their own group name. (Optional; default: `true`)                                                             |
+
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
-
-## Assessment naming
-
-Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Additionally, each assessment has a `title`. Depending on the context, assessments are referred to by either a _short name_ or a _long name_. The format of these is:
-
-- Short name = `Set Number` (e.g., `Quiz 2` in the above example).
-
-- Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
-
-You can select a set from the list of [standardized assessment sets](../course/index.md#standardized-assessment-sets) or create your [own](../course/index.md#adding-your-own-assessment-sets).
-
-## Assessment modules
-
-Instructors may want to group their assessments by course modules (topics, sections or chapters in a course). When using `"groupAssessmentsBy" : "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above. If the property `module` is omitted, by default the assessment will have `"module" : "Default"`.
-
-For more information about how to create your own assessment modules, see [Course configuration](../course/index.md#assessment-modules).
 
 ## Assessment types
 
-Each assessment has a `type` set to either `Homework` or `Exam`, as listed below.
+Each assessment has a `type`, which must be either `"Homework"` or `"Exam"`.
+
+Homeworks are designed for formative learning and allow students to infinitely retry different random variants of questions. A persistent student can eventually get 100%.
+
+Exams, on the other hand, are designed for measuring student knowledge and give each student just one variant of each question, with limited retries. Students will typically not get 100%.
+
+A detailed comparison is shown below.
 
 |                          | `Homework`                                                                                          | `Exam`                                                                                     |
 | ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
@@ -50,7 +77,7 @@ Each assessment has a `type` set to either `Homework` or `Exam`, as listed below
 | **Randomized questions** | [Multiple variants (if question supports them)](#limiting-the-number-of-attempts-for-each-question) | Each student gets a single variant                                                         |
 | **Number of attempts**   | Unlimited attempts                                                                                  | [Limited attempts, possibly with decreasing points](#question-points-for-exam-assessments) |
 | **Gamification**         | [Rewards repeated correct answers](#question-points-for-homework-assessments)                       | Incentivizes a correct answer as early as possible                                         |
-| **Question order**       | [Fixed order by default](#changing-question-order-randomization)                                    | [Shuffled order within zones by default](#changing-question-order-randomization)           |
+| **Question order**       | [Fixed order by default](#question-order-randomization)                                             | [Shuffled order within zones by default](#question-order-randomization)                    |
 | **Time limits**          | Not supported                                                                                       | [Supported](../accessControl/index.md#time-limits)                                         |
 | **Passwords**            | Not supported                                                                                       | [Supported](../accessControl/index.md#passwords)                                           |
 | **Multiple instances**   | Not supported                                                                                       | [Supported](#multiple-instance-versus-single-instance-assessments)                         |
@@ -59,11 +86,34 @@ Each assessment has a `type` set to either `Homework` or `Exam`, as listed below
 | **Honor pledge**         | Not supported                                                                                       | [Enabled by default](#honor-code)                                                          |
 | **Real-time grading**    | Always enabled                                                                                      | [Can be disabled](#disabling-real-time-grading)                                            |
 
-## Changing question-order randomization
+## Assessment naming
 
-To make `Homework` assessments randomize the question order for each student, set the `"shuffleQuestions": true` option in the `infoAssessment.json` file. This will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
+Each assessment has a `title` describing its topic. Additionally, each assessment belongs to a `set` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the assessment has a `number`. Depending on the context, assessments are referred to by either an _abbreviation_, a _short name_ or a _long name_. The format of these is:
 
-On `Exam` assessments, questions are randomized by default, but this can be disabled by setting `"shuffleQuestions": false` in the `infoAssessment.json` file.
+- Abbreviation = `[Set abbreviation][Number]` (e.g., `Q2` to mean the second quiz).
+- Short name = `[Set] [Number]` (e.g., `Quiz 2`).
+- Long name = `[Set] [Number]: [Title]` (e.g., `Quiz 2: Coordinates and Vectors`).
+
+You can select a set name from the list of [standardized assessment sets](../course/index.md#standardized-assessment-sets) or [create your own](../course/index.md#adding-your-own-assessment-sets).
+
+The `type` of an assessment does not have to correspond to the `set` it is in, but these are generally compatible. For example, `"type": "Homework"` assessments normally have `"set": "Homework"` or `"set": "Machine Problem"`. On the other hand, `"type": "Exam"` assessments normally have `"set": "Quiz"`, `"set": "Exam"`, or similar.
+
+## Grouping assessments by modules
+
+Instructors may want to group their assessments by course modules (topics, sections, or chapters in a course). When using `"groupAssessmentsBy": "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above. If the property `module` is omitted, by default the assessment will have `"module": "Default"`.
+
+For more information about how to create your own assessment modules, see the [course configuration](../course/index.md#assessment-modules) documentation.
+
+## Question order randomization
+
+The `shuffleQuestions` parameter controls whether questions on an assessment appear in the same order for all students, or whether this order is randomized for each student. The default value depends on the `type` of the assessment:
+
+| Assessment type | `shuffleQuestions` default | Meaning                                                                                                                                                                                                                        |
+| --------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `Homework`      | `false`                    | Homeworks default to using the same question order as in `infoAssessment.json` for all students.                                                                                                                               |
+| `Exam`          | `true`                     | Exams default to randomizing the question order individually for each student. This randomization happens within each zone, but the zones themselves always appear in the same order and there is no cross-zone randomization. |
+
+If a `Homework` is set to shuffle the question order, it will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say "I don't know how to do #427" and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
 ## Question specification
 
@@ -105,15 +155,61 @@ An assessment is broken down in to a list of zones, like this:
 }
 ```
 
+| Zone Property          | Type    | Description                                                                                                                                           |
+| ---------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`                | string  | The title of the zone. (Optional; default: none)                                                                                                      |
+| `questions`            | array   | The list of slots for questions and question alternatives within the zone. (Required; no default)                                                     |
+| `numberChoose`         | integer | Number of questions to select for each student from this zone. (Optional; default: select all)                                                        |
+| `maxPoints`            | number  | Limit on the number of points that can be earned from this zone. (Optional; default: sum of question max points)                                      |
+| `bestQuestions`        | integer | Only this many questions in the zone will count towards the total points (highest-point questions will count). (Optional; default: use all questions) |
+| `allowRealTimeGrading` | boolean | Whether to grade questions in this zone in real time (Exams only). (Optional; default: `true`)                                                        |
+| `comment`              | string  | Free‑form comment for the zone. (Optional; default: none)                                                                                             |
+
+Zone specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
+
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
 
-- Within each zone the question order is randomized based on [the assessment type and the `shuffleQuestions` option](#changing-question-order-randomization).
-
-- An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
+- Within each zone the question order is randomized based on [the assessment type and the `shuffleQuestions` option](#question-order-randomization).
 
 - If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
 
 - If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
+
+## Question alternatives
+
+Each zone has a list of `questions`. An entry in this list can be a single question:
+
+```json
+{ "id": "hardQV1", "points": 10 }
+```
+
+Or an entry can contain a _question alternative list_:
+
+```json
+{
+  "numberChoose": 1,
+  "points": 5,
+  "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
+}
+```
+
+If a question alternative list is specified, some of these questions are first selected at random for each student, and then random variants of those questions are generated. Question alternatives inherit the points of their parent group, if specified.
+
+| Slot property          | Type            | Description                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `autoPoints`           | number or array | The number of points for the autograding portion of this question (or for each question in this alternative list if `alternatives` is set). Can be a number (e.g., `10`) or, for Exam-type assessments only, can be a declining list of points (e.g., `[10, 8, 4]`) for partial credit. (Optional; default: zero)                                                |
+| `manualPoints`         | number          | The number of points for the manual grading portion of this question (or for each question in this alternative list if `alternatives` is set). (Optional; default: zero)                                                                                                                                                                                         |
+| `points`               | number or array | The number of points for this question (or for each question in this alternative list if `alternatives` is set). Can be a number (e.g., `10`) or, for Exam-type assessments only, can be a declining list of points (e.g., `[10, 8, 4]`) for partial credit. (Required if `autoPoints` and `manualPoints` are not set, can't be specified otherwise; no default) |
+| `maxAutoPoints`        | number          | The maximum points available for the autograding portion of this question (or for each question in this alternative list if `alternatives` is set) on a Homework that allows multiple attempts for more points. May only be specified in Homework-type assessments, and only if `autoPoints` is specified. (Optional; default: same as `autoPoints`)             |
+| `maxPoints`            | number          | The maximum points available for this question (or for each question in this alternative list if `alternatives` is set) on a Homework that allows multiple attempts for more points. May only be specified in Homework-type assessments, and only if `points` is specified. (Optional; default: same as `points`)                                                |
+| `id`                   | string          | The question ID if this slot contains just one question (can’t be specified with `alternatives`). (Optional; default: none)                                                                                                                                                                                                                                      |
+| `alternatives`         | array           | The list of question alternatives if this slot contains multiple alternative questions (can’t be specified with `id`). (Optional; default: none)                                                                                                                                                                                                                 |
+| `numberChoose`         | integer         | If `alternatives` are specified, the number of them to select. (Optional; default `1`).                                                                                                                                                                                                                                                                          |
+| `triesPerVariant`      | integer         | The maximum number of attempts allowed for each question variant (on Homeworks). (Optional; default `1`)                                                                                                                                                                                                                                                         |
+| `allowRealTimeGrading` | boolean         | Whether to allow real-time grading for this question (Exams only). (Optional; default `true`)                                                                                                                                                                                                                                                                    |
+| `forceMaxPoints`       | boolean         | Whether to force all students to receive maximum points. See [Regrading](../regrading.md). (Optional; default `false`)                                                                                                                                                                                                                                           |
+
+Slot specification details are in the [format specification for `infoAssessment.json`](../schemas/infoAssessment.md)
 
 ## Question points for `Homework` assessments
 
@@ -150,7 +246,7 @@ A question may also set a value to `points` instead of `autoPoints` and `manualP
 
 ## Question points for `Exam` assessments
 
-Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as `allowRealTimeGrading` is true (the default). See [Question scoring details for `Exam` assessments](#question-scoring-details-for-exam-assessments) for details on the exact scoring algorithm.
+Assessments with `"type": "Exam"` are designed to test students' knowledge of course material. Students can retry questions for reduced points, so long as real-time grading is allowed (the default). See [Question scoring details for `Exam` assessments](#question-scoring-details-for-exam-assessments) for details on the exact scoring algorithm.
 
 Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](../manualGrading/index.md)).
 
@@ -250,9 +346,23 @@ As an example, suppose a student makes 4 submissions of varying degrees of corre
 
 After the four submissions above the student has achieved 6.5 points for the question, for an overall score of 65% (6.5/10). They can no longer make submission attempts to the question.
 
-## Assessment and question instances and resetting assessments
+## Assessment instances, question selection, and question order
 
-PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the _assessment instance_ for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
+PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the configuration in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student (or group of students, for group assessments), and it is this selection that is the _assessment instance_ for the student/group. There is only one copy of each assessment, but every student/group has their own assessment instance.
+
+The specific questions assigned to a particular assessment instance are chosen in three steps:
+
+1. For each entry in the zone `questions` array, either take the single question in that entry or randomly select some of the questions from the list of question alternatives to give the _selected questions_. If `numberChoose` is specified, randomly select that many questions from the list of alternatives (defaults to 1).
+
+2. For each zone, concatenate the _selected questions_ from each `questions` entry to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). If shuffling is enabled, randomly shuffle the order of the _zone questions_.
+
+3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_. This set of questions forms the _assessment instance_ for this student/group.
+
+Each zone appears in the given order in the assessment (this is not randomized for each assessment instance). Within each zone the question order is randomized per-instance for Exams, but not randomized for Homeworks (but see the [`shuffleQuestions` option](#question-order-randomization)).
+
+## Updating assessments
+
+The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
 
 **`Exam` assessment updates:** Exam assessment instances are generated when the student starts the exam, and they are never automatically deleted, regenerated, or updated, even when the original assessment is changed in some way. This is a safety mechanism to avoid having students' assessments changed during an exam. However, if you want to force the regeneration of assessment instances then you can do so by deleting assessment instances in the "Students" tab. While writing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don't do it on a production server once an assessment is underway).
 
@@ -294,19 +404,21 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
+  "studentGroupChooseName": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
 }
 ```
 
-| Attribute            | Type    | Default | Description                                        |
-| -------------------- | ------- | ------- | -------------------------------------------------- |
-| `groupWork`          | boolean | false   | Enable the group work for the assessment.          |
-| `groupMaxSize`       | integer | -       | The maximum size of a group (default: no minimum). |
-| `groupMinSize`       | integer | -       | The minimum size of a group (default: no maximum). |
-| `studentGroupCreate` | boolean | false   | Allow students to create groups.                   |
-| `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
-| `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
+| Attribute                | Type    | Default | Description                                                                                                |
+| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
+| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
+| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
+| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
+| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
+| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
@@ -515,7 +627,7 @@ In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 becau
 
     An `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
 
-For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#changing-question-order-randomization).
+For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#question-order-randomization).
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
@@ -573,35 +685,57 @@ One particular use case for disabling personal notes can be the upload of a "for
 
 PrairieLearn is designed to give students immediate feedback on their work. However, if you wish to more closely replicate a paper exam experience, you can prevent students from grading their work as they go (what we call "real-time grading").
 
-_Note that students generally expect and benefit from having immediate feedback, so this setting should only be enabled if you have a specific reason for it._
+!!! note
 
-To disable real-time grading for an assessment, add `"allowRealTimeGrading": false` to the assessment's `infoAssessment.json` file. This will hide the "Save & Grade" button on student question pages; only the "Save" button will be available. The "Grade saved answers" button on the assessment overview will also be hidden. Note that real-time grading can only be disabled for `Exam` assessments, as immediate feedback is a core part of the `Homework` experience.
+    Real-time grading cannot be disabled for `Homework` assessments, as immediate feedback is a core part of the homework experience. The instructions below only apply to `Exam` assessments.
 
-An assessment without real-time grading will not show any score information during the exam. However, if a [time limit](../accessControl/index.md#time-limits) is used then when it runs out the assessment will auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../accessControl/index.md#showinghiding-closed-assessments).
+!!! warning
 
-Disabling real-time grading changes a lot of fundamental details of how PrairieLearn is used. To account for that, the student assessment overview page displays less information about points and grading than for usual exams.
+    Students generally expect and benefit from having immediate feedback, so this setting should only be enabled if you have a specific reason for it.
 
-Here is the assessment page for a normal exam with real-time grading enabled:
+Real-time grading can be disabled for an entire assessment:
 
-![Normal assessment](assessment-grading-normal.png)
+```json title="infoAssessment.json"
+{
+  "allowRealTimeGrading": false
+}
+```
 
-Here is the assessment page for an open exam with real-time grading disabled:
+It can also be disabled for specific zones, alternative groups, or questions by adding `"allowRealTimeGrading": false` to the relevant part of the `infoAssessment.json` file. For example, the following configuration disables real-time grading for the second zone only:
 
-![Open assessment with real-time grading disabled](assessment-grading-disabled-open.png)
+```json title="infoAssessment.json"
+{
+  "zones": [
+    {
+      "questions": [
+        { "id": "q1", "points": 10 },
+        { "id": "q2", "points": 10 }
+      ]
+    },
+    {
+      "allowRealTimeGrading": false,
+      "questions": [
+        { "id": "q3", "points": 10 },
+        { "id": "q4", "points": 10 }
+      ]
+    }
+  ]
+}
+```
 
-Compared to the normal assessment, there are a number of differences:
+Disabling real-time grading changes a number of things about the student experience:
 
-- A warning explaining that real-time grading has been disabled is shown
-- Total points is listed as a number, not as an "X/Y" score
-- The percentage bar is not displayed
-- The "Available points" column has been removed
-- The "Awarded points" column has been renamed to "Points" and only shows the max points
+- Only the "Save" button will be available on questions; the "Save & Grade" button won't be shown.
+- The "Grade saved answers" button on the assessment overview will only be shown if at least some questions have real-time grading enabled, and when clicked, it will only grade those questions.
+- Score information won't be shown for questions that have real-time grading disabled.
 
-Here is the assessment page for a closed exam with real-time grading disabled:
+If a [time limit](../accessControl/index.md#time-limits) is used and runs out, the assessment will still auto-grade and show students exactly which questions they got correct/incorrect. The same revealing behavior will happen if an instructor manually closes and grades the student assessment. To prevent this, set the [`showClosedAssessment` access rule restriction](../accessControl/index.md#showinghiding-closed-assessments).
 
-![Closed assessment with real-time grading disabled](assessment-grading-disabled-closed.png)
+??? note
 
-Note that after the exam has closed and been graded, more information about points will be visible.
+    When real-time grading is disabled, submissions will still be parsed, and students will be informed of invalid submissions when they click the "Save" button. This includes any element-specific validation (e.g., checking for blank answers, or checking if numeric inputs have numeric values), as well as [question-specific custom parse functionality](../question/server.md#step-4-parse). As usual, invalid submissions do not count towards limited attempts.
+
+    Students will not be prevented from completing the assessment with invalid submissions should they choose to do so, or if they run out of time before crafting a valid submission. However, invalid submissions will not trigger any auto-grading process, and will by default cause the student to get a zero on the whole question (even if there are elements in the submission with valid answers). Manual grading is still available for these submissions.
 
 ## Limiting the number of attempts for each question
 
@@ -662,6 +796,16 @@ By default, `Exam` assessments require students to certify their identity and pl
 To disable this requirement, set `"requireHonorCode": false` as a top-level option in the `infoAssessment.json` file.
 
 The text of the honor code was based on the University of Maryland's [Honor Pledge](https://studentconduct.umd.edu/you/students/honor-pledge) and the University of Rochester's [Honor Pledge for Exams](https://www.rochester.edu/college/honesty/instructors/pledge.html). This is a "modified" honor code ([McCabe et al., 2002](https://doi.org/10.1023/A:1014893102151)), as opposed to "traditional" codes that typically also require students to report any violations of the honor code they observe.
+
+The honor code can be customized by setting `honorCode` in the `infoAssessment.json` file. This field supports Markdown syntax for formatting. This field can also accept Mustache templating to include the user's name by using `{{user_name}}`.
+
+For example:
+
+```json title="infoAssessment.json"
+{
+  "honorCode": "I, {{user_name}}, affirm that I will complete this exam with honesty and integrity."
+}
+```
 
 ## Linking to assessments
 

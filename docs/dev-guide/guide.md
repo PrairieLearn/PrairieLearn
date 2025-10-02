@@ -88,7 +88,6 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 - All pages are server-side rendered, and we try and minimize the amount of client-side JavaScript. Client-side JS should use vanilla JavaScript/TypeScript where possible, but third-party libraries may be used when appropriate.
 
 - Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For a real-world example, consider the page where users can accept the PrairieLearn terms and conditions, located at [`apps/prairielearn/src/ee/pages/terms`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms). That directory contains the following files:
-
   - [`terms.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.ts): The main entry point for the page. It runs SQL queries and renders a template.
   - [`terms.sql`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.sql): All SQL queries for the page.
   - [`terms.html.ts`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/src/ee/pages/terms/terms.html.ts): The template for the page. Exports a function that returns an HTML document.
@@ -174,6 +173,10 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database stored procedures (sprocs)
 
+!!! warning
+
+    We are migrating away from the use of [sprocs](https://neon.com/postgresql/postgresql-plpgsql/postgresql-create-procedure). Prefer writing logic in TypeScript instead.
+
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
   ```js
@@ -204,7 +207,6 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
-
   - Tables that reference the `pl_courses` table use `course_id` instead of `pl_course_id`.
   - The `users` table has a `user_id` primary key instead of `id`.
 
@@ -227,6 +229,36 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - Questions can randomize their parameters, so there are many possible variants of each question. These are stored in the `variants` table with an `instance_question_id` indicating which instance question the variant belongs to.
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
+
+??? tip "Schema and data exploration"
+
+    The [`ms-ossdata.vscode-pgsql` VSCode extension](https://marketplace.visualstudio.com/items?itemName=ms-ossdata.vscode-pgsql) can help you explore the database schema and data in your editor.
+
+    ![Setup Postgres VSCode](./postgres-vscode-setup.png)
+
+    ![Using Postgres VSCode](./postgres-vscode-select-1000.png)
+
+??? tip "Cleaning out old schemas"
+
+    The following query will remove all schemas except `public`. You can then restart the server to recreate the sprocs.
+
+    ```sql
+    DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname NOT IN ('public', 'information_schema', 'pg_catalog')
+          AND nspname NOT LIKE 'pg_toast%'
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;
+    ```
 
 ## Database schema (full data)
 
@@ -254,7 +286,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database schema modification
 
-See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
+See the [migrations documentation](./migrations/README.md).
 
 ## Database access
 
@@ -288,7 +320,7 @@ WHERE
   const question = await queryRow(sql.block_name, QuestionSchema);
   ```
 
-- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. Locking can be performed with a query like:
+- Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc.) should call a locking function when they start. Locking can be performed with a query like:
 
 ```sql
 SELECT
@@ -303,7 +335,7 @@ FOR NO KEY UPDATE;
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
   ```javascript
-  await sqldb.queryAsync(sql.insert_assessment_question, {
+  await sqldb.execute(sql.insert_assessment_question, {
     points_list: [10, 5, 1],
   });
   ```
@@ -343,7 +375,7 @@ FOR NO KEY UPDATE;
     { a: 5, b: 'foo' },
     { a: 9, b: 'bar' },
   ];
-  await sqldb.queryAsync(sql.insert_data, {
+  await sqldb.execute(sql.insert_data, {
     data: JSON.stringify(data),
   });
   ```
@@ -397,7 +429,6 @@ FOR NO KEY UPDATE;
 - We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenticated user data is stored as `res.locals.authn_user`.
 
 - The authentication flow is:
-
   1. We first redirect to a remote authentication service (e.g. SAML SSO, Google, Microsoft).
 
   2. The remote authentication service redirects back to a callback URL, e.g. `/pl/oauth2callback` for Google. These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
@@ -407,7 +438,6 @@ FOR NO KEY UPDATE;
 - Similar to unix, we distinguish between the real and effective user. The real user is stored as `res.locals.authn_user` and is the user that authenticated. The effective user is stored as `res.locals.user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
 
 - Authorization occurs at multiple levels:
-
   - The `course_instance` checks authorization based on the `authn_user`.
 
   - The `course_instance` authorization is checked against the effective `user`.
@@ -425,7 +455,7 @@ FOR NO KEY UPDATE;
     '/',
     asyncHandler(async (req, res) => {
       if (req.body.__action == 'enroll') {
-        await queryAsync(sql.enroll, {
+        await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
           user_id: res.locals.authn_user.user_id,
         });
@@ -480,12 +510,11 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.html.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.html.ts).
+- The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.tsx](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.tsx).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestion`, etc.). Unfortunately the control-flow is complicated because we need to call `lib/question-render.ts` during page data load, store the data it generates, and then later include the `components/QuestionContainer.html.ts` template to actually render this data.
 
 - For example, the exact control-flow for `pages/instructorQuestion` is:
-
   1. The top-level page `pages/instructorQuestion/instructorQuestion.js` code calls `lib/question-render.getAndRenderVariant()`.
 
   2. `getAndRenderVariant()` inserts data into `res.locals` for later use by `components/QuestionContainer.html.ts`.
@@ -507,7 +536,6 @@ To automatically fix lint and formatting errors, run `make format`.
 ## Errors in question handling
 
 - We distinguish between two different types of student errors:
-
   1. The answer might be not be gradable (`submission.gradable = false`). This could be due to a missing answer, an invalid format (e.g., entering a string in a numeric input), or a answer that doesn't pass some basic check (e.g., a code submission that didn't compile). This can be discovered during either the parsing or grading phases. In such a case the `submission.format_errors` object should store information on what was wrong to allow the student to correct their answer. A submission with `gradable = false` will not cause any updating of points for the question. That is, it acts like a saved-but-not-graded submission, in that it is recorded but has no impact on the question. If `gradable = false` then the `score` and `feedback` will not be displayed to the student.
 
   2. The answer might be gradable but incorrect. In this case `submission.gradable = true` but `submission.score = 0` (or less than 1 for a partial score). If desired, the `submission.feedback` object can be set to give information to the student on what was wrong with their answer. This is not necessary, however. If `submission.feedback` is set then it will be shown to the student along with their `submission.score` as soon as the question is graded.
@@ -538,6 +566,14 @@ To automatically fix lint and formatting errors, run `make format`.
 - The question flow is shown in the diagram below:
 
 ![Question lifecycle flowchart](./question-flow.d2)
+
+## Assertions
+
+Depending on the context, we use different types of assertions.
+
+- In tests, we use the exported helpers from `vitest`, e.g. `assert.ok` or `assert.isDefined`.
+- In server code, to enforce invariants (e.g. something that should never happen), we use `assert` from `node:assert`.
+- For asserting results on the client, or in utility functions, e.g. a `.querySelector`, `.pop`, etc., consider using the `!` operator to assert that a value is not `null` or `undefined`.
 
 ## JavaScript equality operator
 

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { type OpenAI } from 'openai';
-import { zodResponseFormat } from 'openai/helpers/zod.mjs';
+import { zodTextFormat } from 'openai/helpers/zod';
 import * as tmp from 'tmp-promise';
 import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
@@ -18,11 +18,10 @@ import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
 import { generateQuestion } from './aiQuestionGeneration.js';
-import { openAiUserFromAuthn } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o-2024-11-20';
+const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
 
 interface Benchmark {
   prompt: string;
@@ -158,7 +157,11 @@ const BENCHMARKS: Benchmark[] = [
 ];
 
 const QuestionGenerationEvaluationSchema = z.object({
-  score: z.number().describe('Score the generated question from 1 (lowest) to 5 (highest).'),
+  score: z
+    .number()
+    .min(1)
+    .max(5)
+    .describe('Score the generated question from 1 (lowest) to 5 (highest).'),
   reasoning: z.string().array().describe('Provide your reasoning for the score.'),
 });
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
@@ -253,7 +256,7 @@ export async function benchmarkAiQuestionGeneration({
       // Log the prompts, responses, and errors for debugging.
       for (const prompt of prompts) {
         job.info('User prompt');
-        job.info('======');
+        job.info('===========');
         job.info(prompt.user_prompt.trimEnd());
         job.info('\n');
 
@@ -262,7 +265,7 @@ export async function benchmarkAiQuestionGeneration({
         job.info(prompt.response.trimEnd());
         job.info('\n');
 
-        if (prompt.errors?.length) {
+        if (prompt.errors.length > 0) {
           job.error('Errors');
           job.error('======');
           job.error(JSON.stringify(prompt.errors, null, 2));
@@ -274,7 +277,6 @@ export async function benchmarkAiQuestionGeneration({
 
       const evaluationResult = await evaluateGeneratedQuestion({
         client,
-        authnUserId,
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
@@ -315,14 +317,12 @@ export async function benchmarkAiQuestionGeneration({
 
 async function evaluateGeneratedQuestion({
   client,
-  authnUserId,
   originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
   client: OpenAI;
-  authnUserId: string;
   originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
@@ -375,18 +375,17 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const completion = await client.beta.chat.completions.parse({
+  const response = await client.responses.parse({
     model: MODEL_NAME,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: generatedQuestion.join('\n') },
-    ],
-    response_format: zodResponseFormat(
-      QuestionGenerationEvaluationSchema,
-      'question_generation_evaluation',
-    ),
-    user: openAiUserFromAuthn(authnUserId),
+    instructions: systemPrompt,
+    input: generatedQuestion.join('\n'),
+    text: {
+      format: zodTextFormat(QuestionGenerationEvaluationSchema, 'question_generation_evaluation'),
+    },
+    reasoning: {
+      effort: 'low',
+    },
   });
 
-  return completion.choices[0].message.parsed;
+  return response.output_parsed;
 }

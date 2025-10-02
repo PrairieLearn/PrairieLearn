@@ -15,52 +15,86 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
-import { selectQuestionsForCourse } from '../../models/questions.js';
+import { type QuestionsPageData, selectQuestionsForCourse } from '../../models/questions.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 
-let cachedTemplateQuestionOptions: { qid: string; title: string }[] | null = null;
+let cachedTemplateQuestionExampleCourse: { qid: string; title: string }[] | null = null;
 
 /**
- * Get a list of template question qids and titles that can be used as starting points for new questions.
+ * Get a list of template question from the example course. While it should
+ * typically be possible to retrieve these from the database, these are
+ * retrieved from the filesystem for the following reasons:
+ * 1. There is no guarantee that the example course will actually be synced in
+ *    the current environment. The local installation (dev or prod) may have
+ *    removed it from the sync process.
+ * 2. The synced example course may not be up-to-date with the source example
+ *    course questions, and we want to use the latest version.
+ * 3. The current method of identifying an example course is based on
+ *    information that may be forgeable by setting specific values in the course
+ *    info file, which could lead to a security vulnerability if we were to rely
+ *    on the database.
  */
-async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
+async function getTemplateQuestionsExampleCourse() {
   if (!config.devMode) {
-    // Check if the template questions are cached
-    if (cachedTemplateQuestionOptions) {
-      return cachedTemplateQuestionOptions;
+    if (cachedTemplateQuestionExampleCourse) {
+      return cachedTemplateQuestionExampleCourse;
     }
   }
 
-  const questions = await loadQuestions(EXAMPLE_COURSE_PATH);
+  const questions = await loadQuestions({
+    coursePath: EXAMPLE_COURSE_PATH,
+    // We don't actually care about sharing settings here, but we do use shared
+    // questions in the example course, so we'll flag sharing as enabled.
+    sharingEnabled: true,
+  });
 
-  const templateQuestions: { qid: string; title: string }[] = [];
-
-  for (const [qid, question] of Object.entries(questions)) {
-    if (qid.startsWith('template/') && question?.data?.title) {
-      templateQuestions.push({ qid, title: question.data.title });
-    }
-  }
+  const templateQuestions = Object.entries(questions)
+    .map(([qid, question]) => ({ qid, title: question.data?.title }))
+    .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
+    qid: string;
+    title: string;
+  }[];
 
   const sortedTemplateQuestionOptions = templateQuestions.sort((a, b) =>
     a.title.localeCompare(b.title),
   );
 
   if (!config.devMode) {
-    // Cache the template questions
-    cachedTemplateQuestionOptions = sortedTemplateQuestionOptions;
+    cachedTemplateQuestionExampleCourse = sortedTemplateQuestionOptions;
   }
 
   return sortedTemplateQuestionOptions;
 }
 
+/**
+ * Get a list of template question qids and titles that can be used as starting
+ * points for new questions, both from the example course and course-specific
+ * templates.
+ */
+async function getTemplateQuestions(questions: QuestionsPageData[]) {
+  const exampleCourseTemplateQuestions = await getTemplateQuestionsExampleCourse();
+  const courseTemplateQuestions = questions
+    .filter(({ qid }) => qid.startsWith('template/'))
+    .map(({ qid, title }) => ({ example_course: false, qid, title }));
+  return [
+    ...exampleCourseTemplateQuestions.map((q) => ({ example_course: true, ...q })),
+    ...courseTemplateQuestions,
+  ];
+}
+
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async function (req, res) {
     if (!res.locals.authz_data.has_course_permission_preview) {
       // Access denied, but instead of sending them to an error page, we'll show
@@ -69,6 +103,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -90,7 +129,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateCourseQuestionOptions();
+    const templateQuestions = await getTemplateQuestions(questions);
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
@@ -118,6 +157,10 @@ router.get(
 // want to jump through hoops to get a question ID from a QID.
 router.get(
   '/qid/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny
     // access after the redirect, but doing this will allow us to avoid
@@ -130,6 +173,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -180,7 +228,8 @@ router.post(
           `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
       }
-      if (req.body.start_from === 'Template' && !req.body.template_qid) {
+      const usesTemplate = ['example', 'course'].includes(req.body.start_from);
+      if (usesTemplate && !req.body.template_qid) {
         throw new error.HttpStatusError(400, 'template_qid is required');
       }
 
@@ -193,7 +242,8 @@ router.post(
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         qid: req.body.qid,
         title: req.body.title,
-        template_qid: req.body.start_from === 'Template' ? req.body.template_qid : undefined,
+        template_source: req.body.start_from,
+        template_qid: usesTemplate ? req.body.template_qid : undefined,
       });
 
       if (result.status === 'error') {
@@ -203,7 +253,7 @@ router.post(
 
       flash('success', 'Question created successfully.');
 
-      if (req.body.start_from === 'Template') {
+      if (usesTemplate) {
         res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/preview`);
       } else {
         res.redirect(

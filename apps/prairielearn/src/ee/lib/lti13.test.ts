@@ -1,10 +1,10 @@
-import express from 'express';
+import express, { type Request, type Response } from 'express';
 import { assert, describe, expect, test } from 'vitest';
 import { z } from 'zod';
 
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { fetchRetry, fetchRetryPaginated } from './lti13.js';
+import { fetchRetry, fetchRetryPaginated, findValueByKey } from './lti13.js';
 
 const PRODUCTS = [
   'Apple',
@@ -35,9 +35,9 @@ const PRODUCTS = [
   'Zucchini',
 ];
 
-function productApi(req: express.Request, res: express.Response) {
-  const page = parseInt(req.query.page as string) || 1;
-  const limit = parseInt(req.query.limit as string) || 10;
+function productApi(req: Request, res: Response) {
+  const page = Number.parseInt(req.query.page as string) || 1;
+  const limit = Number.parseInt(req.query.limit as string) || 10;
 
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
@@ -55,8 +55,10 @@ function productApi(req: express.Request, res: express.Response) {
   if (page > 1) {
     links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
   }
-  links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
-  links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+  links.push(
+    `<${baseUrl}?page=1&limit=${limit}>; rel="first"`,
+    `<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`,
+  );
 
   res.set('Link', links.join(', '));
 
@@ -75,11 +77,11 @@ describe('fetchRetry()', () => {
     next();
   });
 
-  app.get('/403all', async (req, res) => {
+  app.get('/403all', (req, res) => {
     res.status(403).json([]);
   });
 
-  app.get('/403oddAttempt', async (req, res) => {
+  app.get('/403oddAttempt', (req, res) => {
     if (apiCount % 2 === 1) {
       res.status(403).json([]);
     } else {
@@ -138,5 +140,63 @@ describe('fetchRetry()', () => {
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 6);
     });
+  });
+});
+
+describe('findValueByKey() generic tests', () => {
+  const generic = {
+    val1: 'one',
+    nest1: {
+      val2: 'two',
+    },
+    array1: [null, { val3: 'three' }],
+    nest2: {
+      val1: 'nest2',
+    },
+  };
+
+  test('Top level', () => {
+    assert.equal(findValueByKey(generic, 'val1'), 'one');
+  });
+  test('Nested object', () => {
+    assert.equal(findValueByKey(generic, 'val2'), 'two');
+  });
+  test('Nested array', () => {
+    assert.equal(findValueByKey(generic, 'val3'), 'three');
+  });
+  test('Missing value is undefined', () => {
+    assert.isUndefined(findValueByKey(generic, 'missing'));
+  });
+});
+
+describe('findValueByKey() Canvas errors', () => {
+  test('course concluded', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message:
+              'This course has concluded. AGS requests will no longer be accepted for this course.',
+          },
+        },
+        'message',
+      ),
+      'This course has concluded. AGS requests will no longer be accepted for this course.',
+    );
+  });
+  test('user not found', () => {
+    assert.equal(
+      findValueByKey(
+        {
+          errors: {
+            type: 'unprocessable_entity',
+            message: 'User not found in course or is not a student',
+          },
+        },
+        'message',
+      ),
+      'User not found in course or is not a student',
+    );
   });
 });

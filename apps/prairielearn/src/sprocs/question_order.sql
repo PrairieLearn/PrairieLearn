@@ -1,11 +1,11 @@
 CREATE FUNCTION
     question_order (
-        arg_assessment_instance_id BIGINT
+        arg_assessment_instance_id bigint
     ) RETURNS TABLE (
-        instance_question_id BIGINT,
-        row_order INTEGER,
-        question_number TEXT,
-        sequence_locked BOOLEAN
+        instance_question_id bigint,
+        row_order integer,
+        question_number text,
+        sequence_locked boolean
     )
 AS $$
 -- Used to determine if an instance question should block 

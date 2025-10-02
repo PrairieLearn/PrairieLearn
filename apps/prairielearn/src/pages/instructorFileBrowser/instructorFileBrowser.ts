@@ -5,17 +5,22 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-import { createFileBrowser } from '../../components/FileBrowser.html.js';
+import { createFileBrowser } from '../../components/FileBrowser.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 const router = Router();
 
 router.get(
   '/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_view'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_view) {
       // Access denied, but instead of sending them to an error page, we'll show
@@ -25,6 +30,11 @@ router.get(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
+          navContext: {
+            type: res.locals.navbarType,
+            page: res.locals.navPage,
+            subPage: 'file_view',
+          },
           pageTitle: 'Files',
           requiredPermissions: 'Viewer',
         }),
@@ -77,7 +87,7 @@ router.post(
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
-        locals: res.locals as any as any,
+        locals: res.locals as any,
         container,
         deletePath,
       });

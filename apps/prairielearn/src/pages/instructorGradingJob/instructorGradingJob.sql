@@ -13,8 +13,11 @@ SELECT
     )
   END AS aai,
   to_jsonb(gj.*) AS grading_job,
+  q.id AS question_id,
   q.qid AS question_qid,
-  u.uid AS user_uid
+  u.uid AS user_uid,
+  v.id AS variant_id,
+  v.instance_question_id
 FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)

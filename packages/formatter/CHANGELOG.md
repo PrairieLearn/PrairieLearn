@@ -1,5 +1,59 @@
 # @prairielearn/formatter
 
+## 1.4.6
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 1.4.5
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 1.4.4
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.4.3
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
+## 1.4.2
+
+### Patch Changes
+
+- 7f25a8a: Add `maxPrecision` and `minPrecision` options to `format*Friendly` functions.
+
+## 1.4.1
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 1.4.0
+
+### Minor Changes
+
+- 74b5cac: Add friendly date formatters and tests, and additional supporting utilities
+
+## 1.3.14
+
+### Patch Changes
+
+- 35ec75c: Add formatTz function
+
+## 1.3.13
+
+### Patch Changes
+
+- be4444e: Upgrade all JavaScript dependencies
+
 ## 1.3.12
 
 ### Patch Changes

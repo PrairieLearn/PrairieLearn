@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -8,15 +8,23 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
-import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
+import { features } from '../../../lib/features/index.js';
+import {
+  QUESTION_GENERATION_OPENAI_MODEL,
+  addCompletionCostToIntervalUsage,
+  approximatePromptCost,
+  generateQuestion,
+  getIntervalUsage,
+} from '../../lib/aiQuestionGeneration.js';
 
 import {
   DraftMetadataWithQidSchema,
   GenerationFailure,
   InstructorAIGenerateDrafts,
+  RateLimitExceeded,
 } from './instructorAiGenerateDrafts.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -30,6 +38,15 @@ function assertCanCreateQuestion(resLocals: Record<string, any>) {
     throw new error.HttpStatusError(403, 'Access denied (cannot edit the example course)');
   }
 }
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
+      throw new error.HttpStatusError(403, 'Feature not enabled');
+    }
+    next();
+  }),
+);
 
 router.get(
   '/',
@@ -85,6 +102,29 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
+      const intervalCost = await getIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+      });
+
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
+
+      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
+        res.send(
+          RateLimitExceeded({
+            // If the user has more tokens than the threshold of 100 tokens,
+            // they can shorten their message to avoid exceeding the rate limit.
+            canShortenMessage:
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
+          }),
+        );
+        return;
+      }
+
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -92,6 +132,12 @@ router.post(
         prompt: req.body.prompt,
         userId: res.locals.authn_user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
+
+      await addCompletionCostToIntervalUsage({
+        userId: res.locals.authn_user.user_id,
+        usage: result.usage,
+        intervalCost,
       });
 
       if (result.htmlResult) {

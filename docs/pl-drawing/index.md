@@ -8,7 +8,7 @@ A `pl-drawing` element displays a canvas, which can be used to display initial d
 
 The system of coordinates of the canvas is located at the top/left corner, as illustrated in the image below.
 
-![Screenshot of the pl-origin-canvas element](pl-origin-canvas.png){ width=70% }
+![Screenshot of the pl-origin-canvas element](pl-origin-canvas.png){ width=100% style="max-width: 600px" }
 
 #### Sample element
 
@@ -16,7 +16,7 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 <pl-drawing answers-name="fbd"> </pl-drawing>
 ```
 
-![Screenshot of the pl-drawing element](./pl-drawing.png){ width=70% }
+![Screenshot of the pl-drawing element](./pl-drawing.png){ width=100% style="max-width: 600px" }
 
 #### Customizations
 
@@ -56,7 +56,7 @@ For example, `pl-drawing-initial` can be used to create figures that are display
 </pl-drawing>
 ```
 
-![Screenshot of the pl-drawing-initial element](pl-I.png){ width=30% }
+![Screenshot of the pl-drawing-initial element](pl-I.png){ width=100% style="max-width: 300px" }
 
 And `pl-drawing-initial` can also be used to display initial objects in a canvas that will be used for grading. Objects inside `pl-drawing-initial` are not graded. Objects inside `pl-drawing-answer` are graded.
 
@@ -89,7 +89,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-coordinates element](pl-coordinates.png){ width=50% }
+![Screenshot of the pl-coordinates element](pl-coordinates.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -131,7 +131,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-line element](pl-line.png){ width=50% }
+![Screenshot of the pl-line element](pl-line.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -175,7 +175,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-arc element](pl-arc.png){ width=50% }
+![Screenshot of the pl-arc element](pl-arc.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -208,7 +208,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-point element](pl-point.png){ width=50% }
+![Screenshot of the pl-point element](pl-point.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -241,7 +241,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-triangle element](pl-triangle.png){ width=50% }
+![Screenshot of the pl-triangle element](pl-triangle.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -277,7 +277,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-rectangle element](pl-rectangle.png){ width=50% }
+![Screenshot of the pl-rectangle element](pl-rectangle.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -312,7 +312,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-circle element](pl-circle.png){ width=50% }
+![Screenshot of the pl-circle element](pl-circle.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -347,7 +347,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-polygon element](pl-polygon.png){ width=50% }
+![Screenshot of the pl-polygon element](pl-polygon.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -383,7 +383,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-rod element](pl-rod.png){ width=50% }
+![Screenshot of the pl-rod element](pl-rod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -423,7 +423,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![A 3-point rod element in PrairieLearn](pl-3pointrod.png){ width=50% }
+![A 3-point rod element in PrairieLearn](pl-3pointrod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -468,7 +468,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-4pointrod element](pl-4pointrod.png){ width=50% }
+![Screenshot of the pl-4pointrod element](pl-4pointrod.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -518,7 +518,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-collar-rod element](pl-collar.png){ width=50% }
+![Screenshot of the pl-collar-rod element](pl-collar.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -564,7 +564,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-fixed-pin element](pl-fixed-pin.png){ width=50% }
+![Screenshot of the pl-fixed-pin element](pl-fixed-pin.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -603,7 +603,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-roller element](pl-roller.png){ width=50% }
+![Screenshot of the pl-roller element](pl-roller.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -643,7 +643,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![A clamped end element in PrairieLearn](pl-clamped.png){ width=50% }
+![A clamped end element in PrairieLearn](pl-clamped.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -680,7 +680,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-spring element](pl-spring.png){ width=50% }
+![Screenshot of the pl-spring element](pl-spring.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -716,7 +716,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-coil element](pl-coil.png){ width=50% }
+![Screenshot of the pl-coil element](pl-coil.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -750,7 +750,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-pulley element](pl-pulley.png){ width=50% }
+![Screenshot of the pl-pulley element](pl-pulley.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -821,7 +821,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-dimensions element](pl-dimensions.png){ width=50% }
+![Screenshot of the pl-dimensions element](pl-dimensions.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -873,7 +873,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-arc-dimensions element](pl-arc-dimensions.png){ width=50% }
+![Screenshot of the pl-arc-dimensions element](pl-arc-dimensions.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -927,7 +927,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 </pl-drawing>
 ```
 
-![Screenshot of the pl-vector element](pl-vector.png){ width=50% }
+![Screenshot of the pl-vector element](pl-vector.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -981,7 +981,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-double-headed-vector element](pl-double-headed-vector.png){ width=50% }
+![Screenshot of the pl-double-headed-vector element](pl-double-headed-vector.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1038,7 +1038,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-paired-vector element](pl-paired-vector.png){ width=50% }
+![Screenshot of the pl-paired-vector element](pl-paired-vector.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1081,7 +1081,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-arc-vector element](pl-arc-vector.png){ width=50% }
+![Screenshot of the pl-arc-vector element](pl-arc-vector.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1143,34 +1143,34 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-distributed-load element](pl-distributed-load.png){ width=50% }
+![Screenshot of the pl-distributed-load element](pl-distributed-load.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
-| Attribute           | Type    | Default    | Description                                                                                                                                                                                                                                                                                                       |
-| ------------------- | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`                | float   | 20         | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
-| `y1`                | float   | 20         | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
-| `anchor-is-tail`    | boolean | true       | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
-| `width`             | float   | 40         | Range of the distributed load.                                                                                                                                                                                                                                                                                    |
-| `spacing`           | float   | 20         | Spacing between the vectors.                                                                                                                                                                                                                                                                                      |
-| `w1`                | float   | 40         | Height of the distributed load at the start of the range.                                                                                                                                                                                                                                                         |
-| `w2`                | float   | 40         | Height of the distributed load at the end of the range.                                                                                                                                                                                                                                                           |
-| `angle`             | float   | 0          | Angle of rotation around the center of the baseline, i.e., point `(x1,y1)`. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                              |
-| `label1`            | string  | -          | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
-| `offsetx1`          | float   | 2          | Horizontal distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                        |
-| `offsety1`          | float   | 2          | Vertical distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `label2`            | string  | -          | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
-| `offsetx2`          | float   | 2          | Horizontal distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                        |
-| `offsety2`          | float   | 2          | Vertical distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `color`             | string  | blue       | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                          |
-| `stroke-width`      | float   | 3          | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
-| `arrow-head-width`  | float   | 1          | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
-| `arrow-head-length` | float   | 1          | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
-| `disregard-sense`   | boolean | false      | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
-| `draw-error-box`    | boolean | -          | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
-| `offset-forward`    | float   | 0          | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.                                                                                                                                                                                                        |
-| `offset-backward`   | float   | max(w1,w2) | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.                                                                                                                                                                                                    |
+| Attribute           | Type    | Default             | Description                                                                                                                                                                                                                                                                                                       |
+| ------------------- | ------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                | float   | 20                  | `x` position for the center of the baseline, i.e., the horizontal distance from the left border of the canvas.                                                                                                                                                                                                    |
+| `y1`                | float   | 20                  | `y` position for the center of the baseline, i.e., the vertical distance from the top border of the canvas.                                                                                                                                                                                                       |
+| `anchor-is-tail`    | boolean | true                | the anchor point `(x1,y1)` is the tail of the vector.                                                                                                                                                                                                                                                             |
+| `width`             | float   | 60                  | Range of the distributed load.                                                                                                                                                                                                                                                                                    |
+| `spacing`           | float   | 20                  | Spacing between the vectors.                                                                                                                                                                                                                                                                                      |
+| `w1`                | float   | 60                  | Height of the distributed load at the start of the range.                                                                                                                                                                                                                                                         |
+| `w2`                | float   | 60                  | Height of the distributed load at the end of the range.                                                                                                                                                                                                                                                           |
+| `angle`             | float   | 0                   | Angle of rotation around the center of the baseline, i.e., point `(x1,y1)`. Angles are measured from the horizontal axis and are positive clockwise.                                                                                                                                                              |
+| `label1`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
+| `offsetx1`          | float   | 2                   | Horizontal distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                        |
+| `offsety1`          | float   | 2                   | Vertical distance of `label1` from the vector at the start of the range.                                                                                                                                                                                                                                          |
+| `label2`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
+| `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                        |
+| `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                          |
+| `color`             | string  | blue                | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                          |
+| `stroke-width`      | float   | 3                   | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
+| `arrow-head-width`  | float   | 1                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
+| `arrow-head-length` | float   | 1                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
+| `disregard-sense`   | boolean | false               | When `disregard-sense=false` both the location of the anchor and the angle should match within the tolerance. When `disregard-sense=true`, the correctness of the vector only considers the position of the anchor point and direction (i.e. the vector in the opposite direction is also considered as correct). |
+| `draw-error-box`    | boolean | -                   | Draw the error bounding box, where the location of the anchor point is accepted as correct.                                                                                                                                                                                                                       |
+| `offset-forward`    | float   | 0                   | Length of the bounding box measured from the anchor point in the same orientation of the distributed load.                                                                                                                                                                                                        |
+| `offset-backward`   | float   | `max(w1, w2) * 1.1` | Length of the bounding box measured from the anchor point in the opposite orientation of the distributed load.                                                                                                                                                                                                    |
 
 #### Example implementations
 
@@ -1206,7 +1206,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-controlled-line element](pl-controlled-line.png){ width=50% }
+![Screenshot of the pl-controlled-line element](pl-controlled-line.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1253,7 +1253,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-controlled-curved-line element](pl-controlled-curved-line.png){ width=50% }
+![Screenshot of the pl-controlled-curved-line element](pl-controlled-curved-line.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1295,7 +1295,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-text element](pl-text.png){ width=50% }
+![Screenshot of the pl-text element](pl-text.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1333,7 +1333,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-capacitor element](pl-capacitor.png){ width=50% }
+![Screenshot of the pl-capacitor element](pl-capacitor.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1389,7 +1389,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-resistor element](pl-resistor.png){ width=50% }
+![Screenshot of the pl-resistor element](pl-resistor.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1429,7 +1429,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-battery element](pl-battery.png){ width=50% }
+![Screenshot of the pl-battery element](pl-battery.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1479,7 +1479,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-switch element](pl-switch.png){ width=50% }
+![Screenshot of the pl-switch element](pl-switch.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1529,7 +1529,7 @@ More information about the grading attributes in the Grading section below.
 </pl-drawing>
 ```
 
-![Screenshot of the pl-inductor element](pl-inductor.png){ width=50% }
+![Screenshot of the pl-inductor element](pl-inductor.png){ width=100% style="max-width: 300px" }
 
 #### Customizations
 
@@ -1614,7 +1614,7 @@ The element `pl-drawing-answer` is required when setting a drawing canvas for gr
 </pl-drawing>
 ```
 
-![Screenshot of the pl-drawing-group element](pl-vector-grading-canvas-example.png){ width=70% }
+![Screenshot of the pl-drawing-group element](pl-vector-grading-canvas-example.png){ width=100% style="max-width: 500px" }
 
 ### `pl-drawing-answer` element
 
@@ -1628,7 +1628,7 @@ This element will wrap all the elements that will be graded (checked for correct
 
 In the example above, `pl-vector` is the only object that is graded. The corresponding answer panel is given as:
 
-![Screenshot of the pl-drawing-answer element](pl-vector-correct-answer.png){ width=50% }
+![Screenshot of the pl-drawing-answer element](pl-vector-correct-answer.png){ width=100% style="max-width: 300px" }
 
 ### `pl-drawing-initial` element
 
@@ -1668,7 +1668,7 @@ The example [demo/drawing/buttons] illustrates all the `pl-drawing-button`s that
 
 The example [demo/drawing/customizedButtons] illustrates how custom objects can be generated via buttons.
 
-![Screenshot of all the pl-drawing-button elements](pl-all-buttons.png){ width=70% }
+![Screenshot of all the pl-drawing-button elements](pl-all-buttons.png){ width=100% style="max-width: 500px" }
 
 ### `pl-drawing-buttons` element
 
@@ -1680,7 +1680,7 @@ The example [demo/drawing/customizedButtons] illustrates how custom objects can 
 
 This button adds a point to the canvas. The grading algorithm will check if the submitted point is within the error box. By default, the error box for `pl-point` is a square centered at the correct point, with side of length `tol = 0.5*grid-size`. The tolerance `tol` is an attribute of `pl-drawing` to make sure that all elements use the same tolerance.
 
-![Screenshot of the pl-drawing-button set to pl-point](pl-point-error-box.png){ width=30% }
+![Screenshot of the pl-drawing-button set to pl-point](pl-point-error-box.png){ width=100% style="max-width: 200px" }
 
 #### Insert a vector
 
@@ -1692,7 +1692,7 @@ This button adds a vector to the canvas. A vector is marked as correct when the 
 
 By default, the error box for `pl-vector` is a rectangle aligned with direction of the vector. The width of the rectangle is `tol` and the height is `hb + hf`, as illustrated below. `hb = offset-backward + tol` and `hf = offset-forward + tol`. The attribute `offset-backward` is set to the length of the vector by default. The attribute `offset-forward` is set to zero by default. The tolerances `tol` and `angle-tol` are attributes of `pl-drawing` to make sure that all elements use the same tolerance.
 
-![Screenshot showing an error box for a pl-vector element](pl-vector-error-box.png){ width=50% }
+![Screenshot showing an error box for a pl-vector element](pl-vector-error-box.png){ width=100% style="max-width: 300px" }
 
 If the orientation of the vector is not important, so that vectors `p` and `-p` are both considered correct, the attribute `disregard-sense` should be set to `true`.
 
@@ -1723,6 +1723,8 @@ This button adds a distributed load to the canvas. A distributed load is marked 
 
 The error box for `pl-distributed-load` is defined in the same way as `pl-vector` but considering the anchor point as the center of the baseline. If the orientation of the distributed load is not important, the attribute `disregard-sense` should be set to `true`.
 
+For many questions, it will be necessary to fine-tune the error bounding box by setting the attributes `offset-forward` and `offset-backward`. Suitable values depend on the context of the question, for instance the dimension of the beam in the direction of the distributed load.
+
 #### Insert a "help" line
 
 ```html
@@ -1741,7 +1743,7 @@ This button deletes objects that were previously placed on the canvas.
 
 ## Elements for sketching plots
 
-![Screenshot of the pl-graph element](pl-graph.png) { width=50% }
+![Screenshot of the pl-graph element](pl-graph.png){ width=100% style="max-width: 300px" }
 
 ```html
 <pl-drawing-initial>

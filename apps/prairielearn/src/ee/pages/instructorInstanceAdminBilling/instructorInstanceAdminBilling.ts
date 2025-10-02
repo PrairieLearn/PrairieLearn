@@ -5,7 +5,6 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { instructorInstanceAdminBillingState } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 import {
   getPlanGrantsForContext,
@@ -13,6 +12,7 @@ import {
   updateRequiredPlansForCourseInstance,
 } from '../../lib/billing/plans.js';
 
+import { instructorInstanceAdminBillingState } from './components/InstructorInstanceAdminBillingForm.js';
 import {
   type EnrollmentLimitSource,
   InstructorCourseInstanceBilling,

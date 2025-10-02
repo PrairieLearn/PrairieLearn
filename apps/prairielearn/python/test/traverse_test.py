@@ -319,7 +319,7 @@ def test_traverse_and_replace_void_elements() -> None:
     def replace(e: lxml.html.HtmlElement) -> ElementReplacement:
         return e
 
-    html = traverse_and_replace('<div><br><input name="input"</div>', replace)
+    html = traverse_and_replace('<div><br><input name="input"></div>', replace)
     assert html == '<div><br><input name="input"></div>'
 
 

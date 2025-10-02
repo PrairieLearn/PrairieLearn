@@ -1,7 +1,8 @@
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -17,12 +18,9 @@ import {
 import { ensureEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const UserWithIdSchema = z.object({
-  user_id: z.string(),
-});
 
 describe('effective user', { timeout: 60_000 }, function () {
   const context: Record<string, any> = {};
@@ -55,17 +53,12 @@ describe('effective user', { timeout: 60_000 }, function () {
   let studentId: string;
 
   beforeAll(async function () {
-    const institutionAdmin = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      [
-        'institution-admin@example.com',
-        'Institution Admin',
-        null,
-        'institution-admin@example.com',
-        'dev',
-      ],
-      UserWithIdSchema,
-    );
+    const institutionAdmin = await getOrCreateUser({
+      uid: 'institution-admin@example.com',
+      name: 'Institution Admin',
+      uin: null,
+      email: 'institution-admin@example.com',
+    });
     institutionAdminId = institutionAdmin.user_id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
@@ -73,11 +66,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    const instructor = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Instructor User',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
     instructorId = instructor.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -86,11 +80,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '1',
     });
 
-    const staff = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['staff@example.com', 'Staff Three', null, 'staff@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const staff = await getOrCreateUser({
+      uid: 'staff@example.com',
+      name: 'Staff Three',
+      uin: null,
+      email: 'staff@example.com',
+    });
     staffId = staff.user_id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -99,15 +94,19 @@ describe('effective user', { timeout: 60_000 }, function () {
       authn_user_id: '2',
     });
 
-    const student = await sqldb.callValidatedOneRow(
-      'users_select_or_insert',
-      ['student@example.com', 'Student User', '000000001', 'student@example.com', 'dev'],
-      UserWithIdSchema,
-    );
+    const student = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Student User',
+      uin: '000000001',
+      email: 'student@example.com',
+    });
     studentId = student.user_id;
     await ensureEnrollment({
       user_id: studentId,
       course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
   });
 
@@ -147,21 +146,21 @@ describe('effective user', { timeout: 60_000 }, function () {
   );
 
   test.sequential('instructor can override date and does not become enrolled', async () => {
-    let result = await sqldb.queryAsync(sql.select_enrollment, {
+    let rowCount = await sqldb.execute(sql.select_enrollment, {
       user_id: instructorId,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 0);
+    assert.equal(rowCount, 0);
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01',
     };
     const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
     assert.equal(res.status, 200);
-    result = await sqldb.queryAsync(sql.select_enrollment, {
+    rowCount = await sqldb.execute(sql.select_enrollment, {
       user_id: instructorId,
       course_instance_id: 1,
     });
-    assert.lengthOf(result.rows, 0);
+    assert.equal(rowCount, 0);
   });
 
   test.sequential('instructor can access course instance', async () => {
@@ -279,7 +278,7 @@ describe('effective user', { timeout: 60_000 }, function () {
   });
 
   test.sequential('can request uid of administrator when administrator', async () => {
-    await sqldb.queryAsync(sql.insert_administrator, { user_id: instructorId });
+    await sqldb.execute(sql.insert_administrator, { user_id: instructorId });
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl2_requested_uid=dev@example.com',
     };
@@ -409,7 +408,7 @@ describe('effective user', { timeout: 60_000 }, function () {
   });
 
   test.sequential('instructor cannot request higher course instance role', async () => {
-    updateCourseInstancePermissionsRole({
+    await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
       course_instance_id: '1',
@@ -547,6 +546,62 @@ describe('effective user', { timeout: 60_000 }, function () {
         headers,
       });
       assert.equal(res.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is denied access when emulating student, and no redirect is available',
+    async () => {
+      const headers = {
+        cookie: 'pl2_requested_uid=student@example.com; pl2_requested_data_changed=true',
+      };
+      // Test that instructor is denied access to instructor pages when emulating student
+      const instructorPageUrl = `${context.baseUrl}/course/1/course_admin/instance_admin`;
+      const response = await fetch(instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+      // This should result in a fancy 403 error page
+      const body = await response.text();
+      const $ = cheerio.load(body);
+      const authzAccessMismatch = $('div[data-component="AuthzAccessMismatch"]');
+      assert.equal(authzAccessMismatch.length, 1);
+      assert.equal(response.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is allowed access when emulating student, and a redirect is available',
+    async () => {
+      const courseInstanceId = '1';
+      const studentUid = 'student@example.com';
+      const user = await getOrCreateUser({
+        uid: studentUid,
+        name: 'Example Student',
+        uin: 'student',
+        email: 'student@example.com',
+      });
+      await ensureEnrollment({
+        course_instance_id: courseInstanceId,
+        agent_user_id: null,
+        agent_authn_user_id: null,
+        user_id: user.user_id,
+        action_detail: 'implicit_joined',
+      });
+
+      const headers = {
+        // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
+        cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
+      };
+      const instructorPageUrl = `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
+      const studentPageUrl = `/pl/course_instance/${courseInstanceId}`;
+      const response = await fetch(context.siteUrl + instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('Location'), studentPageUrl);
     },
   );
 });

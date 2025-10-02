@@ -5,9 +5,8 @@ This page describes the procedure to install and run PrairieLearn fully natively
 ## Installation
 
 - Install the prerequisites:
-
   - [Git](https://git-scm.com)
-  - [Node.js 20](https://nodejs.org)
+  - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
   - [PostgreSQL 16](https://www.postgresql.org)
@@ -18,14 +17,14 @@ This page describes the procedure to install and run PrairieLearn fully natively
 
 Most of these prerequisites can be installed using the package manager of your OS:
 
-=== "Ubuntu (WSL2)"
+=== "Ubuntu (including WSL2)"
 
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
     sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
     # Optional; needed only for some example questions that use LaTeX
-    sudo apt install texlive
+    sudo apt install texlive texlive-latex-extra texlive-fonts-extra dvipng
     ```
 
     Make sure you start Postgres:
@@ -54,12 +53,12 @@ Most of these prerequisites can be installed using the package manager of your O
     pip install uv
     ```
 
-    Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
+    Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
 
     ```sh
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
     source ~/.bashrc # or your shell's equivalent
-    nvm install 20
+    nvm install 22
     ```
 
     Enable `corepack` to make `yarn` available:
@@ -95,7 +94,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.10
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -114,6 +113,10 @@ Most of these prerequisites can be installed using the package manager of your O
     corepack enable
     ```
 
+    !!! bug
+
+        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
+
 - Clone the latest code:
 
   ```sh
@@ -126,7 +129,7 @@ Most of these prerequisites can be installed using the package manager of your O
   === "uv"
 
         ```sh
-        uv venv --python 3.10 --seed
+        uv venv --python-preference only-system --python 3.10 --seed
         source .venv/bin/activate
         ```
 

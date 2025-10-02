@@ -35,9 +35,9 @@ WHERE
     OR e.id IS NOT NULL
   )
 ORDER BY
-  c.short_name,
-  c.title,
-  c.id,
+  c.short_name ASC,
+  c.title ASC,
+  c.id ASC,
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC;

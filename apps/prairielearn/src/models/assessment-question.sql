@@ -15,51 +15,53 @@ WITH
       q.id
   )
 SELECT
-  aq.*,
-  q.qid,
-  q.title,
-  row_to_json(top) AS topic,
-  q.id AS question_id,
-  admin_assessment_question_number (aq.id) as number,
-  tags_for_question (q.id) AS tags,
-  ag.number AS alternative_group_number,
-  ag.number_choose AS alternative_group_number_choose,
+  to_jsonb(aq.*) AS assessment_question,
+  to_jsonb(q.*) AS question,
+  to_jsonb(top.*) AS topic,
+  to_jsonb(ag.*) AS alternative_group,
+  to_jsonb(z.*) AS zone,
+  to_jsonb(a.*) AS assessment,
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(c.*) AS course,
+  coalesce(ic.open_issue_count, 0)::integer AS open_issue_count,
   (
-    count(*) OVER (
-      PARTITION BY
-        ag.number
-    )::integer
-  ) AS alternative_group_size,
-  z.title AS zone_title,
-  z.number AS zone_number,
-  z.number_choose as zone_number_choose,
+    SELECT
+      jsonb_agg(t.*)
+    FROM
+      tags t
+      JOIN question_tags qt ON qt.tag_id = t.id
+    WHERE
+      qt.question_id = q.id
+  ) AS tags,
   (
-    lag(z.id) OVER (
-      PARTITION BY
-        z.id
-      ORDER BY
-        aq.number
-    ) IS NULL
-  ) AS start_new_zone,
-  (
-    lag(ag.id) OVER (
-      PARTITION BY
-        ag.id
-      ORDER BY
-        aq.number
-    ) IS NULL
-  ) AS start_new_alternative_group,
-  assessments_format_for_question (q.id, ci.id, a.id) AS other_assessments,
-  coalesce(ic.open_issue_count, 0) AS open_issue_count,
-  z.max_points AS zone_max_points,
-  (z.max_points IS NOT NULL) AS zone_has_max_points,
-  z.best_questions AS zone_best_questions,
-  (z.best_questions IS NOT NULL) AS zone_has_best_questions,
-  aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
-  q.sync_errors,
-  q.sync_warnings,
-  q.course_id,
-  c.sharing_name AS course_sharing_name
+    SELECT
+      jsonb_agg(
+        jsonb_build_object(
+          'assessment_set_abbreviation',
+          aset.abbreviation,
+          'assessment_number',
+          a2.number,
+          'assessment_id',
+          a2.id,
+          'assessment_course_instance_id',
+          a2.course_instance_id,
+          'assessment_share_source_publicly',
+          a2.share_source_publicly,
+          'assessment_set_color',
+          aset.color
+        )
+      )
+    FROM
+      assessments a2
+      JOIN assessment_sets aset ON aset.id = a2.assessment_set_id
+      JOIN assessment_questions aq2 ON aq2.assessment_id = a2.id
+    WHERE
+      aq2.question_id = q.id
+      AND a2.id != a.id
+      AND a2.course_instance_id = a.course_instance_id
+      AND aq2.deleted_at IS NULL
+      AND a2.deleted_at IS NULL
+  ) AS other_assessments
 FROM
   assessment_questions AS aq
   JOIN questions AS q ON (q.id = aq.question_id)
@@ -78,3 +80,20 @@ ORDER BY
   z.number,
   z.id,
   aq.number;
+
+-- BLOCK select_assessment_question_by_id
+SELECT
+  *
+FROM
+  assessment_questions
+WHERE
+  id = $id;
+
+-- BLOCK select_assessment_question_by_question_id
+SELECT
+  *
+FROM
+  assessment_questions
+WHERE
+  assessment_id = $assessment_id
+  AND question_id = $question_id;

@@ -1,45 +1,31 @@
-import ButtonOriginal from 'react-bootstrap/Button';
-import CardOriginal from 'react-bootstrap/Card';
-import CardBodyOriginal from 'react-bootstrap/CardBody';
-import CardFooterOriginal from 'react-bootstrap/CardFooter';
-import CardHeaderOriginal from 'react-bootstrap/CardHeader';
-import FormCheckOriginal from 'react-bootstrap/FormCheck';
-import FormControlOriginal from 'react-bootstrap/FormControl';
-import InputGroupOriginal from 'react-bootstrap/InputGroup';
-import InputGroupTextOriginal from 'react-bootstrap/InputGroupText';
+import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import Button from 'react-bootstrap/Button';
+import Card from 'react-bootstrap/Card';
+import CardBody from 'react-bootstrap/CardBody';
+import CardFooter from 'react-bootstrap/CardFooter';
+import CardHeader from 'react-bootstrap/CardHeader';
+import FormCheck from 'react-bootstrap/FormCheck';
+import FormControl from 'react-bootstrap/FormControl';
+import InputGroup from 'react-bootstrap/InputGroup';
+import InputGroupText from 'react-bootstrap/InputGroupText';
 
-const Button = ButtonOriginal as unknown as typeof ButtonOriginal.default;
-const Card = CardOriginal as unknown as typeof CardOriginal.default;
-const CardBody = CardBodyOriginal as unknown as typeof CardBodyOriginal.default;
-const CardHeader = CardHeaderOriginal as unknown as typeof CardHeaderOriginal.default;
-const CardFooter = CardFooterOriginal as unknown as typeof CardFooterOriginal.default;
-const FormCheck = FormCheckOriginal as unknown as typeof FormCheckOriginal.default;
-const FormControl = FormControlOriginal as unknown as typeof FormControlOriginal.default;
-const InputGroup = InputGroupOriginal as unknown as typeof InputGroupOriginal.default;
-const InputGroupText = InputGroupTextOriginal as unknown as typeof InputGroupTextOriginal.default;
-
-import { useEffect, useLayoutEffect, useState } from '@prairielearn/preact-cjs/hooks';
 import { run } from '@prairielearn/run';
 
 import {
-  type ExamplePrompt,
-  type SampleQuestionVariant,
+  type ExamplePromptWithId,
   type VariantOption,
-  type examplePrompts,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
 export function SampleQuestionDemo({
-  promptId,
   prompt,
   onMathjaxTypeset,
 }: {
-  promptId: keyof typeof examplePrompts;
-  prompt: ExamplePrompt;
-  onMathjaxTypeset: () => Promise<void>;
+  prompt: ExamplePromptWithId;
+  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
 }) {
-  const [variant, setVariant] = useState<SampleQuestionVariant | null>(null);
+  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
@@ -48,6 +34,8 @@ export function SampleQuestionDemo({
   const [selectedOptions, setSelectedOptions] = useState<Set<string>>(() => new Set<string>());
 
   const [grade, setGrade] = useState<number | null>(null);
+
+  const cardRef = useRef<HTMLElement | null>(null);
 
   const handleSelectOption = (option: string) => {
     if (prompt.answerType === 'radio') {
@@ -66,7 +54,7 @@ export function SampleQuestionDemo({
     });
   };
 
-  const handleGenerateNewVariant = async () => {
+  const handleGenerateNewVariant = () => {
     // Clear the grade shown to the user
     setGrade(null);
 
@@ -77,22 +65,20 @@ export function SampleQuestionDemo({
     setSelectedOptions(new Set<string>());
 
     // Generate a new question variant
-    const questionVariant = generateSampleQuestionVariant(promptId);
+    const questionVariant = generateSampleQuestionVariant(prompt.id);
     setVariant(questionVariant);
   };
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    onMathjaxTypeset();
-  }, [variant?.question, prompt]);
+    if (cardRef.current) {
+      void onMathjaxTypeset([cardRef.current]);
+    }
+  }, [variant.question, onMathjaxTypeset]);
 
   const handleGrade = () => {
-    if (!variant) {
-      return;
-    }
-
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
-      const responseNum = parseFloat(userInputResponse);
+      const responseNum = Number.parseFloat(userInputResponse);
 
       const rtol = prompt.rtol;
       const atol = prompt.atol;
@@ -120,7 +106,7 @@ export function SampleQuestionDemo({
         setGrade(0);
       }
     } else if (variant.answerType === 'string') {
-      const isValid = userInputResponse === variant?.correctAnswer;
+      const isValid = userInputResponse === variant.correctAnswer;
       setGrade(isValid ? 100 : 0);
     } else if (variant.answerType === 'radio') {
       const correctAnswer = variant.correctAnswer[0].value;
@@ -152,71 +138,62 @@ export function SampleQuestionDemo({
     }
   };
 
-  useEffect(() => {
-    handleGenerateNewVariant();
-  }, [promptId]);
-
   // The correct answer to the problem, displayed to the user
-  const answerText = variant
-    ? run(() => {
-        if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
-          return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
-        }
-        if (variant.answerType === 'number') {
-          // Round the answer to 4 decimal places
-          return Math.round(variant.correctAnswer * 1e4) / 1e4;
-        }
-        return variant.correctAnswer;
-      })
-    : '';
+  const answerText = run(() => {
+    if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
+      return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
+    }
+    if (variant.answerType === 'number') {
+      // Round the answer to 4 decimal places
+      return Math.round(variant.correctAnswer * 1e4) / 1e4;
+    }
+    return variant.correctAnswer;
+  });
 
-  const placeholder = variant
-    ? run(() => {
-        const placeholderText: string = prompt.answerType;
-        if (prompt.answerType === 'number') {
-          // Add relative and absolute tolerance if available
-          if (prompt.rtol && prompt.atol) {
-            return `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
-          } else if (prompt.rtol) {
-            return `${placeholderText} (rtol=${prompt.rtol})`;
-          } else if (prompt.atol) {
-            return `${placeholderText} (atol=${prompt.atol})`;
-          }
-        }
-        return placeholderText;
-      })
-    : '';
+  const placeholder = run(() => {
+    const placeholderText: string = prompt.answerType;
+    if (prompt.answerType === 'number') {
+      // Add relative and absolute tolerance if available
+      if (prompt.rtol && prompt.atol) {
+        return `${placeholderText} (rtol=${prompt.rtol}, atol=${prompt.atol})`;
+      } else if (prompt.rtol) {
+        return `${placeholderText} (rtol=${prompt.rtol})`;
+      } else if (prompt.atol) {
+        return `${placeholderText} (atol=${prompt.atol})`;
+      }
+    }
+    return placeholderText;
+  });
 
   return (
-    <Card className="shadow">
+    <Card ref={cardRef} class="shadow">
       <CardHeader>
-        <div className="d-flex align-items-center gap-2">
-          <p className="mb-0">{prompt.name}</p>
-          <span className="badge rounded-pill bg-success me-3">Try me!</span>
+        <div class="d-flex align-items-center gap-2">
+          <p class="mb-0">{prompt.name}</p>
+          <span class="badge rounded-pill bg-success me-3">Try me!</span>
         </div>
       </CardHeader>
       <CardBody>
-        {variant &&
-          variant.question
-            .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
-            .filter(Boolean)
-            .map((part) => {
-              // Bold text
-              if (part.startsWith('**') && part.endsWith('**')) {
-                return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
-              }
+        {variant.question
+          .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)
+          .filter(Boolean)
+          .map((part) => {
+            // Bold text
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return <strong key={`bold-${part.slice(2, -2)}`}>{part.slice(2, -2)}</strong>;
+            }
 
-              // MathJax
-              if (
-                (part.startsWith('$$') && part.endsWith('$$')) ||
-                (part.startsWith('$') && part.endsWith('$'))
-              ) {
-                return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
-              }
+            // MathJax
+            if (
+              (part.startsWith('$$') && part.endsWith('$$')) ||
+              (part.startsWith('$') && part.endsWith('$'))
+            ) {
+              return <span key={`math-${part.slice(2, -2)}`}>{part}</span>;
+            }
 
-              // Regular text
-              return <span key={`text-${part.substring(0, 10)}`}>{part}</span>;
-            })}
+            // Regular text
+            return <span key={`text-${part.slice(0, 10)}`}>{part}</span>;
+          })}
         {(prompt.answerType === 'number' || prompt.answerType === 'string') && (
           <NumericOrStringInput
             userInputResponse={userInputResponse}
@@ -227,7 +204,7 @@ export function SampleQuestionDemo({
             onChange={setUserInputResponse}
           />
         )}
-        {variant && (variant.answerType === 'checkbox' || variant.answerType === 'radio') && (
+        {(variant.answerType === 'checkbox' || variant.answerType === 'radio') && (
           <CheckboxOrRadioInput
             selectedOptions={selectedOptions}
             options={variant.options}
@@ -238,12 +215,12 @@ export function SampleQuestionDemo({
         )}
       </CardBody>
       <CardFooter>
-        <div className="d-flex flex-wrap justify-content-end align-items-center gap-2">
+        <div class="d-flex flex-wrap justify-content-end align-items-center gap-2">
           <i>Answer: {answerText}</i>
-          <div className="flex-grow-1"></div>
-          <div className="d-flex align-items-center gap-2">
+          <div class="flex-grow-1" />
+          <div class="d-flex align-items-center gap-2">
             <Button onClick={handleGenerateNewVariant}>
-              <span className="text-nowrap">New variant</span>
+              <span class="text-nowrap">New variant</span>
             </Button>
 
             <Button onClick={handleGrade}>Grade</Button>
@@ -264,12 +241,7 @@ function FeedbackBadge({ grade }: { grade: number }) {
       return 'bg-danger';
     }
   });
-  return (
-    <span className={`badge ${badgeType}`}>
-      {Math.floor(grade)}
-      {'%'}
-    </span>
-  );
+  return <span class={`badge ${badgeType}`}>{Math.floor(grade)}%</span>;
 }
 
 function NumericOrStringInput({
@@ -288,7 +260,7 @@ function NumericOrStringInput({
   onChange: (text: string) => void;
 }) {
   return (
-    <InputGroup className="mt-2">
+    <InputGroup class="mt-2">
       <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
         {answerLabel}
       </InputGroupText>
@@ -301,7 +273,7 @@ function NumericOrStringInput({
       />
       {(answerUnits || grade !== null) && (
         <InputGroupText>
-          {answerUnits && <span className={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
+          {answerUnits && <span class={grade !== null ? 'me-2' : ''}>{answerUnits}</span>}
           {grade !== null && <FeedbackBadge grade={grade} />}
         </InputGroupText>
       )}
@@ -323,12 +295,12 @@ function CheckboxOrRadioInput({
   onSelectOption: (option: string) => void;
 }) {
   return (
-    <div className="mt-2">
+    <div class="mt-2">
       {options.map((option) => (
         <FormCheck
-          id={`check-${option.value}`}
           key={option.value}
-          type={answerType as 'checkbox' | 'radio'}
+          id={`check-${option.value}`}
+          type={answerType}
           label={variantOptionToString(option)}
           value={option.value}
           checked={selectedOptions.has(option.value)}
@@ -336,7 +308,7 @@ function CheckboxOrRadioInput({
         />
       ))}
       {grade !== null && (
-        <div className="mt-2">
+        <div class="mt-2">
           <FeedbackBadge grade={grade} />
         </div>
       )}

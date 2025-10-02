@@ -12,11 +12,13 @@ from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
+from types import CodeType
 from typing import Any, Literal, TypedDict, TypeGuard, cast
 
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
+    evaluateFalse,
     implicit_multiplication_application,
     standard_transformations,
     stringify_expr,
@@ -27,7 +29,8 @@ from prairielearn.misc_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
-SympyMapT = dict[str, Callable[..., Any] | sympy.Basic]
+SympyMapT = dict[str, sympy.Basic | complex]
+SympyFunctionMapT = dict[str, Callable[..., Any]]
 ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 """
@@ -67,21 +70,21 @@ def is_sympy_json(json: Any) -> TypeGuard[SympyJson]:
 class LocalsForEval(TypedDict):
     """A class with type signatures for the locals_for_eval dict"""
 
-    functions: SympyMapT
+    functions: SympyFunctionMapT
     variables: SympyMapT
-    helpers: SympyMapT
+    helpers: SympyFunctionMapT
 
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
-    helpers: SympyMapT
+    helpers: SympyFunctionMapT
     variables: SympyMapT
     hidden_variables: SympyMapT
     complex_variables: SympyMapT
     hidden_complex_variables: SympyMapT
-    functions: SympyMapT
-    trig_functions: SympyMapT
+    functions: SympyFunctionMapT
+    trig_functions: SympyFunctionMapT
 
     def __init__(self) -> None:
         self.helpers = {
@@ -257,11 +260,14 @@ class HasInvalidSymbolError(BaseSympyError):
 class CheckAST(ast.NodeVisitor):
     whitelist: ASTWhiteListT
     variables: SympyMapT
-    functions: SympyMapT
+    functions: SympyFunctionMapT
     __parents: dict[int, ast.AST]
 
     def __init__(
-        self, whitelist: ASTWhiteListT, variables: SympyMapT, functions: SympyMapT
+        self,
+        whitelist: ASTWhiteListT,
+        variables: SympyMapT,
+        functions: SympyFunctionMapT,
     ) -> None:
         self.whitelist = whitelist
         self.variables = variables
@@ -274,13 +280,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
+    def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
+    def visit_Name(self, node: ast.Name) -> None:
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)
@@ -426,8 +432,12 @@ def evaluate(
 
 
 def evaluate_with_source(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex: bool = False
-) -> tuple[sympy.Expr, str]:
+    expr: str,
+    locals_for_eval: LocalsForEval,
+    *,
+    allow_complex: bool = False,
+    simplify_expression: bool = True,
+) -> tuple[sympy.Expr, str | CodeType]:
     """Evaluate a SymPy expression string with a given set of locals.
 
     Returns:
@@ -481,6 +491,9 @@ def evaluate_with_source(
 
     ast_check_str(code, parsed_locals_to_eval)
 
+    if not simplify_expression:
+        code = compile(evaluateFalse(code), "<string>", "eval")
+
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
@@ -500,6 +513,7 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
 ) -> sympy.Expr:
@@ -514,6 +528,7 @@ def convert_string_to_sympy(
         allow_hidden: Whether to allow hidden variables (like pi and e).
         allow_complex: Whether to allow complex numbers (like i).
         allow_trig_functions: Whether to allow trigonometric functions.
+        simplify_expression: Whether to simplify the expression during conversion by evaluating it.
         custom_functions: A list of custom function names that are allowed in the expression.
         assumptions: A dictionary of assumptions for variables in the expression.
 
@@ -533,6 +548,7 @@ def convert_string_to_sympy(
         allow_hidden=allow_hidden,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=custom_functions,
         assumptions=assumptions,
     )[0]
@@ -545,9 +561,10 @@ def convert_string_to_sympy_with_source(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
     custom_functions: Iterable[str] | None = None,
     assumptions: AssumptionsDictT | None = None,
-) -> tuple[sympy.Expr, str]:
+) -> tuple[sympy.Expr, str | CodeType]:
     """
     Convert a string to a sympy expression, with optional restrictions on
     the variables and functions that can be used. If the string is invalid,
@@ -631,7 +648,12 @@ def convert_string_to_sympy_with_source(
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate_with_source(expr, locals_for_eval, allow_complex=allow_complex)
+    return evaluate_with_source(
+        expr,
+        locals_for_eval,
+        allow_complex=allow_complex,
+        simplify_expression=simplify_expression,
+    )
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
@@ -674,10 +696,13 @@ def sympy_to_json(
         reserved |= const.trig_functions.keys()
 
     # Apply substitutions for hidden variables
-    a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
+    a_sub = a.subs([
+        (val, sympy.symbols(key)) for key, val in const.hidden_variables.items()
+    ])
     if allow_complex:
         a_sub = a_sub.subs([
-            (val, key) for key, val in const.hidden_complex_variables.items()
+            (val, sympy.symbols(key))
+            for key, val in const.hidden_complex_variables.items()
         ])
 
     assumptions_dict = {
@@ -702,6 +727,7 @@ def json_to_sympy(
     *,
     allow_complex: bool = True,
     allow_trig_functions: bool = True,
+    simplify_expression: bool = True,
 ) -> sympy.Expr:
     """Convert a json-seralizable dictionary created by [sympy_to_json][prairielearn.sympy_utils.sympy_to_json] to a SymPy expression.
 
@@ -726,6 +752,7 @@ def json_to_sympy(
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        simplify_expression=simplify_expression,
         custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
     )

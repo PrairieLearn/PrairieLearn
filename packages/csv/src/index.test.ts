@@ -42,7 +42,11 @@ describe('stringifyStream', () => {
       { a: 2, b: 2 },
       { a: 3, b: 3 },
     ]);
-    const csvStream = stream.pipe(stringifyStream({ transform: (row) => [row.a + 1, row.b + 2] }));
+    const csvStream = stream.pipe(
+      stringifyStream<{ a: number; b: number }>({
+        transform: (row) => [row.a + 1, row.b + 2],
+      }),
+    );
     const csv = await streamToString(csvStream);
     assert.equal(csv, '2,3\n3,4\n4,5\n');
   });
@@ -53,7 +57,7 @@ describe('stringifyStream', () => {
       { a: 2, b: 2 },
       { a: 3, b: 3 },
     ]);
-    const stringifier = stringifyStream({
+    const stringifier = stringifyStream<{ a: number; b: number }>({
       header: true,
       columns: [
         { key: 'a', header: 'first' },
@@ -71,7 +75,7 @@ describe('stringifyStream', () => {
       { a: 2, b: 2 },
       { a: 3, b: 3 },
     ]);
-    const stringifier = stringifyStream({
+    const stringifier = stringifyStream<{ a: number; b: number }>({
       header: true,
       columns: ['first', 'second'],
       transform: (row) => [row.a + 1, row.b + 2],

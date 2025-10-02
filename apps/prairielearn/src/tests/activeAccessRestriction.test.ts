@@ -5,7 +5,10 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { ensureEnrollment } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -20,9 +23,6 @@ describe(
     const context: Record<string, any> = {};
     context.siteUrl = `http://localhost:${config.serverPort}`;
     context.baseUrl = `${context.siteUrl}/pl`;
-    context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
-    context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
-    context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
 
     const headers: Record<string, string> = {};
 
@@ -39,10 +39,21 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      context.examId = await sqldb.queryRow(sql.select_exam11, IdSchema);
+      const { id: examId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam11-activeAccessRestriction',
+      });
+      const { id: hwId } = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'hw8-activeAccessRestriction',
+      });
+      context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
+      context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;
+      context.gradeBookUrl = `${context.courseInstanceBaseUrl}/gradebook`;
+      context.examId = examId;
       context.examUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examId}/`;
 
-      context.hwId = await sqldb.queryRow(sql.select_homework8, IdSchema);
+      context.hwId = hwId;
       context.hwUrl = `${context.courseInstanceBaseUrl}/assessment/${context.hwId}/`;
       context.hwNumber = '8';
     });
@@ -61,7 +72,14 @@ describe(
     });
 
     test.sequential('enroll the test student user in the course', async () => {
-      await sqldb.queryAsync(sql.enroll_student_in_course, []);
+      const user = await selectUserByUid('student@example.com');
+      await ensureEnrollment({
+        user_id: user.user_id,
+        course_instance_id: '1',
+        agent_user_id: null,
+        agent_authn_user_id: null,
+        action_detail: 'implicit_joined',
+      });
     });
 
     test.sequential(
@@ -194,9 +212,7 @@ describe(
     test.sequential('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
       );
       assert.equal(context.numberOfVariants, 2);
@@ -327,9 +343,7 @@ describe(
     test.sequential('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.examInstanceUrl) },
         z.number(),
       );
       assert.equal(countVariantsResult, context.numberOfVariants);
@@ -422,9 +436,7 @@ describe(
     test.sequential('count number of variants generated', async () => {
       context.numberOfVariants = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
       );
       assert.equal(context.numberOfVariants, 1);
@@ -474,9 +486,7 @@ describe(
     test.sequential('ensure that no new variants have been created', async () => {
       const countVariantsResult = await sqldb.queryRow(
         sql.count_variants,
-        {
-          assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl),
-        },
+        { assessment_instance_id: helperClient.parseAssessmentInstanceId(context.hwInstanceUrl) },
         z.number(),
       );
       assert.equal(countVariantsResult, context.numberOfVariants);
@@ -551,9 +561,7 @@ describe(
       async () => {
         const points = await sqldb.queryRow(
           sql.read_assessment_instance_points,
-          {
-            assessment_id: context.hwId,
-          },
+          { assessment_id: context.hwId },
           z.number(),
         );
         assert.equal(points, 0);
@@ -683,9 +691,7 @@ describe(
     test.sequential('check that no files or text were attached', async () => {
       const numberOfFiles = await sqldb.queryRow(
         sql.get_attached_files,
-        {
-          assessment_id: context.hwId,
-        },
+        { assessment_id: context.hwId },
         z.number(),
       );
 

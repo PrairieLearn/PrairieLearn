@@ -3,8 +3,8 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  AssessmentsFormatForQuestionSchema,
   SharingSetSchema,
+  SprocAssessmentsFormatForQuestionSchema,
   TagSchema,
   TopicSchema,
 } from '../lib/db-types.js';
@@ -18,6 +18,7 @@ const QuestionsPageDataSchema = z.object({
   sync_warnings: z.string().nullable().optional(),
   grading_method: z.string(),
   external_grading_image: z.string().nullable(),
+  workspace_image: z.string().nullable(),
   display_type: z.string(),
   open_issue_count: z.number().default(0),
   topic: TopicSchema,
@@ -25,7 +26,7 @@ const QuestionsPageDataSchema = z.object({
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
   sharing_sets: z.array(SharingSetSchema).nullable().optional(),
-  assessments: AssessmentsFormatForQuestionSchema.nullable().optional(),
+  assessments: SprocAssessmentsFormatForQuestionSchema.nullable().optional(),
 });
 export type QuestionsPageData = z.infer<typeof QuestionsPageDataSchema>;
 
@@ -37,9 +38,7 @@ export async function selectQuestionsForCourse(
 ): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_questions_for_course,
-    {
-      course_id,
-    },
+    { course_id },
     QuestionsPageDataSchema,
   );
 
@@ -58,9 +57,7 @@ export async function selectPublicQuestionsForCourse(
 ): Promise<QuestionsPageData[]> {
   const rows = await sqldb.queryRows(
     sql.select_public_questions_for_course,
-    {
-      course_id,
-    },
+    { course_id },
     QuestionsPageDataSchema,
   );
 

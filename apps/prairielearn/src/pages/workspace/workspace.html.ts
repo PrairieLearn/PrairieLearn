@@ -1,8 +1,8 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
-import { Modal } from '../../components/Modal.html.js';
+import { HeadContents } from '../../components/HeadContents.js';
+import { Modal } from '../../components/Modal.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
@@ -178,7 +178,7 @@ export function Workspace({
             <h2>Workspace failed to load</h2>
             <p id="failed-message"></p>
           </div>
-          <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
+          <iframe id="workspace" class="d-none flex-grow h-100 border-0" title="Workspace"></iframe>
         </main>
       </body>
     </html>

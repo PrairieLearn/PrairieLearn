@@ -1,7 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -28,7 +28,7 @@ export function AdministratorInstitutionLti13({
       institution,
     },
     pageTitle: 'LTI 1.3 - Institution Admin',
-    headContent: [compiledScriptTag('administratorInstitutionLti13Client.ts')],
+    headContent: compiledScriptTag('administratorInstitutionLti13Client.ts'),
     navContext: {
       type: 'administrator_institution',
       page: 'administrator_institution',
@@ -47,7 +47,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ? i.name : `#${i.id}`} </span>
+                  <span style="white-space: nowrap">${i.name}</span>
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;
@@ -95,7 +95,7 @@ function LTI13Instance(
         </button>
       </p>
 
-      <div class="modal fade" id="instanceData" tabindex="-1" aria-hidden="true">
+      <div class="modal fade" id="instanceData" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
           <div class="modal-content">
             <div class="modal-header">
@@ -121,7 +121,7 @@ function LTI13Instance(
         |
         <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
         (${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-        key${instance.keystore?.keys?.length === 1 ? '' : 's'})
+        key${instance.keystore?.keys.length === 1 ? '' : 's'})
       </p>
 
       <hr />
@@ -149,7 +149,7 @@ function LTI13Instance(
             Use this name inside PL to refer to the LMS, i.e. whatever your institution calls it
           </small>
         </div>
-        <button class="btn btn-info">Save name</button>
+        <button type="submit" class="btn btn-info">Save name</button>
         <input type="reset" class="btn btn-secondary" value="Reset options" />
       </form>
 
@@ -233,13 +233,14 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
             <a
               href="https://canvas.instructure.com/doc/api/file.tools_variable_substitutions.html"
               target="_blank"
+              rel="noreferrer"
               >Canvas variable substitution docs</a
             >
           </small>
         </div>
 
         <div class="mb-3">
-          <button class="btn btn-info">Save platform options</button>
+          <button type="submit" class="btn btn-info">Save platform options</button>
           <input type="reset" class="btn btn-secondary" value="Reset options" />
         </div>
       </form>
@@ -249,9 +250,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
 
       <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
       contains ${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-      key${instance.keystore?.keys?.length === 1 ? '' : 's'}.<br />
+      key${instance.keystore?.keys.length === 1 ? '' : 's'}.<br />
       <ul>
-        ${instance.keystore?.keys?.map((k) => {
+        ${instance.keystore?.keys.map((k) => {
           return html`<li>
             <form method="POST">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -262,7 +263,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
                 class="btn btn-xs btn-outline-warning"
                 type="submit"
                 value="Delete key"
-                onClick="return confirm('Really delete this key: ${k.kid}?')"
+                onclick="return confirm('Really delete this key: ${k.kid}?')"
               />
             </form>
           </li>`;
@@ -278,7 +279,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           name="__action"
           value="delete_keys"
           class="btn btn-warning"
-          onClick="return confirm('Really delete all keys from keystore?')"
+          onclick="return confirm('Really delete all keys from keystore?')"
         >
           Delete all keys from keystore
         </button>
@@ -345,7 +346,7 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         </div>
 
         <div class="mb-3">
-          <label class="form-label" for="name_attribute">Email attribute</label>
+          <label class="form-label" for="email_attribute">Email attribute</label>
           <input
             type="text"
             class="form-control"
@@ -360,7 +361,28 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           </small>
         </div>
 
-        <button class="btn btn-info">Save PrairieLearn config</button>
+        <div class="mb-3 form-check">
+          <input
+            type="checkbox"
+            class="form-check-input"
+            name="require_linked_lti_user"
+            id="require_linked_lti_user"
+            value="true"
+            aria-describedby="requireLtiUserHelp"
+            ${instance.require_linked_lti_user ? 'checked' : ''}
+          />
+          <label class="form-check-label" for="require_linked_lti_user">
+            Require LTI authentication
+          </label>
+          <small id="requireLtiUserHelp" class="form-text text-muted d-block">
+            When enabled, students who authenticate via a non-LTI provider will be required to
+            authenticate via the LTI platform before they can access any course instances linked to
+            this LTI instance. This should not be enabled in most cases. It is primarily useful for
+            institutions that don't provide UIDs or useful emails to PrairieLearn via LTI.
+          </small>
+        </div>
+
+        <button type="submit" class="btn btn-info">Save PrairieLearn config</button>
       </form>
 
       <hr />
@@ -375,8 +397,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
         <input type="hidden" name="__action" value="remove_instance" />
         <button
+          type="submit"
           class="btn btn-danger my-2"
-          onClick="return confirm('Really delete this LTI 1.3 instance?')"
+          onclick="return confirm('Really delete this LTI 1.3 instance?')"
         >
           Remove LTI 1.3 instance
         </button>

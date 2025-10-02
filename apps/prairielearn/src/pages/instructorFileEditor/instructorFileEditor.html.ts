@@ -1,7 +1,7 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
-import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.js';
+import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { ansiToHtml } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
@@ -318,7 +318,7 @@ export function InstructorFileEditor({
                         <button
                           class="btn btn-primary"
                           type="button"
-                          onClick="window.location.reload()"
+                          onclick="window.location.reload()"
                         >
                           Choose their version (discard my changes)
                         </button>

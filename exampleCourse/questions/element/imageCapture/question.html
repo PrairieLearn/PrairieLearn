@@ -1,0 +1,19 @@
+<pl-question-panel>
+  <p>This question demonstrates the image capture element, which enables students to submit images to questions using their local camera or an external device (e.g. a phone or tablet).</p>
+</pl-question-panel> 
+
+<pl-card>
+  <p>Consider the function $f(x) = arcsin(2x) + cos(4x^3-5x)+e^{x^3}$. Find $f'(x)$ and show your work.</p>
+  <pl-image-capture file-name="solution-1.jpg"></pl-image-capture>
+</pl-card>
+
+<p>If necessary, mobile capture can be disabled.</p>
+
+<pl-card>
+  <p>Sketch the bounded region enclosed by the curves $y=-x^2+3$ and $y=2x^2$.</p>
+  <pl-image-capture file-name="solution-2.jpg" mobile-capture-enabled="false"></pl-image-capture>
+</pl-card>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

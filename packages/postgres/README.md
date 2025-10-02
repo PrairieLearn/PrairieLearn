@@ -161,20 +161,6 @@ These functions have some behaviors that can make them more convenient to work w
   console.log(userNames);
   ```
 
-There are also a number of legacy functions available, though these are discouraged in new code.
-
-- `queryValidatedRows`
-- `queryValidatedOneRow`
-- `queryValidatedZeroOrOneRow`
-- `queryValidatedSingleColumnRows`
-- `queryValidatedSingleColumnOneRow`
-- `queryValidatedSingleColumnZeroOrOneRow`
-- `callValidatedRows`
-- `callValidatedOneRow`
-- `callValidatedZeroOrOneRow`
-
-For details on the behavior of these functions, see the source code.
-
 ### Transactions
 
 To use transactions, wrap your queries with the `runInTransactionAsync` function:
@@ -194,29 +180,15 @@ const { user, course } = await sqldb.runInTransactionAsync(async () => {
 For very large queries that don't need to fit in memory all at once, it's possible to use a cursor to read a limited number of rows at a time.
 
 ```ts
-import { queryCursor } from '@prairielearn/postgres';
-
-const cursor = await queryCursor(sql.select_all_users, {});
-for await (const users of cursor.iterate(100)) {
-  // `users` will have up to 100 rows in it.
-  for (const user of users) {
-    console.log(user);
-  }
-}
-```
-
-You can optionally pass a Zod schema to parse and validate each row:
-
-```ts
 import { z } from 'zod';
-import { queryValidatedCursor } from '@prairielearn/postgres';
+import { queryCursor } from '@prairielearn/postgres';
 
 const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
 });
 
-const cursor = await queryValidatedCursor(sql.select_all_users, {}, UserSchema);
+const cursor = await queryCursor(sql.select_all_users, {}, UserSchema);
 for await (const users of cursor.iterate(100)) {
   for (const user of users) {
     console.log(user);
@@ -227,10 +199,14 @@ for await (const users of cursor.iterate(100)) {
 You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
 
 ```ts
-import { queryCursor } from '@prairielearn/postgres';
-
-const cursor = await queryCursor(sql.select_all_users, {});
+const cursor = await queryCursor(sql.select_all_users, UserSchema);
 cursor.stream(100).pipe(makeStreamSomehow());
+```
+
+If you don't need to parse and validate each row with Zod, you can use `z.unknown()` as the schema:
+
+```ts
+const cursor = await queryCursor(sql.select_all_users, z.unknown());
 ```
 
 ### Callback-style functions

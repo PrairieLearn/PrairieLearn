@@ -1,5 +1,23 @@
 # @prairielearn/express-test-utils
 
+## 2.0.3
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- 678b48a: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- d97b97a: Upgrade all JavaScript dependencies
+
 ## 2.0.0
 
 ### Major Changes

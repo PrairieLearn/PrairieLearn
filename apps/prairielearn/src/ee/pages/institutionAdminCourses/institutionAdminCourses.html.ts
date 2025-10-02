@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function InstitutionAdminCourses({

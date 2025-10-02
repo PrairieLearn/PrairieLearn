@@ -2,7 +2,7 @@
 WITH
   issue_count AS (
     SELECT
-      i.instance_question_id AS instance_question_id,
+      i.instance_question_id,
       count(*)::integer AS open_issue_count
     FROM
       issues AS i
@@ -12,13 +12,42 @@ WITH
       AND i.open
     GROUP BY
       i.instance_question_id
+  ),
+  latest_submissions AS (
+    SELECT DISTINCT
+      ON (iq.id) iq.id AS instance_question_id,
+      s.id AS submission_id,
+      s.manual_rubric_grading_id
+    FROM
+      instance_questions AS iq
+      JOIN variants AS v ON iq.id = v.instance_question_id
+      JOIN submissions AS s ON v.id = s.variant_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+    ORDER BY
+      iq.id ASC,
+      s.date DESC
+  ),
+  rubric_items_agg AS (
+    SELECT
+      ls.instance_question_id,
+      COALESCE(
+        json_agg(rgi.rubric_item_id) FILTER (
+          WHERE
+            rgi.rubric_item_id IS NOT NULL
+        ),
+        '[]'::json
+      ) AS rubric_grading_item_ids
+    FROM
+      latest_submissions AS ls
+      LEFT JOIN rubric_grading_items AS rgi ON (
+        rgi.rubric_grading_id = ls.manual_rubric_grading_id
+      )
+    GROUP BY
+      ls.instance_question_id
   )
 SELECT
   iq.*,
-  -- Convert modified_at to a text representation suitable for
-  -- PostgreSQL so it can be properly interpreted when a grade
-  -- update POST is received back.
-  CAST(iq.modified_at AS TEXT) AS modified_at,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
@@ -31,7 +60,8 @@ SELECT
   -- is designed to reduce the impact of the order of the instance questions on
   -- individual students, which reduces bias. See
   -- https://papers.ssrn.com/sol3/papers.cfm?abstract_id=4603146
-  ((iq.id % 21317) * 45989) % 3767 as iq_stable_order
+  ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order,
+  COALESCE(ri.rubric_grading_item_ids, '[]'::json) AS rubric_grading_item_ids
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -42,6 +72,7 @@ FROM
   LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
   LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
   LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
+  LEFT JOIN rubric_items_agg AS ri ON ri.instance_question_id = iq.id
 WHERE
   ai.assessment_id = $assessment_id
   AND iq.assessment_question_id = $assessment_question_id
@@ -63,4 +94,4 @@ SET
   END
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::BIGINT[]);
+  AND iq.id = ANY ($instance_question_ids::bigint[]);

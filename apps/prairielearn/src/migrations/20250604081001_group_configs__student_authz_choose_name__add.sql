@@ -1,0 +1,2 @@
+ALTER TABLE group_configs
+ADD COLUMN IF NOT EXISTS student_authz_choose_name BOOLEAN NOT NULL DEFAULT TRUE;

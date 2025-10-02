@@ -4,7 +4,7 @@ CREATE FUNCTION
         column_name text,
         value text,
         authn_user_id bigint
-    ) returns void
+    ) RETURNS void
 AS $$
 DECLARE
     old_row pl_courses%ROWTYPE;

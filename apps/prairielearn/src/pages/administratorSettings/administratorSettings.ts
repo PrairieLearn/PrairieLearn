@@ -1,4 +1,4 @@
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
@@ -12,7 +12,7 @@ import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',

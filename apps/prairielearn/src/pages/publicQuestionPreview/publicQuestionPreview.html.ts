@@ -1,12 +1,19 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 
-import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionContainer } from '../../components/QuestionContainer.html.js';
+import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
+import type { CopyTarget } from '../../lib/copy-content.js';
 
-export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string, any> }) {
+export function PublicQuestionPreview({
+  resLocals,
+  questionCopyTargets,
+}: {
+  resLocals: Record<string, any>;
+  questionCopyTargets: CopyTarget[] | null;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: resLocals.question.qid,
@@ -29,9 +36,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
             <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
             <script src="${assetPath('javascripts/require.js')}"></script>
             <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath(
-                `localscripts/question${resLocals.effectiveQuestionType}.js`,
-              )}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
@@ -39,7 +44,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     content: html`
       <div class="row">
         <div class="col-lg-9 col-sm-12">
-          ${QuestionContainer({ resLocals, questionContext: 'public' })}
+          ${QuestionContainer({ resLocals, questionContext: 'public', questionCopyTargets })}
         </div>
 
         <div class="col-lg-3 col-sm-12">

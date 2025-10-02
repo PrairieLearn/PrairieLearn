@@ -19,13 +19,13 @@
     "@prairielearn/zod": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
-    "filesize": "^10.1.6",
+    "filesize": "^11.0.13",
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.17.32",
-    "typescript": "^5.8.3",
+    "@types/node": "^22.18.8",
+    "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"
   }
 }

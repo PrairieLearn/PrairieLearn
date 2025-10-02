@@ -18,23 +18,24 @@ async function waitForMetricsExport(exporter: InMemoryMetricExporter) {
 
 describe('instrumentedWithMetrics', () => {
   let exporter: InMemoryMetricExporter;
-  let metricReader: PeriodicExportingMetricReader;
+  let meterProvider: MeterProvider;
   let meter: Meter;
 
   beforeEach(async () => {
-    const meterProvider = new MeterProvider();
-    meter = meterProvider.getMeter('test');
     exporter = new InMemoryMetricExporter(AggregationTemporality.DELTA);
-    metricReader = new PeriodicExportingMetricReader({
-      exporter,
-      exportIntervalMillis: 50,
+    meterProvider = new MeterProvider({
+      readers: [
+        new PeriodicExportingMetricReader({
+          exporter,
+          exportIntervalMillis: 50,
+        }),
+      ],
     });
-    meterProvider.addMetricReader(metricReader);
+    meter = meterProvider.getMeter('test');
   });
 
   afterEach(async () => {
-    await exporter.shutdown();
-    await metricReader.shutdown();
+    await meterProvider.shutdown();
   });
 
   it('records a histogram for the function duration', async () => {

@@ -1,5 +1,7 @@
 import { io } from 'socket.io-client';
 
+import { onDocumentReady } from '@prairielearn/browser-utils';
+
 function getNumericalAttribute(element: HTMLElement, name: string, defaultValue: number): number {
   const value = element.getAttribute(name);
   if (value === null) {
@@ -12,7 +14,7 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
   return parsedValue;
 }
 
-$(function () {
+onDocumentReady(function () {
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
@@ -38,7 +40,7 @@ $(function () {
   const workspaceFrame = document.getElementById('workspace') as HTMLIFrameElement;
   const stateBadge = document.getElementById('state') as HTMLSpanElement;
   const messageBadge = document.getElementById('message') as HTMLSpanElement;
-  const failedMessage = document.getElementById('failed-message') as HTMLElement;
+  const failedMessage = document.getElementById('failed-message')!;
   const reloadButton = document.getElementById('reload') as HTMLButtonElement;
 
   const showStoppedFrame = () => {
@@ -63,7 +65,6 @@ $(function () {
   };
 
   function setMessage(message: string) {
-    console.log('message', message);
     messageBadge.textContent = message;
     failedMessage.textContent = message;
     if (message) {
@@ -108,20 +109,17 @@ $(function () {
   }
 
   socket.on('change:state', (msg) => {
-    console.log('change:state, msg =', msg);
     setState(msg.state);
     setMessage(msg.message);
   });
 
   socket.on('change:message', (msg) => {
-    console.log('change:message, msg =', msg);
     setMessage(msg.message);
   });
 
   // Whenever we establish or reestablish a connection, join the workspace room.
   socket.on('connect', () => {
     socket.emit('joinWorkspace', (msg: any) => {
-      console.log('joinWorkspace, msg =', msg);
       if (msg.errorMessage) {
         setMessage('Error joining workspace: ' + msg.errorMessage);
       } else {
@@ -141,9 +139,7 @@ $(function () {
 
     // Only send a heartbeat if this page was recently visible.
     if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
-      socket.emit('heartbeat', (msg: any) => {
-        console.log('heartbeat, msg =', msg);
-      });
+      socket.emit('heartbeat');
     }
   }, heartbeatIntervalSec * 1000);
 

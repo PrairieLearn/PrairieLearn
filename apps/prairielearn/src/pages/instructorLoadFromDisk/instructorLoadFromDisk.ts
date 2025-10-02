@@ -26,7 +26,7 @@ async function update(locals: Record<string, any>) {
   });
 
   serverJob.executeInBackground(async (job) => {
-    let anyCourseHadJsonErrors = false;
+    let anyCourseHadJsonErrors = false as boolean;
 
     // Merge the list of courses in the config with the list of courses in the database.
     // We use a set to ensure that we don't double-count courses that are both
@@ -46,7 +46,7 @@ async function update(locals: Record<string, any>) {
       const hasInfoCourseFile = await fs.pathExists(infoCourseFile);
       if (!hasInfoCourseFile) {
         job.verbose('infoCourse.json not found, skipping');
-        if (index !== config.courseDirs.length - 1) job.info('');
+        if (index !== courseDirs.size - 1) job.info('');
         return;
       }
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
@@ -54,7 +54,7 @@ async function update(locals: Record<string, any>) {
         job.fail('Sync completely failed due to invalid question sharing edit.');
         return;
       }
-      if (index !== config.courseDirs.length - 1) job.info('');
+      if (index !== courseDirs.size - 1) job.info('');
       if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await updateChunksForCourse({

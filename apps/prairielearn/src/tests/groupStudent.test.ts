@@ -2,11 +2,12 @@ import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -24,7 +25,7 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 const storedConfig: Record<string, any> = {};
 
 describe('Group based homework assess control on student side', { timeout: 20_000 }, function () {
-  beforeAll(async () => {
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
@@ -34,7 +35,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   afterAll(helperServer.after);
 
-  afterAll(async () => {
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 
@@ -76,11 +77,16 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('3. Check if the config is correct', function () {
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
-        assessment_id: locals.assessment_id,
-      });
-      const min = result.rows[0]['minimum'];
-      const max = result.rows[0]['maximum'];
+      const result = await sqldb.queryRow(
+        sql.select_group_config,
+        { assessment_id: locals.assessment_id },
+        z.object({
+          minimum: GroupConfigSchema.shape.minimum,
+          maximum: GroupConfigSchema.shape.maximum,
+        }),
+      );
+      const min = result.minimum;
+      const max = result.maximum;
       assert.equal(min, 3);
       assert.equal(max, 3);
     });
@@ -104,11 +110,16 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('5. Check if the config is correct', function () {
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
-        assessment_id: locals.assessment_id_2,
-      });
-      const min = result.rows[0]['minimum'];
-      const max = result.rows[0]['maximum'];
+      const result = await sqldb.queryRow(
+        sql.select_group_config,
+        { assessment_id: locals.assessment_id_2 },
+        z.object({
+          minimum: GroupConfigSchema.shape.minimum,
+          maximum: GroupConfigSchema.shape.maximum,
+        }),
+      );
+      const min = result.minimum;
+      const max = result.maximum;
       assert.equal(min, 2);
       assert.equal(max, 5);
     });
@@ -152,7 +163,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
+          group_name: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -165,7 +176,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: 'secondgroup',
+          group_name: 'secondgroup',
         }),
       });
       assert.equal(response.status, 200);
@@ -281,8 +292,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.$ = cheerio.load(page);
     });
     it('should have 3 students in group 1 in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_user_in_group, []);
-      assert.lengthOf(result.rows, 3);
+      const rowCount = await sqldb.execute(sql.select_all_user_in_group);
+      assert.equal(rowCount, 3);
     });
   });
 
@@ -354,14 +365,12 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group', async () => {
-      locals.group_name = 'groupBBCCDD';
+    it('should be able to create a group without a name', async () => {
       const response = await fetch(locals.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name,
         }),
       });
       assert.equal(response.status, 200);
@@ -440,8 +449,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.lengthOf(elemList, 3);
     });
     it('should have 0 assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 0);
+      const rowCount = await sqldb.execute(sql.select_all_assessment_instance);
+      assert.equal(rowCount, 0);
     });
     it('should be able to start the assessment', async () => {
       const response = await fetch(locals.assessmentUrl, {
@@ -454,12 +463,14 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.equal(response.status, 200);
     });
     it('should have 1 assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 1);
-      locals.assessment_instance_id = result.rows[0].id;
+      const result = await sqldb.queryRow(
+        sql.select_all_assessment_instance,
+        AssessmentInstanceSchema,
+      );
+      locals.assessment_instance_id = result.id;
       locals.assessmentInstanceURL =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(result.rows[0].group_id, 1);
+      assert.equal(result.group_id, '1');
     });
   });
 
@@ -536,7 +547,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative1,
+          group_name: locals.group_name_alternative1,
         }),
       });
       assert.equal(response.status, 200);
@@ -587,7 +598,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
         body: new URLSearchParams({
           __action: 'create_group',
           __csrf_token: locals.__csrf_token,
-          groupName: locals.group_name_alternative2,
+          group_name: locals.group_name_alternative2,
         }),
       });
       assert.equal(response.status, 200);
@@ -600,9 +611,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('20. cross assessment grouping', function () {
     it('should contain a second group-based homework assessment', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
-      assert.lengthOf(result.rows, 2);
-      assert.notEqual(result.rows[1].id, undefined);
+      const rowCount = await sqldb.execute(sql.select_group_work_assessment);
+      assert.equal(rowCount, 2);
     });
     it('should load the second assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl_2);

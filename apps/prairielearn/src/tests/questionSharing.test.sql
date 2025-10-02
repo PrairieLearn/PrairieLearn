@@ -5,7 +5,7 @@ FROM
   questions
 WHERE
   course_id = $course_id
-  and qid = $qid;
+  AND qid = $qid;
 
 -- BLOCK select_sharing_set
 SELECT

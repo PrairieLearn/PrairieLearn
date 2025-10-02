@@ -4,8 +4,8 @@ import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../components/Modal.html.js';
-import { PageLayout } from '../../../components/PageLayout.html.js';
+import { Modal } from '../../../components/Modal.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -182,6 +182,25 @@ export function GenerationFailure({
 
       <p>The LLM did not generate any question file.</p>
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+}
+
+export function RateLimitExceeded({
+  canShortenMessage = false,
+}: {
+  /**
+   * If true, shows that the user should shorten their message to stay under the rate limit.
+   */
+  canShortenMessage: boolean;
+}): string {
+  return html`
+    <div id="generation-results">
+      <div class="alert alert-danger mt-2 mb-0">
+        ${canShortenMessage
+          ? 'Your prompt is too long. Please shorten it and try again.'
+          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
+      </div>
     </div>
   `.toString();
 }

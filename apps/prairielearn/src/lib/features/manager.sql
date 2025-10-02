@@ -59,7 +59,7 @@ ON CONFLICT (
 SET
   enabled = EXCLUDED.enabled;
 
--- BLOCK disable_feature
+-- BLOCK delete_feature
 DELETE FROM feature_grants
 WHERE
   name = $name

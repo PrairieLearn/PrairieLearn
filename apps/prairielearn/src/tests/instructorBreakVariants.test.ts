@@ -3,7 +3,10 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { IdSchema } from '../lib/db-types.js';
+import { type Assessment, type AssessmentQuestion, IdSchema } from '../lib/db-types.js';
+import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -20,10 +23,10 @@ const studentUser: AuthUser = {
   email: 'student@example.com',
 };
 
-describe('Instructor force-breaking variants', () => {
-  let assessmentId: string;
-  let partialCredit1AssessmentQuestionId: string;
-  let partialCredit2AssessmentQuestionId: string;
+describe('Instructor force-breaking variants on homework', () => {
+  let assessment: Assessment;
+  let partialCredit1AssessmentQuestion: AssessmentQuestion;
+  let partialCredit2AssessmentQuestion: AssessmentQuestion;
   let partialCredit1VariantId: string;
   let partialCredit2VariantId: string;
   let assessmentStudentUrl: string;
@@ -31,19 +34,174 @@ describe('Instructor force-breaking variants', () => {
   beforeAll(async () => {
     await helperServer.before()();
 
-    assessmentId = await queryRow(sql.select_break_variants_exam, {}, IdSchema);
-    assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessmentId}`;
+    assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'hw1-automaticTestSuite',
+    });
+    assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
 
-    partialCredit1AssessmentQuestionId = await queryRow(
-      sql.select_assessment_question,
-      { qid: 'partialCredit1', assessment_id: assessmentId },
+    partialCredit1AssessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: (await selectQuestionByQid({ course_id: '1', qid: 'partialCredit1' })).id,
+    });
+    partialCredit2AssessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: (await selectQuestionByQid({ course_id: '1', qid: 'partialCredit2' })).id,
+    });
+  });
+  afterAll(helperServer.after);
+
+  test.sequential('student creates and submits to first variant', async () => {
+    await withUser(studentUser, async () => {
+      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+      assert.equal(assessmentResponse.status, 200);
+      const partialCredit1Url = assessmentResponse.$('a:contains("Partial credit 1")').attr('href');
+
+      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
+      assert.equal(questionResponse.status, 200);
+
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+
+      partialCredit1VariantId = variantIdInputValue.toString();
+
+      const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: getCSRFToken(questionResponse.$),
+          __variant_id: partialCredit1VariantId,
+          s: '50',
+        }),
+      });
+      assert.equal(submissionResponse.status, 200);
+    });
+  });
+
+  test.sequential('student creates and submits to second variant', async () => {
+    await withUser(studentUser, async () => {
+      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+      assert.equal(assessmentResponse.status, 200);
+      const partialCredit2Url = assessmentResponse.$('a:contains("Partial credit 2")').attr('href');
+
+      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
+      assert.equal(questionResponse.status, 200);
+
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+      partialCredit2VariantId = variantIdInputValue.toString();
+
+      const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'grade',
+          __csrf_token: getCSRFToken(questionResponse.$),
+          __variant_id: partialCredit2VariantId,
+          s: '50',
+        }),
+      });
+      assert.equal(submissionResponse.status, 200);
+    });
+  });
+
+  test.sequential('instructor breaks first variant via assessment question page', async () => {
+    const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
+
+    const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
+    const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
+
+    const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'reset_question_variants',
+        __csrf_token: csrfToken,
+        unsafe_assessment_question_id: partialCredit1AssessmentQuestion.id,
+      }),
+    });
+    assert.equal(breakVariantsResponse.status, 200);
+  });
+
+  test.sequential('instructor breaks second variant via student instance page', async () => {
+    const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
+
+    const instanceQuestion = await queryRow(
+      sql.select_instance_question,
+      { assessment_question_id: partialCredit2AssessmentQuestion.id },
       IdSchema,
     );
-    partialCredit2AssessmentQuestionId = await queryRow(
-      sql.select_assessment_question,
-      { qid: 'partialCredit2', assessment_id: assessmentId },
-      IdSchema,
-    );
+
+    const instanceResponse = await fetchCheerio(instanceUrl);
+    const csrfToken = getCSRFToken(instanceResponse.$);
+
+    const breakVariantsResponse = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'reset_question_variants',
+        __csrf_token: csrfToken,
+        unsafe_instance_question_id: instanceQuestion,
+      }),
+    });
+    assert.equal(breakVariantsResponse.status, 200);
+  });
+
+  test.sequential('student sees new variant when revisiting first question', async () => {
+    await withUser(studentUser, async () => {
+      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+      assert.equal(assessmentResponse.status, 200);
+      const partialCredit1Url = assessmentResponse.$('a:contains("Partial credit 1")').attr('href');
+
+      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
+      assert.equal(questionResponse.status, 200);
+
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit1VariantId);
+    });
+  });
+
+  test.sequential('student sees new variant when revisiting second question', async () => {
+    await withUser(studentUser, async () => {
+      const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
+      assert.equal(assessmentResponse.status, 200);
+      const partialCredit2Url = assessmentResponse.$('a:contains("Partial credit 2")').attr('href');
+
+      const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
+      assert.equal(questionResponse.status, 200);
+
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.notEqual(variantId.toString(), partialCredit2VariantId);
+    });
+  });
+});
+
+// We currently forbid resetting variants for Exam assessments.
+// See https://github.com/PrairieLearn/PrairieLearn/issues/12977
+describe('Instructor force-breaking variants on exam', () => {
+  let assessment: Assessment;
+  let partialCredit1AssessmentQuestion: AssessmentQuestion;
+  let partialCredit2AssessmentQuestion: AssessmentQuestion;
+  let partialCredit1VariantId: string;
+  let partialCredit2VariantId: string;
+  let assessmentStudentUrl: string;
+
+  beforeAll(async () => {
+    await helperServer.before()();
+
+    assessment = await selectAssessmentByTid({
+      course_instance_id: '1',
+      tid: 'exam15-breakVariants',
+    });
+    assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
+
+    partialCredit1AssessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: (await selectQuestionByQid({ course_id: '1', qid: 'partialCredit1' })).id,
+    });
+    partialCredit2AssessmentQuestion = await selectAssessmentQuestionByQuestionId({
+      assessment_id: assessment.id,
+      question_id: (await selectQuestionByQid({ course_id: '1', qid: 'partialCredit2' })).id,
+    });
   });
   afterAll(helperServer.after);
 
@@ -72,10 +230,10 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`);
       assert.equal(questionResponse.status, 200);
 
-      partialCredit1VariantId = questionResponse
-        .$('input[name=__variant_id]')
-        .val()
-        ?.toString() as string;
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+
+      partialCredit1VariantId = variantIdInputValue.toString();
 
       const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit1Url}`, {
         method: 'POST',
@@ -99,10 +257,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`);
       assert.equal(questionResponse.status, 200);
 
-      partialCredit2VariantId = questionResponse
-        .$('input[name=__variant_id]')
-        .val()
-        ?.toString() as string;
+      const variantIdInputValue = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantIdInputValue);
+      partialCredit2VariantId = variantIdInputValue.toString();
 
       const submissionResponse = await fetchCheerio(`${siteUrl}${partialCredit2Url}`, {
         method: 'POST',
@@ -117,29 +274,32 @@ describe('Instructor force-breaking variants', () => {
     });
   });
 
-  test.sequential('instructor breaks first variant via assessment question page', async () => {
-    const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessmentId}/questions`;
+  test.sequential(
+    'instructor cannot break first variant via assessment question page',
+    async () => {
+      const assessmentQuestionsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment.id}/questions`;
 
-    const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
-    const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
+      const assessmentQuestionsResponse = await fetchCheerio(assessmentQuestionsUrl);
+      const csrfToken = getCSRFToken(assessmentQuestionsResponse.$);
 
-    const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'reset_question_variants',
-        __csrf_token: csrfToken,
-        unsafe_assessment_question_id: partialCredit1AssessmentQuestionId,
-      }),
-    });
-    assert.equal(breakVariantsResponse.status, 200);
-  });
+      const breakVariantsResponse = await fetchCheerio(assessmentQuestionsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'reset_question_variants',
+          __csrf_token: csrfToken,
+          unsafe_assessment_question_id: partialCredit1AssessmentQuestion.id,
+        }),
+      });
+      assert.equal(breakVariantsResponse.status, 403);
+    },
+  );
 
-  test.sequential('instructor breaks second variant via student instance page', async () => {
+  test.sequential('instructor cannot break second variant via student instance page', async () => {
     const instanceUrl = `${courseInstanceUrl}/instructor/assessment_instance/1`;
 
     const instanceQuestion = await queryRow(
       sql.select_instance_question,
-      { assessment_question_id: partialCredit2AssessmentQuestionId },
+      { assessment_question_id: partialCredit2AssessmentQuestion.id },
       IdSchema,
     );
 
@@ -154,10 +314,10 @@ describe('Instructor force-breaking variants', () => {
         unsafe_instance_question_id: instanceQuestion,
       }),
     });
-    assert.equal(breakVariantsResponse.status, 200);
+    assert.equal(breakVariantsResponse.status, 403);
   });
 
-  test.sequential('student sees new variant when revisiting first question', async () => {
+  test.sequential('student sees same variant when revisiting first question', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -166,12 +326,13 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() as string;
-      assert.notEqual(variantId, partialCredit1VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.equal(variantId.toString(), partialCredit1VariantId);
     });
   });
 
-  test.sequential('student sees new variant when revisiting second question', async () => {
+  test.sequential('student sees same variant when revisiting second question', async () => {
     await withUser(studentUser, async () => {
       const assessmentResponse = await fetchCheerio(assessmentStudentUrl);
       assert.equal(assessmentResponse.status, 200);
@@ -180,8 +341,9 @@ describe('Instructor force-breaking variants', () => {
       const questionResponse = await fetchCheerio(`${siteUrl}${addNumbersUrl}`);
       assert.equal(questionResponse.status, 200);
 
-      const variantId = questionResponse.$('input[name=__variant_id]').val()?.toString() as string;
-      assert.notEqual(variantId, partialCredit2VariantId);
+      const variantId = questionResponse.$('input[name=__variant_id]').val();
+      assert.isDefined(variantId);
+      assert.equal(variantId.toString(), partialCredit2VariantId);
     });
   });
 });

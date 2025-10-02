@@ -1,0 +1,41 @@
+<pl-question-panel>
+    <p>
+        <i>
+            This question demonstrates the creation of a file from other elements in the question. It uses a "fill-in-the-blank" model to allow students to write code elements that will be combined into a single file.
+        </i>
+    </p>
+
+    <p>
+        Complete the following function that finds the last element of a list and returns it. The function should be named <code>last_element</code> and should take a single argument, which is the list from which to extract the last element.
+    </p>
+
+    <pl-external-grader-variables params-name="names_for_user" empty="true">
+    </pl-external-grader-variables>
+
+    <p>Your code snippet should define the following functions:</p>
+    <pl-external-grader-variables params-name="names_from_user">
+        <pl-variable name="last_element" type="function">Returns the last element of a list</pl-variable>
+    </pl-external-grader-variables>
+    <pl-overlay width="600" height="200" clip="false">
+      <pl-background>
+<pl-code language="python">
+def last_element(lst: list):
+    """    Returns the last element of a list.
+    Args:
+        lst (list): The list from which to extract the last element.
+    Returns:
+        The last element of the list.
+    """
+
+    return lst[                                      ]
+</pl-code></pl-background>
+      <pl-location left="270" top="155">
+        <pl-string-input answers-name="index" display="inline" size="30" show-help-text="false"></pl-string-input>
+      </pl-location>
+    </pl-overlay>
+</pl-question-panel>
+
+<pl-submission-panel>
+    <pl-external-grader-results></pl-external-grader-results>
+    <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

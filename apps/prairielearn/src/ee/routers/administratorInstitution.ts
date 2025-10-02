@@ -21,14 +21,11 @@ router.use(
     // The navbar relies on this property.
     res.locals.urlPrefix = req.baseUrl;
 
-    const hasLti13 = await features.enabled('lti13', { institution_id: req.params.institution_id });
-    res.locals.lti13_enabled = hasLti13;
-
-    const hasEnhancedNavigation = await features.enabled('enhanced-navigation', {
+    const usesLegacyNavigation = await features.enabled('legacy-navigation', {
       institution_id: req.params.institution_id,
       user_id: res.locals.authn_user.user_id,
     });
-    res.locals.has_enhanced_navigation = hasEnhancedNavigation;
+    res.locals.has_enhanced_navigation = !usesLegacyNavigation;
     next();
   }),
 );

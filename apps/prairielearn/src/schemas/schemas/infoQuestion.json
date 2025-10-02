@@ -16,7 +16,7 @@
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "type": {
-      "description": "Type of the question.",
+      "description": "Type of the question. This should be set to \"v3\" for new questions.",
       "type": "string",
       "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "v3"]
     },
@@ -34,15 +34,17 @@
       "items": {
         "description": "A tag associated with a question.",
         "type": "string"
-      }
+      },
+      "default": []
     },
     "clientFiles": {
-      "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
+      "description": "The list of question files accessible by the client.",
       "type": "array",
       "items": {
         "description": "A single file accessible by the client.",
         "type": "string"
-      }
+      },
+      "default": ["client.js", "question.html", "answer.html"]
     },
     "clientTemplates": {
       "description": "List of client-accessible templates to render server-side.",
@@ -59,7 +61,8 @@
     "gradingMethod": {
       "description": "The grading method used for this question.",
       "type": "string",
-      "enum": ["Internal", "External", "Manual"]
+      "enum": ["Internal", "External", "Manual"],
+      "default": "Internal"
     },
     "singleVariant": {
       "description": "Whether the question is not randomized and only generates a single variant.",
@@ -119,7 +122,8 @@
           "items": {
             "description": "A single file or directory that will be copied to the external grader.",
             "type": "string"
-          }
+          },
+          "default": []
         },
         "timeout": {
           "description": "The number of seconds after which the grading job will timeout.",
@@ -135,7 +139,8 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "default": {}
         }
       }
     },
@@ -214,7 +219,8 @@
             "type": "string"
           }
         }
-      }
+      },
+      "default": {}
     },
     "workspaceOptions": {
       "description": "Options for workspace questions.",
@@ -254,7 +260,8 @@
         },
         "rewriteUrl": {
           "description": "If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.",
-          "type": "boolean"
+          "type": "boolean",
+          "default": true
         },
         "gradedFiles": {
           "description": "The list of files or directories that will be copied out of the workspace container when saving a submission.",
@@ -262,7 +269,8 @@
           "items": {
             "description": "A single file or directory that will be copied out of the workspace container when saving a submission.",
             "type": "string"
-          }
+          },
+          "default": []
         },
         "enableNetworking": {
           "description": "Whether the workspace should have network access. Access is disabled by default.",
@@ -274,7 +282,8 @@
           "type": "object",
           "additionalProperties": {
             "type": "string"
-          }
+          },
+          "default": {}
         },
         "syncIgnore": {
           "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
@@ -297,11 +306,13 @@
     },
     "sharePublicly": {
       "description": "Whether this question is publicly shared.",
-      "type": "boolean"
+      "type": "boolean",
+      "default": false
     },
     "shareSourcePublicly": {
-      "description": "Whether this questions's source code is publicly shared.",
-      "type": "boolean"
+      "description": "Whether this question's source code is publicly shared.",
+      "type": "boolean",
+      "default": false
     }
   },
   "definitions": {

@@ -2,33 +2,29 @@ import assert from 'node:assert';
 import * as path from 'node:path';
 
 import * as async from 'async';
-// Use slim export, which relies on htmlparser2 instead of parse5. This provides
-// support for questions with legacy renderer.
-import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
-import * as parse5 from 'parse5';
 
 import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 
-import { stripHtmlForAiGrading } from '../lib/ai-grading.js';
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
-import { type CallType } from '../lib/code-caller/code-caller-shared.js';
 import { type CodeCaller, FunctionMissingError, withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
+import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -44,9 +40,12 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -61,7 +60,6 @@ interface QuestionProcessingContext {
   course_dir_host: string;
   question_dir: string;
   question_dir_host: string;
-  renderer: 'experimental' | 'default' | 'legacy';
   course_elements: ElementNameMap;
   course_element_extensions: ElementExtensionNameDirMap;
 }
@@ -126,9 +124,14 @@ export async function init() {
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
-    if (elementType === 'core') return ElementCoreJsonSchema;
-    if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    switch (elementType) {
+      case 'core':
+        return ElementCoreJsonSchema;
+      case 'course':
+        return ElementCourseJsonSchema;
+      default:
+        assertNever(elementType);
+    }
   });
 
   let files: string[];
@@ -176,12 +179,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }
@@ -192,8 +195,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -287,8 +290,8 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -321,86 +324,6 @@ function resolveElement(elementName: string, context: QuestionProcessingContext)
     return coreElementsCache[elementName];
   } else {
     throw new Error(`No such element: ${elementName}`);
-  }
-}
-
-function getElementController(elementName, context) {
-  const element = resolveElement(elementName, context);
-  return path.join(element.directory, element.controller);
-}
-
-/**
- * Add clientFiles urls for elements and extensions.
- * Returns a copy of data with the new urls inserted.
- */
-function getElementClientFiles(
-  data: ExecutionData,
-  elementName: string,
-  context: QuestionProcessingContext,
-) {
-  const dataCopy = structuredClone(data);
-  // The options field wont contain URLs unless in the 'render' stage, so
-  // check if it is populated before adding the element url
-  if ('base_url' in data.options) {
-    dataCopy.options.client_files_element_url = assets.courseElementAssetPath(
-      context.course.commit_hash,
-      data.options.base_url,
-      `${elementName}/clientFilesElement`,
-    );
-    dataCopy.options.client_files_extensions_url = {};
-
-    if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-      Object.keys(context.course_element_extensions[elementName]).forEach((extension) => {
-        const url = assets.courseElementExtensionAssetPath(
-          context.course.commit_hash,
-          data.options.base_url,
-          `${elementName}/${extension}/clientFilesExtension`,
-        );
-        dataCopy.options.client_files_extensions_url[extension] = url;
-      });
-    }
-  }
-  return dataCopy;
-}
-
-async function elementFunction<T extends ExecutionData>(
-  codeCaller: CodeCaller,
-  fcn: Phase,
-  elementName: string,
-  elementHtml: string,
-  data: T,
-  context: QuestionProcessingContext,
-) {
-  const resolvedElement = resolveElement(elementName, context);
-  const { controller, type: resolvedElementType, name: resolvedElementName } = resolvedElement;
-  const dataCopy = getElementClientFiles(data, elementName, context);
-
-  const pythonArgs = [elementHtml, dataCopy];
-  const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-  const type = `${resolvedElementType}-element` satisfies CallType;
-  const directory = resolvedElementName;
-
-  try {
-    return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
-  } catch (err) {
-    if (err instanceof FunctionMissingError) {
-      // function wasn't present in server
-      return {
-        result: defaultElementFunctionRet(fcn, dataCopy),
-        output: '',
-      };
-    }
-    throw err;
-  }
-}
-
-function defaultElementFunctionRet(phase: Phase, data: ExecutionData) {
-  if (phase === 'render') {
-    return '';
-  } else if (phase === 'file') {
-    return '';
-  } else {
-    return data;
   }
 }
 
@@ -464,16 +387,8 @@ async function execPythonServer(
 
 async function execTemplate(htmlFilename: string, data: ExecutionData) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
-  let html = mustache.render(rawFile, data);
-  html = markdown.processQuestion(html);
-  const $ = cheerio.load(html, {
-    xml: {
-      // This is necessary for Cheerio to use `htmlparser2` instead of `parse5`.
-      xmlMode: false,
-      recognizeSelfClosing: true,
-    },
-  });
-  return { html, $ };
+  const html = mustache.render(rawFile, data);
+  return markdown.processQuestion(html);
 }
 
 function checkData(data: Record<string, any>, origData: Record<string, any>, phase: Phase) {
@@ -488,28 +403,34 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
       return `"${prop}" is missing from "data"`;
     }
-    if (type === 'integer') {
-      if (!Number.isInteger(data[prop])) {
-        return `data.${prop} is not an integer: ${String(data[prop])}`;
-      }
-    } else if (type === 'number') {
-      if (!Number.isFinite(data[prop])) {
-        return `data.${prop} is not a number: ${String(data[prop])}`;
-      }
-    } else if (type === 'string') {
-      if (typeof data[prop] !== 'string') {
-        return `data.${prop} is not a string: ${String(data[prop])}`;
-      }
-    } else if (type === 'boolean') {
-      if (data[prop] !== true && data[prop] !== false) {
-        return `data.${prop} is not a boolean: ${String(data[prop])}`;
-      }
-    } else if (type === 'object') {
-      if (data[prop] == null || typeof data[prop] !== 'object') {
-        return `data.${prop} is not an object: ${String(data[prop])}`;
-      }
-    } else {
-      return `invalid type: ${String(type)}`;
+    switch (type) {
+      case 'integer':
+        if (!Number.isInteger(data[prop])) {
+          return `data.${prop} is not an integer: ${String(data[prop])}`;
+        }
+        break;
+      case 'number':
+        if (!Number.isFinite(data[prop])) {
+          return `data.${prop} is not a number: ${String(data[prop])}`;
+        }
+        break;
+      case 'string':
+        if (typeof data[prop] !== 'string') {
+          return `data.${prop} is not a string: ${String(data[prop])}`;
+        }
+        break;
+      case 'boolean':
+        if (data[prop] !== true && data[prop] !== false) {
+          return `data.${prop} is not a boolean: ${String(data[prop])}`;
+        }
+        break;
+      case 'object':
+        if (data[prop] == null || typeof data[prop] !== 'object') {
+          return `data.${prop} is not an object: ${String(data[prop])}`;
+        }
+        break;
+      default:
+        return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
@@ -549,7 +470,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('manual_grading',        'boolean', ['render'],                           [])
              || checkProp('ai_grading',            'boolean', ['render'],                           [])
              || checkProp('panel',                 'string',  ['render'],                           [])
-             || checkProp('num_valid_submissions','integer',  ['render'],                           [])
+             || checkProp('num_valid_submissions', 'integer', ['render'],                           [])
              || checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           [])
              || checkProp('filename',              'string',  ['file'],                             [])
              || checkProp('test_type',             'string',  ['test'],                             [])
@@ -562,7 +483,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
   return null;
 }
 
-async function experimentalProcess<T>(
+async function processQuestionPhase<T>(
   phase: Phase,
   codeCaller: CodeCaller,
   data: T,
@@ -580,7 +501,7 @@ async function experimentalProcess<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -623,307 +544,6 @@ async function experimentalProcess<T>(
   };
 }
 
-function isDocumentFragmentNode(
-  node: parse5.DefaultTreeAdapterTypes.Node,
-): node is parse5.DefaultTreeAdapterTypes.DocumentFragment {
-  return node.nodeName === '#document-fragment';
-}
-
-async function traverseQuestionAndExecuteFunctions<T extends ExecutionData>(
-  phase: Phase,
-  codeCaller: CodeCaller,
-  data: T,
-  context: QuestionProcessingContext,
-  html: string,
-) {
-  const origData = structuredClone(data);
-  const renderedElementNames: string[] = [];
-  const courseIssues: CourseIssueError[] = [];
-  let fileData = Buffer.from('');
-  const questionElements = new Set([
-    ...Object.keys(coreElementsCache),
-    ...Object.keys(context.course_elements),
-  ]);
-
-  const visitNode = async (
-    node:
-      | parse5.DefaultTreeAdapterTypes.DocumentFragment
-      | parse5.DefaultTreeAdapterTypes.ChildNode,
-  ) => {
-    if ('tagName' in node && questionElements.has(node.tagName)) {
-      const elementName = node.tagName;
-      const elementFile = getElementController(elementName, context);
-      if (phase === 'render' && !renderedElementNames.includes(elementName)) {
-        renderedElementNames.push(elementName);
-      }
-
-      // Populate any extensions used by this element.
-      const extensions = run(() => {
-        if (Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)) {
-          return context.course_element_extensions[elementName];
-        }
-        return {};
-      });
-
-      // We need to wrap it in another node, since only child nodes
-      // are serialized
-      const serializedNode = parse5.serialize({
-        nodeName: '#document-fragment',
-        childNodes: [node],
-      });
-      let ret_val: any, consoleLog: string;
-      try {
-        ({ result: ret_val, output: consoleLog } = await elementFunction(
-          codeCaller,
-          phase,
-          elementName,
-          serializedNode,
-          { ...data, extensions },
-          context,
-        ));
-      } catch (e) {
-        // We'll catch this and add it to the course issues list
-        throw new CourseIssueError(`${elementFile}: Error calling ${phase}(): ${e.toString()}`, {
-          cause: e,
-          data: e.data,
-          fatal: true,
-        });
-      }
-
-      // Remove any element extensions since they're not used elsewhere.
-      delete ret_val.extensions;
-
-      if (typeof consoleLog === 'string' && consoleLog.length > 0) {
-        courseIssues.push(
-          new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
-            data: { outputBoth: consoleLog },
-            fatal: false,
-          }),
-        );
-      }
-      if (phase === 'render') {
-        if (typeof ret_val !== 'string') {
-          throw new CourseIssueError(
-            `${elementFile}: Error calling ${phase}(): return value is not a string`,
-            { data: ret_val, fatal: true },
-          );
-        }
-        node = parse5.parseFragment(ret_val);
-      } else if (phase === 'file') {
-        // Convert ret_val from base64 back to buffer (this always works,
-        // whether or not ret_val is valid base64)
-        const buf = Buffer.from(ret_val, 'base64');
-        // If the buffer has non-zero length...
-        if (buf.length > 0) {
-          if (fileData.length > 0) {
-            // If fileData already has non-zero length, throw an error
-            throw new CourseIssueError(
-              `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-              { fatal: true },
-            );
-          } else {
-            // If not, replace fileData with buffer
-            fileData = buf;
-          }
-        }
-      } else {
-        // the following line is safe because we can't be in multiple copies of this function simultaneously
-        data = ret_val;
-        const checkErr = checkData(data, origData, phase);
-        if (checkErr) {
-          throw new CourseIssueError(
-            `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-            { fatal: true },
-          );
-        }
-      }
-    }
-
-    if (!('childNodes' in node)) {
-      // This is a text node or comment node; there are no children to process.
-      return node;
-    }
-
-    const newChildren: parse5.DefaultTreeAdapterTypes.ChildNode[] = [];
-    for (const childNode of node.childNodes) {
-      const childRes = await visitNode(childNode);
-
-      // We can't rely on `nodeName` as a discriminant because for the `Element`
-      // type, it doesn't have a literal value:
-      // https://github.com/microsoft/TypeScript/issues/48500#issuecomment-1085063454
-      // We use a custom type guard instead.
-
-      if (isDocumentFragmentNode(childRes)) {
-        newChildren.push(...childRes.childNodes);
-      } else {
-        newChildren.push(childRes);
-      }
-    }
-
-    // the following line is safe because we can't be in multiple copies of this function simultaneously
-    node.childNodes = newChildren;
-
-    return node;
-  };
-
-  let questionHtml = '';
-  try {
-    const res = await visitNode(parse5.parseFragment(html));
-
-    // This assertion should always pass. If `visitNode` is passed a document
-    // fragment, it will always return a document fragment.
-    assert(isDocumentFragmentNode(res), 'Expected a document fragment');
-
-    questionHtml = parse5.serialize(res);
-  } catch (e) {
-    courseIssues.push(e);
-  }
-
-  return {
-    courseIssues,
-    data,
-    html: questionHtml,
-    fileData,
-    renderedElementNames,
-  };
-}
-
-async function legacyTraverseQuestionAndExecuteFunctions<T extends ExecutionData>(
-  phase: Phase,
-  codeCaller: CodeCaller,
-  data: T,
-  context: QuestionProcessingContext,
-  $: cheerio.CheerioAPI,
-) {
-  const origData = structuredClone(data);
-  const renderedElementNames: string[] = [];
-  const courseIssues: CourseIssueError[] = [];
-  let fileData = Buffer.from('');
-  const questionElements = new Set([
-    ...Object.keys(coreElementsCache),
-    ...Object.keys(context.course_elements),
-  ]).values();
-
-  try {
-    await async.eachSeries(questionElements, async (elementName) => {
-      await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !renderedElementNames.includes(elementName)) {
-          renderedElementNames.push(elementName);
-        }
-
-        const elementFile = getElementController(elementName, context);
-
-        // Populate any extensions used by this element.
-        const extensions = run(() => {
-          if (
-            Object.prototype.hasOwnProperty.call(context.course_element_extensions, elementName)
-          ) {
-            return context.course_element_extensions[elementName];
-          }
-          return {};
-        });
-
-        const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        assert(elementHtml != null, 'Element did not have any HTML');
-
-        let result: any, output: string;
-        try {
-          ({ result, output } = await elementFunction(
-            codeCaller,
-            phase,
-            elementName,
-            elementHtml,
-            { ...data, extensions },
-            context,
-          ));
-        } catch (err) {
-          const courseIssue = new CourseIssueError(
-            `${elementFile}: Error calling ${phase}(): ${err.toString()}`,
-            { data: err.data, fatal: true },
-          );
-          courseIssues.push(courseIssue);
-
-          // We won't actually use this error, but we do still need to throw
-          // it to abort the current traversal.
-          throw courseIssue;
-        }
-
-        // Remove any element extensions since they're not used elsewhere.
-        delete result.extensions;
-
-        if (typeof output === 'string' && output.length > 0) {
-          courseIssues.push(
-            new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
-              data: { outputBoth: output },
-              fatal: false,
-            }),
-          );
-        }
-
-        if (phase === 'render') {
-          if (typeof result !== 'string') {
-            const courseIssue = new CourseIssueError(
-              `${elementFile}: Error calling ${phase}(): return value is not a string`,
-              { data: { result }, fatal: true },
-            );
-            courseIssues.push(courseIssue);
-
-            // As above, we just throw to abort the traversal.
-            throw courseIssue;
-          }
-
-          $(element).replaceWith(result);
-        } else if (phase === 'file') {
-          // Convert ret_val from base64 back to buffer (this always works,
-          // whether or not ret_val is valid base64)
-          const buf = Buffer.from(result, 'base64');
-
-          // If the buffer has non-zero length...
-          if (buf.length > 0) {
-            if (fileData.length > 0) {
-              // If fileData already has non-zero length, throw an error
-              const courseIssue = new CourseIssueError(
-                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
-                { fatal: true },
-              );
-              courseIssues.push(courseIssue);
-
-              // As above, throw the error to abort the traversal.
-              throw courseIssue;
-            } else {
-              // If not, replace fileData with buffer
-              fileData = buf;
-            }
-          }
-        } else {
-          data = result;
-          const checkErr = checkData(data, origData, phase);
-          if (checkErr) {
-            const courseIssue = new CourseIssueError(
-              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
-              { fatal: true },
-            );
-            courseIssues.push(courseIssue);
-
-            // As above, throw the error to abort the traversal.
-            throw courseIssue;
-          }
-        }
-      });
-    });
-  } catch {
-    // Black-hole any errors, they were (should have been) handled by course issues
-  }
-
-  return {
-    courseIssues,
-    data,
-    html: $.html(),
-    fileData,
-    renderedElementNames,
-  };
-}
-
 function getPartialScoreValues(val: unknown) {
   const obj = (typeof val === 'object' && val != null ? val : {}) as Record<string, unknown>;
   return {
@@ -954,9 +574,9 @@ async function processQuestionHtml<T extends ExecutionData>(
   }
 
   const htmlFilename = path.join(context.question_dir_host, 'question.html');
-  let html: string, $: cheerio.CheerioAPI;
+  let html: string;
   try {
-    ({ html, $ } = await execTemplate(htmlFilename, data));
+    html = await execTemplate(htmlFilename, data);
   } catch (err) {
     return {
       courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
@@ -973,15 +593,7 @@ async function processQuestionHtml<T extends ExecutionData>(
     html: processedHtml,
     fileData,
     renderedElementNames,
-  } = await run(async () => {
-    if (context.renderer === 'experimental') {
-      return await experimentalProcess(phase, codeCaller, data, context, html);
-    } else if (context.renderer === 'default') {
-      return await traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html);
-    } else {
-      return await legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $);
-    }
-  });
+  } = await processQuestionPhase(phase, codeCaller, data, context, html);
 
   if (phase === 'grade' || phase === 'test') {
     if (context.question.partial_credit) {
@@ -1097,7 +709,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
@@ -1189,7 +806,7 @@ export async function generate(
     const data = {
       params: {},
       correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
+      variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
     } satisfies ExecutionData;
 
@@ -1215,10 +832,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
@@ -1226,8 +843,8 @@ export async function prepare(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -1253,7 +870,6 @@ export async function prepare(
 interface RenderPanelResult {
   courseIssues: CourseIssueError[];
   html: string;
-  renderer?: string;
   renderedElementNames?: string[];
   cacheHit?: boolean;
 }
@@ -1279,7 +895,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -1301,11 +917,11 @@ async function renderPanel(
   // it won't be present in `locals`). This URL will only have meaning if
   // there's a submission, so it will be `null` otherwise.
   const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
+    ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -1318,6 +934,10 @@ async function renderPanel(
       locals.urlPrefix,
     ),
     submission_files_url: submission ? submissionFilesUrl : null,
+
+    variant_id: variant.id,
+    external_image_capture_url: locals.externalImageCaptureUrl,
+
     base_url: locals.baseUrl,
     workspace_url: locals.workspaceUrl || null,
     ...getContextOptions(context),
@@ -1335,7 +955,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -1356,13 +976,17 @@ async function renderPanel(
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    num_valid_submissions: variant.num_tries ?? null,
+    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-    course,
-    data,
-    context,
+    {
+      course,
+      variant,
+      submission,
+      data,
+      context,
+    },
     async () => {
       const { courseIssues, html, renderedElementNames } = await processQuestion(
         'render',
@@ -1374,14 +998,22 @@ async function renderPanel(
     },
   );
 
+  // If we're rendering for AI grading, transform the resulting HTML to strip
+  // out any data that isn't relevant during AI grading. This is done outside
+  // of `getCachedDataOrCompute` so that we don't need to find a way to factor
+  // the transformation into the cache key.
+  const html = await run(async () => {
+    if (isEnterprise() && locals.questionRenderContext === 'ai_grading') {
+      const { stripHtmlForAiGrading } = await import('../ee/lib/ai-grading/ai-grading-render.js');
+      return await stripHtmlForAiGrading(cachedData.html);
+    }
+
+    return cachedData.html;
+  });
+
   return {
     ...cachedData,
-    // We need to transform the resulting HTML to strip out any data that
-    // isn't relevant during AI grading.
-    html:
-      locals.questionRenderContext === 'ai_grading'
-        ? await stripHtmlForAiGrading(cachedData.html)
-        : cachedData.html,
+    html,
     cacheHit,
   };
 }
@@ -1418,7 +1050,7 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -1437,15 +1069,6 @@ export async function render(
     let allRenderedElementNames: string[] = [];
     const courseIssues: CourseIssueError[] = [];
     const context = await getContext(question, course);
-
-    // Hack: we need to propagate this back up to the original caller so
-    // they can expose the selected renderer to the client via a header, but
-    // parent functions don't actually return things. So we'll just stick it
-    // in the `locals` object that the parent will be able to read from.
-    //
-    // See the `setRendererHeader` function in `lib/question-render`
-    // for where this is actually used.
-    locals.question_renderer = context.renderer;
 
     return withCodeCaller(course, async (codeCaller) => {
       if (renderSelection.question) {
@@ -1515,27 +1138,27 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {
@@ -1820,17 +1443,20 @@ export async function file(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
     const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
-      course,
-      data,
-      context,
+      {
+        course,
+        variant,
+        submission: null, // Files aren't associated with any particular submission.
+        data,
+        context,
+      },
       async () => {
-        // function to compute the file data and return the cachedData
         return withCodeCaller(course, async (codeCaller) => {
           const { courseIssues, fileData } = await processQuestion(
             'file',
@@ -1853,7 +1479,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1871,8 +1497,8 @@ export async function parse(
       submitted_answers: submission.submitted_answer ?? {},
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1927,8 +1553,8 @@ export async function grade(
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1981,8 +1607,8 @@ export async function test(
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,
@@ -2026,20 +1652,6 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
     { type: 'elementExtensions' },
   ]);
 
-  // Select which rendering strategy we'll use. This is computed here so that
-  // in can factor into the cache key.
-  const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
-  const useExperimentalRenderer = !(await features.enabled('process-questions-in-server', {
-    institution_id: course.institution_id,
-    course_id: course.id,
-  }));
-
-  const renderer = useExperimentalRenderer
-    ? 'experimental'
-    : useNewQuestionRenderer
-      ? 'default'
-      : 'legacy';
-
   // The `*Host` values here refer to the paths relative to PrairieLearn;
   // the other values refer to the paths as they will be seen by the worker
   // that actually executes the question.
@@ -2066,28 +1678,62 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
     question_dir_host: questionDirectoryHost,
     course_elements: elements,
     course_element_extensions: extensions,
-    renderer,
   };
 }
 
 async function getCacheKey(
   course: Course,
+  variant: Variant,
+  submission: Submission | null,
   data: ExecutionData,
   context: QuestionProcessingContext,
-) {
+): Promise<string | null> {
   try {
     const commitHash = await getOrUpdateCourseCommitHash(course);
-    const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
-    return `question:${commitHash}-${dataHash}`;
+
+    const dataHash = objectHash(
+      [
+        // We deliberately exclude large user-controlled objects from the cache key.
+        // Whenever these change, the `modified_at` column of `variants` and/or
+        // `submissions` will change, which will cause the cache to be invalidated.
+        _.omit(data, [
+          'params',
+          'correct_answers',
+          'submitted_answers',
+          'format_errors',
+          'partial_scores',
+          'feedback',
+          'raw_submitted_answers',
+        ]),
+        context,
+        variant.modified_at,
+        submission?.modified_at,
+      ],
+      { algorithm: 'sha1', encoding: 'base64' },
+    );
+
+    // The variant and submission IDs are included in the cache key to ensure
+    // that data never leaks between variants or submissions.
+    return `variant:${variant.id}:submission:${submission?.id ?? null}:${commitHash}-${dataHash}:cache`;
   } catch {
     return null;
   }
 }
 
 async function getCachedDataOrCompute(
-  course: Course,
-  data: ExecutionData,
-  context: QuestionProcessingContext,
+  {
+    course,
+    variant,
+    submission,
+    data,
+    context,
+  }: {
+    course: Course;
+    variant: Variant;
+    submission: Submission | null;
+    data: ExecutionData;
+    context: QuestionProcessingContext;
+  },
   computeFcn: () => Promise<any>,
 ) {
   // This function will compute the cachedData and cache it if
@@ -2122,7 +1768,7 @@ async function getCachedDataOrCompute(
   // cacheKey and either return the cachedData for a cache hit,
   // or compute the cachedData for a cache miss
   const getFromCacheOrCompute = async (cacheKey: string) => {
-    let cachedData;
+    let cachedData: unknown;
 
     try {
       cachedData = await cache.get(cacheKey);
@@ -2130,42 +1776,32 @@ async function getCachedDataOrCompute(
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);
+      Sentry.captureException(err);
     }
 
-    // Previously, there was a bug where we would cache operations
-    // that failed with a course issue. We've since fixed that bug,
-    // but so that we can gracefully deploy the fix alongside code
-    // that may still be incorrectly caching errors, we'll ignore
-    // any result from the cache that has course issues and
-    // unconditionally recompute it.
-    //
-    // TODO: once this has been deployed in production for a while,
-    // we can safely remove this check, as we can guarantee that the
-    // cache will no longer contain any entries with `courseIssues`.
-    const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
-    if (cachedData && !hasCachedCourseIssues) {
+    if (cachedData) {
       return {
         data: cachedData,
         cacheHit: true,
       };
-    } else {
-      return doCompute(cacheKey);
     }
+
+    return doCompute(cacheKey);
   };
 
   if (config.devMode) {
     // In dev mode, we should skip caching so that we'll immediately
     // pick up new changes from disk
     return doCompute(null);
+  }
+
+  const cacheKey = await getCacheKey(course, variant, submission, data, context);
+  // If for some reason we failed to get a cache key, don't
+  // actually fail the request, just skip the cache entirely
+  // and compute as usual
+  if (!cacheKey) {
+    return await doCompute(null);
   } else {
-    const cacheKey = await getCacheKey(course, data, context);
-    // If for some reason we failed to get a cache key, don't
-    // actually fail the request, just skip the cache entirely
-    // and compute as usual
-    if (!cacheKey) {
-      return doCompute(null);
-    } else {
-      return getFromCacheOrCompute(cacheKey);
-    }
+    return await getFromCacheOrCompute(cacheKey);
   }
 }

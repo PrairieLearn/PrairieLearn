@@ -6,6 +6,7 @@
   "type": "v3",
   "singleVariant": true,
   "gradingMethod": "External",
+  "sharePublicly": true,
   "externalGradingOptions": {
     "enabled": true,
     "image": "alpine:latest",

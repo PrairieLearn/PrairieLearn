@@ -17,6 +17,18 @@ class DatabaseError extends Error {
   }
 }
 
+const SOFT_DELETE_CASCADE_EXCEPTIONS = {
+  // We want grading jobs to be soft deleted, primarily to support deleting AI
+  // grading jobs while still retaining the jobs and their associated `ai_grading_jobs`
+  // row for logging and auditing purposes, as well as usage tracking.
+  //
+  // While it's ultimately sub-optimal to lose the grading jobs if/when an assessment
+  // instance is deleted, it's not a data integrity issue; we'll just lose some visibility
+  // into what happened on the assessment instance. In the future, assessment instances
+  // may be soft-deleted, which would allow us to retain the grading jobs.
+  grading_jobs: ['submission_id'],
+};
+
 describe('database', { timeout: 20_000 }, function () {
   beforeAll(helperDb.beforeOnlyCreate);
 
@@ -64,6 +76,10 @@ describe('database', { timeout: 20_000 }, function () {
           throw new Error(`Failed to match foreign key for ${table}: ${constraint.def}`);
         }
         const [, keyName, otherTable, deleteAction] = match;
+
+        // Skip table/column pairs that are exceptions to the rule.
+        if (SOFT_DELETE_CASCADE_EXCEPTIONS[table]?.includes(keyName)) continue;
+
         if (deleteAction === 'CASCADE' && hardDeleteTables.includes(otherTable)) {
           throw new Error(
             `Soft-delete table "${table}" has ON DELETE CASCADE foreign key "${keyName}" to hard-delete table "${otherTable}"`,

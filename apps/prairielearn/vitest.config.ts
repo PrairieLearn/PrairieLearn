@@ -1,62 +1,8 @@
 import { join } from 'path';
 
-import { configDefaults, defineConfig } from 'vitest/config';
-import { BaseSequencer, type TestSpecification, type Vitest } from 'vitest/node';
-import { GithubActionsReporter } from 'vitest/reporters';
-// Vitest will try to intelligently sequence the test suite based on which ones
-// are slowest. However, this depends on cached data from previous runs, which
-// isn't available in CI. So, we manually specify the slowest tests here and
-// use a custom sequencer to always run them first.
-const SLOW_TESTS = [
-  'src/tests/exampleCourseQuestions.test.ts',
-  'src/tests/fileEditor.test.ts',
-  'src/tests/homework.test.ts',
-  'src/tests/exam.test.ts',
-  'src/tests/accessibility/index.test.ts',
-  'src/tests/cron.test.ts',
-];
+import { configDefaults, defineConfig, mergeConfig } from 'vitest/config';
 
-class CustomSequencer extends BaseSequencer {
-  async sort(files: TestSpecification[]) {
-    const sortedFiles = await super.sort(files);
-
-    // Put all the slow tests at the beginning.
-    const slowTests = sortedFiles.filter((file) =>
-      SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest)),
-    );
-    const otherTests = sortedFiles.filter(
-      (file) => !SLOW_TESTS.some((slowTest) => file.moduleId.includes(slowTest)),
-    );
-
-    return [...slowTests, ...otherTests];
-  }
-
-  async shard(files: TestSpecification[]) {
-    return super.shard(files);
-  }
-}
-
-/**
- * GitHub expects that when formatting an error message, the filename is relative to the project root.
- * Since we run in a Docker container for CI, we need to ensure that the filename matches what GitHub expects.
- * https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-an-error-message
- *
- * Vitest may add a first-party API to make this easier:
- * https://github.com/vitest-dev/vitest/issues/8008
- */
-export class CustomGithubReporter extends GithubActionsReporter {
-  override onInit(ctx: Vitest) {
-    super.onInit(ctx);
-    const origLog = this.ctx.logger.log;
-    this.ctx.logger.log = (...args: any[]) => {
-      if (args.length === 1) {
-        args[0] = args[0].replaceAll(/(file=)\/PrairieLearn\//g, '$1');
-      }
-
-      origLog.call(this.ctx.logger, ...args);
-    };
-  }
-}
+import { sharedConfig } from '../../vitest.config';
 
 // We support running our tests in two modes:
 //
@@ -73,32 +19,47 @@ const isRunningOnDist = process.argv
   .slice(2)
   .some((arg) => arg.startsWith('dist/') || arg.includes('/dist/'));
 
-export default defineConfig({
-  test: {
-    reporters: process.env.GITHUB_ACTIONS ? ['default', new CustomGithubReporter()] : ['default'],
-    include: isRunningOnDist
-      ? [join(import.meta.dirname, 'dist/**/*.test.js')]
-      : [...configDefaults.include],
-    exclude: isRunningOnDist
-      ? configDefaults.exclude.filter((e) => !e.includes('/dist/'))
-      : configDefaults.exclude,
-    globalSetup: isRunningOnDist
-      ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
-      : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
-    setupFiles: isRunningOnDist
-      ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
-      : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
-    passWithNoTests: true,
-    hookTimeout: 20_000,
-    testTimeout: 10_000,
-    isolate: false,
-    sequence: {
-      sequencer: CustomSequencer,
-    },
-    coverage: {
-      all: true,
-      include: ['src/**'],
-      reporter: ['html', 'text-summary', 'cobertura'],
-    },
-  },
+const dockerSmokeTests = ['src/tests/exampleCourseQuestions.test.ts'];
+
+export default defineConfig(({ mode }) => {
+  let include: string[] = configDefaults.include;
+  let exclude: string[] = configDefaults.exclude;
+
+  // For CI, we want to run a subset of tests natively, and a subset of tests only in Docker.
+  // We control this via the `mode` argument passed to the Vitest CLI
+  // We do this instead of defining separate projects as we want this toggle available in
+  // the root project config and this config, and projects aren't inherited by the root config.
+  if (mode === 'docker-smoke-tests') {
+    if (isRunningOnDist) throw new Error('Cannot run docker-smoke-tests tests on dist files.');
+    include = dockerSmokeTests;
+  } else if (isRunningOnDist) {
+    include = [join(import.meta.dirname, 'dist/**/*.test.js')];
+    exclude = configDefaults.exclude.filter((e) => !e.includes('/dist/'));
+  }
+
+  return mergeConfig(
+    sharedConfig,
+    defineConfig({
+      test: {
+        name: '@prairielearn/prairielearn',
+        include,
+        exclude,
+        globalSetup: isRunningOnDist
+          ? join(import.meta.dirname, './dist/tests/vitest.globalSetup.js')
+          : join(import.meta.dirname, './src/tests/vitest.globalSetup.ts'),
+        setupFiles: isRunningOnDist
+          ? [join(import.meta.dirname, './dist/tests/vitest.testSetup.js')]
+          : [join(import.meta.dirname, './src/tests/vitest.testSetup.ts')],
+        passWithNoTests: true,
+        hookTimeout: 20_000,
+        testTimeout: 10_000,
+
+        coverage: {
+          all: true,
+          include: ['src/**'],
+          reporter: ['html', 'text-summary', 'cobertura'],
+        },
+      },
+    }),
+  );
 });

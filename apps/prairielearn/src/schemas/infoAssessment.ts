@@ -98,8 +98,8 @@ export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSc
 export const PointsSingleJsonSchema = z
   .number()
   .gte(0)
-  .describe('A single point value.')
-  .default(0);
+  .default(0)
+  .describe('A single point value.');
 
 export const PointsListJsonSchema = z
   .array(PointsSingleJsonSchema)
@@ -114,7 +114,6 @@ export const QuestionIdJsonSchema = z
 
 export const ForceMaxPointsJsonSchema = z
   .boolean()
-  .default(false)
   .describe('Whether to force this question to be awarded maximum points on a regrade.');
 
 export const AdvanceScorePercJsonSchema = z
@@ -132,6 +131,7 @@ const QuestionPointsJsonSchema = z.object({
 });
 
 export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
+export type QuestionPointsJsonInput = z.input<typeof QuestionPointsJsonSchema>;
 
 export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
@@ -139,9 +139,10 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
+    .int()
+    .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
-    .optional()
-    .default(1),
+    .optional(),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
@@ -150,7 +151,15 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.',
+    )
+    .optional(),
 });
+
+export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
@@ -171,19 +180,25 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .int()
     .gte(0)
     .describe('Number of questions to choose from this group.')
-    .optional()
-    .default(1),
+    .optional(),
   triesPerVariant: z
     .number()
+    .int()
+    .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
-    .optional()
-    .default(1),
+    .optional(),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
     .gte(0)
     .describe(
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
+    )
+    .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for this question. If not specified, inherits from the zone level.',
     )
     .optional(),
   canSubmit: uniqueArray(z.string())
@@ -199,6 +214,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional()
     .default([]),
 });
+
+export type ZoneQuestionJson = z.infer<typeof ZoneQuestionJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -237,16 +254,24 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+  allowRealTimeGrading: z
+    .boolean()
+    .describe(
+      'Whether to allow real-time grading for questions in this zone. If not specified, inherits from the assessment level.',
+    )
+    .optional(),
   canSubmit: uniqueArray(z.string())
     .describe(
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
   canView: uniqueArray(z.string())
     .describe(
       'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
     )
-    .optional(),
+    .optional()
+    .default([]),
 });
 
 export const AssessmentJsonSchema = z
@@ -254,9 +279,7 @@ export const AssessmentJsonSchema = z
     comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
-      .regex(
-        new RegExp('^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'),
-      )
+      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
       .describe('Unique identifier (UUID v4).'),
     type: z.enum(['Homework', 'Exam']).describe('Type of the assessment.'),
     title: z
@@ -280,15 +303,17 @@ export const AssessmentJsonSchema = z
       .default(false),
     shuffleQuestions: z
       .boolean()
-      .describe('Whether the questions will be shuffled in the student view of an assessment')
-      .optional()
-      .default(false),
+      .describe(
+        'Whether the questions will be shuffled in the student view of an assessment. If the assessment type is Exam, this is true by default, and otherwise false.',
+      )
+      .optional(),
     allowAccess: z
       .array(AssessmentAccessRuleJsonSchema)
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()
@@ -303,7 +328,8 @@ export const AssessmentJsonSchema = z
     allowPersonalNotes: z
       .boolean()
       .describe('Whether students are allowed to upload personal notes for this assessment.')
-      .optional(),
+      .optional()
+      .default(true),
     autoClose: z
       .boolean()
       .describe('Whether to automatically close the assessment after a period of inactivity.')
@@ -314,7 +340,8 @@ export const AssessmentJsonSchema = z
       .describe(
         'Array of "zones" in the assessment, each containing questions that can be randomized within the zone.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     constantQuestionValue: z
       .boolean()
       .describe(
@@ -325,15 +352,21 @@ export const AssessmentJsonSchema = z
     allowRealTimeGrading: z
       .boolean()
       .describe(
-        'Removes the student "Grade" buttons to prevent real-time grading while the assessment is being taken.',
+        'Removes the student "Grade" buttons to prevent real-time grading while the assessment is being taken. Real-time grading is allowed by default.',
       )
-      .optional()
-      .default(true),
+      .optional(),
     requireHonorCode: z
       .boolean()
-      .describe('Requires the student to accept an honor code before starting exam assessments.')
-      .optional()
-      .default(true),
+      .describe(
+        'Requires the student to accept an honor code before starting the assessment. Set to true for Exam assessments by default. Only configurable for Exam assessments.',
+      )
+      .optional(),
+    honorCode: z
+      .string()
+      .describe(
+        'Custom text for the honor code to be accepted before starting the assessment. Only available for Exam assessments.',
+      )
+      .optional(),
     groupWork: z
       .boolean()
       .describe('Whether the assessment will support group work.')
@@ -344,7 +377,8 @@ export const AssessmentJsonSchema = z
     groupRoles: z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
-      .optional(),
+      .optional()
+      .default([]),
     canSubmit: uniqueArray(z.string())
       .describe(
         'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
@@ -362,6 +396,13 @@ export const AssessmentJsonSchema = z
       .describe('Whether students can create groups.')
       .optional()
       .default(false),
+    studentGroupChooseName: z
+      .boolean()
+      .describe(
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.',
+      )
+      .optional()
+      .default(true),
     studentGroupJoin: z
       .boolean()
       .describe('Whether students can join groups.')

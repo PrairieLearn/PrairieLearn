@@ -2,16 +2,10 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryOneRowAsync,
-  queryRow,
-  queryRows,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -43,7 +37,7 @@ async function generateThreeStudentUsers() {
  * Creates a new group in the given assessment as the user with the given CSRF token
  */
 async function createGroup(
-  groupName: string,
+  group_name: string,
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
@@ -52,7 +46,7 @@ async function createGroup(
     body: new URLSearchParams({
       __action: 'create_group',
       __csrf_token: csrfToken,
-      groupName,
+      group_name,
     }),
   });
   assert.isOk(res.ok);
@@ -157,12 +151,11 @@ async function getQuestionUrl(
  */
 async function prepareGroup() {
   // Get exam assessment URL using ids from database
-  const assessmentResult = await queryOneRowAsync(sql.select_assessment, {
-    assessment_tid: GROUP_WORK_ASSESSMENT_TID,
-  });
-  assert.lengthOf(assessmentResult.rows, 1);
-  const assessmentId = assessmentResult.rows[0].id;
-  assert.isDefined(assessmentId);
+  const assessmentId = await queryRow(
+    sql.select_assessment,
+    { assessment_tid: GROUP_WORK_ASSESSMENT_TID },
+    IdSchema,
+  );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
 
   // Generate three users
@@ -223,9 +216,9 @@ async function prepareGroup() {
     '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -249,10 +242,12 @@ async function prepareGroup() {
   $ = cheerio.load(await response.text());
 
   // Check there is now one assessment instance in database
-  const assessmentInstancesResult = await queryAsync(sql.select_all_assessment_instance, []);
-  assert.lengthOf(assessmentInstancesResult.rows, 1);
-  assert.equal(assessmentInstancesResult.rows[0].group_id, 1);
-  const assessmentInstanceId = assessmentInstancesResult.rows[0].id;
+  const assessmentInstancesResult = await queryRow(
+    sql.select_all_assessment_instance,
+    AssessmentInstanceSchema,
+  );
+  assert.equal(assessmentInstancesResult.group_id, '1');
+  const assessmentInstanceId = assessmentInstancesResult.id;
 
   return {
     assessmentInstanceUrl: courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId,
@@ -394,7 +389,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneFirstUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.equal(
@@ -414,7 +409,7 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         body: new URLSearchParams({
           __action: 'grade',
           __csrf_token: questionOneSecondtUserCsrfToken,
-          __variant_id: variantId as string,
+          __variant_id: variantId,
         }),
       });
       assert.isOk(questionSubmissionWithPermissionResponse.ok);
@@ -456,10 +451,10 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder?.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector?.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,

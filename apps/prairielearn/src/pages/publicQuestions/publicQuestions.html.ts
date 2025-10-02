@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { PageLayout } from '../../components/PageLayout.html.js';
-import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -28,7 +28,7 @@ export const QuestionsPage = ({
     options: {
       fullWidth: true,
     },
-    headContent: [QuestionsTableHead()],
+    headContent: QuestionsTableHead(),
     content: html`
       ${resLocals.course.sharing_name
         ? QuestionsTable({

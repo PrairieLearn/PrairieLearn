@@ -1,0 +1,2 @@
+ALTER TABLE query_runs
+DROP COLUMN IF EXISTS sql;

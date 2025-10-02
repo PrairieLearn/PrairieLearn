@@ -1,21 +1,25 @@
 # API
 
-PrairieLearn contains a limited read-only API for use by instructors that
-allows programmatic access to assessments, assessment instances, and
-submissions.
+PrairieLearn contains a limited API for use by instructors that allows programmatic access to assessments, assessment instances, and submissions.
 
 ## API Authentication
 
-PrairieLearn uses personal access tokens for the API. To generate a personal
-access token, click on your name in the nav bar and click "Settings". Under
-the section entitled "Personal Access Tokens", you can generate tokens for
-yourself. These tokens give you all the permissions that your normal user
-account has.
+PrairieLearn uses personal access tokens for the API. To generate a personal access token, click on your name in the nav bar and click "Settings". Under the section entitled "Personal Access Tokens", you can generate tokens for yourself. These tokens give you all the permissions that your normal user account has.
 
 Provide your token via the `Private-Token` header:
 
 ```sh
 curl -H "Private-Token: TOKEN" https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
+```
+
+## Endpoint HTTP methods
+
+API endpoints require either a [`GET` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/GET) or a [`POST` request](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Methods/POST). A `GET` request retrieves information from PrairieLearn, such as gradebook information. A `POST` request asks PrairieLearn to perform an action, such as syncing a course GitHub repository. For `GET` requests, you can follow the format in the above example.
+
+Here is an example of using `curl` for a `POST` request:
+
+```sh
+curl -H "Private-Token: TOKEN" -X POST https://us.prairielearn.com/pl/api/v1/<REST_OF_PATH>
 ```
 
 ## Example access script
@@ -30,69 +34,104 @@ The `token` is your personal access token described above. The `course-instance-
 
 ## Endpoints
 
-All API endpoints are located at `/pl/api/v1/`. If you're running on
-production PrairieLearn, that means the API is at
-<https://us.prairielearn.com/pl/api/v1>. If you're running it locally
-at port 3000, the API is accessible via <http://localhost:3000/pl/api/v1/>.
+All API endpoints are located at `/pl/api/v1/`. If you're running on production PrairieLearn, that means the API is at <https://us.prairielearn.com/pl/api/v1>. If you're running it locally at port 3000, the API is accessible via <http://localhost:3000/pl/api/v1/>.
 
-In the endpoint list below, path components starting with a colon like
-`:course_instance_id` should be replaced with the integer IDs.
+In the endpoint list below, path components starting with a colon like `:course_instance_id` should be replaced with the integer IDs.
 
-- **Course instance info:**
+### Course instances
 
-  - `/pl/api/v1/course_instances/:course_instance_id`
-  - Information about the course instance.
+#### Get single course instance
 
-- **Gradebook:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/gradebook`
-  - All of the data available in the course gradebook, with one entry per user containing summary data on all assessments.
+#### Get gradebook for course instance
 
-- **Course instance access rules list:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/gradebook
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/course_instance_access_rules`
-  - All access rules for the course instance.
+#### Get access rules for course instance
 
-- **Assessments list:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/course_instance_access_rules
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessments`
-  - All assessments in the course instance.
+#### List assessments for course instance
 
-- **Single assessment:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessments
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id`
-  - One specific assessment.
+### Assessments
 
-- **Assessment instances list:**
+#### Get single assessment
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances`
-  - All assessment instances for a given assessment.
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id
+```
 
-- **Assessment access rules list:**
+#### List access rules for assessment
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_access_rules`
-  - All assessment access rules for a given assessment.
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_access_rules
+```
 
-- **One assessment instance:**
+#### List assessment instances for assessment
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id`
-  - One specific assessment instance.
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessments/:assessment_id/assessment_instances
+```
 
-- **Instance questions list:**
+### Assessment instances
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/instance_questions`
-  - All instance questions for a given assessment instance.
+#### Get single assessment instance
 
-- **Submissions list:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions`
-  - All submissions for a given assessment instance.
+#### List instance questions for assessment instance
 
-- **Assessment Instance Event Log:**
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/instance_questions
+```
 
-  - `/pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/log`
-  - Retrieves the event log for a specific assessment.
+#### List submissions for assessment instance
 
-- **One submission:**
-  - `/pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id`
-  - One specific submission.
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/submissions
+```
+
+#### Get event log for assessment instance
+
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/assessment_instances/:assessment_instance_id/log
+```
+
+### Submissions
+
+#### Get single submission
+
+```text
+GET /pl/api/v1/course_instances/:course_instance_id/submissions/:submission_id
+```
+
+### Course sync
+
+#### Start a course sync
+
+```text
+POST /pl/api/v1/course/:course_id/sync
+```
+
+Returns a `job_sequence_id` that can be used to check on the sync job's status.
+
+#### Check course sync status
+
+```text
+GET /pl/api/v1/course/:course_id/sync/:job_sequence_id
+```
+
+Returns the status and output of the sync job.

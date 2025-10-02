@@ -1,7 +1,7 @@
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import * as shlex from 'shlex';
@@ -20,7 +20,7 @@ import {
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
@@ -31,7 +31,7 @@ import {
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
-import { httpPrefixForCourseRepo } from '../../lib/github.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
@@ -40,7 +40,7 @@ import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
-import { selectTagsByCourseId } from '../../models/tags.js';
+import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
@@ -49,8 +49,26 @@ import {
   SharingSetRowSchema,
 } from './instructorQuestionSettings.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+// This will not correctly handle any filenames that have a comma in them.
+// Currently, we do not have any such filenames in prod so we don't think that
+// escaping commas in individual filenames is necessary.
+const GradedFilesSchema = z
+  .string()
+  .transform((s) =>
+    s
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s !== ''),
+  )
+  .optional();
+
+const ArgumentsSchema = z
+  .string()
+  .transform((s) => shlex.split(s || ''))
+  .optional();
 
 router.post(
   '/test',
@@ -134,25 +152,18 @@ router.post(
           workspace_image: z.string().optional(),
           workspace_port: IntegerFromStringOrEmptySchema.nullable().optional(),
           workspace_home: z.string().optional(),
-          workspace_args: z
-            .string()
-            .transform((s) => shlex.split(s || ''))
-            .optional(),
-          workspace_rewrite_url: BooleanFromCheckboxSchema.optional(),
-          // This will not correctly handle any filenames that have a comma in them.
-          // Currently, we do not have any such filenames in prod so we don't think that
-          // escaping commas in indiviudal filenames is necessary.
-          workspace_graded_files: z
-            .string()
-            .transform((s) =>
-              s
-                .split(',')
-                .map((s) => s.trim())
-                .filter((s) => s !== ''),
-            )
-            .optional(),
-          workspace_enable_networking: BooleanFromCheckboxSchema.optional(),
+          workspace_args: ArgumentsSchema,
+          workspace_rewrite_url: BooleanFromCheckboxSchema,
+          workspace_graded_files: GradedFilesSchema,
+          workspace_enable_networking: BooleanFromCheckboxSchema,
           workspace_environment: z.string().optional(),
+          external_grading_enabled: BooleanFromCheckboxSchema,
+          external_grading_image: z.string().optional(),
+          external_grading_files: GradedFilesSchema,
+          external_grading_entrypoint: ArgumentsSchema,
+          external_grading_timeout: IntegerFromStringOrEmptySchema.optional(),
+          external_grading_enable_networking: BooleanFromCheckboxSchema,
+          external_grading_environment: z.string().optional(),
         })
         .parse(req.body);
 
@@ -198,7 +209,7 @@ router.post(
         comment: questionInfo.workspaceOptions?.comment ?? undefined,
         image: propertyValueWithDefault(
           questionInfo.workspaceOptions?.image,
-          body.workspace_image,
+          body.workspace_image?.trim(),
           '',
         ),
         port: propertyValueWithDefault(
@@ -208,7 +219,7 @@ router.post(
         ),
         home: propertyValueWithDefault(
           questionInfo.workspaceOptions?.home,
-          body.workspace_home,
+          body.workspace_home?.trim(),
           '',
         ),
         args: propertyValueWithDefault(
@@ -219,7 +230,7 @@ router.post(
         rewriteUrl: propertyValueWithDefault(
           questionInfo.workspaceOptions?.rewriteUrl,
           body.workspace_rewrite_url,
-          false,
+          true,
         ),
         gradedFiles: propertyValueWithDefault(
           questionInfo.workspaceOptions?.gradedFiles,
@@ -238,19 +249,83 @@ router.post(
         ),
       };
 
-      const filteredOptions = Object.fromEntries(
-        Object.entries(
-          propertyValueWithDefault(
-            questionInfo.workspaceOptions,
-            workspaceOptions,
-            (val) => !val || Object.keys(val).length === 0,
-          ),
-        ).filter(([_, value]) => value !== undefined),
-      );
-      questionInfo.workspaceOptions =
-        Object.keys(filteredOptions).length > 0
-          ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
-          : undefined;
+      // We'll only write the workspace options if the request contains the
+      // required fields. Client-side validation will ensure that these are
+      // present if a workspace is configured.
+      if (workspaceOptions.image && workspaceOptions.port && workspaceOptions.home) {
+        const filteredOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.workspaceOptions,
+              workspaceOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+        questionInfo.workspaceOptions =
+          Object.keys(filteredOptions).length > 0
+            ? applyKeyOrder(questionInfo.workspaceOptions, filteredOptions)
+            : undefined;
+      } else {
+        questionInfo.workspaceOptions = undefined;
+      }
+
+      const externalGradingOptions = {
+        comment: questionInfo.externalGradingOptions?.comment ?? undefined,
+        enabled: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enabled,
+          body.external_grading_enabled,
+          false,
+        ),
+        image: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.image,
+          body.external_grading_image,
+          '',
+        ),
+        entrypoint: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.entrypoint,
+          body.external_grading_entrypoint,
+          (v) => v == null || v.length === 0,
+        ),
+        serverFilesCourse: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.serverFilesCourse,
+          body.external_grading_files,
+          (v) => !v || v.length === 0,
+        ),
+        timeout: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.timeout,
+          body.external_grading_timeout,
+          null,
+        ),
+        enableNetworking: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.enableNetworking,
+          body.external_grading_enable_networking,
+          false,
+        ),
+        environment: propertyValueWithDefault(
+          questionInfo.externalGradingOptions?.environment,
+          JSON.parse(body.external_grading_environment || '{}'),
+          (val) => !val || Object.keys(val).length === 0,
+        ),
+      };
+      if (externalGradingOptions.image) {
+        const filteredExternalGradingOptions = Object.fromEntries(
+          Object.entries(
+            propertyValueWithDefault(
+              questionInfo.externalGradingOptions,
+              externalGradingOptions,
+              (val) => !val || Object.keys(val).length === 0,
+            ),
+          ).filter(([_, value]) => value !== undefined),
+        );
+
+        questionInfo.externalGradingOptions =
+          Object.keys(filteredExternalGradingOptions).length > 0
+            ? applyKeyOrder(questionInfo.externalGradingOptions, filteredExternalGradingOptions)
+            : undefined;
+      } else {
+        questionInfo.externalGradingOptions = undefined;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -303,6 +378,10 @@ router.post(
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_qid: res.locals.question.qid,
+          from_course_short_name: res.locals.course.short_name,
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
         try {
@@ -369,16 +448,10 @@ router.get(
       config.secretKey,
     );
 
-    let questionGHLink: string | null = null;
-    if (res.locals.course.example_course) {
-      // The example course is not found at the root of its repository, so its path is hardcoded
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
-    } else if (res.locals.course.repository) {
-      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
-      if (githubPrefix) {
-        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
-      }
-    }
+    const questionGHLink = courseRepoContentUrl(
+      res.locals.course,
+      `questions/${res.locals.question.qid}`,
+    );
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
 
@@ -390,6 +463,7 @@ router.get(
 
     const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
     const courseTags = await selectTagsByCourseId(res.locals.course.id);
+    const questionTags = await selectTagsByQuestionId(res.locals.question.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
@@ -427,6 +501,7 @@ router.get(
         questionTestPath,
         questionTestCsrfToken,
         questionGHLink,
+        questionTags,
         qids,
         assessmentsWithQuestion,
         sharingEnabled,

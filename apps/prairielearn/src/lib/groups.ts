@@ -4,10 +4,10 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
 import {
@@ -157,9 +157,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     Object.values(roleAssignments).every((roles) => roles.length === 1);
 
   // Check if users have no roles
-  const usersWithoutRoles = groupMembers.filter(
-    (member) => roleAssignments[member.uid] === undefined,
-  );
+  const usersWithoutRoles = groupMembers.filter((member) => !(member.uid in roleAssignments));
 
   return {
     roleAssignments,
@@ -171,6 +169,12 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
   };
 }
 
+const QuestionGroupPermissionsSchema = z.object({
+  can_submit: z.boolean(),
+  can_view: z.boolean(),
+});
+export type QuestionGroupPermissions = z.infer<typeof QuestionGroupPermissionsSchema>;
+
 /**
  * This function assumes that the group has roles, so any caller must ensure
  * that it is only called in that scenario
@@ -179,11 +183,11 @@ export async function getQuestionGroupPermissions(
   instance_question_id: string,
   group_id: string,
   user_id: string,
-): Promise<{ can_submit: boolean; can_view: boolean }> {
+): Promise<QuestionGroupPermissions> {
   const userPermissions = await sqldb.queryOptionalRow(
     sql.select_question_permissions,
     { instance_question_id, group_id, user_id },
-    z.object({ can_submit: z.boolean(), can_view: z.boolean() }),
+    QuestionGroupPermissionsSchema,
   );
   return userPermissions ?? { can_submit: false, can_view: false };
 }
@@ -210,7 +214,7 @@ async function selectUserInCourseInstance({
       [user.user_id, course_instance_id],
       z.boolean(),
     )) ||
-    (await getEnrollmentForUserInCourseInstance({
+    (await selectOptionalEnrollmentByUserId({
       course_instance_id,
       user_id: user.user_id,
     }))
@@ -220,10 +224,10 @@ async function selectUserInCourseInstance({
 
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
-  const course_instance = await selectCourseInstanceById(course_instance_id);
+  const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
   if (course_instance) {
     const course = await selectCourseById(course_instance.course_id);
-    if (course?.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+    if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
       return user;
     }
   }
@@ -287,7 +291,7 @@ export async function addUserToGroup({
         )
       : null;
 
-    await sqldb.queryAsync(sql.insert_group_user, {
+    await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
@@ -340,20 +344,34 @@ export async function joinGroup(
 }
 
 export async function createGroup(
-  group_name: string,
+  group_name: string | null,
   assessment_id: string,
   uids: string[],
   authn_user_id: string,
 ): Promise<void> {
-  if (group_name.length > 30) {
-    throw new GroupOperationError(
-      'The group name is too long. Use at most 30 alphanumerical characters.',
-    );
-  }
-  if (!group_name.match(/^[0-9a-zA-Z]+$/)) {
-    throw new GroupOperationError(
-      'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
-    );
+  if (group_name) {
+    if (group_name.length > 30) {
+      throw new GroupOperationError(
+        'The group name is too long. Use at most 30 alphanumerical characters.',
+      );
+    }
+    if (!/^[0-9a-zA-Z]+$/.test(group_name)) {
+      throw new GroupOperationError(
+        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+      );
+    }
+    if (/^group[0-9]{7,}$/.test(group_name)) {
+      // This test is used to simplify the logic behind system-generated group
+      // names. These are created automatically by adding one to the latest
+      // group name with a number. Allowing a user to specify a group name with
+      // this format could cause an issue if the number is too long, as it would
+      // cause integer overflows in the group calculation. While changing the
+      // process to generate group names that don't take these numbers into
+      // account is possible, this validation is simpler.
+      throw new GroupOperationError(
+        'User-specified group names cannot start with "group" followed by a large number.',
+      );
+    }
   }
 
   if (uids.length === 0) {
@@ -390,7 +408,13 @@ export async function createGroup(
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
-      throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      if (group_name) {
+        throw new GroupOperationError(`Failed to create the group ${group_name}. ${err.message}`);
+      } else {
+        throw new GroupOperationError(
+          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+        );
+      }
     }
     throw err;
   }
@@ -424,11 +448,6 @@ export async function createOrAddToGroup(
   });
 }
 
-/**
- * @param {GroupInfo} groupInfo
- * @param {string} leavingUserId
- * @returns {GroupRoleAssignment[]}
- */
 export function getGroupRoleReassignmentsAfterLeave(
   groupInfo: GroupInfo,
   leavingUserId: string,
@@ -436,9 +455,11 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get the roleIds of the leaving user that need to be re-assigned to other users
   const groupRoleAssignments = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {}).flat();
 
-  const leavingUserRoleIds = groupRoleAssignments
-    .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-    .map(({ group_role_id }) => group_role_id);
+  const leavingUserRoleIds = new Set(
+    groupRoleAssignments
+      .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
+      .map(({ group_role_id }) => group_role_id),
+  );
 
   const roleIdsToReassign =
     groupInfo.rolesInfo?.groupRoles
@@ -446,7 +467,7 @@ export function getGroupRoleReassignmentsAfterLeave(
         (role) =>
           (role.minimum ?? 0) > 0 &&
           role.count <= (role.minimum ?? 0) &&
-          leavingUserRoleIds.includes(role.id),
+          leavingUserRoleIds.has(role.id),
       )
       .map((role) => role.id) ?? [];
 
@@ -460,8 +481,7 @@ export function getGroupRoleReassignmentsAfterLeave(
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
-        groupRoleAssignmentUpdates.find(({ user_id }) => idsEqual(user_id, m.user_id)) ===
-          undefined,
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
     )?.user_id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
@@ -530,7 +550,7 @@ export async function leaveGroup(
       const currentSize = groupInfo.groupMembers.length;
       if (currentSize > 1) {
         const groupRoleAssignmentUpdates = getGroupRoleReassignmentsAfterLeave(groupInfo, userId);
-        await sqldb.queryAsync(sql.update_group_roles, {
+        await sqldb.execute(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
           authn_user_id: authnUserId,
@@ -541,7 +561,7 @@ export async function leaveGroup(
           groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
         );
         if (currentSize - 1 <= minRolesToFill) {
-          await sqldb.queryAsync(sql.delete_non_required_roles, {
+          await sqldb.execute(sql.delete_non_required_roles, {
             group_id: groupId,
             assessment_id: assessmentId,
           });
@@ -550,7 +570,7 @@ export async function leaveGroup(
     }
 
     // Delete user from group and log
-    await sqldb.queryAsync(sql.delete_group_users, {
+    await sqldb.execute(sql.delete_group_users, {
       assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
@@ -623,7 +643,7 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers?.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
         userId = groupInfo.groupMembers[0].user_id;
       }
@@ -634,7 +654,7 @@ export async function updateGroupRoles(
       });
     }
 
-    await sqldb.queryAsync(sql.update_group_roles, {
+    await sqldb.execute(sql.update_group_roles, {
       group_id: groupId,
       role_assignments: JSON.stringify(roleAssignments),
       authn_user_id: authnUserId,
@@ -657,7 +677,7 @@ export async function deleteGroup(assessment_id: string, group_id: string, authn
  * Delete all groups for the given assessment.
  */
 export async function deleteAllGroups(assessmentId: string, authnUserId: string) {
-  await sqldb.queryAsync(sql.delete_all_groups, {
+  await sqldb.execute(sql.delete_all_groups, {
     assessment_id: assessmentId,
     authn_user_id: authnUserId,
   });

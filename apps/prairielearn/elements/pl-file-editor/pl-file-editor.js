@@ -1,7 +1,7 @@
 /* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
-  var elementId = '#file-editor-' + uuid;
+  const elementId = '#file-editor-' + uuid;
   this.element = $(elementId);
   if (!this.element) {
     throw new Error('File upload element ' + elementId + ' was not found!');
@@ -64,16 +64,16 @@ window.PLFileEditor = function (uuid, options) {
 
   this.plOptionFocus = options.plOptionFocus;
 
-  if (options.preview) {
-    this.editor.session.on('change', () => this.updatePreview(options.preview));
-    this.updatePreview(options.preview);
-  }
-
-  var currentContents = '';
+  let currentContents = '';
   if (options.currentContents) {
     currentContents = this.b64DecodeUnicode(options.currentContents);
   }
   this.setEditorContents(currentContents);
+
+  if (options.preview) {
+    this.editor.session.on('change', () => this.updatePreview(options.preview));
+    this.updatePreview(options.preview);
+  }
 
   this.syncSettings();
 
@@ -103,6 +103,24 @@ window.PLFileEditor.prototype.syncSettings = function () {
 };
 
 window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
+  /** @type {HTMLElement} */
+  const preview = this.element.find('.preview')[0];
+  let shadowRoot = preview.shadowRoot;
+  if (!shadowRoot) {
+    shadowRoot = preview.attachShadow({ mode: 'open' });
+    // MathJax includes assistive content that is not visible by default (i.e.,
+    // only readable by screen readers). The hiding of this content is found in
+    // a style tag in the head, but this tag is not applied to the shadow DOM by
+    // default, so we need to manually adopt the MathJax styles.
+    await MathJax.startup.promise;
+    const mjxStyles = document.getElementById('MJX-SVG-styles');
+    if (mjxStyles) {
+      const style = new CSSStyleSheet();
+      style.replaceSync(mjxStyles.textContent);
+      shadowRoot.adoptedStyleSheets.push(style);
+    }
+  }
+
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const html_contents = editor_value
@@ -110,12 +128,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
-  const preview = this.element.find('.preview')[0];
   if (html_contents.trim().length === 0) {
-    preview.innerHTML = default_preview_text;
+    shadowRoot.innerHTML = default_preview_text;
   } else {
-    const sanitized_contents = DOMPurify.sanitize(html_contents, { SANITIZE_NAMED_PROPS: true });
-    preview.innerHTML = sanitized_contents;
+    const sanitized_contents = DOMPurify.sanitize(html_contents);
+    shadowRoot.innerHTML = sanitized_contents;
     if (
       sanitized_contents.includes('$') ||
       sanitized_contents.includes('\\(') ||
@@ -123,7 +140,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise([preview]);
+      MathJax.typesetPromise(shadowRoot.children);
     }
   }
 };
@@ -131,11 +148,11 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
 window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.settingsButton.click(() => {
     ace.require(['ace/ext/themelist'], (themeList) => {
-      var themeSelect = this.modal.find('#modal-' + uuid + '-themes');
+      const themeSelect = this.modal.find('#modal-' + uuid + '-themes');
       themeSelect.empty();
       for (const entries in themeList.themesByName) {
-        var caption = themeList.themesByName[entries].caption;
-        var theme = themeList.themesByName[entries].theme;
+        const caption = themeList.themesByName[entries].caption;
+        const theme = themeList.themesByName[entries].theme;
 
         themeSelect.append(
           $('<option>', {
@@ -146,8 +163,8 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         );
       }
 
-      var fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
-      var fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
+      const fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
+      const fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
       for (const entries in fontSizeList) {
         fontSelect.append(
@@ -159,11 +176,11 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         );
       }
 
-      var keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-      var keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
+      const keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
+      const keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyboardHandlerSelect.empty();
       for (const index in keyboardHandlerList) {
-        var keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+        const keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
 
         keyboardHandlerSelect.append(
           $('<option>', {
@@ -185,19 +202,19 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     }
 
     this.modal.find('#modal-' + uuid + '-themes').change((e) => {
-      var theme = $(e.currentTarget).val();
+      const theme = $(e.currentTarget).val();
       this.editor.setTheme(theme);
     });
     this.modal.find('#modal-' + uuid + '-fontsize').change((e) => {
-      var fontSize = $(e.currentTarget).val();
+      const fontSize = $(e.currentTarget).val();
       this.editor.setFontSize(fontSize);
     });
   });
 
   this.saveSettingsButton.click(() => {
-    var theme = this.modal.find('#modal-' + uuid + '-themes').val();
-    var fontsize = this.modal.find('#modal-' + uuid + '-fontsize').val();
-    var keyboardHandler = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+    const theme = this.modal.find('#modal-' + uuid + '-themes').val();
+    const fontsize = this.modal.find('#modal-' + uuid + '-fontsize').val();
+    const keyboardHandler = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
@@ -282,7 +299,7 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
   // then we convert the percent encodings into raw bytes which
   // can be fed into btoa.
   return btoa(
-    encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
+    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, function toSolidBytes(match, p1) {
       return String.fromCharCode('0x' + p1);
     }),
   );

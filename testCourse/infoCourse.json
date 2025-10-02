@@ -2,7 +2,6 @@
   "uuid": "28760b11-beb1-4507-bb0a-a15bc8eaf091",
   "name": "QA 101",
   "title": "Test Course",
-  "options": { "useNewQuestionRenderer": true },
   "assessmentSets": [],
   "assessmentModules": [
     { "name": "Module1", "heading": "Module 1" },
@@ -43,7 +42,8 @@
     { "name": "Linear algebra", "color": "brown3", "description": "Matrix math." },
     { "name": "Test", "color": "gray3", "description": "Feature examples." },
     { "name": "Names", "color": "red2", "description": "Questions to help you learn names." },
-    { "name": "Statistics", "color": "blue2", "description": "Probability distributions." }
+    { "name": "Statistics", "color": "blue2", "description": "Probability distributions." },
+    { "name": "new topic", "color": "gray1", "description": "new topic", "comment": "" }
   ],
   "tags": [
     { "name": "mwest", "color": "gray1", "description": "Question originally written by mwest" },

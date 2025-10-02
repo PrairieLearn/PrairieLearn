@@ -1,4 +1,4 @@
-import * as htmx from 'htmx.org/dist/htmx.js';
+import htmx from 'htmx.org';
 
 declare global {
   interface Window {

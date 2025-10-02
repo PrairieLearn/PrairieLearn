@@ -1,7 +1,10 @@
 <script>
 $(() => {
   new window.PLFileUpload("{{uuid}}", {
-    acceptedFiles: {{&file_names}},
+    requiredFiles: {{&file_names}},
+    requiredFilesRegex: {{&file_regex}},
+    optionalFiles: {{&optional_file_names}},
+    optionalFilesRegex: {{&optional_file_regex}},
     submittedFileNames: {{&submitted_file_names}},
     checkIconColor: "{{check_icon_color}}",
   });
@@ -22,6 +25,24 @@ $(() => {
   </div>
   {{/editable}}
   <div class="messages">
+{{#parse_error}}
+    <span class="small" style="white-space: nowrap">
+        <span class="badge text-bg-danger">
+            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+        </span>
+        <a
+            class="link-primary"
+            tabindex="0"
+            role="button"
+            data-bs-placement="auto"
+            data-bs-toggle="popover"
+            data-bs-html="true"
+            title="File error"
+            data-bs-content="{{.}}"
+        >
+           More info…
+    </span>
+{{/parse_error}}
   </div>
   <div class="file-upload-status mt-3">
     <div class="card mb-4">

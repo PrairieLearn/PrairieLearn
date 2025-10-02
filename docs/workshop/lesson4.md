@@ -54,7 +54,6 @@ Write a question that provides students with a matrix $A$, and asks them to comp
 1. another matrix $B = \beta \, A$, where $\beta \in [2,9]$.
 
 2. a function that takes two matrices $M_1$ and $M_2$ as arguments, and returns:
-
    - a matrix $C$ given by the element-wise multiplication of $M_1$ and $M_2$ (and hence $M_1$ and $M_2$ should have the same dimensions)
    - the summation of all the entries of $C$
 

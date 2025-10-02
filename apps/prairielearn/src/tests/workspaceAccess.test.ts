@@ -3,11 +3,13 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import { ensureEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
-import { type AuthUser, withUser } from './utils/auth.js';
+import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -31,10 +33,10 @@ const studentNotEnrolled: AuthUser = {
 };
 
 describe('Test workspace authorization access', { timeout: 20_000 }, function () {
-  beforeAll(async function () {
+  beforeAll(function () {
     config.workspaceEnable = false;
   });
-  afterAll(async function () {
+  afterAll(function () {
     config.workspaceEnable = true;
   });
 
@@ -42,21 +44,33 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   afterAll(helperServer.after);
 
   beforeAll(async function () {
-    await sqldb.queryAsync(sql.create_user, studentOne);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentOne.uid });
+    const studentOneUser = await getOrCreateUser(studentOne);
+    await ensureEnrollment({
+      user_id: studentOneUser.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
+    });
 
-    await sqldb.queryAsync(sql.create_user, studentTwo);
-    await sqldb.queryAsync(sql.enroll_student_by_uid, { uid: studentTwo.uid });
+    const studentTwoUser = await getOrCreateUser(studentTwo);
+    await ensureEnrollment({
+      user_id: studentTwoUser.user_id,
+      course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
+    });
 
-    await sqldb.queryAsync(sql.create_user, studentNotEnrolled);
+    await getOrCreateUser(studentNotEnrolled);
   });
 
   describe('workspaces created by instructors in a course instance', function () {
     let workspace_id: string | undefined;
     test.sequential('create instructor workspace', async () => {
-      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
+      const questionId = await sqldb.queryRow(sql.get_test_question, IdSchema);
       const workspace_url =
-        baseUrl + `/course_instance/1/instructor/question/${result.question_id}/preview`;
+        baseUrl + `/course_instance/1/instructor/question/${questionId}/preview`;
       const response = await fetch(workspace_url);
 
       const $ = cheerio.load(await response.text());
@@ -97,19 +111,19 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   describe('workspaces created by instructors in a course (no instance)', function () {
     beforeAll(async () => {
       // Make the user a course owner.
-      await sqldb.queryAsync(sql.give_owner_access_to_uid, {
+      await sqldb.execute(sql.give_owner_access_to_uid, {
         uid: config.authUid,
       });
     });
     afterAll(async () => {
       // Remove owner permissions.
-      await sqldb.queryAsync(sql.revoke_owner_access, {});
+      await sqldb.execute(sql.revoke_owner_access);
     });
 
     let workspace_id: string | undefined;
     test.sequential('create instructor workspace', async () => {
-      const result = (await sqldb.queryOneRowAsync(sql.get_test_question, {})).rows[0];
-      const workspace_url = baseUrl + `/course/1/question/${result.question_id}/preview`;
+      const questionId = await sqldb.queryRow(sql.get_test_question, IdSchema);
+      const workspace_url = baseUrl + `/course/1/question/${questionId}/preview`;
       const response = await fetch(workspace_url);
 
       const $ = cheerio.load(await response.text());

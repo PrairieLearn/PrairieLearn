@@ -1,0 +1,14 @@
+{
+  "uuid": "07b694dd-dccd-4c95-84fb-149abf98e6b3",
+  "title": "Autograder demo: Fill-in-the-blank last element",
+  "topic": "Autograder",
+  "tags": ["jonatan", "code"],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "timeout": 60
+  }
+}

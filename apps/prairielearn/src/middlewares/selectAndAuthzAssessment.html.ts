@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../components/HeadContents.html.js';
-import { Navbar } from '../components/Navbar.html.js';
+import { HeadContents } from '../components/HeadContents.js';
+import { Navbar } from '../components/Navbar.js';
 import { config } from '../lib/config.js';
 
 export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) {

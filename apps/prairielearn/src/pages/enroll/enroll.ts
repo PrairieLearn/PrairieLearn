@@ -1,16 +1,10 @@
-import express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryOneRowAsync,
-  queryRow,
-  queryRows,
-  queryZeroOrOneRowAsync,
-} from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
@@ -24,7 +18,7 @@ import {
   EnrollmentLimitExceededMessage,
 } from './enroll.html.js';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get('/', [
@@ -34,10 +28,15 @@ router.get('/', [
   forbidAccessInExamMode,
   asyncHandler(async (req, res) => {
     if (res.locals.authn_provider_name === 'LTI') {
-      const result = await queryOneRowAsync(sql.lti_course_instance_lookup, {
-        course_instance_id: res.locals.authn_user.lti_course_instance_id,
-      });
-      res.send(EnrollLtiMessage({ ltiInfo: result.rows[0], resLocals: res.locals }));
+      const ltiInfo = await queryRow(
+        sql.lti_course_instance_lookup,
+        { course_instance_id: res.locals.authn_user.lti_course_instance_id },
+        z.object({
+          plc_short_name: z.string(),
+          ci_long_name: z.string(),
+        }),
+      );
+      res.send(EnrollLtiMessage({ ltiInfo, resLocals: res.locals }));
       return;
     }
 
@@ -94,12 +93,13 @@ router.post('/', [
         course,
         course_instance,
         authz_data: res.locals.authz_data,
+        action_detail: 'explicit_joined',
       });
 
       flash('success', `You have joined ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'unenroll') {
-      await queryZeroOrOneRowAsync(sql.unenroll, {
+      await execute(sql.unenroll, {
         course_instance_id: req.body.course_instance_id,
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
@@ -107,7 +107,7 @@ router.post('/', [
       flash('success', `You have left ${courseDisplayName}.`);
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, 'unknown action: ' + res.locals.__action);
+      throw new error.HttpStatusError(400, 'unknown action: ' + req.body.__action);
     }
   }),
 ]);

@@ -65,7 +65,7 @@ plugins:
         - scripts/**
         - overrides/**
         - mkdocstrings/**
-        - requirements.txt
+        - pyproject.toml
   - gen-files:
       scripts:
         - docs/scripts/gen_python_nav.py
@@ -110,7 +110,7 @@ plugins:
 
             show_symbol_type_toc: true
             show_root_full_path: true # prairielearn.core
-            show_root_toc_entry: true
+            show_root_toc_entry: false
             heading_level: 2
             group_by_category: false # e.g. 'classes', 'functions'
             members_order: alphabetical # source, alphabetical
@@ -186,6 +186,8 @@ extra:
   additional_readmes:
     - src: './contrib'
       dest: 'dev-guide/contrib/'
+    - src: './apps/prairielearn/src/migrations/'
+      dest: 'dev-guide/migrations/'
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/PrairieLearn/PrairieLearn
@@ -222,6 +224,7 @@ nav:
       - 'UUIDs in JSON files': 'uuid.md'
       - 'Regrading assessments': 'regrading.md'
       - 'Element for drawing': 'pl-drawing/index.md'
+      - 'Docker images': 'dockerImages.md'
       - 'External grading': 'externalGrading.md'
       - 'Python autograder':
           - 'python-grader/index.md'
@@ -260,6 +263,7 @@ nav:
       - dev-guide/installingNative.md
       - 'Quickstart': dev-guide/quickstart.md
       - dev-guide/guide.md
+      - 'Migrations': 'dev-guide/migrations/'
       - 'Server configuration': 'dev-guide/configJson.md'
       - 'Building question elements': 'devElements.md'
       - 'Building element extensions': 'elementExtensions.md'
@@ -284,7 +288,6 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  schemas/adminQuery.md
   schemas/infoNewsItem.md
   schemas/questionOptionsCalculation.md
   schemas/questionOptionsCheckbox.md

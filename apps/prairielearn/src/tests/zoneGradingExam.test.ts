@@ -2,10 +2,17 @@ import * as cheerio from 'cheerio';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+} from '../lib/db-types.js';
+import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -102,8 +109,11 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
 
     describe('startExam-3. the database', function () {
       it('should contain E5', async () => {
-        const result = await sqldb.queryOneRowAsync(sql.select_e5, []);
-        locals.assessment_id = result.rows[0].id;
+        const { id: assessmentId } = await selectAssessmentByTid({
+          course_instance_id: '1',
+          tid: 'exam5-perZoneGrading',
+        });
+        locals.assessment_id = assessmentId;
       });
     });
 
@@ -173,23 +183,28 @@ describe('Zone grading exam assessment', { timeout: 60_000 }, function () {
         locals.postStartTime = Date.now();
       });
       it('should create one assessment_instance', async () => {
-        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
-        if (result.rowCount !== 1) {
-          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
-        }
-        locals.assessment_instance = result.rows[0];
+        locals.assessment_instance = await sqldb.queryRow(
+          sql.select_assessment_instances,
+          AssessmentInstanceSchema,
+        );
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, async () => {
-        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
-        if (result.rowCount !== questionsArray.length) {
+        const result = await sqldb.queryRows(
+          sql.select_instance_questions,
+          z.object({
+            ...InstanceQuestionSchema.shape,
+            qid: QuestionSchema.shape.qid,
+          }),
+        );
+        if (result.length !== questionsArray.length) {
           throw new Error(
-            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+            `expected ${questionsArray.length} instance_questions, got: ` + result.length,
           );
         }
-        locals.instance_questions = result.rows;
+        locals.instance_questions = result;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
