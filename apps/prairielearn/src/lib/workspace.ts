@@ -13,7 +13,6 @@ import mustache from 'mustache';
 import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -377,7 +376,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   const root = config.workspaceHomeDirRoot;
   const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${uuidv4()}`;
+  const sourcePath = `${destinationPath}-${crypto.randomUUID()}`;
 
   const { fileGenerationErrors } = await generateWorkspaceFiles({
     serverFilesCoursePath,
