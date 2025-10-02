@@ -32,7 +32,7 @@ const router = Router();
 router.get(
   '/:code?',
   asyncHandler(async (req, res) => {
-    const { code } = req.params;
+    const code = req.params.code as string | undefined;
     const { url } = req.query;
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
@@ -45,8 +45,22 @@ router.get(
       // No enrollment code required, abort
       !courseInstance.self_enrollment_use_enrollment_code ||
       // Enrollment code is correct, abort
-      code === enrollmentCode
+      code?.toUpperCase() === enrollmentCode.toUpperCase()
     ) {
+      if (code?.toUpperCase() === enrollmentCode.toUpperCase()) {
+        // Authorize the user for the course instance
+        req.params.course_instance_id = courseInstance.id;
+        await authzCourseOrInstance(req, res);
+
+        // Enroll the user
+        await ensureCheckedEnrollment({
+          institution: res.locals.institution,
+          course: res.locals.course,
+          course_instance: res.locals.course_instance,
+          authz_data: res.locals.authz_data,
+          action_detail: 'implicit_joined',
+        });
+      }
       // redirect to the assessments page
       if (redirectUrl != null) {
         res.redirect(redirectUrl);

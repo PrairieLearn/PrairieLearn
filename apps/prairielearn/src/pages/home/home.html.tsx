@@ -88,6 +88,7 @@ export function Home({
             <EmptyStateCards
               urlPrefix={urlPrefix}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
+              csrfToken={csrfToken}
             />
           </Hydrate>
         )}
@@ -168,7 +169,7 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
           target="_blank"
           rel="noopener noreferrer"
         >
-          <i class="bi bi-journal-text me-1" aria-hidden="true" />
+          <i class="bi bi-journal-text me-sm-1" aria-hidden="true" />
           <span class="d-none d-sm-inline">View docs</span>
         </a>
       </div>
@@ -238,9 +239,11 @@ function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListPr
 function EmptyStateCards({
   urlPrefix,
   enrollmentManagementEnabled,
+  csrfToken,
 }: {
   urlPrefix: string;
   enrollmentManagementEnabled: boolean;
+  csrfToken: string;
 }) {
   const [show, setShow] = useState(false);
 
@@ -310,7 +313,7 @@ function EmptyStateCards({
           </div>
         </div>
       </div>
-      <EnrollmentCodeModal show={show} onHide={() => setShow(false)} />
+      <EnrollmentCodeModal show={show} csrfToken={csrfToken} onHide={() => setShow(false)} />
     </>
   );
 }

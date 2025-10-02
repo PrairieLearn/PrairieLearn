@@ -206,6 +206,7 @@ router.post(
           authz_data: res.locals.authz_data,
           action_detail: 'explicit_joined',
         });
+        console.log('enrolled');
         break;
       }
       default: {

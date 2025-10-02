@@ -115,6 +115,8 @@ async function dangerouslyEnrollUserInCourseInstance({
  *
  * If the user was invited to the course instance, this will set the
  * enrollment status to 'joined'.
+ * If the user was in the 'removed' status, this will set the
+ * enrollment status to 'joined'.
  */
 export async function ensureEnrollment({
   course_instance_id,
@@ -131,16 +133,24 @@ export async function ensureEnrollment({
 }): Promise<Enrollment | null> {
   const result = await runInTransactionAsync(async () => {
     const user = await selectAndLockUserById(user_id);
-    const enrollment = await selectOptionalEnrollmentByPendingUid({
+    let enrollment = await selectOptionalEnrollmentByPendingUid({
       course_instance_id,
       pending_uid: user.uid,
     });
+
+    if (enrollment == null) {
+      // Try to lookup an enrollment by user_id
+      enrollment = await selectOptionalEnrollmentByUserId({
+        course_instance_id,
+        user_id,
+      });
+    }
 
     if (enrollment) {
       await selectAndLockEnrollmentById(enrollment.id);
     }
 
-    if (enrollment && enrollment.status === 'invited') {
+    if (enrollment && (enrollment.status === 'invited' || enrollment.status === 'removed')) {
       const updated = await dangerouslyEnrollUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,

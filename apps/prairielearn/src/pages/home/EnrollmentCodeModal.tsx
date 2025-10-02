@@ -14,13 +14,21 @@ interface EnrollmentCodeForm {
 interface EnrollmentCodeModalProps {
   show: boolean;
   onHide: () => void;
+  csrfToken: string;
 }
 
-export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) {
+export function EnrollmentCodeModal({ show, onHide, csrfToken }: EnrollmentCodeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | undefined>();
 
-  const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>({
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<EnrollmentCodeForm>({
     mode: 'onChange',
     defaultValues: {
       code1: '',
@@ -33,7 +41,7 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
   const onSubmit = async (data: EnrollmentCodeForm) => {
     const fullCode = `${data.code1}${data.code2}${data.code3}`;
     setIsSubmitting(true);
-    setError(undefined);
+    clearErrors('root.serverError');
 
     try {
       const response = await fetch(`/lookup_code?code=${encodeURIComponent(fullCode)}`);
@@ -47,15 +55,27 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
             enrollmentCode: fullCode,
           });
         } else {
-          setError('No course found with this enrollment code');
+          setError('root.serverError', {
+            type: 'manual',
+            message: 'No course found with this enrollment code',
+          });
         }
       } else if (response.status === 404) {
-        setError('No course found with this enrollment code');
+        setError('root.serverError', {
+          type: 'manual',
+          message: 'No course found with this enrollment code',
+        });
       } else {
-        setError('An error occurred while looking up the code. Please try again.');
+        setError('root.serverError', {
+          type: 'manual',
+          message: 'An error occurred while looking up the code. Please try again.',
+        });
       }
     } catch {
-      setError('An error occurred while looking up the code. Please try again.');
+      setError('root.serverError', {
+        type: 'manual',
+        message: 'An error occurred while looking up the code. Please try again.',
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -67,6 +87,9 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onSubmit)}>
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <input type="hidden" name="__action" value="validate_code" />
+        <input type="hidden" name="enrollment_code" id="enrollment_code_hidden" />
         <Modal.Body>
           <EnrollmentCodeInput
             register={register}
@@ -75,7 +98,7 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
             code1Field="code1"
             code2Field="code2"
             code3Field="code3"
-            error={error}
+            error={errors.root?.serverError.message}
             autoFocus={false}
             disabled={isSubmitting}
           />

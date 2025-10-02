@@ -62,12 +62,12 @@ export function StudentCoursesCard({
               class="btn btn-light btn-sm ms-auto"
               onClick={() => setShowEnrollmentCodeModal(true)}
             >
-              <i class="bi bi-plus-circle me-1" aria-hidden="true" />
+              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
               <span class="d-none d-sm-inline">Add course</span>
             </button>
           ) : (
             <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
-              <i class="bi bi-plus-circle me-1" aria-hidden="true" />
+              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
               <span class="d-none d-sm-inline">Add course</span>
             </a>
           ))}
