@@ -278,11 +278,12 @@ export const AccessControlGroupMemberSchema = z.object({
 });
 
 export const AccessControlGroupSchema = z.object({
+  access_control_group_id: IdSchema, // XXX FIXME FIXME FIXME
   course_instance_id: IdSchema,
   description: z.string().nullable(),
   id: IdSchema,
   name: z.string().nullable(),
-  uuid: IdSchema, // TODO: probably not the right type, this is a uuid
+  // uuid: IdSchema, // TODO: probably not the right type, this is a uuid
 });
 
 export const AccessControlLateDeadlineSchema = z.object({

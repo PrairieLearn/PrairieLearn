@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS access_control (
   after_complete_hide_questions_after_date_enabled boolean,
   after_complete_hide_questions_after_date TIMESTAMP WITH TIME ZONE,
   after_complete_hide_score_before_date_enabled boolean,
-  after_complete_hide_score_before_date TIMESTAMP WITH TIME ZONE
-  order INTEGER -- precedence, lower is less important
-  UNIQUE(course_instance_id, assessment_id, order) -- for each assessment, there should be no two controls with the same precedent
+  after_complete_hide_score_before_date TIMESTAMP WITH TIME ZONE,
+  "order" INTEGER, -- precedence, lower is less important
+  UNIQUE(course_instance_id, assessment_id, "order") -- for each assessment, there should be no two controls with the same precedent
 );
 
 CREATE TABLE IF NOT EXISTS access_control_groups (
