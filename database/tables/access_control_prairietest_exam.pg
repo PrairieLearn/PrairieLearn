@@ -1,0 +1,12 @@
+columns
+    access_control_id: bigint not null
+    exam_id: bigint not null
+    id: bigint not null default nextval('access_control_prairietest_exam_id_seq'::regclass)
+    read_only: boolean
+
+indexes
+    access_control_prairietest_exam_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    access_control_prairietest_exam_access_control_id_fkey: FOREIGN KEY (access_control_id) REFERENCES access_control(id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_control_prairietest_exam_exam_id_fkey: FOREIGN KEY (exam_id) REFERENCES exams(exam_id) ON UPDATE CASCADE ON DELETE CASCADE

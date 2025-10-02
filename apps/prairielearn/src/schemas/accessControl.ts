@@ -1,159 +1,155 @@
 import { z } from 'zod';
 
-export const DeadlineEntryJsonSchema = z
-  .object({
-    date: z.string().describe('The deadline date in ISO 8601 format (e.g., "2024-03-17T23:59")'),
-    credit: z.number().describe('The credit percentage for this deadline (e.g., 120 for 120%)'),
-  })
-  .describe('A deadline entry with date and credit percentage');
+export const DeadlineEntryJsonSchema = z.object({
+  date: z.string().describe('Date as ISO String for additional deadline'),
+  credit: z.number().describe('Amount of credit as a percent to allow'),
+});
 
-const PrairieTestExamJsonSchema = z
-  .object({
-    examUuid: z
-      .string()
-      .regex(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)
-      .describe('The PrairieTest exam UUID'),
-    readOnly: z.boolean().describe('Whether this exam is read-only').optional(),
-  })
-  .describe('A PrairieTest exam configuration');
+const AfterLastDeadlineJsonSchema = z.object({
+  allowSubmissions: z.boolean().optional(),
+  creditEnabled: z.boolean().optional(),
+  credit: z.number().optional(),
+});
 
 const DateControlJsonSchema = z
   .object({
-    enabled: z.boolean().describe('Whether date control is enabled').optional(),
-
-    releaseDateEnabled: z
-      .boolean()
-      .describe('Whether release date is enabled')
-      .optional()
-      .default(false),
-    releaseDate: z
-      .string()
-      .describe('The release date in ISO 8601 format (e.g., "2024-03-14T00:01")')
-      .optional(),
-
-    dueDateEnabled: z.boolean().describe('Whether due date is enabled').optional(),
-    dueDate: z
-      .string()
-      .describe('The due date in ISO 8601 format (e.g., "2024-03-21T23:59")')
-      .optional(),
-
-    earlyDeadlinesEnabled: z.boolean().describe('Whether early deadlines are enabled').optional(),
+    enabled: z.boolean().optional(),
+    releaseDateEnabled: z.boolean().optional().describe('Whether to enable release date'),
+    releaseDate: z.string().optional().describe('Deadline date as ISO String'),
+    dueDateEnabled: z.boolean().optional().describe('Whether to enable due date'),
+    dueDate: z.string().nullable().optional().describe('Due date as ISO String'),
+    earlyDeadlinesEnabled: z.boolean().optional().describe('Whether to enable early deadlines'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
-      .describe('Array of early deadline entries with credit percentages')
-      .optional(),
-
-    lateDeadlinesEnabled: z.boolean().describe('Whether late deadlines are enabled').optional(),
+      .nullable()
+      .optional()
+      .describe('Array of early deadlines with credit as percentages'),
+    lateDeadlinesEnabled: z.boolean().optional().describe('Whether to enable late deadlines'),
     lateDeadlines: z
       .array(DeadlineEntryJsonSchema)
-      .describe('Array of late deadline entries with credit percentages')
-      .optional(),
-
-    afterLastDeadline: z
-      .object({
-        allowSubmissions: z
-          .boolean()
-          .describe('Whether submissions are allowed after the last deadline')
-          .optional(),
-        creditEnabled: z
-          .boolean()
-          .describe('Whether credit text box value is enabled and considered')
-          .optional(),
-        credit: z.number().describe('The credit percentage after the last deadline').optional(),
-      })
-      .describe('Configuration for behavior after the last deadline')
-      .optional(),
-
-    durationMinutesEnabled: z.boolean().describe('Whether duration limit is enabled').optional(),
-    durationMinutes: z.number().positive().describe('The duration limit in minutes').optional(),
-
-    passwordEnabled: z.boolean().describe('Whether password protection is enabled').optional(),
-    password: z.string().describe('The password for accessing the assessment').optional(),
+      .nullable()
+      .optional()
+      .describe('Array of late deadlines with credit as percentages'),
+    afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
+      'Controls for assessment behaviour after last deadline',
+    ).optional(),
+    durationMinutesEnabled: z.boolean().optional().describe('Whether to enable duration minutes'),
+    durationMinutes: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .describe('Desired duration limit for assessment'),
+    passwordEnabled: z.boolean().optional().describe('Whether to enable password'),
+    password: z.string().nullable().optional().describe('Password for assessment'),
   })
-  .describe('Date and time control configuration for the assessment');
+  .optional();
+
+const ExamJsonSchema = z.object({
+  examUuid: z.string().describe('UUID of associated PrairieTest exam'),
+  readOnly: z.boolean().optional().describe('Whether the exam is read-only for students'),
+});
 
 const PrairieTestControlJsonSchema = z
   .object({
-    enabled: z.boolean().describe('Whether PrairieTest control is enabled').optional(),
+    enabled: z.boolean().optional().describe('Whether to enable PrairieTest controls'),
     exams: z
-      .array(PrairieTestExamJsonSchema)
-      .describe('Array of PrairieTest exam configurations')
-      .optional(),
+      .array(ExamJsonSchema)
+      .optional()
+      .describe('Array of associated PrairieTest exam configs'),
   })
-  .describe('PrairieTest integration control configuration');
+  .optional();
 
-const AfterCompleteDateControlJsonSchema = z
+const HideQuestionsDateControlJsonSchema = z
   .object({
-    showAgainDateEnabled: z.boolean().describe('Whether show again date is enabled').optional(),
+    showAgainDateEnabled: z
+      .boolean()
+      .optional()
+      .describe(
+        'Whether to enable the ability for revealing hidden questions after assessment completion',
+      ),
     showAgainDate: z
       .string()
-      .describe('The date when content should be shown again in ISO 8601 format')
-      .optional(),
+      .optional()
+      .describe(
+        'Date as ISO String for when to unhide questions to students after assessment completion',
+      ),
     hideAgainDateEnabled: z
       .boolean()
-      .describe('Whether hide again date is enabled (only for hideQuestionsDateControl)')
-      .optional(),
+      .optional()
+      .describe(
+        'Whether to enable the ability for re-hiding revealed questions after assessment completion',
+      ),
     hideAgainDate: z
       .string()
+      .optional()
       .describe(
-        'The date when content should be hidden again in ISO 8601 format (only for hideQuestionsDateControl)',
-      )
-      .optional(),
+        'Date as ISO String for when to rehide questions to students after assessment completion',
+      ),
   })
-  .describe('Date control configuration for after-complete behavior');
+  .optional();
+
+const HideScoreDateControlJsonSchema = z
+  .object({
+    showAgainDateEnabled: z
+      .boolean()
+      .optional()
+      .describe('Whether to enable the ability to show hidden scores after assessment completion'),
+    showAgainDate: z
+      .string()
+      .optional()
+      .describe('Date as ISO String for when to reveal hidden scores after assessment completion'),
+  })
+  .optional();
 
 const AfterCompleteJsonSchema = z
   .object({
-    hideQuestions: z.boolean().describe('Whether to hide questions after completion').optional(),
-    hideQuestionsDateControl: AfterCompleteDateControlJsonSchema.describe(
-      'Date control for hiding/showing questions after completion',
-    ).optional(),
-    hideScore: z.boolean().describe('Whether to hide score after completion').optional(),
-    hideScoreDateControl: z
-      .object({
-        showAgainDateEnabled: z
-          .boolean()
-          .describe('Whether show again date is enabled for scores')
-          .optional(),
-        showAgainDate: z
-          .string()
-          .describe('The date when scores should be shown again in ISO 8601 format')
-          .optional(),
-      })
-      .describe('Date control for hiding/showing scores after completion')
-      .optional(),
-  })
-  .describe('Configuration for behavior after assessment completion');
-
-export const AccessControlJsonSchema = z
-  .object({
-    // These three keys can't/shouldn't be inherited by overrides/other rules
-    targets: z
-      .array(z.string())
-      .describe('Array of target identifiers (e.g., section names) that this rule applies to')
-      .optional(),
-    enabled: z
+    hideQuestions: z
       .boolean()
-      .describe('Whether this access rule should be considered')
       .optional()
-      .default(true),
-    blockAccess: z
+      .describe(
+        'Whether to enable settings controlling question visibility after assessment completion',
+      ),
+    hideQuestionsDateControl: HideQuestionsDateControlJsonSchema.describe(
+      'Settings controlling question visibility after assessment completion',
+    ),
+    hideScore: z
       .boolean()
-      .describe('Short circuit - deny access if this rule applies')
       .optional()
-      .default(false),
-
-    // All other keys are inherited by overrides/other rules
-    listBeforeRelease: z
-      .boolean()
-      .describe('Whether students can see the title and click into the assessment before release')
-      .optional(),
-
-    dateControl: DateControlJsonSchema.optional(),
-    prairieTestControl: PrairieTestControlJsonSchema.optional(),
-    afterComplete: AfterCompleteJsonSchema.optional(),
+      .describe(
+        'Whether to enable settings controlling score visibility after assessment completion',
+      ),
+    hideScoreDateControl: HideScoreDateControlJsonSchema.describe(
+      'Settings controlling score visibility after assessment completion',
+    ),
   })
-  .describe('Access control configuration for assessments');
+  .optional();
+
+export const AccessControlJsonSchema = z.object({
+  name: z.string().optional().describe('Name for AccessControl rule'),
+  targets: z
+    .array(z.string())
+    .optional()
+    .describe('Array of (User, Access Control Group) ids this set targets'),
+  enabled: z
+    .boolean()
+    .optional()
+    .describe('Whether this set of permissions is enabled')
+    .default(true), // default true if not set
+  blockAccess: z
+    .boolean()
+    .optional()
+    .describe('Short circuit for whether the targets should have access to the assessment')
+    .default(false), // default false if not set
+
+  listBeforeRelease: z
+    .boolean()
+    .optional()
+    .describe('Whether students can see the title and click into the assessment before release'),
+  dateControl: DateControlJsonSchema,
+  prairieTestControl: PrairieTestControlJsonSchema,
+  afterComplete: AfterCompleteJsonSchema,
+});
 
 export type AccessControlJson = z.infer<typeof AccessControlJsonSchema>;
 export type AccessControlJsonInput = z.input<typeof AccessControlJsonSchema>;

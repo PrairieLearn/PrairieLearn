@@ -50,46 +50,49 @@ ARG CACHEBUST=2025-08-15-14-16-03
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
 USER 0
-RUN OLD_UID="$(id -u rstudio)" && \
-    OLD_GID="$(id -g rstudio)" && \
-    export OLD_GID OLD_UID NEW_UID=1001 NEW_GID=1001 && \
-    groupmod -g 1001 rstudio && \
-    usermod -u 1001 -g 1001 rstudio && \
-    find /home -user "$OLD_UID" -execdir chown -h "$NEW_UID" {} + && \
-    find /home -group "$OLD_GID" -execdir chgrp -h "$NEW_GID" {} + && \
-    unset OLD_UID OLD_GID NEW_UID NEW_GID
+RUN OLD_UID="$(id -u rstudio)" \
+  && OLD_GID="$(id -g rstudio)" \
+  && export OLD_GID OLD_UID NEW_UID=1001 NEW_GID=1001 \
+  && groupmod -g 1001 rstudio \
+  && usermod -u 1001 -g 1001 rstudio \
+  && find /home -user "$OLD_UID" -execdir chown -h "$NEW_UID" {} + \
+  && find /home -group "$OLD_GID" -execdir chgrp -h "$NEW_GID" {} + \
+  && unset OLD_UID OLD_GID NEW_UID NEW_GID
 
 USER 0
-RUN apt-get update && \
-    # Run 'unminimize' to add docs
-    apt-get install -y --no-install-recommends man-db unminimize && \
-    yes | unminimize && \
-    apt-get install -y --no-install-recommends \
-    # Reverse proxy workaround for PrairieLearn:
-    nginx \
-    gettext \
-    gosu \
-    fonts-dejavu \
-    # Utilities for convenience debugging this container:
-    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
-    # Test:
-    gosu nobody true && \
-    # Cleanup:
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    find /tmp -not -path /tmp -delete
+RUN apt-get update \
+  &&
+  # Run 'unminimize' to add docs
+  apt-get install -y --no-install-recommends man-db unminimize \
+  && yes | unminimize \
+  && apt-get install -y --no-install-recommends
+# Reverse proxy workaround for PrairieLearn:
+nginx \
+  gettext \
+  gosu \
+  fonts-dejavu
+# Utilities for convenience debugging this container:
+less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 \
+  &&
+  # Test:
+  gosu nobody true \
+  &&
+  # Cleanup:
+  apt-get clean \
+  && rm -rf /var/lib/apt/lists/* \
+  && find /tmp -not -path /tmp -delete
 
 # Make sure we'll be able to run as user 1001. This is hacky.
 USER 0
-RUN mkdir -p /var/run/s6 && \
-    chown -R 1001:1001 /var/run/s6 && \
-    chown -R 1001:1001 /usr/local/lib/R && \
-    chown -R 1001:1001 /var/lib/rstudio-server && \
-    chown -R 1001:1001 /var/run/rstudio-server && \
-    chown -R 1001:1001 /etc/rstudio
+RUN mkdir -p /var/run/s6 \
+  && chown -R 1001:1001 /var/run/s6 \
+  && chown -R 1001:1001 /usr/local/lib/R \
+  && chown -R 1001:1001 /var/lib/rstudio-server \
+  && chown -R 1001:1001 /var/run/rstudio-server \
+  && chown -R 1001:1001 /etc/rstudio
 # We store some generated files and the Nginx pid file in /var/pl-var.
-RUN mkdir -p /var/pl-var && \
-    chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var
+RUN mkdir -p /var/pl-var \
+  && chown -R 1001:1001 /var/lib/nginx /var/log/nginx /var/pl-var
 # The Nginx proxy allows us to change the base URL for the RStudio session,
 # which is necessary for embedding on PrairieLearn. The Nginx conf file needs
 # to be writable so we can update the base URL at startup.
@@ -97,13 +100,13 @@ COPY rstudio-nginx.conf /etc/nginx/nginx.conf
 RUN chown 1001:1001 /etc/nginx/nginx.conf
 # Patch the service file that s6 invokes to make sure that rstudio-server
 # runs as our normal user
-RUN MATCH_REGEX='^\(exec /usr/lib/rstudio-server/bin/rserver --server-daemonize 0\)$' && \
-    SERVICE_FILE='/etc/services.d/rstudio/run' && \
-    grep -qe "$MATCH_REGEX" "$SERVICE_FILE" || { \
-        echo "Error patching rstudio service file: Format changed in upstream image. Revise Dockerfile." >&2 ; \
-        exit 1 ; \
-    } && \
-    sed -i "s#$MATCH_REGEX#\1 --server-user rstudio#g" "$SERVICE_FILE"
+RUN MATCH_REGEX='^\(exec /usr/lib/rstudio-server/bin/rserver --server-daemonize 0\)$' \
+  && SERVICE_FILE='/etc/services.d/rstudio/run' \
+  && grep -qe "$MATCH_REGEX" "$SERVICE_FILE" || {
+  echo "Error patching rstudio service file: Format changed in upstream image. Revise Dockerfile." >&2
+  exit 1
+} \
+  && sed -i "s#$MATCH_REGEX#\1 --server-user rstudio#g" "$SERVICE_FILE"
 
 # The proxy uses 3939 and the internal RStudio session uses 8787.
 # We only need to expose 3939 here.
@@ -138,14 +141,14 @@ RUN mkdir -p "$EDITOR_FOCUS_DIR"
 # RUN echo "setwd('$EDITOR_FOCUS_DIR')" >> "/home/rstudio/.Rprofile"
 ### The rsession.conf hack:
 USER 0
-RUN echo "session-default-working-dir=$EDITOR_FOCUS_DIR" >> /etc/rstudio/rsession.conf && \
-    echo "session-default-new-project-dir=$EDITOR_FOCUS_DIR" >> /etc/rstudio/rsession.conf
+RUN echo "session-default-working-dir=$EDITOR_FOCUS_DIR" >> /etc/rstudio/rsession.conf \
+  && echo "session-default-new-project-dir=$EDITOR_FOCUS_DIR" >> /etc/rstudio/rsession.conf
 
 # Prepare the entrypoint script
 USER 0
 COPY ["pl-start.sh", "pl-gosu-helper.sh", "/pl-bin/"]
-RUN mkdir -p /pl-bin && \
-    chmod a+rx /pl-bin /pl-bin/pl-start.sh /pl-bin/pl-gosu-helper.sh
+RUN mkdir -p /pl-bin \
+  && chmod a+rx /pl-bin /pl-bin/pl-start.sh /pl-bin/pl-gosu-helper.sh
 
 # Warning: In general, don't edit the variables below. Do NOT try to set
 # RStudio Server's USERID environment variable here, as this will cause the

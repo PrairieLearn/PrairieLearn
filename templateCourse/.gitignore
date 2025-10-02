@@ -1,7 +1,7 @@
-# macOS 
+# macOS
 *.DS_Store
 
-# Python 
+# Python
 __pycache__/
 *.pyc
 
