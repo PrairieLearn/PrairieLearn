@@ -65,7 +65,7 @@ router.get(
         resLocals: res.locals,
         pageTitle: 'Enrollment Code Required',
         navContext: {
-          type: 'plain',
+          type: 'student',
           page: 'enroll',
         },
         content: (

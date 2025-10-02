@@ -58,3 +58,5 @@ export function EnrollmentCodeRequired({ csrfToken }: EnrollmentCodeRequiredProp
     </div>
   );
 }
+
+EnrollmentCodeRequired.displayName = 'EnrollmentCodeRequired';
