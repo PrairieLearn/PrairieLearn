@@ -1,23 +1,17 @@
+import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { GitHubButton } from '../../components/GitHubButton.js';
-import { PublicLinkSharing, StudentLinkSharing } from '../../components/LinkSharing.js';
+import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { StaffCourseInstanceContext } from '../../lib/client/page-context.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
 import { SelfEnrollmentSettings } from './components/SelfEnrollmentSettings.js';
-
-interface SettingsFormValues {
-  ciid: string;
-  long_name: string;
-  display_timezone: string;
-  group_assessments_by: StaffCourseInstanceContext['course_instance']['assessments_group_by'];
-  hide_in_enroll_page: boolean;
-}
+import type { SettingsFormValues } from './instructorInstanceAdminSettings.types.js';
 
 export function InstructorInstanceAdminSettings({
   csrfToken,
@@ -57,12 +51,27 @@ export function InstructorInstanceAdminSettings({
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
-    hide_in_enroll_page: courseInstance.hide_in_enroll_page ?? false,
+    show_in_enroll_page:
+      courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
+    self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+    self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    self_enrollment_enabled_before_date_enabled:
+      courseInstance.self_enrollment_enabled_before_date_enabled,
+    self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
+      ? Temporal.Instant.fromEpochMilliseconds(
+          courseInstance.self_enrollment_enabled_before_date.getTime(),
+        )
+          .toZonedDateTimeISO(courseInstance.display_timezone)
+          .toPlainDateTime()
+          .toString()
+      : '',
   };
 
   const {
     register,
     reset,
+    control,
+    trigger,
     formState: { isDirty, errors, isValid },
   } = useForm<SettingsFormValues>({
     mode: 'onChange',
@@ -78,8 +87,18 @@ export function InstructorInstanceAdminSettings({
         <GitHubButton gitHubLink={instanceGHLink ?? null} />
       </div>
       <div class="card-body">
-        {/* Any javascript submit will not contain the value of the submit button. */}
-        <form method="POST" name="edit-course-instance-settings-form">
+        <form
+          method="POST"
+          name="edit-course-instance-settings-form"
+          onSubmit={async (e) => {
+            if (!isValid) {
+              // Trigger all the validation rules
+              await trigger();
+              e.preventDefault();
+              return;
+            }
+          }}
+        >
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="orig_hash" value={origHash} />
           <div class="mb-3">
@@ -189,32 +208,16 @@ export function InstructorInstanceAdminSettings({
               Determines how assessments will be grouped on the student assessments page.
             </small>
           </div>
-          <div class="mb-3 form-check">
-            <input
-              class="form-check-input"
-              type="checkbox"
-              id="hide_in_enroll_page"
-              disabled={!canEdit}
-              {...register('hide_in_enroll_page')}
-              name="hide_in_enroll_page"
-            />
-            <label class="form-check-label" for="hide_in_enroll_page">
-              Hide in enrollment page
-            </label>
-            <div class="small text-muted">
-              If enabled, hides the course instance in the enrollment page, so that only direct
-              links to the course can be used for enrollment.
-            </div>
-          </div>
 
-          <StudentLinkSharing
+          <SelfEnrollmentSettings
+            canEdit={canEdit}
+            control={control}
+            trigger={trigger}
+            enrollmentManagementEnabled={enrollmentManagementEnabled}
             studentLink={studentLink}
-            studentLinkMessage="This is the link that students will use to access the course. You can copy this link to share with students."
+            selfEnrollLink={selfEnrollLink}
+            csrfToken={csrfToken}
           />
-
-          {enrollmentManagementEnabled && (
-            <SelfEnrollmentSettings selfEnrollLink={selfEnrollLink} csrfToken={csrfToken} />
-          )}
 
           <h2 class="h4">Sharing</h2>
           {courseInstance.share_source_publicly ? (
@@ -235,7 +238,7 @@ export function InstructorInstanceAdminSettings({
                 class="btn btn-primary mb-2"
                 name="__action"
                 value="update_configuration"
-                disabled={!isDirty || !isValid}
+                disabled={!isDirty}
               >
                 Save
               </button>

@@ -27,9 +27,9 @@ function CopyCourseInstanceModal({
   return Modal({
     id: 'copyCourseInstanceModal',
     title: 'Copy course instance',
-    formAction: courseInstanceCopyTargets[0]?.copy_url ?? '',
+    formAction: courseInstanceCopyTargets.at(0)?.copy_url ?? '',
     formClass: 'js-copy-course-instance-form',
-    form: courseInstanceCopyTargets?.length > 0,
+    form: courseInstanceCopyTargets.length > 0,
     body:
       courseInstanceCopyTargets.length === 0
         ? html`
@@ -85,11 +85,11 @@ function CopyCourseInstanceModal({
       <input
         type="hidden"
         name="__csrf_token"
-        value="${courseInstanceCopyTargets[0]?.__csrf_token ?? ''}"
+        value="${courseInstanceCopyTargets.at(0)?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="course_instance_id" value="${courseInstance.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      ${courseInstanceCopyTargets?.length > 0
+      ${courseInstanceCopyTargets.length > 0
         ? html`
             <button
               type="submit"

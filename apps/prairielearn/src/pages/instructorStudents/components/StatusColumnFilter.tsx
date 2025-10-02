@@ -22,7 +22,7 @@ export function StatusColumnFilter({
   enrollmentStatusFilter: EnumEnrollmentStatus[];
   setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
 }) {
-  const [mode, setModeQuery] = useState<'include' | 'exclude'>('include');
+  const [mode, setMode] = useState<'include' | 'exclude'>('include');
 
   const selected = useMemo(
     () => computeSelected(mode, new Set(enrollmentStatusFilter)),
@@ -31,7 +31,7 @@ export function StatusColumnFilter({
 
   const apply = (newMode: 'include' | 'exclude', newSelected: Set<EnumEnrollmentStatus>) => {
     const selected = computeSelected(newMode, newSelected);
-    setModeQuery(newMode);
+    setMode(newMode);
     setEnrollmentStatusFilter(Array.from(selected));
   };
 
