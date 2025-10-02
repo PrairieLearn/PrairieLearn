@@ -34,7 +34,6 @@ export const RawStudentAssessmentSchema = RawStaffAssessmentSchema.pick({
   advance_score_perc: true,
   allow_issue_reporting: true,
   allow_personal_notes: true,
-  allow_real_time_grading: true,
   assessment_module_id: true,
   assessment_set_id: true,
   auto_close: true,
@@ -193,8 +192,8 @@ export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
   course_instance_id: true,
   created_at: true,
+  first_joined_at: true,
   id: true,
-  joined_at: true,
   lti_managed: true,
   pending_lti13_email: true,
   pending_lti13_instance_id: true,
@@ -206,6 +205,19 @@ export const RawStaffEnrollmentSchema = RawEnrollmentSchema.pick({
 });
 export const StaffEnrollmentSchema = RawStaffEnrollmentSchema.brand<'StaffEnrollment'>();
 export type StaffEnrollment = z.infer<typeof StaffEnrollmentSchema>;
+
+export const RawStudentEnrollmentSchema = RawStaffEnrollmentSchema.pick({
+  course_instance_id: true,
+  created_at: true,
+  first_joined_at: true,
+  id: true,
+  lti_managed: true,
+  pending_uid: true,
+  status: true,
+  user_id: true,
+});
+export const StudentEnrollmentSchema = RawStudentEnrollmentSchema.brand<'StudentEnrollment'>();
+export type StudentEnrollment = z.infer<typeof StudentEnrollmentSchema>;
 
 /** Institutions */
 export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({

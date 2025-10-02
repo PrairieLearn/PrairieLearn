@@ -1,5 +1,14 @@
 # @prairielearn/cache
 
+## 2.1.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/logger@2.0.21
+  - @prairielearn/sentry@4.0.5
+
 ## 2.1.0
 
 ### Minor Changes

@@ -25,6 +25,7 @@ import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
+  QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   getIntervalUsage,
@@ -46,7 +47,7 @@ async function saveGeneratedQuestion(
   pythonFileContents: string | undefined,
   title?: string,
   qid?: string,
-): Promise<string> {
+): Promise<{ question_id: string; qid: string }> {
   const files = {};
 
   if (htmlFileContents) {
@@ -73,7 +74,7 @@ async function saveGeneratedQuestion(
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  return result.question_id;
+  return { question_id: result.question_id, qid: result.question_qid };
 }
 
 async function saveRevisedQuestion({
@@ -219,7 +220,7 @@ router.get(
         prompts,
         question: res.locals.question,
         richTextEditorEnabled,
-        variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
       }),
     );
   }),
@@ -267,16 +268,20 @@ router.post(
         userId: res.locals.authn_user.user_id,
       });
 
-      const approxPromptCost = approximatePromptCost(req.body.prompt);
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
 
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
         res.send(
           RateLimitExceeded({
             // If the user has more than the threshold of 100 tokens,
             // they can shorten their message to avoid reaching the rate limit.
             canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost >
-              config.costPerMillionPromptTokens * 100,
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
           }),
         );
         return;
@@ -297,8 +302,7 @@ router.post(
 
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,
-        promptTokens: result.promptTokens ?? 0,
-        completionTokens: result.completionTokens ?? 0,
+        usage: result.usage,
         intervalCost,
       });
 
@@ -330,7 +334,7 @@ router.post(
       }
 
       // TODO: any membership checks needed here?
-      const qid = await saveGeneratedQuestion(
+      const { question_id, qid } = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
         prompts[prompts.length - 1].python || undefined,
@@ -357,7 +361,7 @@ router.post(
 
       flash('success', `Your question is ready for use as ${qid}.`);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + qid + '/preview');
+      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,

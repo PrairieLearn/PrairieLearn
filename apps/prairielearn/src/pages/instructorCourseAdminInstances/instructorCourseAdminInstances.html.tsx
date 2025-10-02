@@ -2,6 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { Modal } from '../../components/Modal.js';
@@ -9,7 +10,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };

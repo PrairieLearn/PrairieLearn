@@ -214,16 +214,6 @@ export const SprocAuthzCourseInstanceSchema = z.object({
 });
 export type SprocAuthzCourseInstance = z.infer<typeof SprocAuthzCourseInstanceSchema>;
 
-// Result of tags_for_question sproc
-export const SprocTagsForQuestionSchema = z.array(
-  z.object({
-    color: z.string(),
-    description: z.string(),
-    id: IdSchema,
-    name: z.string(),
-  }),
-);
-
 // Result of instance_questions_next_allowed_grade sproc
 export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
@@ -256,7 +246,7 @@ export const AiGradingJobSchema = z.object({
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
   model: z.string(),
-  prompt: z.any(),
+  prompt: z.unknown(),
   prompt_tokens: z.number(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
@@ -265,11 +255,19 @@ export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
   id: IdSchema,
+  json_allow_real_time_grading: z.boolean().nullable(),
+  json_auto_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
+  json_force_max_points: z.boolean().nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   json_has_alternatives: z.boolean().nullable(),
+  json_manual_points: z.number().nullable(),
+  json_max_auto_points: z.number().nullable(),
+  json_max_points: z.number().nullable(),
+  json_points: z.union([z.number(), z.array(z.number())]).nullable(),
+  json_tries_per_variant: z.number().nullable(),
   number: z.number().nullable(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
@@ -283,7 +281,6 @@ export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_personal_notes: z.boolean(),
-  allow_real_time_grading: z.boolean().nullable(),
   assessment_module_id: IdSchema.nullable(),
   assessment_set_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),
@@ -397,7 +394,7 @@ export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
   ai_grading_mode: z.boolean(),
-  allow_real_time_grading: z.boolean().nullable(),
+  allow_real_time_grading: z.boolean(),
   alternative_group_id: IdSchema.nullable(),
   assessment_id: IdSchema,
   average_average_submission_score: z.number().nullable(),
@@ -420,8 +417,16 @@ export const AssessmentQuestionSchema = z.object({
   incremental_submission_score_array_averages: z.array(z.number()).nullable(),
   incremental_submission_score_array_variances: z.array(z.number()).nullable(),
   init_points: z.number().nullable(),
+  json_allow_real_time_grading: z.boolean().nullable(),
+  json_auto_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_comment: JsonCommentSchema.nullable(),
+  json_force_max_points: z.boolean().nullable(),
   json_grade_rate_minutes: z.number().nullable(),
+  json_manual_points: z.number().nullable(),
+  json_max_auto_points: z.number().nullable(),
+  json_max_points: z.number().nullable(),
+  json_points: z.union([z.number(), z.array(z.number())]).nullable(),
+  json_tries_per_variant: z.number().nullable(),
   last_submission_score_hist: z.array(z.number()).nullable(),
   last_submission_score_variance: z.number().nullable(),
   manual_rubric_id: IdSchema.nullable(),
@@ -582,7 +587,7 @@ export const CourseInstanceSchema = z.object({
   course_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   display_timezone: z.string(),
-  enrollment_code: z.string().nullable(),
+  enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
@@ -590,7 +595,8 @@ export const CourseInstanceSchema = z.object({
   long_name: z.string().nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
-  self_enrollment_requires_secret_link: z.boolean(),
+  self_enrollment_enabled_before_date_enabled: z.boolean(),
+  self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
@@ -676,8 +682,8 @@ export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString.nullable(),
+  first_joined_at: DateFromISOString.nullable(),
   id: IdSchema,
-  joined_at: DateFromISOString.nullable(),
   lti_managed: z.boolean(),
   pending_lti13_email: z.string().nullable(),
   pending_lti13_instance_id: IdSchema.nullable(),
@@ -861,6 +867,7 @@ export const GroupUserRoleSchema = z.object({
 export type GroupUserRole = z.infer<typeof GroupUserRoleSchema>;
 
 export const InstanceQuestionSchema = z.object({
+  ai_instance_question_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   assessment_question_id: IdSchema,
   assigned_grader: IdSchema.nullable(),
@@ -879,6 +886,7 @@ export const InstanceQuestionSchema = z.object({
   is_ai_graded: z.boolean(),
   last_grader: IdSchema.nullable(),
   last_submission_score: z.number().nullable(),
+  manual_instance_question_group_id: IdSchema.nullable(),
   manual_points: z.number().nullable(),
   max_submission_score: z.number().nullable(),
   modified_at: DateFromISOString,
@@ -902,6 +910,14 @@ export const InstanceQuestionSchema = z.object({
   variants_points_list: z.array(z.number().nullable()),
 });
 export type InstanceQuestion = z.infer<typeof InstanceQuestionSchema>;
+
+export const InstanceQuestionGroupSchema = z.object({
+  assessment_question_id: IdSchema,
+  id: IdSchema,
+  instance_question_group_description: z.string(),
+  instance_question_group_name: z.string(),
+});
+export type InstanceQuestionGroup = z.infer<typeof InstanceQuestionGroupSchema>;
 
 export const InstitutionAuthnProviderSchema = null;
 
@@ -1487,6 +1503,7 @@ export const ZoneSchema = z.object({
   assessment_id: IdSchema,
   best_questions: z.number().nullable(),
   id: IdSchema,
+  json_allow_real_time_grading: z.boolean().nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
@@ -1552,6 +1569,7 @@ export const TableNames = [
   'group_users',
   'groups',
   'instance_questions',
+  'instance_question_groups',
   'institution_administrators',
   'institution_authn_providers',
   'institutions',
