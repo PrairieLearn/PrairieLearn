@@ -3,6 +3,8 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { features } from '../../lib/features/index.js';
+
 import {
   AssessmentAccessRulesSchema,
   InstructorAssessmentAccess,
@@ -19,7 +21,10 @@ router.get(
       { assessment_id: res.locals.assessment.id },
       AssessmentAccessRulesSchema,
     );
-    res.send(InstructorAssessmentAccess({ resLocals: res.locals, accessRules }));
+    const enhancedAccessControl = await features.enabled('enhanced-access-control');
+    res.send(
+      InstructorAssessmentAccess({ resLocals: res.locals, accessRules, enhancedAccessControl }),
+    );
   }),
 );
 
