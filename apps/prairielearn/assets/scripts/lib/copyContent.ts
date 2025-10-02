@@ -5,9 +5,11 @@ export function copyContentModal(copyForm: HTMLFormElement | null) {
   courseSelect?.addEventListener('change', () => {
     const option = [...courseSelect.selectedOptions].at(0);
 
-    copyForm.action = option?.dataset.copyUrl ?? '';
+    if (!option) return;
+
+    copyForm.action = option.dataset.copyUrl ?? '';
     copyForm.querySelectorAll<HTMLInputElement>('input[name="__csrf_token"]').forEach((input) => {
-      input.value = option?.dataset.csrfToken ?? '';
+      input.value = option.dataset.csrfToken ?? '';
     });
   });
 }
