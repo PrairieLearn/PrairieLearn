@@ -31,14 +31,17 @@ CREATE TABLE IF NOT EXISTS access_control (
   after_complete_hide_questions_after_date TIMESTAMP WITH TIME ZONE,
   after_complete_hide_score_before_date_enabled boolean,
   after_complete_hide_score_before_date TIMESTAMP WITH TIME ZONE
+  order INTEGER -- precedence, lower is less important
+  UNIQUE(course_instance_id, assessment_id, order) -- for each assessment, there should be no two controls with the same precedent
 );
 
 CREATE TABLE IF NOT EXISTS access_control_groups (
   id BIGSERIAL PRIMARY KEY,
+  access_control_group_id BIGINT,
   name text,
   description text,
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE (course_instance_id, id)
+  UNIQUE (course_instance_id, access_control_group_id)
 );
 
 CREATE INDEX idx_sections_on_course_instance_id ON access_control_groups (course_instance_id);

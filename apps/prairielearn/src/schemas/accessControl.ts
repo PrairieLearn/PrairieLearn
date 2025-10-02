@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-// json schema
-
 export const DeadlineEntryJsonSchema = z.object({
   date: z.string().describe('Date as ISO String for additional deadline'),
   credit: z.number().describe('Amount of credit as a percent to allow'),
@@ -9,55 +7,41 @@ export const DeadlineEntryJsonSchema = z.object({
 
 const AfterLastDeadlineJsonSchema = z.object({
   allowSubmissions: z.boolean().optional(),
-  creditEnabled: z.boolean().nullable().optional(),
+  creditEnabled: z.boolean().optional(),
   credit: z.number().optional(),
 });
 
 const DateControlJsonSchema = z
   .object({
-    enabled: z.boolean().nullable().optional(),
-    releaseDateEnabled: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe('Whether to enable release date'),
+    enabled: z.boolean().optional(),
+    releaseDateEnabled: z.boolean().optional().describe('Whether to enable release date'),
     releaseDate: z.string().optional().describe('Deadline date as ISO String'),
-    dueDateEnabled: z.boolean().nullable().optional().describe('Whether to enable due date'),
-    dueDate: z.string().optional().describe('Due date as ISO String'),
-    earlyDeadlinesEnabled: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe('Whether to enable early deadlines'),
+    dueDateEnabled: z.boolean().optional().describe('Whether to enable due date'),
+    dueDate: z.string().nullable().optional().describe('Due date as ISO String'),
+    earlyDeadlinesEnabled: z.boolean().optional().describe('Whether to enable early deadlines'),
     earlyDeadlines: z
       .array(DeadlineEntryJsonSchema)
-      .optional()
-      .describe('Array of early deadlines with credit as percentages'),
-    lateDeadlinesEnabled: z
-      .boolean()
       .nullable()
       .optional()
-      .describe('Whether to enable late deadlines'),
+      .describe('Array of early deadlines with credit as percentages'),
+    lateDeadlinesEnabled: z.boolean().optional().describe('Whether to enable late deadlines'),
     lateDeadlines: z
       .array(DeadlineEntryJsonSchema)
+      .nullable()
       .optional()
       .describe('Array of late deadlines with credit as percentages'),
     afterLastDeadline: AfterLastDeadlineJsonSchema.describe(
       'Controls for assessment behaviour after last deadline',
     ).optional(),
-    durationMinutesEnabled: z
-      .boolean()
-      .nullable()
-      .optional()
-      .describe('Whether to enable duration minutes'),
+    durationMinutesEnabled: z.boolean().optional().describe('Whether to enable duration minutes'),
     durationMinutes: z
       .number()
       .int()
       .positive()
       .optional()
       .describe('Desired duration limit for assessment'),
-    passwordEnabled: z.boolean().nullable().optional().describe('Whether to enable password'),
-    password: z.string().optional().describe('Password for assessment'),
+    passwordEnabled: z.boolean().optional().describe('Whether to enable password'),
+    password: z.string().nullable().optional().describe('Password for assessment'),
   })
   .optional();
 
@@ -80,7 +64,6 @@ const HideQuestionsDateControlJsonSchema = z
   .object({
     showAgainDateEnabled: z
       .boolean()
-      .nullable()
       .optional()
       .describe(
         'Whether to enable the ability for revealing hidden questions after assessment completion',
@@ -93,7 +76,6 @@ const HideQuestionsDateControlJsonSchema = z
       ),
     hideAgainDateEnabled: z
       .boolean()
-      .nullable()
       .optional()
       .describe(
         'Whether to enable the ability for re-hiding revealed questions after assessment completion',
@@ -111,7 +93,6 @@ const HideScoreDateControlJsonSchema = z
   .object({
     showAgainDateEnabled: z
       .boolean()
-      .nullable()
       .optional()
       .describe('Whether to enable the ability to show hidden scores after assessment completion'),
     showAgainDate: z

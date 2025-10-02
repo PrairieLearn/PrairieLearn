@@ -191,6 +191,7 @@ type InfoFile<T> = infofile.InfoFile<T>;
 export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstanceJson>;
   assessments: Record<string, InfoFile<AssessmentJson>>;
+  assessmentAccessControl: Record<string, InfoFile<AccessControlJson>[]>;
 }
 
 export interface CourseData {
@@ -253,6 +254,16 @@ export async function loadFullCourse(
       sharingEnabled,
     });
 
+    // load access control rules for each assessment
+    const assessmentAccessControl: Record<string, InfoFile<AccessControlJson>[]> = {};
+    for (const assessmentDirectory of Object.keys(assessments)) {
+      assessmentAccessControl[assessmentDirectory] = await loadAccessControl({
+        coursePath,
+        courseInstanceDirectory,
+        assessmentDirectory,
+      });
+    }
+
     for (const assessment of Object.values(assessments)) {
       if (assessment.data?.set) {
         assessmentSetsInUse.add(assessment.data.set);
@@ -262,6 +273,7 @@ export async function loadFullCourse(
     courseInstances[courseInstanceDirectory] = {
       courseInstance,
       assessments,
+      assessmentAccessControl,
     };
   }
 
@@ -328,6 +340,18 @@ export function writeErrorsAndWarningsForCourseData(
         'infoAssessment.json',
       );
       writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
+
+      const accessControlRules = courseInstanceData.assessmentAccessControl[aid] ?? []; // TODO: get access control warnings??
+      accessControlRules.forEach((rule, index) => {
+        const accessControlPath = path.posix.join(
+          'courseInstances',
+          ciid,
+          'assessments',
+          aid,
+          `accessControl.json[${index}]`,
+        );
+        writeErrorsAndWarningsForInfoFileIfNeeded(accessControlPath, rule, writeLine);
+      });
     });
   });
 }
@@ -338,7 +362,15 @@ export function courseDataHasErrors(courseData: CourseData): boolean {
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
       if (infofile.hasErrors(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(infofile.hasErrors);
+      if (Object.values(courseInstance.assessments).some(infofile.hasErrors)) return true;
+      if (
+        Object.values(courseInstance.assessmentAccessControl).some(
+          (rules) => rules.some(infofile.hasErrors), // TODO: add access control; is this right??
+        )
+      ) {
+        return true;
+      }
+      return false;
     })
   ) {
     return true;
@@ -352,7 +384,15 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
   if (
     Object.values(courseData.courseInstances).some((courseInstance) => {
       if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
-      return Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings);
+      if (Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings)) return true;
+      if (
+        Object.values(courseInstance.assessmentAccessControl).some(
+          (rules) => rules.some(infofile.hasErrorsOrWarnings), // TODO: add access control; is this right??
+        )
+      ) {
+        return true;
+      }
+      return false;
     })
   ) {
     return true;
@@ -1656,4 +1696,66 @@ export async function loadAssessments({
       `UUID "${uuid}" is used in other assessments in this course instance: ${ids.join(', ')}`,
   );
   return assessments;
+}
+
+/**
+ * Loads access control rules for an assessment.
+ */
+export async function loadAccessControl({
+  coursePath,
+  courseInstanceDirectory,
+  assessmentDirectory,
+}: {
+  coursePath: string;
+  courseInstanceDirectory: string;
+  assessmentDirectory: string;
+}): Promise<InfoFile<AccessControlJson>[]> {
+  const filePath = path.join(
+    coursePath,
+    'courseInstances',
+    courseInstanceDirectory,
+    'assessments',
+    assessmentDirectory,
+    'accessControl.json',
+  );
+
+  try {
+    const contents = await fs.readFile(filePath, 'utf8');
+    const json = JSON.parse(contents);
+
+    if (!Array.isArray(json)) {
+      return [
+        infofile.makeError('accessControl.json must contain an array of access control rules'),
+      ];
+    }
+
+    return json.map((ruleJson, index) => {
+      // parse with Zod schema
+      const result = schemas.AccessControlJsonSchema.safeParse(ruleJson);
+      if (!result.success) {
+        const errors = result.error.issues.map(
+          (e) => `Rule ${index + 1}: ${e.path.join('.')}: ${e.message}`,
+        );
+        return infofile.makeError(errors.join('\n'));
+      }
+
+      // run validation
+      const validationResult = validateAccessControl({ accessControlJson: result.data });
+
+      const infoFile = infofile.makeInfoFile<AccessControlJson>({
+        data: result.data,
+      });
+
+      infofile.addErrors(infoFile, validationResult.errors);
+      infofile.addWarnings(infoFile, validationResult.warnings);
+
+      return infoFile;
+    });
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      // file doesn't exist, return empty array (access control is optional)
+      return [];
+    }
+    return [infofile.makeError(`Error reading accessControl.json: ${err.message}`)];
+  }
 }

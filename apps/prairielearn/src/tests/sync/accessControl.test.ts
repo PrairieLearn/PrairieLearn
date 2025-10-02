@@ -220,67 +220,6 @@ describe('Assignment-Level controls should have no inheritance', () => {
   });
 });
 
-describe('Inherited fields cannot have values', () => {
-  const enabledMismatchExamples: AccessControlJsonInput[] = [
-    // earlyDeadlinesEnabled is null, but earlyDeadlines is set
-    {
-      targets: ['target1'],
-      dateControl: {
-        earlyDeadlinesEnabled: null,
-        earlyDeadlines: [{ date: '2024-03-17T23:59:00', credit: 100 }],
-      },
-    },
-
-    // passwordEnabled is null, but password is set
-    {
-      targets: ['target1'],
-      dateControl: {
-        passwordEnabled: null,
-        password: 'super-secret',
-      },
-    },
-
-    // creditEnabled is null inside afterLastDeadline, but credit is set
-    {
-      targets: ['target1'],
-      dateControl: {
-        afterLastDeadline: {
-          creditEnabled: null,
-          credit: 30,
-        },
-      },
-    },
-
-    // showAgainDateEnabled is null, but showAgainDate is set
-    {
-      targets: ['target1'],
-      afterComplete: {
-        hideQuestionsDateControl: {
-          showAgainDateEnabled: null,
-          showAgainDate: '2024-03-23T23:59:00',
-        },
-      },
-    },
-  ];
-
-  it('should fail enabled field constraint validation (null enabled but value present)', () => {
-    const parsedEnabledMismatchExamples: AccessControlJson[] = enabledMismatchExamples.map(
-      (example) => AccessControlJsonSchema.parse(example),
-    );
-    const results = validateAccessControlArray({
-      accessControlJsonArray: parsedEnabledMismatchExamples,
-    });
-
-    results.forEach((result, index) => {
-      assert.notDeepEqual(
-        result.errors,
-        [],
-        `Expected enabled-value mismatch errors at index ${index}, but got none.`,
-      );
-    });
-  });
-});
-
 describe('Date fields must be dates', () => {
   const dateInvalidExamples: AccessControlJsonInput[] = [
     {
@@ -293,7 +232,6 @@ describe('Date fields must be dates', () => {
       targets: ['target1'],
       afterComplete: {
         hideQuestionsDateControl: {
-          showAgainDateEnabled: null,
           showAgainDate: 'NOTADATE',
         },
       },
@@ -301,14 +239,12 @@ describe('Date fields must be dates', () => {
     {
       targets: ['target1'],
       dateControl: {
-        earlyDeadlinesEnabled: null,
         earlyDeadlines: [{ date: 'NOTADATE', credit: 100 }],
       },
     },
     {
       targets: ['target1'],
       dateControl: {
-        earlyDeadlinesEnabled: null,
         earlyDeadlines: [
           { date: '2024-03-17T23:59:00', credit: 120 },
           { date: '2024-03-20T23:59:00', credit: 110 },

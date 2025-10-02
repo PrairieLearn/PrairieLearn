@@ -2,10 +2,10 @@ FROM node:24-bookworm
 ARG CACHEBUST=2025-08-15-14-16-03
 
 RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends emacs-nox vim tmux \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get upgrade -y \
+  && apt-get install -y --no-install-recommends emacs-nox vim tmux \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
 COPY src /xterm
 
 WORKDIR /xterm

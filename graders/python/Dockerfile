@@ -8,7 +8,7 @@ ENV LANG=en_US.UTF-8
 WORKDIR /
 
 RUN dnf -y update \
-    && dnf install -y \
+  && dnf install -y \
     util-linux \
     sudo \
     gcc \
@@ -16,12 +16,12 @@ RUN dnf -y update \
     dos2unix \
     graphviz \
     graphviz-devel \
-    && dnf clean all \
-    && echo "setting up conda..." \
-    && arch="$(uname -m)" \
-    && curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
-    && bash "Miniforge3-Linux-${arch}.sh" -b -p /usr/local -f \
-    && rm "Miniforge3-Linux-${arch}.sh"
+  && dnf clean all \
+  && echo "setting up conda..." \
+  && arch="$(uname -m)" \
+  && curl -LO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
+  && bash "Miniforge3-Linux-${arch}.sh" -b -p /usr/local -f \
+  && rm "Miniforge3-Linux-${arch}.sh"
 
 COPY requirements.txt /
 RUN python3 -m pip install --no-cache-dir -r /requirements.txt

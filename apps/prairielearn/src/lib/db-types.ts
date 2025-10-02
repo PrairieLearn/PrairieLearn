@@ -259,6 +259,8 @@ export const AccessControlSchema = z.object({
   after_complete_hide_questions_before_date_enabled: z.boolean().nullable(),
   after_complete_hide_score_before_date: DateFromISOString.nullable(),
   after_complete_hide_score_before_date_enabled: z.boolean().nullable(),
+  order: z.number().int(),
+
   prairietest_control_enable: z.boolean().nullable(),
 });
 
@@ -280,6 +282,7 @@ export const AccessControlGroupSchema = z.object({
   description: z.string().nullable(),
   id: IdSchema,
   name: z.string().nullable(),
+  uuid: IdSchema, // TODO: probably not the right type, this is a uuid
 });
 
 export const AccessControlLateDeadlineSchema = z.object({
