@@ -1,11 +1,10 @@
-import * as path from 'node:path';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
+import { sendCourseFile } from '../../lib/express/send-file.js';
 
 const router = Router({ mergeParams: true });
 
@@ -19,8 +18,11 @@ router.get(
     const coursePath = getRuntimeDirectoryForCourse(res.locals.course);
     await ensureChunksForCourseAsync(res.locals.course.id, { type: 'clientFilesCourse' });
 
-    const clientFilesDir = path.join(coursePath, 'clientFilesCourse');
-    res.sendFile(filename, { root: clientFilesDir });
+    await sendCourseFile(res, {
+      coursePath,
+      directory: 'clientFilesCourse',
+      filename,
+    });
   }),
 );
 

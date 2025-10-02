@@ -41,6 +41,8 @@ export async function run() {
         close: !!assessment_instance.open,
         // Ignore any submission or grading rate limits.
         ignoreGradeRateLimit: true,
+        // Ignore real-time grading disabled checks.
+        ignoreRealTimeGradingDisabled: true,
         // We don't have a client fingerprint ID, so pass null.
         client_fingerprint_id: null,
       });

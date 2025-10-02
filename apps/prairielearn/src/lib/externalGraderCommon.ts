@@ -22,6 +22,7 @@ export interface Grader {
     configOverrides?: Partial<Config>,
   ): EventEmitter;
 }
+
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.

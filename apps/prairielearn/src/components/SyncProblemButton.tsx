@@ -1,7 +1,8 @@
 import clsx from 'clsx';
 
+import { renderHtml } from '@prairielearn/preact';
+
 import { ansiToHtml } from '../lib/chalk.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 export function SyncProblemButton({ output, type }: { output: string; type: 'error' | 'warning' }) {
   const title = type === 'error' ? 'Sync Errors' : 'Sync Warnings';

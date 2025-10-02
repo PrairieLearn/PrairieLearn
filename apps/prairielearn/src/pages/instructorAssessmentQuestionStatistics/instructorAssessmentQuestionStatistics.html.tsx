@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -20,7 +21,6 @@ import {
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({

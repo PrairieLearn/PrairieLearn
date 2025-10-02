@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorCourseAdminGettingStarted({
   tasks,

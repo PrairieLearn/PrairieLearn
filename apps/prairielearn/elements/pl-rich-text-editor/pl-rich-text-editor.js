@@ -184,11 +184,11 @@
     }
 
     static updateNode(node, value) {
+      node.setAttribute('data-value', value);
       MathJax.startup.promise.then(async () => {
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
         node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
-        node.setAttribute('data-value', value);
       });
     }
 

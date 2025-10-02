@@ -5,8 +5,10 @@ import { z } from 'zod';
 
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
+import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
 import {
   type AssessmentQuestion,
@@ -37,29 +39,101 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * Builds the URL of an instance question tagged to be manually graded for a particular
  * assessment question. Only returns instance questions assigned to a particular grader.
  *
- * @param urlPrefix - URL prefix for the current course instance.
- * @param assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
- * @param assessment_question_id - The assessment question being graded.
- * @param user_id - The user_id of the current grader. Typically the current effective user.
- * @param prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param options - The options for generating the next instance question URL.
+ * @param options.urlPrefix - URL prefix for the current course instance.
+ * @param options.assessment_id - The assessment linked to the assessment question. Used to ensure the assessment is authorized, since middlewares don't authenticate assessment questions.
+ * @param options.assessment_question_id - The assessment question being graded.
+ * @param options.user_id - The user_id of the current grader. Typically the current effective user.
+ * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
+ * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
+ * @param options.use_instance_question_groups - Whether or not to use the instance question groups to determine the next instance question.
  */
-export async function nextUngradedInstanceQuestionUrl(
-  urlPrefix: string,
-  assessment_id: string,
-  assessment_question_id: string,
-  user_id: string,
-  prior_instance_question_id: string | null,
-): Promise<string> {
-  const instance_question_id = await sqldb.queryOptionalRow(
-    sql.select_next_ungraded_instance_question,
-    { assessment_id, assessment_question_id, user_id, prior_instance_question_id },
-    IdSchema,
+export async function nextInstanceQuestionUrl({
+  urlPrefix,
+  assessment_id,
+  assessment_question_id,
+  user_id,
+  prior_instance_question_id,
+  skip_graded_submissions,
+  use_instance_question_groups,
+}: {
+  urlPrefix: string;
+  assessment_id: string;
+  assessment_question_id: string;
+  user_id: string;
+  prior_instance_question_id: string | null;
+  skip_graded_submissions: boolean;
+  use_instance_question_groups: boolean;
+}): Promise<string> {
+  const prior_instance_question_group_id = await run(async () => {
+    if (!use_instance_question_groups) {
+      return null;
+    }
+    if (prior_instance_question_id) {
+      return await sqldb.queryOptionalRow(
+        sql.instance_question_group_id_for_instance_question,
+        {
+          instance_question_id: prior_instance_question_id,
+        },
+        IdSchema.nullable(),
+      );
+    } else {
+      const instanceQuestionGroups = await selectInstanceQuestionGroups({
+        assessmentQuestionId: assessment_question_id,
+      });
+      return instanceQuestionGroups.at(0)?.id ?? null;
+    }
+  });
+
+  let next_instance_question_id = await sqldb.queryOptionalRow(
+    sql.select_next_instance_question,
+    {
+      assessment_id,
+      assessment_question_id,
+      user_id,
+      prior_instance_question_id,
+      prior_instance_question_group_id,
+      skip_graded_submissions,
+      use_instance_question_groups,
+    },
+    IdSchema.nullable(),
   );
 
-  if (instance_question_id != null) {
-    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${instance_question_id}`;
+  if (
+    use_instance_question_groups &&
+    next_instance_question_id == null &&
+    prior_instance_question_group_id != null
+  ) {
+    const next_instance_question_group_id = await sqldb.queryOptionalRow(
+      sql.select_next_instance_question_group_id,
+      {
+        assessment_question_id,
+        prior_instance_question_group_id,
+      },
+      IdSchema.nullable(),
+    );
+
+    // Check if there exists another instance question in the next instance question group
+    next_instance_question_id = await sqldb.queryOptionalRow(
+      sql.select_next_instance_question,
+      {
+        assessment_id,
+        assessment_question_id,
+        user_id,
+        prior_instance_question_id: null,
+        prior_instance_question_group_id: next_instance_question_group_id,
+        skip_graded_submissions,
+        use_instance_question_groups,
+      },
+      IdSchema,
+    );
   }
-  // If we have no more submissions, then redirect back to main assessment question page
+
+  if (next_instance_question_id !== null) {
+    return `${urlPrefix}/assessment/${assessment_id}/manual_grading/instance_question/${next_instance_question_id}`;
+  }
+
+  // If we have no more instance questions, then redirect back to main assessment question page
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 

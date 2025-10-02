@@ -1,10 +1,10 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type CourseInstance } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({

@@ -75,24 +75,20 @@ type ElementNameMap = Record<
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
-let courseElementsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementNameMap;
-    }
-  >
+let courseElementsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementNameMap;
+  }
 > = {};
 // Maps course IDs to course element extension info
-let courseExtensionsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementExtensionNameDirMap;
-    }
-  >
+let courseExtensionsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementExtensionNameDirMap;
+  }
 > = {};
 
 class CourseIssueError extends Error {
@@ -199,10 +195,11 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseElementsCache[course.id]?.commit_hash &&
-    courseElementsCache[course.id]!.commit_hash === course.commit_hash
+    courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseElementsCache[course.id]!.data;
+    return courseElementsCache[course.id].data;
   }
 
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -293,10 +290,11 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseExtensionsCache[course.id]?.commit_hash &&
-    courseExtensionsCache[course.id]!.commit_hash === course.commit_hash
+    courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseExtensionsCache[course.id]!.data;
+    return courseExtensionsCache[course.id].data;
   }
 
   const extensions = await loadExtensions(

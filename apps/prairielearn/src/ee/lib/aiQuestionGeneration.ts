@@ -10,7 +10,15 @@ import {
   queryRows,
 } from '@prairielearn/postgres';
 
+import {
+  calculateResponseCost,
+  emptyUsage,
+  formatPrompt,
+  logResponseUsage,
+  mergeUsage,
+} from '../../lib/ai.js';
 import * as b64Util from '../../lib/base64-util.js';
+import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import {
@@ -30,7 +38,10 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-4o';
+// We're still using `4o` for question generation as it seems to have better
+// cost/performance characteristics. We'll revisit moving to a newer model in
+// the future.
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAI.Chat.ChatModel;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -41,38 +52,52 @@ const NUM_TOTAL_ATTEMPTS = 2;
  * @returns A string, the prompt preamble.
  */
 function promptPreamble(context: string): string {
-  return `# Introduction
-
-You are an assistant that helps instructors write questions for PrairieLearn.
-
-A question has a \`question.html\` file that can contain standard HTML, CSS, and JavaScript. It can also include PrairieLearn elements like \`<pl-multiple-choice>\` and \`<pl-number-input>\`.
-
-A question may also have a \`server.py\` file that can randomly generate unique parameters and answers, and which can also assign grades to student submissions.
-
-## Generating and using random parameters
-
-\`server.py\` may define a \`generate\` function. \`generate\` has a single parameter \`data\` which can be modified by reference. It has the following properties:
-
-- \`params\`: A dictionary. Random parameters, choices, etc. can be written here for later retrieval.
-- \`correct_answers\`: A dictionary. Correct answers can be written here for later retrieval, if needed.
-
-Parameters can be read in \`question.html\` with Mustache syntax. For instance, if \`server.py\` contains \`data["params"]["answer"]\`, it can be read with \`{{ params.answer }}\` in \`question.html\`.
-
-If a \`question.html\` file includes Mustache templates, a \`server.py\` should be provided to generate the necessary parameters. Remember that Mustache logic is quite limited, so any computation should be done in \`server.py\`.
-
-If the question does not use random parameters, \`server.py\` can be omitted.
-
-## Formatting
-
-You can use LaTeX to format numerical quantities, equations, formulas, and so on. For inline LaTeX, use \`$...$\`. For block LaTeX, use \`$$...$$\`.
-
-# Context
-
-Here is some context that may help you respond to the user. This context may include example questions, documentation, or other information that may be helpful.
-
-${context}
-
-`;
+  return formatPrompt([
+    '# Introduction',
+    'You are an assistant that helps instructors write questions for PrairieLearn.',
+    [
+      'A question has a `question.html` file that can contain standard HTML, CSS, and JavaScript.',
+      'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
+    ],
+    [
+      'A question may also have a `server.py` file that can randomly generate unique parameters and answers,',
+      'and which can also assign grades to student submissions.',
+    ],
+    '## Generating and using random parameters',
+    [
+      '`server.py` may define a `generate` function.',
+      '`generate` has a single parameter `data` which can be modified by reference.',
+      'It has the following properties:',
+    ],
+    '- `params`: A dictionary where random parameters, choices, etc. can be written here for later retrieval, e.g. during rendering or grading.',
+    [
+      '- `correct_answers`:',
+      'A dictionary where correct answers can be written.',
+      'You MUST ONLY write to this dictionary if actually required by the question or a specific element.',
+      'Pay attention to the provided examples and documentation for each element.',
+    ],
+    [
+      'Parameters can be read in `question.html` with Mustache syntax.',
+      'For instance, if `server.py` contains `data["params"]["answer"]`,',
+      'it can be read with `{{ params.answer }}` in `question.html`.',
+    ],
+    [
+      'If a `question.html` file includes Mustache templates, a `server.py` should be provided to generate the necessary parameters.',
+      'Remember that Mustache logic is quite limited, so any computation should be done in `server.py`.',
+    ],
+    'If the question does not use random parameters, `server.py` can be omitted.',
+    '## Formatting',
+    [
+      'You can use LaTeX to format numerical quantities, equations, formulas, and so on.',
+      'For inline LaTeX, use `$...$`. For block LaTeX, use `$$...$$`.',
+    ],
+    '# Context',
+    [
+      'Here is some context that may help you respond to the user.',
+      'This context may include example questions, documentation, or other information that may be helpful.',
+    ],
+    context,
+  ]);
 }
 
 async function checkRender(
@@ -106,10 +131,10 @@ async function checkRender(
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
   return ((locals as any).issues as Issue[])
-    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
+    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
-      return `When trying to render, your code created an error with the following output: \`\`\`${output}\`\`\`\n\nPlease fix it.`;
+      return `When trying to render, your code created an error with the following output:\n\n\`\`\`${output}\`\`\`\n\nPlease fix it.`;
     });
 }
 
@@ -181,35 +206,35 @@ export async function makeContext(
 /**
  * Extracts the generated HTML and Python code from an OpenAI completion into job parameters.
  *
- * @param completion The completion to extract from.
+ * @param response The completion to extract from.
  * @param job The job whose data we want to extract into.
  */
-function extractFromCompletion(
-  completion: OpenAI.Chat.Completions.ChatCompletion,
+function extractFromResponse(
+  response: OpenAI.Responses.Response,
   job: ServerJob,
 ): { html?: string; python?: string } {
-  const completionText = completion.choices[0].message.content;
+  const completionText = response.output_text;
 
-  job.info(`completion is ${completionText}`);
+  job.info(`${chalk.bold('Completion:')}\n\n${completionText}\n`);
 
-  job.info(`used ${completion?.usage?.total_tokens} OpenAI tokens to generate response.`);
+  logResponseUsage({ response, logger: job });
 
   const pythonSelector = /```python\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
   const htmlSelector = /```html\n(?<code>([^`]|`[^`]|``[^`]|\n)*)```/;
 
-  const html = completionText?.match(htmlSelector)?.groups?.code;
-  const python = completionText?.match(pythonSelector)?.groups?.code;
+  const html = completionText.match(htmlSelector)?.groups?.code.trim();
+  const python = completionText.match(pythonSelector)?.groups?.code.trim();
 
   const out: { html?: string; python?: string } = {};
 
   if (html !== undefined) {
-    job.info(`extracted html file: ${html}`);
-    out.html = html;
+    job.info(`\nextracted question.html:\n\n\`\`\`\n${html}\n\`\`\`\n\n`);
+    out.html = html + '\n';
   }
 
   if (python !== undefined) {
-    job.info(`extracted python file: ${python}`);
-    out.python = python;
+    job.info(`\nextracted server.py:\n\n\`\`\`\n${python}\n\`\`\`\n\n`);
+    out.python = python + '\n';
   }
 
   return out;
@@ -235,17 +260,24 @@ export async function getAiQuestionGenerationCache() {
  * Approximate the cost of the prompt, in US dollars.
  * Accounts for the cost of prompt, system, and completion tokens.
  */
-export function approximatePromptCost(prompt: string) {
+export function approximatePromptCost({
+  model,
+  prompt,
+}: {
+  model: keyof (typeof config)['costPerMillionTokens'];
+  prompt: string;
+}) {
+  const modelPricing = config.costPerMillionTokens[model];
+
   // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
   // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
   // Also, on average, we generate 3750 system tokens per prompt.
-  const approxPromptAndSystemTokenCost =
-    ((prompt.length / 4 + 3750) * config.costPerMillionPromptTokens) / 1e6;
+  const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
 
-  // On average, we generate 250 completion tokens per prompt.
-  const approxCompletionTokenCost = (250 * config.costPerMillionCompletionTokens) / 1e6;
+  // On average, we generate 1000 completion tokens per prompt. This includes reasoning tokens.
+  const approxOutputTokenCost = (1000 * modelPricing.output) / 1e6;
 
-  return approxPromptAndSystemTokenCost + approxCompletionTokenCost;
+  return approxInputTokenCost + approxOutputTokenCost;
 }
 
 /**
@@ -272,21 +304,19 @@ export async function getIntervalUsage({ userId }: { userId: number }) {
  */
 export async function addCompletionCostToIntervalUsage({
   userId,
-  promptTokens,
-  completionTokens,
+  usage,
   intervalCost,
 }: {
   userId: number;
-  promptTokens: number;
-  completionTokens: number;
+  usage: OpenAI.Responses.ResponseUsage | undefined;
   intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
 
-  const completionCost =
-    (config.costPerMillionPromptTokens * promptTokens +
-      config.costPerMillionCompletionTokens * completionTokens) /
-    1e6;
+  const completionCost = calculateResponseCost({
+    model: QUESTION_GENERATION_OPENAI_MODEL,
+    usage,
+  });
 
   // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
@@ -330,13 +360,10 @@ export async function generateQuestion({
    */
   context: string | undefined;
   /**
-   * The number of tokens in the prompt provided to the LLM.
+   * Usage details for prompt tokens. If auto-regeneration was triggered,
+   * includes sum across all prompts.
    */
-  promptTokens: number | undefined;
-  /**
-   * The number of completion tokens generated as output by the LLM.
-   */
-  completionTokens: number | undefined;
+  usage: OpenAI.Responses.ResponseUsage;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -345,49 +372,58 @@ export async function generateQuestion({
     authnUserId,
   });
 
-  const jobData = await serverJob.execute(async (job) => {
-    job.info(`Prompt: "${prompt}"`);
+  let usage = emptyUsage();
 
+  const jobData = await serverJob.execute(async (job) => {
     const context = await makeContext(client, prompt, [], authnUserId);
 
-    const sysPrompt = `
-${promptPreamble(context)}
-# Prompt
-
-A user will now request your help in creating a question. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization). In their prompt, they may explain how to calculate the correct answer; this is just for the backend. Do NOT display the method to calculate the correct answer in your \`question.html\` unless otherwise requested.
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.`;
-
-    job.info(`system prompt is: ${sysPrompt}`);
-
-    // TODO [very important]: normalize to prevent prompt injection attacks
-    const completion = await client.chat.completions.create({
-      model: MODEL_NAME,
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: prompt },
+    const instructions = formatPrompt([
+      promptPreamble(context),
+      '# Prompt',
+      [
+        'A user will now ask you to create a question.',
+        'Respond in a friendly but concise way.',
+        'Include the contents of `question.html` and `server.py` in separate Markdown code fences, and mark each code fence with the language (either `html` or `python`).',
+        'Omit `server.py` if the question does not require it (for instance, if the question does not require randomization).',
       ],
-      user: openAiUserFromAuthn(authnUserId),
+      'Here is an example of a well-formed response:',
+      [
+        '```html\n<!-- Question HTML goes here -->\n```',
+        '```python\ndef generate(data):\n  # Code goes here\n```',
+      ],
+      [
+        'In their prompt, they may explain how to calculate the correct answer; this is just for the backend.',
+        'Do NOT display the method to calculate the correct answer in your `question.html` unless otherwise requested.',
+      ],
+      'Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.',
+    ]);
+
+    job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
+    job.info(`\n\n${chalk.bold('Prompt:')}\n\n${prompt}`);
+
+    const response = await client.responses.create({
+      model: QUESTION_GENERATION_OPENAI_MODEL,
+      instructions,
+      input: prompt,
+      safety_identifier: openAiUserFromAuthn(authnUserId),
     });
 
-    const results = extractFromCompletion(completion, job);
-    const html = results?.html;
+    const results = extractFromResponse(response, job);
+    const html = results.html;
 
     let errors: string[] = [];
     if (html && typeof html === 'string') {
-      errors = validateHTML(html, false, !!results?.python);
+      errors = validateHTML(html, !!results.python);
     } else {
       errors = ['Please generate a question.html file.'];
     }
 
     const files = {};
-
-    if (results?.html) {
-      files['question.html'] = results?.html;
+    if (results.html) {
+      files['question.html'] = results.html;
     }
-
-    if (results?.python) {
-      files['server.py'] = results?.python;
+    if (results.python) {
+      files['server.py'] = results.python;
     }
 
     const courseFilesClient = getCourseFilesClient();
@@ -418,12 +454,12 @@ Keep in mind you are not just generating an example; you are generating an actua
         prompting_user_id: authnUserId,
         prompt_type: 'initial',
         user_prompt: prompt,
-        system_prompt: sysPrompt,
-        response: completion.choices[0].message.content,
-        html: results?.html,
-        python: results?.python,
+        system_prompt: instructions,
+        response: response.output_text,
+        html: results.html,
+        python: results.python,
         errors,
-        completion,
+        completion: response,
         job_sequence_id: serverJob.jobSequenceId,
       },
       IdSchema,
@@ -432,37 +468,33 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data.questionId = saveResults.question_id;
     job.data.questionQid = saveResults.question_qid;
 
-    job.data.promptTokens = completion.usage?.prompt_tokens;
-    job.data.completionTokens = completion.usage?.completion_tokens;
+    // Aggregate usage information.
+    usage = mergeUsage(usage, response.usage);
 
     await updateCourseInstanceUsagesForAiQuestionGeneration({
       promptId: ai_question_generation_prompt_id,
       authnUserId,
-      promptTokens: completion.usage?.prompt_tokens,
-      completionTokens: completion.usage?.completion_tokens,
+      model: QUESTION_GENERATION_OPENAI_MODEL,
+      usage: response.usage,
     });
 
     job.data.html = html;
-    job.data.python = results?.python;
+    job.data.python = results.python;
     job.data.context = context;
 
     errors.push(
       ...(await checkRender(saveResults.status, errors, courseId, userId, saveResults.question_id)),
     );
 
-    if (
-      saveResults.status === 'success' &&
-      errors.length > 0 &&
-      typeof job.data.questionQid === 'string'
-    ) {
-      await regenInternal({
+    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
+      const { usage: newUsage } = await regenInternal({
         job,
         client,
         authnUserId,
         originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
-        originalPython: typeof results?.python === 'string' ? results?.python : undefined,
+        originalPython: results.python,
         remainingAttempts: NUM_TOTAL_ATTEMPTS - 1,
         isAutomated: true,
         questionId: saveResults.question_id,
@@ -472,7 +504,14 @@ Keep in mind you are not just generating an example; you are generating an actua
         questionQid: saveResults.question_qid,
         jobSequenceId: serverJob.jobSequenceId,
       });
+
+      // Aggregate usage information.
+      usage = mergeUsage(usage, newUsage);
     }
+
+    job.data.promptTokens = usage.input_tokens;
+    job.data.completionTokens = usage.output_tokens;
+    job.data.usage = usage;
   });
 
   return {
@@ -481,8 +520,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
     context: jobData.data.context,
-    promptTokens: jobData.data.promptTokens,
-    completionTokens: jobData.data.completionTokens,
+    usage,
   };
 }
 
@@ -542,7 +580,7 @@ async function regenInternal({
   authnUserId: string;
   originalPrompt: string;
   revisionPrompt: string;
-  originalHTML: string;
+  originalHTML: string | undefined;
   originalPython: string | undefined;
   remainingAttempts: number;
   isAutomated: boolean;
@@ -552,9 +590,7 @@ async function regenInternal({
   userId: string;
   hasCoursePermissionEdit: boolean;
   jobSequenceId: string;
-}) {
-  job.info(`prompt is ${revisionPrompt}`);
-
+}): Promise<{ usage: OpenAI.Responses.ResponseUsage | undefined }> {
   let tags: string[] = [];
   if (originalHTML) {
     const ast = parse5.parseFragment(originalHTML);
@@ -563,61 +599,43 @@ async function regenInternal({
 
   const context = await makeContext(client, originalPrompt, tags, authnUserId);
 
-  const sysPrompt = `
-${promptPreamble(context)}
-# Previous Generations
-
-A user previously used the assistant to generate a question with following prompt:
-
-${originalPrompt}
-
-You generated the following:
-
-${
-  originalHTML === undefined
-    ? ''
-    : `\`\`\`html
-${originalHTML}
-\`\`\``
-}
-
-${
-  originalPython === undefined
-    ? ''
-    : `\`\`\`python
-${originalPython}
-\`\`\``
-}
-
-# Prompt
-
-A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
-`;
-
-  job.info(`system prompt is: ${sysPrompt}`);
-
-  // TODO [very important]: normalize to prevent prompt injection attacks
-
-  const completion = await client.chat.completions.create({
-    model: MODEL_NAME,
-    messages: [
-      { role: 'system', content: sysPrompt },
-      { role: 'user', content: revisionPrompt },
+  const instructions = formatPrompt([
+    promptPreamble(context),
+    '# Previous generation',
+    'A user previously asked you to generate a question with following prompt:',
+    originalPrompt,
+    'You generated the following:',
+    originalHTML === undefined ? '' : `\`\`\`html\n${originalHTML}\`\`\``,
+    originalPython === undefined ? '' : `\`\`\`python\n${originalPython}\`\`\``,
+    '# Prompt',
+    [
+      'A user will now ask you to revise the question that you generated.',
+      'Respond in a friendly but concise way. Include the contents of `question.html` and `server.py` in separate Markdown code fences, and mark each code fence with the language (either `html` or `python`).',
+      'Omit `server.py` if the question does not require it (for instance, if the question does not require randomization).',
+      'You MUST NOT mention the previous generation or error(s) in any way.',
     ],
-    user: openAiUserFromAuthn(authnUserId),
+    'Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.',
+  ]);
+
+  job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
+  job.info(`${chalk.bold('Revision prompt:')}\n\n${revisionPrompt}`);
+
+  const response = await client.responses.create({
+    model: QUESTION_GENERATION_OPENAI_MODEL,
+    instructions,
+    input: revisionPrompt,
+    safety_identifier: openAiUserFromAuthn(authnUserId),
   });
 
-  const results = extractFromCompletion(completion, job);
+  const results = extractFromResponse(response, job);
 
-  const html = results?.html || originalHTML;
-  const python = results?.python || originalPython;
+  const html = results.html || originalHTML;
+  const python = results.python || originalPython;
 
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!python);
+    errors = validateHTML(html, !!python);
   }
 
   const ai_question_generation_prompt_id = await queryRow(
@@ -627,23 +645,22 @@ Keep in mind you are not just generating an example; you are generating an actua
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
+      system_prompt: instructions,
+      response: response.output_text,
       html,
       python,
       errors,
-      completion,
+      completion: response,
       job_sequence_id: jobSequenceId,
     },
     IdSchema,
   );
 
   const files: Record<string, string> = {};
-  if (results?.html) {
+  if (html) {
     files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
-
-  if (results?.python && python !== undefined) {
+  if (python) {
     files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 
@@ -660,17 +677,14 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (result.status === 'error') {
     job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
-    return;
+    return { usage: response.usage };
   }
-
-  job.data.promptTokens = completion.usage?.prompt_tokens;
-  job.data.completionTokens = completion.usage?.completion_tokens;
 
   await updateCourseInstanceUsagesForAiQuestionGeneration({
     promptId: ai_question_generation_prompt_id,
     authnUserId,
-    promptTokens: completion.usage?.prompt_tokens,
-    completionTokens: completion.usage?.completion_tokens,
+    model: QUESTION_GENERATION_OPENAI_MODEL,
+    usage: response.usage,
   });
 
   job.data.html = html;
@@ -678,9 +692,11 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   errors.push(...(await checkRender(result.status, errors, courseId, userId, questionId)));
 
+  let usage = response.usage;
+
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
-    await regenInternal({
+    const { usage: newUsage } = await regenInternal({
       job,
       client,
       authnUserId,
@@ -697,7 +713,12 @@ Keep in mind you are not just generating an example; you are generating an actua
       hasCoursePermissionEdit,
       jobSequenceId,
     });
+
+    // Aggregate usage information.
+    usage = mergeUsage(usage, newUsage);
   }
+
+  return { usage };
 }
 
 /**
@@ -730,8 +751,7 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
-  promptTokens: number | undefined;
-  completionTokens: number | undefined;
+  usage: OpenAI.Responses.ResponseUsage | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -742,9 +762,11 @@ export async function regenerateQuestion(
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
 
+  let usage = emptyUsage();
+
   const jobData = await serverJob.execute(async (job) => {
     job.data.questionQid = questionQid;
-    await regenInternal({
+    const { usage: newUsage } = await regenInternal({
       job,
       client,
       authnUserId,
@@ -761,13 +783,18 @@ export async function regenerateQuestion(
       hasCoursePermissionEdit,
       jobSequenceId: serverJob.jobSequenceId,
     });
+
+    usage = mergeUsage(usage, newUsage);
+
+    job.data.promptTokens = usage.input_tokens;
+    job.data.completionTokens = usage.output_tokens;
+    job.data.usage = usage;
   });
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
-    promptTokens: jobData.data.promptTokens,
-    completionTokens: jobData.data.completionTokens,
+    usage,
   };
 }

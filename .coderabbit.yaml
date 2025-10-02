@@ -24,6 +24,9 @@ reviews:
     drafts: false
     base_branches:
       - master
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
   finishing_touches:
     docstrings:
       enabled: true

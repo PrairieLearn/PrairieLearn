@@ -1,6 +1,8 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -9,8 +11,6 @@ import { getAssessmentContext, getCourseInstanceContext } from '../../lib/client
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
-import { hydrateHtml } from '../../lib/preact.js';
 
 import { AccessControl } from './components/AccessControl.js';
 

@@ -1,5 +1,11 @@
 # @prairielearn/preact-cjs
 
+## 1.1.4
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 1.1.3
 
 ### Patch Changes

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
@@ -9,7 +10,6 @@ import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsA
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import { renderHtml } from '../../../lib/preact-html.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),

@@ -16,7 +16,7 @@ export async function buildContextForQuestion(dir: string): Promise<string | und
 
   const context: string[] = [];
 
-  if (validateHTML(html, false, hasPython).length > 0) {
+  if (validateHTML(html, hasPython).length > 0) {
     return undefined;
   }
 

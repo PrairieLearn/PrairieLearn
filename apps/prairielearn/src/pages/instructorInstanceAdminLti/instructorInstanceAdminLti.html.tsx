@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -8,7 +9,6 @@ import { config } from '../../lib/config.js';
 import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { isEnterprise } from '../../lib/license.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const LtiDataSchema = z.object({
   assessments: z

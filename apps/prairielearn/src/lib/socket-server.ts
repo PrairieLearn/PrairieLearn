@@ -91,6 +91,8 @@ export async function close() {
 
   // Close the adapters. This will remove the pub/sub subscriptions to ensure we
   // don't receive any more messages from Redis.
+  // The type signature of `close()` is `Promise<void> | void`, so we need to disable the rule about the unneeded `Promise.all`.
+  // eslint-disable-next-line @typescript-eslint/await-thenable
   await Promise.all(adapters.map((adapter) => adapter.close()));
 
   // Close any remaining client connections.

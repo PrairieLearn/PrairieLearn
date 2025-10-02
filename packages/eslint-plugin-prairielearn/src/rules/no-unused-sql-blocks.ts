@@ -24,6 +24,7 @@ function extractSqlBlockReferences(tsContent: string): Set<string> {
 }
 
 export default ESLintUtils.RuleCreator.withoutDocs({
+  name: 'no-unused-sql-blocks',
   meta: {
     type: 'problem',
     messages: {

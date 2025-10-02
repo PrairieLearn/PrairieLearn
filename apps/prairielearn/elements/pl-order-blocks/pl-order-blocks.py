@@ -282,23 +282,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
+        score = None
+        feedback = None
+        if answer_name in data["partial_scores"]:
+            score = data["partial_scores"][answer_name]["score"]
+            feedback = data["partial_scores"][answer_name].get("feedback", "")
+        submission_was_graded = score is not None
+
         student_submission = [
             {
                 "inner_html": attempt["inner_html"],
                 "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
-                "distractor_feedback": attempt.get("distractor_feedback", ""),
-                "ordering_feedback": attempt.get("ordering_feedback", ""),
+                # We intentionally don't include distractor_feedback and ordering_feedback here when
+                # the submission was not graded.
+                "distractor_feedback": attempt.get("distractor_feedback", "")
+                if submission_was_graded
+                else "",
+                "ordering_feedback": attempt.get("ordering_feedback", "")
+                if submission_was_graded
+                else "",
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
-
-        score = None
-        feedback = None
-        if answer_name in data["partial_scores"]:
-            score = data["partial_scores"][answer_name]["score"]
-            feedback = data["partial_scores"][answer_name].get("feedback", "")
 
         html_params = {
             "submission": True,

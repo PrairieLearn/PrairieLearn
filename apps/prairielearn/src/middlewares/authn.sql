@@ -1,6 +1,11 @@
 -- BLOCK enroll_user_in_example_course
 INSERT INTO
-  enrollments (user_id, course_instance_id, status, joined_at) (
+  enrollments (
+    user_id,
+    course_instance_id,
+    status,
+    first_joined_at
+  ) (
     SELECT
       u.user_id,
       ci.id,
@@ -14,4 +19,6 @@ INSERT INTO
       u.user_id = $user_id
       AND c.example_course IS TRUE
   )
-ON CONFLICT DO NOTHING;
+ON CONFLICT DO NOTHING
+RETURNING
+  *;

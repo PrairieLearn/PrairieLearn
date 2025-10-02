@@ -242,6 +242,7 @@ export async function updateAssessmentInstance(
  * @param params.requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param params.close - Whether to close the assessment instance after grading.
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
+ * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
  * @param params.client_fingerprint_id - The client fingerprint ID.
  */
 export async function gradeAssessmentInstance({
@@ -251,6 +252,7 @@ export async function gradeAssessmentInstance({
   requireOpen,
   close,
   ignoreGradeRateLimit,
+  ignoreRealTimeGradingDisabled,
   client_fingerprint_id,
 }: {
   assessment_instance_id: string;
@@ -259,10 +261,12 @@ export async function gradeAssessmentInstance({
   requireOpen: boolean;
   close: boolean;
   ignoreGradeRateLimit: boolean;
+  ignoreRealTimeGradingDisabled: boolean;
   client_fingerprint_id: string | null;
 }): Promise<void> {
   debug('gradeAssessmentInstance()');
   ignoreGradeRateLimit = close || ignoreGradeRateLimit;
+  ignoreRealTimeGradingDisabled = close || ignoreRealTimeGradingDisabled;
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
@@ -313,6 +317,7 @@ export async function gradeAssessmentInstance({
       user_id,
       authn_user_id,
       ignoreGradeRateLimit,
+      ignoreRealTimeGradingDisabled,
     });
   });
   // The `grading_needed` flag was set by the closing query above. Once we've
@@ -349,6 +354,7 @@ const InstancesToGradeSchema = z.object({
  * @param params.authn_user_id - The current authenticated user.
  * @param params.close - Whether to close the assessment instances after grading.
  * @param params.ignoreGradeRateLimit - Whether to ignore grade rate limits.
+ * @param params.ignoreRealTimeGradingDisabled - Whether to ignore real-time grading disabled checks.
  * @returns The ID of the new job sequence.
  */
 export async function gradeAllAssessmentInstances({
@@ -357,12 +363,14 @@ export async function gradeAllAssessmentInstances({
   authn_user_id,
   close,
   ignoreGradeRateLimit,
+  ignoreRealTimeGradingDisabled,
 }: {
   assessment_id: string;
   user_id: string;
   authn_user_id: string;
   close: boolean;
   ignoreGradeRateLimit: boolean;
+  ignoreRealTimeGradingDisabled: boolean;
 }): Promise<string> {
   debug('gradeAllAssessmentInstances()');
   const { assessment_label, course_instance_id, course_id } =
@@ -396,6 +404,7 @@ export async function gradeAllAssessmentInstances({
         requireOpen: true,
         close,
         ignoreGradeRateLimit,
+        ignoreRealTimeGradingDisabled,
         client_fingerprint_id: null,
       });
     });

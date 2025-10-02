@@ -23,14 +23,17 @@ WHERE
 SELECT
   ai.id AS assessment_instance_id,
   assessment_instance_label (ai, a, aset),
-  u.uid AS user_uid
+  u.uid AS user_uid,
+  g.name AS group_name
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN groups AS g ON (g.id = ai.group_id)
 WHERE
   a.id = $assessment_id
+  AND g.deleted_at IS NULL
 ORDER BY
   u.uid,
   u.user_id,
@@ -57,6 +60,8 @@ WITH
       auto_points = aq.max_auto_points,
       manual_points = aq.max_manual_points,
       score_perc = 100,
+      requires_manual_grading = FALSE,
+      status = 'complete',
       modified_at = now()
     FROM
       assessment_questions AS aq

@@ -59,6 +59,10 @@ interface EditData {
   files: Set<string>;
   info?: string;
   data?: Record<string, string | number>;
+  dynamicPostInfo?: (form: cheerio.Cheerio<any>) => {
+    csrfToken: string | undefined;
+    url: string | undefined;
+  };
 }
 
 const testEditData: EditData[] = [
@@ -311,10 +315,17 @@ const testEditData: EditData[] = [
   },
 ];
 
+function getPostInfoFromCopyOption(form) {
+  const option = form.find('select[name="to_course_id"] option[value="1"]');
+  return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
+}
+
 const publicCopyTestData: EditData[] = [
   {
     url: `${baseUrl}/public/course/2/question/2/preview`,
     formSelector: 'form.js-copy-question-form',
+    dynamicPostInfo: getPostInfoFromCopyOption,
+    action: 'copy_question',
     data: {
       course_id: 2,
       question_id: 2,
@@ -334,6 +345,8 @@ const publicCopyTestData: EditData[] = [
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
     formSelector: 'form.js-copy-course-instance-form',
+    dynamicPostInfo: getPostInfoFromCopyOption,
+    action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
     },
@@ -356,6 +369,8 @@ const publicCopyTestData: EditData[] = [
   {
     url: `${baseUrl}/public/course_instance/2/assessments`,
     formSelector: 'form.js-copy-course-instance-form',
+    dynamicPostInfo: getPostInfoFromCopyOption,
+    action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
     },
@@ -475,7 +490,13 @@ function testEdit(params: EditData) {
     }
     it('should have a CSRF token', () => {
       let maybeToken: string | undefined;
-      if (params.button) {
+      if (params.dynamicPostInfo) {
+        const postInfo = params.dynamicPostInfo(currentPage$(`${params.formSelector}`));
+        maybeToken = postInfo.csrfToken;
+        if (postInfo.url !== undefined) {
+          params.url = `${siteUrl}${postInfo.url}`;
+        }
+      } else if (params.button) {
         let elem = currentPage$(params.button);
         assert.lengthOf(elem, 1);
         const formContent = elem.attr('data-bs-content');
