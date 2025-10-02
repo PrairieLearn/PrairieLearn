@@ -3,7 +3,9 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
+import { Hydrate } from '@prairielearn/preact/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
@@ -59,9 +61,18 @@ router.get(
     });
 
     res.send(
-      EnrollmentCodeRequired({
-        csrfToken: __csrf_token,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Enrollment Code Required',
+        navContext: {
+          type: 'plain',
+          page: 'enroll',
+        },
+        content: (
+          <Hydrate>
+            <EnrollmentCodeRequired csrfToken={__csrf_token} />
+          </Hydrate>
+        ),
       }),
     );
   }),

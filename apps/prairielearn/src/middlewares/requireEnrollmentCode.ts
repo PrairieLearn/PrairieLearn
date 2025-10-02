@@ -6,10 +6,13 @@ import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // Check if the user needs an enrollment code to access the course instance.
-  // This middleware runs before checkPlanGrants and autoEnroll to redirect
-  // users to the enrollment code page when required.
-
   const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
+
+  // Skip if user already has student access with enrollment
+  if (res.locals.authz_data.authn_has_student_access_with_enrollment) {
+    next();
+    return;
+  }
 
   // Skip if user is an instructor or administrator
   if (
@@ -23,12 +26,6 @@ export default asyncHandler(async (req, res, next) => {
 
   // Skip if user is not the authenticated user (impersonation)
   if (!idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id)) {
-    next();
-    return;
-  }
-
-  // Skip if user already has student access with enrollment
-  if (res.locals.authz_data.authn_has_student_access_with_enrollment) {
     next();
     return;
   }
@@ -65,8 +62,11 @@ export default asyncHandler(async (req, res, next) => {
     course_instance_id: courseInstance.id,
   });
 
-  // If user is already enrolled, let them through
-  if (existingEnrollment && existingEnrollment.status === 'joined') {
+  // If user is already enrolled or invited, let them through
+  if (
+    existingEnrollment &&
+    (existingEnrollment.status === 'joined' || existingEnrollment.status === 'invited')
+  ) {
     next();
     return;
   }
@@ -77,16 +77,11 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  // If user is invited, they don't need an enrollment code
-  if (existingEnrollment && existingEnrollment.status === 'invited') {
-    next();
-    return;
-  }
-
   // User needs an enrollment code - redirect to the enrollment code page
   // Preserve the current URL as a query parameter so they can return after enrollment
   const currentUrl = req.originalUrl;
   const redirectUrl = `/pl/course_instance/${courseInstance.id}/join?url=${encodeURIComponent(currentUrl)}`;
 
   res.redirect(redirectUrl);
+  return;
 });
