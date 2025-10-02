@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
@@ -7,7 +8,6 @@ import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -659,7 +659,7 @@ async function createSharedCourse() {
   sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test'] = structuredClone(
     sharingCourseData.courseInstances['Fa19'].assessments['test'],
   );
-  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = uuidv4();
+  sharingCourseData.courseInstances['Fa19'].assessments['nested/dir/test']['uuid'] = randomUUID();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }

@@ -7,6 +7,7 @@ import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
 /* eslint-enable import-x/order */
 
+import { randomUUID } from 'node:crypto';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -33,7 +34,6 @@ import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
-import { v4 as uuidv4 } from 'uuid';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -385,7 +385,7 @@ export async function initExpress(): Promise<Express> {
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
-    res.locals.response_id = uuidv4();
+    res.locals.response_id = randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });

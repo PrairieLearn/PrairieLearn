@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import path from 'node:path';
 
 import { execa } from 'execa';
@@ -5,7 +6,6 @@ import fs from 'fs-extra';
 import { type OpenAI } from 'openai';
 import { zodTextFormat } from 'openai/helpers/zod';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -198,7 +198,7 @@ export async function benchmarkAiQuestionGeneration({
     const courseTitle = `AI Question Generation Benchmark ${Date.now()}`;
     const courseName = `ai-question-generation-benchmark-${Date.now()}`;
     await fs.writeJson(path.join(courseDirectory.path, 'infoCourse.json'), {
-      uuid: uuidv4(),
+  uuid: randomUUID(),
       name: courseName,
       title: courseTitle,
       topics: [],

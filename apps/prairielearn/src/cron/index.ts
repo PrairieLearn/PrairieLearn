@@ -1,8 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
 import _ from 'lodash';
-import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -269,7 +269,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 async function runJobs(jobsList: CronJob[]) {
   debug('runJobs()');
-  const cronUuid = uuidv4();
+  const cronUuid = randomUUID();
   logger.verbose('cron: jobs starting', { cronUuid });
 
   for (const job of jobsList) {

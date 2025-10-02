@@ -1,12 +1,12 @@
 import { type ChildProcess } from 'child_process';
 import * as child_process from 'node:child_process';
 import { type SpawnOptions } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
 import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
 import { withResolvers } from '@prairielearn/utils';
@@ -140,7 +140,7 @@ export class CodeCallerNative implements CodeCaller {
    */
   private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = randomUUID();
 
     this.debug('enter constructor()');
 

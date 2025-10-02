@@ -1,5 +1,6 @@
 import assert from 'assert';
 import * as child_process from 'child_process';
+import { randomUUID } from 'crypto';
 import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
 import * as util from 'util';
@@ -9,7 +10,6 @@ import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
 import fs from 'fs-extra';
 import * as tar from 'tar';
-import { v4 as uuidv4 } from 'uuid';
 import z from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -681,7 +681,7 @@ export async function createAndUploadChunks(
     const chunkDirectory = coursePathForChunk(coursePath, chunk);
 
     // Generate a UUId for this chunk
-    const chunkUuid = uuidv4();
+    const chunkUuid = randomUUID();
 
     // Let's create a tarball for this chunk and send it off to S3
     const tarball = tar.create(

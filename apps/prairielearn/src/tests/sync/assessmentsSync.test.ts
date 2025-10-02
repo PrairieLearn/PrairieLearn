@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import { randomUUID } from 'node:crypto';
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -46,7 +46,7 @@ function makeAssessment(
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
-    uuid: uuidv4(),
+    uuid: randomUUID(),
     type,
     title: 'Test assessment',
     set: assessmentSet,
