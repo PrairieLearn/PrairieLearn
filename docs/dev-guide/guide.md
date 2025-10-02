@@ -108,15 +108,19 @@ In general, we prefer simplicity. We standardize on JavaScript/TypeScript (Node.
 
 ## HTML accessibility
 
-If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. Some common things to check for:
+If you are adding anything more complex than a basic form page, the automated accessibility checks are likely not enough for checking accessibility. You should use [VoiceOver (macOS)](https://support.apple.com/guide/voiceover/welcome/mac) or [NVDA (Windows)](https://www.nvaccess.org/download/) to test the page. All our pages must conform to the [Web Content Accessibility Guidelines (WCAG) 2.1 AA standard](https://www.w3.org/TR/WCAG21/). Some common things to check for:
 
 - Are elements announced correctly?
+  - Do you have appropriate `aria-label` / `alt` attributes?
 - Can you navigate the page using only the keyboard?
   - tab to get to the next focusable element, enter to activate it
   - arrow keys work appropriately
 - Are the focus indicators visible?
+- Is the page layout logical and easy to understand?
 
-Example bugs from work on the Students table:
+- Will users with visual impairments be able to use the page? (More generally, we must follow)
+  - Do you have at least a 3:1 contrast ratio between text and background colors?
+  - Do you have appropriate spacing between elements?
 
 - Can you navigate the table with arrow keys?
 - Can you resize the table columns with the arrow keys?
