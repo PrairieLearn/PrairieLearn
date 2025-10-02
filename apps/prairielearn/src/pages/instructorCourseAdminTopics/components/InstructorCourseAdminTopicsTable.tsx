@@ -12,7 +12,7 @@ const emptyTopic: Topic = {
   color: '',
   course_id: '',
   description: '',
-  id: uuidv4(),
+  id: '',
   implicit: false,
   json_comment: '',
   name: '',
@@ -61,7 +61,7 @@ export function InstructorCourseAdminTopicsTable({
 
   const handleNewTopic = () => {
     setAddTopic(true);
-    setSelectedTopic(emptyTopic);
+    setSelectedTopic({ ...emptyTopic, id: uuidv4() });
     setShowModal(true);
   };
 
