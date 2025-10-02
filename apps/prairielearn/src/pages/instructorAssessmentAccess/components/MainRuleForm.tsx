@@ -1,5 +1,5 @@
 import { Form } from 'react-bootstrap';
-import { type Control, type UseFormTrigger, type UseFormSetValue, useWatch } from 'react-hook-form';
+import { type Control, type UseFormSetValue, type UseFormTrigger, useWatch } from 'react-hook-form';
 
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 
@@ -13,16 +13,9 @@ interface MainRuleFormProps {
   trigger: UseFormTrigger<AccessControlFormData>;
   courseInstance: StaffCourseInstanceContext['course_instance'];
   setValue: UseFormSetValue<AccessControlFormData>;
-  errors: any;
 }
 
-export function MainRuleForm({
-  control,
-  trigger,
-  courseInstance,
-  setValue,
-  errors,
-}: MainRuleFormProps) {
+export function MainRuleForm({ control, trigger, courseInstance, setValue }: MainRuleFormProps) {
   // Watch the main rule enabled state
   const ruleEnabled = useWatch({
     control,
@@ -112,11 +105,7 @@ export function MainRuleForm({
                 courseInstance={courseInstance}
                 setValue={setValue}
               />
-              <PrairieTestControlForm
-                control={control}
-                namePrefix="mainRule"
-                ruleEnabled={ruleEnabled}
-              />
+              <PrairieTestControlForm control={control} namePrefix="mainRule" />
 
               <AfterCompleteForm
                 control={control}

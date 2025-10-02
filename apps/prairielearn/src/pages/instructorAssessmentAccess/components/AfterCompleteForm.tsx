@@ -71,20 +71,23 @@ export function AfterCompleteForm({
   // Determine the current radio selection for hide questions
   const getHideQuestionsMode = () => {
     if (hideQuestions === false) return 'show_questions';
-    if (hideQuestions === true && showAgainDateEnabledQuestions === false)
+    if (hideQuestions === true && showAgainDateEnabledQuestions === false) {
       return 'hide_questions_forever';
+    }
     if (
       hideQuestions === true &&
       showAgainDateEnabledQuestions === true &&
       hideAgainDateEnabledQuestions === false
-    )
+    ) {
       return 'hide_questions_until_date';
+    }
     if (
       hideQuestions === true &&
       showAgainDateEnabledQuestions === true &&
       hideAgainDateEnabledQuestions === true
-    )
+    ) {
       return 'hide_questions_between_dates';
+    }
     return 'show_questions';
   };
 
@@ -290,7 +293,7 @@ export function AfterCompleteForm({
         </div>
         <div class="d-flex align-items-center">
           {showOverrideButton && onOverride && (
-            <Button size="sm" variant="outline-primary" onClick={onOverride} class="me-2">
+            <Button size="sm" variant="outline-primary" class="me-2" onClick={onOverride}>
               Override
             </Button>
           )}

@@ -36,7 +36,7 @@ export function AccessControlForm({
     watch,
     trigger,
     setValue,
-    formState: { isDirty, errors, isValid },
+    formState: { isDirty, isValid },
   } = useForm<AccessControlFormData>({
     mode: 'onChange',
     defaultValues: {
@@ -94,7 +94,6 @@ export function AccessControlForm({
                 trigger={trigger}
                 courseInstance={courseInstance}
                 setValue={setValue}
-                errors={errors}
               />
             </Accordion.Body>
           </Accordion.Item>
@@ -111,9 +110,9 @@ export function AccessControlForm({
               <OverrideRulesForm
                 control={control}
                 fields={overrideFields}
+                setValue={setValue}
                 onAdd={addOverride}
                 onRemove={removeOverride}
-                setValue={setValue}
               />
             </Accordion.Body>
           </Accordion.Item>

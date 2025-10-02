@@ -292,12 +292,12 @@ export function DateControlForm({
     // Only consider late deadlines if Late Deadlines is enabled
     if (lateDeadlinesEnabled === true) {
       // Get all late deadlines that have dates
-      const validLateDeadlines = (lateDeadlines || []).filter((deadline) => deadline?.date);
+      const validLateDeadlines = (lateDeadlines || []).filter((deadline: any) => deadline?.date);
 
       if (validLateDeadlines.length > 0) {
         // Find the latest late deadline
         const sortedLateDeadlines = validLateDeadlines.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+          (a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime(),
         );
         const latestLateDeadline = sortedLateDeadlines[0];
         if (latestLateDeadline.date) {
@@ -375,9 +375,9 @@ export function DateControlForm({
           )}
         </div>
       </Card.Header>
-      {formErrors[namePrefix]?.dateControl?.enabled && (
+      {(formErrors as any)[namePrefix]?.dateControl?.enabled && (
         <Form.Text class="text-danger d-block mt-1 ms-3">
-          {formErrors[namePrefix]?.dateControl?.enabled?.message}
+          {(formErrors as any)[namePrefix]?.dateControl?.enabled?.message}
         </Form.Text>
       )}
       {(dateControlEnabled || namePrefix.startsWith('overrides.')) && (
@@ -487,13 +487,13 @@ export function DateControlForm({
 
                                 // Check if there are any early deadlines
                                 const validEarlyDeadlines = (earlyDeadlines || []).filter(
-                                  (deadline) => deadline?.date,
+                                  (deadline: any) => deadline?.date,
                                 );
 
                                 if (validEarlyDeadlines.length > 0) {
                                   // Find the latest early deadline
                                   const sortedEarlyDeadlines = validEarlyDeadlines.sort(
-                                    (a, b) =>
+                                    (a: any, b: any) =>
                                       new Date(b.date).getTime() - new Date(a.date).getTime(),
                                   );
                                   const latestEarlyDeadline = sortedEarlyDeadlines[0];
