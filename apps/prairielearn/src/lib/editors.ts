@@ -27,7 +27,6 @@ import {
   updateCourseCommitHash,
 } from '../models/course.js';
 import { selectQuestionsForCourseInstanceCopy } from '../models/question.js';
-import type { AssessmentJson } from '../schemas/index.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
@@ -193,8 +192,16 @@ export function getUniqueNames({
  * `defaultValue` may be either a value to compare directly with `===`, or a function
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
+ *
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
+export function propertyValueWithDefault(
+  existingValue: any,
+  newValue: any,
+  defaultValue: any,
+  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
+) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -202,10 +209,17 @@ export function propertyValueWithDefault(existingValue: any, newValue: any, defa
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   if (existingValue === undefined) {
     if (!isNewDefault) {
       return newValue;
     }
+    return undefined;
   } else {
     if (!isExistingDefault && isNewDefault) {
       return undefined;
@@ -682,7 +696,7 @@ export class AssessmentCopyEditor extends Editor {
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
@@ -958,8 +972,6 @@ export class CourseInstanceCopyEditor extends Editor {
     const oldNamesLong = await sqldb.queryRows(
       sql.select_course_instances_with_course,
       { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
       z.string(),
     );
 
@@ -1007,7 +1019,7 @@ export class CourseInstanceCopyEditor extends Editor {
 
       // Clear access rules to avoid leaking student PII or unexpectedly
       // making the copied course instance available to users.
-      infoJson['allowAccess'] = [];
+      infoJson.allowAccess = [];
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
@@ -1093,7 +1105,7 @@ export class CourseInstanceCopyEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     // We do not want to preserve sharing settings when copying a course instance
-    delete infoJson['shareSourcePublicly'];
+    delete infoJson.shareSourcePublicly;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1127,11 +1139,11 @@ async function updateInfoAssessmentFilesForTargetCourse(
     const infoJson = await fs.readJson(infoPath);
 
     // We do not want to preserve certain settings when copying an assessment to another course
-    delete infoJson['shareSourcePublicly'];
-    infoJson['allowAccess'] = [];
+    delete infoJson.shareSourcePublicly;
+    infoJson.allowAccess = [];
 
     function shouldAddSharingPrefix(qid: string) {
-      return qid && qid[0] !== '@' && questionsToImport.has(qid);
+      return qid && !qid.startsWith('@') && questionsToImport.has(qid);
     }
 
     // Rewrite the question IDs to include the course sharing name,
@@ -1439,8 +1451,7 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug('Get all existing long names');
-      const questionMetadata = await selectQuestionTitlesForCourse(this.course);
-      const oldNamesLong = questionMetadata.filter((title) => title !== null);
+      const oldNamesLong = await selectQuestionTitlesForCourse(this.course);
 
       debug('Get all existing short names');
       const oldNamesShort = await getExistingShortNames(questionsPath, 'info.json');
@@ -1785,14 +1796,14 @@ export class QuestionRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: AssessmentJson = await fs.readJson(infoPath);
+      const infoJson: any = await fs.readJson(infoPath);
 
       debug(`Find/replace QID in ${infoPath}`);
-      let found = false;
-      infoJson.zones?.forEach((zone) => {
-        zone.questions.forEach((question) => {
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
           if (question.alternatives) {
-            question.alternatives.forEach((alternative: any) => {
+            question.alternatives?.forEach((alternative: any) => {
               if (alternative.id === this.question.qid) {
                 alternative.id = this.qid_new;
                 found = true;
@@ -1942,9 +1953,9 @@ async function copyQuestion({
   }
 
   // We do not want to preserve sharing settings when copying a question to another course
-  delete infoJson['sharingSets'];
-  delete infoJson['sharePublicly'];
-  delete infoJson['shareSourcePublicly'];
+  delete infoJson.sharingSets;
+  delete infoJson.sharePublicly;
+  delete infoJson.shareSourcePublicly;
 
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
   await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
@@ -2323,7 +2334,7 @@ export class FileModifyEditor extends Editor {
     return sha256(contents).toString();
   }
 
-  async shouldEdit() {
+  shouldEdit() {
     debug('get hash of edit contents');
     const editHash = this.getHash(this.editContents);
     debug('editHash: ' + editHash);
@@ -2375,7 +2386,7 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    if (!(await this.shouldEdit())) return null;
+    if (!this.shouldEdit()) return null;
 
     debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));

@@ -12,7 +12,7 @@ export function ResetQuestionVariantsModal({
   onHide: () => void;
 }) {
   return (
-    <Modal show={show} backdrop="static" onHide={onHide}>
+    <Modal show={show} size="lg" backdrop="static" onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>Confirm reset question variants</Modal.Title>
       </Modal.Header>

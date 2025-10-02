@@ -1,0 +1,2 @@
+ALTER TABLE enrollments
+ADD COLUMN joined_at TIMESTAMP WITH TIME ZONE;

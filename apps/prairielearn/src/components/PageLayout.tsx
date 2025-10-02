@@ -2,10 +2,10 @@ import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { HtmlSafeString, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
-import { renderHtml } from '../lib/preact-html.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -60,7 +60,13 @@ export function PageLayout({
   /** The content of the page in the body after the main container. */
   postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
 }) {
-  const paddingBottom = options.paddingBottom ?? true;
+  const resolvedOptions = {
+    hxExt: '',
+    paddingBottom: true,
+    fullHeight: false,
+    fullWidth: false,
+    ...options,
+  };
 
   const headContentString = asHtmlSafe(headContent);
   const preContentString = asHtmlSafe(preContent);
@@ -82,12 +88,12 @@ export function PageLayout({
     if (navContext.page === 'course_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const courseAdminSettingsNavSubPages = navPageTabs.course_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const courseAdminSettingsNavSubPages = navPageTabs.course_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a course admin settings subpage, show ContextNavigation
-      if (navContext.subPage && courseAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && courseAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
@@ -95,12 +101,12 @@ export function PageLayout({
     } else if (navContext.page === 'instance_admin') {
       const navPageTabs = getNavPageTabs(true);
 
-      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin
-        ?.map((tab) => tab.activeSubPage)
-        .flat();
+      const instanceAdminSettingsNavSubPages = navPageTabs.instance_admin.flatMap(
+        (tab) => tab.activeSubPage,
+      );
 
       // If the user is on a instance admin settings subpage, show ContextNavigation
-      if (navContext.subPage && instanceAdminSettingsNavSubPages?.includes(navContext.subPage)) {
+      if (navContext.subPage && instanceAdminSettingsNavSubPages.includes(navContext.subPage)) {
         showContextNavigation = true;
       } else {
         showContextNavigation = false;
@@ -114,14 +120,14 @@ export function PageLayout({
           ${HeadContents({
             resLocals,
             pageTitle,
-            pageNote: options.pageNote,
+            pageNote: resolvedOptions.pageNote,
           })}
           ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
           ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
         </head>
         <body
-          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${options.hxExt ?? ''}"
+          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${resolvedOptions.hxExt}"
         >
           <div
             id="app-container"
@@ -149,15 +155,19 @@ export function PageLayout({
             ${sideNavEnabled
               ? html`
                   <nav class="app-side-nav bg-light border-end" aria-label="Course navigation">
-                    ${SideNav({
-                      resLocals,
-                      page: navContext.page,
-                      subPage: navContext.subPage,
-                    })}
+                    <div class="app-side-nav-scroll">
+                      ${SideNav({
+                        resLocals,
+                        page: navContext.page,
+                        subPage: navContext.subPage,
+                      })}
+                    </div>
                   </nav>
                 `
               : ''}
-            <div class="${clsx(sideNavEnabled && 'app-main', options.fullHeight && 'h-100')}">
+            <div
+              class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}"
+            >
               <div class="${sideNavEnabled ? 'app-main-container' : ''}">
                 ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                   ? AssessmentNavigation({
@@ -178,9 +188,9 @@ export function PageLayout({
                 <main
                   id="content"
                   class="${clsx(
-                    options.fullWidth ? 'container-fluid' : 'container',
-                    paddingBottom && 'pb-4',
-                    options.fullHeight && 'h-100',
+                    resolvedOptions.fullWidth ? 'container-fluid' : 'container',
+                    resolvedOptions.paddingBottom && 'pb-4',
+                    resolvedOptions.fullHeight && 'h-100',
                     'pt-3',
                     sideNavEnabled && 'px-3',
                   )}"
@@ -197,18 +207,18 @@ export function PageLayout({
   } else {
     return html`
       <!doctype html>
-      <html lang="en" class="${options.fullHeight ? 'h-100' : ''}">
+      <html lang="en" class="${resolvedOptions.fullHeight ? 'h-100' : ''}">
         <head>
           ${HeadContents({
             resLocals,
             pageTitle,
-            pageNote: options.pageNote,
+            pageNote: resolvedOptions.pageNote,
           })}
-          ${headContentString}
+          ${compiledStylesheetTag('pageLayout.css')} ${headContentString}
         </head>
         <body
-          class="${options.fullHeight ? 'd-flex flex-column h-100' : ''}"
-          hx-ext="${options.hxExt ?? ''}"
+          class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+          hx-ext="${resolvedOptions.hxExt}"
         >
           ${Navbar({
             resLocals,
@@ -220,9 +230,11 @@ export function PageLayout({
           <main
             id="content"
             class="
-            ${options.fullWidth ? 'container-fluid' : 'container'} 
-            ${paddingBottom ? 'pb-4' : ''}
-            ${options.fullHeight ? 'flex-grow-1' : ''}
+            ${clsx(
+              resolvedOptions.fullWidth ? 'container-fluid' : 'container',
+              resolvedOptions.paddingBottom && 'pb-4',
+              resolvedOptions.fullHeight && 'flex-grow-1',
+            )}
           "
           >
             ${contentString}

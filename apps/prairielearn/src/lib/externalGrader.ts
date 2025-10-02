@@ -141,7 +141,7 @@ function handleGraderError(grading_job_id: string, err: Error): void {
 }
 
 async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
-  await sqldb.queryAsync(sql.update_grading_submitted_time, {
+  await sqldb.execute(sql.update_grading_submitted_time, {
     grading_job_id,
     grading_submitted_at: new Date().toISOString(),
   });
@@ -149,7 +149,7 @@ async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
 }
 
 async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
-  await sqldb.queryAsync(sql.update_grading_received_time, {
+  await sqldb.execute(sql.update_grading_received_time, {
     grading_job_id,
     grading_received_at: receivedTime,
   });

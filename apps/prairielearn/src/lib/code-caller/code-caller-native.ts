@@ -9,9 +9,10 @@ import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { run } from '@prairielearn/run';
+import { withResolvers } from '@prairielearn/utils';
 
-import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+import { assertNever } from '../types.js';
 
 import {
   type CallType,
@@ -207,38 +208,45 @@ export class CodeCallerNative implements CodeCaller {
 
     let cwd: string | undefined;
     const paths = [path.join(APP_ROOT_PATH, 'python')];
-    if (type === 'question') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'questions', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'v2-question') {
-      // v2 questions always use the root of the PrairieLearn repository as their
-      // working directory.
-      cwd = REPOSITORY_ROOT_PATH;
-    } else if (type === 'course-element') {
-      if (!directory) throw new Error('Missing directory');
-      if (!this.coursePath) throw new Error('Missing course path');
-      cwd = path.join(this.coursePath, 'elements', directory);
-      paths.push(path.join(this.coursePath, 'serverFilesCourse'));
-    } else if (type === 'core-element') {
-      if (!directory) throw new Error('Missing directory');
-      cwd = path.join(APP_ROOT_PATH, 'elements', directory);
-    } else if (type === 'restart' || type === 'ping') {
-      // Doesn't need a working directory
-    } else {
-      throw new Error(`Unknown function call type: ${type}`);
+    switch (type) {
+      case 'question':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'questions', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'v2-question':
+        // v2 questions always use the root of the PrairieLearn repository as their
+        // working directory.
+        cwd = REPOSITORY_ROOT_PATH;
+        break;
+      case 'course-element':
+        if (!directory) throw new Error('Missing directory');
+        if (!this.coursePath) throw new Error('Missing course path');
+        cwd = path.join(this.coursePath, 'elements', directory);
+        paths.push(path.join(this.coursePath, 'serverFilesCourse'));
+        break;
+      case 'core-element':
+        if (!directory) throw new Error('Missing directory');
+        cwd = path.join(APP_ROOT_PATH, 'elements', directory);
+        break;
+      case 'restart':
+      case 'ping':
+        // Doesn't need a working directory
+        break;
+      default:
+        assertNever(type);
     }
 
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
-    const deferred = deferredPromise<CodeCallerResult>();
+    const promise = withResolvers<CodeCallerResult>();
     this.callback = (err, data, output) => {
       if (err) {
-        deferred.reject(err);
+        promise.reject(err);
       } else {
-        deferred.resolve({ result: data, output: output ?? '' });
+        promise.resolve({ result: data, output: output ?? '' });
       }
     };
 
@@ -264,7 +272,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise;
+    return promise.promise;
   }
 
   /**
@@ -664,70 +672,45 @@ export class CodeCallerNative implements CodeCaller {
       );
     }
 
-    let childNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
-    if (this.state === CREATED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === WAITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === IN_CALL) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === RESTARTING) {
-      childNull = false;
-      callbackNull = false;
-      timeoutIDNull = false;
-    } else if (this.state === EXITING) {
-      childNull = false;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else if (this.state === EXITED) {
-      childNull = true;
-      callbackNull = true;
-      timeoutIDNull = true;
-    } else {
+    if (![CREATED, WAITING, IN_CALL, RESTARTING, EXITING, EXITED].includes(this.state)) {
       return this._logError('Invalid CodeCallerNative state: ' + String(this.state));
     }
 
-    if (childNull != null) {
-      if (childNull && this.child != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should be null',
-        );
-      }
-      if (!childNull && this.child == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": child should not be null',
-        );
-      }
+    const childNull = [CREATED, EXITED].includes(this.state);
+    const callbackNull = ![IN_CALL, RESTARTING].includes(this.state);
+    const timeoutIDNull = ![IN_CALL, RESTARTING].includes(this.state);
+
+    if (childNull && this.child != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should be null',
+      );
     }
-    if (callbackNull != null) {
-      if (callbackNull && this.callback != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should be null',
-        );
-      }
-      if (!callbackNull && this.callback == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
-        );
-      }
+    if (!childNull && this.child == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": child should not be null',
+      );
     }
-    if (timeoutIDNull != null) {
-      if (timeoutIDNull && this.timeoutID != null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
-        );
-      }
-      if (!timeoutIDNull && this.timeoutID == null) {
-        return this._logError(
-          'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
-        );
-      }
+
+    if (callbackNull && this.callback != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should be null',
+      );
+    }
+    if (!callbackNull && this.callback == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": callback should not be null',
+      );
+    }
+
+    if (timeoutIDNull && this.timeoutID != null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should be null',
+      );
+    }
+    if (!timeoutIDNull && this.timeoutID == null) {
+      return this._logError(
+        'CodeCallerNative state "' + String(this.state) + '": timeoutID should not be null',
+      );
     }
 
     return true;

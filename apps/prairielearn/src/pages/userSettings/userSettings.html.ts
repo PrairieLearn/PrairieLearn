@@ -59,34 +59,39 @@ export function UserSettings({
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h2>User profile</h2>
         </div>
-        <table class="table table-sm two-column-description" aria-label="User profile information">
-          <tbody>
-            <tr>
-              <th>UID</th>
-              <td>${authn_user.uid}</td>
-            </tr>
-            <tr>
-              <th>Name</th>
-              <td>${authn_user.name}</td>
-            </tr>
-            <tr>
-              <th>Unique Identifier (UIN)</th>
-              <td>${authn_user.uin}</td>
-            </tr>
-            <tr>
-              <th>Email</th>
-              <td>${authn_user.email}</td>
-            </tr>
-            <tr>
-              <th>Institution</th>
-              <td>${authn_institution.long_name} (${authn_institution.short_name})</td>
-            </tr>
-            <tr>
-              <th>Authentication method</th>
-              <td>${authn_provider_name}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table
+            class="table table-sm two-column-description"
+            aria-label="User profile information"
+          >
+            <tbody>
+              <tr>
+                <th>UID</th>
+                <td>${authn_user.uid}</td>
+              </tr>
+              <tr>
+                <th>Name</th>
+                <td>${authn_user.name}</td>
+              </tr>
+              <tr>
+                <th>Unique Identifier (UIN)</th>
+                <td>${authn_user.uin}</td>
+              </tr>
+              <tr>
+                <th>Email</th>
+                <td>${authn_user.email}</td>
+              </tr>
+              <tr>
+                <th>Institution</th>
+                <td>${authn_institution.long_name} (${authn_institution.short_name})</td>
+              </tr>
+              <tr>
+                <th>Authentication method</th>
+                <td>${authn_provider_name}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       ${showEnhancedNavigationToggle

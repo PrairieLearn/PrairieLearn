@@ -1,12 +1,12 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
-import { renderHtml } from '../../../src/lib/preact-html.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
@@ -63,7 +63,7 @@ onDocumentReady(() => {
     const sharing_sets = Object.fromEntries(
       data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
     );
-    sharing_sets['Public'] = 'Public';
+    sharing_sets.Public = 'Public';
     sharing_sets['Public source'] = 'Public source';
     return sharing_sets;
   };
@@ -79,12 +79,12 @@ onDocumentReady(() => {
       text += SyncProblemButtonHtml({
         type: 'error',
         output: question.sync_errors,
-      });
+      }).toString();
     } else if (question.sync_warnings) {
       text += SyncProblemButtonHtml({
         type: 'warning',
         output: question.sync_warnings,
-      });
+      }).toString();
     }
 
     // We only want to show the sharing name prefix for publicly-shared questions.
@@ -96,15 +96,15 @@ onDocumentReady(() => {
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
         ${prefix}${question.qid}
       </a>
-    `;
+    `.toString();
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge rounded-pill text-bg-danger ms-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid ?? '',
+          question.qid,
         )}"
         >${question.open_issue_count}</a
-      >`;
+      >`.toString();
     }
     return text.toString();
   };
@@ -140,7 +140,7 @@ onDocumentReady(() => {
   };
 
   window.topicSorter = function (topicA: Topic, topicB: Topic) {
-    return topicA.name?.localeCompare(topicB.name ?? '');
+    return topicA.name.localeCompare(topicB.name);
   };
 
   window.genericFilterSearch = function (search: string, value: string) {
@@ -187,7 +187,7 @@ onDocumentReady(() => {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
     const assessments = data
       .flatMap((row) => row.assessments ?? [])
-      .filter((row) => row && row.course_instance_id === ci_id);
+      .filter((row) => row.course_instance_id === ci_id);
     return {
       ...Object.fromEntries(assessments.map(({ label }) => [label, label])),
       '(None)': '(None)',
@@ -233,7 +233,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent?.trim()}`,
+          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent.trim()}`,
         );
       });
     },

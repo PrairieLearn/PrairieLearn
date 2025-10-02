@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 import { z } from 'zod';
 
@@ -29,6 +31,7 @@ let namespace: Namespace;
 
 /** This module MUST be initialized after socket-server */
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
 }
@@ -42,7 +45,7 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}`);
+    void socket.join(`variant-${msg.variant_id}`);
 
     getVariantSubmissionsStatus(msg.variant_id).then(
       (submissions) => {
@@ -84,7 +87,7 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
       submissions: [
         {
           id: submission.id,
-          grading_job_id: submission.grading_job?.id,
+          grading_job_id: submission.grading_job.id,
           grading_job_status: gradingJobStatus(submission.grading_job),
         },
       ],

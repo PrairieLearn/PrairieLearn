@@ -83,7 +83,7 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
 
       if (req.body.__action === 'reboot') {
         await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
-        await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
+        await sqldb.execute(sql.update_workspace_rebooted_at_now, {
           workspace_id,
         });
         res.redirect(req.originalUrl);
@@ -93,7 +93,7 @@ export default function ({ publicQuestionEndpoint }: { publicQuestionEndpoint: b
           'uninitialized',
           'Resetting container',
         );
-        await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
+        await sqldb.execute(sql.increment_workspace_version, { workspace_id });
         res.redirect(req.originalUrl);
       } else {
         return next(new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`));

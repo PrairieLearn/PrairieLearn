@@ -79,7 +79,7 @@ WITH
 SELECT
   *
 FROM
-  select_course sc
+  select_course
 UNION ALL
 SELECT
   *
