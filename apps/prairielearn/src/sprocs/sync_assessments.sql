@@ -162,7 +162,6 @@ BEGIN
             assessment_module_id = aggregates.assessment_module_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
-            allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             json_allow_real_time_grading = (valid_assessment.data->>'json_allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             honor_code = valid_assessment.data->>'honor_code',
@@ -373,40 +372,61 @@ BEGIN
             -- Insert each alternative group in this zone
             FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'alternativeGroups'->zone_index) LOOP
                 INSERT INTO alternative_groups (
-                    number,
-                    number_choose,
                     advance_score_perc,
                     assessment_id,
-                    zone_id,
                     json_allow_real_time_grading,
-                    json_grade_rate_minutes,
-                    json_can_view,
+                    json_auto_points,
                     json_can_submit,
+                    json_can_view,
+                    json_comment,
+                    json_force_max_points,
+                    json_grade_rate_minutes,
                     json_has_alternatives,
-                    json_comment
+                    json_manual_points,
+                    json_max_auto_points,
+                    json_max_points,
+                    json_points,
+                    json_tries_per_variant,
+                    number,
+                    number_choose,
+                    zone_id
                 ) VALUES (
-                    (alternative_group->>'number')::integer,
-                    (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
-                    new_zone_id,
                     (alternative_group->>'json_allow_real_time_grading')::boolean,
-                    (alternative_group->>'json_grade_rate_minutes')::double precision,
-                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    alternative_group->'json_auto_points',
                     ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    (alternative_group->'comment'),
+                    (alternative_group->>'json_force_max_points')::boolean,
+                    (alternative_group->>'json_grade_rate_minutes')::double precision,
                     (alternative_group->>'json_has_alternatives')::boolean,
-                    (alternative_group->'comment')
-                ) ON CONFLICT (number, assessment_id) DO UPDATE
+                    (alternative_group->>'json_manual_points')::double precision,
+                    (alternative_group->>'json_max_auto_points')::double precision,
+                    (alternative_group->>'json_max_points')::double precision,
+                    alternative_group->'json_points',
+                    (alternative_group->>'json_tries_per_variant')::integer,
+                    (alternative_group->>'number')::integer,
+                    (alternative_group->>'number_choose')::integer,
+                    new_zone_id
+                )                 ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
-                    number_choose = EXCLUDED.number_choose,
-                    zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
                     json_allow_real_time_grading = EXCLUDED.json_allow_real_time_grading,
-                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
-                    json_can_view = EXCLUDED.json_can_view,
+                    json_auto_points = EXCLUDED.json_auto_points,
                     json_can_submit = EXCLUDED.json_can_submit,
+                    json_can_view = EXCLUDED.json_can_view,
+                    json_comment = EXCLUDED.json_comment,
+                    json_force_max_points = EXCLUDED.json_force_max_points,
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                     json_has_alternatives = EXCLUDED.json_has_alternatives,
-                    json_comment = EXCLUDED.json_comment
+                    json_manual_points = EXCLUDED.json_manual_points,
+                    json_max_auto_points = EXCLUDED.json_max_auto_points,
+                    json_max_points = EXCLUDED.json_max_points,
+                    json_points = EXCLUDED.json_points,
+                    json_tries_per_variant = EXCLUDED.json_tries_per_variant,
+                    number_choose = EXCLUDED.number_choose,
+                    zone_id = EXCLUDED.zone_id
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -462,7 +482,14 @@ BEGIN
                         number_in_alternative_group,
                         advance_score_perc,
                         effective_advance_score_perc,
-                        json_comment
+                        json_comment,
+                        json_points,
+                        json_auto_points,
+                        json_manual_points,
+                        json_max_points,
+                        json_max_auto_points,
+                        json_force_max_points,
+                        json_tries_per_variant
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -483,8 +510,15 @@ BEGIN
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
                         (assessment_question->>'effective_advance_score_perc')::double precision,
-                        (assessment_question->'comment')
-                    ) ON CONFLICT (question_id, assessment_id) DO UPDATE
+                        (assessment_question->'comment'),
+                        assessment_question->'json_points',
+                        assessment_question->'json_auto_points',
+                        (assessment_question->>'json_manual_points')::double precision,
+                        (assessment_question->>'json_max_points')::double precision,
+                        (assessment_question->>'json_max_auto_points')::double precision,
+                        (assessment_question->>'json_force_max_points')::boolean,
+                        (assessment_question->>'json_tries_per_variant')::integer
+                    )                     ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
@@ -504,7 +538,14 @@ BEGIN
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
                         effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
-                        json_comment = EXCLUDED.json_comment
+                        json_comment = EXCLUDED.json_comment,
+                        json_points = EXCLUDED.json_points,
+                        json_auto_points = EXCLUDED.json_auto_points,
+                        json_manual_points = EXCLUDED.json_manual_points,
+                        json_max_points = EXCLUDED.json_max_points,
+                        json_max_auto_points = EXCLUDED.json_max_auto_points,
+                        json_force_max_points = EXCLUDED.json_force_max_points,
+                        json_tries_per_variant = EXCLUDED.json_tries_per_variant
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -10,7 +10,16 @@ import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { getPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
+import { assertNever } from '../../lib/types.js';
+import { insertAuditEvent } from '../../models/audit-event.js';
+import {
+  ensureEnrollment,
+  selectAndLockEnrollmentById,
+  selectOptionalEnrollmentByPendingUid,
+} from '../../models/enrollment.js';
+import { selectAndLockUserById } from '../../models/user.js';
 
 import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
@@ -120,17 +129,53 @@ router.post(
       authn_user: { uid, user_id },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    if (body.__action === 'accept_invitation') {
-      await execute(sql.accept_invitation, {
-        course_instance_id: body.course_instance_id,
-        uid,
-        user_id,
-      });
-    } else if (body.__action === 'reject_invitation') {
-      await execute(sql.reject_invitation, {
-        course_instance_id: body.course_instance_id,
-        uid,
-      });
+    switch (body.__action) {
+      case 'accept_invitation':
+        await ensureEnrollment({
+          course_instance_id: body.course_instance_id,
+          user_id,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+          action_detail: 'invitation_accepted',
+        });
+        break;
+      case 'reject_invitation':
+        await runInTransactionAsync(async () => {
+          const oldEnrollment = await selectOptionalEnrollmentByPendingUid({
+            course_instance_id: body.course_instance_id,
+            pending_uid: uid,
+          });
+
+          if (!oldEnrollment) {
+            throw new Error('Could not find enrollment to reject');
+          }
+          await selectAndLockUserById(user_id);
+          await selectAndLockEnrollmentById(oldEnrollment.id);
+
+          const newEnrollment = await queryRow(
+            sql.reject_invitation,
+            {
+              enrollment_id: oldEnrollment.id,
+            },
+            EnrollmentSchema,
+          );
+
+          await insertAuditEvent({
+            table_name: 'enrollments',
+            action: 'update',
+            action_detail: 'invitation_rejected',
+            subject_user_id: null,
+            course_instance_id: body.course_instance_id,
+            row_id: newEnrollment.id,
+            old_row: oldEnrollment,
+            new_row: newEnrollment,
+            agent_user_id: user_id,
+            agent_authn_user_id: user_id,
+          });
+        });
+        break;
+      default:
+        assertNever(body.__action);
     }
 
     res.redirect(req.originalUrl);

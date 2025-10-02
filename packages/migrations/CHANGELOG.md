@@ -1,5 +1,16 @@
 # @prairielearn/migrations
 
+## 4.0.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/error@2.0.20
+  - @prairielearn/logger@2.0.21
+  - @prairielearn/named-locks@3.0.24
+  - @prairielearn/postgres@4.4.1
+
 ## 4.0.0
 
 ### Major Changes
