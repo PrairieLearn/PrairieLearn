@@ -11,7 +11,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import z from 'zod';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -28,7 +28,7 @@ import type {
 } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
+import { getSelfEnrollmentLinkUrl, getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
@@ -46,6 +46,87 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
+
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
+}
+
+function CopyEnrollmentLinkButton({
+  courseInstance,
+  urlPrefix,
+}: {
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+  urlPrefix: string;
+}) {
+  const [copied, setCopied] = useState<'link' | 'code' | null>(null);
+
+  const selfEnrollmentLink = getSelfEnrollmentLinkUrl({
+    courseInstanceId: courseInstance.id,
+    enrollmentCode: courseInstance.enrollment_code,
+  });
+
+  const fullSelfEnrollmentLink = `${window.location.origin}${urlPrefix}${selfEnrollmentLink}`;
+
+  const handleCopyLink = async () => {
+    await copyToClipboard(fullSelfEnrollmentLink);
+    setCopied('link');
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  const handleCopyCode = async () => {
+    await copyToClipboard(courseInstance.enrollment_code);
+    setCopied('code');
+    setTimeout(() => setCopied(null), 1500);
+  };
+
+  // Show button only if self-enrollment is enabled
+  if (!courseInstance.self_enrollment_enabled) {
+    return null;
+  }
+
+  // If enrollment code is required, show split button
+  if (courseInstance.self_enrollment_use_enrollment_code) {
+    return (
+      <Dropdown>
+        <Button
+          variant="light"
+          disabled={!courseInstance.self_enrollment_enabled}
+          onClick={handleCopyLink}
+        >
+          <i class="bi bi-link-45deg me-2" />
+          Copy enrollment link
+        </Button>
+        <Dropdown.Toggle variant="light" disabled={!courseInstance.self_enrollment_enabled} split />
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={handleCopyLink}>
+            <i class="bi bi-link-45deg me-2" />
+            Copy enrollment link
+          </Dropdown.Item>
+          <Dropdown.Item onClick={handleCopyCode}>
+            <i class="bi bi-key me-2" />
+            Copy enrollment code
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
+    );
+  }
+
+  // If no enrollment code required, show simple button
+  return (
+    <OverlayTrigger
+      overlay={<Tooltip>{copied === 'link' ? 'Copied!' : 'Copy enrollment link'}</Tooltip>}
+    >
+      <Button
+        variant="light"
+        disabled={!courseInstance.self_enrollment_enabled}
+        onClick={handleCopyLink}
+      >
+        <i class="bi bi-link-45deg me-2" />
+        Copy enrollment link
+      </Button>
+    </OverlayTrigger>
+  );
+}
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -305,6 +386,7 @@ function StudentsCard({
                 students={students}
                 table={table}
               />
+              <CopyEnrollmentLinkButton courseInstance={courseInstance} urlPrefix={urlPrefix} />
               {enrollmentManagementEnabled && (
                 <Button
                   variant="light"
