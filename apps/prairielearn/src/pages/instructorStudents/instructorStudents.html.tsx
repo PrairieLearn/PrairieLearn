@@ -95,6 +95,7 @@ function StudentsCard({
 
   useEffect(() => {
     // TODO: This is a workaround to avoid a hydration mismatch.
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
     setIsMediumOrLarger(mediaQuery?.matches ?? true);
   }, [mediaQuery]);
 

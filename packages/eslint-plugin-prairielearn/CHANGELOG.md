@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.2.5
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 2.2.4
 
 ### Patch Changes
