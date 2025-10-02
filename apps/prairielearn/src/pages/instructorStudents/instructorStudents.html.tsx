@@ -11,7 +11,15 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Dropdown,
+  DropdownButton,
+  OverlayTrigger,
+  Tooltip,
+} from 'react-bootstrap';
 import z from 'zod';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -53,30 +61,27 @@ async function copyToClipboard(text: string) {
 
 function CopyEnrollmentLinkButton({
   courseInstance,
-  urlPrefix,
 }: {
   courseInstance: StaffCourseInstanceContext['course_instance'];
-  urlPrefix: string;
 }) {
-  const [copied, setCopied] = useState<'link' | 'code' | null>(null);
-
   const selfEnrollmentLink = getSelfEnrollmentLinkUrl({
     courseInstanceId: courseInstance.id,
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const fullSelfEnrollmentLink = `${window.location.origin}${urlPrefix}${selfEnrollmentLink}`;
-
   const handleCopyLink = async () => {
+    const fullSelfEnrollmentLink = `${window.location.origin}${selfEnrollmentLink}`;
     await copyToClipboard(fullSelfEnrollmentLink);
-    setCopied('link');
-    setTimeout(() => setCopied(null), 1500);
   };
 
   const handleCopyCode = async () => {
-    await copyToClipboard(courseInstance.enrollment_code);
-    setCopied('code');
-    setTimeout(() => setCopied(null), 1500);
+    const enrollmentCodeDashed =
+      courseInstance.enrollment_code.slice(0, 3) +
+      '-' +
+      courseInstance.enrollment_code.slice(3, 6) +
+      '-' +
+      courseInstance.enrollment_code.slice(6);
+    await copyToClipboard(enrollmentCodeDashed);
   };
 
   // Show button only if self-enrollment is enabled
@@ -87,44 +92,34 @@ function CopyEnrollmentLinkButton({
   // If enrollment code is required, show split button
   if (courseInstance.self_enrollment_use_enrollment_code) {
     return (
-      <Dropdown>
-        <Button
-          variant="light"
-          disabled={!courseInstance.self_enrollment_enabled}
-          onClick={handleCopyLink}
-        >
+      <DropdownButton
+        as={ButtonGroup}
+        title="Copy enrollment details"
+        disabled={!courseInstance.self_enrollment_enabled}
+        variant="light"
+      >
+        <Dropdown.Item onClick={handleCopyCode}>
+          <i class="bi bi-key me-2" />
+          Copy enrollment code
+        </Dropdown.Item>
+        <Dropdown.Item onClick={handleCopyLink}>
           <i class="bi bi-link-45deg me-2" />
           Copy enrollment link
-        </Button>
-        <Dropdown.Toggle variant="light" disabled={!courseInstance.self_enrollment_enabled} split />
-        <Dropdown.Menu>
-          <Dropdown.Item onClick={handleCopyLink}>
-            <i class="bi bi-link-45deg me-2" />
-            Copy enrollment link
-          </Dropdown.Item>
-          <Dropdown.Item onClick={handleCopyCode}>
-            <i class="bi bi-key me-2" />
-            Copy enrollment code
-          </Dropdown.Item>
-        </Dropdown.Menu>
-      </Dropdown>
+        </Dropdown.Item>
+      </DropdownButton>
     );
   }
 
   // If no enrollment code required, show simple button
   return (
-    <OverlayTrigger
-      overlay={<Tooltip>{copied === 'link' ? 'Copied!' : 'Copy enrollment link'}</Tooltip>}
+    <Button
+      variant="light"
+      disabled={!courseInstance.self_enrollment_enabled}
+      onClick={handleCopyLink}
     >
-      <Button
-        variant="light"
-        disabled={!courseInstance.self_enrollment_enabled}
-        onClick={handleCopyLink}
-      >
-        <i class="bi bi-link-45deg me-2" />
-        Copy enrollment link
-      </Button>
-    </OverlayTrigger>
+      <i class="bi bi-link-45deg me-2" />
+      Copy enrollment link
+    </Button>
   );
 }
 
@@ -386,7 +381,7 @@ function StudentsCard({
                 students={students}
                 table={table}
               />
-              <CopyEnrollmentLinkButton courseInstance={courseInstance} urlPrefix={urlPrefix} />
+              <CopyEnrollmentLinkButton courseInstance={courseInstance} />
               {enrollmentManagementEnabled && (
                 <Button
                   variant="light"
