@@ -645,8 +645,8 @@ export default tseslint.config([
     // TODO: enable this rule for all files.
     files: [
       'apps/prairielearn/src/middlewares/**/*.ts',
-      'apps/prairielearn/assets/scripts/**/*.ts',
-      'apps/prairielearn/*.config.ts',
+      'apps/prairielearn/vite.config.ts',
+      'apps/prairielearn/vitest.config.ts',
     ],
     rules: {
       '@typescript-eslint/no-unnecessary-condition': 'off',

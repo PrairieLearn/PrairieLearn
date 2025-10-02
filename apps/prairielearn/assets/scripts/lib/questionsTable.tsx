@@ -44,7 +44,14 @@ onDocumentReady(() => {
     qidPrefix,
     urlPrefix,
     plainUrlPrefix,
-  } = decodeData('questions-table-data');
+  } = decodeData<{
+    course_instance_ids: string[];
+    showAddQuestionButton: boolean;
+    showAiGenerateQuestionButton: boolean;
+    qidPrefix: string | undefined;
+    urlPrefix: string;
+    plainUrlPrefix: string;
+  }>('questions-table-data');
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];

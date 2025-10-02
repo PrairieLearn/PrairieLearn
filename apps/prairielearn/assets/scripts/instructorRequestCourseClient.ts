@@ -1,5 +1,7 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
+import type { Lti13CourseRequestInput } from '../../src/pages/instructorRequestCourse/instructorRequestCourse.types.js';
+
 onDocumentReady(() => {
   document.querySelectorAll<HTMLInputElement>('input[name=cr-role]').forEach((radio) =>
     radio.addEventListener('change', () => {
@@ -35,7 +37,7 @@ onDocumentReady(() => {
       }
     });
 
-  const courseRequestLti13Info = decodeData('course-request-lti13-info');
+  const courseRequestLti13Info = decodeData<Lti13CourseRequestInput>('course-request-lti13-info');
   if (courseRequestLti13Info !== null) {
     const lti13Modal = window.bootstrap.Modal.getOrCreateInstance(
       '#fill-course-request-lti13-modal',
@@ -51,10 +53,12 @@ onDocumentReady(() => {
       if (!courseRequestForm) return;
 
       const formElements = courseRequestForm.elements;
-      for (const elementName of Object.keys(courseRequestLti13Info)) {
-        const input = formElements.namedItem(elementName) as HTMLInputElement;
+      for (const elementName of Object.keys(
+        courseRequestLti13Info,
+      ) as (keyof Lti13CourseRequestInput)[]) {
+        const input = formElements.namedItem(elementName);
         if (input) {
-          input.value = courseRequestLti13Info[elementName];
+          (input as HTMLInputElement).value = courseRequestLti13Info[elementName];
         }
       }
 

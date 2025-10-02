@@ -37,7 +37,7 @@ onDocumentReady(() => {
     readMeExpanded = !readMeExpanded;
     expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
     revealFade?.classList.toggle('d-none');
-    markdownBody?.classList.toggle('max-height');
+    markdownBody.classList.toggle('max-height');
   }
 
   expandButton?.addEventListener('click', toggleExpandReadMe);
@@ -57,16 +57,16 @@ onDocumentReady(() => {
   });
 
   document.addEventListener('show.bs.collapse', (e) => {
-    if ((e.target as HTMLElement)?.classList.contains('js-collapsible-card-body')) {
-      (e.target as HTMLElement)
+    if ((e.target as HTMLElement | null)!.classList.contains('js-collapsible-card-body')) {
+      (e.target as HTMLElement | null)!
         .closest('.card')
         ?.querySelector<HTMLDivElement>('.collapsible-card-header')
         ?.classList.remove('border-bottom-0');
     }
   });
   document.addEventListener('hidden.bs.collapse', (e) => {
-    if ((e.target as HTMLElement)?.classList.contains('js-collapsible-card-body')) {
-      (e.target as HTMLElement)
+    if ((e.target as HTMLElement | null)!.classList.contains('js-collapsible-card-body')) {
+      (e.target as HTMLElement | null)!
         .closest('.card')
         ?.querySelector<HTMLDivElement>('.collapsible-card-header')
         ?.classList.add('border-bottom-0');
@@ -86,7 +86,7 @@ function externalGradingLiveUpdate() {
 
   // Render initial grading states into the DOM
   let gradingPending = false;
-  document.querySelectorAll<HTMLElement>('[id^=submission-]').forEach((elem) => {
+  for (const elem of document.querySelectorAll<HTMLElement>('[id^=submission-')) {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
@@ -97,7 +97,7 @@ function externalGradingLiveUpdate() {
     if (status !== 'graded' && status !== 'none' && status !== 'canceled') {
       gradingPending = true;
     }
-  });
+  }
 
   // If everything has been graded or was canceled, don't even open a socket
   if (!gradingPending) return;
