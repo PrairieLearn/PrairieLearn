@@ -428,6 +428,8 @@ export async function selectAndLockEnrollmentById(id: string) {
  * This function updates the enrollment status without any additional WHERE clauses
  * for course_instance_id or current status.
  *
+ * If the enrollment is not in the required status, this will throw an error.
+ *
  * The function will lock the enrollment row and create an audit event based on the status change.
  */
 export async function setEnrollmentStatus({
@@ -435,16 +437,24 @@ export async function setEnrollmentStatus({
   agent_user_id,
   agent_authn_user_id,
   status,
+  required_status,
 }: {
   enrollment_id: string;
   agent_user_id: string | null;
   agent_authn_user_id: string | null;
   status: 'rejected' | 'blocked' | 'removed';
+  required_status: 'invited' | 'joined';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
     if (oldEnrollment.user_id) {
       await selectAndLockUserById(oldEnrollment.user_id);
+    }
+
+    if (oldEnrollment.status !== required_status) {
+      throw new Error(
+        `Enrollment is not in the required status. Expected ${required_status}, but got ${oldEnrollment.status}`,
+      );
     }
 
     const newEnrollment = await queryRow(

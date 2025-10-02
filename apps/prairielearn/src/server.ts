@@ -629,8 +629,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
-    // TODO:
-    // (await import('./middlewares/requireEnrollmentCode.js')).default,
+    (await import('./middlewares/requireEnrollmentCode.js')).default,
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     await enterpriseOnly(

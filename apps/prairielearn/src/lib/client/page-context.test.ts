@@ -172,6 +172,8 @@ describe('getCourseInstanceContext', () => {
       id: '1',
       long_name: 'Example Student Course Instance',
       short_name: 'Example Student Course',
+      self_enrollment_enabled: false,
+      self_enrollment_use_enrollment_code: false,
     },
     course: {
       deleted_at: null,

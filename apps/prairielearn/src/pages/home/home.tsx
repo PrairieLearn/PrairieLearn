@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -157,13 +157,7 @@ router.post(
           throw new Error('Could not find enrollment to reject');
         }
 
-        const hasAccess = await callRow(
-          'check_course_instance_access',
-          [user_id, body.course_instance_id, res.locals.req_date],
-          z.boolean(),
-        );
-
-        if (!hasAccess) {
+        if (enrollment.status !== 'invited') {
           throw new Error('User does not have access to the course instance');
         }
 
@@ -172,6 +166,7 @@ router.post(
           status: 'rejected',
           agent_user_id: user_id,
           agent_authn_user_id: user_id,
+          required_status: 'invited',
         });
         break;
       }
@@ -190,6 +185,7 @@ router.post(
           status: 'removed',
           agent_user_id: user_id,
           agent_authn_user_id: user_id,
+          required_status: 'joined',
         });
         break;
       }
