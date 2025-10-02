@@ -313,7 +313,7 @@ function EmptyStateCards({
           </div>
         </div>
       </div>
-      <EnrollmentCodeModal show={show} csrfToken={csrfToken} onHide={() => setShow(false)} />
+      <EnrollmentCodeModal show={show} onHide={() => setShow(false)} />
     </>
   );
 }

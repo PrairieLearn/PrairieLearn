@@ -14,10 +14,9 @@ interface EnrollmentCodeForm {
 interface EnrollmentCodeModalProps {
   show: boolean;
   onHide: () => void;
-  csrfToken: string;
 }
 
-export function EnrollmentCodeModal({ show, onHide, csrfToken }: EnrollmentCodeModalProps) {
+export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
@@ -87,9 +86,6 @@ export function EnrollmentCodeModal({ show, onHide, csrfToken }: EnrollmentCodeM
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onSubmit)}>
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        <input type="hidden" name="__action" value="validate_code" />
-        <input type="hidden" name="enrollment_code" id="enrollment_code_hidden" />
         <Modal.Body>
           <EnrollmentCodeInput
             register={register}

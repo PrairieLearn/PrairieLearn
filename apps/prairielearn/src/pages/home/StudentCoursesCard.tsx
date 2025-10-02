@@ -157,7 +157,6 @@ export function StudentCoursesCard({
 
       <EnrollmentCodeModal
         show={showEnrollmentCodeModal}
-        csrfToken={csrfToken}
         onHide={() => setShowEnrollmentCodeModal(false)}
       />
 

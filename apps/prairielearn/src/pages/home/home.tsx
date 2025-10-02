@@ -13,10 +13,7 @@ import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { assertNever } from '../../lib/types.js';
-import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { selectInstanceAndCourseAndInstitution } from '../../models/course-instances.js';
 import {
-  ensureCheckedEnrollment,
   ensureEnrollment,
   selectOptionalEnrollmentByPendingUid,
   selectOptionalEnrollmentByUid,
@@ -127,7 +124,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll', 'enroll']),
+      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
@@ -186,25 +183,6 @@ router.post(
           agent_user_id: user_id,
           agent_authn_user_id: user_id,
           required_status: 'joined',
-        });
-        break;
-      }
-      case 'enroll': {
-        const { institution, course, course_instance } =
-          await selectInstanceAndCourseAndInstitution({
-            course_instance_id: body.course_instance_id,
-          });
-
-        // Abuse the middleware to authorize the user for the course instance.
-        req.params.course_instance_id = course_instance.id;
-        await authzCourseOrInstance(req, res);
-
-        await ensureCheckedEnrollment({
-          institution,
-          course,
-          course_instance,
-          authz_data: res.locals.authz_data,
-          action_detail: 'explicit_joined',
         });
         break;
       }
