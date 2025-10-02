@@ -602,90 +602,143 @@ function CoursePermissionButton({
   }
 
   const popoverContent = html`
-    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
+    <form
+      name="course-content-access-form-${courseUser.user.user_id}"
+      method="POST"
+      style="width: 35em; max-height: 100vh;"
+      class="overflow-auto"
+    >
       <input type="hidden" name="__action" value="course_permissions_update_role" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
-      <div class="list-group overflow-auto" role="group" style="width: 35em; max-height: 100vh;">
-        <div class="list-group-item disabled">
-          <p>
-            Users with course content access can see aggregate student data (e.g., mean scores), but
-            cannot see the names or scores of individual students without also having student data
-            access to a particular course instance.
+      <p>
+        Users with course content access can see aggregate student data (e.g., mean scores), but
+        cannot see the names or scores of individual students without also having student data
+        access to a particular course instance.
+      </p>
+      <div class="list-group" role="group">
+        <div class="list-group-item">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="course_role"
+              value="None"
+              id="course-permission-input-${courseUser.user.user_id}-None"
+              ${currentRole === 'None' ? 'checked' : ''}
+              aria-describedby="course-permission-help-${courseUser.user.user_id}-None"
+            />
+            <label
+              class="form-check-label"
+              for="course-permission-input-${courseUser.user.user_id}-None"
+            >
+              None
+            </label>
+          </div>
+          <p class="small" id="course-permission-help-${courseUser.user.user_id}-None">
+            Cannot see any course content.
           </p>
         </div>
-        <button
-          class="list-group-item list-group-item-action ${currentRole === 'None' ? 'active' : ''}"
-          type="submit"
-          name="course_role"
-          value="None"
-        >
-          <div class="text-wrap">
-            <h6>None</h6>
-            <p class="small">Cannot see any course content.</p>
+        <div class="list-group-item">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="course_role"
+              value="Previewer"
+              id="course-permission-input-${courseUser.user.user_id}-Previewer"
+              ${currentRole === 'Previewer' ? 'checked' : ''}
+              aria-describedby="course-permission-help-${courseUser.user.user_id}-Previewer"
+            />
+            <label
+              class="form-check-label"
+              for="course-permission-input-${courseUser.user.user_id}-Previewer"
+            >
+              Previewer
+            </label>
           </div>
-        </button>
-        <button
-          class="list-group-item list-group-item-action ${currentRole === 'Previewer'
-            ? 'active'
-            : ''}"
-          type="submit"
-          name="course_role"
-          value="Previewer"
-        >
-          <div class="text-wrap">
-            <h6>Previewer</h6>
-            <p class="small">
-              Can see all questions, course instances, and assessments. Can see but not close
-              issues. Cannot see any code or configuration files.
-            </p>
+          <p class="small" id="course-permission-help-${courseUser.user.user_id}-Previewer">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Cannot see any code or configuration files.
+          </p>
+        </div>
+        <div class="list-group-item">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="course_role"
+              value="Viewer"
+              id="course-permission-input-${courseUser.user.user_id}-Viewer"
+              ${currentRole === 'Viewer' ? 'checked' : ''}
+              aria-describedby="course-permission-help-${courseUser.user.user_id}-Viewer"
+            />
+            <label
+              class="form-check-label"
+              for="course-permission-input-${courseUser.user.user_id}-Viewer"
+            >
+              Viewer
+            </label>
           </div>
-        </button>
-        <button
-          class="list-group-item list-group-item-action ${currentRole === 'Viewer' ? 'active' : ''}"
-          type="submit"
-          name="course_role"
-          value="Viewer"
-        >
-          <div class="text-wrap">
-            <h6>Viewer</h6>
-            <p class="small">
-              Can see all questions, course instances, and assessments. Can see but not close
-              issues. Can see and download but not edit all code and configuration files.
-            </p>
+          <p class="small" id="course-permission-help-${courseUser.user.user_id}-Viewer">
+            Can see all questions, course instances, and assessments. Can see but not close issues.
+            Can see and download but not edit all code and configuration files.
+          </p>
+        </div>
+        <div class="list-group-item">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="course_role"
+              value="Editor"
+              id="course-permission-input-${courseUser.user.user_id}-Editor"
+              ${currentRole === 'Editor' ? 'checked' : ''}
+              aria-describedby="course-permission-help-${courseUser.user.user_id}-Editor"
+            />
+            <label
+              class="form-check-label"
+              for="course-permission-input-${courseUser.user.user_id}-Editor"
+            >
+              Editor
+            </label>
           </div>
-        </button>
-        <button
-          class="list-group-item list-group-item-action ${currentRole === 'Editor' ? 'active' : ''}"
-          type="submit"
-          name="course_role"
-          value="Editor"
-        >
-          <div class="text-wrap">
-            <h6>Editor</h6>
-            <p class="small">
-              Can see all questions, course instances, and assessments. Can see and close issues.
-              Can see, download, and edit all code and configuration files. Can sync course files to
-              and from the GitHub repository.
-            </p>
+          <p class="small" id="course-permission-help-${courseUser.user.user_id}-Editor">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository.
+          </p>
+        </div>
+        <div class="list-group-item">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="course_role"
+              value="Owner"
+              id="course-permission-input-${courseUser.user.user_id}-Owner"
+              ${currentRole === 'Owner' ? 'checked' : ''}
+              aria-describedby="course-permission-help-${courseUser.user.user_id}-Owner"
+            />
+            <label
+              class="form-check-label"
+              for="course-permission-input-${courseUser.user.user_id}-Owner"
+            >
+              Owner
+            </label>
           </div>
-        </button>
-        <button
-          class="list-group-item list-group-item-action ${currentRole === 'Owner' ? 'active' : ''}"
-          type="submit"
-          name="course_role"
-          value="Owner"
-        >
-          <div class="text-wrap">
-            <h6>Owner</h6>
-            <p class="small">
-              Can see all questions, course instances, and assessments. Can see and close issues.
-              Can see, download, and edit all code and configuration files. Can sync course files to
-              and from the GitHub repository. Can add and remove course staff and can change access
-              roles.
-            </p>
-          </div>
-        </button>
+          <p class="small" id="course-permission-help-${courseUser.user.user_id}-Owner">
+            Can see all questions, course instances, and assessments. Can see and close issues. Can
+            see, download, and edit all code and configuration files. Can sync course files to and
+            from the GitHub repository. Can add and remove course staff and can change access roles.
+          </p>
+        </div>
+      </div>
+      <div class="mt-3">
+        <div class="text-end">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+          <button type="submit" class="btn btn-primary">Change access</button>
+        </div>
       </div>
     </form>
   `;
@@ -700,7 +753,7 @@ function CoursePermissionButton({
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
-        data-bs-custom-class="popover-no-padding"
+        data-bs-title="Change course content access"
         data-bs-content="${escapeHtml(popoverContent)}"
         aria-haspopup="true"
         aria-expanded="false"
