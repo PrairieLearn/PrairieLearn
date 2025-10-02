@@ -192,8 +192,16 @@ export function getUniqueNames({
  * `defaultValue` may be either a value to compare directly with `===`, or a function
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
+ *
+ * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
+ * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
+export function propertyValueWithDefault(
+  existingValue: any,
+  newValue: any,
+  defaultValue: any,
+  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
+) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
@@ -201,10 +209,17 @@ export function propertyValueWithDefault(existingValue: any, newValue: any, defa
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
 
+  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
+  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
+  if (writeFalse) {
+    return false;
+  }
+
   if (existingValue === undefined) {
     if (!isNewDefault) {
       return newValue;
     }
+    return undefined;
   } else {
     if (!isExistingDefault && isNewDefault) {
       return undefined;

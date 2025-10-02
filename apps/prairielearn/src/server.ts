@@ -2043,28 +2043,34 @@ export async function initExpress(): Promise<Express> {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
-let server: http.Server | https.Server;
+let server: http.Server | https.Server | undefined;
 let app: express.Express | undefined;
 
 export async function startServer(app: express.Express) {
-  if (config.serverType === 'https') {
-    const options: https.ServerOptions = {};
-    if (config.sslKeyFile) {
-      options.key = await fs.promises.readFile(config.sslKeyFile);
+  switch (config.serverType) {
+    case 'https': {
+      const options: https.ServerOptions = {};
+      if (config.sslKeyFile) {
+        options.key = await fs.promises.readFile(config.sslKeyFile);
+      }
+      if (config.sslCertificateFile) {
+        options.cert = await fs.promises.readFile(config.sslCertificateFile);
+      }
+      if (config.sslCAFile) {
+        options.ca = [await fs.promises.readFile(config.sslCAFile)];
+      }
+      server = https.createServer(options, app);
+      logger.verbose('server listening to HTTPS on port ' + config.serverPort);
+      break;
     }
-    if (config.sslCertificateFile) {
-      options.cert = await fs.promises.readFile(config.sslCertificateFile);
+    case 'http': {
+      server = http.createServer(app);
+      logger.verbose('server listening to HTTP on port ' + config.serverPort);
+      break;
     }
-    if (config.sslCAFile) {
-      options.ca = [await fs.promises.readFile(config.sslCAFile)];
+    default: {
+      assertNever(config.serverType);
     }
-    server = https.createServer(options, app);
-    logger.verbose('server listening to HTTPS on port ' + config.serverPort);
-  } else if (config.serverType === 'http') {
-    server = http.createServer(app);
-    logger.verbose('server listening to HTTP on port ' + config.serverPort);
-  } else {
-    assertNever(config.serverType);
   }
 
   // Capture metrics about the server, including the number of active connections
@@ -2076,8 +2082,9 @@ export async function startServer(app: express.Express) {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  // Hack to get us running in Bun, which doesn't currently support `getConnections`:
+  // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
   // https://github.com/oven-sh/bun/issues/4459
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (server.getConnections) {
     opentelemetry.createObservableValueGauges(
       meter,
@@ -2088,7 +2095,7 @@ export async function startServer(app: express.Express) {
       },
       // @ts-expect-error TODO: type correctly
       () => {
-        return util.promisify(server.getConnections.bind(server))();
+        return util.promisify(server!.getConnections.bind(server))();
       },
     );
   }
@@ -2112,14 +2119,14 @@ export async function startServer(app: express.Express) {
   await new Promise((resolve, reject) => {
     let done = false;
 
-    server.on('error', (err) => {
+    server!.on('error', (err) => {
       if (!done) {
         done = true;
         reject(err);
       }
     });
 
-    server.on('listening', () => {
+    server!.on('listening', () => {
       if (!done) {
         done = true;
         resolve(null);

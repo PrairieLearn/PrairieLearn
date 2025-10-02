@@ -644,13 +644,8 @@ export default tseslint.config([
   {
     // TODO: enable this rule for all files.
     files: [
-      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
-      'apps/prairielearn/src/components/**/*.{ts,tsx}',
-      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
-      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
-      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
-      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
-      'apps/prairielearn/src/server.ts',
+      'apps/prairielearn/src/middlewares/**/*.ts',
+      'apps/prairielearn/assets/scripts/**/*.ts',
       'apps/prairielearn/*.config.ts',
     ],
     rules: {

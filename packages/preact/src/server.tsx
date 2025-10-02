@@ -1,6 +1,5 @@
 import clsx from 'clsx';
 import { isFragment, isValidElement } from 'preact/compat';
-import { render } from 'preact-render-to-string/jsx';
 import superjson from 'superjson';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -37,7 +36,7 @@ function escapeJsonForHtml(value: any): string {
  * @returns An HTML string containing the rendered content.
  */
 export function renderHtmlDocument(content: VNode) {
-  return `<!doctype html>\n${render(content, {}, { pretty: true, jsx: false })}`;
+  return `<!doctype html>\n${renderHtml(content)}`;
 }
 
 interface HydrateProps {

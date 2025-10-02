@@ -14,6 +14,7 @@ import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndW
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
+  type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
   IdSchema,
@@ -111,9 +112,10 @@ export function InstructorAssessmentInstance({
           : html`${resLocals.instance_user.name}`}
       </h1>
       ${ResetQuestionVariantsModal({
+        assessment: resLocals.assessment,
         csrfToken: resLocals.__csrf_token,
-        groupWork: resLocals.assessment.group_work,
       })}
+      ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
           authzData={resLocals.authz_data}
@@ -463,7 +465,9 @@ export function InstructorAssessmentInstance({
                                 <button
                                   class="dropdown-item"
                                   data-bs-toggle="modal"
-                                  data-bs-target="#resetQuestionVariantsModal"
+                                  data-bs-target="${resLocals.assessment.type === 'Exam'
+                                    ? '#examResetNotSupportedModal'
+                                    : '#resetQuestionVariantsModal'}"
                                   data-instance-question-id="${instance_question.id}"
                                 >
                                   Reset question variants
@@ -798,10 +802,10 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
 
 function ResetQuestionVariantsModal({
   csrfToken,
-  groupWork,
+  assessment,
 }: {
   csrfToken: string;
-  groupWork: boolean;
+  assessment: Assessment;
 }) {
   return Modal({
     id: 'resetQuestionVariantsModal',
@@ -809,12 +813,12 @@ function ResetQuestionVariantsModal({
     body: html`
       <p>
         Are your sure you want to reset all current variants of this question for this
-        ${groupWork ? 'group' : 'student'}?
+        ${assessment.group_work ? 'group' : 'student'}?
         <strong>All ungraded attempts will be lost.</strong>
       </p>
       <p>
-        This ${groupWork ? 'group' : 'student'} will receive a new variant the next time they view
-        this question.
+        This ${assessment.group_work ? 'group' : 'student'} will receive a new variant the next time
+        they view this question.
       </p>
     `,
     footer: html`
@@ -823,6 +827,23 @@ function ResetQuestionVariantsModal({
       <input type="hidden" name="unsafe_instance_question_id" class="js-instance-question-id" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-danger">Reset question variants</button>
+    `,
+  });
+}
+
+function ExamResetNotSupportedModal({ assessment }: { assessment: Assessment }) {
+  return Modal({
+    id: 'examResetNotSupportedModal',
+    title: 'Not supported',
+    body: html`
+      <p>Resetting question variants is not supported for Exam assessments.</p>
+      <p class="mb-0">
+        Consider alternative options, such as deleting the assessment instance to allow the
+        ${assessment.group_work ? 'group' : 'student'} to start over.
+      </p>
+    `,
+    footer: html`
+      <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
     `,
   });
 }

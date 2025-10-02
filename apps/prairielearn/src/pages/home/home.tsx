@@ -12,6 +12,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { assertNever } from '../../lib/types.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { selectInstanceAndCourseAndInstitution } from '../../models/course-instances.js';
 import {
@@ -135,72 +136,85 @@ router.post(
       authn_user: { uid, user_id },
     } = getPageContext(res.locals, { withAuthzData: false });
 
-    if (body.__action === 'accept_invitation') {
-      await ensureEnrollment({
-        course_instance_id: body.course_instance_id,
-        user_id,
-        agent_user_id: user_id,
-        agent_authn_user_id: user_id,
-        action_detail: 'invitation_accepted',
-      });
-    } else if (body.__action === 'reject_invitation') {
-      const enrollment = await selectOptionalEnrollmentByPendingUid({
-        course_instance_id: body.course_instance_id,
-        pending_uid: uid,
-      });
-
-      if (!enrollment) {
-        throw new Error('Could not find enrollment to reject');
+    switch (body.__action) {
+      case 'accept_invitation': {
+        await ensureEnrollment({
+          course_instance_id: body.course_instance_id,
+          user_id,
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+          action_detail: 'invitation_accepted',
+        });
+        break;
       }
+      case 'reject_invitation': {
+        const enrollment = await selectOptionalEnrollmentByPendingUid({
+          course_instance_id: body.course_instance_id,
+          pending_uid: uid,
+        });
 
-      const hasAccess = await callRow(
-        'check_course_instance_access',
-        [user_id, body.course_instance_id, res.locals.req_date],
-        z.boolean(),
-      );
+        if (!enrollment) {
+          throw new Error('Could not find enrollment to reject');
+        }
 
-      if (!hasAccess) {
-        throw new Error('User does not have access to the course instance');
+        const hasAccess = await callRow(
+          'check_course_instance_access',
+          [user_id, body.course_instance_id, res.locals.req_date],
+          z.boolean(),
+        );
+
+        if (!hasAccess) {
+          throw new Error('User does not have access to the course instance');
+        }
+
+        await setEnrollmentStatus({
+          enrollment_id: enrollment.id,
+          status: 'rejected',
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+        });
+        break;
       }
+      case 'unenroll': {
+        const enrollment = await selectOptionalEnrollmentByUid({
+          course_instance_id: body.course_instance_id,
+          uid,
+        });
 
-      await setEnrollmentStatus({
-        enrollment_id: enrollment.id,
-        status: 'rejected',
-        agent_user_id: user_id,
-        agent_authn_user_id: user_id,
-      });
-    } else if (body.__action === 'unenroll') {
-      const enrollment = await selectOptionalEnrollmentByUid({
-        course_instance_id: body.course_instance_id,
-        uid,
-      });
+        if (!enrollment) {
+          throw new Error('Could not find enrollment to unenroll');
+        }
 
-      if (!enrollment) {
-        throw new Error('Could not find enrollment to unenroll');
+        await setEnrollmentStatus({
+          enrollment_id: enrollment.id,
+          status: 'removed',
+          agent_user_id: user_id,
+          agent_authn_user_id: user_id,
+        });
+        break;
       }
+      case 'enroll': {
+        const { institution, course, course_instance } =
+          await selectInstanceAndCourseAndInstitution({
+            course_instance_id: body.course_instance_id,
+          });
 
-      await setEnrollmentStatus({
-        enrollment_id: enrollment.id,
-        status: 'removed',
-        agent_user_id: user_id,
-        agent_authn_user_id: user_id,
-      });
-    } else if (body.__action === 'enroll') {
-      const { institution, course, course_instance } = await selectInstanceAndCourseAndInstitution({
-        course_instance_id: body.course_instance_id,
-      });
+        // Abuse the middleware to authorize the user for the course instance.
+        req.params.course_instance_id = course_instance.id;
+        await authzCourseOrInstance(req, res);
 
-      // Abuse the middleware to authorize the user for the course instance.
-      req.params.course_instance_id = course_instance.id;
-      await authzCourseOrInstance(req, res);
-
-      await ensureCheckedEnrollment({
-        institution,
-        course,
-        course_instance,
-        authz_data: res.locals.authz_data,
-        action_detail: 'explicit_joined',
-      });
+        await ensureCheckedEnrollment({
+          institution,
+          course,
+          course_instance,
+          authz_data: res.locals.authz_data,
+          action_detail: 'explicit_joined',
+        });
+        break;
+      }
+      default: {
+        assertNever(body.__action);
+      }
     }
 
     res.redirect(req.originalUrl);

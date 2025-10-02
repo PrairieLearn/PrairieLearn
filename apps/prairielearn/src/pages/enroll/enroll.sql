@@ -54,7 +54,6 @@ FROM
 WHERE
   ci.id = $course_instance_id;
 
-
 -- BLOCK lti_course_instance_lookup
 SELECT
   plc.short_name AS plc_short_name,
