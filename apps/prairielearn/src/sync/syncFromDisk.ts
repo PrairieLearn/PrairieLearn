@@ -147,7 +147,7 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
-    await timed('Synced authors', () => syncAuthors.sync(courseId, courseData, questionIds));
+    await timed('Synced authors', () => syncAuthors.sync(courseData, questionIds));
     // We need to perform sharing validation at exactly this moment. We can only
     // do this once we have a dictionary of question IDs, as this process will also
     // populate any shared questions in that dictionary. We also need to do it before

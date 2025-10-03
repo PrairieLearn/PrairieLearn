@@ -35,11 +35,7 @@ async function resolveSharingNames(courseData: CourseData) {
   return sharingNameLookupTable;
 }
 
-export async function sync(
-  courseId: string,
-  courseData: CourseData,
-  questionIds: Record<string, string>,
-) {
+export async function sync(courseData: CourseData, questionIds: Record<string, string>) {
   if (infofile.hasErrors(courseData.course)) {
     return;
   }
