@@ -131,6 +131,11 @@ mjx-container {
   max-width: 90vw;
 }
 
+.popover-overflow {
+  max-height: 90vh;
+  overflow: auto;
+}
+
 /**
  * Identical to the variables for `btn-light`, except with a transparent
  * background and border in the default state. This style is useful for

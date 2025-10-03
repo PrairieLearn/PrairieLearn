@@ -602,12 +602,7 @@ function CoursePermissionButton({
   }
 
   const popoverContent = html`
-    <form
-      name="course-content-access-form-${courseUser.user.user_id}"
-      method="POST"
-      style="max-height: 100vh;"
-      class="overflow-auto"
-    >
+    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
       <input type="hidden" name="__action" value="course_permissions_update_role" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
@@ -734,6 +729,7 @@ function CoursePermissionButton({
         data-bs-container="body"
         data-bs-html="true"
         data-bs-placement="auto"
+        data-bs-custom-class="popover-overflow"
         data-bs-title="Change course content access"
         data-bs-content="${escapeHtml(popoverContent)}"
         aria-haspopup="true"
