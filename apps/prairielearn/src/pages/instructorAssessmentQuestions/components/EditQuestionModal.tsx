@@ -3,6 +3,7 @@ import { Modal } from 'react-bootstrap';
 import { useState } from '@prairielearn/preact-cjs/hooks';
 
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
+import type { ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
 
 export function EditQuestionModal({
   question,
@@ -13,7 +14,7 @@ export function EditQuestionModal({
   questionDisplayName,
   addQuestion,
 }: {
-  question: StaffAssessmentQuestionRow;
+  question: ZoneQuestionJson | QuestionAlternativeJson;
   showEditModal: boolean;
   onHide: () => void;
   handleUpdateQuestion: (updatedQuestion: any, gradingMethod?: 'auto' | 'manual') => void;

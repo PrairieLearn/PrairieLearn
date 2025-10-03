@@ -17,6 +17,11 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+import {
+  ZoneQuestionJsonSchema,
+  QuestionAlternativeJsonSchema,
+  ZoneAssessmentJsonSchema,
+} from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
 
@@ -36,12 +41,19 @@ const ZoneQuestionAlternativeSchema = z.object({
 // Schema for a single question (without alternatives)
 const ZoneQuestionSingleSchema = z.object({
   id: z.string(),
+  comment: z.string().optional(),
+  points: z.union([z.number(), z.array(z.number())]).nullable(),
   autoPoints: z.union([z.number(), z.array(z.number())]).nullable(),
+  maxPoints: z.union([z.number(), z.array(z.number())]).nullable(),
   maxAutoPoints: z.number().nullable(),
   manualPoints: z.number().nullable(),
+  forceMaxPoints: z.boolean().nullable(),
   triesPerVariant: z.number().nullable(),
   advanceScorePerc: z.number().nullable(),
   gradeRateMinutes: z.number().nullable(),
+  allowRealTimeGrading: z.boolean().nullable(),
+  canSubmit: z.array(z.string()).nullable(),
+  canView: z.array(z.string()).nullable(),
 });
 
 // Schema for an alternative group
@@ -55,11 +67,15 @@ const ZoneQuestionSchema = z.union([ZoneQuestionSingleSchema, ZoneQuestionAltern
 
 const ZoneSchema = z.object({
   title: z.string().nullable(),
+  comment: z.string().optional(),
   maxPoints: z.number().nullable(),
   numberChoose: z.number().nullable(),
   bestQuestions: z.number().nullable(),
   advanceScorePerc: z.number().nullable(),
   gradeRateMinutes: z.number().nullable(),
+  allowRealTimeGrading: z.boolean().nullable(),
+  canSubmit: z.array(z.string()).nullable(),
+  canView: z.array(z.string()).nullable(),
   questions: z.array(ZoneQuestionSchema),
 });
 
@@ -76,7 +92,7 @@ const SaveQuestionsSchema = z.object({
         throw new Error('Invalid JSON in zones field');
       }
     })
-    .pipe(z.array(ZoneSchema)),
+    .pipe(z.array(ZoneAssessmentJsonSchema)),
 });
 
 router.get(
@@ -189,7 +205,16 @@ router.post(
           zone.gradeRateMinutes,
           null,
         );
-
+        filteredZone.canSubmit = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canSubmit,
+          zone.canSubmit,
+          (v) => !v || v.length === 0,
+        );
+        filteredZone.canView = propertyValueWithDefault(
+          assessmentInfo.zones?.find((z: any) => z.title === zone.title)?.canView,
+          zone.canView,
+          (v) => !v || v.length === 0,
+        );
         // Filter questions/alternative groups
         filteredZone.questions = zone.questions.map((question) => {
           // Check if this is a single question or an alternative group
@@ -204,7 +229,7 @@ router.post(
             );
 
             // Filter alternatives
-            filteredQuestion.alternatives = question.alternatives.map((alternative) => {
+            filteredQuestion.alternatives = question.alternatives?.map((alternative) => {
               const filteredAlternative: any = {
                 id: alternative.id,
               };
@@ -249,11 +274,32 @@ router.post(
             const filteredQuestion: any = {
               id: question.id,
             };
-
+            filteredQuestion.comment = propertyValueWithDefault(undefined, question.comment, null);
+            filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
+              undefined,
+              question.allowRealTimeGrading,
+              null,
+            );
+            filteredQuestion.canSubmit = propertyValueWithDefault(
+              undefined,
+              question.canSubmit,
+              (v) => !v || v.length === 0,
+            );
+            filteredQuestion.canView = propertyValueWithDefault(
+              undefined,
+              question.canView,
+              (v) => !v || v.length === 0,
+            );
+            filteredQuestion.points = propertyValueWithDefault(undefined, question.points, 0);
             filteredQuestion.autoPoints = propertyValueWithDefault(
               undefined,
               question.autoPoints,
               0,
+            );
+            filteredQuestion.maxPoints = propertyValueWithDefault(
+              undefined,
+              question.maxPoints,
+              null,
             );
             filteredQuestion.maxAutoPoints = propertyValueWithDefault(
               undefined,
