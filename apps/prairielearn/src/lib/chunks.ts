@@ -503,14 +503,13 @@ export async function diffChunks({
   };
 
   // Track the entity IDs currently referenced by existing chunks, keyed by their
-  // human-readable names. This allows us (inline) to detect when a chunk
-  // exists for a name but points at an old (now-deleted) DB row ID after a
-  // UUID rotation.
+  // human-readable names. This allows us to detect when a chunk exists for a
+  // given name but points at an old (now-deleted) DB row, e.g. after a UUID change.
   const existingCourseInstanceIdByName = new Map<string, string | null>();
   const existingAssessmentIdByCourseInstance = new Map<string, Map<string, string | null>>();
 
   rawCourseChunks.forEach((courseChunk) => {
-    // First, populate the auxiliary maps for reconciliation.
+    // First, populate the auxiliary maps.
     if (courseChunk.type === 'clientFilesCourseInstance' && courseChunk.course_instance_name) {
       existingCourseInstanceIdByName.set(
         courseChunk.course_instance_name,
@@ -603,8 +602,8 @@ export async function diffChunks({
     }
   });
 
-  // Preload active (current) DB IDs so we can detect mismatches inline while
-  // iterating course instances / assessments (handles UUID rotations without file edits).
+  // Preload active (current) DB IDs so we can detect mismatches while iterating
+  // over course instances and assessments. This allows us to handle UUID changes.
   const activeCourseInstances = await sqldb.queryRows(
     sql.select_active_course_instance_ids,
     { course_id: courseId },
@@ -633,7 +632,7 @@ export async function diffChunks({
     assessMap.set(r.assessment_name, r.assessment_id);
   });
 
-  // Next: course instances and their assessments (includes reconciliation logic)
+  // Next: course instances and their assessments.
   await async.each(
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
@@ -641,18 +640,18 @@ export async function diffChunks({
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
-      const existingCiId = existingCourseInstanceIdByName.get(ciid) ?? null;
-      const activeCiId = activeCiIdByName.get(ciid) ?? null;
-      const ciIdMismatch = Boolean(activeCiId && activeCiId !== existingCiId);
-
-      const existingCiChunk =
+      const existingCourseInstanceId = existingCourseInstanceIdByName.get(ciid) ?? null;
+      const activeCourseInstanceId = activeCiIdByName.get(ciid) ?? null;
+      const courseInstanceIdMismatch =
+        !!activeCourseInstanceId && activeCourseInstanceId !== existingCourseInstanceId;
+      const existingCourseInstanceChunk =
         existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
 
-      const changedCiChunk =
+      const changedCourseInstanceChunk =
         changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
-        (!existingCiChunk || changedCiChunk || ciIdMismatch)
+        (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -671,17 +670,18 @@ export async function diffChunks({
             'clientFilesAssessment',
           ),
         );
-        const existingAssessMap = existingAssessmentIdByCourseInstance.get(ciid);
-        const existingAssessId = existingAssessMap?.get(tid) ?? null;
-        const activeAssessId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
-        const assessIdMismatch = Boolean(activeAssessId && activeAssessId !== existingAssessId);
-        const hasExistingAssess =
+        const existingAssessmentId =
+          existingAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const activeAssessmentId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+        const assessmentIdMismatch =
+          !!activeAssessmentId && activeAssessmentId !== existingAssessmentId;
+        const hasExistingAssessment =
           existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
-        const hasChangedAssess =
+        const hasChangedAssessment =
           changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
-          (!hasExistingAssess || hasChangedAssess || assessIdMismatch)
+          (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
