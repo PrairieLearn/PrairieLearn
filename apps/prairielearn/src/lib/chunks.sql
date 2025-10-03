@@ -265,6 +265,7 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
   ci.course_id = $course_id
+  AND ci.deleted_at IS NULL
   AND a.deleted_at IS NULL;
 
 -- BLOCK select_active_course_instance_ids
