@@ -120,9 +120,7 @@ export async function sync(
     (question.data?.authors ?? []).forEach((a) => dedupedQuestionAuthors.add(JSON.stringify(a)));
 
     // Lookup author IDs and set up data structure for DB
-    const authorIds = [...dedupedQuestionAuthors]
-      .map((a) => authorIds[a] ?? null)
-      .filter((id) => id !== null);
+    const authorIds = [...dedupedQuestionAuthors].map((a) => authorIdMapping[a]);
     // Include questions with empty author lists to ensure deletion of existing authors
     if (authorIds.length === 0) {
       qaPairs.push({ question_id: questionIds[qid], author_id: null });
