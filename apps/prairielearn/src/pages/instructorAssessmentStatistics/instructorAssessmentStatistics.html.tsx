@@ -2,12 +2,12 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),

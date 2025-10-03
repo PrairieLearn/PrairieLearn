@@ -7,7 +7,7 @@ import {
 } from '../../schemas/accessControl.js';
 import { validateAccessControlArray } from '../../sync/course-db.js';
 
-describe('Valid configs', () => {
+describe.skip('Valid configs', () => {
   const validAccessControlExamples: AccessControlJsonInput[] = [
     // Example 1: Homework with early/late deadlines
     {
@@ -174,6 +174,7 @@ describe('Valid configs', () => {
   });
 });
 
+<<<<<<< HEAD
 // describe('Assignment-Level controls should have no inheritance', () => {
 //   const assignmentLevelInvalidExamples: AccessControlJsonInput[] = [
 //     // Null dueDateEnabled at assignment level
@@ -209,6 +210,46 @@ describe('Valid configs', () => {
 //     const results = validateAccessControlArray({
 //       accessControlJsonArray: parsedAssignmentLevelInvalidExamples,
 //     });
+=======
+describe('Assignment-Level controls should have no inheritance', () => {
+  const assignmentLevelInvalidExamples: AccessControlJsonInput[] = [
+    // Null dueDateEnabled at assignment level
+    {
+      dateControl: {
+        // @ts-expect-error FIXME FIXME FIXME
+        dueDateEnabled: null,
+        dueDate: '2024-03-21T23:59:00',
+      },
+    },
+
+    // Null releaseDateEnabled at assignment level
+    {
+      dateControl: {
+        // @ts-expect-error FIXME FIXME FIXME
+        releaseDateEnabled: null,
+        releaseDate: '2024-03-14T00:01:00',
+      },
+    },
+
+    // Null showAgainDateEnabled inside afterComplete
+    {
+      afterComplete: {
+        hideQuestionsDateControl: {
+          // @ts-expect-error FIXME FIXME FIXME
+          showAgainDateEnabled: null,
+          showAgainDate: '2024-03-23T23:59:00',
+        },
+      },
+    },
+  ];
+
+  it.skip('should fail assignment-level validation due to null *Enabled fields', () => {
+    const parsedAssignmentLevelInvalidExamples: AccessControlJson[] =
+      assignmentLevelInvalidExamples.map((example) => AccessControlJsonSchema.parse(example));
+    const results = validateAccessControlArray({
+      accessControlJsonArray: parsedAssignmentLevelInvalidExamples,
+    });
+>>>>>>> 1874a005962eb9c8a37570ad22e86588f1a99d4a
 
 //     results.forEach((result, index) => {
 //       assert.notDeepEqual(

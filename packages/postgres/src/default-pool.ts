@@ -198,3 +198,10 @@ export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
  * @returns The randomly-generated search schema.
  */
 export const setRandomSearchSchemaAsync = defaultPool.setRandomSearchSchemaAsync.bind(defaultPool);
+
+/**
+ * Deletes all schemas starting with the given prefix.
+ *
+ * @param prefix The prefix of the schemas to delete.
+ */
+export const clearSchemasStartingWith = defaultPool.clearSchemasStartingWith.bind(defaultPool);

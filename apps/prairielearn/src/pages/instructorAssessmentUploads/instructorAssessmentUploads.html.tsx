@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { JobStatus } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
@@ -8,7 +9,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,

@@ -64,6 +64,9 @@ describe('student data access', { timeout: 60_000 }, function () {
     await ensureEnrollment({
       user_id: '3',
       course_instance_id: '1',
+      agent_user_id: null,
+      agent_authn_user_id: null,
+      action_detail: 'implicit_joined',
     });
   });
 

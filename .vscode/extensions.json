@@ -6,10 +6,10 @@
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
     "dorzey.vscode-sqlfluff",
-    "ms-ossdata.vscode-pgsql",
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
+    "supabase.postgrestools",
     "tamasfe.even-better-toml",
     "vitest.explorer"
   ]

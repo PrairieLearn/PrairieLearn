@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 4.0.20
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 4.0.19
 
 ### Patch Changes

@@ -376,4 +376,81 @@ describe('Editing question settings', () => {
     assert.deepEqual(questionInfo.workspaceOptions.args, ['test', '--test']);
     assert.deepEqual(questionInfo.workspaceOptions.environment, { test: 'value' });
   });
+
+  test.sequential('verify external grading changes with minimal configuration', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'question2',
+        topic: 'Test',
+        grading_method: 'External',
+        external_grading_image: 'test_image',
+        external_grading_entrypoint: '',
+        external_grading_files: '',
+        external_grading_timeout: '',
+        external_grading_enable_networking: '',
+        external_grading_environment: '',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    assert.equal(questionInfo.externalGradingOptions.image, 'test_image');
+    assert.notExists(questionInfo.externalGradingOptions.enabled);
+    assert.notExists(questionInfo.externalGradingOptions.entrypoint);
+    assert.notExists(questionInfo.externalGradingOptions.files);
+    assert.notExists(questionInfo.externalGradingOptions.timeout);
+    assert.notExists(questionInfo.externalGradingOptions.enableNetworking);
+    assert.notExists(questionInfo.externalGradingOptions.environment);
+  });
+
+  test.sequential('verify external grading changes with full configuration', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title - changed',
+        qid: 'question2',
+        topic: 'Test',
+        grading_method: 'External',
+        external_grading_image: 'test_image',
+        external_grading_enabled: 'true',
+        external_grading_entrypoint: '/test',
+        external_grading_files: 'test_file.txt',
+        external_grading_timeout: '10',
+        external_grading_enable_networking: 'true',
+        external_grading_environment: '{"test": "value"}',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+
+    const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
+    assert.equal(questionInfo.externalGradingOptions.image, 'test_image');
+    assert.equal(questionInfo.externalGradingOptions.enabled, true);
+    assert.equal(questionInfo.externalGradingOptions.entrypoint, '/test');
+    assert.equal(questionInfo.externalGradingOptions.serverFilesCourse, 'test_file.txt');
+    assert.equal(questionInfo.externalGradingOptions.timeout, 10);
+    assert.equal(questionInfo.externalGradingOptions.enableNetworking, true);
+    assert.deepEqual(questionInfo.externalGradingOptions.environment, { test: 'value' });
+  });
 });

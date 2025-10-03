@@ -1,4 +1,3 @@
-import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
 
@@ -7,6 +6,7 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { createCsvParser } from './csv.js';
 import { UserSchema } from './db-types.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
@@ -68,13 +68,14 @@ export async function uploadInstanceGroups(
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
-        const csvConverter = csvtojson({ checkType: false, maxRowLength: 10000 });
-        let successCount = 0;
-        const groupAssignments = (await csvConverter.fromStream(csvStream))
-          .map((row) => _.mapKeys(row, (_v, k) => k.toLowerCase()))
-          .filter((row) => row.uid && row.groupname);
+        const csvParser = createCsvParser(csvStream);
+        let successCount = 0,
+          totalCount = 0;
         await runInTransactionAsync(async () => {
-          for (const { uid, groupname } of groupAssignments) {
+          for await (const { record } of csvParser) {
+            const { uid, groupname } = record;
+            if (!uid || !groupname) continue;
+            totalCount++;
             await createOrAddToGroup(groupname, assessment_id, [uid], authn_user_id).then(
               () => successCount++,
               (err) => {
@@ -88,7 +89,7 @@ export async function uploadInstanceGroups(
           }
         });
 
-        const errorCount = groupAssignments.length - successCount;
+        const errorCount = totalCount - successCount;
         job.verbose('----------------------------------------');
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);

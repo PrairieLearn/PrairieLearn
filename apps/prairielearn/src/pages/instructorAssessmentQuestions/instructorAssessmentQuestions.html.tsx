@@ -1,3 +1,5 @@
+import { Hydrate } from '@prairielearn/preact/server';
+
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -6,7 +8,6 @@ import {
   getCourseInstanceContext,
   getPageContext,
 } from '../../lib/client/page-context.js';
-import { Hydrate } from '../../lib/preact.js';
 import type { StaffAssessmentQuestionRow } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';

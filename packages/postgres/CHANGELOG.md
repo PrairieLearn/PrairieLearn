@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 4.4.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 4.4.0
+
+### Minor Changes
+
+- eb90b96: Add a `clearSchemasStartingWith` function
+
 ## 4.3.0
 
 ### Minor Changes

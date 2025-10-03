@@ -1,4 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
@@ -7,7 +8,6 @@ import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,

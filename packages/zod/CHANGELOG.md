@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.4.1
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 1.4.0
 
 ### Minor Changes

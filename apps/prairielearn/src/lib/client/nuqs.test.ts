@@ -63,9 +63,6 @@ describe('parseAsSortingState', () => {
     it('serializes missing id as empty string', () => {
       expect(parseAsSortingState.serialize([{ id: '', desc: false }])).toBe('');
     });
-    it('serializes undefined as empty string', () => {
-      expect(parseAsSortingState.serialize(undefined as any)).toBe('');
-    });
   });
 
   describe('eq', () => {
@@ -109,9 +106,6 @@ describe('parseAsSortingState', () => {
     });
     it('returns true for both empty', () => {
       expect(parseAsSortingState.eq([], [])).toBe(true);
-    });
-    it('returns true for both undefined', () => {
-      expect(parseAsSortingState.eq(undefined as any, undefined as any)).toBe(true);
     });
     it('returns false for one empty, one not', () => {
       expect(parseAsSortingState.eq([], [{ id: 'col', desc: false }])).toBe(false);

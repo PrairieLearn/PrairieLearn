@@ -1,5 +1,13 @@
 # @prairielearn/flash
 
+## 2.0.23
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/html@4.0.20
+
 ## 2.0.22
 
 ### Patch Changes

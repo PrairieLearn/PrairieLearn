@@ -14,7 +14,23 @@ WHERE
   AND q.deleted_at IS NULL
   AND q.qid IS NOT NULL
 ORDER BY
-  qid ASC;
+  -- Order expected QIDs of the form `__drafts__/draft_###` before unexpected
+  -- QIDs like `__drafts__/draft_extra`.
+  (
+    CASE
+      WHEN q.qid ~ '^__drafts__/draft_[0-9]+$' THEN 0
+      ELSE 1
+    END
+  ) ASC,
+  -- Order numeric QIDs numerically.
+  (
+    CASE
+      WHEN q.qid ~ '^__drafts__/draft_[0-9]+$' THEN regexp_replace(q.qid, '^__drafts__/draft_', '')::numeric
+      ELSE NULL
+    END
+  ) ASC,
+  -- Use lexicographic order as a final tiebreaker.
+  q.qid ASC;
 
 -- BLOCK select_draft_questions_by_course_id
 SELECT

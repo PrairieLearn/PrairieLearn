@@ -8,6 +8,7 @@
 [data-md-color-scheme='full-width'] {
   --md-typeset-a-color: #127ac4; /* arbitrary blue */
 }
+
 /* Allow captioned code blocks to function */
 code {
   text-align: left;
@@ -28,6 +29,7 @@ tr:not(.doc-section-item) > td:not(.code) > code {
   text-transform: uppercase;
   color: var(--md-primary-fg-color);
 }
+
 /* CSS for width selection */
 @media (max-width: 1220px) {
   .width-icon {

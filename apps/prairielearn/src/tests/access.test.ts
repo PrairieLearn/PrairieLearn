@@ -112,7 +112,13 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('3. Enroll student user into testCourse', function () {
     it('should succeed', async () => {
-      await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+      await ensureEnrollment({
+        user_id: user.user_id,
+        course_instance_id: '1',
+        agent_user_id: null,
+        agent_authn_user_id: null,
+        action_detail: 'implicit_joined',
+      });
     });
   });
 

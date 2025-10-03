@@ -1,12 +1,12 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
