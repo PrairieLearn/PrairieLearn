@@ -28,11 +28,7 @@ columns
     id: bigint not null default nextval('access_control_id_seq'::regclass)
     list_before_release: boolean
     order: integer
-<<<<<<< HEAD
     prairietest_control_enabled: boolean
-=======
-    prairietest_control_enable: boolean
->>>>>>> 1874a005962eb9c8a37570ad22e86588f1a99d4a
 
 indexes
     access_control_pkey: PRIMARY KEY (id) USING btree (id)
