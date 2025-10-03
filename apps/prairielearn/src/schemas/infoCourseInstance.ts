@@ -24,11 +24,30 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessControlJsonSchema = z
+export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
+
+const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
+
+const PublishingJsonSchema = z.object({
+  publishDate: z
+    .string()
+    .describe(
+      'When the course instance is published. If specified, archiveDate must also be specified.',
+    )
+    .optional(),
+  archiveDate: z
+    .string()
+    .describe(
+      'When the course instance is archived. If specified, publishDate must also be specified.',
+    )
+    .optional(),
+});
+
+export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -86,7 +105,8 @@ export const CourseInstanceJsonSchema = z
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional().default([]),
+    publishing: PublishingJsonSchema.optional(),
+    allowAccess: AllowAccessJsonSchema.optional().default([]),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

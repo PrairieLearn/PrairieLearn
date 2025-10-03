@@ -26,6 +26,16 @@ export const EnumChunkTypeSchema = z.enum([
 ]);
 export type EnumChunkType = z.infer<typeof EnumChunkTypeSchema>;
 
+export const EnumCourseRoleSchema = z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']);
+export type EnumCourseRole = z.infer<typeof EnumCourseRoleSchema>;
+
+export const EnumCourseInstanceRoleSchema = z.enum([
+  'None',
+  'Student Data Viewer',
+  'Student Data Editor',
+]);
+export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema>;
+
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
@@ -148,7 +158,7 @@ export const SprocAuthzAssessmentInstanceSchema = z.object({
 
 // Result of authz_course sproc
 export const SprocAuthzCourseSchema = z.object({
-  course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
+  course_role: EnumCourseRoleSchema,
   has_course_permission_edit: z.boolean(),
   has_course_permission_own: z.boolean(),
   has_course_permission_preview: z.boolean(),
@@ -196,7 +206,7 @@ export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullabl
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
-  course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor', 'Student']),
+  course_instance_role: EnumCourseInstanceRoleSchema,
   has_course_instance_permission_edit: z.boolean(),
   has_course_instance_permission_view: z.boolean(),
   has_student_access: z.boolean(),
@@ -583,6 +593,8 @@ export const CourseInstanceSchema = z.object({
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
+  publishing_archive_date: DateFromISOString.nullable(),
+  publishing_publish_date: DateFromISOString.nullable(),
   self_enrollment_enabled: z.boolean(),
   self_enrollment_enabled_before_date: DateFromISOString.nullable(),
   self_enrollment_enabled_before_date_enabled: z.boolean(),
@@ -596,7 +608,7 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
-export const CourseInstanceAccessRuleSchema = z.object({
+export const CourseInstancePublishingRuleSchema = z.object({
   course_instance_id: IdSchema,
   end_date: DateFromISOString.nullable(),
   id: IdSchema,
@@ -606,7 +618,26 @@ export const CourseInstanceAccessRuleSchema = z.object({
   start_date: DateFromISOString.nullable(),
   uids: z.string().array().nullable(),
 });
-export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+export type CourseInstancePublishingRule = z.infer<typeof CourseInstancePublishingRuleSchema>;
+
+export const CourseInstancePublishingExtensionSchema = z.object({
+  archive_date: DateFromISOString,
+  course_instance_id: IdSchema,
+  id: IdSchema,
+  name: z.string().nullable(),
+});
+export type CourseInstancePublishingExtension = z.infer<
+  typeof CourseInstancePublishingExtensionSchema
+>;
+
+export const CourseInstancePublishingEnrollmentExtensionSchema = z.object({
+  course_instance_publishing_extension_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+});
+export type CourseInstancePublishingEnrollmentExtension = z.infer<
+  typeof CourseInstancePublishingEnrollmentExtensionSchema
+>;
 
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
