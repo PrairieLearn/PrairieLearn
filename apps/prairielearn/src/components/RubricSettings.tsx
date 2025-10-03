@@ -43,6 +43,7 @@ export function RubricSettings({
   const [startingPoints, setStartingPoints] = useState<number>(rubricData?.starting_points ?? 0);
   const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
+  const [tagForGrading, setTagForGrading] = useState<boolean>(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
@@ -287,6 +288,7 @@ export function RubricSettings({
         grader_note: it.grader_note,
         always_show_to_students: it.always_show_to_students,
       })),
+      tag_for_manual_grading: tagForGrading,
     };
 
     const res = await fetch(window.location.pathname, {
@@ -579,6 +581,27 @@ export function RubricSettings({
         )}
 
         {/* Footer actions */}
+        <div class="form-check">
+          <label class="form-check-label">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              checked={tagForGrading}
+              onChange={() => setTagForGrading(!tagForGrading)}
+            />
+            Require all graded submissions to be manually graded/reviewed
+          </label>
+          <button
+            type="button"
+            class="btn btn-sm btn-ghost"
+            data-bs-toggle="tooltip"
+            data-bs-placement="bottom"
+            data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
+            aria-label="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
+          >
+            <i class="fas fa-circle-info" />
+          </button>
+        </div>
         <div class="text-end">
           {wasUsingRubric && (
             <button
