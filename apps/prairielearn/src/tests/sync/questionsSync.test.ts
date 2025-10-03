@@ -2,7 +2,6 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { QuestionSchema, QuestionTagSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
@@ -22,7 +21,7 @@ import * as util from './util.js';
  */
 function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
   return {
-    uuid: uuidv4(),
+    uuid: crypto.randomUUID(),
     title: 'Test question',
     type: 'v3',
     topic: courseData.course.topics[0].name,

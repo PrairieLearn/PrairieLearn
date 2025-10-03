@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -8,7 +9,6 @@ import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndW
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),

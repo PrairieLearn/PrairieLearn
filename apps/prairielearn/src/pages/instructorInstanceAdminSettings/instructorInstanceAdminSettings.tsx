@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -9,7 +10,11 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
+import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
@@ -32,6 +37,7 @@ import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
+import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -43,6 +49,7 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
+      has_enhanced_navigation,
     } = getCourseInstanceContext(res.locals, 'instructor');
     const pageContext = getPageContext(res.locals);
     const { plainUrlPrefix } = pageContext;
@@ -64,8 +71,7 @@ router.get(
     const selfEnrollLink = new URL(
       getSelfEnrollmentLinkUrl({
         courseInstanceId: courseInstance.id,
-        // TODO: after the enrollment code backfill, this should be non-nullable
-        enrollmentCode: courseInstance.enrollment_code ?? '',
+        enrollmentCode: courseInstance.enrollment_code,
       }),
       host,
     ).href;
@@ -100,19 +106,53 @@ router.get(
     });
 
     res.send(
-      InstructorInstanceAdminSettings({
+      PageLayout({
         resLocals: res.locals,
-        shortNames,
-        selfEnrollLink,
-        studentLink,
-        publicLink,
-        infoCourseInstancePath,
-        availableTimezones,
-        origHash,
-        instanceGHLink,
-        canEdit,
-        enrollmentCount,
-        enrollmentManagementEnabled,
+        pageTitle: 'Settings',
+        navContext: {
+          type: 'instructor',
+          page: 'instance_admin',
+          subPage: 'settings',
+        },
+        content: (
+          <>
+            <CourseInstanceSyncErrorsAndWarnings
+              authzData={{
+                has_course_instance_permission_edit:
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false,
+              }}
+              courseInstance={courseInstance}
+              course={course}
+              urlPrefix={pageContext.urlPrefix}
+            />
+            <Hydrate>
+              <InstructorInstanceAdminSettings
+                csrfToken={pageContext.__csrf_token}
+                urlPrefix={pageContext.urlPrefix}
+                navPage={pageContext.navPage}
+                hasEnhancedNavigation={has_enhanced_navigation}
+                canEdit={canEdit}
+                courseInstance={courseInstance}
+                shortNames={shortNames}
+                availableTimezones={availableTimezones}
+                origHash={origHash}
+                instanceGHLink={instanceGHLink}
+                studentLink={studentLink}
+                publicLink={publicLink}
+                selfEnrollLink={selfEnrollLink}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
+                infoCourseInstancePath={infoCourseInstancePath}
+              />
+            </Hydrate>
+            <Hydrate>
+              <DeleteCourseInstanceModal
+                shortName={courseInstance.short_name}
+                enrolledCount={enrollmentCount}
+                csrfToken={pageContext.__csrf_token}
+              />
+            </Hydrate>
+          </>
+        ),
       }),
     );
   }),
@@ -168,10 +208,12 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'update_configuration') {
+      const { course_instance: courseInstanceContext, course: courseContext } =
+        getCourseInstanceContext(res.locals, 'instructor');
       const infoCourseInstancePath = path.join(
-        res.locals.course.path,
+        courseContext.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        courseInstanceContext.short_name,
         'infoCourseInstance.json',
       );
 
@@ -193,22 +235,85 @@ router.post(
       const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
         await fs.readFile(infoCourseInstancePath, 'utf8'),
       );
-      courseInstanceInfo.longName = req.body.long_name;
+
+      const parsedBody = SettingsFormBodySchema.parse(req.body);
+
+      courseInstanceInfo.longName = parsedBody.long_name;
       courseInstanceInfo.timezone = propertyValueWithDefault(
         courseInstanceInfo.timezone,
-        req.body.display_timezone,
-        res.locals.course.display_timezone,
+        parsedBody.display_timezone,
+        courseContext.display_timezone,
       );
       courseInstanceInfo.groupAssessmentsBy = propertyValueWithDefault(
         courseInstanceInfo.groupAssessmentsBy,
-        req.body.group_assessments_by,
+        parsedBody.group_assessments_by,
         'Set',
       );
       courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
         courseInstanceInfo.hideInEnrollPage,
-        req.body.hide_in_enroll_page === 'on',
+        !parsedBody.show_in_enroll_page,
         false,
       );
+
+      // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
+      const parseDateTime = (date: string) => {
+        if (date === '') return undefined;
+        return Temporal.PlainDateTime.from(date).toString();
+      };
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.enabled,
+        parsedBody.self_enrollment_enabled,
+        true,
+        { isUIBoolean: true },
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
+        parsedBody.self_enrollment_use_enrollment_code,
+        false,
+      );
+      const selfEnrollmentBeforeDateEnabled = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.beforeDateEnabled,
+        parsedBody.self_enrollment_enabled_before_date_enabled,
+        false,
+        { isUIBoolean: true },
+      );
+
+      const selfEnrollmentBeforeDate = propertyValueWithDefault(
+        parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
+        parseDateTime(parsedBody.self_enrollment_enabled_before_date),
+        undefined,
+      );
+
+      const hasSelfEnrollmentSettings =
+        (selfEnrollmentEnabled ??
+          selfEnrollmentUseEnrollmentCode ??
+          selfEnrollmentBeforeDateEnabled ??
+          selfEnrollmentBeforeDate) !== undefined;
+
+      const {
+        course_instance: courseInstance,
+        course,
+        institution,
+      } = getCourseInstanceContext(res.locals, 'instructor');
+      const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+        institution_id: institution.id,
+        course_id: course.id,
+        course_instance_id: courseInstance.id,
+      });
+      // Only write self enrollment settings if they are not the default values.
+      // When JSON.stringify is used, undefined values are not included in the JSON object.
+      if (hasSelfEnrollmentSettings && enrollmentManagementEnabled) {
+        courseInstanceInfo.selfEnrollment = {
+          enabled: selfEnrollmentEnabled,
+          useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          beforeDateEnabled: selfEnrollmentBeforeDateEnabled,
+          beforeDate: selfEnrollmentBeforeDate,
+        };
+      } else {
+        courseInstanceInfo.selfEnrollment = undefined;
+      }
+
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
       let ciid_new;

@@ -124,7 +124,6 @@ After this, run PrairieLearn using the same commands as above.
 The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed, use the appropriate tag for the server you're using:
 
 - For courses running under <https://us.prairielearn.com/> use the tag `us-prod-live`;
-- For courses running under <https://ca.prairielearn.com/> use the tag `ca-live`;
 - For institutions with local installations of PrairieLearn, consult your local IT department.
 
 ```sh

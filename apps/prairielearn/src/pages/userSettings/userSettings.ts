@@ -2,7 +2,6 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { v4 as uuidv4 } from 'uuid';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -107,7 +106,7 @@ router.post(
       }
 
       const name = req.body.token_name;
-      const token = uuidv4();
+      const token = crypto.randomUUID();
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
       await sqldb.execute(sql.insert_access_token, {
