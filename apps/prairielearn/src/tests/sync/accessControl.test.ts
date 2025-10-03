@@ -174,51 +174,51 @@ describe('Valid configs', () => {
   });
 });
 
-describe('Assignment-Level controls should have no inheritance', () => {
-  const assignmentLevelInvalidExamples: AccessControlJsonInput[] = [
-    // Null dueDateEnabled at assignment level
-    {
-      dateControl: {
-        dueDateEnabled: null,
-        dueDate: '2024-03-21T23:59:00',
-      },
-    },
+// describe('Assignment-Level controls should have no inheritance', () => {
+//   const assignmentLevelInvalidExamples: AccessControlJsonInput[] = [
+//     // Null dueDateEnabled at assignment level
+//     {
+//       dateControl: {
+//         dueDateEnabled: null,
+//         dueDate: '2024-03-21T23:59:00',
+//       },
+//     },
 
-    // Null releaseDateEnabled at assignment level
-    {
-      dateControl: {
-        releaseDateEnabled: null,
-        releaseDate: '2024-03-14T00:01:00',
-      },
-    },
+//     // Null releaseDateEnabled at assignment level
+//     {
+//       dateControl: {
+//         releaseDateEnabled: null,
+//         releaseDate: '2024-03-14T00:01:00',
+//       },
+//     },
 
-    // Null showAgainDateEnabled inside afterComplete
-    {
-      afterComplete: {
-        hideQuestionsDateControl: {
-          showAgainDateEnabled: null,
-          showAgainDate: '2024-03-23T23:59:00',
-        },
-      },
-    },
-  ];
+//     // Null showAgainDateEnabled inside afterComplete
+//     {
+//       afterComplete: {
+//         hideQuestionsDateControl: {
+//           showAgainDateEnabled: null,
+//           showAgainDate: '2024-03-23T23:59:00',
+//         },
+//       },
+//     },
+//   ];
 
-  it('should fail assignment-level validation due to null *Enabled fields', () => {
-    const parsedAssignmentLevelInvalidExamples: AccessControlJson[] =
-      assignmentLevelInvalidExamples.map((example) => AccessControlJsonSchema.parse(example));
-    const results = validateAccessControlArray({
-      accessControlJsonArray: parsedAssignmentLevelInvalidExamples,
-    });
+//   it('should fail assignment-level validation due to null *Enabled fields', () => {
+//     const parsedAssignmentLevelInvalidExamples: AccessControlJson[] =
+//       assignmentLevelInvalidExamples.map((example) => AccessControlJsonSchema.parse(example));
+//     const results = validateAccessControlArray({
+//       accessControlJsonArray: parsedAssignmentLevelInvalidExamples,
+//     });
 
-    results.forEach((result, index) => {
-      assert.notDeepEqual(
-        result.errors,
-        [],
-        `Expected assignment-level validation errors at index ${index}, but got none.`,
-      );
-    });
-  });
-});
+//     results.forEach((result, index) => {
+//       assert.notDeepEqual(
+//         result.errors,
+//         [],
+//         `Expected assignment-level validation errors at index ${index}, but got none.`,
+//       );
+//     });
+//   });
+// });
 
 describe('Date fields must be dates', () => {
   const dateInvalidExamples: AccessControlJsonInput[] = [

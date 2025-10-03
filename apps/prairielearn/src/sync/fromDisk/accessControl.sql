@@ -39,13 +39,15 @@ INSERT INTO
     date_control_duration_minutes,
     date_control_password_enabled,
     date_control_password,
-    prairietest_control_enable,
-    after_complete_hide_questions_before_date_enabled,
-    after_complete_hide_questions_before_date,
-    after_complete_hide_questions_after_date_enabled,
-    after_complete_hide_questions_after_date,
-    after_complete_hide_score_before_date_enabled,
-    after_complete_hide_score_before_date
+    prairietest_control_enabled,
+    after_complete_hide_questions, 
+    after_complete_hide_questions_date_control_show_again_date_enabled,
+    after_complete_hide_questions_date_control_show_again_date,
+    after_complete_hide_questions_date_control_hide_again_date_enabled,
+    after_complete_hide_questions_date_control_hide_again_date,
+    after_complete_hide_score,
+    after_complete_hide_score_date_control_show_again_date_enabled,
+    after_complete_hide_score_date_control_show_again_date
   )
 VALUES
   (
@@ -69,7 +71,7 @@ VALUES
     $date_control_duration_minutes,
     $date_control_password_enabled,
     $date_control_password,
-    $prairietest_control_enable,
+    $prairietest_control_enabled,
     $after_complete_hide_questions_before_date_enabled,
     $after_complete_hide_questions_before_date,
     $after_complete_hide_questions_after_date_enabled,
@@ -96,6 +98,17 @@ FROM
   UNNEST($targets::jsonb[]) AS t
 RETURNING
   *;
+/*
+TODO: Do we want to unpolymorphise this for better integrity?
+assessment_id BIGINT REFERENCES assessments(id) ON DELETE CASCADE,
+group_id BIGINT REFERENCES access_control_groups(id) ON DELETE CASCADE,
+user_id BIGINT REFERENCES users(user_id) ON DELETE CASCADE,
+CHECK (
+  (target_type = 'assessment' AND assessment_id IS NOT NULL AND group_id IS NULL AND user_id IS NULL) OR
+  (target_type = 'group' AND group_id IS NOT NULL AND assessment_id IS NULL AND user_id IS NULL) OR
+  (target_type = 'individual' AND user_id IS NOT NULL AND assessment_id IS NULL AND group_id IS NULL)
+)
+*/
 
 -- BLOCK delete_access_control_targets
 DELETE FROM access_control_target

@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS access_control (
   enabled boolean,
   block_access boolean,
   list_before_release boolean,
+  "order" INTEGER, -- precedence, lower is higher priority
   -- dateControl fields
   date_control_enabled boolean,
   date_control_release_date_enabled boolean,
@@ -23,25 +24,26 @@ CREATE TABLE IF NOT EXISTS access_control (
   date_control_duration_minutes int,
   date_control_password_enabled boolean,
   date_control_password text,
-  prairietest_control_enable boolean,
+  prairietest_control_enabled boolean,
   -- afterComplete fields
-  after_complete_hide_questions_before_date_enabled boolean,
-  after_complete_hide_questions_before_date TIMESTAMP WITH TIME ZONE,
-  after_complete_hide_questions_after_date_enabled boolean,
-  after_complete_hide_questions_after_date TIMESTAMP WITH TIME ZONE,
-  after_complete_hide_score_before_date_enabled boolean,
-  after_complete_hide_score_before_date TIMESTAMP WITH TIME ZONE
-  order INTEGER -- precedence, lower is less important
-  UNIQUE(course_instance_id, assessment_id, order) -- for each assessment, there should be no two controls with the same precedent
+  after_complete_hide_questions boolean,
+  after_complete_hide_questions_date_control_show_again_date_enabled boolean,
+  after_complete_hide_questions_date_control_show_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_hide_questions_date_control_hide_again_date_enabled boolean,
+  after_complete_hide_questions_date_control_hide_again_date TIMESTAMP WITH TIME ZONE,
+  after_complete_hide_score boolean,
+  after_complete_hide_score_date_control_show_again_date_enabled boolean,
+  after_complete_hide_score_date_control_show_again_date TIMESTAMP WITH TIME ZONE,
+  UNIQUE(course_instance_id, assessment_id, "order")
 );
 
 CREATE TABLE IF NOT EXISTS access_control_groups (
   id BIGSERIAL PRIMARY KEY,
-  access_control_group_id BIGINT,
+  uuid uuid,
   name text,
   description text,
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  UNIQUE (course_instance_id, access_control_group_id)
+  UNIQUE (course_instance_id, uuid) 
 );
 
 CREATE INDEX idx_sections_on_course_instance_id ON access_control_groups (course_instance_id);
@@ -79,6 +81,6 @@ CREATE TABLE IF NOT EXISTS access_control_late_deadline (
 CREATE TABLE IF NOT EXISTS access_control_prairietest_exam (
   id BIGSERIAL PRIMARY KEY,
   access_control_id BIGINT NOT NULL REFERENCES access_control (id) ON DELETE CASCADE ON UPDATE CASCADE,
-  exam_id BIGINT NOT NULL REFERENCES exams (exam_id) ON DELETE CASCADE ON UPDATE CASCADE,
+  exam_id BIGINT NOT NULL REFERENCES exams (id) ON DELETE CASCADE ON UPDATE CASCADE,
   read_only boolean
 );

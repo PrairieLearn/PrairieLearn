@@ -1,10 +1,12 @@
 columns
-    after_complete_hide_questions_after_date: timestamp with time zone
-    after_complete_hide_questions_after_date_enabled: boolean
-    after_complete_hide_questions_before_date: timestamp with time zone
-    after_complete_hide_questions_before_date_enabled: boolean
-    after_complete_hide_score_before_date: timestamp with time zone
-    after_complete_hide_score_before_date_enabled: boolean
+    after_complete_hide_questions: boolean
+    after_complete_hide_questions_date_control_hide_again_date: timestamp with time zone
+    after_complete_hide_questions_date_control_hide_again_date_enab: boolean
+    after_complete_hide_questions_date_control_show_again_date: timestamp with time zone
+    after_complete_hide_questions_date_control_show_again_date_enab: boolean
+    after_complete_hide_score: boolean
+    after_complete_hide_score_date_control_show_again_date: timestamp with time zone
+    after_complete_hide_score_date_control_show_again_date_enabled: boolean
     assessment_id: bigint not null
     block_access: boolean
     course_instance_id: bigint not null
@@ -25,10 +27,12 @@ columns
     enabled: boolean
     id: bigint not null default nextval('access_control_id_seq'::regclass)
     list_before_release: boolean
-    prairietest_control_enable: boolean
+    order: integer
+    prairietest_control_enabled: boolean
 
 indexes
     access_control_pkey: PRIMARY KEY (id) USING btree (id)
+    access_control_course_instance_id_assessment_id_order_key: UNIQUE (course_instance_id, assessment_id, "order") USING btree (course_instance_id, assessment_id, "order")
 
 foreign-key constraints
     access_control_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

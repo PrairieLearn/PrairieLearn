@@ -54,6 +54,7 @@ export async function syncAccessControl(
     }
 
     // For each rule, insert
+    // TODO: For efficiency, we could save on some writes by coalescing all desired inserts for all rules and then insert all in one go.
     for (let i = 0; i < accessControlRules.length; i++) {
       const ruleInfo = accessControlRules[i];
       if (infofile.hasErrors(ruleInfo) || !ruleInfo.data) continue;
@@ -113,19 +114,20 @@ export async function syncAccessControl(
           date_control_password_enabled: dateControl.passwordEnabled ?? null,
           date_control_password: dateControl.password ?? null,
           // PrairieTest control
-          prairietest_control_enable: rule.prairieTestControl?.enabled ?? null,
-          // After complete fields
-          after_complete_hide_questions_before_date_enabled:
+          prairietest_control_enabled: rule.prairieTestControl?.enabled ?? null,
+          after_complete_hide_questions: afterComplete.hideQuestions ?? null,
+          after_complete_hide_questions_date_control_show_again_date_enabled:
             afterComplete.hideQuestionsDateControl?.showAgainDateEnabled ?? null,
-          after_complete_hide_questions_before_date:
+          after_complete_hide_questions_date_control_show_again_date:
             afterComplete.hideQuestionsDateControl?.showAgainDate ?? null,
-          after_complete_hide_questions_after_date_enabled:
+          after_complete_hide_questions_date_control_hide_again_date_enabled:
             afterComplete.hideQuestionsDateControl?.hideAgainDateEnabled ?? null,
-          after_complete_hide_questions_after_date:
+          after_complete_hide_questions_date_control_hide_again_date:
             afterComplete.hideQuestionsDateControl?.hideAgainDate ?? null,
-          after_complete_hide_score_before_date_enabled:
+          after_complete_hide_score: afterComplete.hideScore ?? null,
+          after_complete_hide_score_date_control_show_again_date_enabled:
             afterComplete.hideScoreDateControl?.showAgainDateEnabled ?? null,
-          after_complete_hide_score_before_date:
+          after_complete_hide_score_date_control_show_again_date:
             afterComplete.hideScoreDateControl?.showAgainDate ?? null,
         },
         AccessControlSchema,
@@ -210,6 +212,7 @@ export async function syncAccessControl(
 }
 
 /** todo: make syncfromdisk call this */
+/** TODO: Can coalesce inserts every further */
 export async function sync(
   courseId: string,
   courseInstanceId: string,
@@ -220,7 +223,7 @@ export async function sync(
     const assessmentId = assessmentIds[tid];
     if (!assessmentId) continue;
 
-    const accessControlRules = courseInstanceData.assessmentAccessControl[tid] ?? [];
+    const accessControlRules = courseInstanceData.assessmentAccessControl?.[tid] ?? [];
 
     await syncAccessControl(courseId, courseInstanceId, assessmentId, accessControlRules);
   }

@@ -252,16 +252,19 @@ export const AccessControlSchema = z.object({
   date_control_release_date_enabled: z.boolean().nullable(),
 
   // Prairie test control
-  after_complete_hide_questions_after_date: DateFromISOString.nullable(),
+  after_complete_hide_questions: z.boolean().nullable(),
 
-  after_complete_hide_questions_after_date_enabled: z.boolean().nullable(),
-  after_complete_hide_questions_before_date: DateFromISOString.nullable(),
-  after_complete_hide_questions_before_date_enabled: z.boolean().nullable(),
-  after_complete_hide_score_before_date: DateFromISOString.nullable(),
-  after_complete_hide_score_before_date_enabled: z.boolean().nullable(),
+  after_complete_hide_questions_date_control_hide_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_date_control_hide_again_date_enabled: z.boolean().nullable(),
+  after_complete_hide_questions_date_control_show_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_date_control_show_again_date_enabled: z.boolean().nullable(),
+
+  after_complete_hide_score: z.boolean().nullable(),
+  after_complete_hide_score_date_control_show_again_date: DateFromISOString.nullable(),
+  after_complete_hide_score_date_control_show_again_date_enabled: z.boolean().nullable(),
   order: z.number().int(),
 
-  prairietest_control_enable: z.boolean().nullable(),
+  prairietest_control_enabled: z.boolean().nullable(),
 });
 
 export const AccessControlEarlyDeadlineSchema = z.object({
@@ -282,7 +285,7 @@ export const AccessControlGroupSchema = z.object({
   description: z.string().nullable(),
   id: IdSchema,
   name: z.string().nullable(),
-  uuid: IdSchema, // TODO: probably not the right type, this is a uuid
+  uuid: z.string(),
 });
 
 export const AccessControlLateDeadlineSchema = z.object({

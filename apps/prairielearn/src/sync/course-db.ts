@@ -191,7 +191,7 @@ type InfoFile<T> = infofile.InfoFile<T>;
 export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstanceJson>;
   assessments: Record<string, InfoFile<AssessmentJson>>;
-  assessmentAccessControl: Record<string, InfoFile<AccessControlJson>[]>;
+  assessmentAccessControl?: Record<string, InfoFile<AccessControlJson>[]>;
 }
 
 export interface CourseData {
@@ -341,7 +341,7 @@ export function writeErrorsAndWarningsForCourseData(
       );
       writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
 
-      const accessControlRules = courseInstanceData.assessmentAccessControl[aid] ?? []; // TODO: get access control warnings??
+      const accessControlRules = courseInstanceData.assessmentAccessControl?.[aid] ?? []; // TODO: get access control warnings??
       accessControlRules.forEach((rule, index) => {
         const accessControlPath = path.posix.join(
           'courseInstances',
@@ -364,7 +364,7 @@ export function courseDataHasErrors(courseData: CourseData): boolean {
       if (infofile.hasErrors(courseInstance.courseInstance)) return true;
       if (Object.values(courseInstance.assessments).some(infofile.hasErrors)) return true;
       if (
-        Object.values(courseInstance.assessmentAccessControl).some(
+        Object.values(courseInstance.assessmentAccessControl ?? {}).some(
           (rules) => rules.some(infofile.hasErrors), // TODO: add access control; is this right??
         )
       ) {
@@ -386,7 +386,7 @@ export function courseDataHasErrorsOrWarnings(courseData: CourseData): boolean {
       if (infofile.hasErrorsOrWarnings(courseInstance.courseInstance)) return true;
       if (Object.values(courseInstance.assessments).some(infofile.hasErrorsOrWarnings)) return true;
       if (
-        Object.values(courseInstance.assessmentAccessControl).some(
+        Object.values(courseInstance.assessmentAccessControl ?? {}).some(
           (rules) => rules.some(infofile.hasErrorsOrWarnings), // TODO: add access control; is this right??
         )
       ) {
