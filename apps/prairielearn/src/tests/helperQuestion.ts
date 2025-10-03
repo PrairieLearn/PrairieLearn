@@ -6,6 +6,7 @@ import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AssessmentInstanceSchema,
@@ -17,6 +18,8 @@ import {
   VariantSchema,
 } from '../lib/db-types.js';
 import { selectQuestionByQid } from '../models/question.js';
+
+import { withoutLogging } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -53,13 +56,21 @@ export function waitForJobSequence(locals: Record<string, any>) {
   });
 }
 
-export function getInstanceQuestion(locals: Record<string, any>) {
+export function getInstanceQuestion(
+  locals: Record<string, any>,
+  { errorExpected = false }: { errorExpected?: boolean } = {},
+) {
   describe('GET to instance_question URL', function () {
     it('should load successfully', async function () {
       assert(locals.question);
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
-      const response = await fetch(questionUrl);
+      const response = await run(async () => {
+        if (errorExpected) {
+          return await withoutLogging(() => fetch(questionUrl));
+        }
+        return await fetch(questionUrl);
+      });
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
