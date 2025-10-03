@@ -405,11 +405,9 @@ function StaffTable({
                   })}
                 </td>
                 <td class="align-middle">
-                  ${courseUser.course_instance_roles
-                    ? courseUser.course_instance_roles.map((cir) => {
-                        return CourseInstancePermissionButton({ courseUser, cir, csrfToken });
-                      })
-                    : ''}
+                  ${courseUser.course_instance_roles?.map((cir) =>
+                    CourseInstancePermissionButton({ courseUser, cir, csrfToken }),
+                  )}
                   ${courseUser.other_course_instances?.length
                     ? html`
                         <form
