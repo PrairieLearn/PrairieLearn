@@ -1,5 +1,4 @@
 import { useState } from 'preact/compat';
-import { v4 as uuidv4 } from 'uuid';
 
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import { TopicDescription } from '../../../components/TopicDescription.js';
@@ -64,7 +63,7 @@ export function InstructorCourseAdminTopicsTable({
     setAddTopic(true);
     setSelectedTopic({
       ...emptyTopic,
-      id: uuidv4(),
+      id: crypto.randomUUID(),
       // Pick a random initial color.
       color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
     });
