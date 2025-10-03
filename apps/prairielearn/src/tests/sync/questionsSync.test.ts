@@ -52,6 +52,22 @@ async function findSyncedUndeletedQuestion(qid) {
   return syncedQuestion;
 }
 
+async function findAuthorInDatabase(author: {
+  name?: string;
+  email?: string;
+  orcid?: string;
+  originCourseId?: string;
+}) {
+  const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
+  return authors.find(
+    (a) =>
+      a.author_name === (author.name ?? null) &&
+      a.email === (author.email ?? null) &&
+      a.orcid === (author.orcid?.replaceAll('-', '') ?? null) &&
+      a.origin_course === (author.originCourseId ?? null),
+  );
+}
+
 describe('Question syncing', () => {
   beforeAll(helperDb.before);
 
@@ -290,13 +306,11 @@ describe('Question syncing', () => {
     assert.ok(originalSyncedQuestion);
 
     // Check that the author was added to the authors table
-    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-    const author = authors.find(
-      (a) =>
-        a.author_name === newAuthor.name &&
-        a.email === newAuthor.email &&
-        a.orcid === newAuthor.orcid.replaceAll('-', ''),
-    );
+    const author = await findAuthorInDatabase({
+      name: newAuthor.name,
+      email: newAuthor.email,
+      orcid: newAuthor.orcid,
+    });
     assert.ok(author);
 
     // Check that the question-author relationship was created
@@ -347,14 +361,14 @@ describe('Question syncing', () => {
     assert.isNull(originalSyncedQuestion.sync_errors);
 
     // Check that the author was added to the authors table
-    const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-    const author1 = authors.find(
-      (a) =>
-        a.author_name === newAuthor.name &&
-        a.email === newAuthor.email &&
-        a.orcid === newAuthor.orcid.replaceAll('-', ''),
-    );
-    const author2 = authors.find((a) => a.origin_course === sharingCourseSync.syncResults.courseId);
+    const author1 = await findAuthorInDatabase({
+      name: newAuthor.name,
+      email: newAuthor.email,
+      orcid: newAuthor.orcid,
+    });
+    const author2 = await findAuthorInDatabase({
+      originCourseId: sharingCourseSync.syncResults.courseId,
+    });
     assert.ok(author1);
     assert.ok(author2);
     assert.notDeepEqual(author1, author2);
@@ -476,15 +490,14 @@ describe('Question syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
+    const author = await findAuthorInDatabase({
+      name: newAuthor.name,
+      email: newAuthor.email,
+      orcid: newAuthor.orcid,
+    });
+    assert.isOk(author);
     // Check that only one author record was created
     const authors = await util.dumpTableWithSchema('authors', AuthorSchema);
-    const author = authors.find(
-      (a) =>
-        a.author_name === newAuthor.name &&
-        a.email === newAuthor.email &&
-        a.orcid === newAuthor.orcid.replaceAll('-', ''),
-    );
-    assert.isOk(author);
     assert.equal(
       authors.filter(
         (a) =>
