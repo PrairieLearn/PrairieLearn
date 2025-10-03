@@ -295,6 +295,7 @@ not_in_nav: |
   schemas/questionOptionsMultipleChoice.md
   schemas/questionOptionsMultipleTrueFalse.md
   schemas/questionOptionsv3.md
+  schemas/accessControl.md
 
 validation:
   omitted_files: warn
