@@ -858,7 +858,7 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
       // No authors -> skip
       return map;
     }
-    info.data.authors.forEach((author) => {
+    for (const author of info.data.authors) {
       if (author.originCourse) {
         let originCourseRefs = map.get(author.originCourse);
         if (!originCourseRefs) {
@@ -867,7 +867,7 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
         }
         originCourseRefs.push(id);
       }
-    });
+    }
     return map;
   }, new Map<string, string[]>());
 
@@ -876,7 +876,7 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
 
   // Then, look up all the course IDs at once and find unresolvable ones
   const originCourses = await findCoursesBySharingNames(Array.from(originCourseIDs.keys()));
-  originCourses.forEach((course, sharingName) => {
+  for (const [sharingName, course] of originCourses) {
     if (!course) {
       const affectedQuestions = originCourseIDs.get(sharingName) ?? [];
       affectedQuestions.forEach((question) => {
@@ -886,7 +886,7 @@ async function checkAuthorOriginCourses(questionInfos: Record<string, InfoFile<Q
         );
       });
     }
-  });
+  }
 }
 
 /**
@@ -990,7 +990,7 @@ function checkAllowAccessUids(rule: { uids?: string[] | null }): string[] {
   return warnings;
 }
 
-function validateORCID(orcid: string): boolean {
+function isValidORCID(orcid: string): boolean {
   // Drop any dashes
   const digits = orcid.replaceAll('-', '');
 
@@ -1066,7 +1066,7 @@ function validateQuestion({
         );
       }
       if (author.orcid) {
-        if (!validateORCID(author.orcid)) {
+        if (!isValidORCID(author.orcid)) {
           errors.push(
             `The author ORCID identifier "${author.orcid}" has an invalid checksum. See the official website (https://orcid.org) for info on how to create or look up an identifier`,
           );
@@ -1074,13 +1074,14 @@ function validateQuestion({
       }
       if (author.email) {
         // Manual check here since using email() directly in the schema validation doesn't work well with error logging yet
+        // See: https://github.com/PrairieLearn/PrairieLearn/issues/12846
         const parsedEmail = z.string().email().safeParse(author.email);
 
         if (!parsedEmail.success) {
           errors.push(`The author email address "${author.email}" is invalid`);
         }
       }
-      // Origin courses are validated in bulk loadQuestions, and skipped here.
+      // Origin courses are validated in bulk in loadQuestions(), and skipped here.
     }
   }
 

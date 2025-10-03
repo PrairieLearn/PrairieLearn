@@ -61,7 +61,7 @@ export async function sync(
 
   // Collect all unique authors from all questions
   // Also setting up reverse lookup of resolved authors from database back to JSON
-  const uniqueAuthors = new Map<string, JSONAuthor>();
+  const uniqueAuthors: Record<string, JSONAuthor> = {};
   // Sharing name -> course ID mappings (resolved in bulk)
   const sharingNameLookupTable = await resolveSharingNames(courseData);
 
@@ -81,12 +81,12 @@ export async function sync(
         id: null,
       };
 
-      uniqueAuthors.set(JSON.stringify(normalizedAuthor), author);
+      uniqueAuthors[JSON.stringify(normalizedAuthor)] = author;
     }
   }
 
   const authorsForDB = {
-    authors: JSON.stringify(Array.from(uniqueAuthors.keys()).map((a) => JSON.parse(a))),
+    authors: JSON.stringify(Object.keys(uniqueAuthors).map((a) => JSON.parse(a))),
   };
 
   // Insert all unique authors
@@ -95,7 +95,7 @@ export async function sync(
 
   // Re-load authors from DB (including IDs) and build new map directly from JSONAuthor to ID
   const authors = await sqldb.queryRows(sql.select_authors, authorsForDB, AuthorSchema);
-  const authorIdMap = new Map<string, string>();
+  const authorIds: Record<string, string> = {};
   for (const author of authors) {
     // Reconstructing normalized author from DB author to then lookup JSON author
     const normalizedAuthor: NormalizedAuthor = {
@@ -105,13 +105,9 @@ export async function sync(
       origin_course: author.origin_course ?? null,
       id: null,
     };
-    const jsonAuthor = uniqueAuthors.get(JSON.stringify(normalizedAuthor));
+    const jsonAuthor = uniqueAuthors[JSON.stringify(normalizedAuthor)];
 
-    // This should never happen in practice, but this keeps the type checker
-    // happy, and if it does happen, we want it to fail obviously and loudly.
-    if (!jsonAuthor) throw new Error(`Author ${JSON.stringify(author)} database lookup failed`);
-
-    authorIdMap.set(JSON.stringify(jsonAuthor), author.id);
+    authorIds[JSON.stringify(jsonAuthor)] = author.id;
   }
 
   // Create question-author relationships
@@ -125,7 +121,7 @@ export async function sync(
 
     // Lookup author IDs and set up data structure for DB
     const authorIds = [...dedupedQuestionAuthors]
-      .map((a) => authorIdMap.get(a) ?? null)
+      .map((a) => authorIds[a] ?? null)
       .filter((id) => id !== null);
     // Include questions with empty author lists to ensure deletion of existing authors
     if (authorIds.length === 0) {
