@@ -95,7 +95,7 @@ export async function sync(
 
   // Re-load authors from DB (including IDs) and build new map directly from JSONAuthor to ID
   const authors = await sqldb.queryRows(sql.select_authors, authorsForDB, AuthorSchema);
-  const authorIds: Record<string, string> = {};
+  const authorIdMapping: Record<string, string> = {};
   for (const author of authors) {
     // Reconstructing normalized author from DB author to then lookup JSON author
     const normalizedAuthor: NormalizedAuthor = {
@@ -107,7 +107,7 @@ export async function sync(
     };
     const jsonAuthor = uniqueAuthors[JSON.stringify(normalizedAuthor)];
 
-    authorIds[JSON.stringify(jsonAuthor)] = author.id;
+    authorIdMapping[JSON.stringify(jsonAuthor)] = author.id;
   }
 
   // Create question-author relationships
