@@ -456,6 +456,7 @@ function runTest(context) {
         __csrf_token: context.__csrf_token,
         user_id: '5',
         course_instance_id: '1',
+        course_instance_role: 'None',
       }),
       headers,
     });
