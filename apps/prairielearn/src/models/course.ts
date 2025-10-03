@@ -1,3 +1,4 @@
+import assert from 'assert';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -229,4 +230,26 @@ export async function updateCourseSharingName({ course_id, sharing_name }): Prom
     course_id,
     sharing_name,
   });
+}
+
+/**
+ * Look up courses by sharing names (may return null if non-existent)
+ */
+export async function findCoursesBySharingNames(
+  sharing_names: string[],
+): Promise<Map<string, Course | null>> {
+  const rows = await queryRows(sql.find_courses_by_sharing_names, { sharing_names }, CourseSchema);
+
+  const result = new Map<string, Course | null>();
+  for (const name of sharing_names) result.set(name, null);
+
+  for (const row of rows) {
+    // We looked up the courses by sharing name, so this should hold for all courses
+    assert(row.sharing_name);
+
+    if (row.sharing_name) {
+      result.set(row.sharing_name, row);
+    }
+  }
+  return result;
 }
