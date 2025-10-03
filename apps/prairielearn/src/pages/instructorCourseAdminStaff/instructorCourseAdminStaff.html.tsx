@@ -14,20 +14,19 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 
+const CourseInstanceRoleRowSchema = z.object({
+  id: CourseInstanceSchema.shape.id,
+  short_name: CourseInstanceSchema.shape.short_name,
+  course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
+  course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
+  course_instance_role_formatted: z.string(),
+});
+type CourseInstanceRoleRow = z.infer<typeof CourseInstanceRoleRowSchema>;
+
 export const CourseUsersRowSchema = z.object({
   user: UserSchema,
   course_permission: CoursePermissionSchema,
-  course_instance_roles: z
-    .array(
-      z.object({
-        id: CourseInstanceSchema.shape.id,
-        short_name: CourseInstanceSchema.shape.short_name,
-        course_instance_permission_id: CourseInstancePermissionSchema.shape.id,
-        course_instance_role: CourseInstancePermissionSchema.shape.course_instance_role,
-        course_instance_role_formatted: z.string(),
-      }),
-    )
-    .nullable(),
+  course_instance_roles: CourseInstanceRoleRowSchema.array().nullable(),
   other_course_instances: z
     .array(
       z.object({
@@ -408,100 +407,7 @@ function StaffTable({
                 <td class="align-middle">
                   ${courseUser.course_instance_roles
                     ? courseUser.course_instance_roles.map((cir) => {
-                        return html`
-                          <form
-                            name="student-data-access-change-${courseUser.user.user_id}-${cir.id}"
-                            method="POST"
-                            class="d-inline"
-                          >
-                            <input
-                              type="hidden"
-                              name="__action"
-                              value="course_instance_permissions_update_role_or_delete"
-                            />
-                            <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                            <input
-                              type="hidden"
-                              name="user_id"
-                              value="${courseUser.user.user_id}"
-                            />
-                            <input type="hidden" name="course_instance_id" value="${cir.id}" />
-                            <div
-                              class="btn-group btn-group-sm"
-                              role="group"
-                              aria-label="Button group with nested dropdown"
-                            >
-                              <div class="btn-group btn-group-sm" role="group">
-                                <button
-                                  id="changeCIPDrop-${courseUser.user.user_id}-${cir.id}"
-                                  type="button"
-                                  class="btn btn-sm btn-outline-primary dropdown-toggle"
-                                  data-bs-toggle="dropdown"
-                                  data-bs-boundary="body"
-                                  aria-haspopup="true"
-                                  aria-expanded="false"
-                                >
-                                  ${cir.short_name} (${cir.course_instance_role_formatted})
-                                </button>
-                                <div
-                                  class="dropdown-menu"
-                                  aria-labelledby="changeCIPDrop-${courseUser.user
-                                    .user_id}-${cir.id}"
-                                  style="width: 35em;"
-                                >
-                                  <div class="dropdown-header text-wrap">
-                                    <p>
-                                      Users with student data access can see all assessments in the
-                                      course instance <code>${cir.short_name}</code>, can see all
-                                      questions, and can see issues. They cannot see any code or
-                                      configuration files, or close issues, without also having
-                                      course content access.
-                                    </p>
-                                  </div>
-                                  <div class="dropdown-divider"></div>
-                                  <button
-                                    class="dropdown-item"
-                                    type="submit"
-                                    name="course_instance_role"
-                                    value="Student Data Viewer"
-                                  >
-                                    <div class="text-wrap">
-                                      <h6>Viewer</h6>
-                                      <p class="small">
-                                        Can see but not edit scores of individual students for the
-                                        course instance
-                                        <code>${cir.short_name}</code>.
-                                      </p>
-                                    </div>
-                                  </button>
-                                  <div class="dropdown-divider"></div>
-                                  <button
-                                    class="dropdown-item"
-                                    type="submit"
-                                    name="course_instance_role"
-                                    value="Student Data Editor"
-                                  >
-                                    <div class="text-wrap">
-                                      <h6>Editor</h6>
-                                      <p class="small">
-                                        Can see and edit scores of individual students for the
-                                        course instance
-                                        <code>${cir.short_name}</code>.
-                                      </p>
-                                    </div>
-                                  </button>
-                                </div>
-                              </div>
-                              <button
-                                type="submit"
-                                class="btn btn-sm btn-outline-primary"
-                                aria-label="Remove access"
-                              >
-                                <i class="fa fa-times"></i>
-                              </button>
-                            </div>
-                          </form>
-                        `;
+                        return CourseInstancePermissionButton({ courseUser, cir, csrfToken });
                       })
                     : ''}
                   ${courseUser.other_course_instances?.length
@@ -710,34 +616,137 @@ function CoursePermissionButton({
           </p>
         </label>
       </div>
-      <div class="mt-3">
-        <div class="text-end">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
-          <button type="submit" class="btn btn-primary">Change access</button>
-        </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
       </div>
     </form>
   `;
 
   return html`
-    <div class="btn-group btn-group-sm" role="group">
-      <button
-        id="course-permission-button-${courseUser.user.user_id}"
-        type="button"
-        class="btn btn-sm btn-outline-primary dropdown-toggle"
-        data-bs-toggle="popover"
-        data-bs-container="body"
-        data-bs-html="true"
-        data-bs-placement="auto"
-        data-bs-custom-class="popover-overflow"
-        data-bs-title="Change course content access"
-        data-bs-content="${escapeHtml(popoverContent)}"
-        aria-haspopup="true"
-        aria-expanded="false"
-      >
-        ${courseUser.course_permission.course_role}
-      </button>
-    </div>
+    <button
+      id="course-permission-button-${courseUser.user.user_id}"
+      type="button"
+      class="btn btn-sm btn-outline-primary dropdown-toggle"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Change course content access"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      ${courseUser.course_permission.course_role}
+    </button>
+  `;
+}
+
+function CourseInstancePermissionButton({
+  courseUser,
+  cir,
+  csrfToken,
+}: {
+  courseUser: CourseUsersRow;
+  cir: CourseInstanceRoleRow;
+  csrfToken: string;
+}) {
+  const popoverContent = html`
+    <form name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}" method="POST">
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <p>
+        Users with student data access can see all assessments in the course instance
+        <code>${cir.short_name}</code>, can see all questions, and can see issues. They cannot see
+        any code or configuration files, or close issues, without also having course content access.
+      </p>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="None"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+        >
+          <h6>None</h6>
+          <p class="small text-muted">
+            Remove permissions for the course instance <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Viewer"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+          ${cir.course_instance_role === 'Student Data Viewer' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+        >
+          <h6>Viewer</h6>
+          <p class="small text-muted">
+            Can see but not edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="form-check">
+        <input
+          class="form-check-input"
+          type="radio"
+          name="course_instance_role"
+          value="Student Data Editor"
+          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+          ${cir.course_instance_role === 'Student Data Editor' ? 'checked' : ''}
+        />
+        <label
+          class="form-check-label"
+          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+        >
+          <h6>Editor</h6>
+          <p class="small text-muted">
+            Can see and edit scores of individual students for the course instance
+            <code>${cir.short_name}</code>.
+          </p>
+        </label>
+      </div>
+      <div class="mt-3 text-end">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
+        <button type="submit" class="btn btn-primary">Change access</button>
+      </div>
+    </form>
+  `;
+
+  return html`
+    <button
+      id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
+      type="button"
+      class="btn btn-sm btn-outline-primary dropdown-toggle"
+      data-bs-toggle="popover"
+      data-bs-container="body"
+      data-bs-html="true"
+      data-bs-placement="auto"
+      data-bs-title="Change student data access for ${cir.short_name}"
+      data-bs-content="${escapeHtml(popoverContent)}"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      ${cir.short_name} (${cir.course_instance_role_formatted})
+    </button>
   `;
 }
 
