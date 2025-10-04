@@ -509,6 +509,7 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
   app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
+  app.use('/lookup_code', (await import('./pages/lookupCode/lookupCode.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -599,6 +600,15 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzCourseOrInstance.js')).default,
   );
 
+  // This must come after `authzCourseOrInstance` but before the
+  // `studentCourseInstanceUpgrade` middleware and the `requireEnrollmentCode` middleware.
+  // so that it can render it even when the student hasn't upgraded yet.
+  // Otherwise, we might ask the student to upgrade before they know the enrollment code.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/join',
+    (await import('./pages/enrollmentCodeRequired/enrollmentCodeRequired.js')).default,
+  );
+
   if (isEnterprise()) {
     // This must come after `authzCourseOrInstance` but before the `checkPlanGrants`
     // or `autoEnroll` middlewares so that we can render it even when the student
@@ -618,6 +628,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
+    (await import('./middlewares/requireEnrollmentCode.js')).default,
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     await enterpriseOnly(

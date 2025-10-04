@@ -11,7 +11,15 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import {
+  Alert,
+  Button,
+  ButtonGroup,
+  Dropdown,
+  DropdownButton,
+  OverlayTrigger,
+  Tooltip,
+} from 'react-bootstrap';
 import z from 'zod';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -28,7 +36,7 @@ import type {
 } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getStudentEnrollmentUrl } from '../../lib/client/url.js';
+import { getSelfEnrollmentLinkUrl, getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 
 import { ColumnManager } from './components/ColumnManager.js';
@@ -46,6 +54,74 @@ const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
+
+async function copyToClipboard(text: string) {
+  await navigator.clipboard.writeText(text);
+}
+
+function CopyEnrollmentLinkButton({
+  courseInstance,
+}: {
+  courseInstance: StaffCourseInstanceContext['course_instance'];
+}) {
+  const selfEnrollmentLink = getSelfEnrollmentLinkUrl({
+    courseInstanceId: courseInstance.id,
+    enrollmentCode: courseInstance.enrollment_code,
+  });
+
+  const handleCopyLink = async () => {
+    const fullSelfEnrollmentLink = `${window.location.origin}${selfEnrollmentLink}`;
+    await copyToClipboard(fullSelfEnrollmentLink);
+  };
+
+  const handleCopyCode = async () => {
+    const enrollmentCodeDashed =
+      courseInstance.enrollment_code.slice(0, 3) +
+      '-' +
+      courseInstance.enrollment_code.slice(3, 6) +
+      '-' +
+      courseInstance.enrollment_code.slice(6);
+    await copyToClipboard(enrollmentCodeDashed);
+  };
+
+  // Show button only if self-enrollment is enabled
+  if (!courseInstance.self_enrollment_enabled) {
+    return null;
+  }
+
+  // If enrollment code is required, show split button
+  if (courseInstance.self_enrollment_use_enrollment_code) {
+    return (
+      <DropdownButton
+        as={ButtonGroup}
+        title="Copy enrollment details"
+        disabled={!courseInstance.self_enrollment_enabled}
+        variant="light"
+      >
+        <Dropdown.Item onClick={handleCopyCode}>
+          <i class="bi bi-key me-2" />
+          Copy enrollment code
+        </Dropdown.Item>
+        <Dropdown.Item onClick={handleCopyLink}>
+          <i class="bi bi-link-45deg me-2" />
+          Copy enrollment link
+        </Dropdown.Item>
+      </DropdownButton>
+    );
+  }
+
+  // If no enrollment code required, show simple button
+  return (
+    <Button
+      variant="light"
+      disabled={!courseInstance.self_enrollment_enabled}
+      onClick={handleCopyLink}
+    >
+      <i class="bi bi-link-45deg me-2" />
+      Copy enrollment link
+    </Button>
+  );
+}
 
 interface StudentsCardProps {
   authzData: PageContextWithAuthzData['authz_data'];
@@ -305,6 +381,7 @@ function StudentsCard({
                 students={students}
                 table={table}
               />
+              <CopyEnrollmentLinkButton courseInstance={courseInstance} />
               {enrollmentManagementEnabled && (
                 <Button
                   variant="light"
