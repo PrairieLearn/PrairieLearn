@@ -9,7 +9,7 @@ c = get_config()  # type: ignore # noqa: F821
 
 c.ServerApp.base_url = "/"
 if "WORKSPACE_BASE_URL" in os.environ:
-    c.NotebookApp.base_url = os.environ["WORKSPACE_BASE_URL"]
+    c.ServerApp.base_url = os.environ["WORKSPACE_BASE_URL"]
 
 c.ServerApp.port = 8080
 c.ServerApp.ip = "0.0.0.0"
