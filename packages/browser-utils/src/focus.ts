@@ -164,7 +164,12 @@ export function isSameFocusContext(element1: Element | null, element2: Element |
   if (element1.tagName === 'INPUT' && element2.tagName === 'INPUT') {
     const input1 = element1 as HTMLInputElement;
     const input2 = element2 as HTMLInputElement;
-    if (input1.type === 'radio' && input2.type === 'radio' && input1.name === input2.name) {
+    if (
+      input1.type === 'radio' &&
+      input2.type === 'radio' &&
+      input1.name === input2.name &&
+      input1.form === input2.form
+    ) {
       return true;
     }
   }
