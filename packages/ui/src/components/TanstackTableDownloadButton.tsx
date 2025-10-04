@@ -6,11 +6,11 @@ export interface TanstackTableDownloadButtonProps<RowDataModel> {
   table: Table<RowDataModel>;
   filenameBase: string;
   mapRowToData: (row: RowDataModel) => Record<string, string | number | null> | null;
-  singularLabel: string;
+  pluralLabel: string;
 }
 /**
  * @param params
- * @param params.singularLabel - What you are downloading, e.g. "student"
+ * @param params.pluralLabel - What you are downloading, e.g. "students"
  * @param params.table - The table model
  * @param params.filenameBase - The base filename for the downloads
  * @param params.mapRowToData - A function that maps a row to a record where the
@@ -22,13 +22,12 @@ export function TanstackTableDownloadButton<RowDataModel>({
   table,
   filenameBase,
   mapRowToData,
-  singularLabel,
+  pluralLabel,
 }: TanstackTableDownloadButtonProps<RowDataModel>) {
   const allRows = table.getCoreRowModel().rows.map((row) => row.original);
   const allRowsJSON = allRows.map(mapRowToData).filter((row) => row !== null);
   const filteredRows = table.getRowModel().rows.map((row) => row.original);
   const filteredRowsJSON = filteredRows.map(mapRowToData).filter((row) => row !== null);
-  const pluralLabel = `${singularLabel}s`;
 
   function downloadJSONAsCSV(
     jsonRows: Record<string, string | number | null>[],

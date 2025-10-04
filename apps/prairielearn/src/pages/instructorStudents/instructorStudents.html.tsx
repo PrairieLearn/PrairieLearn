@@ -268,7 +268,7 @@ function StudentsCard({
         title="Students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
-          singularLabel: 'student',
+          pluralLabel: 'students',
           mapRowToData: (row) => {
             return {
               uid: row.user?.uid ?? row.enrollment.pending_uid,
