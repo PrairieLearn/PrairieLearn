@@ -50,6 +50,7 @@ const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
+
 async function updateExecutorImageTag() {
   if (config.workerExecutorImageTag) {
     // Give precedence to any value provided by config.
