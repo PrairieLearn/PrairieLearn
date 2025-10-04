@@ -1,9 +1,14 @@
 import itertools
 from collections import Counter
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
 
 import networkx as nx
+
+ColoredEdge = dict[str, list[str]]
+Edge = list[str]
+Multigraph = dict[str, Edge | ColoredEdge]
+Dag = dict[str, Edge]
 
 
 def validate_grouping(
@@ -51,6 +56,25 @@ def solve_dag(
         group_start = sort.index(group[0])
         not_in_group = [node for node in sort if group_belonging[node] != group_tag]
         sort = not_in_group[:group_start] + group + not_in_group[group_start:]
+
+    return sort
+
+
+def solve_multigraph(
+    depends_multi_graph: Multigraph,
+    final: str,
+) -> list[list[str]]:
+    """Solve the given problem
+    :param depends_multi_graph: the dependency multi graph specified in the question
+    :param final: the sink of the multigraph
+    :return: a list of lists that are a topological sort of the input MDAG making it a solution to the given problem
+    """
+    graphs = [
+        dag_to_nx(graph, {})
+        for graph in collapse_multigraph(depends_multi_graph, final)
+    ]
+
+    sort = [list(nx.topological_sort(graph)) for graph in graphs]
 
     return sort
 
@@ -174,6 +198,27 @@ def grade_dag(
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
+def grade_multigraph(
+    submission: list[str],
+    multigraph: Multigraph,
+    final: str,
+    group_belonging: Mapping[
+        str, str | None
+    ] = {},  # TODO: add grouping correctness for block groups grading
+) -> tuple[int, int, Dag]:
+    top_sort_correctness = []
+    collapsed_dags = list(collapse_multigraph(multigraph, final))
+
+    graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
+    for graph in graphs:
+        sub = [x if x in graph.nodes() else None for x in submission]
+        top_sort_correctness.append(check_topological_sorting(sub, graph))
+
+    max_correct = max(top_sort_correctness)
+    max_index = top_sort_correctness.index(max_correct)
+    return max_correct, graphs[max_index].number_of_nodes(), collapsed_dags[max_index]
+
+
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """
     Taken from
@@ -271,3 +316,84 @@ def lcs_partial_credit(
     deletions_needed = num_distractors + mvc_size
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed
+
+
+def dfs_until(
+    halting_condition: Callable[[tuple[str, ColoredEdge | Edge]], bool],
+    multigraph: Multigraph,
+    start: str,
+) -> tuple[str | None, Dag]:
+    # ruff throws an error for sphinx style doc strings with exception raising
+    # this doc string has to be ignored until implemented
+    # currently a todo in https://github.com/astral-sh/ruff/issues/12434
+    """
+    Depth-First searches a multigraph until a node meets some specified requirements and then halts
+    searching and returns the node or the reason for halting.
+    :param halting_condition: function that takes a node and it's edges and returns a boolean determining
+    if the node fulfills the requirements to halt the search.
+    :param graph: the graph being searched.
+    :param start: the starting point for the search.
+    :return: the reason or node that halted the search with the nodes and their corresponding
+    edges the DFS was able to reach before halting.
+    :raises ValueError: If a cycle is found in the multigraph.
+    """  # noqa: DOC501 (false positive)
+    stack: list[tuple[str, list[str]]] = []
+    visited: list[str] = []
+    traversed: Dag = {}
+    stack.append((start, visited))
+    while stack:
+        curr, visited = stack.pop(0)
+        visited.append(curr)
+
+        if halting_condition((curr, multigraph[curr])):
+            return curr, traversed
+
+        # this is being checked in the halting condition
+        traversed[curr] = multigraph[curr]  # type: ignore
+
+        for target in multigraph[curr]:
+            # this determines if the proposed target edge is a back edge if so it contains a cycle
+            if target in visited and visited.index(curr) >= visited.index(target):
+                raise ValueError("Cycle encountered druing collapse of multigraph.")
+            if target not in visited:
+                stack.insert(0, (target, deepcopy(visited)))
+
+    return None, traversed
+
+
+def collapse_multigraph(
+    multigraph: Multigraph,
+    final: str,
+) -> Generator[Dag]:
+    """
+    :param multigraph: a dependency graph that contains nodes with multiple colored
+    edges.
+    :param final: the sink in the multigraph, necessary to know the sink so that we have
+    a starting point for the DFS to search for DAGs through the multigraph.
+    :param path_names: a dictionary containing names of
+    :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
+    """
+    collapsing_graphs = [(multigraph, "")]
+    while collapsing_graphs:
+        graph, linked_color = collapsing_graphs.pop(0)
+        reason, dag = dfs_until(_is_edges_colored, graph, final)
+
+        # DFS halted because source was reached
+        if reason is None:
+            yield dag
+            continue
+
+        # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
+        for color, edges in graph[reason].items():  # type: ignore
+            if color.startswith("*") or linked_color in (color, ""):
+                partially_collapsed = deepcopy(graph)
+                partially_collapsed[reason] = edges
+
+                # Either linked_color is the same or it is assigned once here
+                collapsing_graphs.append((partially_collapsed, color))
+
+
+def _is_edges_colored(value: tuple[str, Edge | ColoredEdge]) -> bool:
+    """a halting condition function for dfs_until, used to check for colored edges."""
+    _, edges = value
+    return bool(edges and isinstance(edges, dict))
