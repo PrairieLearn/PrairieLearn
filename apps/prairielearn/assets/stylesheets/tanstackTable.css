@@ -1,4 +1,1 @@
-body.no-user-select {
-  user-select: none;
-  -webkit-user-select: none;
-}
+@import url('@prairielearn/ui/components/TanstackTable.css');

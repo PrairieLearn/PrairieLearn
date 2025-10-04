@@ -5,21 +5,19 @@ import Dropdown from 'react-bootstrap/Dropdown';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
-import type { StudentRow } from '../instructorStudents.shared.js';
-
-interface ColumnMenuItemProps {
-  column: Column<StudentRow>;
+interface ColumnMenuItemProps<RowDataModel> {
+  column: Column<RowDataModel>;
   hidePinButton: boolean;
   onTogglePin: (columnId: string) => void;
   onClearElementFocus: () => void;
 }
 
-function ColumnMenuItem({
+function ColumnMenuItem<RowDataModel>({
   column,
   hidePinButton = false,
   onTogglePin,
   onClearElementFocus,
-}: ColumnMenuItemProps) {
+}: ColumnMenuItemProps<RowDataModel>) {
   const pinButtonRef = useRef<HTMLButtonElement>(null);
 
   if (!column.getCanHide() && !column.getCanPin()) return null;
@@ -93,7 +91,7 @@ function ColumnMenuItem({
   );
 }
 
-export function ColumnManager({ table }: { table: Table<StudentRow> }) {
+export function ColumnManager<RowDataModel>({ table }: { table: Table<RowDataModel> }) {
   const [activeElementId, setActiveElementId] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
