@@ -548,10 +548,12 @@ export function TanstackTableCard<RowDataModel>({
                 <i class="bi bi-x-circle" aria-hidden="true" />
               </button>
             </div>
-            {/* We do this instead of CSS properties for the accessibility checker */}
+            {/* We do this instead of CSS properties for the accessibility checker.
+              We can't have two elements with the same id of 'column-manager-button'. */}
             {isMediumOrLarger && <ColumnManager table={table} />}
           </div>
-          {/* We do this instead of CSS properties for the accessibility checker */}
+          {/* We do this instead of CSS properties for the accessibility checker.
+            We can't have two elements with the same id of 'column-manager-button'. */}
           {!isMediumOrLarger && <ColumnManager table={table} />}
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
