@@ -2,7 +2,6 @@ import * as path from 'node:path';
 
 import { type Response } from 'express';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -145,7 +144,7 @@ async function initiateFileTransfer({
   // directly. This would allow us to completely get rid of the endpoints ending in
   // 'copy_public_*' and the file_transfers database table.
 
-  const f = uuidv4();
+  const f = crypto.randomUUID();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
     from_course_id: fromCourse.id,

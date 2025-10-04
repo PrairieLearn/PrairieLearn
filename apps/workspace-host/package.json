@@ -40,7 +40,6 @@
     "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
     "shlex": "^3.0.0",
-    "uuid": "^11.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
