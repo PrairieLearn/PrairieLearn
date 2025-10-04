@@ -118,7 +118,7 @@ export function parallelHistograms(
       return (histogram[i] / max) * width_per_day;
     };
 
-    const xOffset = (index + 0.5) * width_per_day + (yAxisWidth ?? 70);
+    const xOffset = (index + 0.5) * width_per_day + yAxisWidth;
 
     const g = plot.append('g').attr('transform', `translate(${xOffset}, 0)`);
 

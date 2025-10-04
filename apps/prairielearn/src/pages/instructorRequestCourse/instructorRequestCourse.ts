@@ -16,11 +16,11 @@ import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 
+import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
   CourseRequestRowSchema,
   type Lti13CourseRequestInput,
-  RequestCourse,
-} from './instructorRequestCourse.html.js';
+} from './instructorRequestCourse.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
