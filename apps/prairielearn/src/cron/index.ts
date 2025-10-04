@@ -198,6 +198,7 @@ export async function stop() {
 
 function queueJobs(jobsList: CronJob[], intervalSec: number) {
   debug(`queueJobs(): ${intervalSec}`);
+
   function queueRun() {
     debug(`queueJobs(): ${intervalSec}: starting run`);
     jobTimeouts[intervalSec] = 0;
@@ -223,6 +224,7 @@ function queueJobs(jobsList: CronJob[], intervalSec: number) {
 
 function queueDailyJobs(jobsList: CronJob[]) {
   debug('queueDailyJobs()');
+
   function timeToNextMS() {
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -243,6 +245,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     }
     return tMS;
   }
+
   function queueRun() {
     debug('queueDailyJobs(): starting run');
     jobTimeouts.daily = 0;

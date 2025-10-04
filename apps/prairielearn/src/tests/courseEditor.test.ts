@@ -475,6 +475,7 @@ async function getFiles(options: { baseDir: string }): Promise<Set<string>> {
 // information about the current page to persist to the next test
 let currentUrl: string;
 let currentPage$: cheerio.CheerioAPI;
+
 function testEdit(params: EditData) {
   let __csrf_token: string;
   describe(`GET to ${params.url}`, () => {

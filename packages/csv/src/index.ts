@@ -21,6 +21,7 @@ export function stringifyNonblocking(
 
   process.nextTick(function () {
     let j = 0;
+
     function loop() {
       for (let i = 0; i < batchSize; i++) {
         if (j < data.length) {

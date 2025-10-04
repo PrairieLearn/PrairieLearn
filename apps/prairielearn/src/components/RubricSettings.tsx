@@ -103,6 +103,7 @@ export function RubricSettings({
   function onDragStart(idx: number) {
     setDraggedIdx(idx);
   }
+
   function onDragOver(overIdx: number) {
     if (draggedIdx === null || draggedIdx === overIdx) return;
     setRubricItems((items) => {

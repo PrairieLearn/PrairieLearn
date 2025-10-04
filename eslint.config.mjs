@@ -440,6 +440,12 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
+      ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],

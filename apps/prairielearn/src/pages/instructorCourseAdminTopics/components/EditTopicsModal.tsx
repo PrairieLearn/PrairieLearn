@@ -23,6 +23,7 @@ export function EditTopicsModal({
 }) {
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
+
   function handleSubmit() {
     setInvalidName(!selectedTopic?.name);
     setInvalidColor(!selectedTopic?.color);
