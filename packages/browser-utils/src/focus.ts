@@ -140,11 +140,9 @@ export function focusElementOrCheckedOption(element: HTMLElement, focusOptions?:
   if (element.tagName === 'INPUT') {
     const inputElement = element as HTMLInputElement;
     if (inputElement.type === 'radio' && inputElement.name) {
-      const checkedRadio = element
-        .closest('form')
-        ?.querySelector<HTMLInputElement>(
-          `input[type="radio"][name="${CSS.escape(inputElement.name)}"]:checked`,
-        );
+      const checkedRadio = (inputElement.form ?? document).querySelector<HTMLInputElement>(
+        `input[type="radio"][name="${CSS.escape(inputElement.name)}"]:checked`,
+      );
       if (checkedRadio) {
         checkedRadio.focus(focusOptions);
         return;
