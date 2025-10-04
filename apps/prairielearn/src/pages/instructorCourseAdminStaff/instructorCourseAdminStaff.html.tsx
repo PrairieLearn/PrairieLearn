@@ -730,21 +730,47 @@ function CourseInstancePermissionButton({
   `;
 
   return html`
-    <button
-      id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
-      type="button"
-      class="btn btn-sm btn-outline-primary dropdown-toggle"
-      data-bs-toggle="popover"
-      data-bs-container="body"
-      data-bs-html="true"
-      data-bs-placement="auto"
-      data-bs-title="Change student data access for ${cir.short_name}"
-      data-bs-content="${escapeHtml(popoverContent)}"
-      aria-haspopup="true"
-      aria-expanded="false"
+    <form
+      name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}-delete"
+      method="POST"
     >
-      ${cir.short_name} (${cir.course_instance_role_formatted})
-    </button>
+      <input
+        type="hidden"
+        name="__action"
+        value="course_instance_permissions_update_role_or_delete"
+      />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="course_instance_id" value="${cir.id}" />
+      <div class="btn-group btn-group-sm" role="group">
+        <div class="btn-group btn-group-sm">
+          <button
+            id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
+            type="button"
+            class="btn btn-sm btn-outline-primary dropdown-toggle"
+            data-bs-toggle="popover"
+            data-bs-container="body"
+            data-bs-html="true"
+            data-bs-placement="auto"
+            data-bs-title="Change student data access for ${cir.short_name}"
+            data-bs-content="${escapeHtml(popoverContent)}"
+            aria-haspopup="true"
+            aria-expanded="false"
+          >
+            ${cir.short_name} (${cir.course_instance_role_formatted})
+          </button>
+        </div>
+        <button
+          type="submit"
+          class="btn btn-sm btn-outline-primary"
+          aria-label="Remove access"
+          name="course_instance_role"
+          value="None"
+        >
+          <i class="fa fa-times"></i>
+        </button>
+      </div>
+    </form>
   `;
 }
 
