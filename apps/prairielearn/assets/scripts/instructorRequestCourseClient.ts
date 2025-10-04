@@ -53,12 +53,10 @@ onDocumentReady(() => {
       if (!courseRequestForm) return;
 
       const formElements = courseRequestForm.elements;
-      for (const elementName of Object.keys(
-        courseRequestLti13Info,
-      ) as (keyof Lti13CourseRequestInput)[]) {
+      for (const [elementName, elementValue] of Object.entries(courseRequestLti13Info)) {
         const input = formElements.namedItem(elementName);
         if (input) {
-          (input as HTMLInputElement).value = courseRequestLti13Info[elementName];
+          (input as HTMLInputElement).value = elementValue;
         }
       }
 
