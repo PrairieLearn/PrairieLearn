@@ -86,9 +86,9 @@ function externalGradingLiveUpdate() {
 
   // Render initial grading states into the DOM
   let gradingPending = false;
-  for (const elem of document.querySelectorAll<HTMLElement>('[id^=submission-')) {
+  for (const elem of document.querySelectorAll<HTMLElement>('[id^=submission-]')) {
     // Ensure that this is a valid submission element
-    if (!/^submission-\d+$/.test(elem.id)) return;
+    if (!/^submission-\d+$/.test(elem.id)) continue;
 
     const status = elem.dataset.gradingJobStatus as GradingJobStatus;
     const submissionId = elem.id.replace('submission-', '');
