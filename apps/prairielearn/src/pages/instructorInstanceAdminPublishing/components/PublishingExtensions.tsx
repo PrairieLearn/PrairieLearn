@@ -1,18 +1,152 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'preact/compat';
-import { Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Alert, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
+import { type TemporalStaffCourseInstance } from '../../../lib/client/temporal.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
-import { type CourseInstance } from '../../../lib/db-types.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { dateToDatetimeLocalString } from '../utils/dateUtils.js';
+import { stringToZonedDateTime } from '../utils/dateUtils.js';
+
+interface TemporalAccessControlExtension
+  extends Omit<CourseInstancePublishingExtensionWithUsers, 'archive_date'> {
+  archive_date: Temporal.ZonedDateTime;
+}
 
 interface PublishingExtensionsProps {
-  courseInstance: CourseInstance;
-  extensions: CourseInstancePublishingExtensionWithUsers[];
+  courseInstance: TemporalStaffCourseInstance;
+  extensions: TemporalAccessControlExtension[];
   canEdit: boolean;
   csrfToken: string;
+}
+
+interface ExtensionFormValues {
+  name: string;
+  archive_date: string;
+  uids: string;
+}
+
+function ExtensionModal({
+  show,
+  defaultValues,
+  currentArchiveText,
+  onHide,
+  onSubmit,
+  isSubmitting,
+  mode,
+  mainArchiveDate,
+  courseInstanceTimezone,
+}: {
+  show: boolean;
+  defaultValues: ExtensionFormValues;
+  currentArchiveText: string;
+  isSubmitting: boolean;
+  onHide: () => void;
+  onSubmit: (values: ExtensionFormValues) => Promise<void>;
+  mode: 'add' | 'edit';
+  mainArchiveDate: Temporal.ZonedDateTime | null;
+  courseInstanceTimezone: string;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isValid },
+    setError,
+  } = useForm<ExtensionFormValues>({
+    values: defaultValues,
+    mode: 'onChange',
+    reValidateMode: 'onChange',
+  });
+
+  return (
+    <Modal show={show} backdrop="static" onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>{mode === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
+      </Modal.Header>
+      <form
+        onSubmit={handleSubmit(async (data, event) => {
+          event.preventDefault();
+          try {
+            await onSubmit(data);
+          } catch (error) {
+            // errors with root as the key will not persist with each submission
+            setError('root.serverError', {
+              message: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        })}
+      >
+        <Modal.Body>
+          <div class="mb-3">
+            <label class="form-label" for="ext-name">
+              Extension name (optional)
+            </label>
+            <input id="ext-name" type="text" class="form-control" {...register('name')} />
+          </div>
+          <div class="mb-3">
+            <label class="form-label" for="ext-date">
+              Archive date
+            </label>
+            <input
+              id="ext-date"
+              type="datetime-local"
+              step="1"
+              class="form-control"
+              {...register('archive_date', {
+                required: 'Archive date is required',
+                validate: (value) => {
+                  if (mode === 'add') return true;
+                  if (!mainArchiveDate) return true;
+                  const entered = stringToZonedDateTime(value, courseInstanceTimezone);
+                  return (
+                    Temporal.ZonedDateTime.compare(entered, mainArchiveDate) > 0 ||
+                    'Archive date must be after the course archive date'
+                  );
+                },
+              })}
+            />
+            {errors.archive_date && (
+              <div class="text-danger small">{String(errors.archive_date.message)}</div>
+            )}
+            <small class="text-muted">Current course archive date: {currentArchiveText}</small>
+          </div>
+          {errors.root?.serverError && (
+            <div class="alert alert-danger" role="alert">
+              {errors.root.serverError.message}
+            </div>
+          )}
+          <div class="mb-0">
+            <label class="form-label" for="ext-uids">
+              UIDs{mode === 'edit' ? ' (replaces entire list)' : ''}
+            </label>
+            <textarea
+              id="ext-uids"
+              class="form-control"
+              rows={5}
+              placeholder="One UID per line, or comma/space separated"
+              {...register('uids', { required: 'UIDs are required' })}
+            />
+            {errors.uids && <div class="text-danger small">{String(errors.uids.message)}</div>}
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            disabled={isSubmitting}
+            onClick={onHide}
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" disabled={isSubmitting || !isValid}>
+            Save
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
+  );
 }
 
 export function PublishingExtensions({
@@ -21,245 +155,160 @@ export function PublishingExtensions({
   canEdit,
   csrfToken,
 }: PublishingExtensionsProps) {
-  const [showAddRow, setShowAddRow] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingExtensionId, setEditingExtensionId] = useState<string | null>(null);
-  const [editingExtensionData, setEditingExtensionData] = useState<{
-    name: string;
-    archiveDate: string;
-  }>({ name: '', archiveDate: '' });
-  const [newUserUid, setNewUserUid] = useState('');
+  // A set of extension IDs that are showing all students
   const [showAllStudents, setShowAllStudents] = useState<Set<string>>(() => new Set());
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [newExtensionData, setNewExtensionData] = useState<{
-    name: string;
-    archiveDate: string;
-    uids: string;
-  }>({ name: '', archiveDate: '', uids: '' });
 
-  const handleDelete = async (extensionId: string) => {
-    // eslint-disable-next-line no-alert
-    if (!confirm('Are you sure you want to delete this extension?')) {
-      return;
-    }
+  const [shownModalMode, setShownModalMode] = useState<'add' | 'edit' | null>(null);
+  const [modalDefaults, setModalDefaults] = useState<ExtensionFormValues>({
+    name: '',
+    archive_date: '',
+    uids: '',
+  });
+  const [editExtensionId, setEditExtensionId] = useState<string | null>(null);
 
+  // Delete confirmation modal state
+  const [deleteState, setDeleteState] = useState<
+    { show: false } | { show: true; extensionId: string; extensionName: string }
+  >({ show: false });
+
+  const currentInstanceArchiveDate = courseInstance.publishing_archive_date
+    ? formatDateFriendly(courseInstance.publishing_archive_date, courseInstance.display_timezone)
+    : '—';
+
+  const openAddModal = () => {
+    setShownModalMode('add');
+    setEditExtensionId(null);
+    setModalDefaults({
+      name: '',
+      archive_date: courseInstance.publishing_archive_date
+        ? courseInstance.publishing_archive_date.toString()
+        : '',
+      uids: '',
+    });
+    setErrorMessage(null);
+  };
+
+  const openEditModal = (extension: TemporalAccessControlExtension) => {
+    setShownModalMode('edit');
+    setEditExtensionId(extension.id);
+    setModalDefaults({
+      name: extension.name ?? '',
+      archive_date: extension.archive_date.toString(),
+      uids: extension.user_data
+        .map((u) => u.uid)
+        .sort()
+        .join('\n'),
+    });
+    setErrorMessage(null);
+  };
+
+  const closeModal = () => {
+    setShownModalMode(null);
+    setEditExtensionId(null);
+    setModalDefaults({ name: '', archive_date: '', uids: '' });
+  };
+
+  const openDeleteModal = (extension: TemporalAccessControlExtension) => {
+    setDeleteState({
+      show: true,
+      extensionId: extension.id,
+      extensionName: extension.name || 'Unnamed',
+    });
+  };
+
+  const closeDeleteModal = () => setDeleteState({ show: false });
+
+  const confirmDelete = async () => {
+    if (!deleteState.show) return;
     setIsSubmitting(true);
     try {
       const requestBody = {
         __csrf_token: csrfToken,
         __action: 'delete_extension',
-        extension_id: extensionId,
+        extension_id: deleteState.extensionId,
       };
-
       const response = await fetch(window.location.pathname, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        throw new Error('Failed to delete extension');
-      }
-    } catch (error) {
-      console.error('Error deleting extension:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to delete extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRemoveStudent = async (extensionId: string, uid: string) => {
-    // eslint-disable-next-line no-alert
-    if (!confirm('Are you sure you want to remove this student from the extension?')) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append('__action', 'remove_student_from_extension');
-      formData.append('extension_id', extensionId);
-      formData.append('uid', uid);
-
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        throw new Error('Failed to remove student from extension');
-      }
-    } catch (error) {
-      console.error('Error removing student from extension:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to remove student from extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleEditExtension = (extension: CourseInstancePublishingExtensionWithUsers) => {
-    setEditingExtensionId(extension.id);
-    // Convert Date to YYYY-MM-DDTHH:mm:ss format for datetime-local input
-    const archiveDate = dateToDatetimeLocalString(extension.archive_date);
-    setEditingExtensionData({
-      name: extension.name || '',
-      archiveDate,
-    });
-  };
-
-  const handleSaveExtension = async (extensionId: string) => {
-    setIsSubmitting(true);
-    try {
-      const formData = new FormData();
-      formData.append('__action', 'update_extension');
-      formData.append('extension_id', extensionId);
-      formData.append('name', editingExtensionData.name.trim() || '');
-      formData.append('archive_date', editingExtensionData.archiveDate || '');
-
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken,
-        },
-        body: formData,
-      });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        throw new Error('Failed to update extension');
-      }
-    } catch (error) {
-      console.error('Error updating extension:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to update extension. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-      setEditingExtensionId(null);
-      setEditingExtensionData({ name: '', archiveDate: '' });
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditingExtensionId(null);
-    setEditingExtensionData({ name: '', archiveDate: '' });
-  };
-
-  const handleSaveUserToExtension = async (extensionId: string) => {
-    if (!newUserUid.trim()) {
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // Parse multiple UIDs (comma, space, or newline separated)
-      const uids = newUserUid
-        .split(/[,\s\n]+/)
-        .map((uid) => uid.trim())
-        .filter((uid) => uid.length > 0);
-
-      if (uids.length === 0) {
-        return;
-      }
-
-      // Add each UID to the extension
-      for (const uid of uids) {
-        const formData = new FormData();
-        formData.append('__action', 'add_user_to_extension');
-        formData.append('extension_id', extensionId);
-        formData.append('uid', uid);
-
-        const response = await fetch(window.location.pathname, {
-          method: 'POST',
-          headers: {
-            'X-CSRF-Token': csrfToken,
-          },
-          body: formData,
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || `Failed to add user ${uid} to extension`);
-        }
-      }
-
+      if (!response.ok) throw new Error('Failed to delete extension');
       window.location.reload();
     } catch (error) {
-      console.error('Error adding user to extension:', error);
-      setErrorMessage(
-        `Failed to add user to extension: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      console.error('Error deleting extension:', error);
+      setErrorMessage('Failed to delete extension. Please try again.');
     } finally {
       setIsSubmitting(false);
-      setNewUserUid('');
+      closeDeleteModal();
     }
   };
 
-  const handleToggleShowAllStudents = (extensionId: string) => {
-    setShowAllStudents((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(extensionId)) {
-        newSet.delete(extensionId);
-      } else {
-        newSet.add(extensionId);
-      }
-      return newSet;
-    });
-  };
-
-  const handleCreateExtension = async () => {
-    if (!newExtensionData.archiveDate.trim() || !newExtensionData.uids.trim()) {
-      setErrorMessage('Archive date and UIDs are required');
-      return;
+  const submitAdd = async (values: ExtensionFormValues) => {
+    if (!values.archive_date.trim() || !values.uids.trim()) {
+      throw new Error('Archive date and UIDs are required');
     }
-
     setIsSubmitting(true);
     try {
-      const formData = new FormData();
-      formData.append('__action', 'add_extension');
-      formData.append('name', newExtensionData.name.trim());
-      formData.append('archive_date', newExtensionData.archiveDate);
-      formData.append('uids', newExtensionData.uids.trim());
-
-      const response = await fetch(window.location.pathname, {
+      const body = {
+        __csrf_token: csrfToken,
+        __action: 'add_extension',
+        name: values.name.trim(),
+        archive_date: values.archive_date,
+        uids: values.uids.trim(),
+      };
+      const resp = await fetch(window.location.pathname, {
         method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken,
-        },
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
-
-      if (response.ok) {
-        window.location.reload();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to create extension');
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to create extension');
       }
-    } catch (error) {
-      console.error('Error creating extension:', error);
-      setErrorMessage(
-        `Failed to create extension: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      window.location.reload();
+    } catch (err) {
+      console.error('Error creating extension:', err);
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancelAddExtension = () => {
-    setShowAddRow(false);
-    setNewExtensionData({ name: '', archiveDate: '', uids: '' });
-    setErrorMessage(null);
+  const submitEdit = async (values: ExtensionFormValues) => {
+    if (!values.archive_date.trim() || !values.uids.trim()) {
+      throw new Error('Archive date and UIDs are required');
+    }
+    if (!editExtensionId) {
+      throw new Error('Extension ID is missing');
+    }
+    setIsSubmitting(true);
+    try {
+      const body = {
+        __csrf_token: csrfToken,
+        __action: 'edit_extension',
+        extension_id: editExtensionId,
+        name: values.name.trim(),
+        archive_date: values.archive_date,
+        uids: values.uids.trim(),
+      };
+      const resp = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!resp.ok) {
+        const data = await resp.json().catch(() => ({}));
+        throw new Error(data.message || 'Failed to edit extension');
+      }
+      window.location.reload();
+    } catch (err) {
+      console.error('Error editing extension:', err);
+      throw err;
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -267,12 +316,12 @@ export function PublishingExtensions({
       <div class="mb-3">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <h5 class="mb-0">Extensions</h5>
-          {canEdit && !showAddRow && (
+          {canEdit && (
             <button
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
               disabled={isSubmitting}
-              onClick={() => setShowAddRow(true)}
+              onClick={openAddModal}
             >
               Add Extension
             </button>
@@ -285,7 +334,7 @@ export function PublishingExtensions({
         </small>
       </div>
 
-      {extensions.length === 0 && !showAddRow && (
+      {extensions.length === 0 && (
         <div class="text-center text-muted mb-3">
           <p class="mb-0">No extensions configured.</p>
         </div>
@@ -313,98 +362,70 @@ export function PublishingExtensions({
                   idx={idx}
                   extension={extension}
                   courseInstance={courseInstance}
+                  courseInstanceTemporalArchive={courseInstance.publishing_archive_date}
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
                   isSubmitting={isSubmitting}
                   courseInstanceArchiveDate={courseInstance.publishing_archive_date}
-                  editingExtensionId={editingExtensionId}
-                  editingExtensionData={editingExtensionData}
-                  newUserUid={newUserUid}
                   showAllStudents={showAllStudents}
-                  onDelete={handleDelete}
-                  onRemoveStudent={handleRemoveStudent}
-                  onEditExtension={handleEditExtension}
-                  onSaveExtension={handleSaveExtension}
-                  onCancelEdit={handleCancelEdit}
-                  onEditingExtensionDataChange={setEditingExtensionData}
-                  onSaveUserToExtension={handleSaveUserToExtension}
-                  onNewUserUidChange={setNewUserUid}
-                  onToggleShowAllStudents={handleToggleShowAllStudents}
+                  onToggleShowAllStudents={(id) => {
+                    setShowAllStudents((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(id)) next.delete(id);
+                      else next.add(id);
+                      return next;
+                    });
+                  }}
+                  onEditExtension={openEditModal}
+                  onDelete={openDeleteModal}
                 />
               ))}
-              {showAddRow && (
-                <tr>
-                  <td class="col-1">
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      placeholder="Extension name (optional)"
-                      value={newExtensionData.name}
-                      onChange={(e) =>
-                        setNewExtensionData({
-                          ...newExtensionData,
-                          name: (e.target as HTMLInputElement).value,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="col-1">
-                    <input
-                      type="datetime-local"
-                      class="form-control form-control-sm"
-                      step="1"
-                      value={newExtensionData.archiveDate}
-                      onChange={(e) =>
-                        setNewExtensionData({
-                          ...newExtensionData,
-                          archiveDate: (e.target as HTMLInputElement).value,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="col-3">
-                    <textarea
-                      class="form-control form-control-sm"
-                      placeholder="Enter UIDs (one per line, or comma/space separated)"
-                      rows={3}
-                      value={newExtensionData.uids}
-                      onChange={(e) =>
-                        setNewExtensionData({
-                          ...newExtensionData,
-                          uids: (e.target as HTMLTextAreaElement).value,
-                        })
-                      }
-                    />
-                  </td>
-                  <td class="col-1">
-                    <div class="d-flex gap-1">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-success"
-                        disabled={
-                          isSubmitting ||
-                          !newExtensionData.archiveDate.trim() ||
-                          !newExtensionData.uids.trim()
-                        }
-                        onClick={handleCreateExtension}
-                      >
-                        Save
-                      </button>
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-outline-secondary"
-                        disabled={isSubmitting}
-                        onClick={handleCancelAddExtension}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              )}
             </tbody>
           </table>
         </div>
+      )}
+
+      {shownModalMode !== null && (
+        <ExtensionModal
+          show={true}
+          defaultValues={modalDefaults}
+          currentArchiveText={currentInstanceArchiveDate}
+          isSubmitting={isSubmitting}
+          mode={shownModalMode}
+          mainArchiveDate={courseInstance.publishing_archive_date}
+          courseInstanceTimezone={courseInstance.display_timezone}
+          onHide={closeModal}
+          onSubmit={shownModalMode === 'add' ? submitAdd : submitEdit}
+        />
+      )}
+
+      {deleteState.show && (
+        <Modal backdrop="static" show onHide={closeDeleteModal}>
+          <Modal.Header closeButton>
+            <Modal.Title>Delete Extension</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            Are you sure you want to delete extension "{deleteState.extensionName}"?
+          </Modal.Body>
+          <Modal.Footer>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              disabled={isSubmitting}
+              onClick={closeDeleteModal}
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="btn btn-danger"
+              disabled={isSubmitting}
+              onClick={confirmDelete}
+            >
+              Delete
+            </button>
+          </Modal.Footer>
+        </Modal>
       )}
     </>
   );
@@ -414,99 +435,65 @@ function ExtensionTableRow({
   idx: _idx,
   extension,
   courseInstance,
+  courseInstanceTemporalArchive,
   timeZone,
   canEdit,
   onDelete,
-  onRemoveStudent,
   isSubmitting,
   courseInstanceArchiveDate,
-  editingExtensionId,
-  editingExtensionData,
-  onEditExtension,
-  onSaveExtension,
-  onCancelEdit,
-  onEditingExtensionDataChange,
-  newUserUid,
-  onSaveUserToExtension,
-  onNewUserUidChange,
   showAllStudents,
   onToggleShowAllStudents,
+  onEditExtension,
 }: {
   idx: number;
-  extension: CourseInstancePublishingExtensionWithUsers;
-  courseInstance: CourseInstance;
+  extension: TemporalAccessControlExtension;
+  courseInstance: TemporalStaffCourseInstance;
+  courseInstanceTemporalArchive: Temporal.ZonedDateTime | null;
   timeZone: string;
   canEdit: boolean;
-  onDelete: (id: string) => void;
-  onRemoveStudent: (extensionId: string, uid: string) => void;
+  onDelete: (extension: TemporalAccessControlExtension) => void;
   isSubmitting: boolean;
-  courseInstanceArchiveDate: Date | null;
-  editingExtensionId: string | null;
-  editingExtensionData: { name: string; archiveDate: string };
-  onEditExtension: (extension: CourseInstancePublishingExtensionWithUsers) => void;
-  onSaveExtension: (extensionId: string) => void;
-  onCancelEdit: () => void;
-  onEditingExtensionDataChange: (data: { name: string; archiveDate: string }) => void;
-  newUserUid: string;
-  onSaveUserToExtension: (extensionId: string) => void;
-  onNewUserUidChange: (uid: string) => void;
+  courseInstanceArchiveDate: Temporal.ZonedDateTime | null;
   showAllStudents: Set<string>;
   onToggleShowAllStudents: (extensionId: string) => void;
+  onEditExtension: (extension: TemporalAccessControlExtension) => void;
 }) {
   // Check if extension archive date is before the course instance archive date
   const isBeforeInstanceArchiveDate =
     courseInstanceArchiveDate &&
-    new Date(extension.archive_date) < new Date(courseInstanceArchiveDate);
+    Temporal.ZonedDateTime.compare(extension.archive_date, courseInstanceArchiveDate) < 0;
 
   return (
     <tr>
       <td class="col-1">
-        {editingExtensionId === extension.id ? (
-          <input
-            type="text"
-            class="form-control form-control-sm"
-            value={editingExtensionData.name}
-            onChange={(e) =>
-              onEditingExtensionDataChange({
-                ...editingExtensionData,
-                name: (e.target as HTMLInputElement).value,
-              })
-            }
-          />
-        ) : extension.name ? (
+        {extension.name ? (
           <strong>{extension.name}</strong>
         ) : (
           <span class="text-muted">Unnamed</span>
         )}
       </td>
       <td class="col-1">
-        {editingExtensionId === extension.id ? (
-          <input
-            type="datetime-local"
-            class="form-control form-control-sm"
-            step="1"
-            value={editingExtensionData.archiveDate}
-            onChange={(e) =>
-              onEditingExtensionDataChange({
-                ...editingExtensionData,
-                archiveDate: (e.target as HTMLInputElement).value,
-              })
-            }
-          />
-        ) : (
-          <span>
-            {formatDateFriendly(extension.archive_date, timeZone)}
-            {isBeforeInstanceArchiveDate && (
-              <>
-                {' '}
+        <span>
+          {formatDateFriendly(extension.archive_date, timeZone)}
+          {isBeforeInstanceArchiveDate && (
+            <>
+              {' '}
+              <OverlayTrigger
+                placement="top"
+                overlay={
+                  <Tooltip id={`ignored-date-${extension.id}`}>
+                    Warning: This date will be ignored
+                  </Tooltip>
+                }
+              >
                 <i
                   class="fas fa-exclamation-triangle text-warning"
                   aria-label="Warning: This date will be ignored"
                 />
-              </>
-            )}
-          </span>
-        )}
+              </OverlayTrigger>
+            </>
+          )}
+        </span>
       </td>
       <td class="col-3">
         <div>
@@ -533,26 +520,6 @@ function ExtensionTableRow({
                           >
                             {user.name || '—'}
                           </a>
-                          {canEdit && editingExtensionId === extension.id && (
-                            <OverlayTrigger
-                              placement="top"
-                              overlay={
-                                <Tooltip id={`remove-student-${user.uid}`}>
-                                  Remove student from extension
-                                </Tooltip>
-                              }
-                            >
-                              <button
-                                type="button"
-                                class="btn btn-sm"
-                                style="border: none; background: none; color: #dc3545; padding: 0.25rem;"
-                                disabled={isSubmitting}
-                                onClick={() => onRemoveStudent(extension.id, user.uid)}
-                              >
-                                <i class="fas fa-times fa-xs" aria-hidden="true" />
-                              </button>
-                            </OverlayTrigger>
-                          )}
                         </div>
                       ),
                     )}
@@ -576,31 +543,6 @@ function ExtensionTableRow({
                     )}
                   </div>
                 )}
-                {canEdit && editingExtensionId === extension.id && (
-                  <div class="d-flex align-items-start gap-1">
-                    <textarea
-                      class="form-control form-control-sm"
-                      placeholder="Enter UIDs (one per line, or comma/space separated)"
-                      rows={3}
-                      value={newUserUid}
-                      onChange={(e) => onNewUserUidChange((e.target as HTMLTextAreaElement).value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.ctrlKey) {
-                          onSaveUserToExtension(extension.id);
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      class="btn btn-sm btn-success"
-                      disabled={isSubmitting || !newUserUid.trim()}
-                      title="Add users to extension (Ctrl+Enter)"
-                      onClick={() => onSaveUserToExtension(extension.id)}
-                    >
-                      <i class="fas fa-plus" aria-hidden="true" />
-                    </button>
-                  </div>
-                )}
               </>
             );
           })()}
@@ -610,40 +552,19 @@ function ExtensionTableRow({
         <div class="d-flex gap-1">
           {canEdit && (
             <>
-              {editingExtensionId === extension.id ? (
-                <>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-success"
-                    disabled={isSubmitting}
-                    onClick={() => onSaveExtension(extension.id)}
-                  >
-                    Save
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-sm btn-outline-secondary"
-                    disabled={isSubmitting}
-                    onClick={onCancelEdit}
-                  >
-                    Cancel
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  class="btn btn-sm btn-outline-primary"
-                  disabled={isSubmitting}
-                  onClick={() => onEditExtension(extension)}
-                >
-                  Edit
-                </button>
-              )}
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary"
+                disabled={isSubmitting}
+                onClick={() => onEditExtension(extension)}
+              >
+                Edit
+              </button>
               <button
                 type="button"
                 class="btn btn-sm btn-outline-danger"
                 disabled={isSubmitting}
-                onClick={() => onDelete(extension.id)}
+                onClick={() => onDelete(extension)}
               >
                 Delete
               </button>

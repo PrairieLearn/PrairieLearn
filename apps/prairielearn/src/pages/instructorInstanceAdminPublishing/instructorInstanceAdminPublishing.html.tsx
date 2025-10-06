@@ -1,6 +1,6 @@
 import { Hydrate } from '@prairielearn/preact/server';
 
-import { type CourseInstance } from '../../lib/db-types.js';
+import { type StaffCourseInstance } from '../../lib/client/safe-db-types.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../models/course-instance-publishing-extensions.types.js';
 
 import { PublishingForm } from './components/PublishingForm.js';
@@ -12,7 +12,7 @@ export function InstructorInstanceAdminPublishing({
   csrfToken,
   origHash,
 }: {
-  courseInstance: CourseInstance;
+  courseInstance: StaffCourseInstance;
   hasCourseInstancePermissionEdit: boolean;
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;

@@ -9,7 +9,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
@@ -193,44 +193,45 @@ router.post(
       flash('success', 'Access control settings updated successfully');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_extension') {
-      const name = req.body.name || null;
-      const archive_date = req.body.archive_date ? new Date(req.body.archive_date) : null;
-      const uids = req.body.uids
-        .split(/[,\n]/)
-        .map((uid: string) => uid.trim())
-        .filter((uid: string) => uid.length > 0);
+      const EmailsSchema = z
+        .array(z.string().trim().email())
+        .min(1, 'At least one UID is required');
+      const AddExtensionSchema = z.object({
+        __action: z.literal('add_extension'),
+        name: z
+          .string()
+          .trim()
+          .optional()
+          .transform((v) => (v === '' || v === undefined ? null : v)),
+        archive_date: z.string().trim().min(1, 'Archive date is required'),
+        uids: z.preprocess(
+          (val) =>
+            typeof val === 'string'
+              ? val
+                  .split(/[\n,\s]+/)
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+              : val,
+          EmailsSchema,
+        ),
+      });
+      const body = AddExtensionSchema.parse(req.body);
 
-      if (uids.length === 0) {
-        res.status(400).json({ message: 'At least one UID is required' });
-        return;
-      }
-
-      // Validate that all UIDs are in email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const invalidUids = uids.filter((uid) => !emailRegex.test(uid));
-      if (invalidUids.length > 0) {
-        const errorMessage = `Invalid email format for UIDs: ${invalidUids.join(', ')}`;
-        res.status(400).json({ message: errorMessage });
-        return;
-      }
-
-      // Get enrollment IDs for the UIDs
       const enrollments = await getEnrollmentsByUidsInCourseInstance({
-        uids,
+        uids: body.uids,
         course_instance_id: res.locals.course_instance.id,
       });
 
       if (enrollments.length === 0) {
-        res.status(400).json({ message: 'No enrollments found for any of the provided UIDs' });
-        return;
+        throw new error.HttpStatusError(400, 'No enrollments found for any of the provided UIDs');
       }
 
       const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
       await createPublishingExtensionWithEnrollments({
         course_instance_id: res.locals.course_instance.id,
-        name,
-        archive_date,
+        name: body.name ?? null,
+        archive_date: new Date(body.archive_date),
         enrollment_ids: enrollmentIds,
       });
 
@@ -246,90 +247,86 @@ router.post(
 
       res.status(200).json({ success: true });
       return;
-    } else if (req.body.__action === 'remove_student_from_extension') {
-      const extension_id = req.body.extension_id;
-      const uid = req.body.uid;
-
-      // Get the enrollment ID for the UID
-      const enrollments = await getEnrollmentsByUidsInCourseInstance({
-        uids: [uid],
-        course_instance_id: res.locals.course_instance.id,
+    } else if (req.body.__action === 'edit_extension') {
+      const EmailsSchema = z
+        .array(z.string().trim().email())
+        .min(1, 'At least one UID is required');
+      const EditExtensionSchema = z.object({
+        __action: z.literal('edit_extension'),
+        extension_id: z.string().trim().min(1),
+        name: z
+          .string()
+          .trim()
+          .optional()
+          .transform((v) => (v === '' || v === undefined ? null : v)),
+        archive_date: z.string().trim().optional().default(''),
+        uids: z.preprocess(
+          (val) =>
+            typeof val === 'string'
+              ? val
+                  .split(/[\n,\s]+/)
+                  .map((s) => s.trim())
+                  .filter((s) => s.length > 0)
+              : val,
+          EmailsSchema,
+        ),
       });
+      const body = EditExtensionSchema.parse(req.body);
 
-      if (enrollments.length === 0) {
-        res.status(400).json({ message: 'No enrollment found for the provided UID' });
-        return;
-      }
+      await runInTransactionAsync(async () => {
+        // Update extension metadata
+        await execute(sql.update_extension, {
+          extension_id: body.extension_id,
+          name: body.name ?? '',
+          archive_date: body.archive_date,
+          course_instance_id: res.locals.course_instance.id,
+        });
 
-      const enrollment_id = enrollments[0].id;
+        // Desired enrollments for provided UIDs
+        const desiredEnrollments = await getEnrollmentsByUidsInCourseInstance({
+          uids: body.uids,
+          course_instance_id: res.locals.course_instance.id,
+        });
 
-      // Remove the enrollment from the extension
-      await execute(sql.remove_student_from_extension, {
-        extension_id,
-        enrollment_id,
-      });
+        if (desiredEnrollments.length === 0) {
+          throw new error.HttpStatusError(400, 'No enrollments found for provided UIDs');
+        }
 
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'update_extension_name') {
-      const extension_id = req.body.extension_id;
-      const name = req.body.name || null;
+        const desiredEnrollmentIds = new Set(desiredEnrollments.map((e) => e.id));
 
-      await execute(sql.update_publishing_extension_name, {
-        extension_id,
-        name,
-        course_instance_id: res.locals.course_instance.id,
-      });
+        // Current enrollments on this extension
+        const extensions = await selectPublishingExtensionsWithUsersByCourseInstance(
+          res.locals.course_instance.id,
+        );
+        const current = extensions.find((e) => e.id === body.extension_id);
+        const currentEnrollmentIds = new Set(
+          (current?.user_data ?? []).map((u) => u.enrollment_id),
+        );
 
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'update_extension_date') {
-      const extension_id = req.body.extension_id;
-      const archive_date = req.body.archive_date || '';
+        // Compute diffs
+        const toAdd: string[] = [];
+        for (const id of desiredEnrollmentIds) {
+          if (!currentEnrollmentIds.has(id)) toAdd.push(id);
+        }
+        const toRemove: string[] = [];
+        for (const id of currentEnrollmentIds) {
+          if (!desiredEnrollmentIds.has(id)) toRemove.push(id);
+        }
 
-      await execute(sql.update_publishing_extension_date, {
-        extension_id,
-        archive_date,
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'update_extension') {
-      const extension_id = req.body.extension_id;
-      const name = req.body.name || '';
-      const archive_date = req.body.archive_date || '';
-
-      await execute(sql.update_extension, {
-        extension_id,
-        name,
-        archive_date,
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'add_user_to_extension') {
-      const extension_id = req.body.extension_id;
-      const uid = req.body.uid;
-
-      // Get the enrollment ID for the UID
-      const enrollments = await getEnrollmentsByUidsInCourseInstance({
-        uids: [uid],
-        course_instance_id: res.locals.course_instance.id,
-      });
-
-      if (enrollments.length === 0) {
-        res.status(400).json({ message: 'No enrollment found for the provided UID' });
-        return;
-      }
-
-      const enrollment_id = enrollments[0].id;
-
-      // Add the enrollment to the extension
-      await execute(sql.add_user_to_extension, {
-        extension_id,
-        enrollment_id,
+        // Apply removals
+        for (const enrollment_id of toRemove) {
+          await execute(sql.remove_student_from_extension, {
+            extension_id: body.extension_id,
+            enrollment_id,
+          });
+        }
+        // Apply additions
+        for (const enrollment_id of toAdd) {
+          await execute(sql.add_user_to_extension, {
+            extension_id: body.extension_id,
+            enrollment_id,
+          });
+        }
       });
 
       res.status(200).json({ success: true });

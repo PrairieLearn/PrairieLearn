@@ -5,15 +5,15 @@ import { useState } from 'preact/compat';
 import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { CourseInstance } from '../../../lib/db-types.js';
-import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
 import {
-  addWeeksToDatetime,
-  instantFromDate,
-  instantToString,
-  nowInTimezone,
-} from '../utils/dateUtils.js';
+  type TemporalStaffCourseInstance,
+  dateToZonedDateTime,
+  toTemporalCourseInstance,
+} from '../../../lib/client/temporal.js';
+import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
+import { nowInTimezone, stringToZonedDateTime } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
@@ -23,12 +23,16 @@ const queryClient = new QueryClient();
 type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published' | 'archived';
 
 /** Helper to compute status from dates and current time. */
-function computeStatus(publishDate: Date | null, archiveDate: Date | null): PublishingStatus {
+function computeStatus(
+  publishDate: Temporal.ZonedDateTime | null,
+  archiveDate: Temporal.ZonedDateTime | null,
+  courseInstance: TemporalStaffCourseInstance,
+): PublishingStatus {
   if (!publishDate && !archiveDate) {
     return 'unpublished';
   }
 
-  const now = new Date();
+  const now = nowInTimezone(courseInstance.display_timezone);
 
   if (publishDate && archiveDate) {
     if (archiveDate <= now) {
@@ -49,49 +53,44 @@ interface PublishingFormValues {
   archiveDate: string;
 }
 
-interface PublishingFormProps {
-  courseInstance: CourseInstance;
+export function PublishingForm({
+  courseInstance: rawCourseInstance,
+  hasAccessRules,
+  canEdit,
+  csrfToken,
+  origHash,
+  accessControlExtensions: rawAccessControlExtensions,
+}: {
+  courseInstance: StaffCourseInstance;
   hasAccessRules: boolean;
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
-}
-
-export function PublishingForm({
-  courseInstance,
-  hasAccessRules,
-  canEdit,
-  csrfToken,
-  origHash,
-  accessControlExtensions,
-}: PublishingFormProps) {
+}) {
+  const courseInstance = toTemporalCourseInstance(rawCourseInstance);
+  const accessControlExtensions = rawAccessControlExtensions.map((extension) => {
+    return {
+      ...extension,
+      archive_date: dateToZonedDateTime(extension.archive_date, courseInstance.display_timezone),
+    };
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Compute current status from database values
+  const originalTemporalPublish = courseInstance.publishing_publish_date;
+  const originalTemporalArchive = courseInstance.publishing_archive_date;
+
   const currentStatus = computeStatus(
     courseInstance.publishing_publish_date,
     courseInstance.publishing_archive_date,
+    courseInstance,
   );
 
-  // Track user-selected status (defaults to current)
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(currentStatus);
 
   const defaultValues: PublishingFormValues = {
-    publishDate: courseInstance.publishing_publish_date
-      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.publishing_publish_date.getTime())
-          .toZonedDateTimeISO(courseInstance.display_timezone)
-          .toPlainDateTime()
-          .toString()
-          .slice(0, 16)
-      : '',
-    archiveDate: courseInstance.publishing_archive_date
-      ? Temporal.Instant.fromEpochMilliseconds(courseInstance.publishing_archive_date.getTime())
-          .toZonedDateTimeISO(courseInstance.display_timezone)
-          .toPlainDateTime()
-          .toString()
-          .slice(0, 16)
-      : '',
+    publishDate: originalTemporalPublish ? originalTemporalPublish.toString() : '',
+    archiveDate: originalTemporalArchive ? originalTemporalArchive.toString() : '',
   };
 
   const {
@@ -108,117 +107,79 @@ export function PublishingForm({
   const publishDate = watch('publishDate');
   const archiveDate = watch('archiveDate');
 
-  // Store original values from database
-  const originalPublishInstant = courseInstance.publishing_publish_date
-    ? instantFromDate(courseInstance.publishing_publish_date)
-    : null;
-  const originalArchiveInstant = courseInstance.publishing_archive_date
-    ? instantFromDate(courseInstance.publishing_archive_date)
-    : null;
-
   // Update form values when status changes
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
     const now = nowInTimezone(courseInstance.display_timezone);
-    const oneWeekLater = addWeeksToDatetime(now, 1, courseInstance.display_timezone);
-    const eighteenWeeksLater = addWeeksToDatetime(now, 18, courseInstance.display_timezone);
+    const oneWeekLater = now.add({ weeks: 1 });
+    const eighteenWeeksLater = now.add({ weeks: 18 });
 
-    if (newStatus === 'unpublished') {
-      setValue('publishDate', '');
-      setValue('archiveDate', '');
-    } else if (newStatus === 'publish_scheduled') {
-      // Set publish date to now + 1 week if current publish date is not set or in the past
-      let newPublishInstant: Temporal.Instant;
-      const currentPublishDate = publishDate;
+    const currentPublishDate =
+      publishDate === ''
+        ? null
+        : stringToZonedDateTime(publishDate, courseInstance.display_timezone);
+    const currentArchiveDate =
+      archiveDate === ''
+        ? null
+        : stringToZonedDateTime(archiveDate, courseInstance.display_timezone);
 
-      if (!currentPublishDate) {
-        // No publish date set, use one week from now
-        newPublishInstant = oneWeekLater;
-        setValue(
-          'publishDate',
-          instantToString(newPublishInstant, courseInstance.display_timezone),
-        );
-      } else {
-        // Check if current publish date is in the past
-        const currentPublishInstant = Temporal.PlainDateTime.from(currentPublishDate)
-          .toZonedDateTime(courseInstance.display_timezone)
-          .toInstant();
+    // Compute updated dates. We will update them at the end of this function.
+    let updatedPublishDate = currentPublishDate;
+    let updatedArchiveDate = currentArchiveDate;
 
-        if (Temporal.Instant.compare(currentPublishInstant, now) <= 0) {
-          // Current publish date is in the past, set to one week from now
-          newPublishInstant = oneWeekLater;
-          setValue(
-            'publishDate',
-            instantToString(newPublishInstant, courseInstance.display_timezone),
-          );
-        } else {
-          // Current publish date is in the future, keep it
-          newPublishInstant = currentPublishInstant;
+    switch (newStatus) {
+      case 'unpublished': {
+        updatedPublishDate = null;
+        updatedArchiveDate = null;
+        break;
+      }
+      case 'publish_scheduled': {
+        if (
+          currentPublishDate === null ||
+          Temporal.ZonedDateTime.compare(currentPublishDate, now) <= 0
+        ) {
+          updatedPublishDate = oneWeekLater;
         }
-      }
 
-      // Update archive date if it's not set, or if the new publish date is >= archive date
-      if (
-        originalArchiveInstant === null ||
-        Temporal.Instant.compare(newPublishInstant, originalArchiveInstant) >= 0
-      ) {
-        setValue(
-          'archiveDate',
-          instantToString(eighteenWeeksLater, courseInstance.display_timezone),
-        );
-      } else {
-        setValue(
-          'archiveDate',
-          instantToString(originalArchiveInstant, courseInstance.display_timezone),
-        );
+        if (
+          currentArchiveDate === null ||
+          Temporal.ZonedDateTime.compare(currentArchiveDate, now) <= 0 ||
+          Temporal.ZonedDateTime.compare(updatedPublishDate!, currentArchiveDate) >= 0
+        ) {
+          updatedArchiveDate = eighteenWeeksLater;
+        }
+        break;
       }
-    } else if (newStatus === 'published') {
-      // Set publish date to now if original was in the past or not set
-      if (
-        originalPublishInstant === null ||
-        Temporal.Instant.compare(originalPublishInstant, now) > 0
-      ) {
-        setValue('publishDate', instantToString(now, courseInstance.display_timezone));
-      } else {
-        setValue(
-          'publishDate',
-          instantToString(originalPublishInstant, courseInstance.display_timezone),
-        );
+      case 'published': {
+        if (
+          currentPublishDate === null ||
+          Temporal.ZonedDateTime.compare(currentPublishDate, now) <= 0
+        ) {
+          updatedPublishDate = now;
+        }
+        if (
+          currentArchiveDate === null ||
+          Temporal.ZonedDateTime.compare(currentArchiveDate, now) <= 0
+        ) {
+          updatedArchiveDate = eighteenWeeksLater;
+        }
+        break;
       }
-      // Set archive date to now + 18 weeks if original was in the past or not set
-      if (
-        originalArchiveInstant === null ||
-        Temporal.Instant.compare(originalArchiveInstant, now) <= 0
-      ) {
-        setValue(
-          'archiveDate',
-          instantToString(eighteenWeeksLater, courseInstance.display_timezone),
-        );
-      } else {
-        setValue(
-          'archiveDate',
-          instantToString(originalArchiveInstant, courseInstance.display_timezone),
-        );
-      }
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    } else if (newStatus === 'archived') {
-      // Set archive date to now
-      setValue('archiveDate', instantToString(now, courseInstance.display_timezone));
-      // Use original publish date if it's before the archive date
-      if (
-        originalPublishInstant !== null &&
-        Temporal.Instant.compare(originalPublishInstant, now) < 0
-      ) {
-        setValue(
-          'publishDate',
-          instantToString(originalPublishInstant, courseInstance.display_timezone),
-        );
-      } else {
-        const oneWeekAgo = addWeeksToDatetime(now, -1, courseInstance.display_timezone);
-        setValue('publishDate', instantToString(oneWeekAgo, courseInstance.display_timezone));
+      case 'archived': {
+        updatedArchiveDate = now;
+        if (
+          currentPublishDate !== null &&
+          Temporal.ZonedDateTime.compare(currentPublishDate, now) > 0
+        ) {
+          const oneWeekAgo = now.add({ weeks: -1 });
+          updatedPublishDate = oneWeekAgo;
+        }
+        break;
       }
     }
+    setValue('publishDate', updatedPublishDate === null ? '' : updatedPublishDate.toString());
+    setValue('archiveDate', updatedArchiveDate === null ? '' : updatedArchiveDate.toString());
   };
 
   const onSubmit = async (data: PublishingFormValues) => {
@@ -230,12 +191,8 @@ export function PublishingForm({
         __csrf_token: csrfToken,
         __action: 'update_access_control',
         accessControl: {
-          publishDate: data.publishDate
-            ? Temporal.PlainDateTime.from(data.publishDate).toString()
-            : null,
-          archiveDate: data.archiveDate
-            ? Temporal.PlainDateTime.from(data.archiveDate).toString()
-            : null,
+          publishDate: data.publishDate === '' ? null : data.publishDate,
+          archiveDate: data.archiveDate === '' ? null : data.archiveDate,
         },
         orig_hash: origHash,
       };
@@ -265,13 +222,9 @@ export function PublishingForm({
   const handleAddWeek = (field: 'publishDate' | 'archiveDate') => {
     const currentValue = field === 'publishDate' ? publishDate : archiveDate;
     if (currentValue) {
-      const currentDate = new Date(currentValue);
-      const newValue = addWeeksToDatetime(
-        instantFromDate(currentDate),
-        1,
-        courseInstance.display_timezone,
-      );
-      setValue(field, instantToString(newValue, courseInstance.display_timezone));
+      const currentDate = stringToZonedDateTime(currentValue, courseInstance.display_timezone);
+      const newValue = currentDate.add({ weeks: 1 });
+      setValue(field, newValue.toString());
     }
   };
 
@@ -282,8 +235,8 @@ export function PublishingForm({
         return 'Publish date is required for scheduled publishing';
       }
       // Check if publish date is in the future
-      const now = new Date();
-      const publishDateTime = new Date(value);
+      const now = nowInTimezone(courseInstance.display_timezone);
+      const publishDateTime = stringToZonedDateTime(value, courseInstance.display_timezone);
       if (publishDateTime <= now) {
         return 'Publish date must be in the future for scheduled publishing';
       }
@@ -298,8 +251,8 @@ export function PublishingForm({
       }
       // Check if archive date is after publish date
       if (publishDate && value) {
-        const publishDateTime = new Date(publishDate);
-        const archiveDateTime = new Date(value);
+        const publishDateTime = stringToZonedDateTime(publishDate, courseInstance.display_timezone);
+        const archiveDateTime = stringToZonedDateTime(value, courseInstance.display_timezone);
         if (archiveDateTime <= publishDateTime) {
           return 'Archive date must be after publish date';
         }
@@ -390,26 +343,14 @@ export function PublishingForm({
                 <div class="ms-4 mt-1 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
-                    date={
-                      new Date(
-                        Temporal.PlainDateTime.from(publishDate).toZonedDateTime(
-                          courseInstance.display_timezone,
-                        ).epochMilliseconds,
-                      )
-                    }
+                    date={stringToZonedDateTime(publishDate, courseInstance.display_timezone)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be archived at{' '}
                   <FriendlyDate
-                    date={
-                      new Date(
-                        Temporal.PlainDateTime.from(archiveDate).toZonedDateTime(
-                          courseInstance.display_timezone,
-                        ).epochMilliseconds,
-                      )
-                    }
+                    date={stringToZonedDateTime(archiveDate, courseInstance.display_timezone)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
