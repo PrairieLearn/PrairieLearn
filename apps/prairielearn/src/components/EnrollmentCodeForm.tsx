@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/compat';
-import { Alert, Card } from 'react-bootstrap';
+import { Alert, Card, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 interface EnrollmentCodeFormData {
@@ -10,7 +10,8 @@ interface EnrollmentCodeFormData {
 
 interface EnrollmentCodeFormProps {
   style: 'modal' | 'card';
-  onValidEnrollmentCode: (courseInstanceId: number, enrollmentCode: string) => void;
+  show?: boolean;
+  onHide?: () => void;
   autoFocus?: boolean;
   disabled?: boolean;
   class?: string;
@@ -18,7 +19,8 @@ interface EnrollmentCodeFormProps {
 
 export function EnrollmentCodeForm({
   style,
-  onValidEnrollmentCode,
+  show,
+  onHide,
   autoFocus = false,
   disabled = false,
   class: className = '',
@@ -163,8 +165,8 @@ export function EnrollmentCodeForm({
       if (response.ok) {
         const responseData = await response.json();
         if (responseData.course_instance_id) {
-          // Call the callback with the course instance ID and enrollment code
-          onValidEnrollmentCode(responseData.course_instance_id, fullCode);
+          // Redirect to the join page
+          window.location.href = `/pl/course_instance/${responseData.course_instance_id}/enroll?enrollment_code=${encodeURIComponent(fullCode)}`;
         } else {
           setError('No course found with this enrollment code');
         }
@@ -294,5 +296,18 @@ export function EnrollmentCodeForm({
     );
   }
 
-  return <div class={className}>{formContent}</div>;
+  // style === 'modal'
+  return (
+    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Join a course</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>{formContent}</Modal.Body>
+      <Modal.Footer>
+        <button type="button" class="btn btn-secondary" onClick={onHide}>
+          Cancel
+        </button>
+      </Modal.Footer>
+    </Modal>
+  );
 }

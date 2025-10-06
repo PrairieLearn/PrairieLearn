@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
 
+import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
@@ -10,7 +11,6 @@ import {
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 
-import { EnrollmentCodeModal } from './EnrollmentCodeModal.js';
 import { StudentCoursesCard } from './StudentCoursesCard.js';
 
 export const InstructorHomePageCourseSchema = z.object({
@@ -310,7 +310,7 @@ function EmptyStateCards({
           </div>
         </div>
       </div>
-      <EnrollmentCodeModal show={show} onHide={() => setShow(false)} />
+      <EnrollmentCodeForm style="modal" show={show} onHide={() => setShow(false)} />
     </>
   );
 }

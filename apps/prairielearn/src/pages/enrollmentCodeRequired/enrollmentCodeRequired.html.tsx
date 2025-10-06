@@ -1,16 +1,6 @@
 import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
 
-export function EnrollmentCodeRequired({ csrfToken }: { csrfToken: string }) {
-  const handleValidEnrollmentCode = (courseInstanceId: number, enrollmentCode: string) => {
-    // Set the hidden input value and submit the form
-    const hiddenInput = document.getElementById('enrollment_code_hidden');
-    (hiddenInput! as HTMLInputElement).value = enrollmentCode;
-
-    // Submit the form programmatically after setting the hidden input
-    const form = document.querySelector('form')!;
-    form.submit();
-  };
-
+export function EnrollmentCodeRequired() {
   return (
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -25,16 +15,7 @@ export function EnrollmentCodeRequired({ csrfToken }: { csrfToken: string }) {
                 code provided by your instructor.
               </p>
 
-              <form method="POST">
-                <input type="hidden" name="__csrf_token" value={csrfToken} />
-                <input type="hidden" name="__action" value="validate_code" />
-                <input type="hidden" name="enrollment_code" id="enrollment_code_hidden" />
-
-                <EnrollmentCodeForm
-                  style="modal"
-                  onValidEnrollmentCode={handleValidEnrollmentCode}
-                />
-              </form>
+              <EnrollmentCodeForm style="card" />
             </div>
           </div>
 

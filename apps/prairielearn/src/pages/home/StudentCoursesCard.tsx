@@ -2,13 +2,12 @@ import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import z from 'zod';
 
+import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-
-import { EnrollmentCodeModal } from './EnrollmentCodeModal.js';
 
 export const StudentHomePageCourseSchema = z.object({
   id: RawStudentCourseInstanceSchema.shape.id,
@@ -155,7 +154,8 @@ export function StudentCoursesCard({
         </div>
       )}
 
-      <EnrollmentCodeModal
+      <EnrollmentCodeForm
+        style="modal"
         show={showEnrollmentCodeModal}
         onHide={() => setShowEnrollmentCodeModal(false)}
       />
