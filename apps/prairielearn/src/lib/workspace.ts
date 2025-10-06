@@ -170,6 +170,7 @@ async function controlContainer(
   action: 'init',
   options: { useInitialZip: boolean },
 ): Promise<void>;
+
 async function controlContainer(
   workspace_id: string,
   action: 'init' | 'getGradedFiles',
