@@ -1,32 +1,16 @@
-import { useForm } from 'react-hook-form';
-
-import { EnrollmentCodeInput } from '../../components/EnrollmentCodeInput.js';
-
-interface EnrollmentCodeForm {
-  code1: string;
-  code2: string;
-  code3: string;
-}
+import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
 
 export function EnrollmentCodeRequired({ csrfToken }: { csrfToken: string }) {
-  const { register, handleSubmit, setValue, watch } = useForm<EnrollmentCodeForm>({
-    mode: 'onChange',
-    defaultValues: {
-      code1: '',
-      code2: '',
-      code3: '',
-    },
-  });
-
-  const onSubmit = async (data: EnrollmentCodeForm) => {
-    const fullCode = `${data.code1}${data.code2}${data.code3}`;
+  const handleValidEnrollmentCode = (courseInstanceId: number, enrollmentCode: string) => {
+    // Set the hidden input value and submit the form
     const hiddenInput = document.getElementById('enrollment_code_hidden');
-    (hiddenInput! as HTMLInputElement).value = fullCode;
+    (hiddenInput! as HTMLInputElement).value = enrollmentCode;
 
     // Submit the form programmatically after setting the hidden input
     const form = document.querySelector('form')!;
     form.submit();
   };
+
   return (
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -41,25 +25,15 @@ export function EnrollmentCodeRequired({ csrfToken }: { csrfToken: string }) {
                 code provided by your instructor.
               </p>
 
-              <form method="POST" onSubmit={handleSubmit(onSubmit)}>
+              <form method="POST">
                 <input type="hidden" name="__csrf_token" value={csrfToken} />
                 <input type="hidden" name="__action" value="validate_code" />
                 <input type="hidden" name="enrollment_code" id="enrollment_code_hidden" />
 
-                <EnrollmentCodeInput
-                  register={register}
-                  setValue={setValue}
-                  watch={watch}
-                  code1Field="code1"
-                  code2Field="code2"
-                  code3Field="code3"
+                <EnrollmentCodeForm
+                  style="modal"
+                  onValidEnrollmentCode={handleValidEnrollmentCode}
                 />
-
-                <div class="d-grid mt-3">
-                  <button type="submit" class="btn btn-primary btn-lg">
-                    Join Course
-                  </button>
-                </div>
               </form>
             </div>
           </div>
