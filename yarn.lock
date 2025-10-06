@@ -4323,6 +4323,7 @@ __metadata:
     "@prairielearn/error": "workspace:^"
     "@prairielearn/html": "workspace:^"
     "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/superjson": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@types/node": "npm:^22.18.8"
@@ -4432,7 +4433,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/superjson@workspace:packages/superjson":
+"@prairielearn/superjson@workspace:^, @prairielearn/superjson@workspace:packages/superjson":
   version: 0.0.0-use.local
   resolution: "@prairielearn/superjson@workspace:packages/superjson"
   dependencies:
