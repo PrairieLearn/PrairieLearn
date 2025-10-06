@@ -4548,6 +4548,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/zod@workspace:packages/zod"
   dependencies:
+    "@js-temporal/polyfill": "npm:^0.5.1"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^22.18.8"
     "@vitest/coverage-v8": "npm:^3.2.4"
