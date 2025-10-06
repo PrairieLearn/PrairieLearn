@@ -1,4 +1,4 @@
-import { toTemporalInstant } from '@js-temporal/polyfill';
+import { Temporal, toTemporalInstant } from '@js-temporal/polyfill';
 import keyBy from 'lodash/keyBy.js';
 
 type TimePrecision = 'hour' | 'minute' | 'second';
@@ -374,7 +374,7 @@ function formatDateFriendlyParts(
  * @returns Human-readable string representing the date and time.
  */
 export function formatDateFriendly(
-  date: Date,
+  date: Date | Temporal.Instant,
   timezone: string,
   {
     baseDate = new Date(),
@@ -394,6 +394,10 @@ export function formatDateFriendly(
     minPrecision?: TimePrecision;
   } = {},
 ): string {
+  if (date instanceof Temporal.Instant) {
+    date = new Date(date.epochMilliseconds);
+  }
+
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
     date,
     timezone,
