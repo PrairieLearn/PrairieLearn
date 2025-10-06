@@ -492,8 +492,8 @@ router.get(
       origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
     }
 
-    const canEdit = false;
-    // res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     const authors = await sqldb.queryRows(
       sql.author_for_qid,
