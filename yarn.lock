@@ -4164,7 +4164,6 @@ __metadata:
     crypto-js: "npm:^4.2.0"
     csv-parse: "npm:^6.1.0"
     csv-stringify: "npm:^6.6.0"
-    csvtojson: "npm:^2.0.10"
     d3: "npm:^7.9.0"
     date-fns: "npm:^4.1.0"
     date-fns-tz: "npm:^3.2.0"
@@ -4283,7 +4282,6 @@ __metadata:
     ua-parser-js: "npm:^1.0.41"
     unified: "npm:^11.0.5"
     unzipper: "npm:^0.12.3"
-    uuid: "npm:^11.1.0"
     vite: "npm:^7.1.7"
     vitest: "npm:^3.2.4"
     winston: "npm:^3.18.3"
@@ -4509,7 +4507,6 @@ __metadata:
     tsx: "npm:^4.20.6"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
-    uuid: "npm:^11.1.0"
     vitest: "npm:^3.2.4"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -8127,7 +8124,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.5.1, bluebird@npm:~3.7.2":
+"bluebird@npm:~3.7.2":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 10c0/680de03adc54ff925eaa6c7bb9a47a0690e8b5de60f4792604aae8ed618c65e6b63a7893b57ca924beaf53eee69c5af4f8314148c08124c550fe1df1add897d2
@@ -9158,19 +9155,6 @@ __metadata:
   version: 6.6.0
   resolution: "csv-stringify@npm:6.6.0"
   checksum: 10c0/2e5b14ff1e434aba7b8cae74faa0329c1d967654820f2ae3f358a660b5887ab623224ed8eb7f3ab6d0f7342663c965ca079ca420b6046210709f72e8aec87d94
-  languageName: node
-  linkType: hard
-
-"csvtojson@npm:^2.0.10":
-  version: 2.0.10
-  resolution: "csvtojson@npm:2.0.10"
-  dependencies:
-    bluebird: "npm:^3.5.1"
-    lodash: "npm:^4.17.3"
-    strip-bom: "npm:^2.0.0"
-  bin:
-    csvtojson: ./bin/csvtojson
-  checksum: 10c0/0a35e035db845c93768b5e1bf606d2d2ca5dadd36dd974474c6f54ed689fdbbb7fa21b723b2e1eb7fde9aa5d5d1e3e83d2162f1b8cb419fa7e0e196ec263a176
   languageName: node
   linkType: hard
 
@@ -12356,13 +12340,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"is-utf8@npm:^0.2.0":
-  version: 0.2.1
-  resolution: "is-utf8@npm:0.2.1"
-  checksum: 10c0/3ed45e5b4ddfa04ed7e32c63d29c61b980ecd6df74698f45978b8c17a54034943bcbffb6ae243202e799682a66f90fef526f465dd39438745e9fe70794c1ef09
-  languageName: node
-  linkType: hard
-
 "is-what@npm:^4.1.8":
   version: 4.1.16
   resolution: "is-what@npm:4.1.16"
@@ -13108,7 +13085,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.3, lodash@npm:^4.17.5":
+"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.5":
   version: 4.17.21
   resolution: "lodash@npm:4.17.21"
   checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
@@ -17198,15 +17175,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"strip-bom@npm:^2.0.0":
-  version: 2.0.0
-  resolution: "strip-bom@npm:2.0.0"
-  dependencies:
-    is-utf8: "npm:^0.2.0"
-  checksum: 10c0/4fcbb248af1d5c1f2d710022b7d60245077e7942079bfb7ef3fc8c1ae78d61e96278525ba46719b15ab12fced5c7603777105bc898695339d7c97c64d300ed0b
-  languageName: node
-  linkType: hard
-
 "strip-bom@npm:^3.0.0":
   version: 3.0.0
   resolution: "strip-bom@npm:3.0.0"
@@ -18247,15 +18215,6 @@ __metadata:
   bin:
     uuid: dist/bin/uuid
   checksum: 10c0/eab18c27fe4ab9fb9709a5d5f40119b45f2ec8314f8d4cf12ce27e4c6f4ffa4a6321dc7db6c515068fa373c075b49691ba969f0010bf37f44c37ca40cd6bf7fe
-  languageName: node
-  linkType: hard
-
-"uuid@npm:^11.1.0":
-  version: 11.1.0
-  resolution: "uuid@npm:11.1.0"
-  bin:
-    uuid: dist/esm/bin/uuid
-  checksum: 10c0/34aa51b9874ae398c2b799c88a127701408cd581ee89ec3baa53509dd8728cbb25826f2a038f9465f8b7be446f0fbf11558862965b18d21c993684297628d4d3
   languageName: node
   linkType: hard
 

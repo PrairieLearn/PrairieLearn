@@ -265,7 +265,7 @@ makeMigrator({
     if (!el.parentElement?.classList.contains('input-group')) return;
 
     for (const child of Array.from(el.children)) {
-      el.parentElement?.insertBefore(child, el);
+      el.parentElement.insertBefore(child, el);
     }
     el.remove();
 

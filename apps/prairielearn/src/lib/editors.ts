@@ -6,7 +6,6 @@ import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -654,7 +653,7 @@ export class AssessmentCopyEditor extends Editor {
     this.assessment = assessment;
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -845,7 +844,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.course_instance = course_instance;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.aid = params.aid;
     this.title = params.title;
@@ -959,7 +958,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
@@ -1059,7 +1058,7 @@ export class CourseInstanceCopyEditor extends Editor {
           // All non-deleted questions should have a UUID.
           assert(question.uuid, 'question.uuid is required');
 
-          if (existingQuestionUuids.has(question.uuid)) return uuidv4();
+          if (existingQuestionUuids.has(question.uuid)) return crypto.randomUUID();
 
           return question.uuid;
         });
@@ -1282,7 +1281,7 @@ export class CourseInstanceAddEditor extends Editor {
       description: 'Add course instance',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
@@ -1417,7 +1416,7 @@ export class QuestionAddEditor extends Editor {
       description: 'Add question',
     });
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
     this.qid = params.qid;
     this.title = params.title;
     this.template_source = params.template_source;
@@ -1861,7 +1860,7 @@ export class QuestionCopyEditor extends Editor {
     this.from_course = from_course;
     this.is_transfer = is_transfer;
 
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
   }
 
   async write() {
