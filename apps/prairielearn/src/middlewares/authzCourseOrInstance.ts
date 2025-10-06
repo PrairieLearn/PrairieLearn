@@ -161,7 +161,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.institution = authzData.institution;
 
   // The side nav is expanded by default.
-  res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true;
+  res.locals.side_nav_expanded = req.session.side_nav_expanded ?? true;
 
   const permissions_course = authzData.permissions_course;
   res.locals.authz_data = {
