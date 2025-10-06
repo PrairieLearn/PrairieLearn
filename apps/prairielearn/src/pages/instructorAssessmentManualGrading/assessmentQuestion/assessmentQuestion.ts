@@ -1,8 +1,10 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type { ResponseInput } from 'openai/resources/responses/responses.mjs';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { logger } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
@@ -12,23 +14,29 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  selectInstanceQuestionsForAssessmentQuestion,
+  selectLastVariantAndSubmission,
   toggleAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { aiGrade, tuneRubric } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   deleteAiInstanceQuestionGroups,
   selectAssessmentQuestionHasInstanceQuestionGroups,
   selectInstanceQuestionGroups,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
+import { formatPrompt } from '../../../lib/ai.js';
+import type { AssessmentQuestion, Course, InstanceQuestion, Question } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { buildQuestionUrls } from '../../../lib/question-render.js';
+import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
+import * as questionServers from '../../../question-servers/index.js';
 
-import { AssessmentQuestion } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
 const router = Router();
@@ -330,6 +338,15 @@ router.post(
 
       flash('success', `Deleted AI submission grouping results for ${numDeleted} questions.`);
 
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'tune_rubric') {
+      await tuneRubric({
+        assessment_question: res.locals.assessment_question,
+        question: res.locals.question,
+        course: res.locals.course,
+        urlPrefix: res.locals.urlPrefix,
+      });
+      flash('success', 'Tuned rubric.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'modify_rubric_settings') {
       try {
