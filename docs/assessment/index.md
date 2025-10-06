@@ -70,7 +70,7 @@ Each assessment has a `type`, which must be either `"Homework"` or `"Exam"`:
 
 The type controls the overall behavior of the assessment and applies various default settings, some of which can be customized. An assessment's type doesn't have to correspond to how the assessment is administered; for example, an instructor could assign an Exam-type assessment for completion outside of class as homework.
 
-A detailed comparison is shown below.
+A detailed comparison of the two types is shown below.
 
 |                          | `Homework`                                                                                          | `Exam`                                                                                     |
 | ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
