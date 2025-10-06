@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { selectCourseInstanceByEnrollmentCode } from '../../models/course-instances.js';
+import { selectCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 
 const router = Router();
 

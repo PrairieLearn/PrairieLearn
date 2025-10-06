@@ -509,7 +509,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/password', (await import('./pages/authPassword/authPassword.js')).default);
   app.use('/pl/news_items', (await import('./pages/newsItems/newsItems.js')).default);
   app.use('/pl/news_item', (await import('./pages/newsItem/newsItem.js')).default);
-  app.use('/lookup_code', (await import('./pages/lookupCode/lookupCode.js')).default);
   app.use('/pl/request_course', [
     // Users can post data to this page and then view it, so we'll block access to prevent
     // students from using to infiltrate or exfiltrate exam information.
@@ -583,6 +582,12 @@ export async function initExpress(): Promise<Express> {
   app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instance_admin/assessments`);
   });
+
+  // API route for looking up a course instance by enrollment code
+  app.use(
+    '/pl/course_instance/lookup',
+    (await import('./pages/course_instance/lookup/lookupByEnrollmentCode.js')).default,
+  );
 
   // is the course instance being accessed through the student or instructor page route
   app.use('/pl/course_instance/:course_instance_id(\\d+)', function (req, res, next) {

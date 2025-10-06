@@ -43,7 +43,9 @@ export function EnrollmentCodeModal({ show, onHide }: EnrollmentCodeModalProps) 
     clearErrors('root.serverError');
 
     try {
-      const response = await fetch(`/lookup_code?code=${encodeURIComponent(fullCode)}`);
+      const response = await fetch(
+        `/pl/course_instance/lookup?code=${encodeURIComponent(fullCode)}`,
+      );
 
       if (response.ok) {
         const responseData = await response.json();
