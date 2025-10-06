@@ -100,13 +100,13 @@ router.post(
 
     validateCourseRole({ course_role });
 
-    const user = await insertCoursePermissionsByUserUid({
+    await insertCoursePermissionsByUserUid({
       course_id: req.params.course_id,
       uid,
       course_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ user });
+    res.sendStatus(204);
   }),
 );
 
@@ -125,7 +125,7 @@ router.put(
       course_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ output: 'updated: ' + uid });
+    res.sendStatus(204);
   }),
 );
 
@@ -142,7 +142,7 @@ router.delete(
       user_id: user.user_id,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ status: 'complete' });
+    res.sendStatus(204);
   }),
 );
 
@@ -162,7 +162,7 @@ router.post(
       course_instance_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ output: 'updated: ' + uid });
+    res.sendStatus(204);
   }),
 );
 
@@ -182,7 +182,7 @@ router.put(
       course_instance_role,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ output: 'updated: ' + uid });
+    res.sendStatus(204);
   }),
 );
 
@@ -200,7 +200,7 @@ router.delete(
       user_id: user.user_id,
       authn_user_id: res.locals.authz_data.authn_user.user_id,
     });
-    res.status(200).json({ status: 'complete' });
+    res.sendStatus(204);
   }),
 );
 

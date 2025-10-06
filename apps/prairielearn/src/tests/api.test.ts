@@ -448,7 +448,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_role: 'Previewer',
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 204);
       },
     );
 
@@ -496,7 +496,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_role: 'Owner',
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 204);
       },
     );
 
@@ -569,7 +569,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_instance_role: 'Student Data Viewer',
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 204);
       },
     );
 
@@ -623,7 +623,7 @@ describe('API', { timeout: 60_000 }, function () {
             course_instance_role: 'Student Data Editor',
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 204);
       },
     );
 
@@ -718,7 +718,7 @@ describe('API', { timeout: 60_000 }, function () {
             uid: 'dev@example.com',
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(res.status, 204);
       },
     );
 
@@ -775,7 +775,7 @@ describe('API', { timeout: 60_000 }, function () {
           uid: 'dev@example.com',
         }),
       });
-      assert.equal(res.status, 200);
+      assert.equal(res.status, 204);
     });
 
     test.sequential('Use GET endpoint to verify that staff access was removed', async function () {
