@@ -2,4 +2,4 @@ clang==18.1.8 # Major version must match the version of clang installed in the D
 matplotlib==3.10.3
 numpy==1.26.4
 sympy==1.14.0
-lxml==6.0.1
+lxml==6.0.2

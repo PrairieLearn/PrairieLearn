@@ -1,4 +1,3 @@
-import { type Options as CsvParseOptions, parse as csvParse } from 'csv-parse';
 import isPlainObject from 'is-plain-obj';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
@@ -8,21 +7,12 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { createCsvParser } from './csv.js';
 import { IdSchema } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const DEFAULT_CSV_PARSE_OPTIONS: CsvParseOptions = {
-  columns: (header) => header.map((column) => column.toLowerCase()),
-  info: true, // include line number info
-  bom: true, // handle byte order mark if present (sometimes present in files from Excel)
-  trim: true, // trim whitespace around values
-  skipEmptyLines: true,
-  relaxColumnCount: true, // allow rows with different number of columns
-  maxRecordSize: 10000,
-};
 
 /**
  * Update question instance scores from a CSV file.
@@ -71,28 +61,19 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
-      csvParse({
-        ...DEFAULT_CSV_PARSE_OPTIONS,
-        cast: (value, context) => {
-          if (value === '') return null;
-          if (context.header) return value; // do not cast header row
-          if (context.column === 'instance') return Number.parseInt(value);
-          if (
-            [
-              'score_perc',
-              'points',
-              'manual_score_perc',
-              'manual_points',
-              'auto_score_perc',
-              'auto_points',
-            ].includes(context.column.toString())
-          ) {
-            return Number.parseFloat(value);
-          }
-          return value;
-        },
-      }),
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      {
+        integerColumns: ['instance'],
+        floatColumns: [
+          'score_perc',
+          'points',
+          'manual_score_perc',
+          'manual_points',
+          'auto_score_perc',
+          'auto_points',
+        ],
+      },
     );
 
     try {
@@ -193,19 +174,9 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
-      csvParse({
-        ...DEFAULT_CSV_PARSE_OPTIONS,
-        cast: (value, context) => {
-          if (value === '') return null;
-          if (context.header) return value; // do not cast header row
-          if (context.column === 'instance') return Number.parseInt(value);
-          if (['score_perc', 'points'].includes(context.column.toString())) {
-            return Number.parseFloat(value);
-          }
-          return value;
-        },
-      }),
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
     );
 
     try {

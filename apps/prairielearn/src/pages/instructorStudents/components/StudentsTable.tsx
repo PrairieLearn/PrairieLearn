@@ -138,6 +138,7 @@ export function StudentsTable({
     };
 
     const next = adjacentCells[e.key];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!next) {
       return;
     }
@@ -186,6 +187,8 @@ export function StudentsTable({
 
   const tableRect = tableRef.current?.getBoundingClientRect();
 
+  // We toggle this here instead of in the parent since this component logically manages all UI for the table.
+  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
