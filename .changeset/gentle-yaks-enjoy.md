@@ -2,4 +2,4 @@
 '@prairielearn/formatter': minor
 ---
 
-Add support for `Temporal.Instance`
+Add support for `Temporal.Instant`
