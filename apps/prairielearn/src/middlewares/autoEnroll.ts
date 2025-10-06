@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
@@ -25,7 +26,7 @@ export default asyncHandler(async (req, res, next) => {
   const selfEnrollmentAllowed =
     courseInstance.self_enrollment_enabled &&
     (courseInstance.self_enrollment_enabled_before_date == null ||
-      new Date() < courseInstance.self_enrollment_enabled_before_date);
+      Temporal.Now.instant() < courseInstance.self_enrollment_enabled_before_date);
 
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&

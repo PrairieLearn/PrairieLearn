@@ -543,20 +543,17 @@ describe('Course instance syncing', () => {
     const timezone = 'America/New_York';
 
     // We pick an arbitrary date to use.
-    const date = new Date('2025-09-05T20:52:49.000Z');
+    const date = Temporal.Instant.from('2025-09-05T20:52:49.000Z');
 
     // In JSON, the date must be formatted like `2025-01-01T00:00:00` and will
     // interpreted in the course instance's timezone.
-    const jsonDate = Temporal.Instant.from(date.toISOString())
-      .toZonedDateTimeISO(timezone)
-      .toPlainDateTime()
-      .toString();
+    const jsonDate = date.toZonedDateTimeISO(timezone).toPlainDateTime().toString();
 
     const schemaMappings: {
       json: CourseInstanceJsonInput['selfEnrollment'];
       db: {
         self_enrollment_enabled: boolean;
-        self_enrollment_enabled_before_date: Date | null;
+        self_enrollment_enabled_before_date: Temporal.Instant | null;
         self_enrollment_enabled_before_date_enabled: boolean;
         self_enrollment_use_enrollment_code: boolean;
       } | null;

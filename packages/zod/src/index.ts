@@ -1,6 +1,8 @@
 import parsePostgresInterval from 'postgres-interval';
 import { type ZodTypeAny, z } from 'zod';
 
+export { zInstant } from './temporal.js';
+
 const INTERVAL_MS_PER_SECOND = 1000;
 const INTERVAL_MS_PER_MINUTE = 60 * INTERVAL_MS_PER_SECOND;
 const INTERVAL_MS_PER_HOUR = 60 * INTERVAL_MS_PER_MINUTE;

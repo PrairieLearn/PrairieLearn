@@ -6,8 +6,12 @@ import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/co
 import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { type ComponentChildren, Fragment, type VNode } from '@prairielearn/preact-cjs';
+import { registerSuperJSONTemporal } from '@prairielearn/superjson';
 
 import { renderHtml } from './index.js';
+
+// Allow serialization of Temporal types
+registerSuperJSONTemporal(superjson);
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {

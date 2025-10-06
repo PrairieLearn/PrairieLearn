@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 
-import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema, IntervalSchema, zInstant } from '@prairielearn/zod';
 
 // re-export schemas for backwards compatibility
 export { DateFromISOString, IdSchema, IntervalSchema };
@@ -584,7 +584,7 @@ export type Course = z.infer<typeof CourseSchema>;
 export const CourseInstanceSchema = z.object({
   assessments_group_by: z.enum(['Set', 'Module']),
   course_id: IdSchema,
-  deleted_at: DateFromISOString.nullable(),
+  deleted_at: zInstant.nullable(),
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
@@ -593,7 +593,7 @@ export const CourseInstanceSchema = z.object({
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
   self_enrollment_enabled: z.boolean(),
-  self_enrollment_enabled_before_date: DateFromISOString.nullable(),
+  self_enrollment_enabled_before_date: zInstant.nullable(),
   self_enrollment_enabled_before_date_enabled: z.boolean(),
   self_enrollment_use_enrollment_code: z.boolean(),
   share_source_publicly: z.boolean(),

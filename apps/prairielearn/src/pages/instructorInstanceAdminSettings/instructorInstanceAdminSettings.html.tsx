@@ -1,4 +1,3 @@
-import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -58,9 +57,7 @@ export function InstructorInstanceAdminSettings({
     self_enrollment_enabled_before_date_enabled:
       courseInstance.self_enrollment_enabled_before_date_enabled,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
-      ? Temporal.Instant.fromEpochMilliseconds(
-          courseInstance.self_enrollment_enabled_before_date.getTime(),
-        )
+      ? courseInstance.self_enrollment_enabled_before_date
           .toZonedDateTimeISO(courseInstance.display_timezone)
           .toPlainDateTime()
           .toString()

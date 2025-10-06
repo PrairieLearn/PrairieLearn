@@ -4432,6 +4432,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/superjson@workspace:packages/superjson":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/superjson@workspace:packages/superjson"
+  dependencies:
+    "@js-temporal/polyfill": "npm:^0.5.1"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^22.18.8"
+    "@vitest/coverage-v8": "npm:^3.2.4"
+    superjson: "npm:^2.2.2"
+    typescript: "npm:^5.9.3"
+    vitest: "npm:^3.2.4"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
