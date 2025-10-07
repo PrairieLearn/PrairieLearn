@@ -15,16 +15,18 @@ BooleanFromCheckboxSchema.parse('1'); // true
 BooleanFromCheckboxSchema.parse('on'); // true
 ```
 
-### `zInstant`
-
-The temporal helpers are originally from [`temporal-zod`](https://github.com/macalinao/temporal-utils/tree/master/packages/temporal-zod) and were modified to work with `@js-temporal/polyfill` instead of `temporal-polyfill`.
+### `DateFromISOString`
 
 ```ts
-import { zInstant } from '@prairielearn/zod';
+import { DateFromISOString } from '@prairielearn/zod';
 
-zInstant.parse('2023-01-01T12:00:00Z');
+DateFromISOString.parse('2023-01-01T12:00:00Z'); // Date
 ```
 
-### Licensing
+### `InstantFromISOString`
 
-Only the code for the `temporal` helpers is licensed under the Apache 2.0 license.
+```ts
+import { InstantFromISOString } from '@prairielearn/zod';
+
+InstantFromISOString.parse('2023-01-01T12:00:00Z'); // Temporal.Instant
+```

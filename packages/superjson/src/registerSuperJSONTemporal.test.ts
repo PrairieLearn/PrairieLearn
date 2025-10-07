@@ -8,7 +8,7 @@ describe('registerSuperJSONTemporal', () => {
   it('should register the serializers/deserializers for Temporal types', () => {
     registerSuperJSONTemporal(SuperJSON);
 
-    const zonedDateTime = Temporal.ZonedDateTime.from('2022-01-28T19:53+01:00[Europe/Berlin]');
+    const zonedDateTime = Temporal.ZonedDateTime.from('2025-10-07T19:53+01:00[America/New_York]');
     const obj = {
       zonedDateTime,
       plainDate: zonedDateTime.toPlainDate(),
@@ -23,16 +23,15 @@ describe('registerSuperJSONTemporal', () => {
       }),
       instant: zonedDateTime.toInstant(),
     };
-    type ObjType = typeof obj;
-    const newObj = SuperJSON.parse<ObjType>(SuperJSON.stringify(obj));
+    const parsedObj = SuperJSON.parse<typeof obj>(SuperJSON.stringify(obj));
 
-    expect(newObj.zonedDateTime.equals(obj.zonedDateTime)).toEqual(true);
-    expect(newObj.plainDateTime.equals(obj.plainDateTime)).toEqual(true);
-    expect(newObj.plainMonthDay.equals(obj.plainMonthDay)).toEqual(true);
-    expect(newObj.plainYearMonth.equals(obj.plainYearMonth)).toEqual(true);
-    expect(newObj.plainTime.equals(obj.plainTime)).toEqual(true);
-    expect(newObj.plainDate.equals(obj.plainDate)).toEqual(true);
-    expect(newObj.instant.equals(obj.instant)).toEqual(true);
-    expect(newObj.duration.toString()).toEqual(obj.duration.toString());
+    expect(parsedObj.zonedDateTime.equals(obj.zonedDateTime)).toBeTruthy();
+    expect(parsedObj.plainDateTime.equals(obj.plainDateTime)).toBeTruthy();
+    expect(parsedObj.plainMonthDay.equals(obj.plainMonthDay)).toBeTruthy();
+    expect(parsedObj.plainYearMonth.equals(obj.plainYearMonth)).toBeTruthy();
+    expect(parsedObj.plainTime.equals(obj.plainTime)).toBeTruthy();
+    expect(parsedObj.plainDate.equals(obj.plainDate)).toBeTruthy();
+    expect(parsedObj.instant.equals(obj.instant)).toBeTruthy();
+    expect(parsedObj.duration.toString()).toEqual(obj.duration.toString());
   });
 });

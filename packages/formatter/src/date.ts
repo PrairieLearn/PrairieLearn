@@ -15,7 +15,7 @@ type TimePrecision = 'hour' | 'minute' | 'second';
  * @returns Human-readable string representing the date.
  */
 export function formatDate(
-  date: Date,
+  date: Date | Temporal.Instant,
   timeZone: string,
   {
     includeTz = true,
@@ -23,6 +23,8 @@ export function formatDate(
     includeMs = false,
   }: { includeTz?: boolean; longTz?: boolean; includeMs?: boolean } = {},
 ): string {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -53,7 +55,9 @@ export function formatDate(
  * @param timeZone The time zone to use for formatting.
  * @returns Human-readable string representing the date.
  */
-export function formatDateYMD(date: Date, timeZone: string): string {
+export function formatDateYMD(date: Date | Temporal.Instant, timeZone: string): string {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -72,7 +76,9 @@ export function formatDateYMD(date: Date, timeZone: string): string {
  * @param timeZone The time zone to use for formatting.
  * @returns Human-readable string representing the date.
  */
-export function formatDateYMDHM(date: Date, timeZone: string): string {
+export function formatDateYMDHM(date: Date | Temporal.Instant, timeZone: string): string {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -112,10 +118,12 @@ export function formatTz(timeZone: string): string {
  * @returns Human-readable string representing the date.
  */
 export function formatDateHMS(
-  date: Date,
+  date: Date | Temporal.Instant,
   timeZone: string,
   { includeTz = true }: { includeTz?: boolean } = {},
 ): string {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -143,11 +151,15 @@ export function formatDateHMS(
  * @returns Human-readable string representing the date.
  */
 export function formatDateWithinRange(
-  date: Date,
-  rangeStart: Date,
-  rangeEnd: Date,
+  date: Date | Temporal.Instant,
+  rangeStart: Date | Temporal.Instant,
+  rangeEnd: Date | Temporal.Instant,
   timeZone: string,
 ): string {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+  if (rangeStart instanceof Temporal.Instant) rangeStart = new Date(rangeStart.epochMilliseconds);
+  if (rangeEnd instanceof Temporal.Instant) rangeEnd = new Date(rangeEnd.epochMilliseconds);
+
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
     hourCycle: 'h23',
@@ -229,12 +241,15 @@ export function formatDateWithinRange(
  *
  */
 function formatDateFriendlyParts(
-  date: Date,
+  date: Date | Temporal.Instant,
   timezone: string,
-  baseDate: Date,
+  baseDate: Date | Temporal.Instant,
   maxPrecision: TimePrecision = 'second',
   minPrecision: TimePrecision = 'hour',
 ): { dateFormatted: string; timeFormatted: string; timezoneFormatted: string } {
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+  if (baseDate instanceof Temporal.Instant) baseDate = new Date(baseDate.epochMilliseconds);
+
   // compute the number of days from the base date (0 = today, 1 = tomorrow, etc.)
 
   const baseZonedDateTime = toTemporalInstant.call(baseDate).toZonedDateTimeISO(timezone);
@@ -385,7 +400,7 @@ export function formatDateFriendly(
     maxPrecision = 'second',
     minPrecision = 'hour',
   }: {
-    baseDate?: Date;
+    baseDate?: Date | Temporal.Instant;
     includeTz?: boolean;
     timeFirst?: boolean;
     dateOnly?: boolean;
@@ -394,9 +409,8 @@ export function formatDateFriendly(
     minPrecision?: TimePrecision;
   } = {},
 ): string {
-  if (date instanceof Temporal.Instant) {
-    date = new Date(date.epochMilliseconds);
-  }
+  if (date instanceof Temporal.Instant) date = new Date(date.epochMilliseconds);
+  if (baseDate instanceof Temporal.Instant) baseDate = new Date(baseDate.epochMilliseconds);
 
   const { dateFormatted, timeFormatted, timezoneFormatted } = formatDateFriendlyParts(
     date,
@@ -448,8 +462,8 @@ export function formatDateFriendly(
  * @returns Human-readable string representing the datetime range.
  */
 export function formatDateRangeFriendly(
-  start: Date,
-  end: Date,
+  start: Date | Temporal.Instant,
+  end: Date | Temporal.Instant,
   timezone: string,
   {
     baseDate = new Date(),
@@ -460,6 +474,9 @@ export function formatDateRangeFriendly(
     minPrecision = 'hour',
   }: Parameters<typeof formatDateFriendly>[2] = {},
 ): string {
+  if (start instanceof Temporal.Instant) start = new Date(start.epochMilliseconds);
+  if (end instanceof Temporal.Instant) end = new Date(end.epochMilliseconds);
+
   const {
     dateFormatted: startDateFormatted,
     timeFormatted: startTimeFormatted,

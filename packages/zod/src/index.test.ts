@@ -1,11 +1,14 @@
+import { Temporal } from '@js-temporal/polyfill';
 import parsePostgresInterval from 'postgres-interval';
-import { assert, describe, it } from 'vitest';
+import { assert, describe, expect, it } from 'vitest';
 
 import {
   ArrayFromCheckboxSchema,
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
+  DateFromISOString,
   IdSchema,
+  InstantFromISOString,
   IntegerFromStringOrEmptySchema,
   IntervalSchema,
 } from './index.js';
@@ -161,5 +164,33 @@ describe('ArrayFromCheckboxSchema', () => {
   it('parses an array of strings', () => {
     const result = ArrayFromCheckboxSchema.parse(['a', 'b', 'c']);
     assert.deepEqual(result, ['a', 'b', 'c']);
+  });
+});
+
+describe('DateFromISOString', () => {
+  it('should parse a Date', () => {
+    const validDate = new Date('2023-01-01T00:00:00Z');
+    const result = DateFromISOString.safeParse(validDate);
+    expect(result.success).toBe(true);
+  });
+});
+
+describe('InstantFromISOString', () => {
+  it('should parse a Temporal.Instant', () => {
+    const validInstant = Temporal.Instant.from('2023-01-01T00:00:00Z');
+    const result = InstantFromISOString.safeParse(validInstant);
+    expect(result.success).toBe(true);
+  });
+  it('should parse a string to a Temporal.Instant', () => {
+    const inputString = '2025-10-13 11:15:48-05';
+    const validInstant = Temporal.Instant.from(inputString);
+    const result = InstantFromISOString.safeParse(inputString);
+    expect(result.success).toBe(true);
+    expect(result.data!.toString()).toBe(validInstant.toString());
+  });
+  it('should not parse a invalid Temporal.Instant', () => {
+    const inputString = 'invalid-instant';
+    const result = InstantFromISOString.safeParse(inputString);
+    expect(result.success).toBe(false);
   });
 });

@@ -11,6 +11,7 @@ import { HydratedComponentsRegistry } from './registry.js';
 
 // This file, if imported, will register a selector observer that will hydrate
 // registered components on the client.
+
 const registry = new HydratedComponentsRegistry();
 
 // Allow serialization of Temporal types

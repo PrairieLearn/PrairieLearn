@@ -4,7 +4,7 @@ import type { SuperJSON } from 'superjson';
 export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCustom'>): void => {
   superjson.registerCustom<Temporal.ZonedDateTime, string>(
     {
-      isApplicable: (v): v is Temporal.ZonedDateTime => v instanceof Temporal.ZonedDateTime,
+      isApplicable: (v) => v instanceof Temporal.ZonedDateTime,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.ZonedDateTime.from(raw),
     },
@@ -13,7 +13,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.PlainTime, string>(
     {
-      isApplicable: (v): v is Temporal.PlainTime => v instanceof Temporal.PlainTime,
+      isApplicable: (v) => v instanceof Temporal.PlainTime,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.PlainTime.from(raw),
     },
@@ -22,7 +22,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.PlainMonthDay, string>(
     {
-      isApplicable: (v): v is Temporal.PlainMonthDay => v instanceof Temporal.PlainMonthDay,
+      isApplicable: (v) => v instanceof Temporal.PlainMonthDay,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.PlainMonthDay.from(raw),
     },
@@ -31,7 +31,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.PlainYearMonth, string>(
     {
-      isApplicable: (v): v is Temporal.PlainYearMonth => v instanceof Temporal.PlainYearMonth,
+      isApplicable: (v) => v instanceof Temporal.PlainYearMonth,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.PlainYearMonth.from(raw),
     },
@@ -40,7 +40,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.PlainDate, string>(
     {
-      isApplicable: (v): v is Temporal.PlainDate => v instanceof Temporal.PlainDate,
+      isApplicable: (v) => v instanceof Temporal.PlainDate,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.PlainDate.from(raw),
     },
@@ -49,7 +49,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.PlainDateTime, string>(
     {
-      isApplicable: (v): v is Temporal.PlainDateTime => v instanceof Temporal.PlainDateTime,
+      isApplicable: (v) => v instanceof Temporal.PlainDateTime,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.PlainDateTime.from(raw),
     },
@@ -58,7 +58,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.Duration, string>(
     {
-      isApplicable: (v): v is Temporal.Duration => v instanceof Temporal.Duration,
+      isApplicable: (v) => v instanceof Temporal.Duration,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.Duration.from(raw),
     },
@@ -67,7 +67,7 @@ export const registerSuperJSONTemporal = (superjson: Pick<SuperJSON, 'registerCu
 
   superjson.registerCustom<Temporal.Instant, string>(
     {
-      isApplicable: (v): v is Temporal.Instant => v instanceof Temporal.Instant,
+      isApplicable: (v) => v instanceof Temporal.Instant,
       serialize: (v) => v.toJSON(),
       deserialize: (raw) => Temporal.Instant.from(raw),
     },
