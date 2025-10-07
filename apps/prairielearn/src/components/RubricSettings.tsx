@@ -34,6 +34,21 @@ export function RubricSettings({
         ? rubricItemsWithDisagreementCount[itemA.id]
         : null,
   }));
+  const { variant_params, variant_true_answer, submission_submitted_answer } = context;
+  // const variant_params: Record<string, string> = { a: 'number' };
+  // const variant_true_answer: Record<string, string> = { b: 'something' };
+  // const submission_submitted_answer: Record<string, string> = { ans: 'abc' };
+  const params: string[] = [];
+  const groups = [
+    [variant_params, 'params'],
+    [variant_true_answer, 'correct_answers'],
+    [submission_submitted_answer, 'submitted_answers'],
+  ];
+  groups.forEach(([group, groupName]) =>
+    Object.keys(group || {}).forEach((key) => {
+      params.push(`{{${groupName}.${key}}}`);
+    }),
+  );
 
   // Define states
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
@@ -257,6 +272,32 @@ export function RubricSettings({
     } catch {
       setImportModalWarning('Error reading file content.');
     }
+  };
+
+  const copyMustachePattern = async (e: Event, param: string) => {
+    const button = e.currentTarget as HTMLElement;
+    try {
+      await navigator.clipboard.writeText(param);
+    } catch {
+      return;
+    }
+    button.animate(
+      [
+        { backgroundColor: '', color: '', offset: 0 },
+        { backgroundColor: '#000', color: '#fff', offset: 0.5 },
+        { backgroundColor: '', color: '', offset: 1 },
+      ],
+      500,
+    );
+    $(button)
+      .popover({
+        content: 'Copied!',
+        placement: 'right',
+      })
+      .popover('show');
+    setTimeout(function () {
+      $(button).popover('hide');
+    }, 1000);
   };
 
   const submitSettings = async (use_rubric: boolean) => {
@@ -570,6 +611,25 @@ export function RubricSettings({
             <i class="fas fa-circle-info" />
           </button>
         </div>
+        {params.length > 0 && (
+          <div class="small form-text text-muted">
+            Rubric items may use these entries, which are replaced with the corresponding values for
+            the student variant (click to copy):
+            <ul style="max-height: 7rem; overflow-y: auto;">
+              {params.map((param) => (
+                <li key={`${param}`}>
+                  <button
+                    type="button"
+                    class="btn btn-sm"
+                    onClick={(e) => copyMustachePattern(e, param)}
+                  >
+                    <code>{param}</code>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {settingsError && (
           <div
             key={settingsError}
