@@ -126,7 +126,7 @@ describe('fastSyncQuestion', () => {
     assert.isTrue(await attemptFastSync(course, strategy));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
-    const tags = await selectTagsForQuestion({ question_id: question.id });
+    const tags = await selectTagsByQuestionId(question.id);
     assert.lengthOf(tags, 1);
     assert.isTrue(tags.some((tag) => tag.name === 'another test'));
   });
