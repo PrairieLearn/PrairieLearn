@@ -132,7 +132,7 @@ export function focusFirstFocusableChild(el: HTMLElement) {
 /**
  * Focus on the element, or if it's a radio button, focus on the checked radio button in the same group.
  */
-export function focusElementOrCheckedOption(element: HTMLElement, focusOptions?: FocusOptions) {
+function focusElementOrCheckedOption(element: HTMLElement, focusOptions?: FocusOptions) {
   // If the element receiving focus is a radio button, and there is another
   // radio button in the same group that is currently checked, focus on that one
   // instead.
@@ -158,7 +158,7 @@ export function focusElementOrCheckedOption(element: HTMLElement, focusOptions?:
  * Check if two elements are in the same focus context. This is true if they are the
  * same element, or if they are radio buttons in the same group.
  */
-export function isSameFocusContext(element1: Element | null, element2: Element | null) {
+function isSameFocusContext(element1: Element | null, element2: Element | null) {
   if (!element1 || !element2) return false;
   if (element1 === element2) return true;
   if (element1.tagName === 'INPUT' && element2.tagName === 'INPUT') {
