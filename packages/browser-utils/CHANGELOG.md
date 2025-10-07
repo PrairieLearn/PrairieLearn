@@ -1,5 +1,19 @@
 # @prairielearn/browser-utils
 
+## 2.3.0
+
+### Minor Changes
+
+- 65c63e0: Change the default return type of `decodeData` to unknown
+
+## 2.2.14
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/html@4.0.20
+
 ## 2.2.13
 
 ### Patch Changes

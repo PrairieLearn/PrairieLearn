@@ -1,5 +1,11 @@
 # @prairielearn/node-metrics
 
+## 2.0.9
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 2.0.8
 
 ### Patch Changes

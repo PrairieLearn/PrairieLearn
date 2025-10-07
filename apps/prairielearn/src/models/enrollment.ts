@@ -66,6 +66,7 @@ export async function enrollUserInCourseInstance({
     });
   });
 }
+
 /**
  * Changes the status of an enrollment to joined.
  *

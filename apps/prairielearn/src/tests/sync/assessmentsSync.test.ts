@@ -2,7 +2,6 @@
 import * as path from 'path';
 
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 import { z } from 'zod';
 
@@ -46,7 +45,7 @@ function makeAssessment(
 ): AssessmentJsonInput {
   const assessmentSet = courseData.course.assessmentSets?.[0].name ?? '';
   return {
-    uuid: uuidv4(),
+    uuid: crypto.randomUUID(),
     type,
     title: 'Test assessment',
     set: assessmentSet,
@@ -3651,5 +3650,279 @@ describe('Assessment syncing', () => {
         );
       },
     );
+  });
+
+  it('stores json points data correctly for homework assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: 15,
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              points: 5,
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_points);
+  });
+
+  it('stores json points data correctly for exam assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, points: 10 },
+        {
+          points: [15, 12, 8],
+          alternatives: [
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              points: [5, 3],
+            },
+            {
+              id: util.MANUAL_GRADING_QUESTION_ID,
+            },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['pointsTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('pointsTest');
+    assert.equal(syncedData.alternative_groups[0].json_points, 10);
+    assert.deepEqual(syncedData.alternative_groups[1].json_points, [15, 12, 8]);
+    assert.deepEqual(syncedData.assessment_questions[1].json_points, [5, 3]);
+    assert.isNull(syncedData.assessment_questions[2].json_points);
+  });
+
+  it('stores json max points data correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, points: 10, maxPoints: 10 },
+        {
+          points: 10,
+          maxPoints: 15,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, maxPoints: 5 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_max_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_max_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_max_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_max_points);
+  });
+
+  it('stores json auto points data correctly for homework assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, autoPoints: 10 },
+        {
+          autoPoints: 15,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, autoPoints: 5 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_auto_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_auto_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_auto_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_auto_points);
+  });
+
+  it('stores json auto points data correctly for exam assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, autoPoints: 10 },
+        {
+          autoPoints: [15, 12, 8],
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, autoPoints: [5, 3] },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['examTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('examTest');
+    assert.equal(syncedData.alternative_groups[0].json_auto_points, 10);
+    assert.deepEqual(syncedData.alternative_groups[1].json_auto_points, [15, 12, 8]);
+    assert.deepEqual(syncedData.assessment_questions[1].json_auto_points, [5, 3]);
+    assert.isNull(syncedData.assessment_questions[2].json_auto_points);
+  });
+
+  it('stores json max auto points data correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, autoPoints: 10, maxAutoPoints: 10 },
+        {
+          autoPoints: 10,
+          maxAutoPoints: 15,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, autoPoints: 5, maxAutoPoints: 5 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_max_auto_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_max_auto_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_max_auto_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_max_auto_points);
+  });
+
+  it('stores json manual points data correctly for homework assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, manualPoints: 10 },
+        {
+          manualPoints: 15,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, manualPoints: 5 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_manual_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_manual_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_manual_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_manual_points);
+  });
+
+  it('stores json manual points data correctly for exam assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, manualPoints: 10 },
+        {
+          manualPoints: 15,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, manualPoints: 5 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['examTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('examTest');
+    assert.equal(syncedData.alternative_groups[0].json_manual_points, 10);
+    assert.equal(syncedData.alternative_groups[1].json_manual_points, 15);
+    assert.equal(syncedData.assessment_questions[1].json_manual_points, 5);
+    assert.isNull(syncedData.assessment_questions[2].json_manual_points);
+  });
+
+  it('stores json force max points data correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, points: 10, forceMaxPoints: true },
+        {
+          points: 10,
+          forceMaxPoints: false,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, forceMaxPoints: true },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_force_max_points, true);
+    assert.equal(syncedData.alternative_groups[1].json_force_max_points, false);
+    assert.equal(syncedData.assessment_questions[1].json_force_max_points, true);
+    assert.isNull(syncedData.assessment_questions[2].json_force_max_points);
+  });
+
+  it('stores json tries per variant data correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones!.push({
+      title: 'zone 1',
+      questions: [
+        { id: util.QUESTION_ID, points: 10, triesPerVariant: 1 },
+        {
+          points: 10,
+          triesPerVariant: 2,
+          alternatives: [
+            { id: util.ALTERNATIVE_QUESTION_ID, triesPerVariant: 3 },
+            { id: util.MANUAL_GRADING_QUESTION_ID },
+          ],
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['homeworkTest'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('homeworkTest');
+    assert.equal(syncedData.alternative_groups[0].json_tries_per_variant, 1);
+    assert.equal(syncedData.alternative_groups[1].json_tries_per_variant, 2);
+    assert.equal(syncedData.assessment_questions[1].json_tries_per_variant, 3);
+    assert.isNull(syncedData.assessment_questions[2].json_tries_per_variant);
   });
 });

@@ -246,11 +246,18 @@ export const AlternativeGroupSchema = z.object({
   assessment_id: IdSchema,
   id: IdSchema,
   json_allow_real_time_grading: z.boolean().nullable(),
+  json_auto_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_can_submit: z.string().array().nullable(),
   json_can_view: z.string().array().nullable(),
   json_comment: JsonCommentSchema.nullable(),
+  json_force_max_points: z.boolean().nullable(),
   json_grade_rate_minutes: z.number().nullable(),
   json_has_alternatives: z.boolean().nullable(),
+  json_manual_points: z.number().nullable(),
+  json_max_auto_points: z.number().nullable(),
+  json_max_points: z.number().nullable(),
+  json_points: z.union([z.number(), z.array(z.number())]).nullable(),
+  json_tries_per_variant: z.number().nullable(),
   number: z.number().nullable(),
   number_choose: z.number().nullable(),
   zone_id: IdSchema,
@@ -401,8 +408,15 @@ export const AssessmentQuestionSchema = z.object({
   incremental_submission_score_array_variances: z.array(z.number()).nullable(),
   init_points: z.number().nullable(),
   json_allow_real_time_grading: z.boolean().nullable(),
+  json_auto_points: z.union([z.number(), z.array(z.number())]).nullable(),
   json_comment: JsonCommentSchema.nullable(),
+  json_force_max_points: z.boolean().nullable(),
   json_grade_rate_minutes: z.number().nullable(),
+  json_manual_points: z.number().nullable(),
+  json_max_auto_points: z.number().nullable(),
+  json_max_points: z.number().nullable(),
+  json_points: z.union([z.number(), z.array(z.number())]).nullable(),
+  json_tries_per_variant: z.number().nullable(),
   last_submission_score_hist: z.array(z.number()).nullable(),
   last_submission_score_variance: z.number().nullable(),
   manual_rubric_id: IdSchema.nullable(),
@@ -502,6 +516,15 @@ export const AuthnProviderSchema = z.object({
   name: z.enum(['Shibboleth', 'Google', 'Azure', 'LTI', 'SAML', 'LTI 1.3']).nullable(),
 });
 export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
+
+export const AuthorSchema = z.object({
+  author_name: z.string().nullable(),
+  email: z.string().nullable(),
+  id: IdSchema,
+  orcid: z.string().nullable(),
+  origin_course: IdSchema.nullable(),
+});
+export type Author = z.infer<typeof AuthorSchema>;
 
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
@@ -1138,6 +1161,12 @@ export const QueryRunSchema = z.object({
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 
+export const QuestionAuthorSchema = z.object({
+  author_id: IdSchema,
+  id: IdSchema,
+  question_id: IdSchema,
+});
+
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   chunk_id: z.string(),
   doc_path: z.string(),
@@ -1515,6 +1544,7 @@ export const TableNames = [
   'audit_events',
   'audit_logs',
   'authn_providers',
+  'authors',
   'batched_migration_jobs',
   'batched_migrations',
   'chunks',
@@ -1569,6 +1599,7 @@ export const TableNames = [
   'pl_courses',
   'plan_grants',
   'query_runs',
+  'question_authors',
   'question_generation_context_embeddings',
   'question_score_logs',
   'question_tags',

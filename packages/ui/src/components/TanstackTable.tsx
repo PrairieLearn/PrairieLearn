@@ -1,18 +1,15 @@
-import {
-  type Header,
-  type Row,
-  type SortDirection,
-  type Table,
-  flexRender,
-} from '@tanstack/react-table';
+import { flexRender } from '@tanstack/react-table';
 import { notUndefined, useVirtualizer } from '@tanstack/react-virtual';
+import type { Header, Row, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'preact/compat';
+import { useEffect, useRef, useState } from 'preact/hooks';
+import type { JSX } from 'preact/jsx-runtime';
 
-import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
-import type { StudentRow } from '../instructorStudents.shared.js';
-
-import { StatusColumnFilter } from './StatusColumnFilter.js';
+import { ColumnManager } from './ColumnManager.js';
+import {
+  TanstackTableDownloadButton,
+  type TanstackTableDownloadButtonProps,
+} from './TanstackTableDownloadButton.js';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -24,12 +21,12 @@ function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   }
 }
 
-function ResizeHandle({
+function ResizeHandle<RowDataModel>({
   header,
   setColumnSizing,
 }: {
-  header: Header<StudentRow, unknown>;
-  setColumnSizing: Table<StudentRow>['setColumnSizing'];
+  header: Header<RowDataModel, unknown>;
+  setColumnSizing: Table<RowDataModel>['setColumnSizing'];
 }) {
   const minSize = header.column.columnDef.minSize ?? 0;
   const maxSize = header.column.columnDef.maxSize ?? 0;
@@ -88,19 +85,47 @@ function ResizeHandle({
   );
 }
 
-export function StudentsTable({
+const DefaultEmptyState = (
+  <>
+    <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
+    <p class="mb-0">No results found matching your search criteria.</p>
+  </>
+);
+
+interface TanstackTableProps<RowDataModel> {
+  table: Table<RowDataModel>;
+  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
+  rowHeight?: number;
+  emptyState?: JSX.Element;
+}
+
+const DEFAULT_FILTER_MAP = {};
+
+/**
+ * A generic component that renders a full-width, resizeable Tanstack Table.
+ * @param params
+ * @param params.table - The table model
+ * @param params.title - The title of the table
+ * @param params.filters - The filters for the table
+ * @param params.rowHeight - The height of the rows in the table
+ * @param params.emptyState - The empty state for the table
+ */
+export function TanstackTable<RowDataModel>({
   table,
-  enrollmentStatusFilter,
-  setEnrollmentStatusFilter,
+  title,
+  filters = DEFAULT_FILTER_MAP,
+  rowHeight = 42,
+  emptyState = DefaultEmptyState,
 }: {
-  table: Table<StudentRow>;
-  enrollmentStatusFilter: EnumEnrollmentStatus[];
-  setEnrollmentStatusFilter: (value: EnumEnrollmentStatus[]) => void;
+  table: Table<RowDataModel>;
+  title: string;
+  emptyState?: JSX.Element;
+  rowHeight?: number;
+  filters?: Record<string, (props: { header: Header<RowDataModel, unknown> }) => JSX.Element>;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const rows = [...table.getTopRows(), ...table.getCenterRows()];
-  const rowHeight = 42;
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
@@ -111,7 +136,7 @@ export function StudentsTable({
   // Track focused cell for grid navigation
   const [focusedCell, setFocusedCell] = useState<{ row: number; col: number }>({ row: 0, col: 0 });
 
-  const getVisibleCells = (row: Row<StudentRow>) => [
+  const getVisibleCells = (row: Row<RowDataModel>) => [
     ...row.getLeftVisibleCells(),
     ...row.getCenterVisibleCells(),
   ];
@@ -138,6 +163,7 @@ export function StudentsTable({
     };
 
     const next = adjacentCells[e.key];
+
     if (!next) {
       return;
     }
@@ -186,6 +212,8 @@ export function StudentsTable({
 
   const tableRect = tableRef.current?.getBoundingClientRect();
 
+  // We toggle this here instead of in the parent since this component logically manages all UI for the table.
+  // eslint-disable-next-line react-you-might-not-need-an-effect/no-manage-parent
   useEffect(() => {
     document.body.classList.toggle('no-user-select', isTableResizing);
   }, [isTableResizing]);
@@ -226,7 +254,7 @@ export function StudentsTable({
           <table
             class="table table-hover mb-0 border border-top-0"
             style={{ tableLayout: 'fixed' }}
-            aria-label="Students"
+            aria-label={title}
             role="grid"
           >
             <thead>
@@ -307,13 +335,7 @@ export function StudentsTable({
                             )}
                           </button>
 
-                          {header.column.id === 'enrollment_status' && canFilter && (
-                            <StatusColumnFilter
-                              columnId={header.column.id}
-                              enrollmentStatusFilter={enrollmentStatusFilter}
-                              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
-                            />
-                          )}
+                          {canFilter && filters[header.column.id]?.({ header })}
                         </div>
                         {tableRect?.width &&
                         tableRect.width > table.getTotalSize() &&
@@ -414,10 +436,136 @@ export function StudentsTable({
           role="status"
           aria-live="polite"
         >
-          <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
-          <p class="mb-0">No students found matching your search criteria.</p>
+          {emptyState}
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * A generic component that wraps the TanstackTable component in a card.
+ * @param params
+ * @param params.table - The table model
+ * @param params.title - The title of the card
+ * @param params.headerButtons - The buttons to display in the header
+ * @param params.globalFilter - State management for the global filter
+ * @param params.globalFilter.value
+ * @param params.globalFilter.setValue
+ * @param params.globalFilter.placeholder
+ * @param params.tableOptions - Specific options for the table. See {@link TanstackTableProps} for more details.
+ * @param params.downloadButtonOptions - Specific options for the download button. See {@link TanstackTableDownloadButtonProps} for more details.
+ */
+export function TanstackTableCard<RowDataModel>({
+  table,
+  title,
+  headerButtons,
+  globalFilter,
+  tableOptions,
+  downloadButtonOptions = null,
+}: {
+  table: Table<RowDataModel>;
+  title: string;
+  headerButtons: JSX.Element;
+  globalFilter: {
+    value: string;
+    setValue: (value: string) => void;
+    placeholder: string;
+  };
+  tableOptions: Partial<Omit<TanstackTableProps<RowDataModel>, 'table'>>;
+  downloadButtonOptions?: Omit<TanstackTableDownloadButtonProps<RowDataModel>, 'table'> | null;
+}) {
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Track screen size for aria-hidden
+  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
+  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
+
+  useEffect(() => {
+    // TODO: This is a workaround to avoid a hydration mismatch.
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setIsMediumOrLarger(mediaQuery?.matches ?? true);
+  }, [mediaQuery]);
+
+  useEffect(() => {
+    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
+    mediaQuery?.addEventListener('change', handler);
+    return () => mediaQuery?.removeEventListener('change', handler);
+  }, [mediaQuery]);
+
+  // Focus the search input when Ctrl+F is pressed
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
+        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
+          searchInputRef.current.focus();
+          event.preventDefault();
+        }
+      }
+    }
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  return (
+    <div class="card d-flex flex-column h-100">
+      <div class="card-header bg-primary text-white">
+        <div class="d-flex align-items-center justify-content-between gap-2">
+          <div>{title}</div>
+          <div class="d-flex gap-2">
+            {headerButtons}
+
+            {downloadButtonOptions && (
+              <TanstackTableDownloadButton table={table} {...downloadButtonOptions} />
+            )}
+          </div>
+        </div>
+      </div>
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
+          <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
+            <div class="input-group">
+              <input
+                ref={searchInputRef}
+                type="text"
+                class="form-control"
+                aria-label={globalFilter.placeholder}
+                placeholder={globalFilter.placeholder}
+                value={globalFilter.value}
+                onInput={(e) => {
+                  if (!(e.target instanceof HTMLInputElement)) return;
+                  globalFilter.setValue(e.target.value);
+                }}
+              />
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                aria-label="Clear search"
+                title="Clear search"
+                data-bs-toggle="tooltip"
+                onClick={() => globalFilter.setValue('')}
+              >
+                <i class="bi bi-x-circle" aria-hidden="true" />
+              </button>
+            </div>
+            {/* We do this instead of CSS properties for the accessibility checker.
+              We can't have two elements with the same id of 'column-manager-button'. */}
+            {isMediumOrLarger && <ColumnManager table={table} />}
+          </div>
+          {/* We do this instead of CSS properties for the accessibility checker.
+            We can't have two elements with the same id of 'column-manager-button'. */}
+          {!isMediumOrLarger && <ColumnManager table={table} />}
+          <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
+            <div class="text-muted text-nowrap">
+              Showing {table.getRowModel().rows.length} of {table.getCoreRowModel().rows.length}{' '}
+              {title.toLowerCase()}
+            </div>
+          </div>
+        </div>
+        <div class="flex-grow-1">
+          <TanstackTable table={table} title={title} {...tableOptions} />
+        </div>
+      </div>
     </div>
   );
 }
