@@ -21,6 +21,7 @@ import {
   UserSchema,
 } from './db-types.js';
 import { idsEqual } from './id.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
