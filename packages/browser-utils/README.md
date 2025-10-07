@@ -115,26 +115,3 @@ import { focusFirstFocusableChild } from '@prairielearn/browser-utils';
 const modal = document.querySelector('.modal');
 focusFirstFocusableChild(modal);
 ```
-
-### `focusElementOrCheckedOption`
-
-This function will focus the provided element. If the element is a radio button, it will follow the W3C recommendation of focusing the checked radio button in the group instead.
-
-```ts
-import { focusElementOrCheckedOption } from '@prairielearn/browser-utils';
-
-const radio = document.querySelector('input[type="radio"]');
-focusElementOrCheckedOption(radio);
-```
-
-### `isSameFocusContext`
-
-This function checks if two elements correspond to the same tab focus context. For most elements, this corresponds to being the same element, however for radio buttons, this corresponds to being in the same radio button group.
-
-```ts
-import { isSameFocusContext } from '@prairielearn/browser-utils';
-
-const radio1 = document.querySelector('input[type="radio"][name="group1"][value="option1"]');
-const radio2 = document.querySelector('input[type="radio"][name="group1"][value="option2"]');
-console.log(isSameFocusContext(radio1, radio2)); // true
-```
