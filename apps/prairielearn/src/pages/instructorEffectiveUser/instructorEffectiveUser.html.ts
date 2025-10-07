@@ -123,7 +123,7 @@ export function InstructorEffectiveUser({
                   list="userList"
                   type="text"
                   class="form-control me-2"
-                  style="width: 20em;"
+                  style="width: 100%; max-width: 30em;"
                   name="pl_requested_uid"
                   id="changeEffectiveUid"
                   placeholder="username@example.com"
@@ -281,7 +281,7 @@ export function InstructorEffectiveUser({
                 <input
                   type="text"
                   class="form-control me-2"
-                  style="width:30em;"
+                  style="width: 100%; max-width: 30em;"
                   id="changeDate"
                   name="pl_requested_date"
                   value="${formattedReqDate}"

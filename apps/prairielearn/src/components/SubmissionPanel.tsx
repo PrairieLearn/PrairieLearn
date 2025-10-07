@@ -180,7 +180,7 @@ export function SubmissionPanel({
 
       <div class="card mb-4" data-testid="submission-block">
         <div
-          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+          class="card-header bg-light text-dark d-flex flex-wrap align-items-center collapsible-card-header"
         >
           <div class="me-2">
             <div>
