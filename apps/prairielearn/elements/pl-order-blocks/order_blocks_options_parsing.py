@@ -1,8 +1,10 @@
+import re
 from enum import Enum
 from typing import TypedDict
 
 import lxml.html
 import prairielearn as pl
+from dag_checker import ColoredEdge, Edge
 from lxml.etree import _Comment
 
 
@@ -75,6 +77,16 @@ SPEC_CHAR_STR = "*&^$@!~[]{}()|:@?/\\"
 SPEC_CHAR = frozenset(SPEC_CHAR_STR)
 
 
+def is_multigraph(element: lxml.html.HtmlElement) -> bool:
+    for html_tag in element:  # iterate through the html tags inside pl-order-blocks
+        if isinstance(html_tag, _Comment):
+            continue
+        has_colors = "|" in pl.get_string_attrib(html_tag, "depends", "")
+        if has_colors:
+            return True
+    return False
+
+
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
 ) -> tuple[str, list[str]]:
@@ -84,9 +96,34 @@ def get_graph_info(
     return tag, depends
 
 
+def get_multigraph_info(
+    html_tag: lxml.html.HtmlElement,
+) -> tuple[str, ColoredEdge | Edge, bool | None]:
+    tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
+    depends = pl.get_string_attrib(html_tag, "depends", "")
+    final = pl.get_boolean_attrib(html_tag, "final", None)
+    match "|" in depends:
+        case True:
+            edges = {}
+            for i, split in enumerate(depends.split("|")):
+                if linked_color := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
+                    edges[linked_color[1]] = [
+                        tag.strip() for tag in linked_color[2].split(",")
+                    ]
+                else:
+                    # assign colors by index prefixed with a '*' which is a reserved character
+                    color = "*" + f"{i}"
+                    edges[color] = [edge.strip() for edge in split.split(",")]
+            return tag, edges, final
+        case False:
+            tag, edges = get_graph_info(html_tag)
+            return tag, edges, final
+
+
 class OrderBlocksOptions:
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
+        self.paths = {}
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
         self.weight = pl.get_integer_attrib(html_element, "weight", WEIGHT_DEFAULT)
         self.grading_method = pl.get_enum_attrib(
@@ -133,8 +170,10 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
+        self.is_multi = is_multigraph(html_element)
 
-        self.answer_options = collect_answer_options(html_element, self.grading_method)
+        # All necessary properties are initialized for collect_answer_options
+        self.answer_options = collect_answer_options(html_element, self)
         self.correct_answers = [
             options for options in self.answer_options if options.correct
         ]
@@ -182,6 +221,15 @@ class OrderBlocksOptions:
     def validate(self) -> None:
         self._validate_order_blocks_options()
         self._validate_answer_options()
+
+        # Check that if it is a multigraph to ensure the final tag exists
+        if self.is_multi:
+            for options in self.answer_options:
+                if options.final:
+                    return
+            raise ValueError(
+                "Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
+            )
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -300,10 +348,15 @@ class AnswerOptions:
         self,
         html_element: lxml.html.HtmlElement,
         group_info: GroupInfo,
-        grading_method: GradingMethodType,
+        order_block_options: OrderBlocksOptions,
     ) -> None:
-        self._check_options(html_element, grading_method)
-        self.tag, self.depends = get_graph_info(html_element)
+        self._check_options(html_element, order_block_options.grading_method)
+        if order_block_options.is_multi:
+            self.tag, self.depends, self.final = get_multigraph_info(html_element)
+            self.final = pl.get_boolean_attrib(html_element, "final", False)
+        else:
+            self.tag, self.depends = get_graph_info(html_element)
+            self.final = None
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )
@@ -372,12 +425,16 @@ class AnswerOptions:
                     "distractor-feedback",
                     "distractor-for",
                     "ordering-feedback",
+                    "final",
                 ],
             )
 
+    def __repr__(self) -> str:
+        return f"{self.tag}: {self.depends}"
+
 
 def collect_answer_options(
-    html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
+    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
 ) -> list[AnswerOptions]:
     answer_options = []
     for inner_element in html_element:
@@ -393,15 +450,14 @@ def collect_answer_options(
                     options = AnswerOptions(
                         answer_element,
                         {"tag": group_tag, "depends": group_depends},
-                        grading_method,
+                        order_blocks_options,
                     )
                     answer_options.append(options)
             case "pl-answer":
-                answer_options.append(
-                    AnswerOptions(
-                        inner_element, {"tag": None, "depends": None}, grading_method
-                    )
+                options = AnswerOptions(
+                    inner_element, {"tag": None, "depends": None}, order_blocks_options
                 )
+                answer_options.append(options)
             case _:
                 raise ValueError(
                     """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
