@@ -8,23 +8,19 @@ interface EnrollmentCodeFormData {
   code3: string;
 }
 
-interface EnrollmentCodeFormProps {
-  style: 'modal' | 'card';
-  show?: boolean;
-  onHide?: () => void;
-  autoFocus?: boolean;
-  disabled?: boolean;
-  class?: string;
-}
-
 export function EnrollmentCodeForm({
   style,
   show,
   onHide,
   autoFocus = false,
   disabled = false,
-  class: className = '',
-}: EnrollmentCodeFormProps) {
+}: {
+  style: 'modal' | 'card';
+  show?: boolean;
+  onHide?: () => void;
+  autoFocus?: boolean;
+  disabled?: boolean;
+}) {
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -287,7 +283,7 @@ export function EnrollmentCodeForm({
 
   if (style === 'card') {
     return (
-      <Card class={className}>
+      <Card>
         <Card.Header>
           <h4 class="mb-0">Join a course</h4>
         </Card.Header>
@@ -296,7 +292,6 @@ export function EnrollmentCodeForm({
     );
   }
 
-  // style === 'modal'
   return (
     <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={onHide}>
       <Modal.Header closeButton>
