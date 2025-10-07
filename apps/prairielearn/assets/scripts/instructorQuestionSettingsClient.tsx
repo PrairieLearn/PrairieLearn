@@ -247,7 +247,7 @@ onDocumentReady(() => {
   }
 
   for (let index = 0; index < numRows; index++) {
-    const orcidIDInput = document.querySelector<HTMLButtonElement>('#author_orcid_' + index);
+    const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
     orcidIDInput?.addEventListener('blur', () => {
       const orcidIDValue = orcidIDInput.value;
       const validOrcidID = validateORCID(orcidIDValue);

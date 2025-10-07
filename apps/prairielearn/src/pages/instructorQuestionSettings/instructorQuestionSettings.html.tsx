@@ -282,7 +282,7 @@ export function InstructorQuestionSettings({
                     <th class="text-center">Email</th>
                     <th class="text-center">ORCID identifier</th>
                     <th class="text-center">Reference Course</th>
-                    <th></th>
+                    ${canEdit ? html`<th class="text-center">Remove</th>` : null}
                   </tr>
                 </thead>
                 <tbody id="author-table-body">
@@ -341,32 +341,36 @@ export function InstructorQuestionSettings({
                                 >${author?.origin_course ?? ''}</small
                               >`}
                         </td>
-                        <td class="text-center align-middle">
-                          <button
-                            id="${'remove_author_' + index}"
-                            class="btn btn-secondary mb-2"
-                            type="button"
-                          >
-                            Remove
-                          </button>
-                        </td>
+                        ${canEdit
+                          ? html`<td class="text-center align-middle">
+                              <button
+                                id="${'remove_author_' + index}"
+                                class="btn btn-secondary mb-2"
+                                type="button"
+                              >
+                                Remove
+                              </button>
+                            </td>`
+                          : null}
                       </tr>
                     `;
                   })}
                 </tbody>
-                <tfoot>
-                  <tr>
-                    <td colspan="4" align="left">
-                      <button id="add-author-button" class="btn btn-primary mb-2" type="button">
-                        Add Author
-                      </button>
-                      <small
-                        >Each author must have a name and one of email, orcid, and origin
-                        course</small
-                      >
-                    </td>
-                  </tr>
-                </tfoot>
+                ${canEdit
+                  ? html`<tfoot>
+                      <tr>
+                        <td colspan="4" align="left">
+                          <button id="add-author-button" class="btn btn-primary mb-2" type="button">
+                            Add Author
+                          </button>
+                          <small
+                            >Each author must have a name and one of email, orcid, and origin
+                            course</small
+                          >
+                        </td>
+                      </tr>
+                    </tfoot>`
+                  : null}
               </table>
             </div>
             <div class="mb-3">
