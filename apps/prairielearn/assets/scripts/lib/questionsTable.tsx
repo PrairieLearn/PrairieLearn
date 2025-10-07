@@ -3,6 +3,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
+import { type QuestionsTableData } from '../../../src/components/QuestionsTable.types.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
@@ -44,7 +45,7 @@ onDocumentReady(() => {
     qidPrefix,
     urlPrefix,
     plainUrlPrefix,
-  } = decodeData('questions-table-data');
+  } = decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
@@ -101,7 +102,7 @@ onDocumentReady(() => {
       text += html`<a
         class="badge rounded-pill text-bg-danger ms-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid ?? '',
+          question.qid,
         )}"
         >${question.open_issue_count}</a
       >`.toString();
@@ -140,7 +141,7 @@ onDocumentReady(() => {
   };
 
   window.topicSorter = function (topicA: Topic, topicB: Topic) {
-    return topicA.name?.localeCompare(topicB.name ?? '');
+    return topicA.name.localeCompare(topicB.name);
   };
 
   window.genericFilterSearch = function (search: string, value: string) {
@@ -187,7 +188,7 @@ onDocumentReady(() => {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
     const assessments = data
       .flatMap((row) => row.assessments ?? [])
-      .filter((row) => row && row.course_instance_id === ci_id);
+      .filter((row) => row.course_instance_id === ci_id);
     return {
       ...Object.fromEntries(assessments.map(({ label }) => [label, label])),
       '(None)': '(None)',
@@ -233,7 +234,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent?.trim()}`,
+          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent.trim()}`,
         );
       });
     },

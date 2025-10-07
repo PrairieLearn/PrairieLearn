@@ -36,7 +36,7 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
 
         // Track the last node that was interacted with so that the panel visibility applies to the correct node.
         const { state } = editor;
-        if (pos != null && pos !== -1) {
+        if (pos !== -1) {
           let offset = 1;
           try {
             // For elements with children, we need to select the next position for some reason.

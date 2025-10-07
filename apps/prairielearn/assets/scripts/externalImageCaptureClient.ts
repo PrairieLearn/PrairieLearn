@@ -46,7 +46,7 @@ onDocumentReady(() => {
       variant_token: externalImageCaptureForm.dataset.variantToken,
       file_name: externalImageCaptureForm.dataset.fileName,
     },
-    (msg: StatusMessage) => {
+    (msg: StatusMessage | null) => {
       if (!msg) {
         changeState('failed');
         throw new Error('Failed to join external image capture room');
@@ -176,7 +176,7 @@ onDocumentReady(() => {
       socket.disconnect();
     }, SOCKET_TIMEOUT_MS);
 
-    socket.on('externalImageCaptureAck', (msg: StatusMessage) => {
+    socket.on('externalImageCaptureAck', (msg: StatusMessage | null) => {
       clearTimeout(timeout);
       socket.disconnect();
 
