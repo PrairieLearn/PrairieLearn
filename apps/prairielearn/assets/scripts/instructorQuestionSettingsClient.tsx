@@ -163,4 +163,126 @@ onDocumentReady(() => {
       questionSettingsForm.reportValidity();
     }
   });
+
+  const addAuthorButton = document.querySelector<HTMLButtonElement>('#add-author-button');
+  const table = document.getElementById('author-table-body');
+  addAuthorButton?.addEventListener('click', () => {
+    const rows = table?.getElementsByClassName('author-row');
+    const numRows = rows?.length ?? 0;
+    const newRow = document.createElement('tr');
+    newRow.setAttribute('class', 'author-row');
+    newRow.setAttribute('id', 'author_row_' + numRows);
+    let tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const nameInput = document.createElement('input');
+    nameInput.setAttribute('type', 'text');
+    nameInput.setAttribute('class', 'form-control');
+    nameInput.setAttribute('id', 'author_name_' + numRows);
+    nameInput.setAttribute('name', 'author_name_' + numRows);
+    tableData.appendChild(nameInput);
+    newRow.appendChild(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const emailInput = document.createElement('input');
+    emailInput.setAttribute('type', 'text');
+    emailInput.setAttribute('class', 'form-control');
+    emailInput.setAttribute('id', 'author_email_' + numRows);
+    emailInput.setAttribute('name', 'author_email_' + numRows);
+    tableData.appendChild(emailInput);
+    newRow.appendChild(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const orcidInput = document.createElement('input');
+    orcidInput.setAttribute('type', 'text');
+    orcidInput.setAttribute('class', 'form-control');
+    orcidInput.setAttribute('id', 'author_orcid_' + numRows);
+    orcidInput.setAttribute('name', 'author_orcid_' + numRows);
+    orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$');
+    tableData.appendChild(orcidInput);
+    newRow.appendChild(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const originCourseInput = document.createElement('input');
+    originCourseInput.setAttribute('type', 'text');
+    originCourseInput.setAttribute('class', 'form-control');
+    originCourseInput.setAttribute('id', 'author_origin_course_' + numRows);
+    originCourseInput.setAttribute('name', 'author_origin_course_' + numRows);
+    tableData.appendChild(originCourseInput);
+    newRow.appendChild(tableData);
+
+    tableData = document.createElement('td');
+    tableData.setAttribute('class', 'align-middle');
+    const removeData = document.createElement('button');
+    removeData.setAttribute('type', 'button');
+    removeData.setAttribute('class', 'btn btn-secondary mb-2');
+    removeData.setAttribute('id', 'remove_author_' + numRows);
+    removeData.innerText = 'Remove';
+    removeData?.addEventListener('click', () => {
+      const rowToRemove = document.querySelector<HTMLTableRowElement>('#author_row_' + numRows);
+      rowToRemove?.remove();
+      if (questionSettingsForm && saveButton) {
+        saveButton.removeAttribute('disabled');
+      }
+    });
+    tableData.appendChild(removeData);
+    newRow.appendChild(tableData);
+
+    table?.appendChild(newRow);
+  });
+
+  const rows = table?.getElementsByClassName('author-row');
+  const numRows = rows?.length ?? 0;
+  for (let index = 0; index < numRows; index++) {
+    const removeAuthorButton = document.querySelector<HTMLButtonElement>('#remove_author_' + index);
+    removeAuthorButton?.addEventListener('click', () => {
+      const rowToRemove = document.querySelector<HTMLTableRowElement>('#author_row_' + index);
+      rowToRemove?.remove();
+      if (questionSettingsForm && saveButton) {
+        saveButton.removeAttribute('disabled');
+      }
+    });
+  }
+
+  for (let index = 0; index < numRows; index++) {
+    const orcidIDInput = document.querySelector<HTMLButtonElement>('#author_orcid_' + index);
+    orcidIDInput?.addEventListener('blur', () => {
+      const orcidIDValue = orcidIDInput.value;
+      const validOrcidID = validateORCID(orcidIDValue);
+      const inputClass = 'form-control';
+      orcidIDInput.setAttribute(
+        'class',
+        validOrcidID ? inputClass + ' is-valid' : inputClass + ' is-invalid',
+      );
+    });
+  }
 });
+
+function validateORCID(orcid: string): boolean {
+  // Empty strings are fine.
+  if (orcid == null || orcid === '') {
+    return true;
+  }
+  // Drop any dashes
+  const digits = orcid.replaceAll('-', '');
+
+  // Sanity check that should not fail since the ORCID identifier format is baked into the JSON schema
+  if (!/^\d{15}[\dX]$/.test(digits)) {
+    return false;
+  }
+
+  // Calculate and verify checksum
+  // (adapted from Java code provided here: https://support.orcid.org/hc/en-us/articles/360006897674-Structure-of-the-ORCID-Identifier)
+  let total = 0;
+  for (let i = 0; i < 15; i++) {
+    total = (total + Number.parseInt(digits[i])) * 2;
+  }
+
+  const remainder = total % 11;
+  const result = (12 - remainder) % 11;
+  const checkDigit = result === 10 ? 'X' : String(result);
+
+  return digits[15] === checkDigit;
+}

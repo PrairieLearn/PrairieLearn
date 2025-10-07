@@ -52,6 +52,13 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+interface JSONAuthor {
+  name?: string;
+  email?: string;
+  orcid?: string;
+  originCourse?: string;
+}
+
 // This will not correctly handle any filenames that have a comma in them.
 // Currently, we do not have any such filenames in prod so we don't think that
 // escaping commas in individual filenames is necessary.
@@ -326,6 +333,43 @@ router.post(
       } else {
         questionInfo.externalGradingOptions = undefined;
       }
+
+      // Author data
+      const bodyData = req.body;
+      const keys: string[] = Object.keys(bodyData);
+      const authorKeys = keys.filter((key) => key.includes('author'));
+      const numAuthorsKeys = authorKeys.length / 4;
+      const authors = new Array<JSONAuthor>(numAuthorsKeys);
+      const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
+      const authorNameIndices = authorNameKeys.map((key) => key.charAt(key.length - 1));
+      for (let index = 0; index < authorNameIndices.length; index++) {
+        const name: string | undefined = bodyData['author_name_' + authorNameIndices[index]];
+        const email: string | undefined = bodyData['author_email_' + authorNameIndices[index]];
+        const orcid: string | undefined = bodyData['author_orcid_' + authorNameIndices[index]];
+        const originCourse: string | undefined =
+          bodyData['author_origin_course_' + authorNameIndices[index]];
+        const newAuthor: JSONAuthor = {};
+        if (name !== undefined && name !== '') {
+          newAuthor.name = name;
+        }
+        if (email !== undefined && email !== '') {
+          newAuthor.email = email;
+        }
+        if (orcid !== undefined && orcid !== '') {
+          newAuthor.orcid = orcid;
+        }
+        if (originCourse !== undefined && originCourse !== '') {
+          newAuthor.originCourse = originCourse;
+        }
+        // Only write author if at least one of the fields is nonnull
+        if (
+          name !== undefined &&
+          (email !== undefined || orcid !== undefined || originCourse !== undefined)
+        ) {
+          authors[index] = newAuthor;
+        }
+      }
+      questionInfo.authors = authors;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 

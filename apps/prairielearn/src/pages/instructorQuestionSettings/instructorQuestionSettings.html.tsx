@@ -90,8 +90,6 @@ export function InstructorQuestionSettings({
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
 
-  const hasAuthors = authors.length > 0;
-
   const authorsData = authors.map((author) => {
     let parsedORCIDId = '';
     if (author.orcid !== null) {
@@ -272,83 +270,105 @@ export function InstructorQuestionSettings({
                 </tbody>
               </table>
             </div>
-            ${hasAuthors
-              ? html`<div class="mb-3">
-                  <label id="authors-table-label" for="authors-table">Author Information</label>
-                  <table
-                    class="table table-sm table-hover tablesorter table-bordered"
-                    aria-label="Author information"
-                  >
-                    <thead>
-                      <tr>
-                        <th class="text-center">Name</th>
-                        <th class="text-center">Email</th>
-                        <th class="text-center">ORCID identifier</th>
-                        <th class="text-center">Reference Course</th>
+            <div class="mb-3">
+              <label id="authors-table-label" for="authors-table">Author Information</label>
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Author information"
+              >
+                <thead>
+                  <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Email</th>
+                    <th class="text-center">ORCID identifier</th>
+                    <th class="text-center">Reference Course</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="author-table-body">
+                  ${authorsData.map((author, index) => {
+                    return html`
+                      <tr class="author-row" id="${'author_row_' + index}">
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                class="form-control"
+                                id="${'author_name_' + index}"
+                                name="${'author_name_' + index}"
+                                value="${author?.author_name ?? ''}"
+                              />`
+                            : html`
+                                <small class="text-center">${author?.author_name ?? ''}</small>
+                              `}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="email"
+                                class="form-control"
+                                id="${'author_email_' + index}"
+                                name="${'author_email_' + index}"
+                                value="${author?.email ?? ''}"
+                                ${canEdit ? '' : 'disabled'}
+                              />`
+                            : html`<small class="text-center">${author?.email ?? ''}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$"
+                                class="form-control"
+                                id="${'author_orcid_' + index}"
+                                name="${'author_orcid_' + index}"
+                                value="${author?.orcid ?? ''}"
+                                ${canEdit ? '' : 'disabled'}
+                              />`
+                            : html`<small class="text-center">${author?.orcid ?? ''}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                class="form-control"
+                                id="${'author_reference_course_' + index}"
+                                name="${'author_reference_course_' + index}"
+                                value="${author?.origin_course ?? ''}"
+                                ${canEdit ? '' : 'disabled'}
+                              />`
+                            : html`<small class="text-center"
+                                >${author?.origin_course ?? ''}</small
+                              >`}
+                        </td>
+                        <td class="text-center align-middle">
+                          <button
+                            id="${'remove_author_' + index}"
+                            class="btn btn-secondary mb-2"
+                            type="button"
+                          >
+                            Remove
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      ${authorsData.map((author, index) => {
-                        return html`
-                          <tr>
-                            <td>
-                              ${canEdit
-                                ? html`<input
-                                    type="text"
-                                    class="form-control font-monospace"
-                                    id="${'author_name_' + index}"
-                                    name="${'author_name_' + index}"
-                                    value="${author?.author_name ?? ''}"
-                                  />`
-                                : html`
-                                    <small class="text-center">${author?.author_name ?? ''}</small>
-                                  `}
-                            </td>
-                            <td>
-                              ${canEdit
-                                ? html`<input
-                                    type="email"
-                                    class="form-control font-monospace"
-                                    id="${'author_email_' + index}"
-                                    name="${'author_email_' + index}"
-                                    value="${author?.email ?? ''}"
-                                    ${canEdit ? '' : 'disabled'}
-                                  />`
-                                : html`<small class="text-center">${author?.email ?? ''}</small>`}
-                            </td>
-                            <td>
-                              ${canEdit
-                                ? html`<input
-                                    type="text"
-                                    class="form-control font-monospace"
-                                    id="${'author_orcid_' + index}"
-                                    name="${'author_orcid_' + index}"
-                                    value="${author?.orcid ?? ''}"
-                                    ${canEdit ? '' : 'disabled'}
-                                  />`
-                                : html`<small class="text-center">${author?.orcid ?? ''}</small>`}
-                            </td>
-                            <td>
-                              ${canEdit
-                                ? html`<input
-                                    type="text"
-                                    class="form-control font-monospace"
-                                    id="${'author_reference_course_' + index}"
-                                    name="${'author_reference_course_' + index}"
-                                    value="${author?.origin_course ?? ''}"
-                                    ${canEdit ? '' : 'disabled'}
-                                  />`
-                                : html`<small class="text-center"
-                                    >${author?.origin_course ?? ''}</small
-                                  >`}
-                            </td>
-                          </tr>
-                        `;
-                      })}
-                    </tbody>
-                  </table>
-                </div>`
-              : ''}
+                    `;
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <td colspan="4" align="left">
+                      <button id="add-author-button" class="btn btn-primary mb-2" type="button">
+                        Add Author
+                      </button>
+                      <small
+                        >Each author must have a name and one of email, orcid, and origin
+                        course</small
+                      >
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
             <div class="mb-3">
               <label class="form-label" for="grading_method">Grading method</label>
               <select
