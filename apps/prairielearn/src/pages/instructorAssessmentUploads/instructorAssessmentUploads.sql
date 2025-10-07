@@ -16,4 +16,4 @@ WHERE
   )
 ORDER BY
   js.start_date DESC,
-  js.id;
+  js.id ASC;

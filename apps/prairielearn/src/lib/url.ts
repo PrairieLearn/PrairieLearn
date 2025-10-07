@@ -1,9 +1,5 @@
 import { type Request } from 'express';
 
-import type {
-  StaffCourseInstanceContext,
-  StudentCourseInstanceContext,
-} from './client/page-context.js';
 import { config } from './config.js';
 
 export function getCanonicalHost(req: Request): string {
@@ -19,8 +15,6 @@ export function getSearchParams(req: Request): URLSearchParams {
   return new URL(req.originalUrl, getCanonicalHost(req)).searchParams;
 }
 
-export function getCourseInstanceUrl(
-  context: StudentCourseInstanceContext | StaffCourseInstanceContext,
-): string {
-  return `/pl/course_instance/${context.course_instance.id}`;
+export function getCourseInstanceUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}`;
 }

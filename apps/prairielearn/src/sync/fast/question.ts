@@ -2,8 +2,10 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import z from 'zod';
+
 import {
-  callAsync,
+  callRows,
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
@@ -27,7 +29,7 @@ import { selectTagsByCourseId } from '../../models/tags.js';
 import { selectOptionalTopicByName } from '../../models/topics.js';
 import * as schemas from '../../schemas/index.js';
 import type { QuestionJson } from '../../schemas/index.js';
-import { DEFAULT_QUESTION_INFO, loadAndValidateJson, validateQuestion } from '../course-db.js';
+import { loadAndValidateJson, validateQuestion } from '../course-db.js';
 import { getParamsForQuestion } from '../fromDisk/questions.js';
 import * as infofile from '../infofile.js';
 
@@ -75,8 +77,8 @@ async function loadAndValidateQuestionJson(
   return await loadAndValidateJson({
     coursePath: course.path,
     filePath: jsonFilePath,
-    defaults: DEFAULT_QUESTION_INFO,
     schema: schemas.infoQuestion,
+    zodSchema: schemas.QuestionJsonSchema,
     validate: (question: QuestionJson) => validateQuestion({ question, sharingEnabled }),
     // This shouldn't matter, as we've already guaranteed that the file exists.
     tolerateMissing: false,
@@ -167,7 +169,11 @@ async function updateQuestion(
 
     // Update the question's tags.
     const tagIds = tags.map((tag) => tag.id);
-    await callAsync('sync_question_tags', [[JSON.stringify([updatedQuestion.id, tagIds])]]);
+    await callRows(
+      'sync_question_tags',
+      [[JSON.stringify([updatedQuestion.id, tagIds])]],
+      z.unknown(),
+    );
 
     return updatedQuestion;
   });

@@ -5,7 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { downloadAsCSV, downloadAsJSON } from '../../../lib/client/downloads.js';
 import type { StaffCourseInstanceContext } from '../../../lib/client/page-context.js';
 import { courseInstanceFilenamePrefix } from '../../../lib/sanitize-name.js';
-import type { StudentRow } from '../instructorStudents.shared.js';
+import type { StudentRow, StudentRowWithUser } from '../instructorStudents.shared.js';
 
 export function DownloadButton({
   students,
@@ -24,26 +24,32 @@ export function DownloadButton({
   const filteredStudents = table.getRowModel().rows.map((row) => row.original);
 
   function downloadStudentsCSV(students: StudentRow[], filename: string): void {
-    const rows = students.map((student) => [
-      student.user.uid,
-      student.user.name,
-      student.user.email,
-      student.enrollment.created_at
-        ? formatDate(student.enrollment.created_at, course.display_timezone, {
-            includeTz: false,
-          })
-        : '',
-    ]);
-    downloadAsCSV(['UID', 'name', 'email', 'enrolled_on'], rows, filename);
+    const rows = students
+      .filter((student): student is StudentRowWithUser => !!student.user)
+      .map((student) => [
+        student.user.uid,
+        student.user.name,
+        student.user.email,
+        student.enrollment.status,
+        student.enrollment.first_joined_at
+          ? formatDate(student.enrollment.first_joined_at, course.display_timezone, {
+              includeTz: false,
+            })
+          : '',
+      ]);
+    downloadAsCSV(['UID', 'name', 'email', 'status', 'first_joined_at'], rows, filename);
   }
 
   function downloadStudentsJSON(students: StudentRow[], filename: string): void {
-    const rows = students.map((student) => ({
-      uid: student.user.uid,
-      name: student.user.name,
-      email: student.user.email,
-      enrolled_on: student.enrollment.created_at,
-    }));
+    const rows = students
+      .filter((student): student is StudentRowWithUser => !!student.user)
+      .map((student) => ({
+        uid: student.user.uid,
+        name: student.user.name,
+        email: student.user.email,
+        status: student.enrollment.status,
+        first_joined_at: student.enrollment.first_joined_at,
+      }));
     downloadAsJSON(rows, filename);
   }
 

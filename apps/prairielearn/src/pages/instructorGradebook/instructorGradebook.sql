@@ -44,8 +44,8 @@ WITH
     FROM
       course_assessment_instances AS cai
     ORDER BY
-      cai.user_id,
-      cai.assessment_id,
+      cai.user_id ASC,
+      cai.assessment_id ASC,
       cai.score_perc DESC,
       cai.id DESC
   ),
@@ -139,13 +139,18 @@ SELECT
   u.uin,
   u.user_name,
   u.role,
+  e.id AS enrollment_id,
   COALESCE(s.scores, '{}') AS scores
 FROM
   course_users AS u
+  LEFT JOIN enrollments AS e ON (
+    e.user_id = u.user_id
+    AND e.course_instance_id = $course_instance_id
+  )
   LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
 ORDER BY
   role DESC,
-  uid;
+  uid ASC;
 
 -- BLOCK assessment_instance_score
 SELECT

@@ -235,7 +235,7 @@ const internallyGradedQuestions = allQuestionDirs
   })
   .filter(
     (q): q is { path: string; relativePath: string; info: any } =>
-      q !== null && !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
+      !['External', 'Manual'].includes(q.info.gradingMethod) && q.info.type === 'v3',
   );
 
 const course = {
@@ -353,7 +353,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
 
       assert.isEmpty(parseIssues, 'Parse should not produce any issues');
 
-      assert.isEmpty(parseData.format_errors ?? {}, 'Parse should not have any formatting errors');
+      assert.isEmpty(parseData.format_errors, 'Parse should not have any formatting errors');
 
       // 5. Grade
       const gradeResult = await questionModule.grade(

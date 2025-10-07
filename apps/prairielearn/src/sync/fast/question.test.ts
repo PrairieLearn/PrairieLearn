@@ -5,7 +5,7 @@ import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionByQid } from '../../models/question.js';
-import { selectTagsForQuestion } from '../../models/tags.js';
+import { selectTagsByQuestionId } from '../../models/tags.js';
 import type { QuestionJsonInput } from '../../schemas/index.js';
 import * as helperDb from '../../tests/helperDb.js';
 import * as util from '../../tests/sync/util.js';
@@ -145,7 +145,7 @@ describe('fastSyncQuestion', () => {
     assert.isTrue(await attemptFastSync(course, strategy));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
-    const tags = await selectTagsForQuestion({ question_id: question.id });
+    const tags = await selectTagsByQuestionId(question.id);
     assert.lengthOf(tags, 1);
     assert.isTrue(tags.some((tag) => tag.name === 'test'));
   });

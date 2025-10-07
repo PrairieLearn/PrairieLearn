@@ -2,22 +2,25 @@ import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { TagBadge } from '../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../src/components/TopicBadge.js';
 import { type Tag, type Topic } from '../../src/lib/db-types.js';
-import { renderHtml } from '../../src/lib/preact-html.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 import { validateId } from './lib/validateId.js';
 
 onDocumentReady(() => {
-  const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
+  const qidField = document.querySelector<HTMLInputElement>('input[name="qid"]')!;
   const otherQids = qidField.dataset.otherValues?.split(',') ?? [];
   const questionSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+  const showExternalGradingOptionsButton = document.querySelector<HTMLButtonElement>(
+    '#show-external-grading-options-button',
+  );
   const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
     '#show-workspace-options-button',
   );
@@ -27,8 +30,17 @@ onDocumentReady(() => {
   const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
   const workspaceEnvironmentInput =
     document.querySelector<HTMLInputElement>('#workspace_environment');
+  const externalGradingOptions = document.querySelector<HTMLDivElement>(
+    '#external-grading-options',
+  );
+  const externalGradingImageInput =
+    document.querySelector<HTMLInputElement>('#external_grading_image');
+  const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_environment',
+  );
 
   let workspaceOptionsShown = showWorkspaceOptionsButton?.getAttribute('hidden') === 'true';
+  let externalGradingOptionsShown = showExternalGradingOptionsButton!.hidden;
 
   function updateWorkspaceOptionsValidation() {
     if (workspaceOptionsShown) {
@@ -39,6 +51,31 @@ onDocumentReady(() => {
       workspaceImageInput?.removeAttribute('required');
       workspacePortInput?.removeAttribute('required');
       workspaceHomeInput?.removeAttribute('required');
+    }
+  }
+
+  function updateExternalGradingOptionsValidation() {
+    if (externalGradingOptionsShown) {
+      externalGradingImageInput?.setAttribute('required', 'true');
+    } else {
+      externalGradingImageInput?.removeAttribute('required');
+    }
+  }
+
+  function validateJsonInput(input: HTMLInputElement) {
+    if (input.value === '') {
+      input.setCustomValidity('');
+      return;
+    }
+    try {
+      const value = JSON.parse(input.value);
+      if (typeof value !== 'object' || Array.isArray(value)) {
+        input.setCustomValidity('Invalid JSON object format');
+      } else {
+        input.setCustomValidity('');
+      }
+    } catch {
+      input.setCustomValidity('Invalid JSON object format');
     }
   }
 
@@ -94,21 +131,11 @@ onDocumentReady(() => {
   qidField.addEventListener('change', () => validateId({ input: qidField, otherIds: otherQids }));
 
   workspaceEnvironmentInput?.addEventListener('input', (e) => {
-    if ((e.target as HTMLInputElement).value === '') {
-      workspaceEnvironmentInput?.setCustomValidity('');
-      return;
-    }
-    try {
-      const value = JSON.parse((e.target as HTMLInputElement).value);
-      if (typeof value !== 'object' || Array.isArray(value)) {
-        workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-      } else {
-        workspaceEnvironmentInput?.setCustomValidity('');
-      }
-      return;
-    } catch {
-      workspaceEnvironmentInput?.setCustomValidity('Invalid JSON object format');
-    }
+    validateJsonInput(e.target as HTMLInputElement);
+  });
+
+  externalGradingEnvironmentInput?.addEventListener('input', (e) => {
+    validateJsonInput(e.target as HTMLInputElement);
   });
 
   if (questionSettingsForm && saveButton) {
@@ -116,11 +143,18 @@ onDocumentReady(() => {
   }
 
   updateWorkspaceOptionsValidation();
+  updateExternalGradingOptionsValidation();
   showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
     workspaceOptionsShown = true;
     updateWorkspaceOptionsValidation();
+  });
+  showExternalGradingOptionsButton?.addEventListener('click', () => {
+    externalGradingOptions?.removeAttribute('hidden');
+    showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+    externalGradingOptionsShown = true;
+    updateExternalGradingOptionsValidation();
   });
 
   questionSettingsForm?.addEventListener('submit', (e) => {

@@ -25,7 +25,7 @@ locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
 const storedConfig: Record<string, any> = {};
 
 describe('Group based homework assess control on student side', { timeout: 20_000 }, function () {
-  beforeAll(async () => {
+  beforeAll(() => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
@@ -35,7 +35,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   afterAll(helperServer.after);
 
-  afterAll(async () => {
+  afterAll(() => {
     Object.assign(config, storedConfig);
   });
 
@@ -292,8 +292,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.$ = cheerio.load(page);
     });
     it('should have 3 students in group 1 in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_user_in_group, []);
-      assert.lengthOf(result.rows, 3);
+      const rowCount = await sqldb.execute(sql.select_all_user_in_group);
+      assert.equal(rowCount, 3);
     });
   });
 
@@ -449,8 +449,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       assert.lengthOf(elemList, 3);
     });
     it('should have 0 assessment instance in db', async () => {
-      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
-      assert.lengthOf(result.rows, 0);
+      const rowCount = await sqldb.execute(sql.select_all_assessment_instance);
+      assert.equal(rowCount, 0);
     });
     it('should be able to start the assessment', async () => {
       const response = await fetch(locals.assessmentUrl, {
@@ -611,8 +611,8 @@ describe('Group based homework assess control on student side', { timeout: 20_00
 
   describe('20. cross assessment grouping', function () {
     it('should contain a second group-based homework assessment', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
-      assert.lengthOf(result.rows, 2);
+      const rowCount = await sqldb.execute(sql.select_group_work_assessment);
+      assert.equal(rowCount, 2);
     });
     it('should load the second assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl_2);

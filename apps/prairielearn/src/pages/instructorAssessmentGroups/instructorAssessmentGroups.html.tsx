@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -171,7 +171,7 @@ export function InstructorAssessmentGroups({
                         <td class="text-center">${row.size}</td>
                         <td class="text-center">
                           <small>
-                            ${row.users?.length > 0
+                            ${row.users.length > 0
                               ? row.users.map((user) => user.uid).join(', ')
                               : '(empty)'}
                           </small>
@@ -275,8 +275,8 @@ export function InstructorAssessmentGroups({
                           <strong>
                             ${notAssigned?.length
                               ? html`
-                        ${notAssigned?.length}
-                        student${notAssigned?.length > 1 ? html`s` : ''} not yet
+                        ${notAssigned.length}
+                        student${notAssigned.length > 1 ? html`s` : ''} not yet
                         assigned:
                       </strong>
                       `

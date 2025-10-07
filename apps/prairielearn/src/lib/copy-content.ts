@@ -2,7 +2,6 @@ import * as path from 'node:path';
 
 import { type Response } from 'express';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -12,7 +11,6 @@ import { selectCoursesWithEditAccess } from '../models/course.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
-import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -24,13 +22,11 @@ export interface CopyTarget {
 }
 
 async function getCopyTargets({
-  course,
   is_administrator,
   authn_user,
   user,
   urlSuffix,
 }: {
-  course: Course;
   is_administrator: boolean;
   authn_user: User;
   user: User;
@@ -42,12 +38,10 @@ async function getCopyTargets({
   });
 
   return editableCourses
+
     .filter(
-      (editableCourse) =>
-        // The example course cannot be updated in the web interface.
-        !editableCourse.example_course &&
-        // Question copying cannot be done within the same course.
-        !idsEqual(editableCourse.id, course.id),
+      // The example course cannot be updated in the web interface.
+      (editableCourse) => !editableCourse.example_course,
     )
     .map((editableCourse) => {
       const copyUrl = `/pl/course/${editableCourse.id}/${urlSuffix}`;
@@ -89,7 +83,6 @@ export async function getQuestionCopyTargets({
   }
   return getCopyTargets({
     urlSuffix: 'copy_public_question',
-    course,
     is_administrator,
     authn_user,
     user,
@@ -114,7 +107,6 @@ export async function getCourseInstanceCopyTargets({
   }
   return getCopyTargets({
     urlSuffix: 'copy_public_course_instance',
-    course,
     is_administrator,
     authn_user,
     user,
@@ -152,7 +144,7 @@ async function initiateFileTransfer({
   // directly. This would allow us to completely get rid of the endpoints ending in
   // 'copy_public_*' and the file_transfers database table.
 
-  const f = uuidv4();
+  const f = crypto.randomUUID();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
     from_course_id: fromCourse.id,
@@ -163,7 +155,6 @@ async function initiateFileTransfer({
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
-  if (config.filesRoot == null) throw new Error('config.filesRoot is null');
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
