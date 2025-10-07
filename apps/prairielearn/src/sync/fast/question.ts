@@ -109,13 +109,13 @@ async function validateAndGetTags(
   course: Course,
   jsonData: infofile.InfoFile<QuestionJson>,
 ): Promise<Tag[] | null> {
-  if (!jsonData.data?.tags?.length) return [];
+  if (!jsonData.data?.tags.length) return [];
 
   const courseTags = await selectTagsByCourseId(course.id);
   const courseTagsMap = new Map(courseTags.map((tag) => [tag.name, tag]));
   const questionTags = new Map(
     jsonData.data.tags
-      ?.map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
+      .map((tagName) => [tagName, courseTagsMap.get(tagName)] as const)
       .filter((entry): entry is [string, Tag] => entry[1] !== undefined),
   );
 
@@ -123,7 +123,7 @@ async function validateAndGetTags(
   //
   // We could theoretically add a fast path for this and insert any missing tags.
   // That's not yet worth the effort.
-  const questionTagNames = new Set(jsonData.data.tags || []);
+  const questionTagNames = new Set(jsonData.data.tags);
   const allTagsExist =
     questionTags.size === questionTagNames.size &&
     [...questionTagNames].every((tagName) => questionTags.has(tagName));
