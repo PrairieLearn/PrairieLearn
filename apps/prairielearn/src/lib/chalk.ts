@@ -1,5 +1,6 @@
 import { AnsiUp } from 'ansi_up';
 import { Chalk } from 'chalk';
+
 export const chalk = new Chalk({ level: 3 });
 
 const ansiUp = new AnsiUp();
