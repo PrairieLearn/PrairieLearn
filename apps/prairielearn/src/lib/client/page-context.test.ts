@@ -196,7 +196,8 @@ describe('getCourseInstanceContext', () => {
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: false,
       self_enrollment_enabled_before_date: null,
-      self_enrollment_enabled_before_date_enabled: false,
+      // TODO: delete this, not in use.
+      self_enrollment_enabled_before_date_enabled: null,
       sync_errors: null,
       sync_job_sequence_id: null,
       sync_warnings: null,

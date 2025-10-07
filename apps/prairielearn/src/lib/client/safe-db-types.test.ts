@@ -82,7 +82,8 @@ const minimalStaffCourseInstance: z.input<typeof StaffCourseInstanceSchema> = {
   long_name: null,
   self_enrollment_enabled: true,
   self_enrollment_enabled_before_date: null,
-  self_enrollment_enabled_before_date_enabled: false,
+  // TODO: delete this, not in use
+  self_enrollment_enabled_before_date_enabled: null,
   self_enrollment_use_enrollment_code: false,
   share_source_publicly: false,
   short_name: null,
