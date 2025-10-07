@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.4.0
+
+### Minor Changes
+
+- 5b46852: Add `downloadTextFile`, `downloadAsJSON` and `downloadAsCSV` utilities
+
 ## 2.3.0
 
 ### Minor Changes
