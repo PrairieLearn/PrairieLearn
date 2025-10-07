@@ -592,7 +592,6 @@ describe('Course instance syncing', () => {
       {
         json: {
           beforeDate: jsonDate,
-          beforeDateEnabled: true,
           useEnrollmentCode: true,
         },
         db: {
