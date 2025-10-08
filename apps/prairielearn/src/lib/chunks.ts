@@ -312,7 +312,7 @@ export async function identifyChangedFiles(
     'git rev-parse --show-toplevel',
     { cwd: coursePath },
   );
-  const topLevel = await fs.realpath(topLevelStdout.trim());
+  const topLevel = topLevelStdout.trim();
 
   const { stdout: diffStdout } = await util.promisify(child_process.exec)(
     `git diff --name-only ${oldHash}..${newHash}`,
@@ -331,18 +331,14 @@ export async function identifyChangedFiles(
   // Construct absolute path to all changed files.
   const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
 
-  // Resolve the course path to its real path to handle symlinks. This is especially
-  // important for tests on macOS, where `/var` is symlinked to `/private/var`.
-  const realCoursePath = await fs.realpath(coursePath);
-
   // Exclude any changed files that aren't in the course directory.
   const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(realCoursePath, absoluteChangedFile),
+    contains(coursePath, absoluteChangedFile),
   );
 
   // Convert all absolute paths back into relative paths.
   return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(realCoursePath, absoluteChangedFile),
+    path.relative(coursePath, absoluteChangedFile),
   );
 }
 
