@@ -118,7 +118,7 @@ export const IntervalSchema = z
  *
  * Useful for parsing dates from JSON, which are always strings.
  *
- * @deprecated Use {@link DateFromISOString} instead.
+ * @deprecated Use {@link InstantFromISOString} instead.
  */
 export const DateFromISOString = z
   .union([z.string(), z.date()])
