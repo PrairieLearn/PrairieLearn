@@ -82,6 +82,11 @@ export function AdministratorInstitutionSsoForm({
                     }
                     return newSet;
                   });
+
+                  // If the default provider is being disabled, reset to null (none).
+                  if (!e.currentTarget.checked && defaultProviderId === provider.id) {
+                    setDefaultProviderId(null);
+                  }
                 }}
               />
               <label class="form-check-label" for={`provider-${provider.id}-enabled`}>
@@ -122,6 +127,7 @@ export function AdministratorInstitutionSsoForm({
           id="defaultProvider"
           name="default_authn_provider_id"
           aria-labelledby="defaultProviderLabel"
+          value={defaultProviderId || ''}
           onChange={(e) => setDefaultProviderId(e.currentTarget.value || null)}
         >
           <option value="" selected={institution.default_authn_provider_id === null}>
@@ -134,7 +140,6 @@ export function AdministratorInstitutionSsoForm({
               <option
                 key={provider.id}
                 value={provider.id}
-                selected={provider.id === defaultProviderId}
                 disabled={!enabledProviderIds.has(provider.id)}
               >
                 {provider.name}
