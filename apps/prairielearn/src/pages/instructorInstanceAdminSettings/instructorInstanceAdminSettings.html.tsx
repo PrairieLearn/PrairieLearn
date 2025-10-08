@@ -55,7 +55,7 @@ export function InstructorInstanceAdminSettings({
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
     self_enrollment_enabled_before_date_enabled:
-      courseInstance.self_enrollment_enabled_before_date_enabled,
+      !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
       ? courseInstance.self_enrollment_enabled_before_date
           .toZonedDateTimeISO(courseInstance.display_timezone)
@@ -293,4 +293,5 @@ export function InstructorInstanceAdminSettings({
     </div>
   );
 }
+
 InstructorInstanceAdminSettings.displayName = 'InstructorInstanceAdminSettings';

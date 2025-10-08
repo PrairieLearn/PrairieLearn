@@ -554,7 +554,6 @@ describe('Course instance syncing', () => {
       db: {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: Temporal.Instant | null;
-        self_enrollment_enabled_before_date_enabled: boolean;
         self_enrollment_use_enrollment_code: boolean;
       } | null;
       errors: string[];
@@ -567,7 +566,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -581,7 +579,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: date,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -589,13 +586,11 @@ describe('Course instance syncing', () => {
       {
         json: {
           beforeDate: jsonDate,
-          beforeDateEnabled: true,
           useEnrollmentCode: true,
         },
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: date,
-          self_enrollment_enabled_before_date_enabled: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -605,7 +600,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -617,7 +611,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -629,7 +622,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -674,8 +666,6 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
           self_enrollment_enabled_before_date:
             syncedCourseInstance.self_enrollment_enabled_before_date,
-          self_enrollment_enabled_before_date_enabled:
-            syncedCourseInstance.self_enrollment_enabled_before_date_enabled,
           self_enrollment_use_enrollment_code:
             syncedCourseInstance.self_enrollment_use_enrollment_code,
         };

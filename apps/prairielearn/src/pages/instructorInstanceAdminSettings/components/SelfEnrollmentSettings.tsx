@@ -131,11 +131,6 @@ export function SelfEnrollmentSettings({
     name: 'self_enrollment_use_enrollment_code',
   });
 
-  const selfEnrollmentEnabledBeforeDate = useWatch({
-    control,
-    name: 'self_enrollment_enabled_before_date',
-  });
-
   const selfEnrollmentEnabledBeforeDateEnabled = useWatch({
     control,
     name: 'self_enrollment_enabled_before_date_enabled',
@@ -259,20 +254,7 @@ export function SelfEnrollmentSettings({
               return true;
             },
           })}
-          // HACK: Make the accessibility checker happy
-          // See https://gitlab.com/html-validate/html-validate/-/issues/294
-          {...(!selfEnrollmentEnabledBeforeDateEnabled
-            ? { name: 'self_enrollment_enabled_before_date__IGNORE' }
-            : {})}
         />
-        {/* Disabled inputs are not submitted in a HTTP POST request. However, we still want to send the updated value. */}
-        {!selfEnrollmentEnabledBeforeDateEnabled && (
-          <input
-            type="hidden"
-            name="self_enrollment_enabled_before_date"
-            value={selfEnrollmentEnabledBeforeDate}
-          />
-        )}
         {selfEnrollmentEnabledBeforeDateError && (
           <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
         )}
