@@ -22,6 +22,7 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
+    "@prairielearn/superjson": "workspace:^",
     "@prairielearn/utils": "workspace:^",
     "clsx": "^2.1.1",
     "preact": "^10.27.0",

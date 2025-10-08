@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import parsePostgresInterval from 'postgres-interval';
 import { type ZodTypeAny, z } from 'zod';
 
@@ -116,6 +117,8 @@ export const IntervalSchema = z
  * validated and parsed as an ISO date string.
  *
  * Useful for parsing dates from JSON, which are always strings.
+ *
+ * @deprecated Use {@link InstantFromISOString} instead.
  */
 export const DateFromISOString = z
   .union([z.string(), z.date()])
@@ -129,6 +132,40 @@ export const DateFromISOString = z
     },
   )
   .transform((s) => new Date(s));
+
+/**
+ * A Zod schema for {@link Temporal.Instant} objects.
+ *
+ * We handle three formats based on our needs:
+ *  - `Date` - dates returned by the pg driver will be a `Date` object
+ *  - `Temporal.Instant` - For idempotence
+ *  - `string` - ISO date strings from JSON or other sources
+ */
+export const InstantFromISOString = z
+  .union([z.instanceof(Temporal.Instant), z.string(), z.date()])
+  .refine(
+    (s) => {
+      try {
+        if (s instanceof Date) {
+          Temporal.Instant.fromEpochMilliseconds(s.getTime());
+        } else {
+          Temporal.Instant.from(s);
+        }
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: 'must be a valid ISO date string',
+    },
+  )
+  .transform((s) => {
+    if (s instanceof Date) {
+      return Temporal.Instant.from(s.toISOString());
+    }
+    return Temporal.Instant.from(s);
+  });
 
 /**
  * A Zod schema that coerces a non-empty string to an integer or an empty string to null.

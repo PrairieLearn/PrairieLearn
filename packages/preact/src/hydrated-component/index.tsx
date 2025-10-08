@@ -5,6 +5,7 @@ import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 import { type ComponentType, hydrate } from '@prairielearn/preact-cjs';
+import { registerSuperJSONTemporal } from '@prairielearn/superjson';
 
 import { HydratedComponentsRegistry } from './registry.js';
 
@@ -12,6 +13,9 @@ import { HydratedComponentsRegistry } from './registry.js';
 // registered components on the client.
 
 const registry = new HydratedComponentsRegistry();
+
+// Allow serialization of Temporal types
+registerSuperJSONTemporal(superjson);
 
 /**
  * Registers a Preact component for client-side hydration. The component should have a
