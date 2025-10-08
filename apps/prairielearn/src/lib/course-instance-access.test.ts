@@ -22,7 +22,6 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
     json_comment: null,
     self_enrollment_enabled: true,
     self_enrollment_enabled_before_date: null,
-    self_enrollment_enabled_before_date_enabled: false,
     self_enrollment_use_enrollment_code: false,
     share_source_publicly: false,
     sync_errors: null,
