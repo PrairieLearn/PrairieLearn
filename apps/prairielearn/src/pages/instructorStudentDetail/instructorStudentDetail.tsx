@@ -11,6 +11,7 @@ import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
+import { selectAuditEvents } from '../../models/audit-event.js';
 import {
   deleteEnrollmentById,
   enrollUserInCourseInstance,
@@ -19,7 +20,8 @@ import {
   setEnrollmentStatusBlocked,
 } from '../../models/enrollment.js';
 
-import { InstructorStudentDetail, UserDetailSchema } from './instructorStudentDetail.html.js';
+import { UserDetailSchema } from './components/OverviewCard.js';
+import { InstructorStudentDetail } from './instructorStudentDetail.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -80,6 +82,14 @@ router.get(
       return `${student.enrollment.pending_uid}`;
     });
 
+    const auditEvents = student.user
+      ? await selectAuditEvents({
+          subject_user_id: student.user.user_id,
+          course_instance_id: courseInstance.id,
+          table_names: ['enrollments'],
+        })
+      : [];
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -95,6 +105,7 @@ router.get(
         content: (
           <Hydrate>
             <InstructorStudentDetail
+              auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
               urlPrefix={urlPrefix}
