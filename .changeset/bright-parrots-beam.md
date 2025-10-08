@@ -2,4 +2,4 @@
 '@prairielearn/zod': minor
 ---
 
-Add helper for converting to `Temporal.Instant` objects from strings
+Add helper for converting to `Temporal.Instant` objects from various formats
