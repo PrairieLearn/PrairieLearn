@@ -2,13 +2,13 @@ import { Temporal } from '@js-temporal/polyfill';
 import SuperJSON from 'superjson';
 import { describe, expect, it } from 'vitest';
 
-import { registerSuperJSONTemporal } from './registerSuperJSONTemporal.js';
+import { registerSuperJSONTemporal } from './index.js';
 
 describe('registerSuperJSONTemporal', () => {
   it('should register the serializers/deserializers for Temporal types', () => {
     registerSuperJSONTemporal(SuperJSON);
 
-    const zonedDateTime = Temporal.ZonedDateTime.from('2025-10-07T19:53+01:00[America/New_York]');
+    const zonedDateTime = Temporal.ZonedDateTime.from('2025-10-07T19:53[America/New_York]');
     const obj = {
       zonedDateTime,
       plainDate: zonedDateTime.toPlainDate(),
