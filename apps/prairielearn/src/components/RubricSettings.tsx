@@ -316,7 +316,7 @@ export function RubricSettings({
       __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: rubricData?.modified_at.toString() ?? '',
+      modified_at: rubricData?.modified_at.toISOString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,
@@ -330,7 +330,7 @@ export function RubricSettings({
         grader_note: it.grader_note,
         always_show_to_students: it.always_show_to_students,
       })),
-      tag_for_manual_grading: tagForGrading,
+      tag_for_manual_grading: tagForGrading === true ? 'true' : undefined,
     };
 
     const res = await fetch(window.location.pathname, {

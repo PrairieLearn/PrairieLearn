@@ -344,7 +344,7 @@ const PostBodySchema = z.union([
       .literal('true')
       .optional()
       .transform((val) => val === 'true'),
-    rubric_item: z
+    rubric_items: z
       .record(
         z.string(),
         z.object({
@@ -597,7 +597,7 @@ router.post(
           body.starting_points,
           body.min_points,
           body.max_extra_points,
-          Object.values(body.rubric_item), // rubric items
+          Object.values(body.rubric_items), // rubric items
           body.tag_for_manual_grading,
           res.locals.authn_user.user_id,
         );
