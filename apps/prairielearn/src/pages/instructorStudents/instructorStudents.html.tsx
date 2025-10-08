@@ -10,7 +10,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { useMemo, useState } from 'preact/compat';
 import {
   Alert,
   Button,
@@ -21,6 +21,9 @@ import {
   Tooltip,
 } from 'react-bootstrap';
 import z from 'zod';
+
+import { formatDate } from '@prairielearn/formatter';
+import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
@@ -38,11 +41,9 @@ import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/sa
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getSelfEnrollmentLinkUrl, getStudentEnrollmentUrl } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
+import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { ColumnManager } from './components/ColumnManager.js';
-import { DownloadButton } from './components/DownloadButton.js';
 import { InviteStudentModal } from './components/InviteStudentModal.js';
-import { StudentsTable } from './components/StudentsTable.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -162,38 +163,6 @@ function StudentsCard({
     ),
   );
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
-
-  const searchInputRef = useRef<HTMLInputElement>(null);
-
-  // Track screen size for aria-hidden
-  const mediaQuery = typeof window !== 'undefined' ? window.matchMedia('(min-width: 768px)') : null;
-  const [isMediumOrLarger, setIsMediumOrLarger] = useState(false);
-
-  useEffect(() => {
-    // TODO: This is a workaround to avoid a hydration mismatch.
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setIsMediumOrLarger(mediaQuery?.matches ?? true);
-  }, [mediaQuery]);
-
-  useEffect(() => {
-    const handler = (e: MediaQueryListEvent) => setIsMediumOrLarger(e.matches);
-    mediaQuery?.addEventListener('change', handler);
-    return () => mediaQuery?.removeEventListener('change', handler);
-  }, [mediaQuery]);
-
-  // Focus the search input when Ctrl+F is pressed
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'f') {
-        if (searchInputRef.current && searchInputRef.current !== document.activeElement) {
-          searchInputRef.current.focus();
-          event.preventDefault();
-        }
-      }
-    }
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, []);
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo(() => {
@@ -370,86 +339,73 @@ function StudentsCard({
           {lastInvitation.pending_uid} was invited successfully.
         </Alert>
       )}
-      <div class="card d-flex flex-column h-100">
-        <div class="card-header bg-primary text-white">
-          <div class="d-flex align-items-center justify-content-between gap-2">
-            <div>Students</div>
-            <div class="d-flex gap-2">
-              <DownloadButton
-                course={course}
-                courseInstance={courseInstance}
-                students={students}
-                table={table}
-              />
-              <CopyEnrollmentLinkButton courseInstance={courseInstance} />
-              {enrollmentManagementEnabled && (
+      <TanstackTableCard
+        table={table}
+        title="Students"
+        downloadButtonOptions={{
+          filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
+          pluralLabel: 'students',
+          mapRowToData: (row) => {
+            return {
+              uid: row.user?.uid ?? row.enrollment.pending_uid,
+              name: row.user?.name ?? null,
+              email: row.user?.email ?? null,
+              status: row.enrollment.status,
+              first_joined_at: row.enrollment.first_joined_at
+                ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                    includeTz: false,
+                  })
+                : null,
+            };
+          },
+        }}
+        headerButtons={
+          <>
+            {enrollmentManagementEnabled && (
+              <>
                 <Button
                   variant="light"
                   disabled={!authzData.has_course_instance_permission_edit}
                   onClick={() => setShowInvite(true)}
                 >
-                  <i class="bi bi-person-plus me-2" />
+                  <i class="bi bi-person-plus me-2" aria-hidden="true" />
                   Invite student
                 </Button>
-              )}
-            </div>
-          </div>
-        </div>
-        <div class="card-body d-flex flex-column">
-          <div class="d-flex flex-row flex-wrap align-items-center mb-3 gap-2">
-            <div class="flex-grow-1 flex-lg-grow-0 col-xl-6 col-lg-7 d-flex flex-row gap-2">
-              <div class="input-group">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  class="form-control"
-                  aria-label="Search by UID, name or email."
-                  placeholder="Search by UID, name, email..."
-                  value={globalFilter}
-                  onInput={(e) => {
-                    if (!(e.target instanceof HTMLInputElement)) return;
-                    void setGlobalFilter(e.target.value);
-                  }}
-                />
-                <button
-                  type="button"
-                  class="btn btn-outline-secondary"
-                  aria-label="Clear search"
-                  title="Clear search"
-                  data-bs-toggle="tooltip"
-                  onClick={() => setGlobalFilter('')}
-                >
-                  <i class="bi bi-x-circle" aria-hidden="true" />
-                </button>
-              </div>
-              {/* We do this instead of CSS properties for the accessibility checker */}
-              {isMediumOrLarger && <ColumnManager table={table} />}
-            </div>
-            {/* We do this instead of CSS properties for the accessibility checker */}
-            {!isMediumOrLarger && <ColumnManager table={table} />}
-            <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
-              <div class="text-muted text-nowrap">
-                Showing {table.getRowModel().rows.length} of {students.length} students
-              </div>
-            </div>
-          </div>
-          <div class="flex-grow-1">
-            <StudentsTable
-              table={table}
-              enrollmentStatusFilter={enrollmentStatusFilter}
-              setEnrollmentStatusFilter={setEnrollmentStatusFilter}
-            />
-          </div>
-        </div>
-        <InviteStudentModal
-          show={showInvite}
-          onHide={() => setShowInvite(false)}
-          onSubmit={async ({ uid }) => {
-            const enrollment = await inviteMutation.mutateAsync(uid);
-            setLastInvitation(enrollment);
-          }}
-        />
-      </div>
+                <CopyEnrollmentLinkButton courseInstance={courseInstance} />
+              </>
+            )}
+          </>
+        }
+        globalFilter={{
+          value: globalFilter,
+          setValue: setGlobalFilter,
+          placeholder: 'Search by UID, name, email...',
+        }}
+        tableOptions={{
+          filters: {
+            enrollment_status: ({ header }) => (
+              <CategoricalColumnFilter
+                columnId={header.column.id}
+                columnLabel="Status"
+                allColumnValues={STATUS_VALUES}
+                renderValueLabel={({ value }) => (
+                  <EnrollmentStatusIcon type="text" status={value} />
+                )}
+                columnValuesFilter={enrollmentStatusFilter}
+                setColumnValuesFilter={setEnrollmentStatusFilter}
+              />
+            ),
+          },
+        }}
+      />
+      <InviteStudentModal
+        show={showInvite}
+        onHide={() => setShowInvite(false)}
+        onSubmit={async ({ uid }) => {
+          const enrollment = await inviteMutation.mutateAsync(uid);
+          setLastInvitation(enrollment);
+        }}
+      />
     </>
   );
 }
