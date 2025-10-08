@@ -727,11 +727,7 @@ export async function loadAndValidateJson<T extends ZodSchema>({
   loadedJson.data = result.data;
 
   const validationResult = validate(loadedJson.data);
-  if (validationResult.errors.length > 0) {
-    infofile.addErrors(loadedJson, validationResult.errors);
-    return loadedJson;
-  }
-
+  infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
   return loadedJson;
 }

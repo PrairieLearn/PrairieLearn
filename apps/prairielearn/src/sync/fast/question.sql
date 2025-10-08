@@ -14,10 +14,11 @@ VALUES
 RETURNING
   *;
 
--- BLOCK update_question_errors
+-- BLOCK update_question_errors_and_warnings
 UPDATE questions
 SET
-  sync_errors = $errors
+  sync_errors = $errors,
+  sync_warnings = $warnings
 WHERE
   id = $id
 RETURNING

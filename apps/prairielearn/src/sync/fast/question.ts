@@ -83,7 +83,9 @@ async function validateAndGetTopic(
   course: Course,
   jsonData: infofile.InfoFile<QuestionJson>,
 ): Promise<Topic | null> {
-  if (!jsonData.data?.topic) return null;
+  // If the question has data, it's guaranteed to have a non-null `topic` property.
+  // The only time there's no topic is if the file has errors and thus no data.
+  if (!jsonData.data) return null;
 
   return await selectOptionalTopicByName({
     course_id: course.id,
@@ -131,10 +133,11 @@ async function updateQuestion(
   if (infofile.hasErrors(infoFile)) {
     // Write the errors to the question.
     return await queryRow(
-      sql.update_question_errors,
+      sql.update_question_errors_and_warnings,
       {
         id: question.id,
         errors: infofile.stringifyErrors(infoFile),
+        warnings: infofile.stringifyWarnings(infoFile),
       },
       QuestionSchema,
     );

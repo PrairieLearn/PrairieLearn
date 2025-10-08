@@ -164,11 +164,18 @@ describe('fastSyncQuestion', () => {
     assert.isFalse(await attemptFastSync(course, strategy));
   });
 
-  it('syncs errors to question with fast sync', async () => {
+  it('syncs both errors and warnings to question with fast sync', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
-    // @ts-expect-error -- Deliberately introducing malformed JSON.
-    courseData.questions[util.QUESTION_ID].title = undefined;
+    // This will produce an error because the email is malformed.
+    courseData.questions[util.QUESTION_ID].authors = [{ email: 'invalid.email' }];
+
+    // This will produce a warning because the timeout is too large.
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'alpine',
+      timeout: 1000000,
+    };
+
     await util.writeCourseToDirectory(courseData, courseDir);
 
     const course = await selectCourseById(syncResults.courseId);
@@ -177,7 +184,8 @@ describe('fastSyncQuestion', () => {
     assert.isTrue(await attemptFastSync(course, strategy));
 
     const question = await selectQuestionByQid({ course_id: course.id, qid: util.QUESTION_ID });
-    assert.match(question.sync_errors ?? '', /must have required property 'title'/);
+    assert.match(question.sync_errors ?? '', /author email address.*is invalid/);
+    assert.match(question.sync_warnings ?? '', /exceeds the maximum value and has been limited/);
   });
 
   it('syncs warnings to question with fast sync', async () => {
@@ -362,7 +370,7 @@ describe('fastSyncQuestion', () => {
   });
 
   it('falls back to slow sync when question path changes', async () => {
-    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
 
     // Move the question to a new path.
     const questionData = courseData.questions[util.QUESTION_ID];
@@ -370,16 +378,34 @@ describe('fastSyncQuestion', () => {
     courseData.questions['new-location/test-question'] = questionData;
     await util.writeCourseToDirectory(courseData, courseDir);
 
-    const course = await selectCourseById(syncResults.courseId);
     const strategy = getFastSyncStrategy([
       path.join('questions', util.QUESTION_ID, 'info.json'),
       path.join('questions', 'new-location', 'test-question', 'info.json'),
+    ]);
+    assert.isNull(strategy);
+  });
+
+  it('falls back to slow sync when question is moved to another nested path', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    const questionData = makeQuestion(courseData);
+    courseData.questions['nested/test-question'] = questionData;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    delete courseData.questions['nested/test-question'];
+    courseData.questions['nested/another-test-question'] = questionData;
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([
+      path.join('questions', 'nested', 'test-question', 'info.json'),
+      path.join('questions', 'nested', 'another-test-question', 'info.json'),
     ]);
     assert(strategy !== null);
     assert.isFalse(await attemptFastSync(course, strategy));
   });
 
-  it('falls back to slow sync when question is moved to a nested path', async () => {
+  it('falls back to slow sync when question is moved to a deeper-nested path', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
     const questionData = makeQuestion(courseData);
