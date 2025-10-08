@@ -99,7 +99,11 @@ export function PublishingForm({
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
-    const now = Temporal.Now.plainDateTimeISO(courseInstance.display_timezone);
+    // "Now" must be rounded to the nearest second, as that's what `datetime-local` supports.
+    const now = Temporal.Now.plainDateTimeISO(courseInstance.display_timezone).round({
+      smallestUnit: 'seconds',
+    });
+
     const oneWeekLater = now.add({ weeks: 1 });
     const eighteenWeeksLater = now.add({ weeks: 18 });
 
