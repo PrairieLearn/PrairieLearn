@@ -8,12 +8,7 @@ import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import {
-  nowDateInTimezone,
-  nowInTimezone,
-  parseDateTimeLocalString,
-  stringToZonedDateTime,
-} from '../utils/dateUtils.js';
+import { nowDateInTimezone, parseDateTimeLocalString } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
@@ -104,18 +99,12 @@ export function PublishingForm({
   const handleStatusChange = (newStatus: PublishingStatus) => {
     setSelectedStatus(newStatus);
 
-    const now = nowInTimezone(courseInstance.display_timezone);
+    const now = Temporal.Now.plainDateTimeISO(courseInstance.display_timezone);
     const oneWeekLater = now.add({ weeks: 1 });
     const eighteenWeeksLater = now.add({ weeks: 18 });
 
-    const currentPublishDate =
-      publishDate === ''
-        ? null
-        : stringToZonedDateTime(publishDate, courseInstance.display_timezone);
-    const currentArchiveDate =
-      archiveDate === ''
-        ? null
-        : stringToZonedDateTime(archiveDate, courseInstance.display_timezone);
+    const currentPublishDate = publishDate === '' ? null : Temporal.PlainDateTime.from(publishDate);
+    const currentArchiveDate = archiveDate === '' ? null : Temporal.PlainDateTime.from(archiveDate);
 
     // Compute updated dates. We will update them at the end of this function.
     let updatedPublishDate = currentPublishDate;
@@ -130,15 +119,15 @@ export function PublishingForm({
       case 'publish_scheduled': {
         if (
           currentPublishDate === null ||
-          Temporal.ZonedDateTime.compare(currentPublishDate, now) <= 0
+          Temporal.PlainDateTime.compare(currentPublishDate, now) <= 0
         ) {
           updatedPublishDate = oneWeekLater;
         }
 
         if (
           currentArchiveDate === null ||
-          Temporal.ZonedDateTime.compare(currentArchiveDate, now) <= 0 ||
-          Temporal.ZonedDateTime.compare(updatedPublishDate!, currentArchiveDate) >= 0
+          Temporal.PlainDateTime.compare(currentArchiveDate, now) <= 0 ||
+          Temporal.PlainDateTime.compare(updatedPublishDate!, currentArchiveDate) >= 0
         ) {
           updatedArchiveDate = eighteenWeeksLater;
         }
@@ -147,13 +136,13 @@ export function PublishingForm({
       case 'published': {
         if (
           currentPublishDate === null ||
-          Temporal.ZonedDateTime.compare(currentPublishDate, now) <= 0
+          Temporal.PlainDateTime.compare(currentPublishDate, now) <= 0
         ) {
           updatedPublishDate = now;
         }
         if (
           currentArchiveDate === null ||
-          Temporal.ZonedDateTime.compare(currentArchiveDate, now) <= 0
+          Temporal.PlainDateTime.compare(currentArchiveDate, now) <= 0
         ) {
           updatedArchiveDate = eighteenWeeksLater;
         }
@@ -163,7 +152,7 @@ export function PublishingForm({
         updatedArchiveDate = now;
         if (
           currentPublishDate !== null &&
-          Temporal.ZonedDateTime.compare(currentPublishDate, now) > 0
+          Temporal.PlainDateTime.compare(currentPublishDate, now) > 0
         ) {
           const oneWeekAgo = now.add({ weeks: -1 });
           updatedPublishDate = oneWeekAgo;
@@ -171,14 +160,8 @@ export function PublishingForm({
         break;
       }
     }
-    setValue(
-      'publishDate',
-      updatedPublishDate === null ? '' : updatedPublishDate.toPlainDateTime().toString(),
-    );
-    setValue(
-      'archiveDate',
-      updatedArchiveDate === null ? '' : updatedArchiveDate.toPlainDateTime().toString(),
-    );
+    setValue('publishDate', updatedPublishDate === null ? '' : updatedPublishDate.toString());
+    setValue('archiveDate', updatedArchiveDate === null ? '' : updatedArchiveDate.toString());
   };
 
   const onSubmit = async (data: PublishingFormValues) => {
@@ -221,7 +204,7 @@ export function PublishingForm({
   const handleAddWeek = (field: 'publishDate' | 'archiveDate') => {
     const currentValue = field === 'publishDate' ? publishDate : archiveDate;
     if (currentValue) {
-      const currentDate = stringToZonedDateTime(currentValue, courseInstance.display_timezone);
+      const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
     }
@@ -344,14 +327,14 @@ export function PublishingForm({
                 <div class="ms-4 mt-1 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
-                    date={stringToZonedDateTime(publishDate, courseInstance.display_timezone)}
+                    date={Temporal.PlainDateTime.from(publishDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
                   />{' '}
                   and will be archived at{' '}
                   <FriendlyDate
-                    date={stringToZonedDateTime(archiveDate, courseInstance.display_timezone)}
+                    date={Temporal.PlainDateTime.from(archiveDate)}
                     timezone={courseInstance.display_timezone}
                     tooltip={true}
                     options={{ timeFirst: true }}
