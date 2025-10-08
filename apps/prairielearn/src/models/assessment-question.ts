@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 import {

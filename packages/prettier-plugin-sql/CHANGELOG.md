@@ -1,5 +1,11 @@
 # @prairielearn/prettier-plugin-sql
 
+## 2.1.11
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 2.1.10
 
 ### Patch Changes

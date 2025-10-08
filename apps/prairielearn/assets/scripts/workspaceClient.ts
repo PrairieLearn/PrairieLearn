@@ -75,6 +75,7 @@ onDocumentReady(function () {
   }
 
   let previousState: null | string = null;
+
   function setState(state: string) {
     // Simplify the state machine by ignoring duplicate states.
     if (state === previousState) return;

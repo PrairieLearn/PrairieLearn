@@ -8,7 +8,6 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as bindMount from '@prairielearn/bind-mount';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
@@ -51,6 +50,7 @@ const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
+
 async function updateExecutorImageTag() {
   if (config.workerExecutorImageTag) {
     // Give precedence to any value provided by config.
@@ -159,7 +159,7 @@ export class CodeCallerContainer implements CodeCaller {
 
   private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 
