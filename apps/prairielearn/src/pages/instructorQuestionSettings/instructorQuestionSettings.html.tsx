@@ -17,8 +17,8 @@ import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
   type Author,
+  IdSchema,
   type Question,
   type Tag,
   type Topic,
@@ -296,11 +296,9 @@ export function InstructorQuestionSettings({
                                 class="form-control"
                                 id="${'author_name_' + index}"
                                 name="${'author_name_' + index}"
-                                value="${author?.author_name ?? ''}"
+                                value="${author.author_name}"
                               />`
-                            : html`
-                                <small class="text-center">${author?.author_name ?? ''}</small>
-                              `}
+                            : html` <small class="text-center">${author.author_name}</small> `}
                         </td>
                         <td class="text-center align-middle">
                           ${canEdit
@@ -309,10 +307,9 @@ export function InstructorQuestionSettings({
                                 class="form-control"
                                 id="${'author_email_' + index}"
                                 name="${'author_email_' + index}"
-                                value="${author?.email ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
+                                value="${author.email}"
                               />`
-                            : html`<small class="text-center">${author?.email ?? ''}</small>`}
+                            : html`<small class="text-center">${author.email}</small>`}
                         </td>
                         <td class="text-center align-middle">
                           ${canEdit
@@ -322,10 +319,9 @@ export function InstructorQuestionSettings({
                                 class="form-control author_orcid"
                                 id="${'author_orcid_' + index}"
                                 name="${'author_orcid_' + index}"
-                                value="${author?.orcid ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
+                                value="${author.orcid}"
                               />`
-                            : html`<small class="text-center">${author?.orcid ?? ''}</small>`}
+                            : html`<small class="text-center">${author.orcid}</small>`}
                         </td>
                         <td class="text-center align-middle">
                           ${canEdit
@@ -334,12 +330,9 @@ export function InstructorQuestionSettings({
                                 class="form-control"
                                 id="${'author_reference_course_' + index}"
                                 name="${'author_reference_course_' + index}"
-                                value="${author?.origin_course ?? ''}"
-                                ${canEdit ? '' : 'disabled'}
+                                value="${author.origin_course}"
                               />`
-                            : html`<small class="text-center"
-                                >${author?.origin_course ?? ''}</small
-                              >`}
+                            : html`<small class="text-center">${author.origin_course}</small>`}
                         </td>
                         ${canEdit
                           ? html`<td class="text-center align-middle">
@@ -359,7 +352,7 @@ export function InstructorQuestionSettings({
                 ${canEdit
                   ? html`<tfoot>
                       <tr>
-                        <td colspan="4" align="left">
+                        <td colspan="4">
                           <button id="add-author-button" class="btn btn-primary mb-2" type="button">
                             Add Author
                           </button>

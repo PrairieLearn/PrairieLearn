@@ -7,8 +7,7 @@
   "type": "Calculation",
   "authors": [
     { "name": "Jane M. Smith", "email": "wrweg@sfwef.com" },
-    { "name": "John Smith", "email": "fefef@grg.com" },
     { "name": "vwsgvbg", "email": "email@email.com" },
-    { "name": "Name", "email": "email@mail.com", "orcid": "0000-0000-0000-0001" }
+    { "name": "item", "orcid": "0000-0000-0000-0001" }
   ]
 }

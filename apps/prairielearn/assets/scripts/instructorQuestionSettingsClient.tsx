@@ -179,8 +179,8 @@ onDocumentReady(() => {
     nameInput.setAttribute('class', 'form-control');
     nameInput.setAttribute('id', 'author_name_' + index);
     nameInput.setAttribute('name', 'author_name_' + index);
-    tableData.appendChild(nameInput);
-    newRow.appendChild(tableData);
+    tableData.append(nameInput);
+    newRow.append(tableData);
 
     tableData = document.createElement('td');
     tableData.setAttribute('class', 'align-middle');
@@ -190,8 +190,8 @@ onDocumentReady(() => {
     emailInput.setAttribute('id', 'author_email_' + index);
     emailInput.setAttribute('name', 'author_email_' + index);
     validateEmailInput(emailInput);
-    tableData.appendChild(emailInput);
-    newRow.appendChild(tableData);
+    tableData.append(emailInput);
+    newRow.append(tableData);
 
     tableData = document.createElement('td');
     tableData.setAttribute('class', 'align-middle');
@@ -202,8 +202,8 @@ onDocumentReady(() => {
     orcidInput.setAttribute('name', 'author_orcid_' + index);
     orcidInput.setAttribute('pattern', '^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$');
     addORCIDInputListener(orcidInput);
-    tableData.appendChild(orcidInput);
-    newRow.appendChild(tableData);
+    tableData.append(orcidInput);
+    newRow.append(tableData);
 
     tableData = document.createElement('td');
     tableData.setAttribute('class', 'align-middle');
@@ -212,8 +212,8 @@ onDocumentReady(() => {
     originCourseInput.setAttribute('class', 'form-control');
     originCourseInput.setAttribute('id', 'author_origin_course_' + index);
     originCourseInput.setAttribute('name', 'author_origin_course_' + index);
-    tableData.appendChild(originCourseInput);
-    newRow.appendChild(tableData);
+    tableData.append(originCourseInput);
+    newRow.append(tableData);
 
     tableData = document.createElement('td');
     tableData.setAttribute('class', 'text-center align-middle');
@@ -222,24 +222,24 @@ onDocumentReady(() => {
     removeData.setAttribute('class', 'btn btn-secondary mb-2');
     removeData.setAttribute('id', 'remove_author_' + index);
     removeData.innerText = 'Remove';
-    removeData?.addEventListener('click', () => {
+    removeData.addEventListener('click', () => {
       removeAuthorRowButtonClick(index, questionSettingsForm, saveButton);
     });
-    tableData.appendChild(removeData);
-    newRow.appendChild(tableData);
+    tableData.append(removeData);
+    newRow.append(tableData);
 
-    table?.appendChild(newRow);
+    table?.append(newRow);
   });
 
   const rows = table?.getElementsByClassName('author-row');
   const numRows = rows?.length ?? 0;
   const removeAuthorButtons = document.getElementsByClassName('remove_author_button');
-  for (let index = 0; index < removeAuthorButtons.length; index++) {
-    const removeAuthorButtonRowFinalUnderscore = removeAuthorButtons[index].id.lastIndexOf('_');
+  for (const removeAuthorButton of removeAuthorButtons) {
+    const removeAuthorButtonRowFinalUnderscore = removeAuthorButton.id.lastIndexOf('_');
     const removeAuthorButtonRowIndex = Number(
-      removeAuthorButtons[index].id.slice(removeAuthorButtonRowFinalUnderscore + 1),
+      removeAuthorButton.id.slice(removeAuthorButtonRowFinalUnderscore + 1),
     );
-    removeAuthorButtons[index]?.addEventListener('click', () => {
+    removeAuthorButton.addEventListener('click', () => {
       removeAuthorRowButtonClick(removeAuthorButtonRowIndex, questionSettingsForm, saveButton);
     });
   }
@@ -256,11 +256,13 @@ onDocumentReady(() => {
 });
 
 const removeAuthorRowButtonClick = (
-  index: Number,
+  index: number,
   questionSettingsForm: HTMLFormElement | null,
   saveButton: HTMLButtonElement | null,
 ) => {
-  const rowToRemove = document.querySelector<HTMLTableRowElement>('#author_row_' + index);
+  const rowToRemove = document.querySelector<HTMLTableRowElement>(
+    '#author_row_' + index.toString(),
+  );
   rowToRemove?.remove();
   if (questionSettingsForm && saveButton) {
     saveButton.removeAttribute('disabled');
@@ -298,7 +300,7 @@ function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
 
 function validateORCID(orcid: string): boolean {
   // Empty strings are fine.
-  if (orcid == null || orcid === '') {
+  if (orcid === '') {
     return true;
   }
   // Drop any dashes
