@@ -800,7 +800,12 @@ function QuestionTestsForm({
   questionTestCsrfToken: string;
 }) {
   return html`
-    <form name="question-tests-form" method="POST" action="${questionTestPath}" class="d-flex flex-wrap gap-2">
+    <form
+      name="question-tests-form"
+      method="POST"
+      action="${questionTestPath}"
+      class="d-flex flex-wrap gap-2"
+    >
       <input type="hidden" name="__csrf_token" value="${questionTestCsrfToken}" />
       <button
         type="submit"
