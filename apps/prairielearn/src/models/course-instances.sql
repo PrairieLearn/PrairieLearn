@@ -16,6 +16,15 @@ WHERE
   AND ci.short_name = $short_name
   AND ci.deleted_at IS NULL;
 
+-- BLOCK select_course_instance_by_enrollment_code
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.enrollment_code = $enrollment_code
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
@@ -126,3 +135,15 @@ WHERE
   ci.uuid = $uuid
   AND ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
+
+-- BLOCK select_instance_and_course_and_institution
+SELECT
+  to_jsonb(ci.*) AS course_instance,
+  to_jsonb(c.*) AS course,
+  to_jsonb(i.*) AS institution
+FROM
+  course_instances AS ci
+  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN institutions AS i ON (i.id = c.institution_id)
+WHERE
+  ci.id = $course_instance_id;
