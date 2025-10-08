@@ -63,7 +63,7 @@ export function ErrorPage({
 
           <p><strong>Status:</strong> ${error.status}</p>
 
-          <div>
+          <div class="d-flex flex-column gap-2 align-items-start">
             <a href="${referrer}" class="btn btn-primary" ${!referrer ? 'disabled' : ''}>
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to previous page
