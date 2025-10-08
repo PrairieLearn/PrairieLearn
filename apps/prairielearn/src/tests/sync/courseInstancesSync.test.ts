@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { CourseInstancePublishingRuleSchema, CourseInstanceSchema } from '../../lib/db-types.js';
@@ -21,7 +20,7 @@ import * as util from './util.js';
 function makeCourseInstance(): util.CourseInstanceData {
   return {
     courseInstance: {
-      uuid: uuidv4(),
+      uuid: crypto.randomUUID(),
       longName: 'Test course instance',
     },
     assessments: {},
@@ -681,7 +680,6 @@ describe('Course instance syncing', () => {
       db: {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: Date | null;
-        self_enrollment_enabled_before_date_enabled: boolean;
         self_enrollment_use_enrollment_code: boolean;
       } | null;
       errors: string[];
@@ -694,7 +692,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -708,7 +705,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: date,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -716,13 +712,11 @@ describe('Course instance syncing', () => {
       {
         json: {
           beforeDate: jsonDate,
-          beforeDateEnabled: true,
           useEnrollmentCode: true,
         },
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: date,
-          self_enrollment_enabled_before_date_enabled: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -732,7 +726,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -744,7 +737,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -756,7 +748,6 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
-          self_enrollment_enabled_before_date_enabled: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -801,8 +792,6 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
           self_enrollment_enabled_before_date:
             syncedCourseInstance.self_enrollment_enabled_before_date,
-          self_enrollment_enabled_before_date_enabled:
-            syncedCourseInstance.self_enrollment_enabled_before_date_enabled,
           self_enrollment_use_enrollment_code:
             syncedCourseInstance.self_enrollment_use_enrollment_code,
         };

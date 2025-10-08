@@ -63,7 +63,6 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     access_rules: accessRules,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
-    self_enrollment_enabled_before_date_enabled: courseInstance.selfEnrollment.beforeDateEnabled,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
     publishing_publish_date: courseInstance.publishing?.publishDate ?? null,
     publishing_archive_date: courseInstance.publishing?.archiveDate ?? null,
