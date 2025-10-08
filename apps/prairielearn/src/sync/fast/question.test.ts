@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { v4 as uuidv4 } from 'uuid';
@@ -289,6 +290,24 @@ describe('fastSyncQuestion', () => {
     },
   );
 
+  it.for([{ qid: 'test-question' }, { qid: 'nested/test-question' }])(
+    'falls back to slow sync when $qid info.json is deleted but other files remain',
+    async ({ qid }) => {
+      const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+      courseData.questions[qid] = makeQuestion(courseData);
+      await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+      await fs.writeFile(path.join(courseDir, 'questions', qid, 'question.html'), 'Testing!');
+      await fs.rm(path.join(courseDir, 'questions', qid, 'info.json'));
+
+      const course = await selectCourseById(syncResults.courseId);
+      const strategy = getFastSyncStrategy([path.join('questions', qid, 'info.json')]);
+      assert(strategy !== null);
+      assert.isFalse(await attemptFastSync(course, strategy));
+    },
+  );
+
   it('falls back to slow sync when question UUID changes', async () => {
     const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
 
@@ -337,6 +356,44 @@ describe('fastSyncQuestion', () => {
     const course = await selectCourseById(syncResults.courseId);
     const strategy = getFastSyncStrategy([
       path.join('questions', util.MANUAL_GRADING_QUESTION_ID, 'info.json'),
+    ]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
+
+  it('falls back to slow sync when question path changes', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    // Move the question to a new path.
+    const questionData = courseData.questions[util.QUESTION_ID];
+    delete courseData.questions[util.QUESTION_ID];
+    courseData.questions['new-location/test-question'] = questionData;
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([
+      path.join('questions', util.QUESTION_ID, 'info.json'),
+      path.join('questions', 'new-location', 'test-question', 'info.json'),
+    ]);
+    assert(strategy !== null);
+    assert.isFalse(await attemptFastSync(course, strategy));
+  });
+
+  it('falls back to slow sync when question is moved to a nested path', async () => {
+    const { courseData, courseDir, syncResults } = await util.createAndSyncCourseData();
+
+    const questionData = makeQuestion(courseData);
+    courseData.questions['nested/test-question'] = questionData;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    delete courseData.questions['nested/test-question'];
+    courseData.questions['nested/test-question/nested-again'] = questionData;
+    await util.writeCourseToDirectory(courseData, courseDir);
+
+    const course = await selectCourseById(syncResults.courseId);
+    const strategy = getFastSyncStrategy([
+      path.join('questions', 'nested', 'test-question', 'info.json'),
+      path.join('questions', 'nested', 'test-question', 'nested-again', 'info.json'),
     ]);
     assert(strategy !== null);
     assert.isFalse(await attemptFastSync(course, strategy));
