@@ -30,10 +30,10 @@ function computeStatus(
   const now = nowDateInTimezone(courseInstance.display_timezone);
 
   if (publishDate && archiveDate) {
-    if (archiveDate <= now) {
+    if (Temporal.ZonedDateTime.compare(archiveDate, now) <= 0) {
       return 'archived';
     }
-    if (publishDate > now) {
+    if (Temporal.ZonedDateTime.compare(publishDate, now) > 0) {
       return 'publish_scheduled';
     }
     return 'published';
