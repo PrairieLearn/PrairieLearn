@@ -319,7 +319,7 @@ export function InstructorQuestionSettings({
                             ? html`<input
                                 type="text"
                                 pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$"
-                                class="form-control"
+                                class="form-control author_orcid"
                                 id="${'author_orcid_' + index}"
                                 name="${'author_orcid_' + index}"
                                 value="${author?.orcid ?? ''}"
@@ -345,7 +345,7 @@ export function InstructorQuestionSettings({
                           ? html`<td class="text-center align-middle">
                               <button
                                 id="${'remove_author_' + index}"
-                                class="btn btn-secondary mb-2"
+                                class="btn btn-secondary mb-2 remove_author_button"
                                 type="button"
                               >
                                 Remove
