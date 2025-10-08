@@ -134,15 +134,23 @@ export const DateFromISOString = z
   .transform((s) => new Date(s));
 
 /**
- * A Zod schema for a temporal instant string in ISO format.
+ * A Zod schema for Temporal.Instant objects.
  *
+ * We handle three formats based on our needs:
+ *  - `Date` - dates returned by the pg driver will be a `Date` object
+ *  - `Temporal.Instant` - For idempotence
+ *  - `string` - ISO date strings in JSON
  */
 export const InstantFromISOString = z
-  .union([z.instanceof(Temporal.Instant), z.string()])
+  .union([z.instanceof(Temporal.Instant), z.string(), z.date()])
   .refine(
     (s) => {
       try {
-        Temporal.Instant.from(s);
+        if (s instanceof Date) {
+          Temporal.Instant.fromEpochMilliseconds(s.getTime());
+        } else {
+          Temporal.Instant.from(s);
+        }
         return true;
       } catch {
         return false;
@@ -152,7 +160,12 @@ export const InstantFromISOString = z
       message: 'must be a valid ISO date string',
     },
   )
-  .transform((s) => Temporal.Instant.from(s));
+  .transform((s) => {
+    if (s instanceof Date) {
+      return Temporal.Instant.from(s.toISOString());
+    }
+    return Temporal.Instant.from(s);
+  });
 
 /**
  * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
