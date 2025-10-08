@@ -22,14 +22,13 @@ import {
   type Tag,
   type Topic,
 } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
-import { selectInstitutionForCourse } from '../../models/institution.js';
 import { selectOptionalQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId } from '../../models/tags.js';
 import { selectOptionalTopicByName } from '../../models/topics.js';
 import * as schemas from '../../schemas/index.js';
 import type { QuestionJson } from '../../schemas/index.js';
-import { loadAndValidateJson, validateQuestion } from '../course-db.js';
+import { isSharingEnabledForCourse, loadAndValidateJson, validateQuestion } from '../course-db.js';
+import { sync as syncAuthors } from '../fromDisk/authors.js';
 import { getParamsForQuestion } from '../fromDisk/questions.js';
 import * as infofile from '../infofile.js';
 
@@ -55,15 +54,6 @@ async function selectMatchingQuestion(pathPrefix: string) {
   );
 }
 
-/** TODO: this is copied from `course-db.ts`; switch to a shared version? */
-async function isSharingEnabled(course: Course): Promise<boolean> {
-  const institution = await selectInstitutionForCourse({ course_id: course.id });
-  return await features.enabled('question-sharing', {
-    institution_id: institution.id,
-    course_id: course.id,
-  });
-}
-
 export function qidFromFilePath(filePath: string): string {
   const relativePath = path.relative('questions', filePath);
   return relativePath.replace(/\/info\.json$/, '');
@@ -73,7 +63,7 @@ async function loadAndValidateQuestionJson(
   course: Course,
   jsonFilePath: string,
 ): Promise<infofile.InfoFile<QuestionJson> | null> {
-  const sharingEnabled = await isSharingEnabled(course);
+  const sharingEnabled = await isSharingEnabledForCourse({ course_id: course.id });
   return await loadAndValidateJson({
     coursePath: course.path,
     filePath: jsonFilePath,
@@ -174,6 +164,9 @@ async function updateQuestion(
       [[JSON.stringify([updatedQuestion.id, tagIds])]],
       z.unknown(),
     );
+
+    // Sync the authors.
+    await syncAuthors({ [question.qid]: infoFile }, { [question.qid]: question.id });
 
     return updatedQuestion;
   });
