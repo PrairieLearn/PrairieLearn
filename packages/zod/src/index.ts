@@ -121,7 +121,7 @@ export const IntervalSchema = z
  * @deprecated Use {@link DateFromISOString} instead.
  */
 export const DateFromISOString = z
-  .union([z.string(), z.date()])
+  .date()
   .refine(
     (s) => {
       const date = new Date(s);
