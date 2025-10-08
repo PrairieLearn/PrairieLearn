@@ -121,7 +121,7 @@ export const IntervalSchema = z
  * @deprecated Use {@link DateFromISOString} instead.
  */
 export const DateFromISOString = z
-  .date()
+  .union([z.string(), z.date()])
   .refine(
     (s) => {
       const date = new Date(s);
@@ -139,7 +139,7 @@ export const DateFromISOString = z
  * We handle three formats based on our needs:
  *  - `Date` - dates returned by the pg driver will be a `Date` object
  *  - `Temporal.Instant` - For idempotence
- *  - `string` - ISO date strings in JSON
+ *  - `string` - ISO date strings from to_jsonb(row)
  */
 export const InstantFromISOString = z
   .union([z.instanceof(Temporal.Instant), z.string(), z.date()])

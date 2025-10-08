@@ -193,4 +193,11 @@ describe('InstantFromISOString', () => {
     const result = InstantFromISOString.safeParse(inputString);
     expect(result.success).toBe(false);
   });
+  it('should parse a date to a Temporal.Instant', () => {
+    const inputDate = new Date('2025-10-13T11:15:48-05:00');
+    const validInstant = Temporal.Instant.fromEpochMilliseconds(inputDate.getTime());
+    const result = InstantFromISOString.safeParse(inputDate);
+    expect(result.success).toBe(true);
+    expect(result.data!.toString()).toBe(validInstant.toString());
+  });
 });
