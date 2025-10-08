@@ -134,12 +134,12 @@ export const DateFromISOString = z
   .transform((s) => new Date(s));
 
 /**
- * A Zod schema for Temporal.Instant objects.
+ * A Zod schema for {@link Temporal.Instant} objects.
  *
  * We handle three formats based on our needs:
  *  - `Date` - dates returned by the pg driver will be a `Date` object
  *  - `Temporal.Instant` - For idempotence
- *  - `string` - ISO date strings from to_jsonb(row)
+ *  - `string` - ISO date strings from JSON or other sources
  */
 export const InstantFromISOString = z
   .union([z.instanceof(Temporal.Instant), z.string(), z.date()])
