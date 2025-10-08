@@ -5,6 +5,7 @@ import {
   loadSqlEquiv,
   queryOptionalRow,
   queryRow,
+  queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
@@ -279,6 +280,22 @@ export async function generateAndEnrollUsers({
   });
 }
 
+/**
+ * Gets enrollments for users with the specified UIDs in a course instance.
+ */
+export async function getEnrollmentsByUidsInCourseInstance({
+  uids,
+  course_instance_id,
+}: {
+  uids: string[];
+  course_instance_id: string;
+}): Promise<Enrollment[]> {
+  return await queryRows(
+    sql.select_enrollments_by_uids_in_course_instance,
+    { uids, course_instance_id },
+    EnrollmentSchema,
+  );
+}
 export async function selectEnrollmentById({ id }: { id: string }) {
   return await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
 }

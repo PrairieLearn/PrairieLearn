@@ -6,7 +6,10 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseInstanceAccessRuleSchema, CourseInstanceSchema } from '../../../../lib/db-types.js';
+import {
+  CourseInstancePublishingRuleSchema,
+  CourseInstanceSchema,
+} from '../../../../lib/db-types.js';
 
 const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
 const router = Router({ mergeParams: true });
@@ -18,11 +21,11 @@ const CourseInstanceAccessRuleDataSchema = z.array(
     course_instance_long_name: z.string(),
     course_instance_course_id: CourseInstanceSchema.shape.course_id,
     end_date: z.string().nullable(),
-    course_instance_access_rule_id: CourseInstanceAccessRuleSchema.shape.id,
-    institution: CourseInstanceAccessRuleSchema.shape.institution,
-    course_instance_access_rule_number: CourseInstanceAccessRuleSchema.shape.number,
+    course_instance_access_rule_id: CourseInstancePublishingRuleSchema.shape.id,
+    institution: CourseInstancePublishingRuleSchema.shape.institution,
+    course_instance_access_rule_number: CourseInstancePublishingRuleSchema.shape.number,
     start_date: z.string().nullable(),
-    uids: CourseInstanceAccessRuleSchema.shape.uids,
+    uids: CourseInstancePublishingRuleSchema.shape.uids,
   }),
 );
 
