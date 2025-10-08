@@ -262,23 +262,13 @@ export function EnrollmentCodeForm({
           course.
         </div>
       </div>
-      <div class="d-grid">
-        <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
-          {isSubmitting ? (
-            <>
-              <span
-                class="spinner-border spinner-border-sm me-2"
-                role="status"
-                aria-hidden="true"
-              />
-              Looking up code...
-            </>
-          ) : (
-            'Join Course'
-          )}
-        </button>
-      </div>
     </form>
+  );
+
+  const submitButton = (
+    <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
+      {isSubmitting ? 'Looking up code...' : 'Join Course'}
+    </button>
   );
 
   if (style === 'card') {
@@ -287,7 +277,10 @@ export function EnrollmentCodeForm({
         <Card.Header>
           <h4 class="mb-0">Join a course</h4>
         </Card.Header>
-        <Card.Body>{formContent}</Card.Body>
+        <Card.Body>
+          {formContent}
+          <div class="d-grid">{submitButton}</div>
+        </Card.Body>
       </Card>
     );
   }
@@ -302,6 +295,7 @@ export function EnrollmentCodeForm({
         <button type="button" class="btn btn-secondary" onClick={onHide}>
           Cancel
         </button>
+        {submitButton}
       </Modal.Footer>
     </Modal>
   );

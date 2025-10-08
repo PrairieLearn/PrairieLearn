@@ -39,7 +39,11 @@ import type {
 } from '../../lib/client/page-context.js';
 import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getSelfEnrollmentLinkUrl, getStudentEnrollmentUrl } from '../../lib/client/url.js';
+import {
+  getSelfEnrollmentLinkUrl,
+  getSelfEnrollmentSettingsUrl,
+  getStudentEnrollmentUrl,
+} from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -85,42 +89,31 @@ function CopyEnrollmentLinkButton({
     await copyToClipboard(enrollmentCodeDashed);
   };
 
-  // Show button only if self-enrollment is enabled
-  if (!courseInstance.self_enrollment_enabled) {
-    return null;
-  }
-
-  // If enrollment code is required, show split button
-  if (courseInstance.self_enrollment_use_enrollment_code) {
-    return (
-      <DropdownButton
-        as={ButtonGroup}
-        title="Copy enrollment details"
-        disabled={!courseInstance.self_enrollment_enabled}
-        variant="light"
-      >
+  return (
+    <DropdownButton
+      as={ButtonGroup}
+      title="Enrollment details"
+      disabled={!courseInstance.self_enrollment_enabled}
+      variant="light"
+    >
+      {courseInstance.self_enrollment_use_enrollment_code && (
         <Dropdown.Item onClick={handleCopyCode}>
           <i class="bi bi-key me-2" />
           Copy enrollment code
         </Dropdown.Item>
+      )}
+
+      {courseInstance.self_enrollment_enabled && (
         <Dropdown.Item onClick={handleCopyLink}>
           <i class="bi bi-link-45deg me-2" />
           Copy enrollment link
         </Dropdown.Item>
-      </DropdownButton>
-    );
-  }
-
-  // If no enrollment code required, show simple button
-  return (
-    <Button
-      variant="light"
-      disabled={!courseInstance.self_enrollment_enabled}
-      onClick={handleCopyLink}
-    >
-      <i class="bi bi-link-45deg me-2" />
-      Copy enrollment link
-    </Button>
+      )}
+      <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
+        <i class="bi bi-gear me-2" />
+        Manage settings
+      </Dropdown.Item>
+    </DropdownButton>
   );
 }
 

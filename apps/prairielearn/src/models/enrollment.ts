@@ -151,7 +151,7 @@ export async function ensureEnrollment({
       await selectAndLockEnrollmentById(enrollment.id);
     }
 
-    if (enrollment && (enrollment.status === 'invited' || enrollment.status === 'removed')) {
+    if (enrollment && ['invited', 'removed', 'rejected'].includes(enrollment.status)) {
       const updated = await dangerouslyEnrollUserInCourseInstance({
         enrollment_id: enrollment.id,
         user_id,

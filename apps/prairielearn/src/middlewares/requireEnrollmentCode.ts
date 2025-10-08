@@ -1,10 +1,11 @@
 import asyncHandler from 'express-async-handler';
 
 import { getCourseInstanceContext } from '../lib/client/page-context.js';
-import { idsEqual } from '../lib/id.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
+  // The user will already be denied access if they are impersonating another user that is not enrolled in the course instance.
+
   // Check if the user needs an enrollment code to access the course instance.
   const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
@@ -24,12 +25,6 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  // Skip if user is not the authenticated user (impersonation)
-  if (!idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id)) {
-    next();
-    return;
-  }
-
   // Check if self-enrollment is enabled and requires an enrollment code
   if (
     !courseInstance.self_enrollment_enabled ||
@@ -41,9 +36,8 @@ export default asyncHandler(async (req, res, next) => {
 
   // Check if self-enrollment is still allowed (before the cutoff date)
   const selfEnrollmentAllowed =
-    courseInstance.self_enrollment_enabled &&
-    (courseInstance.self_enrollment_enabled_before_date == null ||
-      new Date() < courseInstance.self_enrollment_enabled_before_date);
+    courseInstance.self_enrollment_enabled_before_date == null ||
+    new Date() < courseInstance.self_enrollment_enabled_before_date;
 
   if (!selfEnrollmentAllowed) {
     next();
@@ -51,6 +45,7 @@ export default asyncHandler(async (req, res, next) => {
   }
 
   // Check if user has student access (they should be able to enroll)
+  // This checks if access rules would allow them to enroll.
   if (!res.locals.authz_data.authn_has_student_access) {
     next();
     return;
@@ -62,10 +57,11 @@ export default asyncHandler(async (req, res, next) => {
     course_instance_id: courseInstance.id,
   });
 
-  // If user is already enrolled or invited, let them through
+  // If user is enrolled and joined/invited/rejected/removed, let them through.
+  // This means that an invited/rejected user can skip the process of entering an enrollment code.
   if (
     existingEnrollment &&
-    (existingEnrollment.status === 'joined' || existingEnrollment.status === 'invited')
+    ['joined', 'invited', 'removed', 'rejected'].includes(existingEnrollment.status)
   ) {
     next();
     return;

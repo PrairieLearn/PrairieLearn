@@ -46,3 +46,7 @@ export function getSelfEnrollmentLinkUrl({
 }): string {
   return `/pl/course_instance/${courseInstanceId}/join/${enrollmentCode}`;
 }
+
+export function getSelfEnrollmentSettingsUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instance_admin/settings`;
+}
