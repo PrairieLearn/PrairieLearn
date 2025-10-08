@@ -123,9 +123,7 @@ export function GradingPanel({
                   class="form-label d-flex align-items-center gap-2"
                 >
                   Submission Group:
-                  ${displayedSelectedGroup &&
-                  instanceQuestionGroups &&
-                  instanceQuestionGroups.length > 0
+                  ${instanceQuestionGroups && instanceQuestionGroups.length > 0
                     ? html`
                         <div
                           id="instance-question-group-description-tooltip"
@@ -150,7 +148,7 @@ export function GradingPanel({
                     data-bs-boundary="window"
                   >
                     <span id="instance-question-group-selection-dropdown-span">
-                      ${displayedSelectedGroup?.instance_question_group_name || 'No group'}
+                      ${displayedSelectedGroup.instance_question_group_name}
                     </span>
                   </button>
 
@@ -162,34 +160,31 @@ export function GradingPanel({
                       role="listbox"
                       aria-labelledby="instance-question-group-toggle"
                     >
-                      ${instanceQuestionGroupsWithEmpty
-                        ? instanceQuestionGroupsWithEmpty.map((group) => {
-                            const isSelected = run(() => {
-                              if (!group.id) {
-                                return displayedSelectedGroup?.id === null;
-                              }
-                              if (!displayedSelectedGroup.id) {
-                                return false;
-                              }
-                              return idsEqual(group.id, displayedSelectedGroup.id);
-                            });
+                      ${instanceQuestionGroupsWithEmpty.map((group) => {
+                        const isSelected = run(() => {
+                          if (!group.id) {
+                            return displayedSelectedGroup.id === null;
+                          }
+                          if (!displayedSelectedGroup.id) {
+                            return false;
+                          }
+                          return idsEqual(group.id, displayedSelectedGroup.id);
+                        });
 
-                            return html`
-                              <a
-                                class="dropdown-item ${isSelected ? 'active' : ''}"
-                                role="option"
-                                aria-current="${isSelected ? 'page' : ''}"
-                                href="#"
-                                data-id="${group.id}"
-                                data-name="${group.instance_question_group_name}"
-                                data-description="${group.instance_question_group_description ||
-                                ''}"
-                              >
-                                ${group.instance_question_group_name}
-                              </a>
-                            `;
-                          })
-                        : ''}
+                        return html`
+                          <a
+                            class="dropdown-item ${isSelected ? 'active' : ''}"
+                            role="option"
+                            aria-current="${isSelected ? 'page' : ''}"
+                            href="#"
+                            data-id="${group.id}"
+                            data-name="${group.instance_question_group_name}"
+                            data-description="${group.instance_question_group_description || ''}"
+                          >
+                            ${group.instance_question_group_name}
+                          </a>
+                        `;
+                      })}
                     </div>
                   </div>
                 </div>

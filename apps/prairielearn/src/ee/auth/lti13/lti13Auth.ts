@@ -79,6 +79,7 @@ const OIDCLaunchFlowSchema = z.object({
 
 router.get('/login', asyncHandler(launchFlow));
 router.post('/login', asyncHandler(launchFlow));
+
 async function launchFlow(req: Request, res: Response) {
   // https://www.imsglobal.org/spec/security/v1p0/#step-1-third-party-initiated-login
   // Can be POST or GET
