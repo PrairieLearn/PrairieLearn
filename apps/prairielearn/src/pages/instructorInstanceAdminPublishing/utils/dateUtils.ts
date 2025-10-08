@@ -20,6 +20,10 @@ export function stringToZonedDateTime(string: string, timezone: string): Tempora
   return Temporal.PlainDateTime.from(string).toZonedDateTime(timezone);
 }
 
+export function parseDateTimeLocalString(string: string, timezone: string): Date {
+  return new Date(stringToZonedDateTime(string, timezone).toInstant().epochMilliseconds);
+}
+
 /** Convert a datetime-local string to a Date object */
 export function datetimeLocalStringToDate(dateString: string): Date {
   return new Date(dateString);

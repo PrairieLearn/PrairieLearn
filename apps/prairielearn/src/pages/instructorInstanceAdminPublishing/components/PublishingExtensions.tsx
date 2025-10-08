@@ -1,23 +1,17 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'preact/compat';
 import { Alert, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
-import { type TemporalStaffCourseInstance } from '../../../lib/client/temporal.js';
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { stringToZonedDateTime } from '../utils/dateUtils.js';
-
-interface TemporalAccessControlExtension
-  extends Omit<CourseInstancePublishingExtensionWithUsers, 'archive_date'> {
-  archive_date: Temporal.ZonedDateTime;
-}
+import { parseDateTimeLocalString } from '../utils/dateUtils.js';
 
 interface PublishingExtensionsProps {
-  courseInstance: TemporalStaffCourseInstance;
-  extensions: TemporalAccessControlExtension[];
+  courseInstance: StaffCourseInstance;
+  extensions: CourseInstancePublishingExtensionWithUsers[];
   canEdit: boolean;
   csrfToken: string;
 }
@@ -46,7 +40,7 @@ function ExtensionModal({
   onHide: () => void;
   onSubmit: (values: ExtensionFormValues) => Promise<void>;
   mode: 'add' | 'edit';
-  mainArchiveDate: Temporal.ZonedDateTime | null;
+  mainArchiveDate: Date | null;
   courseInstanceTimezone: string;
 }) {
   const {
@@ -99,9 +93,9 @@ function ExtensionModal({
                 validate: (value) => {
                   if (mode === 'add') return true;
                   if (!mainArchiveDate) return true;
-                  const entered = stringToZonedDateTime(value, courseInstanceTimezone);
+                  const enteredDate = parseDateTimeLocalString(value, courseInstanceTimezone);
                   return (
-                    Temporal.ZonedDateTime.compare(entered, mainArchiveDate) > 0 ||
+                    enteredDate > mainArchiveDate ||
                     'Archive date must be after the course archive date'
                   );
                 },
@@ -190,7 +184,7 @@ export function PublishingExtensions({
     setErrorMessage(null);
   };
 
-  const openEditModal = (extension: TemporalAccessControlExtension) => {
+  const openEditModal = (extension: CourseInstancePublishingExtensionWithUsers) => {
     setShownModalMode('edit');
     setEditExtensionId(extension.id);
     setModalDefaults({
@@ -210,7 +204,7 @@ export function PublishingExtensions({
     setModalDefaults({ name: '', archive_date: '', uids: '' });
   };
 
-  const openDeleteModal = (extension: TemporalAccessControlExtension) => {
+  const openDeleteModal = (extension: CourseInstancePublishingExtensionWithUsers) => {
     setDeleteState({
       show: true,
       extensionId: extension.id,
@@ -362,7 +356,6 @@ export function PublishingExtensions({
                   idx={idx}
                   extension={extension}
                   courseInstance={courseInstance}
-                  courseInstanceTemporalArchive={courseInstance.publishing_archive_date}
                   timeZone={courseInstance.display_timezone}
                   canEdit={canEdit}
                   isSubmitting={isSubmitting}
@@ -435,7 +428,6 @@ function ExtensionTableRow({
   idx: _idx,
   extension,
   courseInstance,
-  courseInstanceTemporalArchive,
   timeZone,
   canEdit,
   onDelete,
@@ -446,22 +438,20 @@ function ExtensionTableRow({
   onEditExtension,
 }: {
   idx: number;
-  extension: TemporalAccessControlExtension;
-  courseInstance: TemporalStaffCourseInstance;
-  courseInstanceTemporalArchive: Temporal.ZonedDateTime | null;
+  extension: CourseInstancePublishingExtensionWithUsers;
+  courseInstance: StaffCourseInstance;
   timeZone: string;
   canEdit: boolean;
-  onDelete: (extension: TemporalAccessControlExtension) => void;
+  onDelete: (extension: CourseInstancePublishingExtensionWithUsers) => void;
   isSubmitting: boolean;
-  courseInstanceArchiveDate: Temporal.ZonedDateTime | null;
+  courseInstanceArchiveDate: Date | null;
   showAllStudents: Set<string>;
   onToggleShowAllStudents: (extensionId: string) => void;
-  onEditExtension: (extension: TemporalAccessControlExtension) => void;
+  onEditExtension: (extension: CourseInstancePublishingExtensionWithUsers) => void;
 }) {
   // Check if extension archive date is before the course instance archive date
   const isBeforeInstanceArchiveDate =
-    courseInstanceArchiveDate &&
-    Temporal.ZonedDateTime.compare(extension.archive_date, courseInstanceArchiveDate) < 0;
+    courseInstanceArchiveDate && extension.archive_date < courseInstanceArchiveDate;
 
   return (
     <tr>
