@@ -7,11 +7,11 @@ import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function resolveSharingNames(courseData: CourseData) {
+async function resolveSharingNames(questions: CourseData['questions']) {
   // Collect all sharing names to resolve
   const sharingNamesToResolve = new Set<string>();
-  for (const qid of Object.keys(courseData.questions)) {
-    const question = courseData.questions[qid];
+  for (const qid of Object.keys(questions)) {
+    const question = questions[qid];
     if (infofile.hasErrors(question)) continue;
     const authors = question.data?.authors ?? [];
     for (const author of authors) {
@@ -35,11 +35,10 @@ async function resolveSharingNames(courseData: CourseData) {
   return sharingNameLookupTable;
 }
 
-export async function sync(courseData: CourseData, questionIds: Record<string, string>) {
-  if (infofile.hasErrors(courseData.course)) {
-    return;
-  }
-
+export async function sync(
+  questions: CourseData['questions'],
+  questionIds: Record<string, string>,
+) {
   interface JSONAuthor {
     name?: string;
     email?: string;
@@ -59,10 +58,10 @@ export async function sync(courseData: CourseData, questionIds: Record<string, s
   // Also setting up reverse lookup of resolved authors from database back to JSON
   const uniqueAuthors: Record<string, JSONAuthor> = {};
   // Sharing name -> course ID mappings (resolved in bulk)
-  const sharingNameLookupTable = await resolveSharingNames(courseData);
+  const sharingNameLookupTable = await resolveSharingNames(questions);
 
-  for (const qid of Object.keys(courseData.questions)) {
-    const question = courseData.questions[qid];
+  for (const qid of Object.keys(questions)) {
+    const question = questions[qid];
     if (infofile.hasErrors(question)) continue;
     const authors = question.data?.authors ?? [];
     for (const author of authors) {
@@ -109,7 +108,7 @@ export async function sync(courseData: CourseData, questionIds: Record<string, s
   // Create question-author relationships
   const qaPairs: { question_id: string; author_id: string | null }[] = [];
 
-  Object.entries(courseData.questions).forEach(([qid, question]) => {
+  Object.entries(questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
     // De-duplicate repeated authors in the same question info file
     const dedupedQuestionAuthors = new Set<string>();
