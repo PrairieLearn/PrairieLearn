@@ -2,37 +2,51 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
-
 import { selectCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 
 const router = Router();
 
 const LookupCodeSchema = z.object({
-  code: z.string().min(1).max(255),
+  code: z.string(),
+  course_instance_id: z.string().optional(),
 });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     // Parse and validate the code parameter
-    const { code } = LookupCodeSchema.parse(req.query);
+    const { code, course_instance_id: courseInstanceId } = LookupCodeSchema.parse(req.query);
+
+    if (!code) {
+      res.status(400).json({
+        error: 'Enrollment code is required',
+      });
+      return;
+    }
 
     // Look up the course instance by enrollment code
     const courseInstance = await selectCourseInstanceByEnrollmentCode(code);
 
     if (!courseInstance) {
-      throw new HttpStatusError(404, 'Course instance not found');
+      res.status(404).json({
+        error: 'No course instance found with this enrollment code',
+      });
+      return;
+    }
+
+    if (courseInstanceId && courseInstance.id !== courseInstanceId) {
+      res.status(404).json({
+        error: 'No course instance found with this enrollment code',
+      });
+      return;
     }
 
     // Check if self-enrollment is enabled for this course instance
     if (!courseInstance.self_enrollment_enabled) {
-      throw new HttpStatusError(403, 'Self-enrollment is not enabled for this course');
-    }
-
-    // Check if enrollment code is required and if it's enabled
-    if (courseInstance.self_enrollment_use_enrollment_code && !code) {
-      throw new HttpStatusError(400, 'Enrollment code is required');
+      res.status(403).json({
+        error: 'Self-enrollment is not enabled for this course',
+      });
+      return;
     }
 
     // Return the course instance ID

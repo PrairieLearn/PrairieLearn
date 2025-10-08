@@ -50,3 +50,15 @@ export function getSelfEnrollmentLinkUrl({
 export function getSelfEnrollmentSettingsUrl(courseInstanceId: string): string {
   return `/pl/course_instance/${courseInstanceId}/instance_admin/settings`;
 }
+
+export function getSelfEnrollmentLookupUrl(
+  enrollmentCode: string,
+  courseInstanceId?: string,
+): string {
+  const params = new URLSearchParams();
+  params.set('code', encodeURIComponent(enrollmentCode));
+  if (courseInstanceId) {
+    params.set('course_instance_id', courseInstanceId);
+  }
+  return `/pl/course_instance/lookup?${params.toString()}`;
+}

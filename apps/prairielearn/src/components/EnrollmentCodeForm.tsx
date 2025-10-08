@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from 'preact/compat';
+import { useEffect, useRef } from 'preact/compat';
 import { Alert, Card, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
+
+import { getSelfEnrollmentLinkUrl, getSelfEnrollmentLookupUrl } from '../lib/client/url.js';
 
 interface EnrollmentCodeFormData {
   code1: string;
@@ -14,23 +16,26 @@ export function EnrollmentCodeForm({
   onHide,
   autoFocus = false,
   disabled = false,
+  courseInstanceId,
 }: {
   style: 'modal' | 'card';
   show?: boolean;
   onHide?: () => void;
   autoFocus?: boolean;
   disabled?: boolean;
+  courseInstanceId?: string;
 }) {
-  const [error, setError] = useState<string | null>(null);
-
   const {
     register,
     handleSubmit,
     setValue,
     watch,
-    formState: { isSubmitting },
+    setError,
+    clearErrors,
+    reset,
+    formState: { isSubmitting, errors },
   } = useForm<EnrollmentCodeFormData>({
-    mode: 'onChange',
+    mode: 'onSubmit',
     defaultValues: {
       code1: '',
       code2: '',
@@ -52,9 +57,11 @@ export function EnrollmentCodeForm({
     }
   }, [autoFocus]);
 
-  // Handle dismissing the error alert
-  const handleDismissError = () => {
-    setError(null);
+  // Handle modal close - reset form and clear errors
+  const handleClose = () => {
+    reset();
+    clearErrors();
+    onHide?.();
   };
 
   // Validate and format input - only alphanumeric, uppercase
@@ -65,7 +72,12 @@ export function EnrollmentCodeForm({
   // Handle input change for individual fields
   const handleInputChange = (value: string, field: keyof EnrollmentCodeFormData) => {
     const formatted = formatInput(value);
-    setValue(field, formatted, { shouldValidate: true });
+    setValue(field, formatted);
+
+    // Clear server errors when user starts typing
+    if (errors.root?.serverError) {
+      clearErrors('root.serverError');
+    }
 
     if (field === 'code1' && formatted.length === 3 && input2Ref.current) {
       input2Ref.current.focus();
@@ -81,14 +93,15 @@ export function EnrollmentCodeForm({
     const formatted = formatInput(pastedText);
 
     if (formatted.length <= 10) {
-      // Distribute the pasted text across the three inputs
-      const part1 = formatted.slice(0, 3);
-      const part2 = formatted.slice(3, 6);
-      const part3 = formatted.slice(6, 10);
+      // Clear server errors when user pastes
+      if (errors.root?.serverError) {
+        clearErrors('root.serverError');
+      }
 
-      setValue('code1', part1, { shouldValidate: true });
-      setValue('code2', part2, { shouldValidate: true });
-      setValue('code3', part3, { shouldValidate: true });
+      // Distribute the pasted text across the three inputs
+      setValue('code1', formatted.slice(0, 3));
+      setValue('code2', formatted.slice(3, 6));
+      setValue('code3', formatted.slice(6, 10));
     }
   };
 
@@ -151,36 +164,40 @@ export function EnrollmentCodeForm({
   // Submit the enrollment code
   const onSubmit = async (data: EnrollmentCodeFormData) => {
     const fullCode = `${data.code1}${data.code2}${data.code3}`;
-    setError(null);
+    const response = await fetch(getSelfEnrollmentLookupUrl(fullCode, courseInstanceId));
 
-    try {
-      const response = await fetch(
-        `/pl/course_instance/lookup?code=${encodeURIComponent(fullCode)}`,
-      );
-
-      if (response.ok) {
-        const responseData = await response.json();
-        if (responseData.course_instance_id) {
-          // Redirect to the join page
-          window.location.href = `/pl/course_instance/${responseData.course_instance_id}/enroll?enrollment_code=${encodeURIComponent(fullCode)}`;
-        } else {
-          setError('No course found with this enrollment code');
-        }
-      } else if (response.status === 404) {
-        setError('No course found with this enrollment code');
+    if (response.ok) {
+      const responseData = await response.json();
+      if (responseData.course_instance_id) {
+        // Redirect to the join page
+        window.location.href = getSelfEnrollmentLinkUrl({
+          courseInstanceId: responseData.course_instance_id,
+          enrollmentCode: fullCode,
+        });
       } else {
-        setError('An error occurred while looking up the code. Please try again.');
+        setError('root.serverError', {
+          message: 'No course found with this enrollment code',
+        });
       }
-    } catch {
-      setError('An error occurred while looking up the code. Please try again.');
+    } else {
+      try {
+        const responseData = await response.json();
+        setError('root.serverError', {
+          message: responseData.error,
+        });
+      } catch {
+        setError('root.serverError', {
+          message: 'An error occurred while looking up the code. Please try again.',
+        });
+      }
     }
   };
 
   const formContent = (
-    <form onSubmit={handleSubmit(onSubmit)}>
-      {error && (
-        <Alert variant="danger" dismissible onClose={handleDismissError}>
-          {error}
+    <>
+      {errors.root?.serverError && (
+        <Alert variant="danger" dismissible onClose={() => clearErrors('root.serverError')}>
+          {errors.root.serverError.message}
         </Alert>
       )}
       <div class="mb-3">
@@ -196,10 +213,10 @@ export function EnrollmentCodeForm({
             placeholder="ABC"
             disabled={disabled}
             {...register('code1', {
-              required: 'First part is required',
+              required: 'Code must be 10 alphanumeric characters',
               pattern: {
                 value: /^[A-Z0-9]{3}$/,
-                message: 'Must be 3 alphanumeric characters',
+                message: 'Code must be 10 alphanumeric characters',
               },
               onChange: (e) => handleInputChange(e.target.value, 'code1'),
             })}
@@ -219,10 +236,10 @@ export function EnrollmentCodeForm({
             placeholder="DEF"
             disabled={disabled}
             {...register('code2', {
-              required: 'Second part is required',
+              required: 'Code must be 10 alphanumeric characters',
               pattern: {
                 value: /^[A-Z0-9]{3}$/,
-                message: 'Must be 3 alphanumeric characters',
+                message: 'Code must be 10 alphanumeric characters',
               },
               onChange: (e) => handleInputChange(e.target.value, 'code2'),
             })}
@@ -242,10 +259,10 @@ export function EnrollmentCodeForm({
             placeholder="GHIJ"
             disabled={disabled}
             {...register('code3', {
-              required: 'Third part is required',
+              required: 'Code must be 10 alphanumeric characters',
               pattern: {
                 value: /^[A-Z0-9]{4}$/,
-                message: 'Must be 4 alphanumeric characters',
+                message: 'Code must be 10 alphanumeric characters',
               },
               onChange: (e) => handleInputChange(e.target.value, 'code3'),
             })}
@@ -257,12 +274,17 @@ export function EnrollmentCodeForm({
             onPaste={handlePaste}
           />
         </div>
+        {(errors.code1 || errors.code2 || errors.code3) && (
+          <div class="form-text text-danger">
+            {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
+          </div>
+        )}
         <div class="form-text">
           If you don't have a code, ask your instructor for the enrollment code or link to the
           course.
         </div>
       </div>
-    </form>
+    </>
   );
 
   const submitButton = (
@@ -278,25 +300,29 @@ export function EnrollmentCodeForm({
           <h4 class="mb-0">Join a course</h4>
         </Card.Header>
         <Card.Body>
-          {formContent}
-          <div class="d-grid">{submitButton}</div>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            {formContent}
+            <div class="d-grid">{submitButton}</div>
+          </form>
         </Card.Body>
       </Card>
     );
   }
 
   return (
-    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={onHide}>
+    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={handleClose}>
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
-      <Modal.Body>{formContent}</Modal.Body>
-      <Modal.Footer>
-        <button type="button" class="btn btn-secondary" onClick={onHide}>
-          Cancel
-        </button>
-        {submitButton}
-      </Modal.Footer>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <Modal.Body>{formContent}</Modal.Body>
+        <Modal.Footer>
+          <button type="button" class="btn btn-secondary" onClick={handleClose}>
+            Cancel
+          </button>
+          {submitButton}
+        </Modal.Footer>
+      </form>
     </Modal>
   );
 }

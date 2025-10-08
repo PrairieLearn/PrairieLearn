@@ -64,7 +64,7 @@ router.get(
         },
         content: (
           <Hydrate>
-            <EnrollmentCodeRequired />
+            <EnrollmentCodeRequired courseInstanceId={courseInstance.id} />
           </Hydrate>
         ),
       }),

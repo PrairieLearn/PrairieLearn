@@ -1,6 +1,6 @@
 import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
 
-export function EnrollmentCodeRequired() {
+export function EnrollmentCodeRequired({ courseInstanceId }: { courseInstanceId: string }) {
   return (
     <div class="container-fluid">
       <div class="row justify-content-center">
@@ -15,7 +15,7 @@ export function EnrollmentCodeRequired() {
                 code provided by your instructor.
               </p>
 
-              <EnrollmentCodeForm style="card" />
+              <EnrollmentCodeForm style="card" courseInstanceId={courseInstanceId} />
             </div>
           </div>
 
