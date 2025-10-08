@@ -9,6 +9,10 @@ export function nowInTimezone(timezone: string): Temporal.ZonedDateTime {
   return Temporal.Now.zonedDateTimeISO(timezone).round({ smallestUnit: 'seconds' });
 }
 
+export function nowDateInTimezone(timezone: string): Date {
+  return new Date(nowInTimezone(timezone).toInstant().epochMilliseconds);
+}
+
 /** Convert a Temporal.Instant to a string for datetime-local inputs */
 export function instantToString(instant: Temporal.Instant, timezone: string): string {
   // Remove seconds from the string
