@@ -415,7 +415,8 @@ export function RubricSettings({
         });
         window.resetInstructorGradingPanel();
       }
-      const rubricItemsWithSelectionCount = data.rubric_data?.rubric_items ?? [];
+      const rubricData = data.rubric_data as RubricData | null;
+      const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
       const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
       const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
         ...itemA,
@@ -427,11 +428,11 @@ export function RubricSettings({
       // Need to set the default values so a "Discard changes" would not reset to the state before the save
       defaultRubricItems.current = rubricItemDataMerged;
       defaultReplaceAutoPoints.current =
-        data.rubric_data?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPoints.current = data.rubric_data?.starting_points ?? 0;
-      defaultMinPoints.current = data.rubric_data?.min_points ?? 0;
-      defaultMaxExtraPoints.current = data.rubric_data?.max_extra_points ?? 0;
-      setWasUsingRubric(Boolean(data.rubric_data));
+        rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+      defaultStartingPoints.current = rubricData?.starting_points ?? 0;
+      defaultMinPoints.current = rubricData?.min_points ?? 0;
+      defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
+      setWasUsingRubric(Boolean(rubricData));
       onCancel();
     } else if (contentType.includes('text/html')) {
       window.location.replace(res.url);
