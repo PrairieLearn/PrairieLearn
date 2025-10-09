@@ -64,8 +64,7 @@ export function InstanceQuestion({
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
     : false;
-  const { __csrf_token, assessment_question } = resLocals;
-  const rubric_data = resLocals.rubric_data;
+  const { __csrf_token, assessment_question, rubric_data } = resLocals;
 
   return PageLayout({
     resLocals: {

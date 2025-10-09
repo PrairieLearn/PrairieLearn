@@ -291,7 +291,7 @@ function resetRubricExportFormListeners() {
   });
 }
 
-function resetInstructorGradingPanel() {
+window.resetInstructorGradingPanel = function () {
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
     const clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
       container: modal,

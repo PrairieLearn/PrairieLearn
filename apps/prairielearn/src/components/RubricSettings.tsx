@@ -10,6 +10,12 @@ type RubricItemData = Partial<
   RubricItem & { num_submissions: number; disagreement_count: number | null }
 >;
 
+declare global {
+  interface Window {
+    resetInstructorGradingPanel: () => any;
+  }
+}
+
 export function RubricSettings({
   assessmentQuestion,
   rubricData,
@@ -64,6 +70,10 @@ export function RubricSettings({
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
+
+  // Also define default for rubric-related variables
+  const [defaultRubricItems, setDefaultRubricItems] =
+    useState<RubricItemData[]>(rubricItemDataMerged);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -156,7 +166,7 @@ export function RubricSettings({
   };
 
   const onCancel = () => {
-    setRubricItems(rubricItemDataMerged);
+    setRubricItems(defaultRubricItems);
     setReplaceAutoPoints(rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points);
     setStartingPoints(rubricData?.starting_points ?? 0);
     setMinPoints(rubricData?.min_points ?? 0);
@@ -349,7 +359,73 @@ export function RubricSettings({
         return setSettingsError(data.err);
       }
     }
-    if (res.redirected) {
+    // Need to handle response separated for assessment question and instance question pages
+    const contentType = res.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+      const data = await res.json();
+      if (data.gradingPanel) {
+        const gradingPanel = document.querySelector<HTMLElement>('.js-main-grading-panel');
+        if (!gradingPanel) return;
+
+        const oldRubricForm = gradingPanel.querySelector<HTMLFormElement>(
+          'form[name="manual-grading-form"]',
+        );
+        if (!oldRubricForm) return;
+        // Save values in grading rubric so they can be re-applied once the form is re-created.
+        const rubricFormData = Array.from(new FormData(oldRubricForm).entries());
+        // The CSRF token of the returned panels is not valid for the current form (it uses a
+        // different URL), so save the old value to be used in future requests.
+        const oldCsrfToken =
+          oldRubricForm.querySelector<HTMLInputElement>('[name=__csrf_token]')?.value ?? '';
+
+        gradingPanel.innerHTML = data.gradingPanel;
+
+        // Restore any values that had been set before the settings were configured.
+        const newRubricForm = gradingPanel.querySelector<HTMLFormElement>(
+          'form[name="manual-grading-form"]',
+        );
+        if (!newRubricForm) return;
+
+        newRubricForm
+          .querySelectorAll<HTMLInputElement>('input[type="checkbox"]')
+          .forEach((input) => {
+            input.checked = false;
+          });
+        rubricFormData.forEach(([item_name, item_value]) => {
+          newRubricForm
+            .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(`[name="${item_name}"]`)
+            .forEach((input) => {
+              if (input.name === 'modified_at') {
+                // Do not reset modified_at, as the rubric settings may have changed it
+              } else if (input.type !== 'checkbox' && !(item_value instanceof File)) {
+                input.value = item_value;
+              } else if (input instanceof HTMLInputElement && input.value === item_value) {
+                input.checked = true;
+              }
+            });
+        });
+        document.querySelectorAll<HTMLInputElement>('input[name=__csrf_token]').forEach((input) => {
+          input.value = oldCsrfToken;
+        });
+        // TODO: reset rubric editing panel (either in the same component, reset the default states, or re-render a component and overwrite the current one)
+        window.resetInstructorGradingPanel();
+      }
+      if (data.rubric_data) {
+        const rubricItemsWithSelectionCount = data.rubric_data?.rubric_items ?? [];
+        const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
+        const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
+          ...itemA,
+          disagreement_count:
+            itemA.id in rubricItemsWithDisagreementCount
+              ? rubricItemsWithDisagreementCount[itemA.id]
+              : null,
+        }));
+        // Need to reset the default values so a reset would not reset to the state before the save
+        setDefaultRubricItems(rubricItemDataMerged);
+        onCancel();
+      }
+    } else if (contentType.includes('text/html')) {
       window.location.replace(res.url);
     }
   };

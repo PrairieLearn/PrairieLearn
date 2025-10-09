@@ -46,7 +46,6 @@ import {
   GradingJobDataSchema,
   InstanceQuestion as InstanceQuestionPage,
 } from './instanceQuestion.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -290,8 +289,18 @@ router.get(
         ...locals,
         context: 'main',
       }).toString();
-      const rubricSettings = RubricSettingsModal(locals).toString();
-      res.send({ gradingPanel, rubricSettings });
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
+      const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+      res.send({
+        gradingPanel,
+        rubric_data,
+        aiGradingStats:
+          aiGradingEnabled && res.locals.assessment_question.ai_grading_mode
+            ? await calculateAiGradingStats(res.locals.assessment_question)
+            : null,
+      });
     } catch (err) {
       res.send({ err: String(err) });
     }
