@@ -30,7 +30,6 @@ export function RubricSettings({
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
-  const wasUsingRubric = Boolean(rubricData);
   const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
   const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
@@ -70,10 +69,16 @@ export function RubricSettings({
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
+  const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData));
 
   // Also define default for rubric-related variables
-  const [defaultRubricItems, setDefaultRubricItems] =
-    useState<RubricItemData[]>(rubricItemDataMerged);
+  const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
+  const defaultReplaceAutoPoints = useRef<boolean>(
+    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+  );
+  const defaultStartingPoints = useRef<number>(rubricData?.starting_points ?? 0);
+  const defaultMinPoints = useRef<number>(rubricData?.min_points ?? 0);
+  const defaultMaxExtraPoints = useRef<number>(rubricData?.max_extra_points ?? 0);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -166,11 +171,11 @@ export function RubricSettings({
   };
 
   const onCancel = () => {
-    setRubricItems(defaultRubricItems);
-    setReplaceAutoPoints(rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points);
-    setStartingPoints(rubricData?.starting_points ?? 0);
-    setMinPoints(rubricData?.min_points ?? 0);
-    setMaxExtraPoints(rubricData?.max_extra_points ?? 0);
+    setRubricItems(defaultRubricItems.current);
+    setReplaceAutoPoints(defaultReplaceAutoPoints.current);
+    setStartingPoints(defaultStartingPoints.current);
+    setMinPoints(defaultMinPoints.current);
+    setMaxExtraPoints(defaultMaxExtraPoints.current);
     setSettingsError(null);
   };
 
@@ -408,23 +413,26 @@ export function RubricSettings({
         document.querySelectorAll<HTMLInputElement>('input[name=__csrf_token]').forEach((input) => {
           input.value = oldCsrfToken;
         });
-        // TODO: reset rubric editing panel (either in the same component, reset the default states, or re-render a component and overwrite the current one)
         window.resetInstructorGradingPanel();
       }
-      if (data.rubric_data) {
-        const rubricItemsWithSelectionCount = data.rubric_data?.rubric_items ?? [];
-        const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
-        const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
-          ...itemA,
-          disagreement_count:
-            itemA.id in rubricItemsWithDisagreementCount
-              ? rubricItemsWithDisagreementCount[itemA.id]
-              : null,
-        }));
-        // Need to reset the default values so a reset would not reset to the state before the save
-        setDefaultRubricItems(rubricItemDataMerged);
-        onCancel();
-      }
+      const rubricItemsWithSelectionCount = data.rubric_data?.rubric_items ?? [];
+      const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
+      const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
+        ...itemA,
+        disagreement_count:
+          itemA.id in rubricItemsWithDisagreementCount
+            ? rubricItemsWithDisagreementCount[itemA.id]
+            : null,
+      }));
+      // Need to set the default values so a "Discard changes" would not reset to the state before the save
+      defaultRubricItems.current = rubricItemDataMerged;
+      defaultReplaceAutoPoints.current =
+        data.rubric_data?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+      defaultStartingPoints.current = data.rubric_data?.starting_points ?? 0;
+      defaultMinPoints.current = data.rubric_data?.min_points ?? 0;
+      defaultMaxExtraPoints.current = data.rubric_data?.max_extra_points ?? 0;
+      setWasUsingRubric(Boolean(data.rubric_data));
+      onCancel();
     } else if (contentType.includes('text/html')) {
       window.location.replace(res.url);
     }
