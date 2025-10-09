@@ -178,7 +178,6 @@ onDocumentReady(() => {
 
     socket.on('externalImageCaptureAck', (msg: StatusMessage | null) => {
       clearTimeout(timeout);
-      socket.disconnect();
 
       if (!msg) {
         changeState('failed');
