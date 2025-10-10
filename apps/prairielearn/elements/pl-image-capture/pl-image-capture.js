@@ -906,7 +906,7 @@ const MAX_ZOOM_SCALE = 5;
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({ 
           video: {
             width: { ideal: 1000 },
-            height: { ideal: 800 } 
+            height: { ideal: 750 } 
           }
         });
         localCameraVideo.srcObject = this.localCameraStream;
@@ -981,8 +981,6 @@ const MAX_ZOOM_SCALE = 5;
         localCameraVideo,
         hiddenCaptureInput,
       });
-
-      console.log('video width', localCameraVideo.videoWidth, 'height', localCameraVideo.videoHeight);
 
       localCameraImagePreviewCanvas.width = localCameraVideo.videoWidth;
       localCameraImagePreviewCanvas.height = localCameraVideo.videoHeight;
