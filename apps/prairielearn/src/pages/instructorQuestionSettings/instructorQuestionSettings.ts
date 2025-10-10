@@ -340,7 +340,11 @@ router.post(
       const authorKeys = keys.filter((key) => key.includes('author'));
       const authors: JSONAuthor[] = [];
       const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
-      const authorNameIndices = authorNameKeys.map((key) => key.charAt(key.length - 1));
+
+      const authorNameIndices = authorNameKeys.map((key) => {
+        const lastUnderscore = key.lastIndexOf('_');
+        return Number(key.slice(lastUnderscore + 1));
+      });
       for (const authorIndex of authorNameIndices) {
         const name: string | undefined = bodyData['author_name_' + authorIndex];
         const email: string | undefined = bodyData['author_email_' + authorIndex];
