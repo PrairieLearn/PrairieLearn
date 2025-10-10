@@ -122,6 +122,11 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
+/* Ensure MathJax SVG equations scale down responsively on small screens */
+mjx-container svg {
+  max-width: 100%;
+}
+
 .popover-wide {
   max-width: min(800px, 90vw);
 }
