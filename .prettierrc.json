@@ -2,8 +2,18 @@
   "$schema": "https://json.schemastore.org/prettierrc.json",
   "singleQuote": true,
   "printWidth": 100,
+  "overrides": [
+    {
+      "files": "*.sql",
+      "options": {
+        "parser": "sql",
+        "language": "postgresql",
+        "paramTypes": "{named: [\"$\"]}"
+      }
+    }
+  ],
   "plugins": [
-    "@prairielearn/prettier-plugin-sql",
+    "prettier-plugin-sql",
     "prettier-plugin-pkg",
     "prettier-plugin-sh",
     "prettier-plugin-toml"
