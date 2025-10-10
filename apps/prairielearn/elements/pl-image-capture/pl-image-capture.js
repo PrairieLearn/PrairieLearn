@@ -336,9 +336,8 @@ const MAX_ZOOM_SCALE = 5;
      * - If in local-camera-capture, capture the current image.
      */
     createApplyChangesListeners() {
-      this.imageCaptureDiv.addEventListener('keypress', (event) => {
+      document.addEventListener('keypress', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
-          // event.preventDefault();
           if (this.selectedContainerName === 'crop-rotate') {
             this.confirmCropRotateChanges();
           } else if (this.selectedContainerName === 'local-camera-capture') {
@@ -903,11 +902,11 @@ const MAX_ZOOM_SCALE = 5;
 
       try {
         // Stream the local camera video to the video element
-        this.localCameraStream = await navigator.mediaDevices.getUserMedia({ 
+        this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
             width: { ideal: 1000 },
-            height: { ideal: 750 } 
-          }
+            height: { ideal: 750 },
+          },
         });
         localCameraVideo.srcObject = this.localCameraStream;
 
