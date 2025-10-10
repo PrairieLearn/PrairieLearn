@@ -341,12 +341,11 @@ router.post(
       const authors: JSONAuthor[] = [];
       const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
       const authorNameIndices = authorNameKeys.map((key) => key.charAt(key.length - 1));
-      for (let index = 0; index < authorNameIndices.length; index++) {
-        const name: string | undefined = bodyData['author_name_' + authorNameIndices[index]];
-        const email: string | undefined = bodyData['author_email_' + authorNameIndices[index]];
-        const orcid: string | undefined = bodyData['author_orcid_' + authorNameIndices[index]];
-        const originCourse: string | undefined =
-          bodyData['author_origin_course_' + authorNameIndices[index]];
+      for (const authorIndex of authorNameIndices) {
+        const name: string | undefined = bodyData['author_name_' + authorIndex];
+        const email: string | undefined = bodyData['author_email_' + authorIndex];
+        const orcid: string | undefined = bodyData['author_orcid_' + authorIndex];
+        const originCourse: string | undefined = bodyData['author_origin_course_' + authorIndex];
         const newAuthor: JSONAuthor = {};
         if (name !== undefined && name !== '') {
           newAuthor.name = name;
