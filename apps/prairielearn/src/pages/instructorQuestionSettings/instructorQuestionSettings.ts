@@ -338,8 +338,7 @@ router.post(
       const bodyData = req.body;
       const keys: string[] = Object.keys(bodyData);
       const authorKeys = keys.filter((key) => key.includes('author'));
-      const numAuthorsKeys = authorKeys.length / 4;
-      const authors = [numAuthorsKeys];
+      const authors: JSONAuthor[] = [];
       const authorNameKeys = authorKeys.filter((key) => key.includes('author_name_'));
       const authorNameIndices = authorNameKeys.map((key) => key.charAt(key.length - 1));
       for (let index = 0; index < authorNameIndices.length; index++) {
@@ -366,7 +365,7 @@ router.post(
           name !== undefined &&
           (email !== undefined || orcid !== undefined || originCourse !== undefined)
         ) {
-          authors[index] = newAuthor;
+          authors.push(newAuthor);
         }
       }
       questionInfo.authors = authors;
