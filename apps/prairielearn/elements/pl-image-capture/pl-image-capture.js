@@ -338,6 +338,7 @@ const MAX_ZOOM_SCALE = 5;
     createApplyChangesListeners() {
       document.addEventListener('keypress', (event) => {
         if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
           if (this.selectedContainerName === 'crop-rotate') {
             this.confirmCropRotateChanges();
           } else if (this.selectedContainerName === 'local-camera-capture') {
