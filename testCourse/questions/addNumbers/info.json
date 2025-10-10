@@ -6,8 +6,8 @@
   "type": "v3",
   "sharingSets": ["final-exam"],
   "authors": [
-    { "name": "John Doe", "email": "doe@example.org", "orcid": "0000-0000-0000-0001" },
     { "name": "Doe John", "email": "ahh@ahh.com" },
+    { "name": "John Doe", "email": "doe@mail.org", "orcid": "0000-0000-0000-0001" },
     { "name": "First Last", "email": "email@email.com" }
   ]
 }

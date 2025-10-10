@@ -244,10 +244,9 @@ onDocumentReady(() => {
     });
   }
 
-  const orcidIDInputs = document.querySelectorAll<HTMLInputElement>('.author_orcid');
   for (let index = 0; index < numRows; index++) {
     const orcidIDInput = document.querySelector<HTMLInputElement>('#author_orcid_' + index);
-    addORCIDInputListener(orcidIDInput, orcidIDInputs);
+    addORCIDInputListener(orcidIDInput);
   }
 
   for (let index = 0; index < numRows; index++) {
@@ -287,13 +286,10 @@ const validateEmailInput = (emailInput: HTMLInputElement | null) => {
   return;
 };
 
-function addORCIDInputListener(
-  orcidIDInput: HTMLInputElement | null,
-  orcidIDValues: NodeListOf<HTMLInputElement>,
-): void {
+function addORCIDInputListener(orcidIDInput: HTMLInputElement | null): void {
   orcidIDInput?.addEventListener('blur', () => {
     const orcidIDValue = orcidIDInput.value;
-    const validOrcidID = validateORCID(orcidIDValue, orcidIDValues);
+    const validOrcidID = validateORCID(orcidIDValue);
     const inputClass = 'form-control';
     orcidIDInput.setAttribute(
       'class',
@@ -302,21 +298,10 @@ function addORCIDInputListener(
   });
 }
 
-function validateORCID(orcid: string, orcidIDValues: NodeListOf<HTMLInputElement>): boolean {
+function validateORCID(orcid: string): boolean {
   // Empty strings are fine.
   if (orcid === '') {
     return true;
-  }
-  // If the ORCID already exists in this list, we can't see it again
-  let orcidUsed = false;
-  for (const orcidInput of orcidIDValues) {
-    if (orcidInput.value === orcid) {
-      orcidUsed = true;
-      break;
-    }
-  }
-  if (orcidUsed) {
-    return false;
   }
 
   // Drop any dashes
