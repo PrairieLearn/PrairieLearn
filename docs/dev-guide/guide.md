@@ -153,7 +153,7 @@ If you are adding anything more complex than a basic form page, the automated ac
     questions
   WHERE
     id = $question_id;
-
+  
   -- BLOCK insert_user
   INSERT INTO
     users (uid)

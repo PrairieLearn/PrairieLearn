@@ -35,14 +35,16 @@ ALTER TABLE variants
 ADD COLUMN authn_user_id bigint;
 
 -- add a foreign key to a table
-ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE variants
+ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- remove a constraint
 ALTER TABLE alternative_groups
 DROP CONSTRAINT alternative_groups_number_assessment_id_key;
 
 -- add a constraint
-ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
+ALTER TABLE alternative_groups
+ADD UNIQUE (assessment_id, number);
 ```
 
 ## Sample migration patterns
