@@ -153,3 +153,9 @@ div.pl-order-blocks-header {
   outline: 3px solid #ff6200;
   outline-offset: -3px;
 }
+
+/* Ensure MathJax SVG equations scale down responsively on small screens */
+div.pl-order-blocks-container mjx-container svg,
+div.pl-order-blocks-answer-container mjx-container svg {
+  max-width: 100%;
+}
