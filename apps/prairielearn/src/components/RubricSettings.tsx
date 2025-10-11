@@ -414,6 +414,7 @@ export function RubricSettings({
           input.value = oldCsrfToken;
         });
         window.resetInstructorGradingPanel();
+        // Mathjax typeset?
       }
       const rubricData = data.rubric_data as RubricData | null;
       const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
