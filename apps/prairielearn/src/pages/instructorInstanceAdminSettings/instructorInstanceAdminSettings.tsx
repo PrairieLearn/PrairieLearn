@@ -272,24 +272,19 @@ router.post(
         parsedBody.self_enrollment_use_enrollment_code,
         false,
       );
-      const selfEnrollmentBeforeDateEnabled = propertyValueWithDefault(
-        courseInstanceInfo.selfEnrollment?.beforeDateEnabled,
-        parsedBody.self_enrollment_enabled_before_date_enabled,
-        false,
-        { isUIBoolean: true },
-      );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
-        parseDateTime(parsedBody.self_enrollment_enabled_before_date),
+        // We'll only serialize the value if self-enrollment is enabled.
+        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+          ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
+          : undefined,
         undefined,
       );
 
       const hasSelfEnrollmentSettings =
-        (selfEnrollmentEnabled ??
-          selfEnrollmentUseEnrollmentCode ??
-          selfEnrollmentBeforeDateEnabled ??
-          selfEnrollmentBeforeDate) !== undefined;
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode ?? selfEnrollmentBeforeDate) !==
+        undefined;
 
       const {
         course_instance: courseInstance,
@@ -307,7 +302,6 @@ router.post(
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
-          beforeDateEnabled: selfEnrollmentBeforeDateEnabled,
           beforeDate: selfEnrollmentBeforeDate,
         };
       } else {

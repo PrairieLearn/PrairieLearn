@@ -686,8 +686,8 @@ function pointsFormatter(
           field,
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`;
 }
@@ -707,8 +707,8 @@ function scorebarFormatter(
           field: 'score_perc',
           instance_question: row,
           assessment_question: row.assessment_question,
-          urlPrefix: urlPrefix ?? '',
-          csrfToken: csrfToken ?? '',
+          urlPrefix,
+          csrfToken,
         })
       : ''}`.toString();
 }

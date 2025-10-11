@@ -79,6 +79,7 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
   // Store a cached copy of the most recent app module that we can use while
   // doing a full restart.
   let _mostRecentAppModule: any;
+
   async function _loadApp(config: VitePluginExpressConfig) {
     if (!isRunnableDevEnvironment(server.environments.ssr)) {
       throw new Error('VitePluginExpress can only be used with a runnable dev environment');
