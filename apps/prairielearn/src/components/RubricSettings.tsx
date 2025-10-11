@@ -477,6 +477,15 @@ export function RubricSettings({
                       Apply rubric to manual points (out of {assessmentQuestion.max_manual_points},
                       keep auto points)
                     </label>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
+                    >
+                      <i class="fas fa-circle-info" />
+                    </button>
                   </div>
                 </div>
                 <div class="col-12 col-lg-6">
@@ -496,6 +505,15 @@ export function RubricSettings({
                       Apply rubric to total points (out of {assessmentQuestion.max_points}, ignore
                       auto points)
                     </label>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-ghost"
+                      data-bs-toggle="tooltip"
+                      data-bs-placement="bottom"
+                      data-bs-title={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessmentQuestion.max_points} points).`}
+                    >
+                      <i class="fas fa-circle-info" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -536,12 +554,30 @@ export function RubricSettings({
                     : assessmentQuestion.max_manual_points}
                   , subtract penalties)
                 </label>
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
+                >
+                  <i class="fas fa-circle-info" />
+                </button>
               </div>
             </div>
 
             <div class="mb-3 col-6 col-lg-3">
               <label class="form-label">
                 Minimum rubric score
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  data-bs-title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
+                >
+                  <i class="fas fa-circle-info" />
+                </button>
                 <input
                   class="form-control"
                   type="number"
@@ -553,6 +589,15 @@ export function RubricSettings({
             <div class="mb-3 col-6 col-lg-3">
               <label class="form-label">
                 Maximum extra credit
+                <button
+                  type="button"
+                  class="btn btn-sm btn-ghost"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="bottom"
+                  data-bs-title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
+                >
+                  <i class="fas fa-circle-info" />
+                </button>
                 <input
                   class="form-control"
                   type="number"
@@ -743,7 +788,6 @@ export function RubricSettings({
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
             data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
-            aria-label="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
           >
             <i class="fas fa-circle-info" />
           </button>
