@@ -72,6 +72,7 @@ router.get(
     let paramInstance: Lti13Instance | undefined;
 
     // Handle the / (no id passed case)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (req.params.unsafe_lti13_instance_id === undefined) {
       if (lti13Instances.length > 0) {
         return res.redirect(

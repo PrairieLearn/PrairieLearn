@@ -20,7 +20,6 @@ import { type Entry } from 'fast-glob';
 import minimist from 'minimist';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
@@ -890,7 +889,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
-  const uuid = uuidv4();
+  const uuid = crypto.randomUUID();
   const params = {
     workspace_id,
     launch_uuid: uuid,

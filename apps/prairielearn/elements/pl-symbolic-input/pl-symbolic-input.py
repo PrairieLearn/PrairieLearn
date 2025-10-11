@@ -83,25 +83,34 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         allow_trig = pl.get_boolean_attrib(
             element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
         )
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         simplify_expression = pl.get_boolean_attrib(
             element,
             "display-simplified-expression",
             DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT,
         )
         # Validate that the answer can be parsed before storing
-        try:
-            psu.convert_string_to_sympy(
-                a_true,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-                simplify_expression=simplify_expression,
-            )
-        except psu.BaseSympyError as exc:
+        if a_true.strip() != "":
+            try:
+                psu.convert_string_to_sympy(
+                    a_true,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                    simplify_expression=simplify_expression,
+                )
+            except psu.BaseSympyError as exc:
+                raise ValueError(
+                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                ) from exc
+        elif allow_blank and blank_value == "":
+            a_true = ""
+        else:
             raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from exc
+                "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
+            )
 
         data["correct_answers"][name] = a_true
 
@@ -175,7 +184,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if parse_error is None and name in data["submitted_answers"]:
         a_sub = data["submitted_answers"][name]
 
-        if isinstance(a_sub, str):
+        if isinstance(a_sub, str) and a_sub.strip() == "":
+            a_sub_parsed = ""
+        elif isinstance(a_sub, str):
             # this is for backward-compatibility
             a_sub_parsed = psu.convert_string_to_sympy(
                 a_sub,
@@ -184,21 +195,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 custom_functions=custom_functions,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
-            )
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_sub_parsed = psu.json_to_sympy(
                 a_sub,
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
-            )
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
 
-        if display_log_as_ln:
+        if display_log_as_ln and a_sub_parsed != "":
             a_sub_parsed = a_sub_parsed.replace(sympy.log, sympy.Function("ln"))
-
-        a_sub_converted = sympy.latex(
-            a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        )
+        a_sub_converted = "" if a_sub_parsed == "" else sympy.latex(a_sub_parsed)
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -284,25 +292,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return ""
 
         elif isinstance(a_tru, str):
-            # this is so instructors can specify the true answer simply as a string
-            a_tru = psu.convert_string_to_sympy(
-                a_tru,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-                simplify_expression=simplify_expression,
-            )
+            if a_tru != "":
+                # this is so instructors can specify the true answer simply as a string
+                a_tru = psu.convert_string_to_sympy(
+                    a_tru,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                    simplify_expression=simplify_expression,
+                ).subs(sympy.I, sympy.Symbol(imaginary_unit))
         else:
             a_tru = psu.json_to_sympy(
                 a_tru,
                 allow_complex=allow_complex,
                 allow_trig_functions=allow_trig,
                 simplify_expression=simplify_expression,
-            )
+            ).subs(sympy.I, sympy.Symbol(imaginary_unit))
 
-        a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        if display_log_as_ln:
+        if display_log_as_ln and a_tru != "":
             a_tru = a_tru.replace(sympy.log, sympy.Function("ln"))
 
         html_params = {
@@ -341,7 +349,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "display-simplified-expression", DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT
     )
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", str(BLANK_VALUE_DEFAULT))
+    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
     if formula_editor:
@@ -353,14 +361,23 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         )
     else:
         a_sub = data["submitted_answers"].get(name, None)
-
-    if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value
-    if not a_sub:
+        
+    if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
 
+    if a_sub.strip() == "":
+        if allow_blank:
+            a_sub = blank_value
+            if a_sub.strip() == "":  # Handle blank case
+                data["submitted_answers"][name] = ""
+                return
+        else:
+            data["format_errors"][name] = "No submitted answer."
+            data["submitted_answers"][name] = None
+            return
+          
     error_msg = psu.validate_string_as_sympy(
         a_sub,
         variables,
@@ -506,20 +523,29 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    # Parse true answer
-    if isinstance(a_tru, str):
-        # this is so instructors can specify the true answer simply as a string
-        a_tru_sympy = psu.convert_string_to_sympy(
-            a_tru,
-            variables,
-            allow_complex=allow_complex,
-            allow_trig_functions=allow_trig,
-            custom_functions=custom_functions,
-        )
-    else:
-        a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
-
     def grade_function(a_sub: str | psu.SympyJson) -> tuple[bool, None]:
+        # Special case: submitted answer or correct answer is the empty string
+        if isinstance(a_tru, str) and a_tru == "":
+            if isinstance(a_sub, str) and a_sub == "":
+                return True, None
+            else:
+                return False, None
+        elif isinstance(a_sub, str) and a_sub == "":
+            return False, None
+
+        # Parse true answer
+        if isinstance(a_tru, str):
+            # this is so instructors can specify the true answer simply as a string
+            a_tru_sympy = psu.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=allow_trig,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru_sympy = psu.json_to_sympy(a_tru, allow_complex=allow_complex)
+
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility
@@ -574,38 +600,46 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         # Parse correct answer based on type
         if isinstance(a_tru, str):
-            a_tru = psu.convert_string_to_sympy(
-                a_tru,
-                variables,
-                allow_complex=allow_complex,
-                allow_trig_functions=allow_trig,
-                custom_functions=custom_functions,
-            )
+            if a_tru != "":
+                a_tru = psu.convert_string_to_sympy(
+                    a_tru,
+                    variables,
+                    allow_complex=allow_complex,
+                    allow_trig_functions=allow_trig,
+                    custom_functions=custom_functions,
+                )
         else:
             a_tru = psu.json_to_sympy(
                 a_tru, allow_complex=allow_complex, allow_trig_functions=allow_trig
             )
 
-        # Substitute in imaginary unit symbol
-        a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
+        if a_tru != "":
+            # Substitute in imaginary unit symbol
+            a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
 
     if result == "correct":
-        correct_answers = [
-            a_tru_str,
-            f"{a_tru_str} + 0",
-        ]
-        if allow_complex:
-            correct_answers.append(f"2j + {a_tru_str} - 3j + j")
-        if allow_trig:
-            correct_answers.append(f"cos(0) * ( {a_tru_str} )")
+        if a_tru_str == "":
+            data["raw_submitted_answers"][name] = ""
+        else:
+            correct_answers = [
+                a_tru_str,
+                f"{a_tru_str} + 0",
+            ]
+            if allow_complex:
+                correct_answers.append(f"2j + {a_tru_str} - 3j + j")
+            if allow_trig:
+                correct_answers.append(f"cos(0) * ( {a_tru_str} )")
 
-        data["raw_submitted_answers"][name] = random.choice(correct_answers)
+            data["raw_submitted_answers"][name] = random.choice(correct_answers)
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        data["raw_submitted_answers"][name] = (
-            f"{a_tru_str} + {random.randint(1, 100):d}"
-        )
+        if a_tru_str == "":
+            data["raw_submitted_answers"][name] = f"{random.randint(1, 100):d}"
+        else:
+            data["raw_submitted_answers"][name] = (
+                f"{a_tru_str} + {random.randint(1, 100):d}"
+            )
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":

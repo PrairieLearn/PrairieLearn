@@ -9,6 +9,7 @@ import { type QuestionsPageData } from '../models/questions.js';
 
 import { CreateQuestionModalContents } from './CreateQuestionModalContents.js';
 import { Modal } from './Modal.js';
+import type { QuestionsTableData } from './QuestionsTable.types.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -55,9 +56,9 @@ export function QuestionsTable({
   __csrf_token: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
-  const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
+  const course_instance_ids = course_instances.map((course_instance) => course_instance.id);
   return html`
-    ${EncodedData(
+    ${EncodedData<QuestionsTableData>(
       {
         course_instance_ids,
         showAddQuestionButton,
@@ -201,7 +202,18 @@ export function QuestionsTable({
                   >
                     External Grading Image
                   </th>
-                  ${(course_instances || []).map(
+                  <th
+                    data-field="workspace_image"
+                    data-sortable="true"
+                    data-class="align-middle text-nowrap"
+                    data-filter-control="select"
+                    data-filter-control-placeholder="(All Images)"
+                    data-visible="false"
+                    data-switchable="true"
+                  >
+                    Workspace Image
+                  </th>
+                  ${course_instances.map(
                     (course_instance) =>
                       html` <th
                         data-field="assessments_${course_instance.id}"

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
@@ -24,6 +24,11 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'reset_question_variants') {
+      if (res.locals.assessment.type === 'Exam') {
+        // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
+        throw new HttpStatusError(403, 'Cannot reset variants for Exam assessments');
+      }
+
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
@@ -31,7 +36,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

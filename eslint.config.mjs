@@ -440,6 +440,12 @@ export default tseslint.config([
         { exceptAfterSingleLine: true },
       ],
       '@stylistic/no-tabs': 'error',
+      '@stylistic/padding-line-between-statements': [
+        'error',
+        { blankLine: 'always', next: 'function', prev: '*' },
+        { blankLine: 'always', next: '*', prev: 'import' },
+        { blankLine: 'any', next: 'import', prev: 'import' },
+      ],
       // Blocks double-quote strings (unless a single quote is present in the
       // string) and backticks (unless there is a tag or substitution in place).
       '@stylistic/quotes': ['error', 'single', { avoidEscape: true }],
@@ -639,22 +645,6 @@ export default tseslint.config([
           allowRegExp: true,
         },
       ],
-    },
-  },
-  {
-    // TODO: enable this rule for all files.
-    files: [
-      'apps/prairielearn/assets/scripts/**/*.{ts,tsx}',
-      'apps/prairielearn/src/components/**/*.{ts,tsx}',
-      'apps/prairielearn/src/ee/**/*.{ts,tsx}',
-      'apps/prairielearn/src/lib/client/**/*.{ts,tsx}',
-      'apps/prairielearn/src/middlewares/**/*.{ts,tsx}',
-      'apps/prairielearn/src/pages/**/*.{ts,tsx}',
-      'apps/prairielearn/src/server.ts',
-      'apps/prairielearn/*.config.ts',
-    ],
-    rules: {
-      '@typescript-eslint/no-unnecessary-condition': 'off',
     },
   },
   {
