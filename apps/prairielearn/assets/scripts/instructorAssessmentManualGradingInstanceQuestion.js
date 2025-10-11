@@ -434,7 +434,7 @@ window.resetInstructorGradingPanel = function () {
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
-}
+};
 
 /**
  * Adjusts the height based on the content. If the content changes, the height
