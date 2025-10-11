@@ -352,16 +352,17 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     # Get submitted answer or return parse_error if it does not exist
+    submitted_answer = data["submitted_answers"].get(name, None)
     if formula_editor:
         a_sub = format_submission_for_sympy(
-            data["submitted_answers"].get(name, None),
+            submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
     else:
-        a_sub = data["submitted_answers"].get(name, None)
-        
+        a_sub = submitted_answer
+
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
@@ -377,7 +378,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data["format_errors"][name] = "No submitted answer."
             data["submitted_answers"][name] = None
             return
-          
+
     error_msg = psu.validate_string_as_sympy(
         a_sub,
         variables,
