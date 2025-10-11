@@ -602,6 +602,14 @@ export async function tuneRubric({
   course: Course,
   urlPrefix: string
 }) {
+  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+  }
+  const openai = new OpenAI({
+    apiKey: config.aiGradingOpenAiApiKey,
+    organization: config.aiGradingOpenAiOrganization,
+  });
+
   const instanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
   });
@@ -620,19 +628,31 @@ export async function tuneRubric({
       continue;
     }
     for (const rubricDifference of instanceQuestion.rubric_difference) {
-      if (aiGradingsForEachRubricItem[rubricDifference.id].length >= 10) { 
-        break
+      if (Object.keys(aiGradingsForEachRubricItem).includes(rubricDifference.id.toString())) {
+        if (
+          aiGradingsForEachRubricItem[rubricDifference.id].length >= 10
+        ) { 
+          break
+        }
+      } else {
+          aiGradingsForEachRubricItem[rubricDifference.id] = [];
       }
       selectedInstanceQuestions.push(instanceQuestion);
       aiGradingsForEachRubricItem[rubricDifference.id].push(instanceQuestion.id);
     }
-    for (const rubricSimilarity of instanceQuestion.rubric_similarity) {
-      if (aiGradingsForEachRubricItem[rubricSimilarity.id].length >= 10) {
-        break;
-      }
-      selectedInstanceQuestions.push(instanceQuestion);
-      aiGradingsForEachRubricItem[rubricSimilarity.id].push(instanceQuestion.id);
-    }
+    // for (const rubricSimilarity of instanceQuestion.rubric_similarity) {
+    //   if (Object.keys(aiGradingsForEachRubricItem).includes(rubricSimilarity.id.toString())) {
+    //     if (
+    //       aiGradingsForEachRubricItem[rubricSimilarity.id].length >= 10
+    //     ) {
+    //       break;
+    //     }
+    //   } else {
+    //     aiGradingsForEachRubricItem[rubricSimilarity.id] = [];
+    //   }
+    //   selectedInstanceQuestions.push(instanceQuestion);
+    //   aiGradingsForEachRubricItem[rubricSimilarity.id].push(instanceQuestion.id);
+    // }
   }
 
   const instanceQuestionsById: Record<string, InstanceQuestion> = {};
@@ -675,11 +695,19 @@ export async function tuneRubric({
   let questionPromptAdded = false;
   const question_course = await getQuestionCourse(question, course);
   const gradingJobMapping = await selectGradingJobsInfo(selectedInstanceQuestions);
+
+
+  // TODO: Remove this, don't want to blow up our openai costs
+  let numUsed = 0;
   
   for (const rubricItemId in aiGradingsForEachRubricItem) {
     const selectedInstanceQuestionIds = aiGradingsForEachRubricItem[rubricItemId];
     if (selectedInstanceQuestionIds.length > 0) {
       for (const instanceQuestionId of selectedInstanceQuestionIds) {
+        if (numUsed >= 20) {
+          continue
+        }
+
         const instanceQuestion = instanceQuestionsById[instanceQuestionId];
         const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
 
@@ -693,8 +721,8 @@ export async function tuneRubric({
           { question: true, submissions: true, answer: false },
           variant,
           question,
-          null,
-          [],
+          submission,
+          [submission],
           question_course,
           locals,
         );
@@ -734,7 +762,6 @@ export async function tuneRubric({
           submitted_answer: submission.submitted_answer
         });
 
-
         const grading_jobs = gradingJobMapping[instanceQuestion.id] ?? [];
 
         const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
@@ -758,7 +785,7 @@ export async function tuneRubric({
 
         input.push({
           role: 'user',
-          content: 'Sample submission:'
+          content: 'Example student submission:'
         }, 
         submissionMessage, 
         {
@@ -767,8 +794,10 @@ export async function tuneRubric({
             'The AI selected the following rubric items:',
             JSON.stringify(aiRubricItemsJSON, null, 2),
             'A human grader selected the following rubric items:',
-            JSON.stringify(manualRubricItemsJSON, null, 2),          ])
+            JSON.stringify(manualRubricItemsJSON, null, 2),          
+          ])
         });
+        numUsed++;
       }
     }
     input.push({
@@ -777,5 +806,33 @@ export async function tuneRubric({
     })
   }
 
-  // TODO: Bucket all the instance questions by AI grading
+  const TunedRubricResponseSchema = z.object({
+    rubric_items: z.array(
+      z.object({
+        id: z.string(),
+        description: z.string(),
+        explanation: z.string(),
+        grader_note: z.string(),
+      }),
+    )
+  });
+  
+  type TunedRubricResponse = z.infer<typeof TunedRubricResponseSchema>;
+  
+  const response = await openai.responses.parse({
+    model: AI_GRADING_OPENAI_MODEL,
+    input,
+    text: {
+      format: zodTextFormat(TunedRubricResponseSchema, 'tuned_rubric'),
+    },
+    metadata: {
+      course_id: course.id.toString(),
+      assessment_id: assessment_question.assessment_id.toString(),
+      assessment_question_id: assessment_question.id.toString(),
+    },
+    prompt_cache_key: `assessment_question_${assessment_question.id}`,
+    safety_identifier: `course_${course.id}`,
+  })
+
+  console.log('Response', response);
 }
