@@ -291,7 +291,7 @@ function resetRubricExportFormListeners() {
   });
 }
 
-function resetInstructorGradingPanel() {
+window.resetInstructorGradingPanel = function () {
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
     const clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
       container: modal,
@@ -434,7 +434,7 @@ function resetInstructorGradingPanel() {
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
-}
+};
 
 /**
  * Adjusts the height based on the content. If the content changes, the height
