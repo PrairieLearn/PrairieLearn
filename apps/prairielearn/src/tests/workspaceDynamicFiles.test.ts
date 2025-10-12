@@ -217,4 +217,43 @@ describe('Workspace dynamic files', function () {
 
     assert.lengthOf(fileGenerationErrors, 8);
   });
+
+  it('preserves executable permissions from template files', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'test',
+      },
+      correctAnswers: {
+        b: 42,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that the rendered template file has executable permissions
+    const renderedScriptPath = join(targetPath.path, 'script.sh');
+    const renderedScriptStats = await fs.stat(renderedScriptPath);
+    const renderedScriptMode = renderedScriptStats.mode & 0o777;
+    assert.isTrue(
+      (renderedScriptMode & 0o111) !== 0,
+      `Rendered template script.sh should be executable, but has mode ${renderedScriptMode.toString(8)}`,
+    );
+
+    // Check that the simple (non-rendered) template file has executable permissions
+    const simpleScriptPath = join(targetPath.path, 'simple_script.sh');
+    const simpleScriptStats = await fs.stat(simpleScriptPath);
+    const simpleScriptMode = simpleScriptStats.mode & 0o777;
+    assert.isTrue(
+      (simpleScriptMode & 0o111) !== 0,
+      `Simple script simple_script.sh should be executable, but has mode ${simpleScriptMode.toString(8)}`,
+    );
+
+    // Verify the content was correctly rendered
+    const scriptContent = await fs.readFile(renderedScriptPath, 'utf-8');
+    assert.include(scriptContent, 'params: test', 'Template should be rendered with params');
+  });
 });

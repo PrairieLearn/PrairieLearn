@@ -59,6 +59,7 @@ interface DiskWorkspaceFile {
 interface BufferWorkspaceFile {
   name: string;
   buffer: Buffer | string;
+  mode?: number;
 }
 
 type WorkspaceFile = DiskWorkspaceFile | BufferWorkspaceFile;
@@ -473,6 +474,7 @@ export async function generateWorkspaceFiles({
               await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),
+            mode: file.stats.mode,
           };
         } catch (err) {
           fileGenerationErrors.push({
@@ -585,6 +587,10 @@ export async function generateWorkspaceFiles({
           await fs.copy(workspaceFile.localPath, targetFile);
         } else {
           await fs.writeFile(targetFile, workspaceFile.buffer);
+          // Preserve file permissions if they were captured
+          if (workspaceFile.mode !== undefined) {
+            await fs.chmod(targetFile, workspaceFile.mode);
+          }
         }
       } catch (err) {
         fileGenerationErrors.push({
