@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { executeRow, loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
@@ -41,8 +41,7 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
-  selectRubricGradingItems,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -619,7 +618,7 @@ export async function tuneRubric({
     assessment_question
   );
 
-  const aiGradingsForEachRubricItem: Record<number, string[]> = {};
+  const aiGradingsForEachRubricItem: Record<number, {incorrectlySelected: string[], incorrectlyDeselected: string[]}> = {};
   const selectedInstanceQuestions: InstanceQuestion[] = [];
 
   // For each rubric item, add IDs that were incorrect (not selected/should've been, selected/shouldn't have been). Also track correct IDs. 
@@ -628,31 +627,22 @@ export async function tuneRubric({
       continue;
     }
     for (const rubricDifference of instanceQuestion.rubric_difference) {
-      if (Object.keys(aiGradingsForEachRubricItem).includes(rubricDifference.id.toString())) {
-        if (
-          aiGradingsForEachRubricItem[rubricDifference.id].length >= 10
-        ) { 
-          break
-        }
-      } else {
-          aiGradingsForEachRubricItem[rubricDifference.id] = [];
+      if (!Object.keys(aiGradingsForEachRubricItem).includes(rubricDifference.id.toString())) {
+        aiGradingsForEachRubricItem[rubricDifference.id] = { incorrectlySelected: [], incorrectlyDeselected: [] };
       }
       selectedInstanceQuestions.push(instanceQuestion);
-      aiGradingsForEachRubricItem[rubricDifference.id].push(instanceQuestion.id);
+      if (rubricDifference.false_positive) {
+        if (aiGradingsForEachRubricItem[rubricDifference.id].incorrectlySelected.length >= 10) {
+          continue;
+        }
+        aiGradingsForEachRubricItem[rubricDifference.id].incorrectlySelected.push(instanceQuestion.id);
+      } else {
+        if (aiGradingsForEachRubricItem[rubricDifference.id].incorrectlyDeselected.length >= 10) {
+          continue;
+        }
+        aiGradingsForEachRubricItem[rubricDifference.id].incorrectlyDeselected.push(instanceQuestion.id);
+      }
     }
-    // for (const rubricSimilarity of instanceQuestion.rubric_similarity) {
-    //   if (Object.keys(aiGradingsForEachRubricItem).includes(rubricSimilarity.id.toString())) {
-    //     if (
-    //       aiGradingsForEachRubricItem[rubricSimilarity.id].length >= 10
-    //     ) {
-    //       break;
-    //     }
-    //   } else {
-    //     aiGradingsForEachRubricItem[rubricSimilarity.id] = [];
-    //   }
-    //   selectedInstanceQuestions.push(instanceQuestion);
-    //   aiGradingsForEachRubricItem[rubricSimilarity.id].push(instanceQuestion.id);
-    // }
   }
 
   const instanceQuestionsById: Record<string, InstanceQuestion> = {};
@@ -660,30 +650,6 @@ export async function tuneRubric({
     instanceQuestionsById[instanceQuestion.id] = instanceQuestion;
   }
 
-  // Prompt the model to adjust the rubric items based on the submissions it got wrong.
-  const input: ResponseInput = [
-    {
-      role: 'developer',
-      content: formatPrompt([
-        'You are an AI rubric calibration tool in an AI grading platform.',
-        'Your task is to enhance and clarify rubric items using sample submissions and AI-selected rubric items.',
-        'Questions may have randomly-generated parameters. Hence, only hardcode specific values if the original rubric also does. In general, avoid adding new hardcoded values.',
-        'You may slightly modify the descriptions to improve clarity, but do not change their core meaning.',
-        [
-          'Use the sample submissions to refine the rubric’s explanation and grader notes.',
-          'Ensure that the rubric items are precise, actionable, and clearly distinguish correct from incorrect responses.',
-        ],
-        'Return the adjusted rubric items as a JSON array of objects, each containing:',
-        [
-          '- id: The rubric item’s original ID (do not change it).',
-          '- description: The improved rubric description.',
-          '- explanation: The clarified explanation for the rubric item.',
-          '- grader_note: The improved grader note, giving guidance for consistent grading.',
-        ],
-        'You must return ALL provided rubric items — do not add or remove any items.',
-      ]),
-    }
-  ]
   const rubric_items = await selectRubricForGrading(assessment_question.id);
   const rubricItemsJSON = rubric_items.map((item) => ({
     id: item.id,
@@ -693,24 +659,88 @@ export async function tuneRubric({
     points: item.points,
   }));
 
-  let questionPromptAdded = false;
   const question_course = await getQuestionCourse(question, course);
   const gradingJobMapping = await selectGradingJobsInfo(selectedInstanceQuestions);
 
-
-  // TODO: Remove this, don't want to blow up our openai costs
-  let numUsed = 0;
-  const addedInstanceQuestions = new Set();
-  
   for (const rubricItemId in aiGradingsForEachRubricItem) {
-    const selectedInstanceQuestionIds = aiGradingsForEachRubricItem[rubricItemId];
-    if (selectedInstanceQuestionIds.length > 0) {
-      for (const instanceQuestionId of selectedInstanceQuestionIds) {
-        if (addedInstanceQuestions.has(instanceQuestionId)) {
-          continue;
-        }
-        addedInstanceQuestions.add(instanceQuestionId);
 
+
+    const rubricItem = rubric_items.find((item) => item.id.toString() === rubricItemId);
+
+    let questionPromptAdded = false;
+    const input: ResponseInput = [
+      {
+        role: 'developer',
+        content: formatPrompt([
+          'You are an AI rubric calibration tool in an AI grading platform.',
+          'Your task is to enhance and clarify a rubric item based on the mistakes that the AI grader made.',
+          'Questions may have randomly-generated parameters. Hence, only hardcode specific values if the original rubric also does. In general, avoid adding new hardcoded values.',
+          'You may slightly modify the descriptions to improve clarity, but do not change their core meaning.',
+          'Return the adjusted rubric item as a JSON array of objects, each containing:',
+          [
+            '- id: The rubric item’s original ID (do not change it).',
+            '- description: The improved rubric description.',
+            '- explanation: The clarified explanation for the rubric item.',
+            '- grader_note: The improved grader note, giving guidance for consistent grading.',
+          ]
+        ]),
+      }
+    ]
+    const firstInstanceQuestionId = aiGradingsForEachRubricItem[rubricItemId].incorrectlySelected[0] ?? aiGradingsForEachRubricItem[rubricItemId].incorrectlyDeselected[0];
+
+    if (!firstInstanceQuestionId) {
+      continue;
+    }
+
+    const instanceQuestion = instanceQuestionsById[firstInstanceQuestionId];
+    const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+
+    const locals = {
+      ...buildQuestionUrls(urlPrefix, variant, question, instanceQuestion),
+      questionRenderContext: 'ai_grading',
+    };
+    // Get question html
+    const questionModule = questionServers.getModule(question.type);
+    const render_question_results = await questionModule.render(
+      { question: true, submissions: true, answer: false },
+      variant,
+      question,
+      submission,
+      [submission],
+      question_course,
+      locals,
+    );
+    if (render_question_results.courseIssues.length > 0) {
+      logger.info(render_question_results.courseIssues.toString());
+      logger.error('Errors occurred while AI grading, see output for details');
+      throw new Error(
+        'Errors occurred while AI grading, see output for details. Please check the logs for more information.',
+      );
+    }
+
+    const questionPrompt = render_question_results.data.questionHtml;
+    input.push({
+      role: 'user',
+      content: 'This is the question:'
+    }, {
+      role: 'user',
+      content: questionPrompt
+    }, {
+      role: 'user',
+      content: 'Here is the rubric item:'
+    }, {
+      role: 'user',
+      content: JSON.stringify(rubricItem, null, 2)
+    })
+    questionPromptAdded = true
+    
+    if (aiGradingsForEachRubricItem[rubricItemId].incorrectlySelected.length > 0) {
+      input.push({
+        role: 'user',
+        content: 'For the following student submissions, the AI selected the rubric item, but a human grader did not:'
+      })
+
+      for (const instanceQuestionId of aiGradingsForEachRubricItem[rubricItemId].incorrectlySelected) {
         const instanceQuestion = instanceQuestionsById[instanceQuestionId];
         const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
 
@@ -729,34 +759,6 @@ export async function tuneRubric({
           question_course,
           locals,
         );
-        if (render_question_results.courseIssues.length > 0) {
-          logger.info(render_question_results.courseIssues.toString());
-          logger.error('Errors occurred while AI grading, see output for details');
-          throw new Error(
-            'Errors occurred while AI grading, see output for details. Please check the logs for more information.',
-          );
-        }
-
-        if (!questionPromptAdded) {
-          const questionPrompt = render_question_results.data.questionHtml;
-          input.push({
-            role: 'user',
-            content: 'This is the question:'
-          }, {
-            role: 'user',
-            content: questionPrompt
-          }, {
-            role: 'user',
-            content: 'Here are the rubric items:'
-          }, {
-            role: 'user',
-            content: JSON.stringify(rubricItemsJSON, null, 2)
-          }, {
-            role: 'user',
-            content: 'Here are sample submissions, along with differences between AI and human gradings.'
-          })
-          questionPromptAdded = true
-        }
 
         const submission_text = render_question_results.data.submissionHtmls[0];
     
@@ -765,98 +767,104 @@ export async function tuneRubric({
           submitted_answer: submission.submitted_answer
         });
 
-        const grading_jobs = gradingJobMapping[instanceQuestion.id] ?? [];
+        input.push({
+          role: 'user',
+          content: 'Student submission (AI erroneously selected the rubric item):'
+        }, 
+        submissionMessage
+      );
+      }
+    }
 
-        const manualGradingJob = grading_jobs.find((job) => job.grading_method === 'Manual');
-        const aiGradingJob = grading_jobs.find((job) => job.grading_method === 'AI');
 
-        if (!manualGradingJob || !aiGradingJob) {
-          throw new Error(
-            `No manual or AI grading job found for instance question ${instanceQuestion.id}.`
-          );
-        }
+    if (aiGradingsForEachRubricItem[rubricItemId].incorrectlyDeselected.length > 0) {
+      input.push({
+        role: 'user',
+        content: 'For the following student submissions, the AI did not select the rubric item, but a human grader did:'
+      })
 
-        const aiRubricItemsJSON = aiGradingJob.rubric_items.map((item) => ({
-          id: item.id,
-          description: item.description
-        }));
-        const manualRubricItems = await selectRubricGradingItems(manualGradingJob.manual_rubric_grading_id);
-        const manualRubricItemsJSON = manualRubricItems.map((item) => ({
-          id: item.id,
-          description: item.description
-        }));
+      for (const instanceQuestionId of aiGradingsForEachRubricItem[rubricItemId].incorrectlyDeselected) {
+        const instanceQuestion = instanceQuestionsById[instanceQuestionId];
+        const { variant, submission } = await selectLastVariantAndSubmission(instanceQuestion.id);
+
+        const locals = {
+          ...buildQuestionUrls(urlPrefix, variant, question, instanceQuestion),
+          questionRenderContext: 'ai_grading',
+        };
+        // Get question html
+        const questionModule = questionServers.getModule(question.type);
+        const render_question_results = await questionModule.render(
+          { question: true, submissions: true, answer: false },
+          variant,
+          question,
+          submission,
+          [submission],
+          question_course,
+          locals,
+        );
+
+        const submission_text = render_question_results.data.submissionHtmls[0];
+    
+        const submissionMessage = generateSubmissionMessage({
+          submission_text,
+          submitted_answer: submission.submitted_answer
+        });
 
         input.push({
           role: 'user',
-          content: 'Example student submission:'
+          content: 'Student submission (AI erroneously did not select the rubric item):'
         }, 
-        submissionMessage, 
-        {
-          role: 'user',
-          content: formatPrompt([
-            'The AI selected the following rubric items:',
-            JSON.stringify(aiRubricItemsJSON, null, 2),
-            'A human grader selected the following rubric items:',
-            JSON.stringify(manualRubricItemsJSON, null, 2),          
-          ])
-        });
-        numUsed++;
+        submissionMessage);
       }
     }
-  }
 
-  input.push({
-    role: 'user',
-    content: 'Please adjust the rubric items based on the provided sample submissions and responses to help the AI grader better determine which rubric items to select.'
-  })
+    input.push({
+      role: 'user',
+      content: 'Please adjust the rubric item based on the provided sample submissions and errors made in them.'
+    })
 
-  const TunedRubricResponseSchema = z.object({
-    rubric_items: z.array(
-      z.object({
-        id: z.string(),
-        description: z.string(),
-        explanation: z.string(),
-        grader_note: z.string(),
-      }),
-    )
-  });
-
-  const response = await openai.responses.parse({
-    model: 'gpt-5',
-    input,
-    text: {
-      format: zodTextFormat(TunedRubricResponseSchema, 'tuned_rubric'),
-    },
-    metadata: {
-      course_id: course.id.toString(),
-      assessment_id: assessment_question.assessment_id.toString(),
-      assessment_question_id: assessment_question.id.toString(),
-    },
-    prompt_cache_key: `assessment_question_${assessment_question.id}`,
-    safety_identifier: `course_${course.id}`,
-  })
-
-  console.log('response', response);
-
-  const generatedRubricItems = response.output_parsed?.rubric_items
-  if (!generatedRubricItems) {
-    throw new Error('No rubric items generated by AI.');
-  }
-
-  console.log('generatedRubricItems', generatedRubricItems);
-
-
-  for (const item of generatedRubricItems) {
-    // Dummy message for testing
-    // console.log(`Updating rubric item ${item.id} with description: ${item.description}, explanation: ${item.explanation}, grader_note: ${item.grader_note}`);
-    await executeRow(sql.update_rubric_item, {
-      id: item.id,
-      rubric_id: assessment_question.manual_rubric_id,
-      description: item.description,
-      explanation: item.explanation,
-      grader_note: item.grader_note,
+    const TunedRubricResponseSchema = z.object({
+      rubric_item: 
+        z.object({
+          id: z.string(),
+          description: z.string(),
+          explanation: z.string(),
+          grader_note: z.string(),
+        }),
     });
-  }
 
-  console.log('Response', response);
+    console.log('input', input);
+
+    const response = await openai.responses.parse({
+      model: 'gpt-5',
+      input,
+      text: {
+        format: zodTextFormat(TunedRubricResponseSchema, 'tuned_rubric'),
+      },
+      metadata: {
+        course_id: course.id.toString(),
+        assessment_id: assessment_question.assessment_id.toString(),
+        assessment_question_id: assessment_question.id.toString(),
+      },
+      prompt_cache_key: `assessment_question_${assessment_question.id}`,
+      safety_identifier: `course_${course.id}`,
+    })
+
+    const generatedRubricItem = response.output_parsed?.rubric_item;
+    if (!generatedRubricItem) {
+      throw new Error('No rubric item returned by AI.');
+    }
+
+    console.log('Original rubric item', rubricItem);
+
+    console.log('generatedRubricItem', generatedRubricItem);
+
+    // await executeRow(sql.update_rubric_item, {
+    //   id: rubricItem.id,
+    //   rubric_id: assessment_question.manual_rubric_id,
+    //   description: rubricItem.description,
+    //   explanation: rubricItem.explanation,
+    //   grader_note: rubricItem.grader_note,
+    // }); 
+  }
 }
