@@ -437,10 +437,12 @@ def format_submission_for_sympy(
     Format raw formula editor input to be compatible with SymPy. This is necessary
     due to some incompatibilities between SymPy's and the editor's syntax.
 
-    There are 2 cases that need to be handled:
-    1. In the raw output, multi-letter function and variable names are separated
+    There are 3 cases that need to be handled:
+    1. Sometimes, when copy-pasting Latex, invisible "{:" or ":}" operators can be
+    inserted into the submission that need to be removed.
+    2. In the raw output, multi-letter function and variable names are separated
     by spaces (e.g., "s i n" needs to become "sin")
-    2. In the raw output, in some cases, numbers immediately follow variables
+    3. In the raw output, in some cases, numbers immediately follow variables
     (e.g., "e^x2" is intended to be "e^x * 2" (otherwise there'd be parentheses),
     but to make SymPy use this interpretation it needs to become "e^x 2")
 
@@ -456,7 +458,10 @@ def format_submission_for_sympy(
     if sub is None:
         return None
 
-    # Step 1: Assemble a list of all available names
+    # Step 1: Remove invisible formatting operators
+    sub = sub.replace("{:", "").replace(":}", "")
+
+    # Step 2: Assemble a list of all available names
     constants_class = psu._Constants()
     functions = (
         list(psu.STANDARD_OPERATORS)
@@ -471,13 +476,13 @@ def format_submission_for_sympy(
     # Necessary for names that are prefixes of other names, e.g., acos and acosh
     names.sort(key=len, reverse=True)
 
-    # Step 2: Merge allowed names (e.g., "s i n" -> "sin")
+    # Step 3: Merge allowed names (e.g., "s i n" -> "sin")
     for name in names:
         spaced_name = " ".join(list(name))
         if spaced_name in sub:
             sub = sub.replace(spaced_name, name)
 
-    # Step 3: Protect names that contain numbers (e.g., in custom functions)
+    # Step 4: Protect names that contain numbers (e.g., in custom functions)
     protected_indices = set()
     for name in names:
         if re.search(r"\d", name):
@@ -486,7 +491,7 @@ def format_submission_for_sympy(
                 end = match.end()
                 protected_indices.update(range(start, end))
 
-    # Step 4: Add spaces between all letter->number pairs that are not custom names
+    # Step 5: Add spaces between all letter->number pairs that are not custom names
     i = 1
     offset = 0
     while i < len(sub):

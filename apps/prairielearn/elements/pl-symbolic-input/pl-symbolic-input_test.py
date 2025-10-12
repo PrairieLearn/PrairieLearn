@@ -22,6 +22,8 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
         ("m y f u n ( x )", False, ["x"], ["myfun"], "myfun ( x )"),
         ("f2(x) + x2", False, ["x"], ["f2"], "f2(x) + x 2"),
         ("x2 + x2 + f2(x)", False, ["x"], ["f2"], "x 2 + x 2 + f2(x)"),
+        # Formatting operators
+        ("{:s i n ( x ):}", True, ["x"], [], "sin ( x )"),
     ],
 )
 def test_format_submission_for_sympy(
