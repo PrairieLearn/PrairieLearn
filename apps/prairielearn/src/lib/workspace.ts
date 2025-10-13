@@ -1,4 +1,5 @@
-import { promises as fsPromises } from 'fs';
+import * as fs from 'node:fs';
+import * as fsPromises from 'node:fs/promises';
 import { ok as assert } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
@@ -7,7 +8,7 @@ import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
 import type { Entry } from 'fast-glob';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
 import fetch from 'node-fetch';
@@ -280,10 +281,9 @@ async function startup(workspace_id: string): Promise<void> {
         // could lead to unexpected behavior.
         try {
           const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
-          await fs.move(
+          await fsPromises.rename(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
-            { overwrite: true },
           );
         } catch (err) {
           // If the directory couldn't be moved because it didn't exist, ignore the error.
@@ -296,9 +296,7 @@ async function startup(workspace_id: string): Promise<void> {
         // Next, move the newly created directory into place. This will be
         // done with a lock held, so we shouldn't worry about other processes
         // trying to work with these directories at the same time.
-        await fs.move(initializeResult.sourcePath, initializeResult.destinationPath, {
-          overwrite: true,
-        });
+        await fsPromises.rename(initializeResult.sourcePath, initializeResult.destinationPath);
       }
       await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Initialization complete');
     }
@@ -574,17 +572,17 @@ export async function generateWorkspaceFiles({
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
-  await fs.ensureDir(targetPath);
+  await fsPromises.mkdir(targetPath, { recursive: true });
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
       const targetFile = path.join(targetPath, workspaceFile.name);
       try {
-        await fs.ensureDir(path.dirname(targetFile));
+        await fsPromises.mkdir(path.dirname(targetFile), { recursive: true });
         if ('localPath' in workspaceFile) {
-          await fs.copy(workspaceFile.localPath, targetFile);
+          await fsPromises.cp(workspaceFile.localPath, targetFile, { recursive: true });
         } else {
-          await fs.writeFile(targetFile, workspaceFile.buffer);
+          await fsPromises.writeFile(targetFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({

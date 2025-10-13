@@ -2,7 +2,6 @@ import type { EventEmitter } from 'node:events';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
-import fs from 'fs-extra';
 import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
@@ -55,18 +54,18 @@ export async function buildDirectory(
     for (const file of question.external_grading_files ?? []) {
       const src = path.join(coursePath, 'serverFilesCourse', file);
       const dest = path.join(dir, 'serverFilesCourse', file);
-      await fs.copy(src, dest);
+      await fsPromises.cp(src, dest, { recursive: true });
     }
 
     // This is temporary while /grade/shared is deprecated but still supported
     // TODO remove this when we remove support for /grade/shared
     const src = path.join(dir, 'serverFilesCourse');
     const dest = path.join(dir, 'shared');
-    await fs.copy(src, dest);
+    await fsPromises.cp(src, dest, { recursive: true });
 
     if (question.directory != null) {
       const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
-      await fs.copy(testsDir, path.join(dir, 'tests')).catch((err) => {
+      await fsPromises.cp(testsDir, path.join(dir, 'tests'), { recursive: true }).catch((err) => {
         // Tests might not be specified, only copy them if they exist
         if (err.code !== 'ENOENT') throw err;
       });

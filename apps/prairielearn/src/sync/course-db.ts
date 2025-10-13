@@ -1,10 +1,10 @@
 import * as path from 'path';
+import * as fsPromises from 'node:fs/promises';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
-import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
 import { type ZodSchema, z } from 'zod';
@@ -755,7 +755,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
-    const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
+    const files = await fsPromises.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory
     // and attempt to access `info.json`. If we can successfully read it,

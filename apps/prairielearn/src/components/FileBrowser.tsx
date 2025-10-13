@@ -1,9 +1,9 @@
 import * as path from 'node:path';
+import * as fsPromises from 'node:fs/promises';
 
 import * as async from 'async';
 import { fileTypeFromFile } from 'file-type';
 import { filesize } from 'filesize';
-import fs from 'fs-extra';
 import hljs from 'highlight.js';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -104,13 +104,13 @@ export async function browseDirectory({
 }: {
   paths: InstructorFilePaths;
 }): Promise<DirectoryListings> {
-  const filenames = await fs.readdir(paths.workingPath);
+  const filenames = await fsPromises.readdir(paths.workingPath);
   const all_files = await async.mapLimit(
     filenames.sort().map((name, index) => ({ name, index })),
     3,
     async (file: { name: string; index: number }) => {
       const filepath = path.join(paths.workingPath, file.name);
-      const stats = await fs.lstat(filepath);
+      const stats = await fsPromises.lstat(filepath);
       if (stats.isFile()) {
         const editable = !(await isBinaryFile(filepath));
         const movable = !paths.cannotMove.includes(filepath);
