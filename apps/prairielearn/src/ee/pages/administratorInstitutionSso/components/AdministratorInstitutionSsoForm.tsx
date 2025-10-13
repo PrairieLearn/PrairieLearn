@@ -47,7 +47,7 @@ export function AdministratorInstitutionSsoForm({
   // and do not provision accounts.
   //
   // Note that LTI 1.3 *does* provision accounts, but we're in the process of changing that,
-  // so it's no included here.
+  // so it's not included here.
   const enabledPrimaryProviders = [...enabledProviderIds]
     .filter((id) => {
       return [googleProvider, microsoftProvider, samlProvider].some((p) => p?.id === id);
