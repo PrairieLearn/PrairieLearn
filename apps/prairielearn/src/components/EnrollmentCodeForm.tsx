@@ -10,20 +10,33 @@ interface EnrollmentCodeFormData {
   code3: string;
 }
 
+/**
+ * A form for entering an enrollment code. Redirects to a join URL if the code is valid.
+ *
+ * @param params
+ * @param params.style - The style of the form
+ * @param params.show - If the form is shown (only used for modal style)
+ * @param params.onHide - The function to call when the form is hidden (only used for modal style)
+ * @param params.courseInstanceId - The ID of the course instance the code is for (optional)
+ */
 export function EnrollmentCodeForm({
   style,
   show,
   onHide,
-  disabled = false,
   courseInstanceId,
-}: {
-  style: 'modal' | 'card';
-  show?: boolean;
-  onHide?: () => void;
-  autoFocus?: boolean;
-  disabled?: boolean;
-  courseInstanceId?: string;
-}) {
+}:
+  | {
+      style: 'card';
+      show?: undefined;
+      onHide?: undefined;
+      courseInstanceId?: string;
+    }
+  | {
+      style: 'modal';
+      show: boolean;
+      onHide: () => void;
+      courseInstanceId?: string;
+    }) {
   const {
     register,
     handleSubmit,
@@ -49,11 +62,11 @@ export function EnrollmentCodeForm({
   const watchedValues = watch();
 
   useEffect(() => {
-    if (show && style === 'modal') {
+    if (style === 'modal') {
       const timeoutId = setTimeout(() => input1Ref.current?.focus(), 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [show, style]);
+  }, [style]);
 
   // Handle modal close - reset form and clear errors
   const handleClose = () => {
@@ -213,7 +226,6 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="ABC"
-            disabled={disabled}
             {...register('code1', {
               required: 'Code must be 10 alphanumeric characters',
               pattern: {
@@ -236,7 +248,6 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="DEF"
-            disabled={disabled}
             {...register('code2', {
               required: 'Code must be 10 alphanumeric characters',
               pattern: {
@@ -259,7 +270,6 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={4}
             placeholder="GHIJ"
-            disabled={disabled}
             {...register('code3', {
               required: 'Code must be 10 alphanumeric characters',
               pattern: {
