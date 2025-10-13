@@ -351,7 +351,7 @@ function UploadSubmissionsCsvModal({ csrfToken }: { csrfToken: string }) {
         scores (including manual grading and rubrics) will not be preserved.
       </p>
       <p>
-        If the assessment has questions that use <b>manual grading with rubrics</b>, upload their rubrics before uploading the CSV.
+        If the assessment has questions that use <b>manual rubric grading</b>, upload their rubrics before uploading the CSV.
         The rubrics must be identical to those used when the submissions were downloaded.
       </p>
       <div class="alert alert-danger">
