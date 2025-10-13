@@ -41,6 +41,7 @@ SHOW_SCORE_DEFAULT = True
 ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
+ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
 ANSWER_SHOULD_BE_BLANK_WARNING = "The correct answer was to leave this input blank."
 
 
@@ -442,7 +443,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if is_submitted_blank or is_correct_blank:
             if is_submitted_blank and is_correct_blank:
                 is_correct = True
-                feedback = "The correct answer used for grading was blank"
+                feedback = ANSWER_BLANK_CORRECT_FEEDBACK
             elif is_correct_blank:
                 is_correct = False
                 feedback = ANSWER_SHOULD_BE_BLANK_WARNING
@@ -516,7 +517,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         if is_correct and can_show_if_correct:
             feedback = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
         return (is_correct, feedback)
 
