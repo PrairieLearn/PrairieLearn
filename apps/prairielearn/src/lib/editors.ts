@@ -1450,7 +1450,7 @@ export class QuestionAddEditor extends Editor {
         );
 
         while (await pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
-          //increment and sync to postgres
+          // increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,
             { course_id: this.course.id },
