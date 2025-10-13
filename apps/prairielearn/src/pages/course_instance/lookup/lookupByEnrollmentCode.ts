@@ -7,7 +7,7 @@ import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/co
 const router = Router();
 
 const LookupCodeSchema = z.object({
-  code: z.string(),
+  code: z.string().min(1),
   course_instance_id: z.string().optional(),
 });
 
@@ -16,13 +16,6 @@ router.get(
   asyncHandler(async (req, res) => {
     // Parse and validate the code parameter
     const { code, course_instance_id: courseInstanceId } = LookupCodeSchema.parse(req.query);
-
-    if (!code) {
-      res.status(400).json({
-        error: 'Enrollment code is required',
-      });
-      return;
-    }
 
     // Look up the course instance by enrollment code
     const courseInstance = await selectOptionalCourseInstanceByEnrollmentCode(code);

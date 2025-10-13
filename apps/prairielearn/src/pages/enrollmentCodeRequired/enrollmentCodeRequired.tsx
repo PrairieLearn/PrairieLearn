@@ -24,7 +24,8 @@ router.get(
 
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
     const enrollmentCode = courseInstance.enrollment_code;
-    const redirectUrl = typeof url === 'string' ? url : null;
+    const redirectUrl =
+      typeof url === 'string' && url.startsWith('/') && !url.startsWith('//') ? url : null;
     // Lookup if they have an existing enrollment
     const existingEnrollment = await selectOptionalEnrollmentByUserId({
       user_id: res.locals.authn_user.user_id,

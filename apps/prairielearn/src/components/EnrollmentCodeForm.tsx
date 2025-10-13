@@ -50,6 +50,7 @@ export function EnrollmentCodeForm({
     formState: { isSubmitting, errors },
   } = useForm<EnrollmentCodeFormData>({
     mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
     defaultValues: {
       code1: '',
       code2: '',
@@ -198,11 +199,18 @@ export function EnrollmentCodeForm({
       }
     }
   };
-
   // Submit the enrollment code
   const onSubmit = async (data: EnrollmentCodeFormData) => {
     const fullCode = `${data.code1}${data.code2}${data.code3}`;
-    const response = await fetch(getSelfEnrollmentLookupUrl(fullCode, courseInstanceId));
+    let response: Response | null = null;
+    try {
+      response = await fetch(getSelfEnrollmentLookupUrl(fullCode, courseInstanceId));
+    } catch {
+      setError('root.serverError', {
+        message: 'An error occurred while looking up the code. Please try again.',
+      });
+      return;
+    }
 
     if (response.ok) {
       const responseData = await response.json();
@@ -231,6 +239,32 @@ export function EnrollmentCodeForm({
     }
   };
 
+  // https://www.react-hook-form.com/faqs/#Howtosharerefusage
+  const { ref: ref1, ...code1Props } = register('code1', {
+    required: 'Code must be 10 alphanumeric characters',
+    pattern: {
+      value: /^[A-Z0-9]{3}$/,
+      message: 'Code must be 10 alphanumeric characters',
+    },
+    onChange: (e) => handleInputChange(e.target.value, 'code1'),
+  });
+  const { ref: ref2, ...code2Props } = register('code2', {
+    required: 'Code must be 10 alphanumeric characters',
+    pattern: {
+      value: /^[A-Z0-9]{3}$/,
+      message: 'Code must be 10 alphanumeric characters',
+    },
+    onChange: (e) => handleInputChange(e.target.value, 'code2'),
+  });
+  const { ref: ref3, ...code3Props } = register('code3', {
+    required: 'Code must be 10 alphanumeric characters',
+    pattern: {
+      value: /^[A-Z0-9]{4}$/,
+      message: 'Code must be 10 alphanumeric characters',
+    },
+    onChange: (e) => handleInputChange(e.target.value, 'code3'),
+  });
+
   const formContent = (
     <>
       {errors.root?.serverError && (
@@ -249,17 +283,10 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="ABC"
-            {...register('code1', {
-              required: 'Code must be 10 alphanumeric characters',
-              pattern: {
-                value: /^[A-Z0-9]{3}$/,
-                message: 'Code must be 10 alphanumeric characters',
-              },
-              onChange: (e) => handleInputChange(e.target.value, 'code1'),
-            })}
+            {...code1Props}
             ref={(e) => {
               input1Ref.current = e;
-              register('code1').ref(e);
+              ref1(e);
             }}
             onKeyDown={(e) => handleKeyDown(e, 'code1')}
             onPaste={handlePaste}
@@ -271,17 +298,10 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="DEF"
-            {...register('code2', {
-              required: 'Code must be 10 alphanumeric characters',
-              pattern: {
-                value: /^[A-Z0-9]{3}$/,
-                message: 'Code must be 10 alphanumeric characters',
-              },
-              onChange: (e) => handleInputChange(e.target.value, 'code2'),
-            })}
+            {...code2Props}
             ref={(e) => {
               input2Ref.current = e;
-              register('code2').ref(e);
+              ref2(e);
             }}
             onKeyDown={(e) => handleKeyDown(e, 'code2')}
             onPaste={handlePaste}
@@ -293,17 +313,10 @@ export function EnrollmentCodeForm({
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={4}
             placeholder="GHIJ"
-            {...register('code3', {
-              required: 'Code must be 10 alphanumeric characters',
-              pattern: {
-                value: /^[A-Z0-9]{4}$/,
-                message: 'Code must be 10 alphanumeric characters',
-              },
-              onChange: (e) => handleInputChange(e.target.value, 'code3'),
-            })}
+            {...code3Props}
             ref={(e) => {
               input3Ref.current = e;
-              register('code3').ref(e);
+              ref3(e);
             }}
             onKeyDown={(e) => handleKeyDown(e, 'code3')}
             onPaste={handlePaste}
