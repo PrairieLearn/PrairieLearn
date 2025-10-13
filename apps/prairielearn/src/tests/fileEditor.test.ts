@@ -6,7 +6,7 @@ import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import { copy, pathExists, remove } from 'fs-extra/esm';
+import { pathExists } from 'fs-extra/esm';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
@@ -391,7 +391,7 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await fs.cp(courseTemplateDir, courseLiveDir, { force: false, recursive: true });
   await execa('git', ['add', '-A'], {
     cwd: courseLiveDir,
     env: process.env,
@@ -411,9 +411,9 @@ async function createCourseFiles() {
 }
 
 async function deleteCourseFiles() {
-  await remove(courseOriginDir);
-  await remove(courseLiveDir);
-  await remove(courseDevDir);
+  await fs.rm(courseOriginDir, { recursive: true, force: true });
+  await fs.rm(courseLiveDir, { recursive: true, force: true });
+  await fs.rm(courseDevDir, { recursive: true, force: true });
 }
 
 function editPost(
