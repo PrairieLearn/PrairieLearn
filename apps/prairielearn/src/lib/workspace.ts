@@ -8,7 +8,6 @@ import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
 import type { Entry } from 'fast-glob';
-import { pathExists } from 'fs-extra';
 import klaw from 'klaw';
 import mustache from 'mustache';
 import fetch from 'node-fetch';

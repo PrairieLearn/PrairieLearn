@@ -191,7 +191,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
   } else {
     // This is probably a text file. If it's is larger that 1MB, don't
     // attempt to read it; treat it like an opaque binary file.
-    const { size } = await fs.stat(paths.workingPath);
+    const { size } = await fsPromises.stat(paths.workingPath);
     if (size > 1 * 1024 * 1024) {
       return { ...file, isBinary: true };
     }
@@ -199,7 +199,7 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
     file.isText = true;
     file.canEdit = paths.hasEditPermission;
 
-    const fileContents = await fs.readFile(paths.workingPath);
+    const fileContents = await fsPromises.readFile(paths.workingPath);
     const stringifiedContents = fileContents.toString('utf8');
 
     // Try to guess the language from the file extension. This takes
@@ -239,7 +239,7 @@ export async function createFileBrowser({
   paths: InstructorFilePaths;
   isReadOnly: boolean;
 }) {
-  const stats = await fs.lstat(paths.workingPath);
+  const stats = await fsPromises.lstat(paths.workingPath);
   if (stats.isDirectory()) {
     return FileBrowser({
       resLocals,

@@ -385,7 +385,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
-    contents = await fs.readFile(absolutePath, 'utf8');
+    contents = await fsPromises.readFile(absolutePath, 'utf8');
   } catch (err) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
