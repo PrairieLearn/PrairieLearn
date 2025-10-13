@@ -569,7 +569,6 @@ export function TanstackTableCard<RowDataModel>({
           <div class="flex-lg-grow-1 d-flex flex-row justify-content-end">
             <div class="text-muted text-nowrap">
               Showing {displayedCount} of {totalCount} {title.toLowerCase()}
-              {title.toLowerCase()}
             </div>
           </div>
         </div>
