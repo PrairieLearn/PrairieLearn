@@ -8,7 +8,7 @@ import * as util from 'util';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import { ensureDir, ensureSymlink, move, pathExists, remove } from 'fs-extra/esm';
+import { ensureSymlink, pathExists } from 'fs-extra/esm';
 import * as tar from 'tar';
 import z from 'zod';
 
@@ -944,7 +944,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     // If the target path isn't a directory, who knows what state we're in, so we
     // allow the error to propagate.
     if (err.code === 'EINVAL' && (await fs.stat(targetPath)).isDirectory()) {
-      await remove(targetPath);
+      await fs.rm(targetPath, { recursive: true, force: true });
     } else if (err.code !== 'ENOENT') {
       // Allow ENOENT errors to continue, because they mean we don't have the chunk
       throw err;
@@ -958,15 +958,15 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
 
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
-  await ensureDir(path.dirname(downloadPath));
+  await fs.mkdir(path.dirname(downloadPath), { recursive: true });
   await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
-  await move(downloadPath, chunkPath, { overwrite: true });
+  await fs.rename(downloadPath, chunkPath);
 
   // Once the chunk has been downloaded, we need to untar it. In
   // case we had an earlier unpack attempt, we will remove the
   // existing unpack directory to ensure a clean slate.
-  await remove(unpackPath);
-  await ensureDir(unpackPath);
+  await fs.rm(unpackPath, { recursive: true, force: true });
+  await fs.mkdir(unpackPath, { recursive: true });
   await tar.extract({
     file: chunkPath,
     cwd: unpackPath,
@@ -986,7 +986,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     try {
       const stat = await fs.lstat(parentPath);
       if (stat.isSymbolicLink()) {
-        await remove(parentPath);
+        await fs.rm(parentPath, { recursive: true, force: true });
       } else if (!stat.isDirectory()) {
         throw new Error(`${parentPath} exists but is not a directory`);
       }
@@ -1092,10 +1092,13 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
   const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   await Promise.all(
     missingChunks.map(async (chunk) => {
-      // Blindly remove this chunk from disk - if it doesn't exist, `remove`
-      // will silently no-op.
+      // Blindly remove this chunk from disk - if it doesn't exist, `fs.rm`
+      // will silently no-op with force: true.
       const chunkMetadata = chunkMetadataFromDatabaseChunk(chunk);
-      await remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
+      await fs.rm(coursePathForChunk(courseChunksDirs.course, chunkMetadata), {
+        recursive: true,
+        force: true,
+      });
     }),
   );
 }
