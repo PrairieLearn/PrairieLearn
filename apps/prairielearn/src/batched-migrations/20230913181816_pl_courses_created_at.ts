@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';

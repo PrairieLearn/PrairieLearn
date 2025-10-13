@@ -8,7 +8,7 @@ import * as util from 'util';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import { ensureDir, ensureSymlink, move, pathExists, remove } from 'fs-extra';
+import { ensureDir, ensureSymlink, move, pathExists, remove } from 'fs-extra/esm';
 import * as tar from 'tar';
 import z from 'zod';
 

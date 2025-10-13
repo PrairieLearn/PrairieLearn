@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
-import { ensureDir, pathExists } from 'fs-extra';
+import { ensureDir, pathExists } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';

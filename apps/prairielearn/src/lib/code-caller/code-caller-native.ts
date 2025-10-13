@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import { run } from '@prairielearn/run';
 import { withResolvers } from '@prairielearn/utils';

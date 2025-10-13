@@ -5,7 +5,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';

@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';

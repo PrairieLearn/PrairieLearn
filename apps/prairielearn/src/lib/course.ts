@@ -1,4 +1,4 @@
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';

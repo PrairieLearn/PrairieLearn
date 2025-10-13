@@ -2,7 +2,7 @@ import * as url from 'node:url';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';

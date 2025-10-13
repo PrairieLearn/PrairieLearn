@@ -6,7 +6,7 @@ import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
-import { existsSync, pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -1449,7 +1449,7 @@ export class QuestionAddEditor extends Editor {
           z.number(),
         );
 
-        while (existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
+        while (await pathExists(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
           //increment and sync to postgres
           draftNumber = await sqldb.queryRow(
             sql.update_draft_number,

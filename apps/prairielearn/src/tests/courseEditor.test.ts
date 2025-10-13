@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import { copy, remove } from 'fs-extra';
+import { copy, remove } from 'fs-extra/esm';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';

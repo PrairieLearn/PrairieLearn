@@ -4,7 +4,7 @@ import * as url from 'node:url';
 import * as path from 'path';
 
 import { Router } from 'express';
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import { pathExists } from 'fs-extra';
+import { pathExists } from 'fs-extra/esm';
 
 import { validateHTML } from '../validateHTML.js';
 

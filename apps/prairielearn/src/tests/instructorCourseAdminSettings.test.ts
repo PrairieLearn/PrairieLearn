@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import { copy, move } from 'fs-extra';
+import { copy, move } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';

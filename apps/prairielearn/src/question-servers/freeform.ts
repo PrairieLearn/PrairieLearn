@@ -4,7 +4,7 @@ import * as path from 'node:path';
 
 import * as async from 'async';
 import debugfn from 'debug';
-import { readJson } from 'fs-extra';
+import { readJson } from 'fs-extra/esm';
 import _ from 'lodash';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
