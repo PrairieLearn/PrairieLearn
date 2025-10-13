@@ -427,20 +427,31 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         feedback = ""
         is_correct = None
 
+        can_show_if_correct = pl.get_boolean_attrib(
+            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
+        )
+
         # Special cases: submitted or correct answer are the empty string
-        if isinstance(correct_answer, str) and correct_answer.strip() == "":
-            if isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-                return (
-                    True,
-                    "The correct answer used for grading was blank",
-                )
-            return (False, ANSWER_SHOULD_BE_BLANK_WARNING)
-        elif isinstance(submitted_answer, str) and submitted_answer.strip() == "":
-            correct_answer_converted = np.float64(correct_answer)
-            return (
-                False,
-                f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank.",
-            )
+        is_submitted_blank = (
+            isinstance(submitted_answer, str) and submitted_answer.strip() == ""
+        )
+        is_correct_blank = (
+            isinstance(correct_answer, str) and correct_answer.strip() == ""
+        )
+
+        if is_submitted_blank or is_correct_blank:
+            if is_submitted_blank and is_correct_blank:
+                is_correct = True
+                feedback = "The correct answer used for grading was blank"
+            elif is_correct_blank:
+                is_correct = False
+                feedback = ANSWER_SHOULD_BE_BLANK_WARNING
+            elif is_submitted_blank:
+                is_correct = False
+                correct_answer_converted = np.float64(correct_answer)
+                feedback = f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank."
+
+            return (is_correct, feedback if is_correct and can_show_if_correct else "")
 
         # Cast both submitted and true answers as np.float64, because...
         #
@@ -503,9 +514,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             assert_never(comparison)
 
-        if is_correct and pl.get_boolean_attrib(
-            element, "show-correct-answer", SHOW_CORRECT_ANSWER_DEFAULT
-        ):
+        if is_correct and can_show_if_correct:
             feedback = (
                 f"The correct answer used for grading was {correct_answer_converted}"
             )
