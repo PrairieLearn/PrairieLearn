@@ -1,7 +1,7 @@
 import * as path from 'node:path';
+import * as fs from 'node:fs/promises';
 
 import { type Response } from 'express';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -155,8 +155,9 @@ async function initiateFileTransfer({
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
-  await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
+  await fs.cp(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
+    recursive: true,
   });
 
   return await sqldb.queryRow(sql.insert_file_transfer, params, z.string());
