@@ -4,16 +4,16 @@ import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
-import { selectRubricGradingItems } from '../ee/lib/ai-grading/ai-grading-util.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
 import { deleteAllAssessmentInstancesForAssessment } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { AssessmentQuestionSchema, IdSchema } from './db-types.js';
-import { updateInstanceQuestionScore } from './manualGrading.js';
+import { AssessmentQuestionSchema, IdSchema, RubricItemSchema } from './db-types.js';
+import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -46,7 +46,7 @@ const SubmissionCsvRowSchema = z.object({
   'Submitted answer': ZodStringToJson,
   Feedback: ZodStringToJson,
   'Rubric Grading': ZodStringToJson,
-  'Auto points': z.number().int().optional(),
+  'Auto points': z.coerce.number().optional(),
 });
 
 /**
@@ -202,42 +202,56 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
-        const rubric_items = await selectRubricGradingItems(assessmentQuestion.manual_rubric_id);
-
-        const selected_rubric_item_ids: string[] = [];
-        if (row['Rubric Grading']?.items) {
-          for (const { description } of row['Rubric Grading'].items) {
-            const rubric_item = rubric_items.find((ri) => ri.description === description);
-            if (!rubric_item) {
-              continue;
-            }
-            selected_rubric_item_ids.push(rubric_item.id);
-          }
-        }
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
 
         if (assessmentQuestion.manual_rubric_id) {
-          await updateInstanceQuestionScore(
-            assessment_id,
-            instance_question_id,
-            submission_id,
-            null,
-            {
-              manual_score_perc: null,
-              manual_points: row['Rubric Grading']?.computed_points ?? null,
-              auto_score_perc: null,
-              auto_points: row['Auto points'],
-              feedback: row.Feedback,
-              manual_rubric_data: {
-                rubric_id: assessmentQuestion.manual_rubric_id,
-                applied_rubric_items: selected_rubric_item_ids.map((id) => ({
-                  rubric_item_id: id,
-                })),
-                adjust_points: row['Rubric Grading']?.adjust_points,
-              },
-            },
-            authn_user_id,
+          const rubric_items = await sqldb.queryRows(
+            sql.select_rubric_items,
+            { rubric_id: assessmentQuestion.manual_rubric_id },
+            RubricItemSchema,
           );
+
+          const applied_rubric_item_ids: string[] = [];
+
+          if (row['Rubric Grading']?.items) {
+            for (const { description } of row['Rubric Grading'].items) {
+              const rubric_item = rubric_items.find((ri) => ri.description === description);
+              if (!rubric_item) {
+                continue;
+              }
+              applied_rubric_item_ids.push(rubric_item.id);
+            }
+          }
+          manual_rubric_data = {
+            rubric_id: assessmentQuestion.manual_rubric_id,
+            applied_rubric_items: applied_rubric_item_ids.map((id) => ({
+              rubric_item_id: id,
+            })),
+            adjust_points: row['Rubric Grading']?.adjust_points ?? null,
+          };
         }
+
+        await updateInstanceQuestionScore(
+          assessment_id,
+          instance_question_id,
+          submission_id,
+          null,
+          {
+            manual_score_perc: null,
+            manual_points: run(() => {
+              if (assessmentQuestion.manual_rubric_id) {
+                return row['Rubric Grading']?.computed_points ?? null;
+              } else {
+                return row['Manual points'];
+              }
+            }),
+            auto_score_perc: null,
+            auto_points: row['Auto points'] ?? null,
+            feedback: row.Feedback,
+            manual_rubric_data,
+          },
+          authn_user_id,
+        );
 
         successCount++;
       } catch (err) {

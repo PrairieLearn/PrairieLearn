@@ -93,3 +93,12 @@ VALUES
   )
 RETURNING
   id AS submission_id;
+
+-- BLOCK select_rubric_items
+SELECT
+  *
+FROM
+  rubric_items as ri
+WHERE
+  ri.rubric_id = $rubric_id
+  AND ri.deleted_at IS NULL;
