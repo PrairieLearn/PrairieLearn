@@ -54,8 +54,6 @@ router.get(
     // Return the course instance ID
     res.json({
       course_instance_id: courseInstance.id,
-      course_instance_name: courseInstance.long_name,
-      course_short_name: courseInstance.short_name,
     });
   }),
 );
