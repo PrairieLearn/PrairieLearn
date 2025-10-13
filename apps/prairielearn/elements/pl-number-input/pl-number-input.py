@@ -452,7 +452,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 correct_answer_converted = np.float64(correct_answer)
                 feedback = f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank."
             assert is_correct is not None
-            return (is_correct, feedback if is_correct and can_show_if_correct else "")
+            return (is_correct, feedback if is_correct or can_show_if_correct else "")
 
         # Cast both submitted and true answers as np.float64, because...
         #
