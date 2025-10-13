@@ -1,7 +1,7 @@
 import * as path from 'path';
+import * as fsPromises from 'node:fs/promises';
 
 import { Octokit } from '@octokit/rest';
-import fs from 'fs-extra';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -158,7 +158,7 @@ export async function createCourseRepoJob(
 
     job.info('Creating infoCourse.json based on template');
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
-    const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
+    const infoCourse = JSON.parse(await fsPromises.readFile(infoCoursePath, 'utf-8'));
 
     infoCourse.uuid = crypto.randomUUID();
     infoCourse.name = options.short_name;
@@ -175,13 +175,13 @@ export async function createCourseRepoJob(
     // Copy the template .gitignore file
     job.info('Copying .gitignore file');
     const gitignorePath = path.join(TEMPLATE_COURSE_PATH, '.gitignore');
-    const gitignoreContents = await fs.readFile(gitignorePath, 'utf-8');
+    const gitignoreContents = await fsPromises.readFile(gitignorePath, 'utf-8');
     await addFileToRepo(client, options.repo_short_name, '.gitignore', gitignoreContents);
     job.info('Uploaded new .gitignore file');
 
     job.info('Copying README.md file');
     const readmePath = path.join(TEMPLATE_COURSE_PATH, 'README.md');
-    const readmeContents = await fs.readFile(readmePath, 'utf-8');
+    const readmeContents = await fsPromises.readFile(readmePath, 'utf-8');
     await addFileToRepo(client, options.repo_short_name, 'README.md', readmeContents);
     job.info('Uploaded new README.md file');
 

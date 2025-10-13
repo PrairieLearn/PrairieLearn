@@ -1,4 +1,4 @@
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -116,7 +116,7 @@ export async function pullAndUpdateCourse({
         }
 
         const gitOptions = { cwd: path, env: gitEnv };
-        const coursePathExists = await fs.pathExists(path);
+        const coursePathExists = await pathExists(path);
         if (!coursePathExists) {
           // path does not exist, start with 'git clone'
           job.info('Clone from remote git repository');

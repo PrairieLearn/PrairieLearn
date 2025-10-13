@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -48,7 +48,7 @@ export async function questionFilePath(
     throw new Error(`Template recursion exceeded maximum depth of 10: ${rootPath}`);
   }
 
-  if (await fs.pathExists(fullPath)) {
+  if (await pathExists(fullPath)) {
     // Found the file!
     return {
       fullPath,
@@ -95,7 +95,7 @@ export async function questionFilePath(
       const rootPathCourse = path.join(coursePath, 'clientFilesCourse');
       const fullPathCourse = path.join(rootPathCourse, filename);
 
-      if (await fs.pathExists(fullPathCourse)) {
+      if (await pathExists(fullPathCourse)) {
         return {
           fullPath: fullPathCourse,
           effectiveFilename: filename,
@@ -108,7 +108,7 @@ export async function questionFilePath(
       const defaultFilename = question.type + filenameToSuffix[filename];
       const fullDefaultFilePath = path.join(QUESTION_DEFAULTS_PATH, defaultFilename);
 
-      if (await fs.pathExists(fullDefaultFilePath)) {
+      if (await pathExists(fullDefaultFilePath)) {
         // Found a default file
         return {
           fullPath: fullDefaultFilePath,
