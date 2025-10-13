@@ -4,7 +4,6 @@ import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import { copy, remove } from 'fs-extra/esm';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
@@ -598,7 +597,7 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await fs.cp(courseTemplateDir, courseLiveDir, { force: false, recursive: true });
   await execa('git', ['add', '-A'], {
     cwd: courseLiveDir,
     env: process.env,
@@ -667,7 +666,7 @@ async function createSharedCourse() {
 }
 
 async function deleteCourseFiles() {
-  await remove(courseOriginDir);
-  await remove(courseLiveDir);
-  await remove(courseDevDir);
+  await fs.rm(courseOriginDir, { recursive: true, force: true });
+  await fs.rm(courseLiveDir, { recursive: true, force: true });
+  await fs.rm(courseDevDir, { recursive: true, force: true });
 }
