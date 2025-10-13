@@ -256,4 +256,75 @@ describe('Workspace dynamic files', function () {
     const scriptContent = await fs.readFile(renderedScriptPath, 'utf-8');
     assert.include(scriptContent, 'params: test', 'Template should be rendered with params');
   });
+
+  it('preserves executable permissions from dynamic files with mode', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'dynamic',
+        _workspace_files: [
+          {
+            name: 'executable_script.sh',
+            contents: '#!/bin/bash\necho "Executable from params"\n',
+            mode: 0o755,
+          },
+          {
+            name: 'non_executable.txt',
+            contents: 'Not executable\n',
+            mode: 0o644,
+          },
+          {
+            name: 'no_mode_specified.txt',
+            contents: 'Default permissions\n',
+          },
+        ],
+      },
+      correctAnswers: {
+        b: 99,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that dynamic file with mode=0o755 is executable
+    const executableScriptPath = join(targetPath.path, 'executable_script.sh');
+    const executableStats = await fs.stat(executableScriptPath);
+    const executableMode = executableStats.mode & 0o777;
+    assert.isTrue(
+      (executableMode & 0o111) !== 0,
+      `Dynamic file with mode=0o755 should be executable, but has mode ${executableMode.toString(8)}`,
+    );
+    assert.equal(
+      executableMode,
+      0o755,
+      `Dynamic file with mode=0o755 should have exactly 755 permissions, but has ${executableMode.toString(8)}`,
+    );
+
+    // Check that dynamic file with mode=0o644 is not executable
+    const nonExecutablePath = join(targetPath.path, 'non_executable.txt');
+    const nonExecutableStats = await fs.stat(nonExecutablePath);
+    const nonExecutableMode = nonExecutableStats.mode & 0o777;
+    assert.isFalse(
+      (nonExecutableMode & 0o111) !== 0,
+      `Dynamic file with mode=0o644 should not be executable, but has mode ${nonExecutableMode.toString(8)}`,
+    );
+    assert.equal(
+      nonExecutableMode,
+      0o644,
+      `Dynamic file with mode=0o644 should have exactly 644 permissions, but has ${nonExecutableMode.toString(8)}`,
+    );
+
+    // Check that dynamic file without mode uses default permissions
+    const noModePath = join(targetPath.path, 'no_mode_specified.txt');
+    const noModeStats = await fs.stat(noModePath);
+    const noModeMode = noModeStats.mode & 0o777;
+    // Default permissions from fs.writeFile (no chmod applied)
+    assert.isFalse(
+      (noModeMode & 0o111) !== 0,
+      `Dynamic file without mode should not be executable, but has mode ${noModeMode.toString(8)}`,
+    );
+  });
 });

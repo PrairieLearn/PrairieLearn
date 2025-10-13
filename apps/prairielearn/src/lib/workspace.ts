@@ -70,6 +70,7 @@ interface DynamicWorkspaceFile {
   encoding?: BufferEncoding;
   questionFile?: string;
   serverFilesCourseFile?: string;
+  mode?: number;
 }
 
 interface InitializeResult {
@@ -560,6 +561,7 @@ export async function generateWorkspaceFiles({
           return {
             name: normalizedFilename,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
+            mode: file.mode,
           };
         } catch (err) {
           // Error retrieving contents of dynamic file. Ignoring file.
@@ -587,9 +589,11 @@ export async function generateWorkspaceFiles({
           await fs.copy(workspaceFile.localPath, targetFile);
         } else {
           await fs.writeFile(targetFile, workspaceFile.buffer);
-          // Preserve file permissions if they were captured
+          // Preserve executable bits if they were captured
           if (workspaceFile.mode !== undefined) {
-            await fs.chmod(targetFile, workspaceFile.mode);
+            // Only preserve executable bits, use 644 or 755 based on whether source was executable
+            const isExecutable = (workspaceFile.mode & 0o111) !== 0;
+            await fs.chmod(targetFile, isExecutable ? 0o755 : 0o644);
           }
         }
       } catch (err) {
