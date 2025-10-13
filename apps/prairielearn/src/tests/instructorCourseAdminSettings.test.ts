@@ -2,7 +2,6 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import { copy, move } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -43,7 +42,7 @@ describe('Editing course settings', () => {
     });
 
     // create course files
-    await copy(courseTemplateDir, courseLiveDir);
+    await fs.cp(courseTemplateDir, courseLiveDir, { recursive: true });
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
     await execa('git', ['add', '-A'], execOptions);
@@ -142,7 +141,7 @@ describe('Editing course settings', () => {
   });
 
   test.sequential('should not be able to submit without course info file', async () => {
-    await move(courseLiveInfoPath, `${courseLiveInfoPath}.bak`);
+    await fs.rename(courseLiveInfoPath, `${courseLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course/1/course_admin/settings`,
@@ -162,7 +161,7 @@ describe('Editing course settings', () => {
       });
       assert.equal(response.status, 400);
     } finally {
-      await move(`${courseLiveInfoPath}.bak`, courseLiveInfoPath);
+      await fs.rename(`${courseLiveInfoPath}.bak`, courseLiveInfoPath);
     }
   });
 

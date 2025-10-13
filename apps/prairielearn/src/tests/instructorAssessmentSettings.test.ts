@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import { copy, move, pathExists } from 'fs-extra/esm';
+import { pathExists } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -44,7 +44,7 @@ describe('Editing assessment settings', () => {
       env: process.env,
     });
 
-    await copy(courseTemplateDir, courseLiveDir);
+    await fs.cp(courseTemplateDir, courseLiveDir, { recursive: true });
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
     await execa('git', ['add', '-A'], execOptions);
@@ -232,7 +232,7 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('should not be able to submit without assessment info file', async () => {
-    await move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
+    await fs.rename(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
@@ -258,7 +258,7 @@ describe('Editing assessment settings', () => {
       );
       assert.equal(response.status, 400);
     } finally {
-      await move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
+      await fs.rename(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
     }
   });
 
