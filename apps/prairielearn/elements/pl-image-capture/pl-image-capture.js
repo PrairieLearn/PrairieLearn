@@ -886,8 +886,8 @@ const MAX_ZOOM_SCALE = 5;
         // Stream the local camera video to the video element
         this.localCameraStream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 1000 },
-            height: { ideal: 750 },
+            width: { ideal: 2000 },
+            height: { ideal: 2000 },
           },
         });
         localCameraVideo.srcObject = this.localCameraStream;
