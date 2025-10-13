@@ -152,31 +152,6 @@ window.resetInstructorGradingPanel = function () {
     }),
   );
 
-  document.querySelectorAll('.js-add-rubric-item-button').forEach((button) =>
-    button.addEventListener('click', () => {
-      addRubricItemRow();
-    }),
-  );
-
-  document.querySelectorAll('.js-replace-auto-points-input').forEach((input) => {
-    input.addEventListener('change', updateSettingsPointValues);
-  });
-  updateSettingsPointValues();
-
-  document
-    .querySelectorAll('.js-rubric-settings-modal form')
-    .forEach((form) => form.addEventListener('submit', submitSettings));
-
-  document.querySelectorAll('.js-disable-rubric-button').forEach((button) =>
-    button.addEventListener('click', (e) => {
-      const form = button.closest('form');
-      if (!form) return;
-      submitSettings.bind(form)(e, 'false');
-    }),
-  );
-
-  resetRubricItemRowsListeners();
-  updateRubricItemOrderField();
   computePointsFromRubric();
 };
 
@@ -307,12 +282,6 @@ function computePointsFromRubric(sourceInput = null) {
 //   const container = event.currentTarget.closest('td');
 //   enableRubricItemLongTextField(container);
 // }
-
-function updateRubricItemOrderField() {
-  document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
-    input.value = `${index}`;
-  });
-}
 
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
