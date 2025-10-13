@@ -1,6 +1,7 @@
 import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
+import { getPageContext } from '../../../lib/client/page-context.js';
 import {
   StaffAuthnProviderSchema,
   StaffInstitutionSchema,
@@ -22,6 +23,8 @@ export function AdministratorInstitutionSso({
   institutionAuthenticationProviders: AuthnProvider[];
   resLocals: Record<string, any>;
 }) {
+  const pageContext = getPageContext(resLocals, { withAuthzData: false });
+
   return PageLayout({
     resLocals: { ...resLocals, institution },
     pageTitle: 'SSO - Institution Admin',
@@ -40,8 +43,8 @@ export function AdministratorInstitutionSso({
         institutionAuthenticationProviders={StaffAuthnProviderSchema.array().parse(
           institutionAuthenticationProviders,
         )}
-        urlPrefix={resLocals.urlPrefix}
-        csrfToken={resLocals.__csrf_token}
+        urlPrefix={pageContext.urlPrefix}
+        csrfToken={pageContext.__csrf_token}
       />,
     ),
   });
