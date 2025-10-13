@@ -131,9 +131,7 @@ export function AdministratorInstitutionSsoForm({
           value={defaultProviderId || ''}
           onChange={(e) => setDefaultProviderId(e.currentTarget.value || null)}
         >
-          <option value="" selected={institution.default_authn_provider_id === null}>
-            None
-          </option>
+          <option value="">None</option>
           {supportedAuthenticationProviders.map((provider) => {
             if (provider.name === 'LTI' || provider.name === 'LTI 1.3') return null;
 
