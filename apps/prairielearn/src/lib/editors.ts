@@ -6,7 +6,7 @@ import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
-import { pathExists } from 'fs-extra/esm';
+import { move, pathExists } from 'fs-extra/esm';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -809,7 +809,7 @@ export class AssessmentRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.rename(oldPath, newPath);
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
     return {
@@ -1258,7 +1258,7 @@ export class CourseInstanceRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.rename(oldPath, newPath);
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(
       path.join(this.course.path, 'courseInstances'),
       this.course_instance.short_name,
@@ -1787,7 +1787,7 @@ export class QuestionRenameEditor extends Editor {
     }
 
     debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.rename(oldPath, newPath);
+    await move(oldPath, newPath, { overwrite: true });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
@@ -2174,11 +2174,8 @@ export class FileRenameEditor extends Editor {
   async write() {
     debug('FileRenameEditor: write()');
 
-    debug('ensure path exists');
-    await fs.mkdir(path.dirname(this.newPath), { recursive: true });
-
     debug('rename file');
-    await fs.rename(this.oldPath, this.newPath);
+    await move(this.oldPath, this.newPath, { overwrite: true });
 
     return {
       pathsToAdd: [this.oldPath, this.newPath],

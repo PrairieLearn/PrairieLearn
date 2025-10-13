@@ -8,6 +8,7 @@ import archiver from 'archiver';
 import * as async from 'async';
 import debugfn from 'debug';
 import type { Entry } from 'fast-glob';
+import { move } from 'fs-extra/esm';
 import klaw from 'klaw';
 import mustache from 'mustache';
 import fetch from 'node-fetch';
@@ -280,9 +281,10 @@ async function startup(workspace_id: string): Promise<void> {
         // could lead to unexpected behavior.
         try {
           const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
-          await fs.rename(
+          await move(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
+            { overwrite: true },
           );
         } catch (err) {
           // If the directory couldn't be moved because it didn't exist, ignore the error.
@@ -295,7 +297,9 @@ async function startup(workspace_id: string): Promise<void> {
         // Next, move the newly created directory into place. This will be
         // done with a lock held, so we shouldn't worry about other processes
         // trying to work with these directories at the same time.
-        await fs.rename(initializeResult.sourcePath, initializeResult.destinationPath);
+        await move(initializeResult.sourcePath, initializeResult.destinationPath, {
+          overwrite: true,
+        });
       }
       await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Initialization complete');
     }

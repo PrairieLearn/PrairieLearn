@@ -3,7 +3,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
-import { ensureDir, pathExists } from 'fs-extra/esm';
+import { ensureDir, move, pathExists } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -507,7 +507,7 @@ describe('Question Sharing', function () {
     test.sequential('Fail to sync if shared question is renamed', async () => {
       const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
-      await fs.rename(questionPath, questionTempPath);
+      await move(questionPath, questionTempPath, { overwrite: true });
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
       assert.equal(
         syncResult.status,
@@ -527,7 +527,7 @@ describe('Question Sharing', function () {
         question_id !== null,
         'Sync of consuming course should not allow renaming a shared question.',
       );
-      await fs.rename(questionTempPath, questionPath);
+      await move(questionTempPath, questionPath, { overwrite: true });
     });
 
     test.sequential(
@@ -546,7 +546,7 @@ describe('Question Sharing', function () {
     test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
       const questionPath = path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
-      await fs.rename(questionPath, questionTempPath);
+      await move(questionPath, questionTempPath, { overwrite: true });
       await execa('git', ['add', '-A'], gitOptionsOrigin);
       await execa('git', ['commit', '-m', 'invalid sharing config edit'], gitOptionsOrigin);
 

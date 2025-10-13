@@ -2,7 +2,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import { pathExists } from 'fs-extra/esm';
+import { move, pathExists } from 'fs-extra/esm';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -176,7 +176,7 @@ describe('Editing question settings', () => {
 
   test.sequential('should not be able to submit without question info file', async () => {
     questionLiveInfoPath = path.join(questionLiveDir, 'test', 'question1', 'info.json');
-    await fs.rename(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
+    await move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
@@ -199,7 +199,7 @@ describe('Editing question settings', () => {
       );
       assert.equal(response.status, 400);
     } finally {
-      await fs.rename(`${questionLiveInfoPath}.bak`, questionLiveInfoPath);
+      await move(`${questionLiveInfoPath}.bak`, questionLiveInfoPath);
     }
   });
 

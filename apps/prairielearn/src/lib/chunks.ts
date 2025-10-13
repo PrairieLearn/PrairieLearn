@@ -8,7 +8,7 @@ import * as util from 'util';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import { ensureSymlink, pathExists } from 'fs-extra/esm';
+import { ensureSymlink, move, pathExists } from 'fs-extra/esm';
 import * as tar from 'tar';
 import z from 'zod';
 
@@ -960,7 +960,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   // to the "downloads" path first, then rename it to the "chunks" path.
   await fs.mkdir(path.dirname(downloadPath), { recursive: true });
   await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
-  await fs.rename(downloadPath, chunkPath);
+  await move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
   // case we had an earlier unpack attempt, we will remove the
