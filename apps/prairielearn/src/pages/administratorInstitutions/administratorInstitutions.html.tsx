@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { getPageContext } from '../../lib/client/page-context.js';
 import { type AuthnProvider, InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { type Timezone } from '../../lib/timezone.shared.js';
@@ -26,6 +27,8 @@ export function AdministratorInstitutions({
   supportedAuthenticationProviders: AuthnProvider[];
   resLocals: Record<string, any>;
 }) {
+  const pageContext = getPageContext(resLocals, { withAuthzData: false });
+
   return PageLayout({
     resLocals,
     pageTitle: 'Institutions',
@@ -43,7 +46,7 @@ export function AdministratorInstitutions({
           institutions={institutions}
           availableTimezones={availableTimezones}
           supportedAuthenticationProviders={supportedAuthenticationProviders}
-          csrfToken={resLocals.__csrf_token}
+          csrfToken={pageContext.__csrf_token}
           isEnterprise={isEnterprise()}
         />
       </Hydrate>
