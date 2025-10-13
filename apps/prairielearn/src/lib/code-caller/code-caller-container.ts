@@ -5,7 +5,7 @@ import { ECRClient } from '@aws-sdk/client-ecr';
 import debugfn from 'debug';
 import Docker, { type Container } from 'dockerode';
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
 

@@ -3,7 +3,8 @@ import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { copy, remove } from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
@@ -597,7 +598,7 @@ async function createCourseFiles() {
     cwd: '.',
     env: process.env,
   });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
+  await copy(courseTemplateDir, courseLiveDir, { overwrite: false });
   await execa('git', ['add', '-A'], {
     cwd: courseLiveDir,
     env: process.env,
@@ -666,7 +667,7 @@ async function createSharedCourse() {
 }
 
 async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
+  await remove(courseOriginDir);
+  await remove(courseLiveDir);
+  await remove(courseDevDir);
 }

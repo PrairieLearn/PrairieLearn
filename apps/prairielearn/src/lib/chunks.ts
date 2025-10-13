@@ -7,7 +7,8 @@ import * as util from 'util';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { ensureDir, ensureSymlink, move, pathExists, remove } from 'fs-extra';
 import * as tar from 'tar';
 import z from 'zod';
 
@@ -547,7 +548,7 @@ export async function diffChunks({
     'clientFilesCourse',
     'serverFilesCourse',
   ] as const) {
-    const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
+    const hasChunkDirectory = await pathExists(path.join(coursePath, chunkType));
     if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
@@ -579,7 +580,7 @@ export async function diffChunks({
   await async.each(
     Object.entries(courseData.courseInstances),
     async ([ciid, courseInstanceInfo]) => {
-      const hasClientFilesCourseInstanceDirectory = await fs.pathExists(
+      const hasClientFilesCourseInstanceDirectory = await pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
 
@@ -595,7 +596,7 @@ export async function diffChunks({
       }
 
       await async.each(Object.keys(courseInstanceInfo.assessments), async (tid) => {
-        const hasClientFilesAssessmentDirectory = await fs.pathExists(
+        const hasClientFilesAssessmentDirectory = await pathExists(
           path.join(
             coursePath,
             'courseInstances',
@@ -624,7 +625,7 @@ export async function diffChunks({
   await Promise.all(
     existingCourseChunks.courseInstances.map(async (ciid, courseInstanceInfo) => {
       const courseInstanceExists = ciid in courseData.courseInstances;
-      const clientFilesCourseInstanceExists = await fs.pathExists(
+      const clientFilesCourseInstanceExists = await pathExists(
         path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
       );
       if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
@@ -638,7 +639,7 @@ export async function diffChunks({
         [...courseInstanceInfo.assessments].map(async (tid) => {
           const assessmentExists =
             courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
-          const clientFilesAssessmentExists = await fs.pathExists(
+          const clientFilesAssessmentExists = await pathExists(
             path.join(
               coursePath,
               'courseInstances',
@@ -943,7 +944,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     // If the target path isn't a directory, who knows what state we're in, so we
     // allow the error to propagate.
     if (err.code === 'EINVAL' && (await fs.stat(targetPath)).isDirectory()) {
-      await fs.remove(targetPath);
+      await remove(targetPath);
     } else if (err.code !== 'ENOENT') {
       // Allow ENOENT errors to continue, because they mean we don't have the chunk
       throw err;
@@ -957,15 +958,15 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
 
   // Otherwise, we need to download and untar the chunk. We'll download it
   // to the "downloads" path first, then rename it to the "chunks" path.
-  await fs.ensureDir(path.dirname(downloadPath));
+  await ensureDir(path.dirname(downloadPath));
   await downloadFromS3(config.chunksS3Bucket, `${chunk.uuid}.tar.gz`, downloadPath);
-  await fs.move(downloadPath, chunkPath, { overwrite: true });
+  await move(downloadPath, chunkPath, { overwrite: true });
 
   // Once the chunk has been downloaded, we need to untar it. In
   // case we had an earlier unpack attempt, we will remove the
   // existing unpack directory to ensure a clean slate.
-  await fs.remove(unpackPath);
-  await fs.ensureDir(unpackPath);
+  await remove(unpackPath);
+  await ensureDir(unpackPath);
   await tar.extract({
     file: chunkPath,
     cwd: unpackPath,
@@ -985,7 +986,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     try {
       const stat = await fs.lstat(parentPath);
       if (stat.isSymbolicLink()) {
-        await fs.remove(parentPath);
+        await remove(parentPath);
       } else if (!stat.isDirectory()) {
         throw new Error(`${parentPath} exists but is not a directory`);
       }
@@ -1002,7 +1003,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
   //     https://github.com/jprichardson/node-fs-extra/pull/826
   // As a work-around, we symlink a temporary name and move it over targetPath
   const tmpPath = `${targetPath}-${chunk.uuid}`;
-  await fs.ensureSymlink(relativeUnpackPath, tmpPath);
+  await ensureSymlink(relativeUnpackPath, tmpPath);
   await fs.rename(tmpPath, targetPath);
 };
 
@@ -1091,10 +1092,10 @@ export async function ensureChunksForCourseAsync(courseId: string, chunks: Chunk
   const courseChunksDirs = getChunksDirectoriesForCourseId(courseId);
   await Promise.all(
     missingChunks.map(async (chunk) => {
-      // Blindly remove this chunk from disk - if it doesn't exist, `fs.remove`
+      // Blindly remove this chunk from disk - if it doesn't exist, `remove`
       // will silently no-op.
       const chunkMetadata = chunkMetadataFromDatabaseChunk(chunk);
-      await fs.remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
+      await remove(coursePathForChunk(courseChunksDirs.course, chunkMetadata));
     }),
   );
 }

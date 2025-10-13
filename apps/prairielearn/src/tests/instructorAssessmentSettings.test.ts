@@ -1,7 +1,8 @@
 import * as path from 'path';
 
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { copy, move, pathExists } from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -43,7 +44,7 @@ describe('Editing assessment settings', () => {
       env: process.env,
     });
 
-    await fs.copy(courseTemplateDir, courseLiveDir);
+    await copy(courseTemplateDir, courseLiveDir);
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
     await execa('git', ['add', '-A'], execOptions);
@@ -131,7 +132,7 @@ describe('Editing assessment settings', () => {
 
   test.sequential('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'HW2');
-    assert.notOk(await fs.pathExists(assessmentDir));
+    assert.notOk(await pathExists(assessmentDir));
   });
 
   test.sequential('verify reverting a nested assessment id works correctly', async () => {
@@ -231,7 +232,7 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('should not be able to submit without assessment info file', async () => {
-    await fs.move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
+    await move(assessmentLiveInfoPath, `${assessmentLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
@@ -257,7 +258,7 @@ describe('Editing assessment settings', () => {
       );
       assert.equal(response.status, 400);
     } finally {
-      await fs.move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
+      await move(`${assessmentLiveInfoPath}.bak`, assessmentLiveInfoPath);
     }
   });
 
@@ -356,7 +357,7 @@ describe('Editing assessment settings', () => {
 
   test.sequential('verify change assessment id', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'A1');
-    assert.ok(await fs.pathExists(assessmentDir));
+    assert.ok(await pathExists(assessmentDir));
   });
 
   test.sequential(

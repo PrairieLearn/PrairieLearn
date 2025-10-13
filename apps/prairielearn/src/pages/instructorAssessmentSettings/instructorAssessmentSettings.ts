@@ -3,7 +3,8 @@ import * as path from 'path';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { pathExists } from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -70,7 +71,7 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
-    const infoAssessmentPathExists = await fs.pathExists(fullInfoAssessmentPath);
+    const infoAssessmentPathExists = await pathExists(fullInfoAssessmentPath);
 
     let origHash = '';
     if (infoAssessmentPathExists) {
@@ -149,7 +150,7 @@ router.post(
         res.locals.assessment.tid,
         'infoAssessment.json',
       );
-      if (!(await fs.pathExists(infoAssessmentPath))) {
+      if (!(await pathExists(infoAssessmentPath))) {
         throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
       }
 

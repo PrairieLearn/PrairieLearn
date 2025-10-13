@@ -5,7 +5,7 @@ import * as path from 'path';
 import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';

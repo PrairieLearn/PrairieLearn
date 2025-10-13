@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';;
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
@@ -43,7 +43,7 @@ async function update(locals: Record<string, any>) {
     await async.eachOfSeries(Array.from(courseDirs), async (courseDir, index) => {
       job.info(chalk.bold(courseDir));
       const infoCourseFile = path.join(courseDir, 'infoCourse.json');
-      const hasInfoCourseFile = await fs.pathExists(infoCourseFile);
+      const hasInfoCourseFile = await pathExists(infoCourseFile);
       if (!hasInfoCourseFile) {
         job.verbose('infoCourse.json not found, skipping');
         if (index !== courseDirs.size - 1) job.info('');

@@ -1,7 +1,8 @@
 import * as path from 'path';
 
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { copy, move, pathExists } from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
@@ -42,7 +43,7 @@ describe('Editing question settings', () => {
       env: process.env,
     });
 
-    await fs.copy(courseTemplateDir, courseLiveDir);
+    await copy(courseTemplateDir, courseLiveDir);
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
     await execa('git', ['add', '-A'], execOptions);
@@ -121,7 +122,7 @@ describe('Editing question settings', () => {
 
   test.sequential('verify changing qid did not leave any empty directories', async () => {
     const questionDir = path.join(courseLiveDir, 'question');
-    assert.notOk(await fs.pathExists(questionDir));
+    assert.notOk(await pathExists(questionDir));
   });
 
   test.sequential('pull and verify changes', async () => {
@@ -175,7 +176,7 @@ describe('Editing question settings', () => {
 
   test.sequential('should not be able to submit without question info file', async () => {
     questionLiveInfoPath = path.join(questionLiveDir, 'test', 'question1', 'info.json');
-    await fs.move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
+    await move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
@@ -198,7 +199,7 @@ describe('Editing question settings', () => {
       );
       assert.equal(response.status, 400);
     } finally {
-      await fs.move(`${questionLiveInfoPath}.bak`, questionLiveInfoPath);
+      await move(`${questionLiveInfoPath}.bak`, questionLiveInfoPath);
     }
   });
 
@@ -271,7 +272,7 @@ describe('Editing question settings', () => {
     );
 
     // If the file at path questionLiveInfoPath exists, then the question id was successfully changed
-    assert.ok(await fs.pathExists(questionLiveInfoPath));
+    assert.ok(await pathExists(questionLiveInfoPath));
   });
 
   test.sequential(

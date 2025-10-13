@@ -2,7 +2,7 @@ import * as url from 'node:url';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';;
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -131,7 +131,7 @@ router.get(
 
     const templateQuestions = await getTemplateQuestions(questions);
 
-    const courseDirExists = await fs.pathExists(res.locals.course.path);
+    const courseDirExists = await pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions,

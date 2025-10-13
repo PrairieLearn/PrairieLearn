@@ -4,7 +4,7 @@ import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import { isBinaryFile } from 'isbinaryfile';
 
 import { HttpStatusError } from '@prairielearn/error';

@@ -1,5 +1,5 @@
 import { execa } from 'execa';
-import fs from 'fs-extra';
+import { pathExists } from 'fs-extra';;
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
@@ -10,7 +10,7 @@ import { DateFromISOString, IdSchema } from '../lib/db-types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 async function getEarliestCommitDateForCourse(coursePath: string | null): Promise<Date | null> {
-  if (coursePath == null || !(await fs.pathExists(coursePath))) {
+  if (coursePath == null || !(await pathExists(coursePath))) {
     return null;
   }
 

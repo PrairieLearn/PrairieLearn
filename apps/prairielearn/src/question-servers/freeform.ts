@@ -3,7 +3,8 @@ import * as path from 'node:path';
 
 import * as async from 'async';
 import debugfn from 'debug';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { readJson } from 'fs-extra';
 import _ from 'lodash';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
@@ -149,7 +150,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
   // Filter out any non-directories.
   const elementNames = await async.filter(files, async (file) => {
-    const stats = await fs.promises.lstat(path.join(sourceDir, file));
+    const stats = await fs.lstat(path.join(sourceDir, file));
     return stats.isDirectory();
   });
 
@@ -159,7 +160,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
     let rawInfo: any;
     try {
-      rawInfo = await fs.readJSON(elementInfoPath);
+      rawInfo = await readJson(elementInfoPath);
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // This must not be an element directory, skip it
@@ -257,7 +258,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
 
     let rawInfo: any;
     try {
-      rawInfo = await fs.readJson(infoPath);
+      rawInfo = await readJson(infoPath);
     } catch (err) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.

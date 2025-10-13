@@ -1,7 +1,7 @@
 import * as path from 'path';
 import { promisify } from 'util';
 
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import _ from 'lodash';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
@@ -40,24 +40,24 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
     it("shouldn't fail on empty extension directories", async () => {
       const dir = path.join(extDir, element, 'empty');
 
-      await promisify(fs.mkdir)(dir);
+      await fs.mkdir(dir);
       try {
         const extensions = await freeform.loadExtensions(extDir, extDir);
         check_ext(extensions);
       } finally {
-        await promisify(fs.rmdir)(dir);
+        await fs.rmdir(dir);
       }
     });
 
     it("shouldn't fail on empty element directories", async () => {
       const dir = path.join(extDir, 'empty');
 
-      await promisify(fs.mkdir)(dir);
+      await fs.mkdir(dir);
       try {
         const extensions = await freeform.loadExtensions(extDir, extDir);
         check_ext(extensions);
       } finally {
-        await promisify(fs.rmdir)(dir);
+        await fs.rmdir(dir);
       }
     });
 

@@ -1,18 +1,19 @@
 import * as path from 'path';
 
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
+import { pathExists } from 'fs-extra';
 
 import { validateHTML } from '../validateHTML.js';
 
 export async function buildContextForQuestion(dir: string): Promise<string | undefined> {
   const readmePath = path.join(dir, 'README.md');
-  const hasReadme = await fs.pathExists(readmePath);
+  const hasReadme = await pathExists(readmePath);
 
   const htmlPath = path.join(dir, 'question.html');
   const html = await fs.readFile(htmlPath, 'utf-8');
 
   const pythonPath = path.join(dir, 'server.py');
-  const hasPython = await fs.pathExists(pythonPath);
+  const hasPython = await pathExists(pythonPath);
 
   const context: string[] = [];
 
