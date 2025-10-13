@@ -27,16 +27,18 @@ router.get(
     // Look up the course instance by enrollment code
     const courseInstance = await selectOptionalCourseInstanceByEnrollmentCode(code);
 
+    // User-facing terminology is to use "course" instead of "course instance"
+
     if (!courseInstance) {
       res.status(404).json({
-        error: 'No course instance found with this enrollment code',
+        error: 'No course found with this enrollment code',
       });
       return;
     }
 
     if (courseInstanceId && courseInstance.id !== courseInstanceId) {
       res.status(404).json({
-        error: 'No course instance found with this enrollment code',
+        error: 'No course found with this enrollment code',
       });
       return;
     }

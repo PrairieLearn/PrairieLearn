@@ -6,7 +6,10 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { getCourseInstanceContext } from '../../lib/client/page-context.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+import {
+  ensureCheckedEnrollment,
+  selectOptionalEnrollmentByUserId,
+} from '../../models/enrollment.js';
 
 import { EnrollmentCodeRequired } from './enrollmentCodeRequired.html.js';
 
@@ -22,16 +25,30 @@ router.get(
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
     const enrollmentCode = courseInstance.enrollment_code;
     const redirectUrl = typeof url === 'string' ? url : null;
+    // Lookup if they have an existing enrollment
+    const existingEnrollment = await selectOptionalEnrollmentByUserId({
+      user_id: res.locals.authn_user.user_id,
+      course_instance_id: courseInstance.id,
+    });
 
     if (
-      // No self-enrollment, abort
+      // No self-enrollment enabled
       !courseInstance.self_enrollment_enabled ||
-      // No enrollment code required, abort
+      // No enrollment code required
       !courseInstance.self_enrollment_use_enrollment_code ||
-      // Enrollment code is correct, abort
-      code?.toUpperCase() === enrollmentCode.toUpperCase()
+      // Enrollment code is correct
+      code?.toUpperCase() === enrollmentCode.toUpperCase() ||
+      // Existing enrollments can transition immediately
+      existingEnrollment
     ) {
-      if (code?.toUpperCase() === enrollmentCode.toUpperCase()) {
+      // 'blocked' and 'joined' enrollments don't transition.
+      // This means that blocked users will end up on the /assessments page without authorization.
+
+      if (
+        code?.toUpperCase() === enrollmentCode.toUpperCase() ||
+        (existingEnrollment &&
+          ['invited', 'rejected', 'removed'].includes(existingEnrollment.status))
+      ) {
         // Authorize the user for the course instance
         req.params.course_instance_id = courseInstance.id;
         await authzCourseOrInstance(req, res);

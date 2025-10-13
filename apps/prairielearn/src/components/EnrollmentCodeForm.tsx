@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'preact/compat';
-import { Alert, Card, Modal } from 'react-bootstrap';
+import { useRef } from 'preact/compat';
+import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
+
+import { run } from '@prairielearn/run';
 
 import { getSelfEnrollmentLinkUrl, getSelfEnrollmentLookupUrl } from '../lib/client/url.js';
 
@@ -26,7 +28,7 @@ export function EnrollmentCodeForm({
   courseInstanceId,
 }:
   | {
-      style: 'card';
+      style: 'raw-form';
       show?: undefined;
       onHide?: undefined;
       courseInstanceId?: string;
@@ -60,14 +62,6 @@ export function EnrollmentCodeForm({
   const input3Ref = useRef<HTMLInputElement>(null);
 
   const watchedValues = watch();
-
-  useEffect(() => {
-    if (style === 'modal') {
-      const timeoutId = setTimeout(() => input1Ref.current?.focus(), 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [style]);
-
   // Handle modal close - reset form and clear errors
   const handleClose = () => {
     reset();
@@ -97,22 +91,73 @@ export function EnrollmentCodeForm({
     }
   };
 
+  const fields: {
+    currentRef: HTMLInputElement;
+    value: string;
+    field: keyof EnrollmentCodeFormData;
+  }[] = [
+    {
+      currentRef: input1Ref.current!,
+      value: watchedValues.code1,
+      field: 'code1',
+    },
+    {
+      currentRef: input2Ref.current!,
+      value: watchedValues.code2,
+      field: 'code2',
+    },
+    {
+      currentRef: input3Ref.current!,
+      value: watchedValues.code3,
+      field: 'code3',
+    },
+  ];
+
   // Handle paste event
   const handlePaste = (e: ClipboardEvent) => {
     e.preventDefault();
+    const target = e.target as HTMLInputElement;
     const pastedText = e.clipboardData?.getData('text') || '';
     const formatted = formatInput(pastedText);
-
-    if (formatted.length <= 10) {
-      // Clear server errors when user pastes
-      if (errors.root?.serverError) {
-        clearErrors('root.serverError');
+    const currentField = fields.find((f) => f.field === target.name);
+    const cursorPosition = run(() => {
+      const cursorPosition = target.selectionStart ?? 0;
+      if (!currentField) {
+        return cursorPosition;
       }
+      if (currentField.field === 'code1') {
+        return cursorPosition;
+      } else if (currentField.field === 'code2') {
+        return cursorPosition + 3;
+      } else {
+        return cursorPosition + 6;
+      }
+    });
 
-      // Distribute the pasted text across the three inputs
-      setValue('code1', formatted.slice(0, 3));
-      setValue('code2', formatted.slice(3, 6));
-      setValue('code3', formatted.slice(6, 10));
+    const existingCode = `${watchedValues.code1}${watchedValues.code2}${watchedValues.code3}`;
+    const combinedCode =
+      existingCode.slice(0, cursorPosition) +
+      formatted +
+      existingCode.slice(cursorPosition + formatted.length);
+    // If the paste will fit at the current position, do it
+    const newCode = combinedCode.length <= 10 ? combinedCode : formatted;
+
+    // Distribute the pasted text across the three inputs
+    setValue('code1', newCode.slice(0, 3));
+    setValue('code2', newCode.slice(3, 6));
+    setValue('code3', newCode.slice(6, 10));
+
+    const endPosition = formatted.length + cursorPosition;
+
+    if (endPosition < 3) {
+      input1Ref.current!.focus();
+      input1Ref.current!.setSelectionRange(endPosition, endPosition);
+    } else if (endPosition < 6) {
+      input2Ref.current!.focus();
+      input2Ref.current!.setSelectionRange(endPosition - 3, endPosition - 3);
+    } else {
+      input3Ref.current!.focus();
+      input3Ref.current!.setSelectionRange(endPosition - 6, endPosition - 6);
     }
   };
 
@@ -121,28 +166,6 @@ export function EnrollmentCodeForm({
     const target = e.target as HTMLInputElement;
     const cursorPosition = target.selectionStart ?? 0;
     const valueLength = target.value.length;
-
-    const fields: {
-      currentRef: HTMLInputElement;
-      value: string;
-      field: keyof EnrollmentCodeFormData;
-    }[] = [
-      {
-        currentRef: input1Ref.current!,
-        value: watchedValues.code1,
-        field: 'code1',
-      },
-      {
-        currentRef: input2Ref.current!,
-        value: watchedValues.code2,
-        field: 'code2',
-      },
-      {
-        currentRef: input3Ref.current!,
-        value: watchedValues.code3,
-        field: 'code3',
-      },
-    ];
 
     const fieldIndex = fields.findIndex((f) => f.field === field);
     const prevField = fieldIndex > 0 ? fields[fieldIndex - 1] : null;
@@ -305,19 +328,12 @@ export function EnrollmentCodeForm({
     </button>
   );
 
-  if (style === 'card') {
+  if (style === 'raw-form') {
     return (
-      <Card>
-        <Card.Header>
-          <h4 class="mb-0">Join a course</h4>
-        </Card.Header>
-        <Card.Body>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {formContent}
-            <div class="d-grid">{submitButton}</div>
-          </form>
-        </Card.Body>
-      </Card>
+      <form onSubmit={handleSubmit(onSubmit)}>
+        {formContent}
+        <div class="d-grid">{submitButton}</div>
+      </form>
     );
   }
 

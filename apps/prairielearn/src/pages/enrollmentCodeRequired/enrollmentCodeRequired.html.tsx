@@ -15,14 +15,13 @@ export function EnrollmentCodeRequired({ courseInstanceId }: { courseInstanceId:
                 code provided by your instructor.
               </p>
 
-              <EnrollmentCodeForm style="card" courseInstanceId={courseInstanceId} />
+              <EnrollmentCodeForm style="raw-form" courseInstanceId={courseInstanceId} />
             </div>
-          </div>
-
-          <div class="text-center mt-4">
-            <p class="text-muted small">
-              Don't have an enrollment code? Contact your instructor for assistance.
-            </p>
+            <div class="card-footer">
+              <div class="text-center text-muted small my-2">
+                Don't have an enrollment code? Contact your instructor for assistance.
+              </div>
+            </div>
           </div>
         </div>
       </div>
