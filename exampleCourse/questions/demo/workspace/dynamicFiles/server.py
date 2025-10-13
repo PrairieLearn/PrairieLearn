@@ -34,4 +34,10 @@ def generate(data):
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
         # A file can also be added by using its path in the serverFilesCourse
         {"name": "course.txt", "serverFilesCourseFile": "workspace_file.txt"},
+        # To make an executable file, set the mode to 0o755
+        {
+            "name": "run_tests.sh",
+            "contents": "#!/bin/bash\necho 'Running tests...'\necho 'Random value: {}'".format(data["params"]["random_value"]),
+            "mode": 0o755,
+        },
     ]
