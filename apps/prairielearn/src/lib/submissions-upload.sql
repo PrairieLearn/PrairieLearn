@@ -98,7 +98,7 @@ RETURNING
 SELECT
   *
 FROM
-  rubric_items as ri
+  rubric_items AS ri
 WHERE
   ri.rubric_id = $rubric_id
   AND ri.deleted_at IS NULL;
