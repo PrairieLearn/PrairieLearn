@@ -108,7 +108,7 @@ export function AdministratorInstitutionSsoForm({
             It is <strong>not recommended</strong> to enable{' '}
             {formatProviderList(enabledPrimaryProviders)} at the same time. It may be appropriate in
             situations where students use one sign-on provider and staff use a different one.
-            Contact a technical administrator if your have questions.
+            Contact a technical administrator if you have questions.
           </div>
         )}
         {enabledProviderIds.size === 0 && (
