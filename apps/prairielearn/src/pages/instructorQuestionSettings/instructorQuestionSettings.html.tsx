@@ -315,7 +315,7 @@ export function InstructorQuestionSettings({
                           ${canEdit
                             ? html`<input
                                 type="text"
-                                pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{4}$"
+                                pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"
                                 class="form-control author_orcid"
                                 id="${'author_orcid_' + index}"
                                 name="${'author_orcid_' + index}"
