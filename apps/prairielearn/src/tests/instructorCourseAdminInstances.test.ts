@@ -2,7 +2,6 @@ import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import { copy } from 'fs-extra/esm';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -39,7 +38,7 @@ describe('Creating a course instance', () => {
       env: process.env,
     });
 
-    await copy(courseTemplateDir, courseLiveDir);
+    await fs.cp(courseTemplateDir, courseLiveDir, { recursive: true });
 
     const execOptions = { cwd: courseLiveDir, env: process.env };
     await execa('git', ['add', '-A'], execOptions);
