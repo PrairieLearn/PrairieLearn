@@ -1,9 +1,5 @@
-import type { StaffCourseInstanceContext, StudentCourseInstanceContext } from './page-context.js';
-
-export function getStudentCourseInstanceUrl(
-  context: StudentCourseInstanceContext | StaffCourseInstanceContext,
-): string {
-  return `/pl/course_instance/${context.course_instance.id}`;
+export function getStudentCourseInstanceUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}`;
 }
 
 export type AssessmentInstanceUrlParts =
@@ -48,7 +44,7 @@ export function getSelfEnrollmentLinkUrl({
 }
 
 export function getSelfEnrollmentSettingsUrl(courseInstanceId: string): string {
-  return `/pl/course_instance/${courseInstanceId}/instance_admin/settings`;
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/settings`;
 }
 
 export function getSelfEnrollmentLookupUrl(

@@ -46,7 +46,7 @@ export async function selectCourseInstanceByShortName({
   );
 }
 
-export async function selectCourseInstanceByEnrollmentCode(
+export async function selectOptionalCourseInstanceByEnrollmentCode(
   enrollment_code: string,
 ): Promise<CourseInstance | null> {
   return queryOptionalRow(

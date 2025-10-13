@@ -14,7 +14,6 @@ export function EnrollmentCodeForm({
   style,
   show,
   onHide,
-  autoFocus = false,
   disabled = false,
   courseInstanceId,
 }: {
@@ -49,13 +48,12 @@ export function EnrollmentCodeForm({
 
   const watchedValues = watch();
 
-  // Focus first input when autoFocus is true
   useEffect(() => {
-    if (autoFocus) {
+    if (show && style === 'modal') {
       const timeoutId = setTimeout(() => input1Ref.current?.focus(), 100);
       return () => clearTimeout(timeoutId);
     }
-  }, [autoFocus]);
+  }, [show, style]);
 
   // Handle modal close - reset form and clear errors
   const handleClose = () => {
@@ -134,16 +132,19 @@ export function EnrollmentCodeForm({
     ];
 
     const fieldIndex = fields.findIndex((f) => f.field === field);
-    const prevField = fields.at(fieldIndex - 1) ?? null;
+    const prevField = fieldIndex > 0 ? fields[fieldIndex - 1] : null;
     const currentField = fields[fieldIndex];
-    const nextField = fields.at(fieldIndex + 1) ?? null;
+    const nextField = fieldIndex < fields.length - 1 ? fields[fieldIndex + 1] : null;
 
     if (e.key === 'Backspace') {
       if (prevField && currentField.value.length === 0) {
+        // If there is nothing to backspace, it should move to the previous field
+        e.preventDefault();
         prevField.currentRef.focus();
       }
     } else if (e.key === 'ArrowLeft' && cursorPosition === 0) {
       if (prevField) {
+        e.preventDefault();
         prevField.currentRef.focus();
         prevField.currentRef.setSelectionRange(
           prevField.currentRef.value.length,
@@ -152,6 +153,7 @@ export function EnrollmentCodeForm({
       }
     } else if (e.key === 'ArrowRight' && cursorPosition === valueLength) {
       if (nextField) {
+        e.preventDefault();
         nextField.currentRef.focus();
         nextField.currentRef.setSelectionRange(
           nextField.currentRef.value.length,

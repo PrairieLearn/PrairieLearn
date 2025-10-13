@@ -20,7 +20,7 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
   return (
     <div class="mb-3">
       <label class="form-label" for="self_enrollment_code">
-        Self-enrollment Code
+        Self-enrollment code
       </label>
       <InputGroup>
         <Form.Control
@@ -45,8 +45,8 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
         </OverlayTrigger>
       </InputGroup>
       <small class="form-text text-muted">
-        Students can use this code to enroll in the course by entering it on any link to the course
-        instance.
+        Students can use this code to enroll in the course by entering it on the homepage or after
+        clicking on any link to the course instance.
       </small>
     </div>
   );
@@ -68,7 +68,7 @@ function SelfEnrollmentLink({
     <>
       <div class="mb-3">
         <label class="form-label" for="self_enrollment_link">
-          Self-enrollment Link
+          Self-enrollment link
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />

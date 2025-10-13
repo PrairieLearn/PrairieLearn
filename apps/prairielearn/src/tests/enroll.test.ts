@@ -54,13 +54,13 @@ describe('Enroll page (enterprise)', function () {
   test.sequential('unenroll a single student', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
-    assert.equal(res.url, baseUrl + '/enroll');
+    assert.equal(res.url, siteUrl + '/');
   });
 
   test.sequential('unenroll the same student again', async () => {
     const res = await unenrollUser('1', USER_1);
     assert.isOk(res.ok);
-    assert.equal(res.url, baseUrl + '/enroll');
+    assert.equal(res.url, siteUrl + '/');
   });
 
   test.sequential('apply a course instance enrollment limit', async () => {

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
-import { selectCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
+import { selectOptionalCourseInstanceByEnrollmentCode } from '../../../models/course-instances.js';
 
 const router = Router();
 
@@ -25,7 +25,7 @@ router.get(
     }
 
     // Look up the course instance by enrollment code
-    const courseInstance = await selectCourseInstanceByEnrollmentCode(code);
+    const courseInstance = await selectOptionalCourseInstanceByEnrollmentCode(code);
 
     if (!courseInstance) {
       res.status(404).json({

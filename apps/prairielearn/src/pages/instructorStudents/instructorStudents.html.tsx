@@ -23,6 +23,7 @@ import {
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
+import { run } from '@prairielearn/run';
 import { CategoricalColumnFilter, TanstackTableCard } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -42,6 +43,7 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getSelfEnrollmentLinkUrl,
   getSelfEnrollmentSettingsUrl,
+  getStudentCourseInstanceUrl,
   getStudentEnrollmentUrl,
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
@@ -69,14 +71,19 @@ function CopyEnrollmentLinkButton({
 }: {
   courseInstance: StaffCourseInstanceContext['course_instance'];
 }) {
-  const selfEnrollmentLink = getSelfEnrollmentLinkUrl({
+  const selfEnrollmentCodeLink = getSelfEnrollmentLinkUrl({
     courseInstanceId: courseInstance.id,
     enrollmentCode: courseInstance.enrollment_code,
   });
 
   const handleCopyLink = async () => {
-    const fullSelfEnrollmentLink = `${window.location.origin}${selfEnrollmentLink}`;
-    await copyToClipboard(fullSelfEnrollmentLink);
+    const selfEnrollmentLink = run(() => {
+      if (!courseInstance.self_enrollment_use_enrollment_code) {
+        return getStudentCourseInstanceUrl(courseInstance.id);
+      }
+      return selfEnrollmentCodeLink;
+    });
+    await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
   };
 
   const handleCopyCode = async () => {
@@ -97,14 +104,14 @@ function CopyEnrollmentLinkButton({
       variant="light"
     >
       {courseInstance.self_enrollment_use_enrollment_code && (
-        <Dropdown.Item onClick={handleCopyCode}>
+        <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
           <i class="bi bi-key me-2" />
           Copy enrollment code
         </Dropdown.Item>
       )}
 
       {courseInstance.self_enrollment_enabled && (
-        <Dropdown.Item onClick={handleCopyLink}>
+        <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
           <i class="bi bi-link-45deg me-2" />
           Copy enrollment link
         </Dropdown.Item>
@@ -389,6 +396,27 @@ function StudentsCard({
               />
             ),
           },
+          emptyState: (
+            <>
+              <i class="bi bi-person-exclamation display-4 mb-2" aria-hidden="true" />
+              {/* medium screen and larger, 75% width */}
+              <p class="col-md-9">
+                No students found. To enroll students in your course, you can provide them with a
+                link to enroll (recommended) or invite them. You can manage the self-enrollment
+                settings on the
+                <a class="mx-1" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
+                  course instance settings
+                </a>
+                page.
+              </p>
+            </>
+          ),
+          noResultsState: (
+            <>
+              <i class="bi bi-search display-4 mb-2" aria-hidden="true" />
+              <p class="mb-0">No students found matching your search criteria.</p>
+            </>
+          ),
         }}
       />
       <InviteStudentModal

@@ -2,12 +2,12 @@ import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import z from 'zod';
 
-import { EnrollmentCodeForm } from '../../components/EnrollmentCodeForm.js';
+import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StudentEnrollmentSchema,
-} from '../../lib/client/safe-db-types.js';
+} from '../../../lib/client/safe-db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
   id: RawStudentCourseInstanceSchema.shape.id,

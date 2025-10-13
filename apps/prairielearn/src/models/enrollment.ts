@@ -435,11 +435,9 @@ export async function selectAndLockEnrollmentById(id: string) {
 }
 
 /**
- * Sets the status of an enrollment.
- * This function updates the enrollment status without any additional WHERE clauses
- * for course_instance_id or current status.
+ * Updates the status of an existing enrollment record.
  *
- * If the enrollment is not in the required status, this will throw an error.
+ * If the enrollment is not in the required status or already in the desired status, this will throw an error.
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
  */
@@ -460,6 +458,11 @@ export async function setEnrollmentStatus({
     const oldEnrollment = await selectAndLockEnrollmentById(enrollment_id);
     if (oldEnrollment.user_id) {
       await selectAndLockUserById(oldEnrollment.user_id);
+    }
+
+    // The enrollment is already in the desired status, so we can return early.
+    if (oldEnrollment.status === status) {
+      return oldEnrollment;
     }
 
     if (oldEnrollment.status !== required_status) {
