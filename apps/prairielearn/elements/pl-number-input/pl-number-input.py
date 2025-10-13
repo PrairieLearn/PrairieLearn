@@ -588,7 +588,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         # If the empty answer is correct, use 0 as an arbitrary starting point for incorrect answers
         if correct_answer_converted == "blank":
             answer = random.choice([-1.1, 1.1])
-            feedback = ANSWER_SHOULD_BE_BLANK_WARNING
+            feedback = ANSWER_SHOULD_BE_BLANK_WARNING if show_correct else None
         elif comparison is ComparisonType.RELABS:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
