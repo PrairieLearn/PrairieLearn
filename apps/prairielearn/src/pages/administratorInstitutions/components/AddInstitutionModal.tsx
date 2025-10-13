@@ -97,7 +97,7 @@ export function AddInstitutionModal({
                         value={provider.id}
                         id={`authn-provider-${provider.id}`}
                         name="enabled_authn_provider_ids"
-                        checked={isDefaultChecked}
+                        defaultChecked={isDefaultChecked}
                       />
                       <label class="form-check-label" for={`authn-provider-${provider.id}`}>
                         {provider.name}
