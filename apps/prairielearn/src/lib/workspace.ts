@@ -588,12 +588,15 @@ export async function generateWorkspaceFiles({
         if ('localPath' in workspaceFile) {
           await fs.copy(workspaceFile.localPath, targetFile);
         } else {
-          await fs.writeFile(targetFile, workspaceFile.buffer);
-          // Preserve executable bits if they were captured
+          // Preserve executable bits if they were captured by setting mode during writeFile
           if (workspaceFile.mode !== undefined) {
             // Only preserve executable bits, use 644 or 755 based on whether source was executable
             const isExecutable = (workspaceFile.mode & 0o111) !== 0;
-            await fs.chmod(targetFile, isExecutable ? 0o755 : 0o644);
+            await fs.writeFile(targetFile, workspaceFile.buffer, {
+              mode: isExecutable ? 0o755 : 0o644,
+            });
+          } else {
+            await fs.writeFile(targetFile, workspaceFile.buffer);
           }
         }
       } catch (err) {
