@@ -33,7 +33,7 @@ async function withTempFile(
 
 async function writeQuestion(courseDir: string, qid: string, question: QuestionJsonInput) {
   await fs.mkdir(path.join(courseDir, 'questions', qid));
-  await fs.writeFile(path.join(courseDir, 'questions', qid, 'info.json'), question);
+  await fs.writeFile(path.join(courseDir, 'questions', qid, 'info.json'), JSON.stringify(question, null, 2));
 }
 
 function getQuestion() {
@@ -67,7 +67,7 @@ describe('course database', () => {
           uuid: UUID,
           foo: 'bar',
         };
-        await fs.writeFile(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
@@ -83,7 +83,7 @@ describe('course database', () => {
     it('errors if UUID is missing from valid file', async () => {
       await withTempFile(async (file) => {
         const json = { foo: 'bar' };
-        await fs.writeFile(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
@@ -96,7 +96,7 @@ describe('course database', () => {
     it('errors if UUID is not valid v4 UUID', async () => {
       await withTempFile(async (file) => {
         const json = { uuid: 'bar' };
-        await fs.writeFile(file.path, json);
+        await fs.writeFile(file.path, JSON.stringify(json, null, 2));
         const result = await courseDb.loadInfoFile({
           coursePath: file.dirname,
           filePath: file.basename,
