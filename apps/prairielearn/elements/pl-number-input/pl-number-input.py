@@ -563,7 +563,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
         if show_correct:
             data["partial_scores"][name]["feedback"] = (
-                f"The correct answer used for grading was {correct_answer_converted}"
+                f"The correct answer used for grading was {correct_answer_converted}."
             )
     elif result == "incorrect":
         data["partial_scores"][name] = {
