@@ -1,6 +1,6 @@
+import { ok as assert } from 'node:assert';
 import * as fsSync from 'node:fs';
 import * as fs from 'node:fs/promises';
-import { ok as assert } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 

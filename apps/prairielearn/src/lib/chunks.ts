@@ -1,5 +1,6 @@
 import assert from 'assert';
 import * as child_process from 'child_process';
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 import { PassThrough as PassThroughStream } from 'stream';
 import * as util from 'util';
@@ -7,7 +8,6 @@ import * as util from 'util';
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import * as fs from 'node:fs/promises';
 import { ensureDir, ensureSymlink, move, pathExists, remove } from 'fs-extra';
 import * as tar from 'tar';
 import z from 'zod';

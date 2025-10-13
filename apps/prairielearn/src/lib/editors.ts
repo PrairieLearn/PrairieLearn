@@ -1114,10 +1114,7 @@ export class CourseInstanceCopyEditor extends Editor {
     delete infoJson.shareSourcePublicly;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-    await fs.writeFile(
-      path.join(courseInstancePath, 'infoCourseInstance.json'),
-      formattedJson,
-    );
+    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     pathsToAdd.push(courseInstancePath);
     return {

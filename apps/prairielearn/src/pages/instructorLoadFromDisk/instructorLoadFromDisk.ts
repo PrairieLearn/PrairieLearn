@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { pathExists } from 'fs-extra';;
+import { pathExists } from 'fs-extra';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 

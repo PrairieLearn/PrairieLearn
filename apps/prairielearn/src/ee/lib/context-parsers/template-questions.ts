@@ -1,6 +1,6 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import * as fs from 'node:fs/promises';
 import { pathExists } from 'fs-extra';
 
 import { validateHTML } from '../validateHTML.js';

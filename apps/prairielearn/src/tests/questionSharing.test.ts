@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { execa } from 'execa';
-import * as fs from 'node:fs/promises';
 import { ensureDir, pathExists } from 'fs-extra';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
@@ -648,7 +648,7 @@ describe('Question Sharing', function () {
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
         await fs.writeFile(
           path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          JSON.stringify(sharingCourseData.courseInstances["Fa19"].courseInstance, null, 2),
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -657,7 +657,7 @@ describe('Question Sharing', function () {
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
         await fs.writeFile(
           path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-          JSON.stringify(sharingCourseData.courseInstances["Fa19"].courseInstance, null, 2),
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
         );
       },
     );
@@ -686,7 +686,7 @@ describe('Question Sharing', function () {
             sharingCourseLiveDir,
             'courseInstances/Fa19/assessments/test/infoAssessment.json',
           ),
-          JSON.stringify(sharingCourseData.courseInstances["Fa19"].assessments["test"], null, 2),
+          JSON.stringify(sharingCourseData.courseInstances['Fa19'].assessments['test'], null, 2),
         );
 
         await ensureInvalidSharingOperationFailsToSync();
@@ -710,7 +710,7 @@ describe('Question Sharing', function () {
           sharingCourseLiveDir,
           'courseInstances/Fa19/assessments/test/infoAssessment.json',
         ),
-        JSON.stringify(sharingCourseData.courseInstances["Fa19"].assessments["test"], null, 2),
+        JSON.stringify(sharingCourseData.courseInstances['Fa19'].assessments['test'], null, 2),
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
@@ -738,7 +738,7 @@ describe('Question Sharing', function () {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeFile(
         path.join(sharingCourseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
-        JSON.stringify(sharingCourseData.courseInstances["Fa19"].courseInstance, null, 2),
+        JSON.stringify(sharingCourseData.courseInstances['Fa19'].courseInstance, null, 2),
       );
 
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);

@@ -1,11 +1,11 @@
 import { readFileSync } from 'node:fs';
+import * as fs from 'node:fs/promises';
 import http from 'node:http';
 import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import * as fs from 'node:fs/promises';
 import { copy, pathExists, remove } from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
 import * as tmp from 'tmp';

@@ -33,7 +33,10 @@ async function withTempFile(
 
 async function writeQuestion(courseDir: string, qid: string, question: QuestionJsonInput) {
   await fs.mkdir(path.join(courseDir, 'questions', qid));
-  await fs.writeFile(path.join(courseDir, 'questions', qid, 'info.json'), JSON.stringify(question, null, 2));
+  await fs.writeFile(
+    path.join(courseDir, 'questions', qid, 'info.json'),
+    JSON.stringify(question, null, 2),
+  );
 }
 
 function getQuestion() {

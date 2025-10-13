@@ -1,7 +1,7 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import { execa } from 'execa';
-import * as fs from 'node:fs/promises';
 import { copy } from 'fs-extra';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';

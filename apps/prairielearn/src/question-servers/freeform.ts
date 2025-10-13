@@ -1,9 +1,9 @@
 import assert from 'node:assert';
+import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import * as async from 'async';
 import debugfn from 'debug';
-import * as fs from 'node:fs/promises';
 import { readJson } from 'fs-extra';
 import _ from 'lodash';
 import mustache from 'mustache';

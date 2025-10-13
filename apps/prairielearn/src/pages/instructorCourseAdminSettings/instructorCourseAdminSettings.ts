@@ -1,10 +1,10 @@
 import * as crypto from 'node:crypto';
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import * as fs from 'node:fs/promises';
 import { pathExists } from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -26,9 +26,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const coursePathExists = await pathExists(res.locals.course.path);
-    const courseInfoExists = await pathExists(
-      path.join(res.locals.course.path, 'infoCourse.json'),
-    );
+    const courseInfoExists = await pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
     const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);

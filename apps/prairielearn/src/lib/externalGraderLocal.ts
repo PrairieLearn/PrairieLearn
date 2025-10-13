@@ -1,11 +1,11 @@
 import EventEmitter from 'events';
+import * as fs from 'node:fs/promises';
 import * as os from 'os';
 import * as path from 'path';
 
 import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
-import * as fs from 'node:fs/promises';
 import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';

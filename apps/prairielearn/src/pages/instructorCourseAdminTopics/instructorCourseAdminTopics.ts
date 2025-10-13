@@ -1,9 +1,9 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import * as fs from 'node:fs/promises';
 import { pathExists } from 'fs-extra';
 import { z } from 'zod';
 
@@ -26,9 +26,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const topics = await selectTopicsByCourseId(res.locals.course.id);
 
-    const courseInfoExists = await pathExists(
-      path.join(res.locals.course.path, 'infoCourse.json'),
-    );
+    const courseInfoExists = await pathExists(path.join(res.locals.course.path, 'infoCourse.json'));
     let origHash: string | null = null;
     if (courseInfoExists) {
       origHash = sha256(

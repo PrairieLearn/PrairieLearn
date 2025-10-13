@@ -1,6 +1,6 @@
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import * as fs from 'node:fs/promises';
 import _ from 'lodash';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 

@@ -1,9 +1,9 @@
 import assert from 'node:assert';
+import * as fs from 'node:fs/promises';
 import * as url from 'node:url';
 import * as path from 'path';
 
 import { Router } from 'express';
-import * as fs from 'node:fs/promises';
 import { pathExists } from 'fs-extra';
 import { z } from 'zod';
 

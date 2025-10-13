@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import * as cheerio from 'cheerio';
 import { execa } from 'execa';
-import * as fs from 'node:fs/promises';
 import { copy, remove } from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
