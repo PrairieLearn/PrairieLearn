@@ -1,5 +1,5 @@
 import * as path from 'path';
-import * as fsPromises from 'node:fs/promises';
+import * as fs from 'node:fs/promises';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
@@ -385,7 +385,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
-    contents = await fsPromises.readFile(absolutePath, 'utf8');
+    contents = await fs.readFile(absolutePath, 'utf8');
   } catch (err) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
@@ -755,7 +755,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   const infoFilesRootDir = path.join(coursePath, directory);
   const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
-    const files = await fsPromises.readdir(path.join(infoFilesRootDir, relativeDir));
+    const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
     // For each file in the directory, assume it is a question directory
     // and attempt to access `info.json`. If we can successfully read it,

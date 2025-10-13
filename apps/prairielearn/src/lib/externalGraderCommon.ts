@@ -1,5 +1,5 @@
 import type { EventEmitter } from 'node:events';
-import * as fsPromises from 'node:fs/promises';
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
 import _ from 'lodash';
@@ -43,29 +43,29 @@ export async function buildDirectory(
   const coursePath = getRuntimeDirectoryForCourse(course);
   try {
     // Attempt to remove existing directory first
-    await fsPromises.rm(dir, { force: true, recursive: true });
-    await fsPromises.mkdir(dir, { recursive: true });
-    await fsPromises.mkdir(path.join(dir, 'serverFilesCourse'));
-    await fsPromises.mkdir(path.join(dir, 'tests'));
-    await fsPromises.mkdir(path.join(dir, 'student'));
-    await fsPromises.mkdir(path.join(dir, 'data'));
+    await fs.rm(dir, { force: true, recursive: true });
+    await fs.mkdir(dir, { recursive: true });
+    await fs.mkdir(path.join(dir, 'serverFilesCourse'));
+    await fs.mkdir(path.join(dir, 'tests'));
+    await fs.mkdir(path.join(dir, 'student'));
+    await fs.mkdir(path.join(dir, 'data'));
 
     // Copy all specified files/directories into serverFilesCourse/
     for (const file of question.external_grading_files ?? []) {
       const src = path.join(coursePath, 'serverFilesCourse', file);
       const dest = path.join(dir, 'serverFilesCourse', file);
-      await fsPromises.cp(src, dest, { recursive: true });
+      await fs.cp(src, dest, { recursive: true });
     }
 
     // This is temporary while /grade/shared is deprecated but still supported
     // TODO remove this when we remove support for /grade/shared
     const src = path.join(dir, 'serverFilesCourse');
     const dest = path.join(dir, 'shared');
-    await fsPromises.cp(src, dest, { recursive: true });
+    await fs.cp(src, dest, { recursive: true });
 
     if (question.directory != null) {
       const testsDir = path.join(coursePath, 'questions', question.directory, 'tests');
-      await fsPromises.cp(testsDir, path.join(dir, 'tests'), { recursive: true }).catch((err) => {
+      await fs.cp(testsDir, path.join(dir, 'tests'), { recursive: true }).catch((err) => {
         // Tests might not be specified, only copy them if they exist
         if (err.code !== 'ENOENT') throw err;
       });
@@ -88,8 +88,8 @@ export async function buildDirectory(
         throw new Error('Invalid filename');
       }
 
-      await fsPromises.mkdir(path.dirname(fullPath), { recursive: true });
-      await fsPromises.writeFile(fullPath, decodedContents);
+      await fs.mkdir(path.dirname(fullPath), { recursive: true });
+      await fs.writeFile(fullPath, decodedContents);
     }
 
     // This uses the same fields passed v3's server.grade functions
@@ -106,7 +106,7 @@ export async function buildDirectory(
       raw_submitted_answers: submission.raw_submitted_answer,
       gradable: submission.gradable,
     };
-    await fsPromises.writeFile(path.join(dir, 'data', 'data.json'), JSON.stringify(data));
+    await fs.writeFile(path.join(dir, 'data', 'data.json'), JSON.stringify(data));
 
     logger.verbose(`Successfully set up ${dir}`);
   } catch (err) {

@@ -1,5 +1,5 @@
-import * as fs from 'node:fs';
-import * as fsPromises from 'node:fs/promises';
+import * as fsSync from 'node:fs';
+import * as fs from 'node:fs/promises';
 import { ok as assert } from 'node:assert';
 import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
@@ -210,7 +210,7 @@ async function controlContainer(
     const zipPath = await tmp.tmpName({ postfix: '.zip' });
 
     debug(`controlContainer: saving ${zipPath}`);
-    const stream = fs.createWriteStream(zipPath);
+    const stream = fsSync.createWriteStream(zipPath);
 
     return new Promise((resolve, reject) => {
       stream
@@ -280,7 +280,7 @@ async function startup(workspace_id: string): Promise<void> {
         // could lead to unexpected behavior.
         try {
           const timestampSuffix = new Date().toISOString().replaceAll(/[^a-zA-Z0-9]/g, '-');
-          await fsPromises.rename(
+          await fs.rename(
             initializeResult.destinationPath,
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
           );
@@ -295,7 +295,7 @@ async function startup(workspace_id: string): Promise<void> {
         // Next, move the newly created directory into place. This will be
         // done with a lock held, so we shouldn't worry about other processes
         // trying to work with these directories at the same time.
-        await fsPromises.rename(initializeResult.sourcePath, initializeResult.destinationPath);
+        await fs.rename(initializeResult.sourcePath, initializeResult.destinationPath);
       }
       await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Initialization complete');
     }
@@ -386,7 +386,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   // Update permissions so that the directory and all contents are owned by the workspace user
   for await (const file of klaw(sourcePath)) {
-    await fsPromises.chown(
+    await fs.chown(
       file.path,
       config.workspaceJobsDirectoryOwnerUid,
       config.workspaceJobsDirectoryOwnerGid,
@@ -467,7 +467,7 @@ export async function generateWorkspaceFiles({
           return {
             name: generatedFileName,
             buffer: mustache.render(
-              await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
+              await fs.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),
           };
@@ -571,17 +571,17 @@ export async function generateWorkspaceFiles({
 
   const allWorkspaceFiles = staticFiles.concat(templateFiles).concat(dynamicFiles);
 
-  await fsPromises.mkdir(targetPath, { recursive: true });
+  await fs.mkdir(targetPath, { recursive: true });
 
   if (allWorkspaceFiles.length > 0) {
     await async.eachSeries(allWorkspaceFiles, async (workspaceFile) => {
       const targetFile = path.join(targetPath, workspaceFile.name);
       try {
-        await fsPromises.mkdir(path.dirname(targetFile), { recursive: true });
+        await fs.mkdir(path.dirname(targetFile), { recursive: true });
         if ('localPath' in workspaceFile) {
-          await fsPromises.cp(workspaceFile.localPath, targetFile, { recursive: true });
+          await fs.cp(workspaceFile.localPath, targetFile, { recursive: true });
         } else {
-          await fsPromises.writeFile(targetFile, workspaceFile.buffer);
+          await fs.writeFile(targetFile, workspaceFile.buffer);
         }
       } catch (err) {
         fileGenerationErrors.push({
@@ -674,7 +674,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
   });
 
   // Write zip file to disk
-  const stream = fs.createWriteStream(zipPath);
+  const stream = fsSync.createWriteStream(zipPath);
   await new Promise((resolve, reject) => {
     archive.on('error', (err) => reject(err));
 
