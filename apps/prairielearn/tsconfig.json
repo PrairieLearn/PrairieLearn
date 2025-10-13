@@ -3,6 +3,8 @@
     // Bun requires these to be set at the root `tsconfig.json` file.
     "jsx": "react-jsx",
     "jsxImportSource": "preact",
+    // @typescript-eslint requires this to be set at the root `tsconfig.json` file.
+    "strictNullChecks": true,
     "paths": {
       "react": ["./node_modules/preact/compat/", "../../node_modules/preact/compat/"],
       "react/jsx-runtime": [
