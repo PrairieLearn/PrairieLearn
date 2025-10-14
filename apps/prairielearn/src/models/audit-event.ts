@@ -86,11 +86,11 @@ export async function selectAuditEventsByEnrollmentId({
 }: {
   enrollment_id: string;
   table_names: (keyof typeof requiredTableFields)[];
-}): Promise<StaffAuditEvent[]> {
+}): Promise<AuditEvent[]> {
   return await queryRows(
     sql.select_audit_events_by_enrollment_id_table_names,
     { enrollment_id, table_names },
-    StaffAuditEventSchema,
+    AuditEventSchema,
   );
 }
 
