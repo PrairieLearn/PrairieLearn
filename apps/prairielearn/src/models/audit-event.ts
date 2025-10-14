@@ -1,7 +1,11 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { type StaffAuditEvent, StaffAuditEventSchema } from '../lib/client/safe-db-types.js';
-import { type EnumAuditEventAction, type TableName } from '../lib/db-types.js';
+import {
+  type AuditEvent,
+  AuditEventSchema,
+  type EnumAuditEventAction,
+  type TableName,
+} from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -95,7 +99,7 @@ export async function selectAuditEvents({
   course_instance_id: string;
   subject_user_id?: string;
   table_names: (keyof typeof requiredTableFields)[];
-}): Promise<StaffAuditEvent[]> {
+}): Promise<AuditEvent[]> {
   if (!subject_user_id && !agent_authn_user_id) {
     throw new Error('subject_user_id or agent_authn_user_id must be provided');
   }
@@ -107,14 +111,14 @@ export async function selectAuditEvents({
     return await queryRows(
       sql.select_audit_events_by_subject_user_id_table_names_course_instance_id,
       { course_instance_id, subject_user_id, table_names },
-      StaffAuditEventSchema,
+      AuditEventSchema,
     );
   }
 
   return await queryRows(
     sql.select_audit_events_by_agent_authn_user_id_table_names_course_instance_id,
     { agent_authn_user_id, course_instance_id, table_names },
-    StaffAuditEventSchema,
+    AuditEventSchema,
   );
 }
 
@@ -166,7 +170,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  * @param params.assessment_instance_id - ID of the affected assessment instance
  * @param params.assessment_question_id - ID of the affected assessment question
  */
-export async function insertAuditEvent(params: InsertAuditEventParams): Promise<StaffAuditEvent> {
+export async function insertAuditEvent(params: InsertAuditEventParams): Promise<AuditEvent> {
   const {
     action,
     action_detail,
@@ -276,5 +280,5 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     );
   }
 
-  return await queryRow(sql.insert_audit_event, resolvedParams, StaffAuditEventSchema);
+  return await queryRow(sql.insert_audit_event, resolvedParams, AuditEventSchema);
 }
