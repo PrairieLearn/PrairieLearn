@@ -273,6 +273,7 @@ export function InstructorQuestionSettings({
             <div class="mb-3">
               <label id="authors-table-label" for="authors-table">Author Information</label>
               <table
+                id="authors-table"
                 class="table table-sm table-hover tablesorter table-bordered"
                 aria-label="Author information"
               >
