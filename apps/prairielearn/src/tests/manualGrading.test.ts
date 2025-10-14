@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+// import _ from 'lodash';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -371,18 +371,18 @@ function checkSettingsResults(
   });
 }
 
-function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
-  return Object.fromEntries(
-    Object.entries(
-      _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
-    ).flatMap(([key, item], order) =>
-      Object.entries({ order, ...item }).map(([field, value]) => [
-        `rubric_item[${key}][${field}]`,
-        String(value),
-      ]),
-    ),
-  );
-}
+// function buildRubricItemFields(items: RubricItem[]): Record<string, string> {
+//   return Object.fromEntries(
+//     Object.entries(
+//       _.mapKeys(items, (item, index) => (item.id ? `cur${item.id}` : `new${index}`)),
+//     ).flatMap(([key, item], order) =>
+//       Object.entries({ order, ...item }).map(([field, value]) => [
+//         `rubric_item[${key}][${field}]`,
+//         String(value),
+//       ]),
+//     ),
+//   );
+// }
 
 describe('Manual Grading', { timeout: 80_000 }, function () {
   beforeAll(helperServer.before());
@@ -849,20 +849,46 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           score_points = 5.4;
           score_percent = 90;
 
+          // const response = await fetch(manualGradingIQUrl, {
+          //   method: 'POST',
+          //   headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          //   body: new URLSearchParams({
+          //     __action: form.find('input[name=__action]').attr('value') || '',
+          //     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+          //     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+          //     use_rubric: 'true',
+          //     replace_auto_points: 'false',
+          //     starting_points: '0', // Positive grading
+          //     min_points: '-0.5',
+          //     max_extra_points: '0.5',
+          //     ...buildRubricItemFields(rubric_items),
+          //   }).toString(),
+          // });
+
+          const payload = {
+            __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+            __action: form.find('input[name=__action]').attr('value') || '',
+            modified_at: form.find('input[name=modified_at]').attr('value') || '',
+            use_rubric: true,
+            replace_auto_points: false,
+            starting_points: 0,
+            min_points: -0.5,
+            max_extra_points: 0.5,
+            rubric_items: rubric_items.map((it, idx) => ({
+              id: it.id,
+              order: idx,
+              points: it.points,
+              description: it.description,
+              explanation: it.explanation,
+              grader_note: it.grader_note,
+              always_show_to_students: it.always_show_to_students,
+            })),
+          };
+
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              use_rubric: 'true',
-              replace_auto_points: 'false',
-              starting_points: '0', // Positive grading
-              min_points: '-0.5',
-              max_extra_points: '0.5',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
           });
 
           assert.equal(response.ok, true);
@@ -891,20 +917,46 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           const form = $manualGradingIQPage('form[name=rubric-settings]');
           assert.isDefined(rubric_items);
 
+          // const response = await fetch(manualGradingIQUrl, {
+          //   method: 'POST',
+          //   headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          //   body: new URLSearchParams({
+          //     __action: form.find('input[name=__action]').attr('value') || '',
+          //     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+          //     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+          //     replace_auto_points: 'false',
+          //     use_rubric: 'true',
+          //     starting_points: '0', // Positive grading
+          //     min_points: '-0.3',
+          //     max_extra_points: '0.3',
+          //     ...buildRubricItemFields(rubric_items),
+          //   }).toString(),
+          // });
+
+          const payload = {
+            __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+            __action: form.find('input[name=__action]').attr('value') || '',
+            modified_at: form.find('input[name=modified_at]').attr('value') || '',
+            use_rubric: true,
+            replace_auto_points: false,
+            starting_points: 0,
+            min_points: -0.3,
+            max_extra_points: 0.3,
+            rubric_items: rubric_items.map((it, idx) => ({
+              id: it.id,
+              order: idx,
+              points: it.points,
+              description: it.description,
+              explanation: it.explanation,
+              grader_note: it.grader_note,
+              always_show_to_students: it.always_show_to_students,
+            })),
+          };
+
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
           });
 
           assert.equal(response.ok, true);
@@ -962,20 +1014,46 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           score_points = 6.9;
           score_percent = 115;
 
+          // const response = await fetch(manualGradingIQUrl, {
+          //   method: 'POST',
+          //   headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          //   body: new URLSearchParams({
+          //     __action: form.find('input[name=__action]').attr('value') || '',
+          //     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+          //     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+          //     replace_auto_points: 'false',
+          //     use_rubric: 'true',
+          //     starting_points: '0', // Positive grading
+          //     min_points: '-0.3',
+          //     max_extra_points: '-0.3',
+          //     ...buildRubricItemFields(rubric_items),
+          //   }).toString(),
+          // });
+
+          const payload = {
+            __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+            __action: form.find('input[name=__action]').attr('value') || '',
+            modified_at: form.find('input[name=modified_at]').attr('value') || '',
+            use_rubric: true,
+            replace_auto_points: false,
+            starting_points: 0,
+            min_points: -0.3,
+            max_extra_points: -0.3,
+            rubric_items: rubric_items.map((it, idx) => ({
+              id: it.id,
+              order: idx,
+              points: it.points,
+              description: it.description,
+              explanation: it.explanation,
+              grader_note: it.grader_note,
+              always_show_to_students: it.always_show_to_students,
+            })),
+          };
+
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '-0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
           });
 
           assert.equal(response.ok, true);
@@ -1040,20 +1118,46 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             },
           ];
 
+          // const response = await fetch(manualGradingIQUrl, {
+          //   method: 'POST',
+          //   headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          //   body: new URLSearchParams({
+          //     __action: form.find('input[name=__action]').attr('value') || '',
+          //     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+          //     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+          //     replace_auto_points: 'false',
+          //     use_rubric: 'true',
+          //     starting_points: '6', // Negative grading
+          //     min_points: '-0.6',
+          //     max_extra_points: '0.6',
+          //     ...buildRubricItemFields(rubric_items),
+          //   }).toString(),
+          // });
+
+          const payload = {
+            __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+            __action: form.find('input[name=__action]').attr('value') || '',
+            modified_at: form.find('input[name=modified_at]').attr('value') || '',
+            use_rubric: true,
+            replace_auto_points: false,
+            starting_points: 6,
+            min_points: -0.6,
+            max_extra_points: 0.6,
+            rubric_items: rubric_items.map((it, idx) => ({
+              id: it.id,
+              order: idx,
+              points: it.points,
+              description: it.description,
+              explanation: it.explanation,
+              grader_note: it.grader_note,
+              always_show_to_students: it.always_show_to_students,
+            })),
+          };
+
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              replace_auto_points: 'false',
-              use_rubric: 'true',
-              starting_points: '6', // Negative grading
-              min_points: '-0.6',
-              max_extra_points: '0.6',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
           });
 
           assert.equal(response.ok, true);
