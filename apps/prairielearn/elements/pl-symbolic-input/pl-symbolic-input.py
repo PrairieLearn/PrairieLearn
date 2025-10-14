@@ -352,14 +352,19 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
     if formula_editor:
-        a_sub = format_formula_editor_submission_for_sympy(
+        a_sub, error_msg = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
     else:
-        a_sub = format_submission_for_sympy(submitted_answer)
+        a_sub, error_msg = format_submission_for_sympy(submitted_answer)
+
+    if error_msg is not None:
+        data["format_errors"][name] = error_msg
+        data["submitted_answers"][name] = None
+        return
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -428,7 +433,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission_for_sympy(sub: str | None) -> str | None:
+def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
     """
     Format submission to be compatible with SymPy.
 
@@ -442,14 +447,11 @@ def format_submission_for_sympy(sub: str | None) -> str | None:
         sub: The text submission to format
 
     Returns:
-        Formatted text with absolute value bars replaced by abs() calls
-
-    Raises:
-        ValueError: If absolute value bars are found in the expression
+        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
     """
     original_sub = sub
     if sub is None:
-        return None
+        return None, None
 
     while True:
         # Find matches of |...| where:
@@ -466,11 +468,12 @@ def format_submission_for_sympy(sub: str | None) -> str | None:
         sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
 
     if "|" in sub:
-        raise ValueError(
-            f"Could not parse absolute value bars in expression: {original_sub}"
+        return (
+            None,
+            f"The absolute value bars in your answer are mismatched or ambiguous: {original_sub}.",
         )
 
-    return sub
+    return sub, None
 
 
 def format_formula_editor_submission_for_sympy(
@@ -478,7 +481,7 @@ def format_formula_editor_submission_for_sympy(
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """
     Format raw formula editor input to be compatible with SymPy.
 
@@ -494,10 +497,10 @@ def format_formula_editor_submission_for_sympy(
         custom_functions: List of custom function names
 
     Returns:
-        Formatted text ready for SymPy parsing, or None if input is None
+        A tuple of (Formatted text ready for SymPy parsing, or None if input is None, and an error message if there is an error)
     """
     if sub is None:
-        return None
+        return None, None
 
     # Remove invisible LaTeX formatting operators
     text = sub.replace("{:", "").replace(":}", "")
