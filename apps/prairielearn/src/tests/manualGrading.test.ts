@@ -779,20 +779,46 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             },
           ];
 
+          // const response = await fetch(manualGradingIQUrl, {
+          //   method: 'POST',
+          //   headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          //   body: new URLSearchParams({
+          //     __action: form.find('input[name=__action]').attr('value') || '',
+          //     __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+          //     modified_at: form.find('input[name=modified_at]').attr('value') || '',
+          //     use_rubric: 'true',
+          //     replace_auto_points: 'false',
+          //     starting_points: '0', // Positive grading
+          //     min_points: '-0.3',
+          //     max_extra_points: '0.3',
+          //     ...buildRubricItemFields(rubric_items),
+          //   }).toString(),
+          // });
+
+          const payload = {
+            __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
+            __action: form.find('input[name=__action]').attr('value') || '',
+            use_rubric: true,
+            modified_at: form.find('input[name=modified_at]').attr('value') || '',
+            replace_auto_points: false,
+            starting_points: 0,
+            min_points: -0.3,
+            max_extra_points: 0.3,
+            rubric_items: rubric_items.map((it, idx) => ({
+              id: it.id,
+              order: idx,
+              points: it.points,
+              description: it.description,
+              explanation: it.explanation,
+              grader_note: it.grader_note,
+              always_show_to_students: it.always_show_to_students,
+            })),
+          };
+
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').attr('value') || '',
-              __csrf_token: form.find('input[name=__csrf_token]').attr('value') || '',
-              modified_at: form.find('input[name=modified_at]').attr('value') || '',
-              use_rubric: 'true',
-              replace_auto_points: 'false',
-              starting_points: '0', // Positive grading
-              min_points: '-0.3',
-              max_extra_points: '0.3',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
           });
 
           assert.equal(response.ok, true);
