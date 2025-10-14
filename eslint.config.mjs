@@ -678,7 +678,7 @@ export default tseslint.config([
             {
               group: ['**/safe-db-types.js'],
               message:
-                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should use the lib directory.',
+                'Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory.',
             },
           ],
         },
