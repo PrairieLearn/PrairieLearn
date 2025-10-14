@@ -1,11 +1,11 @@
 import { EventEmitter } from 'events';
+import * as fs from 'node:fs/promises';
 import { PassThrough } from 'stream';
 
 import { S3 } from '@aws-sdk/client-s3';
 import { GetQueueUrlCommand, SQSClient, SendMessageCommand } from '@aws-sdk/client-sqs';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import fs from 'fs-extra';
 import * as tar from 'tar';
 
 import { logger } from '@prairielearn/logger';
@@ -75,7 +75,7 @@ export class ExternalGraderSqs implements Grader {
         async () => sendJobToQueue(grading_job.id, question, config),
       ],
       (err) => {
-        fs.remove(dir).catch((err) => {
+        fs.rm(dir, { recursive: true, force: true }).catch((err) => {
           logger.error('Error removing directory', err);
           Sentry.captureException(err);
         });

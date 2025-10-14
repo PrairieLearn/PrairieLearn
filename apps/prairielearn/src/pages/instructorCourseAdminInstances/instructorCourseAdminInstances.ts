@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
+import * as fs from 'node:fs/promises';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
