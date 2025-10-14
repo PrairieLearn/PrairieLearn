@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/dot-notation */
+import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { assert, describe, it } from 'vitest';
 
@@ -32,7 +32,7 @@ async function withTempFile(
 }
 
 async function writeQuestion(courseDir: string, qid: string, question: QuestionJsonInput) {
-  await fs.mkdir(path.join(courseDir, 'questions', qid));
+  await fs.mkdir(path.join(courseDir, 'questions', qid), { recursive: true });
   await fs.writeFile(
     path.join(courseDir, 'questions', qid, 'info.json'),
     JSON.stringify(question, null, 2),
