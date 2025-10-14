@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { callRow, queryRow } from '@prairielearn/postgres';
+import { callRow, execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema, type User, UserSchema } from '../../lib/db-types.js';
@@ -10,6 +10,7 @@ export interface AuthUser {
   uid: string;
   uin: string | null;
   email?: string | null;
+  institutionId?: string;
 }
 
 export async function withUser<T>(user: AuthUser, fn: () => Promise<T>): Promise<T> {
@@ -49,7 +50,14 @@ export async function getConfiguredUser(): Promise<User> {
 export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
   const user = await callRow(
     'users_select_or_insert',
-    [authUser.uid, authUser.name, authUser.uin, authUser.email, 'dev'],
+    [
+      authUser.uid,
+      authUser.name,
+      authUser.uin,
+      authUser.email,
+      'dev',
+      authUser.institutionId || null,
+    ],
     // The sproc returns multiple columns, but we only use the ID.
     z.object({ user_id: IdSchema }),
   );
@@ -58,4 +66,49 @@ export async function getOrCreateUser(authUser: AuthUser): Promise<User> {
     { id: user.user_id },
     UserSchema,
   );
+}
+
+/** Helper function to create institutions for testing */
+export async function createInstitution(id: string, shortName: string, longName: string) {
+  await queryOptionalRow(
+    `INSERT INTO institutions (id, short_name, long_name, uid_regexp)
+     VALUES ($id, $short_name, $long_name, $uid_regexp)
+     ON CONFLICT (id) DO NOTHING
+     RETURNING id`,
+    {
+      id,
+      short_name: shortName,
+      long_name: longName,
+      uid_regexp: `@${shortName}$`,
+    },
+    z.object({ id: z.string() }),
+  );
+}
+
+/** Helper function to update course instance settings */
+export async function updateCourseInstanceSettings(
+  courseInstanceId: string,
+  options: {
+    selfEnrollmentEnabled: boolean;
+    restrictToInstitution: boolean;
+  },
+) {
+  await execute(
+    `UPDATE course_instances 
+     SET self_enrollment_enabled = $self_enrollment_enabled,
+         self_enrollment_restrict_to_institution = $restrict_to_institution
+     WHERE id = $course_instance_id`,
+    {
+      course_instance_id: courseInstanceId,
+      self_enrollment_enabled: options.selfEnrollmentEnabled,
+      restrict_to_institution: options.restrictToInstitution,
+    },
+  );
+}
+
+/** Helper function to delete enrollments in a course instance for testing */
+export async function deleteEnrollmentsInCourseInstance(courseInstanceId: string) {
+  await execute('DELETE FROM enrollments WHERE course_instance_id = $course_instance_id', {
+    course_instance_id: courseInstanceId,
+  });
 }

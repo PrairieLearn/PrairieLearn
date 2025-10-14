@@ -2,7 +2,11 @@ import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import {
+  ensureCheckedEnrollment,
+  selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUserId,
+} from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -15,10 +19,22 @@ export default asyncHandler(async (req, res, next) => {
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
+  // Check for existing enrollment by user_id
   const existingEnrollment = await selectOptionalEnrollmentByUserId({
     user_id: res.locals.authn_user.user_id,
     course_instance_id: courseInstance.id,
   });
+
+  // If no enrollment found by user_id, check for invited enrollment by pending_uid
+  const invitedEnrollment = existingEnrollment
+    ? null
+    : await selectOptionalEnrollmentByPendingUid({
+        pending_uid: res.locals.authn_user.uid,
+        course_instance_id: courseInstance.id,
+      });
+
+  // Use either the existing enrollment or the invited enrollment
+  const enrollment = existingEnrollment || invitedEnrollment;
 
   // If we have self-enrollment enabled, and it is before the enabled before date,
   // then we can enroll the user.
@@ -28,9 +44,11 @@ export default asyncHandler(async (req, res, next) => {
       new Date() < courseInstance.self_enrollment_enabled_before_date);
 
   // Check institution restriction for self-enrollment
+  // Invited users can enroll regardless of institution restrictions
   const institutionRestrictionSatisfied =
     !courseInstance.self_enrollment_restrict_to_institution ||
-    res.locals.authn_user.institution_id === res.locals.course.institution_id;
+    res.locals.authn_user.institution_id === res.locals.course.institution_id ||
+    (enrollment != null && enrollment.status === 'invited');
 
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
@@ -40,7 +58,7 @@ export default asyncHandler(async (req, res, next) => {
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
     selfEnrollmentAllowed &&
     institutionRestrictionSatisfied &&
-    (existingEnrollment == null || existingEnrollment.status !== 'blocked')
+    (enrollment == null || enrollment.status !== 'blocked')
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,
