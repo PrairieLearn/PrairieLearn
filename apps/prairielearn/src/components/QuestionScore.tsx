@@ -391,7 +391,12 @@ export function InstanceQuestionPoints({
 }: {
   instance_question: Pick<
     InstanceQuestion,
-    'auto_points' | 'manual_points' | 'points' | 'status' | 'requires_manual_grading'
+    | 'auto_points'
+    | 'manual_points'
+    | 'points'
+    | 'status'
+    | 'requires_manual_grading'
+    | 'last_grader'
   >;
   assessment_question: Pick<
     AssessmentQuestion,
@@ -428,13 +433,16 @@ export function InstanceQuestionPoints({
 
   return html`
     <span class="text-nowrap">
-      ${instance_question.status === 'unanswered'
-        ? html`&mdash;`
-        : pointsPending
-          ? html`<span class="badge text-bg-info">pending</span>`
-          : !points && !maxPoints
-            ? html`&mdash;`
-            : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}
+      ${
+        // If the question is unanswered but was manually graded, show the assigned points
+        instance_question.status === 'unanswered' && instance_question.last_grader == null
+          ? html`&mdash;`
+          : pointsPending
+            ? html`<span class="badge text-bg-info">pending</span>`
+            : !points && !maxPoints
+              ? html`&mdash;`
+              : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
+      }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
     </span>
   `;

@@ -61,7 +61,11 @@ WITH
       manual_points = aq.max_manual_points,
       score_perc = 100,
       requires_manual_grading = FALSE,
-      status = 'complete',
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'
+        ELSE 'complete'
+      END,
       modified_at = now()
     FROM
       assessment_questions AS aq
