@@ -147,25 +147,5 @@ def get_with_units_grading_fn(
     return grade_with_units
 
 
-def get_blank_grading_function(
-    correct_ans: str,
-) -> Callable[[str], tuple[bool, str | None]]:
-    def grade_blank_correct(submitted_ans: str) -> tuple[bool, str | None]:
-        if submitted_ans == "":
-            return True, None
-        else:
-            return False, INCORRECT_FEEDBACK
-
-    def grade_blank_incorrect(submitted_ans: str) -> tuple[bool, str | None]:
-        if submitted_ans == "":
-            return False, INCORRECT_FEEDBACK
-        else:
-            return True, None
-
-    if correct_ans == "":
-        return grade_blank_correct
-    return grade_blank_incorrect
-
-
 def is_numberless(a_sub: str, a_sub_parsed: Any) -> bool:
     return "1" not in a_sub and a_sub_parsed.magnitude == 1
