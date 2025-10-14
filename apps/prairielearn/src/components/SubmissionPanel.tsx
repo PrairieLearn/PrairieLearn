@@ -180,7 +180,7 @@ export function SubmissionPanel({
 
       <div class="card mb-4" data-testid="submission-block">
         <div
-          class="card-header bg-light text-dark d-flex align-items-center collapsible-card-header"
+          class="card-header bg-light text-dark d-flex flex-wrap align-items-center collapsible-card-header"
         >
           <div class="me-2">
             <div>
@@ -196,7 +196,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="me-auto" data-testid="submission-status">
+          <div class="me-auto align-self-end" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,
