@@ -140,8 +140,8 @@ export function EnrollmentCodeForm({
       existingCode.slice(0, cursorPosition) +
       formatted +
       existingCode.slice(cursorPosition + formatted.length);
-    // If the paste will fit at the current position, do it
-    const newCode = combinedCode.length <= 10 ? combinedCode : formatted;
+    // If they paste a full code, replace with the pasted code no matter where they paste it
+    const newCode = formatted.length === 10 ? formatted : combinedCode;
 
     // Distribute the pasted text across the three inputs
     setValue('code1', newCode.slice(0, 3));
