@@ -9,6 +9,7 @@ import {
   AssessmentSchema as RawAssessmentSchema,
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
+  AuthnProviderSchema as RawAuthnProviderSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
@@ -229,6 +230,14 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 });
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
+
+/** AuthnProviders */
+export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
+  id: true,
+  name: true,
+});
+export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
+export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 
 /** Questions */
 export const StaffQuestionSchema = RawQuestionSchema.brand<'StaffQuestion'>();
