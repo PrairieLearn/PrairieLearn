@@ -121,7 +121,12 @@ export function InstructorFileEditor({
                   )}
                 </span>
               </div>
-              <div class="d-flex flex-wrap gap-2 col-auto collapse ${!draftEdit?.alertChoice ? 'show' : ''}" id="buttons">
+              <div
+                class="d-flex flex-wrap gap-2 col-auto collapse ${!draftEdit?.alertChoice
+                  ? 'show'
+                  : ''}"
+                id="buttons"
+              >
                 <button
                   type="button"
                   id="help-button"
