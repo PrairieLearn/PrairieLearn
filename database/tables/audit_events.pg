@@ -23,7 +23,7 @@ columns
 indexes
     audit_events_pkey: PRIMARY KEY (id) USING btree (id)
     audit_events_agent_authn_user_id_course_instance_id_idx: USING btree (agent_authn_user_id, table_name, course_instance_id) WHERE agent_authn_user_id IS NOT NULL
-    audit_events_table_name_enrollment_id_course_instance_id_idx: USING btree (enrollment_id, table_name, course_instance_id) WHERE enrollment_id IS NOT NULL
+    audit_events_table_name_enrollment_id_idx: USING btree (enrollment_id, table_name) WHERE enrollment_id IS NOT NULL
     audit_events_table_name_subject_user_id_course_instance_id_idx: USING btree (subject_user_id, table_name, course_instance_id) WHERE subject_user_id IS NOT NULL
 
 foreign-key constraints
