@@ -446,20 +446,18 @@ def format_submission_for_sympy(sub: str | None) -> str | None:
         return None
 
     while True:
-        # Use lookahead to find all overlapping matches of |...| where ... has no bars
-        # The lookahead (?=...) doesn't consume characters, allowing overlapping matches
-        # For example, "|x + |y||" has an overlapping bar shared between |x + | and |y|.
-        matches = list(re.finditer(r"(?=(\|[^|]+\|))", sub))
-        if not matches:
+        # Find matches of |...| where:
+        # when ignoring spaces, it either:
+        # - starts with letter/number/opening paren and ends with letter/number/closing paren
+        # - is a single leter/number
+        match = re.search(
+            r"(\|\s*[a-zA-Z0-9(]([^|]*[a-zA-Z0-9)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)", sub
+        )
+        if not match:
             break
 
-        # Select the match with the shortest content (innermost)
-        # Group 1 contains the actual |...| match
-        shortest_match = min(matches, key=lambda m: len(m.group(1)))
-        start_pos = shortest_match.start()
-        content = shortest_match.group(1)[1:-1]  # Strip the bars
-        end_pos = start_pos + len(shortest_match.group(1))
-        sub = sub[:start_pos] + f"abs({content})" + sub[end_pos:]
+        content = match.group(0)[1:-1]  # Strip the bars
+        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
 
     if "|" in sub:
         raise ValueError(
