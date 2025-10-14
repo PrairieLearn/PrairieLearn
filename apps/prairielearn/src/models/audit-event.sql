@@ -135,6 +135,12 @@ WITH
           SELECT
             course_instance_id
           FROM
+            enrollment_meta
+        ),
+        (
+          SELECT
+            course_instance_id
+          FROM
             group_meta
         ),
         (
@@ -142,12 +148,6 @@ WITH
             course_instance_id
           FROM
             assessment_meta
-        ),
-        (
-          SELECT
-            course_instance_id
-          FROM
-            enrollment_meta
         )
       )
       AND id IS NOT NULL
