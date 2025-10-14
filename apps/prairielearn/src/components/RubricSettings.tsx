@@ -67,6 +67,7 @@ export function RubricSettings({
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData));
+  const [modifiedAt, setModifiedAt] = useState<Date | undefined>(rubricData?.modified_at);
 
   // Also define default for rubric-related variables
   const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
@@ -328,7 +329,7 @@ export function RubricSettings({
       __csrf_token: csrfToken,
       __action: 'modify_rubric_settings',
       use_rubric,
-      modified_at: rubricData?.modified_at.toISOString() ?? '',
+      modified_at: modifiedAt?.toISOString() ?? '',
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       min_points: minPoints,
@@ -431,6 +432,7 @@ export function RubricSettings({
       defaultMinPoints.current = rubricData?.min_points ?? 0;
       defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
       setWasUsingRubric(Boolean(rubricData));
+      setModifiedAt(rubricData?.modified_at);
       onCancel();
     } else if (contentType.includes('text/html')) {
       window.location.replace(res.url);
