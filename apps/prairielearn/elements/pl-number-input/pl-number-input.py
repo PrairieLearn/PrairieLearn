@@ -42,7 +42,6 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
 ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
-
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
 
