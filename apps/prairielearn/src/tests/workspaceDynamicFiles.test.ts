@@ -173,6 +173,12 @@ describe('Workspace dynamic files', function () {
             // File without contents or questionFile
             name: 'no_contents.txt',
           },
+          {
+            // File with invalid mode
+            name: 'invalid_mode.sh',
+            contents: '#!/bin/bash\necho "test"\n',
+            mode: 0o777,
+          },
         ],
       },
       correctAnswers: {
@@ -199,6 +205,7 @@ describe('Workspace dynamic files', function () {
         msg: 'has neither "contents" nor "questionFile" nor "serverFilesCourseFile"',
         contents: '',
       },
+      { file: 'invalid_mode.sh', msg: 'unsupported mode' },
     ];
 
     for (const expectedError of expectedErrors) {
@@ -215,7 +222,7 @@ describe('Workspace dynamic files', function () {
       }
     }
 
-    assert.lengthOf(fileGenerationErrors, 8);
+    assert.lengthOf(fileGenerationErrors, 9);
   });
 
   it('preserves executable permissions from template files', async () => {

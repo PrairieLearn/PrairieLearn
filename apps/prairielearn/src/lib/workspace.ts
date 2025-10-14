@@ -550,6 +550,16 @@ export async function generateWorkspaceFiles({
             return null;
           }
 
+          // Validate mode if provided
+          if (file.mode !== undefined && file.mode !== 0o644 && file.mode !== 0o755) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported mode (${file.mode.toString(8)}). Only 0o644 and 0o755 are supported. File ignored.`,
+              data: file,
+            });
+            return null;
+          }
+
           if (!('contents' in file)) {
             fileGenerationErrors.push({
               file: file.name,

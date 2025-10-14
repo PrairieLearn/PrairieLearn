@@ -175,7 +175,7 @@ For more fine-tuned randomized files, the `_workspace_files` parameter can also 
 
 Additionally, each element may optionally include:
 
-- a `mode` property (e.g., `0o755` for executable files, `0o644` for non-executable files) to set file permissions. Only executable bits are preserved; files will be set to either `0o755` (if any executable bits are present in the mode) or `0o644` (otherwise).
+- a `mode` property to set file permissions. Must be either `0o755` (for executable files) or `0o644` (for non-executable files).
 
 For example:
 
@@ -221,8 +221,6 @@ def generate(data):
 ```
 
 By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Exactly one of `questionFile`, `serverFilesCourseFile` or `contents` must be provided. If an empty file is expected, `contents` may be set to `None` or an empty string.
-
-The optional `mode` property can be used to set file permissions. If specified, only the executable bits are preserved: files with any executable bits set (e.g., `0o755`, `0o777`, `0o111`) will be created with `0o755` permissions, while files without executable bits (e.g., `0o644`, `0o600`) will be created with `0o644` permissions. If `mode` is not specified, files are created with default permissions (typically `0o644`).
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
