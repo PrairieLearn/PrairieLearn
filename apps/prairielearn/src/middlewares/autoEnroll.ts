@@ -2,7 +2,7 @@ import asyncHandler from 'express-async-handler';
 
 import type { CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { ensureCheckedEnrollment, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import { ensureCheckedEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
 export default asyncHandler(async (req, res, next) => {
   // If the user does not currently have access to the course, but could if
@@ -15,8 +15,9 @@ export default asyncHandler(async (req, res, next) => {
 
   const courseInstance: CourseInstance = res.locals.course_instance;
 
-  const existingEnrollment = await selectOptionalEnrollmentByUserId({
-    user_id: res.locals.authn_user.user_id,
+  // We select by user UID so that we can find invited/rejected enrollments as well
+  const existingEnrollment = await selectOptionalEnrollmentByUid({
+    uid: res.locals.authn_user.uid,
     course_instance_id: courseInstance.id,
   });
 
