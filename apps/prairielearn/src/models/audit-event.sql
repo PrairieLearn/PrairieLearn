@@ -241,6 +241,7 @@ FROM
   LEFT JOIN course_instance_meta ON (TRUE)
   LEFT JOIN institution_meta ON (TRUE)
   LEFT JOIN course_meta ON (TRUE)
+  LEFT JOIN enrollment_meta ON (TRUE)
   LEFT JOIN assessment_meta ON (TRUE)
   LEFT JOIN assessment_instance_meta ON (TRUE)
   LEFT JOIN assessment_question_meta ON (TRUE)
