@@ -66,7 +66,6 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       this.createCropRotateListeners();
-      this.createApplyChangesListeners();
     }
 
     /**
@@ -327,24 +326,6 @@ const MAX_ZOOM_SCALE = 5;
           confirmDeletionButton,
         });
         confirmDeletionButton.removeEventListener('click', confirmDeletion);
-      });
-    }
-
-    /**
-     * When the user clicks Enter or Space, apply any pending changes based on the current container.
-     * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in local-camera-capture, capture the current image.
-     */
-    createApplyChangesListeners() {
-      document.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (this.selectedContainerName === 'crop-rotate') {
-            this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'local-camera-capture') {
-            this.handleCaptureImage();
-          }
-        }
       });
     }
 

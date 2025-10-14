@@ -59,14 +59,6 @@
     <pl-symbolic-input aria-label="Simplified expression for x" answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1" placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
 </pl-card>
 
-<pl-card header="An example in which a blank answer is the only correct answer">
-    <pl-question-panel>
-        <p>When <code>allow-blank="true"</code> is set, truly empty answers are also supported by setting <code>blank-value=""</code> (and potentially <code>correct-answer=""</code>).</p>
-        <p>Find a value for $x \in \mathbb{R}$ so that $x^2 = -1$. If there is no solution, leave the answer blank.</p>
-    </pl-question-panel>
-    <pl-symbolic-input aria-label="Simplified expression for x" correct-answer="" answers-name="simplify_blank" variables="x" allow-blank="true" blank-value="" placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
-</pl-card>
-
 <pl-card header="An example where we use assumptions">
     <pl-question-panel>
         <p>Sometimes, certain expressions can only be treated as equivalent by sympy if additional assumptions are made. For example, consider that $\sqrt{B^2} = B$ is only true if $B \geq 0$. To use these, assumptions must be set in the <code>server.py</code> file when variables are declared.</p>
