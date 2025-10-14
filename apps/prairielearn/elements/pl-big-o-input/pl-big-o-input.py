@@ -80,24 +80,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
-        if len(a_true) > 0:
-            try:
-                psu.convert_string_to_sympy(
-                    a_true, variables, allow_complex=False, allow_trig_functions=False
-                )
-            except psu.BaseSympyError as exc:
-                raise ValueError(
-                    f'Parsing correct answer "{a_true}" for "{name}" failed.'
-                ) from exc
+        try:
+            psu.convert_string_to_sympy(
+                a_true, variables, allow_complex=False, allow_trig_functions=False
+            )
+        except psu.BaseSympyError as exc:
+            raise ValueError(
+                f'Parsing correct answer "{a_true}" for "{name}" failed.'
+            ) from exc
 
         data["correct_answers"][name] = a_true
-
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
-    if data["correct_answers"][name] == "" and (not allow_blank or blank_value != ""):
-        raise ValueError(
-            "Correct answer cannot be blank unless 'allow-blank' is true and 'blank-value' is empty."
-        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -143,16 +135,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     a_sub = None
 
     if parse_error is None and name in data["submitted_answers"]:
-        a_sub = data["submitted_answers"][name]
-        if a_sub != "":
-            a_sub = sympy.latex(
-                psu.convert_string_to_sympy(
-                    a_sub,
-                    variables,
-                    allow_complex=False,
-                    allow_trig_functions=False,
-                )
+        a_sub = sympy.latex(
+            psu.convert_string_to_sympy(
+                data["submitted_answers"][name],
+                variables,
+                allow_complex=False,
+                allow_trig_functions=False,
             )
+        )
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
@@ -222,10 +212,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        if a_tru != "":
-            a_tru = psu.convert_string_to_sympy(
-                a_tru, variables, allow_complex=False, allow_trig_functions=False
-            )
+        a_tru = psu.convert_string_to_sympy(
+            a_tru, variables, allow_complex=False, allow_trig_functions=False
+        )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),
@@ -249,11 +238,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
-        a_sub = blank_value.strip()
-        if a_sub == "":
-            data["submitted_answers"][name] = a_sub
-            return
-    if a_sub is None:
+        a_sub = blank_value
+    if not a_sub:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
         return
@@ -314,13 +300,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
         }
 
-    elif result == "incorrect" and a_tru == "":
-        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * 1"
-        data["partial_scores"][name] = {
-            "score": 0,
-            "weight": weight,
-            "feedback": bou.INCORRECT_FEEDBACK,
-        }
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
         bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
