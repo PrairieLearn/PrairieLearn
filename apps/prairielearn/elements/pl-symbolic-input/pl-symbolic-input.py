@@ -28,7 +28,8 @@ DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
-SHOW_FORMULA_EDITOR_DEFAULT = False
+SHOW_FORMULA_EDITOR_DEFAULT = True
+SHOW_FORMULA_EDITOR_BUTTONS_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
@@ -52,6 +53,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-trig-functions",
         "size",
         "formula-editor",
+        "show-formula-editor-buttons",
         "show-help-text",
         "allow-blank",
         "blank-value",
@@ -144,7 +146,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
-
     constants_class = psu._Constants()
 
     operators: list[str] = list(psu.STANDARD_OPERATORS)
@@ -212,6 +213,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+    formula_editor_buttons = pl.get_boolean_attrib(
+        element, "show-formula-editor-buttons", SHOW_FORMULA_EDITOR_BUTTONS_DEFAULT
+    )
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
@@ -245,6 +249,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,
+            "formula_editor_buttons": formula_editor_buttons,
             "custom_functions": ",".join(custom_functions),
         }
 
@@ -265,6 +270,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "formula_editor": formula_editor,
+            "formula_editor_buttons": formula_editor_buttons,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
             display.value: True,

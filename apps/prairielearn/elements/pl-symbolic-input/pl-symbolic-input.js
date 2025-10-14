@@ -295,6 +295,11 @@
         min-height: 0px;
       }
     }
+
+    :host(.no-buttons) .ML__virtual-keyboard-toggle,
+    :host(.no-buttons) .ML__menu-toggle {
+      display: none !important;
+    }
   `);
     mf.shadowRoot.adoptedStyleSheets.push(customCSS);
   };
