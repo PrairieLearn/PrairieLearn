@@ -75,6 +75,23 @@ type SupportedTableActionCombination =
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
   Exclude<Extract<SupportedTableActionCombination, { table_name: T }>['action_detail'], null>
 >;
+
+export async function selectAuditEventsByEnrollmentId({
+  enrollment_id,
+  course_instance_id,
+  table_names,
+}: {
+  enrollment_id: string;
+  course_instance_id: string;
+  table_names: (keyof typeof requiredTableFields)[];
+}): Promise<StaffAuditEvent[]> {
+  return await queryRows(
+    sql.select_audit_events_by_enrollment_id_table_names_course_instance_id,
+    { enrollment_id, course_instance_id, table_names },
+    StaffAuditEventSchema,
+  );
+}
+
 /**
  * Selects audit events by subject user ID, table names, and course instance ID.
  * Exactly one of `subject_user_id` or `agent_authn_user_id` must be provided.

@@ -165,7 +165,6 @@ router.post(
             action: 'update',
             action_detail: 'invitation_rejected',
             subject_user_id: null,
-            course_instance_id: body.course_instance_id,
             row_id: newEnrollment.id,
             old_row: oldEnrollment,
             new_row: newEnrollment,
