@@ -445,6 +445,9 @@ export function RubricSettings({
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <input type="hidden" name="__action" value="modify_rubric_settings" />
         <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
+        <input type="hidden" name="starting_points" value={startingPoints} />
+        <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
+        <input type="hidden" name="min_points" value={minPoints} />
       </div>
       <div class="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
@@ -872,11 +875,13 @@ export function RubricRow({
         >
           <i class="fas fa-trash text-danger" />
         </button>
+        {item.id && <input type="hidden" name="id" value={item.id} />}
       </td>
 
       <td class="align-middle">
         <input
           type="number"
+          name={item.id ? `rubric_item[${item.id}][points]` : undefined}
           class="form-control"
           style="width:5rem"
           step="any"
@@ -890,6 +895,7 @@ export function RubricRow({
       <td class="align-middle">
         <input
           type="text"
+          name={item.id ? `rubric_item[${item.id}][description]` : undefined}
           class="form-control"
           maxLength={100}
           style="min-width:15rem"
@@ -903,6 +909,7 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
+          name={item.id ? `rubric_item[${item.id}][explanation]` : undefined}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
@@ -915,6 +922,7 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
+          name={item.id ? `rubric_item[${item.id}][grader_note]` : undefined}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
@@ -930,6 +938,7 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
+              name={item.id ? `rubric_item[${item.id}][always_show_to_students]` : undefined}
               checked={item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />

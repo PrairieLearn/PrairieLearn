@@ -302,6 +302,7 @@ function checkSettingsResults(
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=rubric-settings]');
+    // const form = $manualGradingIQPage('div[id=rubric-editing]');
 
     assert.equal(
       form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
