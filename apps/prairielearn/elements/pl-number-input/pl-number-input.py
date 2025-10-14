@@ -42,8 +42,6 @@ ANSWER_INSUFFICIENT_PRECISION_WARNING = (
     "Your answer does not have precision within the specified relative tolerance."
 )
 ANSWER_BLANK_CORRECT_FEEDBACK = "The correct answer used for grading was blank."
-ANSWER_SHOULD_BE_BLANK_WARNING = "The correct answer was to leave this input blank."
-
 
 NUMBER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-number-input.mustache"
 
@@ -443,16 +441,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if is_submitted_blank or is_correct_blank:
             if is_submitted_blank and is_correct_blank:
                 is_correct = True
-                feedback = ANSWER_BLANK_CORRECT_FEEDBACK
-            elif is_correct_blank:
+                feedback = ANSWER_BLANK_CORRECT_FEEDBACK if can_show_if_correct else ""
+            else:
                 is_correct = False
-                feedback = ANSWER_SHOULD_BE_BLANK_WARNING
-            elif is_submitted_blank:
-                is_correct = False
-                correct_answer_converted = np.float64(correct_answer)
-                feedback = f"The correct answer used for grading was {correct_answer_converted}. Your answer was blank."
-            assert is_correct is not None
-            return (is_correct, feedback if is_correct and can_show_if_correct else "")
+                feedback = ""
+            return (is_correct, feedback)
 
         # Cast both submitted and true answers as np.float64, because...
         #
