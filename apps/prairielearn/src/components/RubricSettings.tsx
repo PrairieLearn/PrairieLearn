@@ -40,9 +40,6 @@ export function RubricSettings({
         : null,
   }));
   const { variant_params, variant_true_answer, submission_submitted_answer } = context;
-  // const variant_params: Record<string, string> = { a: 'number' };
-  // const variant_true_answer: Record<string, string> = { b: 'something' };
-  // const submission_submitted_answer: Record<string, string> = { ans: 'abc' };
   const params: string[] = [];
   const groups = [
     [variant_params, 'params'],
@@ -345,7 +342,7 @@ export function RubricSettings({
         grader_note: it.grader_note,
         always_show_to_students: it.always_show_to_students,
       })),
-      tag_for_manual_grading: tagForGrading === true ? 'true' : undefined,
+      tag_for_manual_grading: tagForGrading,
     };
 
     const res = await fetch(window.location.pathname, {

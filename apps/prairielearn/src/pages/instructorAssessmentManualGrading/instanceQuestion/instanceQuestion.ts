@@ -350,7 +350,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z
-      .literal('true')
+      .enum(['true', 'false'])
       .optional()
       .transform((val) => val === 'true'),
     rubric_items: z
