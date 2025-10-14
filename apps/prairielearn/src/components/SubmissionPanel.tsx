@@ -196,7 +196,7 @@ export function SubmissionPanel({
                 : `${submission.user_uid} submitted at ${submission.formatted_date}`}
             </span>
           </div>
-          <div class="me-auto" data-testid="submission-status">
+          <div class="me-auto align-self-end" data-testid="submission-status">
             ${SubmissionStatusBadge({
               submission,
               question,
