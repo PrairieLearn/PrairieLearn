@@ -1,4 +1,4 @@
--- BLOCK select_audit_events_by_enrollment_id_table_names_course_instance_id
+-- BLOCK select_audit_events_by_enrollment_id_table_names
 SELECT
   *
 FROM
@@ -6,7 +6,6 @@ FROM
 WHERE
   enrollment_id = $enrollment_id
   AND table_name = ANY ($table_names::text[])
-  AND course_instance_id = $course_instance_id
 ORDER BY
   date DESC;
 

@@ -78,16 +78,14 @@ export type SupportedActionsForTable<T extends TableName> = NonNullable<
 
 export async function selectAuditEventsByEnrollmentId({
   enrollment_id,
-  course_instance_id,
   table_names,
 }: {
   enrollment_id: string;
-  course_instance_id: string;
   table_names: (keyof typeof requiredTableFields)[];
 }): Promise<StaffAuditEvent[]> {
   return await queryRows(
-    sql.select_audit_events_by_enrollment_id_table_names_course_instance_id,
-    { enrollment_id, course_instance_id, table_names },
+    sql.select_audit_events_by_enrollment_id_table_names,
+    { enrollment_id, table_names },
     StaffAuditEventSchema,
   );
 }
