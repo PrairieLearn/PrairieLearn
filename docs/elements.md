@@ -611,10 +611,10 @@ When the `fixed-options-order` feature is used, options are shown in the followi
     ```html
     <pl-matching answers-name="string_value">
       <pl-statement match="golden">$\Phi$</pl-statement>
-      <pl-option name="golden">$\frac{1+\sqrt{5}}{2}$</pl-option>
       <pl-statement match="e">$e$</pl-statement>
-      <pl-option name="e">$\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
       <pl-statement match="i">$i$</pl-statement>
+      <pl-option name="golden">$\frac{1+\sqrt{5}}{2}$</pl-option>
+      <pl-option name="e">$\lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
       <pl-option name="i">$\sqrt{-1}$</pl-option>
     </pl-matching>
     ```

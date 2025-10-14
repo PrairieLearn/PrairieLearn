@@ -136,10 +136,10 @@
         
     <pl-matching answers-name="ex7">
       <pl-statement match="golden">$\phi$</pl-statement>
-      <pl-option name="golden">$\cfrac{1+\sqrt{5}}{2}$</pl-option>
       <pl-statement match="e">$e$</pl-statement>
-      <pl-option name="e">$ \displaystyle \lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
       <pl-statement match="i">$i$</pl-statement>
+      <pl-option name="golden">$\cfrac{1+\sqrt{5}}{2}$</pl-option>
+      <pl-option name="e">$ \displaystyle \lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
       <pl-option name="i">$\sqrt{-1}$</pl-option>
     </pl-matching>
 </pl-card>
@@ -157,10 +157,10 @@
 
     <pl-matching answers-name="ex8">
       <pl-statement match="filter"><pl-code language="python">list(filter(lambda item: item > 0, lst))</pl-code></pl-statement>
-      <pl-option name="filter"><pl-code language="python">[item for item in lst if item > 0]</pl-code></pl-option>
       <pl-statement match="map"><pl-code language="python">list(map(lambda item: item * 2, lst))</pl-code></pl-statement>
-      <pl-option name="map"><pl-code language="python">[item * 2 for item in lst]</pl-code></pl-option>
       <pl-statement match="product"><pl-code language="python">list(itertools.product(lst1, lst2))</pl-code></pl-statement>
+      <pl-option name="filter"><pl-code language="python">[item for item in lst if item > 0]</pl-code></pl-option>
+      <pl-option name="map"><pl-code language="python">[item * 2 for item in lst]</pl-code></pl-option>
       <pl-option name="product"><pl-code language="python">[(a, b) for a in lst1 for b in lst2]</pl-code></pl-option>
     </pl-matching>
 </pl-card>
