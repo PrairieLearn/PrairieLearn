@@ -3,6 +3,20 @@
   max-width: 100%;
 }
 
+body {
+  --keyboard-background: #e8ebef;
+  --keyboard-toolbar-background-hover: #e8ebef;
+  --keyboard-toolbar-text-active: #0d6efd;
+  --keycap-secondary-background: #909aa1;
+  --keycap-secondary-background-hover: #909aa1;
+  --keyboard-accent-color: #0d6efd;
+  --variant-panel-background: #e8ebef;
+  --keycap-background: #ffffff;
+  --keycap-background-hover: #ffffff;
+  --keyboard-toolbar-text: #3d4144;
+  --keycap-text: #3d4144;
+}
+
 math-field.read-only {
   background-color: #f0f0f0;
   border-color: #cccccc;
@@ -27,14 +41,27 @@ math-field.read-only::part(menu-toggle) {
   }
 }
 
+/* Mirror the placeholder color to bootstrap's input color */
+math-field::part(placeholder) {
+  background: var(--bs-body-bg);
+  /* https://github.com/twbs/bootstrap/blob/8f3d0580a36d3eba2a9f90d90ceaf6e50f452365/scss/_variables.scss#L920 */
+  color: var(--bs-secondary-color);
+}
+
 math-field.form-control {
   padding-right: 0.1rem;
 }
 
 math-field::part(content) {
-  min-width: 80px;
-  font-size: 1.3rem;
-  display: block;
+  min-width: 15ch;
+  /* Keep the content at a readable size, especially for exponents */
+  font-size: 1.2rem;
+}
+
+/* Ensure that the tooltips appear above any bootstrap elements */
+math-field::part(virtual-keyboard-toggle),
+math-field::part(menu-toggle) {
+  z-index: 3;
 }
 
 math-field:not([hide-menu])::part(menu-toggle) {
@@ -48,26 +75,4 @@ math-field[hide-menu]::part(menu-toggle) {
 .form-control.is-invalid.no-validation-icon {
   background-image: none;
   padding-right: 0.1rem;
-}
-
-math-field::part(menu-toggle) {
-  margin: 0px;
-}
-
-math-field::part(virtual-keyboard-toggle) {
-  margin: 0px;
-}
-
-body {
-  --keyboard-background: #e8ebef;
-  --keyboard-toolbar-background-hover: #e8ebef;
-  --keyboard-toolbar-text-active: #0d6efd;
-  --keycap-secondary-background: #909aa1;
-  --keycap-secondary-background-hover: #909aa1;
-  --keyboard-accent-color: #0d6efd;
-  --variant-panel-background: #e8ebef;
-  --keycap-background: #ffffff;
-  --keycap-background-hover: #ffffff;
-  --keyboard-toolbar-text: #3d4144;
-  --keycap-text: #3d4144;
 }

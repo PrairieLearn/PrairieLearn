@@ -6,8 +6,8 @@
         {{/label}}
         {{#formula_editor}}
         <script>
-            $(async function() {
-                await window.PLSymbolicInput("{{name}}");
+            $(function() {
+                window.PLSymbolicInput("{{name}}");
             });
         </script>
             <input
@@ -111,8 +111,8 @@
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#formula_editor}}
         <script>
-            $(async function() {
-                await window.PLSymbolicInputParseError("{{uuid}}");
+            $(function() {
+                window.PLSymbolicInputParseError("{{uuid}}");
             });
         </script>
         {{#raw_submitted_answer_latex}}
@@ -178,8 +178,8 @@
 ${{a_sub}}$
 {{#raw_submitted_answer_latex}}
     <script>
-        $(async function() {
-            await window.PLSymbolicInputPopover("{{uuid}}");
+        $(function() {
+            window.PLSymbolicInputPopover("{{uuid}}");
         });
     </script>
 {{/raw_submitted_answer_latex}}

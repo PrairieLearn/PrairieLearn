@@ -346,14 +346,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
     if formula_editor:
-        a_sub = format_submission_for_sympy(
+        a_sub = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
     else:
-        a_sub = submitted_answer
+        a_sub = format_submission_for_sympy(submitted_answer)
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -422,80 +422,173 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission_for_sympy(
-    sub: str | None, allow_trig: bool, variables: list[str], custom_functions: list[str]
-) -> str | None:
+def format_submission_for_sympy(sub: str | None) -> str | None:
     """
-    Format raw formula editor input to be compatible with SymPy. This is necessary
-    due to some incompatibilities between SymPy's and the editor's syntax.
+    Format submission to be compatible with SymPy.
 
-    There are 3 cases that need to be handled:
-    1. Sometimes, when copy-pasting Latex, invisible "{:" or ":}" operators can be
-    inserted into the submission that need to be removed.
-    2. In the raw output, multi-letter function and variable names are separated
-    by spaces (e.g., "s i n" needs to become "sin")
-    3. In the raw output, in some cases, numbers immediately follow variables
-    (e.g., "e^x2" is intended to be "e^x * 2" (otherwise there'd be parentheses),
-    but to make SymPy use this interpretation it needs to become "e^x 2")
+    Converts absolute value bars to abs() function calls, handling nested cases.
+
+    Examples:
+        "|x|" becomes "abs(x)"
+        "||x|+y|" becomes "abs(abs(x)+y)"
 
     Args:
-        sub: The formula editor input (extracted as plain text)
-        allow_trig: Whether trigonometric functions are enabled
-        variables: The list of allowed variable names allowed in the input
-        custom_functions: The list of custom function names allowed in the input
+        sub: The text submission to format
 
     Returns:
-        str | None: The formatted version of the input (or none if the input is none)
+        Formatted text with absolute value bars replaced by abs() calls
+
+    Raises:
+        ValueError: If absolute value bars are found in the expression
+    """
+    original_sub = sub
+    if sub is None:
+        return None
+
+    while True:
+        # Use lookahead to find all overlapping matches of |...| where ... has no bars
+        # The lookahead (?=...) doesn't consume characters, allowing overlapping matches
+        # For example, "|x + |y||" has an overlapping bar shared between |x + | and |y|.
+        matches = list(re.finditer(r"(?=(\|[^|]+\|))", sub))
+        if not matches:
+            break
+
+        # Select the match with the shortest content (innermost)
+        # Group 1 contains the actual |...| match
+        shortest_match = min(matches, key=lambda m: len(m.group(1)))
+        start_pos = shortest_match.start()
+        content = shortest_match.group(1)[1:-1]  # Strip the bars
+        end_pos = start_pos + len(shortest_match.group(1))
+        sub = sub[:start_pos] + f"abs({content})" + sub[end_pos:]
+
+    if "|" in sub:
+        raise ValueError(
+            f"Could not parse absolute value bars in expression: {original_sub}"
+        )
+
+    return sub
+
+
+def format_formula_editor_submission_for_sympy(
+    sub: str | None,
+    allow_trig: bool,
+    variables: list[str],
+    custom_functions: list[str],
+) -> str | None:
+    """
+    Format raw formula editor input to be compatible with SymPy.
+
+    The formula editor outputs text with several quirks that need correction:
+    1. Invisible "{:" and ":}" operators from LaTeX copy-paste
+    2. Multi-character names are space-separated: "s i n" instead of "sin"
+    3. Numbers after variables need spacing: "x2" should be "x 2" for multiplication
+
+    Args:
+        sub: Raw text from the formula editor
+        allow_trig: Whether trig functions (sin, cos, etc.) are available
+        variables: List of allowed variable names
+        custom_functions: List of custom function names
+
+    Returns:
+        Formatted text ready for SymPy parsing, or None if input is None
     """
     if sub is None:
         return None
 
-    # Step 1: Remove invisible formatting operators
-    sub = sub.replace("{:", "").replace(":}", "")
+    # Remove invisible LaTeX formatting operators
+    text = sub.replace("{:", "").replace(":}", "")
 
-    # Step 2: Assemble a list of all available names
+    # Build list of all multi-character tokens that should be recognized as units
+    known_tokens = _build_known_tokens(allow_trig, variables, custom_functions)
+
+    # Merge space-separated characters into proper tokens (e.g., "s i n" -> "sin")
+    text = _merge_spaced_tokens(text, known_tokens)
+
+    # Add spaces between letters and numbers for implicit multiplication,
+    # but preserve tokens like "f2" that are custom function names
+    text = _add_multiplication_spaces(text, known_tokens)
+
+    return format_submission_for_sympy(text)
+
+
+def _build_known_tokens(
+    allow_trig: bool,
+    variables: list[str],
+    custom_functions: list[str],
+) -> list[str]:
+    """
+    Build a list of all multi-character tokens that should be recognized as single units.
+
+    Returns tokens sorted by length (longest first) to handle prefix matching correctly.
+    For example, "acosh" must be checked before "acos" to avoid partial matches.
+    """
     constants_class = psu._Constants()
-    functions = (
+    tokens = (
         list(psu.STANDARD_OPERATORS)
         + list(constants_class.functions.keys())
         + custom_functions
     )
     if allow_trig:
-        functions += list(constants_class.trig_functions.keys())
-    multi_char_variables = [v for v in variables if len(v) > 1]
-    names = functions + multi_char_variables
+        tokens += list(constants_class.trig_functions.keys())
 
-    # Necessary for names that are prefixes of other names, e.g., acos and acosh
-    names.sort(key=len, reverse=True)
+    # Add multi-character variables
+    tokens += [var for var in variables if len(var) > 1]
+    tokens.sort(key=len, reverse=True)
 
-    # Step 3: Merge allowed names (e.g., "s i n" -> "sin")
-    for name in names:
-        spaced_name = " ".join(list(name))
-        if spaced_name in sub:
-            sub = sub.replace(spaced_name, name)
+    return tokens
 
-    # Step 4: Protect names that contain numbers (e.g., in custom functions)
-    protected_indices = set()
-    for name in names:
-        if re.search(r"\d", name):
-            for match in re.finditer(re.escape(name), sub):
-                start = match.start()
-                end = match.end()
-                protected_indices.update(range(start, end))
 
-    # Step 5: Add spaces between all letter->number pairs that are not custom names
-    i = 1
-    offset = 0
-    while i < len(sub):
-        if (i - offset) in protected_indices:
-            i += 1
+def _merge_spaced_tokens(text: str, tokens: list[str]) -> str:
+    """
+    Replace space-separated versions of tokens with their unspaced form.
+
+    Example: "s i n ( x )" becomes "sin ( x )"
+    """
+    for token in tokens:
+        spaced_version = " ".join(token)
+        text = text.replace(spaced_version, token)
+    return text
+
+
+def _add_multiplication_spaces(text: str, protected_tokens: list[str]) -> str:
+    """
+    Insert spaces between letter-digit pairs to indicate multiplication.
+
+    Example: "x2" becomes "x 2"
+
+    However, we preserve tokens that naturally contain digits (like "f2" for
+    a custom function) by marking their character positions as protected.
+    """
+    # Find all positions that are part of tokens containing digits
+    protected_positions = set()
+    for token in protected_tokens:
+        if not re.search(r"\d", token):
             continue
-        if sub[i].isdigit() and sub[i - 1].isalpha():
-            sub = sub[:i] + " " + sub[i:]
-            offset += 1  # Account for extra space in protected_indices
-            i += 1  # Skip over the just inserted space
-        i += 1
-    return sub
+        for match in re.finditer(re.escape(token), text):
+            protected_positions.update(range(match.start(), match.end()))
+
+    # Build result, inserting spaces where appropriate
+    result = []
+    for i, char in enumerate(text):
+        result.append(char)
+
+        # Check if we need a space after this character
+        has_next = i + 1 < len(text)
+        if not has_next:
+            continue
+
+        next_char = text[i + 1]
+        next_position = i + 1
+
+        # Insert space if: letter followed by digit, and next position is not protected
+        if (
+            char.isalpha()
+            and next_char.isdigit()
+            and next_position not in protected_positions
+        ):
+            result.append(" ")
+
+    return "".join(result)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
