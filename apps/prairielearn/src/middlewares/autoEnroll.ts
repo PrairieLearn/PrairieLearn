@@ -27,6 +27,11 @@ export default asyncHandler(async (req, res, next) => {
     (courseInstance.self_enrollment_enabled_before_date == null ||
       new Date() < courseInstance.self_enrollment_enabled_before_date);
 
+  // Check institution restriction for self-enrollment
+  const institutionRestrictionSatisfied =
+    !courseInstance.self_enrollment_restrict_to_institution ||
+    res.locals.authn_user.institution_id === res.locals.course.institution_id;
+
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
@@ -34,6 +39,7 @@ export default asyncHandler(async (req, res, next) => {
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
     selfEnrollmentAllowed &&
+    institutionRestrictionSatisfied &&
     (existingEnrollment == null || existingEnrollment.status !== 'blocked')
   ) {
     await ensureCheckedEnrollment({

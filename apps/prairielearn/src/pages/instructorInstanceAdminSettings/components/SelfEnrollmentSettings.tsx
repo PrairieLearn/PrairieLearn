@@ -225,6 +225,29 @@ export function SelfEnrollmentSettings({
         <input
           class={clsx('form-check-input')}
           type="checkbox"
+          id="self_enrollment_restrict_to_institution"
+          disabled={!canEdit || !selfEnrollmentEnabled}
+          {...control.register('self_enrollment_restrict_to_institution')}
+          name="self_enrollment_restrict_to_institution"
+        />
+        <label class="form-check-label" for="self_enrollment_restrict_to_institution">
+          Restrict self-enrollment to institution
+        </label>
+        <div class="small text-muted">
+          If not checked, users from any institution (not just the institution of the course) can
+          self-enroll.
+        </div>
+      </div>
+
+      <div
+        class={clsx(
+          'mb-3 form-check',
+          (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
+        )}
+      >
+        <input
+          class={clsx('form-check-input')}
+          type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={!canEdit}
           {...control.register('self_enrollment_enabled_before_date_enabled', {

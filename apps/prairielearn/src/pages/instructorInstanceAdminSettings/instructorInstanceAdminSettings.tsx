@@ -272,6 +272,11 @@ router.post(
         parsedBody.self_enrollment_use_enrollment_code,
         false,
       );
+      const selfEnrollmentRestrictToInstitution = propertyValueWithDefault(
+        courseInstanceInfo.selfEnrollment?.restrictToInstitution,
+        parsedBody.self_enrollment_restrict_to_institution,
+        true,
+      );
 
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
@@ -283,7 +288,7 @@ router.post(
       );
 
       const hasSelfEnrollmentSettings =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode ?? selfEnrollmentBeforeDate) !==
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode ?? selfEnrollmentRestrictToInstitution ?? selfEnrollmentBeforeDate) !==
         undefined;
 
       const {
@@ -302,6 +307,7 @@ router.post(
         courseInstanceInfo.selfEnrollment = {
           enabled: selfEnrollmentEnabled,
           useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          restrictToInstitution: selfEnrollmentRestrictToInstitution,
           beforeDate: selfEnrollmentBeforeDate,
         };
       } else {

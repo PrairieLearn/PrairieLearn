@@ -55,6 +55,7 @@ export function InstructorInstanceAdminSettings({
       courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    self_enrollment_restrict_to_institution: courseInstance.self_enrollment_restrict_to_institution,
     self_enrollment_enabled_before_date_enabled:
       !!courseInstance.self_enrollment_enabled_before_date,
     self_enrollment_enabled_before_date: courseInstance.self_enrollment_enabled_before_date
