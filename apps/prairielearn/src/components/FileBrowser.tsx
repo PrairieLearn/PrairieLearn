@@ -408,6 +408,7 @@ function FileBrowserActions({
 }) {
   const encodedPath = encodePath(fileInfo.path);
   return html`
+    <div class="d-flex flex-wrap gap-2">
     ${isReadOnly
       ? ''
       : html`
@@ -477,6 +478,7 @@ function FileBrowserActions({
             <span>Delete</span>
           </button>
         `}
+        </div>
   `;
 }
 
@@ -488,6 +490,7 @@ function DirectoryBrowserActions({
   csrfToken: string;
 }) {
   return html`
+    <div class="d-flex flex-wrap gap-2">
     ${paths.specialDirs.map(
       (d) => html`
         <button
@@ -531,6 +534,7 @@ function DirectoryBrowserActions({
       <i class="fa fa-plus"></i>
       <span>Add new file</span>
     </button>
+    </div>
   `;
 }
 
@@ -747,7 +751,7 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
         ${file.path != null
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
-        <div class="text-end">
+        <div class="text-end gap-2 d-flex flex-wrap">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
           <button type="submit" class="btn btn-primary">Upload file</button>
         </div>
@@ -812,7 +816,7 @@ function FileRenameForm({
           required
         />
       </div>
-      <div class="text-end">
+      <div class="text-end gap-2 d-flex flex-wrap">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
