@@ -17,7 +17,7 @@ import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
-import type { Assessment, AssessmentQuestion } from '../../../lib/db-types.js';
+import type { Assessment, AssessmentQuestion, EnumAssessmentType } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 import type {
@@ -114,8 +114,7 @@ function maxPointsText({
   max_manual_points: number | null;
   points_list: number[] | null;
   init_points: number | null;
-  // TODO: this should be its own `EnumAssessmentType` type.
-  assessmentType: Assessment['type'];
+  assessmentType: EnumAssessmentType;
 }) {
   if (max_auto_points || !max_manual_points) {
     if (assessmentType === 'Exam') {
@@ -160,29 +159,33 @@ function mapQuestions(
     if (row.alternative_group.number == null) throw new Error('Alternative group number required');
 
     const zoneNumber = row.zone.number;
+    zoneAlternativeGroupCounts[zoneNumber] ??= -1;
 
     // If this is a new alternative group in this zone, increment the count
     if (row.start_new_alternative_group) {
-      zoneAlternativeGroupCounts[zoneNumber] = zoneAlternativeGroupCounts[zoneNumber] || 0;
+      zoneAlternativeGroupCounts[zoneNumber]++;
     }
 
     // Use the count as the position within the zone
     const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
-    zones[zoneNumber - 1].questions[positionInZone] ??= {
-      comment: row.alternative_group.json_comment ?? undefined,
-      advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
-      canView: row.alternative_group.json_can_view ?? [],
-      canSubmit: row.alternative_group.json_can_submit ?? [],
-      gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
-      numberChoose: row.alternative_group.number_choose ?? 1,
-      triesPerVariant: row.alternative_group.json_tries_per_variant ?? 1,
-      points: row.alternative_group.json_points ?? undefined,
-      autoPoints: row.alternative_group.json_auto_points ?? undefined,
-      maxPoints: row.alternative_group.json_max_points ?? undefined,
-      maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
-      manualPoints: row.alternative_group.json_manual_points ?? undefined,
-      forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
-    };
+    if (zones[zoneNumber - 1].questions[positionInZone] == null) {
+      zones[zoneNumber - 1].questions[positionInZone] ??= {
+        id: row.alternative_group.id ? questionDisplayName(course, row) : undefined,
+        comment: row.alternative_group.json_comment ?? undefined,
+        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
+        canView: row.alternative_group.json_can_view ?? [],
+        canSubmit: row.alternative_group.json_can_submit ?? [],
+        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
+        numberChoose: row.alternative_group.number_choose ?? 1,
+        triesPerVariant: row.alternative_group.json_tries_per_variant ?? 1,
+        points: row.alternative_group.json_points ?? undefined,
+        autoPoints: row.alternative_group.json_auto_points ?? undefined,
+        maxPoints: row.alternative_group.json_max_points ?? undefined,
+        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
+        manualPoints: row.alternative_group.json_manual_points ?? undefined,
+        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
+      };
+    }
 
     if (row.alternative_group.json_has_alternatives) {
       if (row.assessment_question.number_in_alternative_group == null) {
@@ -209,13 +212,7 @@ function mapQuestions(
     } else {
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
     }
-
-    // If this is a new alternative group, increment the count for next time
-    if (row.start_new_alternative_group) {
-      zoneAlternativeGroupCounts[zoneNumber]++;
-    }
   }
-
   return zones;
 }
 
@@ -225,6 +222,9 @@ function AssessmentQuestion({
   alternative,
   // TODO: currently unused. We need to be using this instead of the data off of `questionMap`.
   alternativeGroup,
+  zoneNumber,
+  alternativeGroupNumber,
+  alternativeNumber,
   nTableCols,
   questionMap,
   editMode,
@@ -232,6 +232,7 @@ function AssessmentQuestion({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   showAdvanceScorePercCol,
+  assessmentType,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
@@ -240,21 +241,38 @@ function AssessmentQuestion({
   alternative?: QuestionAlternativeJson;
   alternativeGroup: ZoneQuestionJson;
   nTableCols: number;
+  zoneNumber: number;
+  alternativeGroupNumber: number;
+  alternativeNumber?: number;
   questionMap: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
   urlPrefix: string;
   hasCoursePermissionPreview?: boolean;
   hasCourseInstancePermissionEdit: boolean;
   showAdvanceScorePercCol: boolean;
-  handleEditQuestion: (question: StaffAssessmentQuestionRow) => void;
+  assessmentType: EnumAssessmentType;
+  handleEditQuestion: ({
+    question,
+    alternativeGroup,
+    zoneNumber,
+    alternativeGroupNumber,
+    alternativeNumber,
+  }: {
+    question: ZoneQuestionJson | QuestionAlternativeJson;
+    alternativeGroup?: ZoneQuestionJson;
+    zoneNumber: number;
+    alternativeGroupNumber: number;
+    alternativeNumber?: number;
+  }) => void;
   handleDeleteQuestion: (qid: string) => void;
   handleResetButtonClick: (questionId: string) => void;
 }) {
+  const question = alternative ?? alternativeGroup;
   const questionId = alternative?.id ?? id;
   if (questionId == null) throw new Error('Either ID or question is required');
 
-  const question = questionMap[questionId];
-
+  const questionData = questionMap[questionId];
+  console.log(assessmentType);
   return (
     <Fragment>
       <tr>
@@ -262,10 +280,16 @@ function AssessmentQuestion({
           <>
             <td class="align-content-center">
               <button
-                class="btn btn-sm btn-secondary"
+                class="btn btn-sm btn-ghost"
                 type="button"
                 onClick={() => {
-                  handleEditQuestion(alternativeGroup.id ? alternativeGroup : alternative);
+                  handleEditQuestion({
+                    question,
+                    alternativeGroup: alternative ? alternativeGroup : undefined,
+                    zoneNumber,
+                    alternativeGroupNumber,
+                    alternativeNumber,
+                  });
                 }}
               >
                 <i class="fa fa-edit" aria-hidden="true" />
@@ -273,11 +297,11 @@ function AssessmentQuestion({
             </td>
             <td class="align-content-center">
               <button
-                class="btn btn-sm btn-danger"
+                class="btn btn-sm btn-ghost"
                 type="button"
                 onClick={() => handleDeleteQuestion(questionId)}
               >
-                <i class="fa fa-trash" aria-hidden="true" />
+                <i class="fa fa-trash text-danger" aria-hidden="true" />
               </button>
             </td>
           </>
@@ -286,63 +310,65 @@ function AssessmentQuestion({
         )}
         <td>
           <Title
-            questionRow={question}
+            questionRow={questionData}
             hasCoursePermissionPreview={hasCoursePermissionPreview ?? false}
             urlPrefix={urlPrefix}
           />
           <IssueBadge
             urlPrefix={urlPrefix}
-            count={question.open_issue_count ?? 0}
-            issueQid={question.question.qid}
+            count={questionData.open_issue_count ?? 0}
+            issueQid={questionData.question.qid}
           />
         </td>
         <td>
-          {question.question.sync_errors ? (
-            <SyncProblemButton output={question.question.sync_errors} type="error" />
-          ) : question.question.sync_warnings ? (
-            <SyncProblemButton output={question.question.sync_warnings} type="warning" />
+          {questionData.question.sync_errors ? (
+            <SyncProblemButton output={questionData.question.sync_errors} type="error" />
+          ) : questionData.question.sync_warnings ? (
+            <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
           ) : (
             ''
           )}
           {questionId}
         </td>
         <td>
-          <TopicBadge topic={question.topic} />
+          <TopicBadge topic={questionData.topic} />
         </td>
         <td>
-          <TagBadgeList tags={question.tags} />
+          <TagBadgeList tags={questionData.tags} />
         </td>
         <td>
           {maxPointsText({
-            max_auto_points: question.assessment_question.max_auto_points,
-            max_manual_points: question.assessment_question.max_manual_points,
-            points_list: question.assessment_question.points_list,
-            init_points: question.assessment_question.init_points,
-            assessmentType: question.assessment.type,
+            max_auto_points: question.maxPoints ?? question.maxAutoPoints ?? null,
+            max_manual_points: question.manualPoints ?? null,
+            points_list: question.points ?? question.autoPoints ?? null,
+            init_points: question.points ?? question.autoPoints ?? null,
+            assessmentType: assessmentType,
           })}
         </td>
-        <td>{question.assessment_question.max_manual_points || '—'}</td>
+        <td>{question.manualPoints || '—'}</td>
         {showAdvanceScorePercCol ? (
           <td
             class={clsx(
-              question.assessment_question.effective_advance_score_perc === 0 ? 'text-muted' : '',
+              questionData.assessment_question.effective_advance_score_perc === 0
+                ? 'text-muted'
+                : '',
             )}
             data-testid="advance-score-perc"
           >
-            {question.assessment_question.effective_advance_score_perc}%
+            {questionData.assessment_question.effective_advance_score_perc}%
           </td>
         ) : (
           ''
         )}
         <td>
-          {question.assessment_question.mean_question_score
-            ? `${question.assessment_question.mean_question_score.toFixed(3)} %`
+          {questionData.assessment_question?.mean_question_score
+            ? `${questionData.assessment_question.mean_question_score.toFixed(3)} %`
             : ''}
         </td>
         <td class="text-center">
-          {question.assessment_question.number_submissions_hist ? (
+          {questionData.assessment_question?.number_submissions_hist ? (
             <HistMini
-              data={question.assessment_question.number_submissions_hist}
+              data={questionData.assessment_question.number_submissions_hist}
               options={{ width: 60, height: 20 }}
             />
           ) : (
@@ -350,10 +376,10 @@ function AssessmentQuestion({
           )}
         </td>
         <td>
-          {question.other_assessments?.map((assessment) => {
+          {questionData.other_assessments?.map((assessment) => {
             return (
               <div
-                key={`${question.question.qid}-${assessment.assessment_id}`}
+                key={`${questionData.question.qid}-${assessment.assessment_id}`}
                 class="d-inline-block me-1"
               >
                 <AssessmentBadge
@@ -373,7 +399,7 @@ function AssessmentQuestion({
             <Dropdown.Toggle
               variant="secondary"
               class="dropdown-toggle btn-xs"
-              id={`question-actions-${question.question.qid}`}
+              id={`question-actions-${questionData.question.qid}`}
             >
               Action
             </Dropdown.Toggle>
@@ -382,7 +408,7 @@ function AssessmentQuestion({
                 <Dropdown.Item
                   as="button"
                   type="button"
-                  onClick={() => handleResetButtonClick(question.assessment_question.id)}
+                  onClick={() => handleResetButtonClick(questionData.assessment_question.id)}
                 >
                   Reset question variants
                 </Dropdown.Item>
@@ -400,6 +426,7 @@ function AssessmentQuestion({
 function AlternativeGroup({
   alternativeGroup,
   alternativeGroupNumber,
+  zoneNumber,
   nTableCols,
   questionMap,
   editMode,
@@ -407,12 +434,14 @@ function AlternativeGroup({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   showAdvanceScorePercCol,
+  assessmentType,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
 }: {
   alternativeGroup: ZoneQuestionJson;
   alternativeGroupNumber: number;
+  zoneNumber: number;
   nTableCols: number;
   questionMap: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
@@ -420,14 +449,29 @@ function AlternativeGroup({
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   showAdvanceScorePercCol: boolean;
-  handleEditQuestion: (question: StaffAssessmentQuestionRow) => void;
+  assessmentType: EnumAssessmentType;
+  handleEditQuestion: ({
+    question,
+    alternativeGroup,
+    zoneNumber,
+    alternativeGroupNumber,
+    alternativeNumber,
+  }: {
+    question: ZoneQuestionJson | QuestionAlternativeJson;
+    alternativeGroup?: ZoneQuestionJson;
+    zoneNumber: number;
+    alternativeGroupNumber: number;
+    alternativeNumber?: number;
+  }) => void;
   handleDeleteQuestion: (qid: string) => void;
   handleResetButtonClick: (questionId: string) => void;
 }) {
+  const hasAlternatives =
+    alternativeGroup.alternatives?.length && alternativeGroup.alternatives?.length > 1;
   return (
     // TODO: better index?
     <Fragment>
-      {(alternativeGroup.alternatives?.length ?? 0) > 1 ? (
+      {hasAlternatives ? (
         <AlternativeGroupHeader
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={alternativeGroupNumber}
@@ -435,11 +479,13 @@ function AlternativeGroup({
         />
       ) : null}
       {run(() => {
-        if (alternativeGroup.id) {
+        if (!hasAlternatives) {
           return (
             <AssessmentQuestion
               id={alternativeGroup.id}
               alternativeGroup={alternativeGroup}
+              zoneNumber={zoneNumber}
+              alternativeGroupNumber={alternativeGroupNumber}
               nTableCols={nTableCols}
               questionMap={questionMap}
               editMode={editMode}
@@ -447,6 +493,7 @@ function AlternativeGroup({
               hasCoursePermissionPreview={hasCoursePermissionPreview}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
               showAdvanceScorePercCol={showAdvanceScorePercCol}
+              assessmentType={assessmentType}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
@@ -454,19 +501,23 @@ function AlternativeGroup({
           );
         }
 
-        return alternativeGroup.alternatives?.map((alternative) => {
+        return alternativeGroup.alternatives?.map((alternative, alternativeNumber) => {
           return (
             <AssessmentQuestion
               key={alternative.id}
               alternative={alternative}
               alternativeGroup={alternativeGroup}
+              zoneNumber={zoneNumber}
               nTableCols={nTableCols}
+              alternativeGroupNumber={alternativeGroupNumber}
+              alternativeNumber={alternativeNumber}
               questionMap={questionMap}
               editMode={editMode}
               urlPrefix={urlPrefix}
               hasCoursePermissionPreview={hasCoursePermissionPreview}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
               showAdvanceScorePercCol={showAdvanceScorePercCol}
+              assessmentType={assessmentType}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
@@ -488,6 +539,7 @@ function Zone({
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
   showAdvanceScorePercCol,
+  assessmentType,
   handleAddQuestion,
   handleEditQuestion,
   handleDeleteQuestion,
@@ -502,8 +554,21 @@ function Zone({
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
   showAdvanceScorePercCol: boolean;
+  assessmentType: EnumAssessmentType;
   handleAddQuestion: (zone: StaffAssessmentQuestionRow['zone']) => void;
-  handleEditQuestion: (question: StaffAssessmentQuestionRow) => void;
+  handleEditQuestion: ({
+    question,
+    alternativeGroup,
+    zoneNumber,
+    alternativeGroupNumber,
+    alternativeNumber,
+  }: {
+    question: ZoneQuestionJson | QuestionAlternativeJson;
+    alternativeGroup?: ZoneQuestionJson;
+    zoneNumber: number;
+    alternativeGroupNumber: number;
+    alternativeNumber?: number;
+  }) => void;
   handleDeleteQuestion: (qid: string) => void;
   handleResetButtonClick: (questionId: string) => void;
 }) {
@@ -517,12 +582,14 @@ function Zone({
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={index + 1}
           nTableCols={nTableCols}
+          zoneNumber={zoneNumber}
           questionMap={questionMap}
           editMode={editMode}
           urlPrefix={urlPrefix}
           hasCoursePermissionPreview={hasCoursePermissionPreview}
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           showAdvanceScorePercCol={showAdvanceScorePercCol}
+          assessmentType={assessmentType}
           handleAddQuestion={handleAddQuestion}
           handleEditQuestion={handleEditQuestion}
           handleDeleteQuestion={handleDeleteQuestion}
@@ -547,6 +614,7 @@ export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
   urlPrefix,
+  assessment,
   assessmentType,
   assessmentSetName,
   assessmentNumber,
@@ -558,7 +626,8 @@ export function InstructorAssessmentQuestionsTable({
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
-  assessmentType: 'Homework' | 'Exam';
+  assessment: Assessment;
+  assessmentType: EnumAssessmentType;
   assessmentSetName: string;
   assessmentNumber: string;
   urlPrefix: string;
@@ -569,8 +638,8 @@ export function InstructorAssessmentQuestionsTable({
   editorEnabled: boolean;
 }) {
   // TODO: memoize?
-  const questionMap = Object.fromEntries(
-    questionRows.map((r) => [questionDisplayName(course, r), r]),
+  const [questionMap, setQuestionMap] = useState(
+    Object.fromEntries(questionRows.map((r) => [questionDisplayName(course, r), r])),
   );
 
   // TODO: name better; memoize?
@@ -592,6 +661,9 @@ export function InstructorAssessmentQuestionsTable({
   const [questionState, setQuestionState] = useState<StaffAssessmentQuestionRow[]>(questionRows);
   const [addQuestion, setAddQuestion] = useState(false);
   const [selectedQuestionDisplayName, setSelectedQuestionDisplayName] = useState<string>('');
+  const [selectedAlternativeGroup, setSelectedAlternativeGroup] = useState<ZoneQuestionJson | null>(
+    null,
+  );
 
   const handleResetButtonClick = (assessmentQuestionId: string) => {
     setResetAssessmentQuestionId(assessmentQuestionId);
@@ -600,20 +672,21 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleEditQuestion = ({
     question,
-    questionDisplayName,
+    alternativeGroup,
     zoneNumber,
     alternativeGroupNumber,
     alternativeNumber,
   }: {
     question: ZoneQuestionJson | QuestionAlternativeJson;
-    questionDisplayName: string;
+    alternativeGroup?: ZoneQuestionJson;
     zoneNumber: number;
     alternativeGroupNumber: number;
     alternativeNumber?: number;
   }) => {
     setAddQuestion(false);
     setSelectedQuestion(question);
-    setSelectedQuestionDisplayName(questionDisplayName);
+    setSelectedAlternativeGroup(alternativeGroup ?? null);
+    setSelectedQuestionDisplayName(question.id!);
     setSelectedQuestionPosition({
       zoneNumber,
       alternativeGroupNumber,
@@ -700,54 +773,65 @@ export function InstructorAssessmentQuestionsTable({
     });
   };
 
-  const handleUpdateQuestion = (
-    updatedQuestion: StaffAssessmentQuestionRow,
+  const handleUpdateQuestion = async (
+    updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson,
     gradingMethod?: 'auto' | 'manual',
   ) => {
-    // For Homework assessments, ensure points are correctly set based on grading method
-    if (assessmentType === 'Homework' && gradingMethod) {
-      if (gradingMethod === 'auto') {
-        // Auto grading: ensure manual points are 0
-        updatedQuestion.assessment_question.max_manual_points = 0;
-      } else {
-        // Manual grading: ensure auto points are 0
-        updatedQuestion.assessment_question.init_points = 0;
-        updatedQuestion.assessment_question.max_auto_points = 0;
-      }
-    }
-
-    if (addQuestion) {
-      // Add new question to the state in the correct zone position and renumber
-      setQuestionState((prevState) => {
-        // Find the correct position to insert the new question within its zone
-        const targetZoneId = updatedQuestion.zone.id;
-        let insertIndex = prevState.length; // Default to end if zone not found
-
-        // Find the last question in the target zone
-        for (let i = prevState.length - 1; i >= 0; i--) {
-          if (prevState[i].zone.id === targetZoneId) {
-            insertIndex = i + 1; // Insert after the last question in this zone
-            break;
-          }
-        }
-
-        // Insert the new question at the correct position
-        const newState = [
-          ...prevState.slice(0, insertIndex),
-          updatedQuestion,
-          ...prevState.slice(insertIndex),
-        ];
-
-        return renumberQuestions(newState);
+    if (!updatedQuestion.id) return;
+    let questionData;
+    if (updatedQuestion.id !== selectedQuestion?.id) {
+      const res = await fetch(`${window.location.pathname}/${updatedQuestion.id}`, {
+        method: 'GET',
       });
-    } else {
-      // Update existing question
-      setQuestionState((prevState) =>
-        prevState.map((q) =>
-          q.question.qid === updatedQuestion.question.qid ? updatedQuestion : q,
-        ),
-      );
+      if (!res.ok) {
+        throw new Error('Failed to save question');
+      }
+      questionData = await res.json();
+      questionData.assessment = assessment;
+      questionData.assessment_question = {
+        number: selectedQuestionPosition?.alternativeGroupNumber,
+        number_in_alternative_group: selectedQuestionPosition?.alternativeNumber,
+      };
+      questionData.alternative_group = {
+        number: selectedQuestionPosition?.alternativeGroupNumber,
+      };
+      questionData.alternative_group_size = 1;
+      questionData.alternative_group_size = 1;
+      setQuestionMap((prev) => ({
+        ...prev,
+        [updatedQuestion.id!]: questionData,
+      }));
     }
+    if (!selectedQuestionPosition) return;
+    const { zoneNumber, alternativeGroupNumber, alternativeNumber } = selectedQuestionPosition;
+    // Update the mappedQuestions state
+    setMappedQuestion((prevZones) => {
+      const newZones = JSON.parse(JSON.stringify(prevZones)); // Deep clone
+      const zone = newZones[zoneNumber - 1];
+      if (!zone) return prevZones;
+
+      const question = zone.questions[alternativeGroupNumber - 1];
+      if (!question) return prevZones;
+
+      // Check if we're editing an alternative or the alternative group itself
+      if (alternativeNumber !== undefined) {
+        // Editing an alternative question
+        if (!question.alternatives) return prevZones;
+        question.alternatives[alternativeNumber] = {
+          ...question.alternatives[alternativeNumber],
+          ...updatedQuestion,
+        };
+      } else {
+        // Editing the alternative group
+        zone.questions[alternativeGroupNumber - 1] = {
+          ...question,
+          ...updatedQuestion,
+        };
+      }
+
+      return newZones;
+    });
+
     handleCloseEditModal();
   };
 
@@ -764,9 +848,6 @@ export function InstructorAssessmentQuestionsTable({
   );
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
-
-  console.log('mappedQuestions', mappedQuestions);
-
   return (
     <>
       <div class="card mb-4">
@@ -834,6 +915,7 @@ export function InstructorAssessmentQuestionsTable({
                     hasCoursePermissionPreview={hasCoursePermissionPreview}
                     hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
                     showAdvanceScorePercCol={showAdvanceScorePercCol}
+                    assessmentType={assessmentType}
                     handleAddQuestion={handleAddQuestion}
                     handleEditQuestion={handleEditQuestion}
                     handleDeleteQuestion={handleDeleteQuestion}
@@ -858,6 +940,7 @@ export function InstructorAssessmentQuestionsTable({
       {editMode && selectedQuestion ? (
         <EditQuestionModal
           question={selectedQuestion}
+          alternativeGroup={selectedAlternativeGroup}
           showEditModal={showEditModal}
           assessmentType={assessmentType}
           questionDisplayName={selectedQuestionDisplayName}

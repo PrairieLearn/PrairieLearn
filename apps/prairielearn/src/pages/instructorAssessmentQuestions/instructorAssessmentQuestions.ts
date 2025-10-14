@@ -24,8 +24,11 @@ import {
 } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
+import { selectOptionalQuestionByQid } from '../../models/question.js';
+import * as sqldb from '@prairielearn/postgres';
 
 const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 // Zod schema for parsing zones data
 const ZoneQuestionAlternativeSchema = z.object({
@@ -134,6 +137,23 @@ router.get(
   }),
 );
 
+router.get(
+  '/:qid',
+  asyncHandler(async (req, res) => {
+    // const assessmentQuestion = await selectAssessmentQuestion(req.params.assessment_question_id);
+    const assessmentQuestion = await sqldb.queryRow(
+      sql.select_assessment_question,
+      {
+        qid: req.params.qid,
+        course_id: res.locals.course.id,
+      },
+      // TODO better schema
+      z.any(),
+    );
+    res.json(assessmentQuestion);
+  }),
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -218,14 +238,15 @@ router.post(
         // Filter questions/alternative groups
         filteredZone.questions = zone.questions.map((question) => {
           // Check if this is a single question or an alternative group
+          const filteredQuestion: any = {};
           if ('alternatives' in question) {
+            console.log('alternatives in question');
             // This is an alternative group
-            const filteredQuestion: any = {};
 
             filteredQuestion.numberChoose = propertyValueWithDefault(
               undefined,
               question.numberChoose,
-              null,
+              1,
             );
 
             // Filter alternatives
@@ -234,9 +255,19 @@ router.post(
                 id: alternative.id,
               };
 
+              filteredAlternative.points = propertyValueWithDefault(
+                undefined,
+                alternative.points,
+                0,
+              );
               filteredAlternative.autoPoints = propertyValueWithDefault(
                 undefined,
                 alternative.autoPoints,
+                0,
+              );
+              filteredAlternative.maxPoints = propertyValueWithDefault(
+                undefined,
+                alternative.maxPoints,
                 0,
               );
               filteredAlternative.maxAutoPoints = propertyValueWithDefault(
@@ -267,68 +298,60 @@ router.post(
 
               return filteredAlternative;
             });
-
-            return filteredQuestion;
           } else {
             // This is a single question
-            const filteredQuestion: any = {
-              id: question.id,
-            };
-            filteredQuestion.comment = propertyValueWithDefault(undefined, question.comment, null);
-            filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
-              undefined,
-              question.allowRealTimeGrading,
-              null,
-            );
-            filteredQuestion.canSubmit = propertyValueWithDefault(
-              undefined,
-              question.canSubmit,
-              (v) => !v || v.length === 0,
-            );
-            filteredQuestion.canView = propertyValueWithDefault(
-              undefined,
-              question.canView,
-              (v) => !v || v.length === 0,
-            );
-            filteredQuestion.points = propertyValueWithDefault(undefined, question.points, 0);
-            filteredQuestion.autoPoints = propertyValueWithDefault(
-              undefined,
-              question.autoPoints,
-              0,
-            );
-            filteredQuestion.maxPoints = propertyValueWithDefault(
-              undefined,
-              question.maxPoints,
-              null,
-            );
-            filteredQuestion.maxAutoPoints = propertyValueWithDefault(
-              undefined,
-              question.maxAutoPoints,
-              0,
-            );
-            filteredQuestion.manualPoints = propertyValueWithDefault(
-              undefined,
-              question.manualPoints,
-              0,
-            );
-            filteredQuestion.triesPerVariant = propertyValueWithDefault(
-              undefined,
-              question.triesPerVariant,
-              1,
-            );
-            filteredQuestion.advanceScorePerc = propertyValueWithDefault(
-              undefined,
-              question.advanceScorePerc,
-              null,
-            );
-            filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
-              undefined,
-              question.gradeRateMinutes,
-              null,
-            );
-
-            return filteredQuestion;
+            filteredQuestion.id = question.id;
           }
+          filteredQuestion.comment = propertyValueWithDefault(undefined, question.comment, null);
+          filteredQuestion.allowRealTimeGrading = propertyValueWithDefault(
+            undefined,
+            question.allowRealTimeGrading,
+            null,
+          );
+          filteredQuestion.canSubmit = propertyValueWithDefault(
+            undefined,
+            question.canSubmit,
+            (v) => !v || v.length === 0,
+          );
+          filteredQuestion.canView = propertyValueWithDefault(
+            undefined,
+            question.canView,
+            (v) => !v || v.length === 0,
+          );
+          filteredQuestion.points = propertyValueWithDefault(undefined, question.points, 0);
+          filteredQuestion.autoPoints = propertyValueWithDefault(undefined, question.autoPoints, 0);
+          filteredQuestion.maxPoints = propertyValueWithDefault(
+            undefined,
+            question.maxPoints,
+            null,
+          );
+          filteredQuestion.maxAutoPoints = propertyValueWithDefault(
+            undefined,
+            question.maxAutoPoints,
+            0,
+          );
+          filteredQuestion.manualPoints = propertyValueWithDefault(
+            undefined,
+            question.manualPoints,
+            0,
+          );
+          filteredQuestion.triesPerVariant = propertyValueWithDefault(
+            undefined,
+            question.triesPerVariant,
+            1,
+          );
+          filteredQuestion.advanceScorePerc = propertyValueWithDefault(
+            undefined,
+            question.advanceScorePerc,
+            null,
+          );
+          filteredQuestion.gradeRateMinutes = propertyValueWithDefault(
+            undefined,
+            question.gradeRateMinutes,
+            null,
+          );
+
+          return filteredQuestion;
         });
 
         return filteredZone;

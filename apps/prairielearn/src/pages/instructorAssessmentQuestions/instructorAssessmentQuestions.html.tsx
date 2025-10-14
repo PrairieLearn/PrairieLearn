@@ -53,6 +53,7 @@ export function InstructorAssessmentQuestions({
             course={course}
             questionRows={questionRows}
             urlPrefix={urlPrefix}
+            assessment={assessment}
             assessmentType={assessment.type}
             assessmentSetName={assessment_set.name}
             assessmentNumber={assessment.number}
