@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import { executeRow, loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
@@ -859,12 +859,12 @@ export async function tuneRubric({
 
     console.log('generatedRubricItem', generatedRubricItem);
 
-    // await executeRow(sql.update_rubric_item, {
-    //   id: rubricItem.id,
-    //   rubric_id: assessment_question.manual_rubric_id,
-    //   description: rubricItem.description,
-    //   explanation: rubricItem.explanation,
-    //   grader_note: rubricItem.grader_note,
-    // }); 
+    await executeRow(sql.update_rubric_item, {
+      id: generatedRubricItem.id,
+      rubric_id: assessment_question.manual_rubric_id,
+      description: generatedRubricItem.description,
+      explanation: generatedRubricItem.explanation,
+      grader_note: generatedRubricItem.grader_note,
+    }); 
   }
 }
