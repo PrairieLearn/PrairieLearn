@@ -20,13 +20,13 @@ WHERE
 SELECT
   ci.*,
   CASE
-    WHEN d.start_date IS NULL THEN '—'
-    ELSE format_date_full_compact (d.start_date, ci.display_timezone)
-  END AS formatted_start_date,
+    WHEN d.access_start_date IS NULL THEN '—'
+    ELSE format_date_full_compact (d.access_start_date, ci.display_timezone)
+  END AS formatted_access_start_date,
   CASE
-    WHEN d.end_date IS NULL THEN '—'
-    ELSE format_date_full_compact (d.end_date, ci.display_timezone)
-  END AS formatted_end_date,
+    WHEN d.access_end_date IS NULL THEN '—'
+    ELSE format_date_full_compact (d.access_end_date, ci.display_timezone)
+  END AS formatted_access_end_date,
   COALESCE(
     $is_administrator
     OR ia.id IS NOT NULL
@@ -60,8 +60,8 @@ FROM
   ),
   LATERAL (
     SELECT
-      min(ar.start_date) AS start_date,
-      max(ar.end_date) AS end_date
+      min(ar.start_date) AS access_start_date,
+      max(ar.end_date) AS access_end_date
     FROM
       course_instance_access_rules AS ar
     WHERE

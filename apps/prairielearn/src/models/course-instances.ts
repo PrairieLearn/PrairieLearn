@@ -13,8 +13,8 @@ import { idsEqual } from '../lib/id.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
-  formatted_start_date: z.string(),
-  formatted_end_date: z.string(),
+  formatted_access_start_date: z.string(),
+  formatted_access_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
 });
