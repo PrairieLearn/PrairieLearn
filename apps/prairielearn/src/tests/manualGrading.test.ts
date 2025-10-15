@@ -301,13 +301,10 @@ function checkSettingsResults(
   test.sequential('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-    const form = $manualGradingIQPage('form[name=rubric-settings]');
-    // const form = $manualGradingIQPage('div[id=rubric-editing]');
+    // const form = $manualGradingIQPage('form[name=rubric-settings]');
+    const form = $manualGradingIQPage('div[id=rubric-editing]');
 
-    assert.equal(
-      form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
-      true,
-    );
+    assert.equal(form.find('input[name="starting_points"]').val(), starting_points.toString());
     assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
 
@@ -321,21 +318,21 @@ function checkSettingsResults(
         item.id = idField.attr('value');
       }
       assert.equal(idField.val(), item.id);
-      assert.equal(idField.attr('name'), `rubric_item[cur${item.id}][id]`);
-      const points = form.find(`[name="rubric_item[cur${item.id}][points]"]`);
+      assert.equal(idField.attr('name'), `rubric_item[${item.id}][id]`);
+      const points = form.find(`[name="rubric_item[${item.id}][points]"]`);
       assert.equal(points.val(), item.points.toString());
-      const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
+      const description = form.find(`[name="rubric_item[${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
       const explanation = form.find(
-        `button[data-input-name="rubric_item[cur${item.id}][explanation]"]`,
+        `button[data-input-name="rubric_item[${item.id}][explanation]"]`,
       );
       assert.equal(explanation.attr('data-current-value') ?? '', item.explanation ?? '');
       const graderNote = form.find(
-        `button[data-input-name="rubric_item[cur${item.id}][grader_note]"]`,
+        `button[data-input-name="rubric_item[${item.id}][grader_note]"]`,
       );
       assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
       const always_show_to_students = form.find(
-        `[name="rubric_item[cur${item.id}][always_show_to_students]"]:checked`,
+        `[name="rubric_item[${item.id}][always_show_to_students]"]:checked`,
       );
       assert.equal(always_show_to_students.val(), item.always_show_to_students ? 'true' : 'false');
     });
