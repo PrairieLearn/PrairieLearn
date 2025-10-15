@@ -1,10 +1,14 @@
-import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { selectOptionalEnrollmentByPendingUid, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
+import * as helperCourse from './helperCourse.js';
 import * as helperServer from './helperServer.js';
+import { deleteEnrollmentsInCourseInstance, getOrCreateUser, updateCourseInstanceSettings, withUser } from './utils/auth.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -152,5 +156,246 @@ describe('Enroll page (non-enterprise)', () => {
       },
     });
     assert.equal(res.status, 403);
+  });
+});
+
+
+describe('autoEnroll middleware with institution restrictions', () => {
+  let originalIsEnterprise: boolean;
+
+  const courseInstanceUrl = baseUrl + '/course_instance/1';
+  const assessmentsUrl = courseInstanceUrl + '/assessments';
+
+  beforeAll(async function () {
+    await helperServer.before()();
+    await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+
+    // Ensure we're not in enterprise mode to avoid enterprise-specific checks
+    originalIsEnterprise = config.isEnterprise;
+    config.isEnterprise = false;
+
+    // Set uid_regexp for the default institution to allow @example.com UIDs
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
+  });
+
+  afterAll(async function () {
+    await helperServer.after();
+
+    // Restore original enterprise setting
+    config.isEnterprise = originalIsEnterprise;
+  });
+
+  it('allows user to self-enroll via the assessments endpoint when self-enrollment is enabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: false,
+      enrollmentCode: '',
+    });
+
+    // Create user from same institution
+    const sameInstitutionUser = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Same Institution Student',
+      uin: 'same1',
+      email: 'student@example.com',
+      institutionId: '1',
+    });
+
+    await withUser(
+      {
+        uid: sameInstitutionUser.uid,
+        name: sameInstitutionUser.name,
+        uin: sameInstitutionUser.uin,
+        email: sameInstitutionUser.email,
+      },
+      async () => {
+        // Check that user is not enrolled initially
+        const initialEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNull(initialEnrollment);
+
+        // Hit the assessments endpoint - this should trigger auto-enrollment
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, 200);
+
+        // Check that user is now enrolled
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.status, 'joined');
+      }
+    );
+  });
+
+  it('allows invited user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+      enrollmentCode: '',
+    });
+
+    // Create user from same institution
+    const invitedUser = await getOrCreateUser({
+      uid: 'invited@example.com',
+      name: 'Invited Student',
+      uin: 'invited1',
+      email: 'invited@example.com',
+      institutionId: '1',
+    });
+
+    // Create an invited enrollment for this user
+    await execute(
+      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
+       VALUES ($course_instance_id, 'invited', $pending_uid)`,
+      {
+        course_instance_id: '1',
+        pending_uid: invitedUser.uid,
+      }
+    );
+
+    await withUser(
+      {
+        uid: invitedUser.uid,
+        name: invitedUser.name,
+        uin: invitedUser.uin,
+        email: invitedUser.email,
+      },
+      async () => {
+        const initialEnrollment = await selectOptionalEnrollmentByPendingUid({
+          pending_uid: invitedUser.uid,
+          course_instance_id: '1',
+        });
+        assert.isNotNull(initialEnrollment);
+        assert.equal(initialEnrollment.status, 'invited');
+
+        // Hit the assessments endpoint - this should convert invited enrollment to joined
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, 200);
+
+        // Check that user is now enrolled (invited enrollment should be converted to joined)
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: invitedUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.status, 'joined');
+        assert.isNull(finalEnrollment.pending_uid);
+      }
+    );
+  });
+
+  it('does not allow blocked user to self-enroll via the assessments endpoint', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: false,
+      enrollmentCode: '',
+    });
+
+    // Create a blocked user
+    const blockedUser = await getOrCreateUser({
+      uid: 'blocked@example.com',
+      name: 'Blocked Student',
+      uin: 'blocked1',
+      email: 'blocked@example.com',
+      institutionId: '1',
+    });
+
+    // Create a blocked enrollment for this user
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)`,
+      {
+        user_id: blockedUser.user_id,
+        course_instance_id: '1',
+        first_joined_at: new Date(),
+      }
+    );
+
+    await withUser(
+      {
+        uid: blockedUser.uid,
+        name: blockedUser.name,
+        uin: blockedUser.uin,
+        email: blockedUser.email,
+      },
+      async () => {
+        // Hit the assessments endpoint - this should return 403 for blocked users
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, 403);
+      }
+    );
+  });
+
+  it('redirects to join page when enrollment code is required and user hits join URL', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: true,
+      enrollmentCode: 'TEST123',
+    });
+
+    // Create user from same institution
+    const sameInstitutionUser = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Same Institution Student',
+      uin: 'same1',
+      email: 'student@example.com',
+      institutionId: '1',
+    });
+
+    await withUser(
+      {
+        uid: sameInstitutionUser.uid,
+        name: sameInstitutionUser.name,
+        uin: sameInstitutionUser.uin,
+        email: sameInstitutionUser.email,
+      },
+      async () => {
+        // Hit the assessments endpoint - this should redirect to the join page due to enrollment code requirement
+        const response = await fetch(assessmentsUrl, { redirect: 'manual' });
+        assert.equal(response.status, 302);
+        assert.isTrue(response.headers.get('location')?.includes('/join'));
+      }
+    );
+  });
+
+  it('redirects to join page when enrollment code is required and user goes to correct URL', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: true,
+      selfEnrollmentUseEnrollmentCode: true,
+      enrollmentCode: 'TEST123',
+    });
+
+    // Create user from same institution
+    const sameInstitutionUser = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Same Institution Student',
+      uin: 'same1',
+      email: 'student@example.com',
+      institutionId: '1',
+    });
+
+    await withUser(
+      {
+        uid: sameInstitutionUser.uid,
+        name: sameInstitutionUser.name,
+        uin: sameInstitutionUser.uin,
+        email: sameInstitutionUser.email,
+      },
+      async () => {
+        // Hit the assessments endpoint - this should redirect to join page
+        const response = await fetch(assessmentsUrl, { redirect: 'manual' });
+        assert.equal(response.status, 302);
+        assert.isTrue(response.headers.get('location')?.includes('/join'));
+      }
+    );
   });
 });
