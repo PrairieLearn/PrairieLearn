@@ -888,12 +888,12 @@ export function RubricRow({
             <input
               type="hidden"
               name={`rubric_item[${item.id}][explanation]`}
-              value={item.explanation ?? undefined}
+              value={btoa(item.explanation ?? '')}
             />
             <input
               type="hidden"
               name={`rubric_item[${item.id}][grader_note]`}
-              value={item.grader_note ?? undefined}
+              value={btoa(item.grader_note ?? '')}
             />
             <input
               type="hidden"
