@@ -162,7 +162,7 @@ describe('Enroll page (non-enterprise)', () => {
 });
 
 
-describe('autoEnroll middleware with institution restrictions', () => {
+describe('Enrollment transitions', () => {
   let originalIsEnterprise: boolean;
   let courseInstanceCode : string | null = null;
 
@@ -434,7 +434,7 @@ describe('autoEnroll middleware with institution restrictions', () => {
         email: sameInstitutionUser.email,
       },
       async () => {
-        const response = await fetch(getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }));
+        const response = await fetch(siteUrl + getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }), { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/assessments'));
       }

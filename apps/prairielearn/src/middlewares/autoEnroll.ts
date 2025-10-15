@@ -28,14 +28,18 @@ export default asyncHandler(async (req, res, next) => {
     (courseInstance.self_enrollment_enabled_before_date == null ||
       new Date() < courseInstance.self_enrollment_enabled_before_date);
 
+  // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
+  // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
+  const canEnroll = ((selfEnrollmentAllowed && existingEnrollment == null) ||
+    (existingEnrollment != null && ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)));
+
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
     !res.locals.authz_data.authn_has_student_access_with_enrollment &&
-    selfEnrollmentAllowed &&
-    (existingEnrollment == null || existingEnrollment.status !== 'blocked')
+    canEnroll
   ) {
     await ensureCheckedEnrollment({
       institution: res.locals.institution,
