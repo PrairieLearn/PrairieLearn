@@ -4,7 +4,7 @@ from typing import TypedDict
 
 import lxml.html
 import prairielearn as pl
-from dag_checker import ColoredEdge, Edge
+from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
 
 

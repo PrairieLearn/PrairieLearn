@@ -6,10 +6,10 @@ from typing import TypeAlias, TypeGuard
 
 import networkx as nx
 
-ColoredEdge: TypeAlias = list[list[str]]
-Edge: TypeAlias = list[str]
-Multigraph: TypeAlias = dict[str, Edge | ColoredEdge]
-Dag: TypeAlias = dict[str, Edge]
+ColoredEdges: TypeAlias = list[list[str]]
+Edges: TypeAlias = list[str]
+Multigraph: TypeAlias = dict[str, Edges | ColoredEdges]
+Dag: TypeAlias = dict[str, Edges]
 
 
 def validate_grouping(
@@ -209,7 +209,6 @@ def grade_multigraph(
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))
-    print(collapsed_dags)
 
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
@@ -323,7 +322,7 @@ def lcs_partial_credit(
 def dfs_until(
     multigraph: Multigraph,
     start: str,
-) -> tuple[tuple[str, ColoredEdge] | None, Dag]:
+) -> tuple[tuple[str, ColoredEdges] | None, Dag]:
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
@@ -348,13 +347,14 @@ def dfs_until(
         if _is_edges_colored(edges):
             return (curr, edges), traversed
 
-        traversed[curr] = edges
-        for target in edges:
-            # this determines if the proposed target edge is a back edge if so it contains a cycle
-            if target in visited and visited.index(curr) >= visited.index(target):
-                raise ValueError("Cycle encountered during collapse of multigraph.")
-            if target not in visited:
-                stack.insert(0, (target, deepcopy(visited)))
+        if _is_edges_uncolored(edges):
+            traversed[curr] = edges
+            for target in edges:
+                # this determines if the proposed target edge is a back edge if so it contains a cycle
+                if target in visited and visited.index(curr) >= visited.index(target):
+                    raise ValueError("Cycle encountered during collapse of multigraph.")
+                if target not in visited:
+                    stack.insert(0, (target, deepcopy(visited)))
 
     return None, traversed
 
@@ -369,6 +369,7 @@ def collapse_multigraph(
     :param final: the sink in the multigraph, necessary to know the sink so that we have
     a starting point for the DFS to search for DAGs through the multigraph.
     :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
+    For more details, see the paper: https://arxiv.org/abs/2510.11999
     """
     collapsing_graphs: list[Multigraph] = [multigraph]
     while collapsing_graphs:
@@ -390,10 +391,19 @@ def collapse_multigraph(
             collapsing_graphs.append(partially_collapsed)
 
 
-def _is_edges_colored(edges: Edge | ColoredEdge) -> TypeGuard[ColoredEdge]:
+def _is_edges_colored(edges: Edges | ColoredEdges) -> TypeGuard[ColoredEdges]:
     """a halting condition function for dfs_until, used to check for colored edges."""
     for edge in edges:
         if isinstance(edge, list):
+            return True
+
+    return False
+
+
+def _is_edges_uncolored(edges: Edges | ColoredEdges) -> TypeGuard[Edges]:
+    """a halting condition function for dfs_until, used to check for colored edges."""
+    for edge in edges:
+        if isinstance(edge, str):
             return True
 
     return False
