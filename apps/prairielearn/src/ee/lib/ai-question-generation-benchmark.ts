@@ -4,12 +4,12 @@ import type { OpenAIProvider } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import { type OpenAI } from 'openai';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import type { OpenAIModelId } from '../../lib/ai.js';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
@@ -21,7 +21,7 @@ import { generateQuestion } from './aiQuestionGeneration.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
-const MODEL_NAME: OpenAI.Chat.ChatModel = 'gpt-5-2025-08-07';
+const MODEL_NAME = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
 
 interface Benchmark {
   prompt: string;

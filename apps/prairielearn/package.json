@@ -193,7 +193,6 @@
     "object-hash": "^3.0.0",
     "on-finished": "^2.4.1",
     "on-headers": "^1.1.0",
-    "openai": "^6.0.0",
     "openid-client": "^6.6.3",
     "p-memoize": "^8.0.0",
     "parse5": "^7.3.0",

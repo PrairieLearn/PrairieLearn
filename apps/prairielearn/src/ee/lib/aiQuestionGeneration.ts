@@ -1,6 +1,5 @@
 import type { OpenAIProvider } from '@ai-sdk/openai';
 import { type GenerateTextResult, type LanguageModelUsage, generateText } from 'ai';
-import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { Cache } from '@prairielearn/cache';
@@ -13,6 +12,7 @@ import {
 } from '@prairielearn/postgres';
 
 import {
+  type OpenAIModelId,
   calculateResponseCost,
   emptyUsage,
   formatPrompt,
@@ -43,7 +43,7 @@ const sql = loadSqlEquiv(import.meta.url);
 // We're still using `4o` for question generation as it seems to have better
 // cost/performance characteristics. We'll revisit moving to a newer model in
 // the future.
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAI.Chat.ChatModel;
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAIModelId;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 

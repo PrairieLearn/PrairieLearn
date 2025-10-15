@@ -1,12 +1,11 @@
 import { type OpenAIProvider, createOpenAI } from '@ai-sdk/openai';
 import { type ModelMessage, generateObject } from 'ai';
 import * as async from 'async';
-import { type OpenAI } from 'openai';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,
@@ -33,8 +32,7 @@ import {
 
 const PARALLEL_INSTANCE_QUESTION_GROUPING_LIMIT = 20;
 
-const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL =
-  'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
+const INSTANCE_QUESTION_GROUPING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
 
 /**
  * Given a question, the AI returns whether or not the student-provided final answer is correct.

@@ -1,7 +1,6 @@
 import type { OpenAIProvider } from '@ai-sdk/openai';
 import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
-import { type OpenAI } from 'openai';
 import { z } from 'zod';
 
 import {
@@ -15,7 +14,7 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -42,7 +41,7 @@ import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAI.Chat.ChatModel;
+export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
