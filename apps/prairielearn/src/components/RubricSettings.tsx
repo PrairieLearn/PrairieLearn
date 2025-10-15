@@ -934,25 +934,23 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
+          value={item.explanation ?? ''}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
           onInput={(e: any) => updateRubricItem({ explanation: e.target.value })}
-        >
-          {item.explanation}
-        </textarea>
+        />
       </td>
 
       <td class="align-middle">
         <textarea
           class="form-control"
+          value={item.grader_note ?? ''}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
           onInput={(e: any) => updateRubricItem({ grader_note: e.target.value })}
-        >
-          {item.grader_note}
-        </textarea>
+        />
       </td>
 
       <td class="align-middle">
