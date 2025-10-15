@@ -434,8 +434,12 @@ export function InstanceQuestionPoints({
   return html`
     <span class="text-nowrap">
       ${
-        // If the question is unanswered but was manually graded, show the assigned points
-        instance_question.status === 'unanswered' && instance_question.last_grader == null
+        // If the question is unanswered show a dash instead of 0 points, unless
+        // the question was manually graded or a regrading process forced the
+        // points to be increased.
+        instance_question.status === 'unanswered' &&
+        instance_question.last_grader == null &&
+        instance_question.points === 0
           ? html`&mdash;`
           : pointsPending
             ? html`<span class="badge text-bg-info">pending</span>`
