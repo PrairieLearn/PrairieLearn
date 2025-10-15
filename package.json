@@ -23,7 +23,7 @@
     "release": "turbo run build && node scripts/fix-workspace-versions-before-publish.mjs && changeset publish --no-git-tag",
     "start": "yarn workspace @prairielearn/prairielearn start",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
-    "test": "vitest run apps/prairielearn/src/tests/manualGrading.test.ts",
+    "test": "vitest run --coverage",
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
