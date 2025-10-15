@@ -225,6 +225,7 @@ export function PublishingForm({
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
+      // setValue doesn't seem to trigger validation so we need to trigger it manually
       await trigger('publishDate');
       await trigger('archiveDate');
     }

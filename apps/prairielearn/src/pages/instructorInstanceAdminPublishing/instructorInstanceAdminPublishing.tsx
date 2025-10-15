@@ -334,7 +334,10 @@ router.post(
         res.status(200).json({ success: true });
         return;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to add extension';
+        const message =
+          err instanceof Error && !(err instanceof z.ZodError)
+            ? err.message
+            : 'Failed to add extension';
         res.status(400).json({ message });
         return;
       }
@@ -357,7 +360,7 @@ router.post(
     } else if (req.body.__action === 'edit_extension') {
       try {
         const EmailsSchema = z
-          .array(z.string().trim().email())
+          .array(z.string().trim().email('Invalid email format'))
           .min(1, 'At least one UID is required');
         const EditExtensionSchema = z.object({
           __action: z.literal('edit_extension'),
@@ -440,6 +443,17 @@ router.post(
         res.status(200).json({ success: true });
         return;
       } catch (err) {
+        if (err instanceof z.ZodError) {
+          const errorMessages = err.errors.map((error) => {
+            if (error.path.length > 0) {
+              const field = error.path.join('.');
+              return `${field}: ${error.message}`;
+            }
+            return error.message;
+          });
+          res.status(400).json({ message: errorMessages.join(', ') });
+          return;
+        }
         const message = err instanceof Error ? err.message : 'Failed to edit extension';
         res.status(400).json({ message });
         return;

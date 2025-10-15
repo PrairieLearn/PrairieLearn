@@ -1,3 +1,5 @@
+import { Temporal } from '@js-temporal/polyfill';
+import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Alert, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -43,16 +45,55 @@ function ExtensionModal({
   mainArchiveDate: Date | null;
   courseInstanceTimezone: string;
 }) {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
-    setError,
+    setValue,
+    watch,
+    trigger,
+    formState: { errors },
   } = useForm<ExtensionFormValues>({
     values: defaultValues,
-    mode: 'onChange',
-    reValidateMode: 'onChange',
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
   });
+
+  const currentArchiveDate = watch('archive_date');
+
+  const handleAddWeek = async () => {
+    const currentDate = Temporal.PlainDateTime.from(currentArchiveDate);
+    const newValue = currentDate.add({ weeks: 1 });
+    setValue('archive_date', newValue.toString());
+    await trigger('archive_date');
+  };
+
+  const validateEmails = (value: string) => {
+    if (!value.trim()) {
+      return 'UIDs are required';
+    }
+
+    // Parse UIDs from the textarea (support both line-separated and comma/space-separated)
+    const uids = value
+      .split(/[\n,]+/)
+      .map((uid) => uid.trim())
+      .filter((uid) => uid.length > 0);
+
+    if (uids.length === 0) {
+      return 'At least one UID is required';
+    }
+
+    // Email validation regex
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = uids.filter((uid) => !emailRegex.test(uid));
+
+    if (invalidEmails.length > 0) {
+      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
+    }
+
+    return true;
+  };
 
   return (
     <Modal show={show} backdrop="static" onHide={onHide}>
@@ -62,13 +103,11 @@ function ExtensionModal({
       <form
         onSubmit={handleSubmit(async (data, event) => {
           event.preventDefault();
+          setErrorMessage(null);
           try {
             await onSubmit(data);
           } catch (error) {
-            // errors with root as the key will not persist with each submission
-            setError('root.serverError', {
-              message: error instanceof Error ? error.message : 'Unknown error',
-            });
+            setErrorMessage(error instanceof Error ? error.message : 'Unknown error');
           }
         })}
       >
@@ -83,32 +122,41 @@ function ExtensionModal({
             <label class="form-label" for="ext-date">
               Archive date
             </label>
-            <input
-              id="ext-date"
-              type="datetime-local"
-              step="1"
-              class="form-control"
-              {...register('archive_date', {
-                required: 'Archive date is required',
-                validate: (value) => {
-                  if (!mainArchiveDate) return true;
-                  const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
-                  return (
-                    enteredDate > mainArchiveDate ||
-                    'Archive date must be after the course archive date'
-                  );
-                },
-              })}
-            />
+            <div class="input-group">
+              <input
+                id="ext-date"
+                type="datetime-local"
+                step="1"
+                class="form-control"
+                {...register('archive_date', {
+                  required: 'Archive date is required',
+                  validate: (value) => {
+                    if (!mainArchiveDate) return true;
+                    const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
+                    return (
+                      enteredDate > mainArchiveDate ||
+                      'Archive date must be after the course archive date'
+                    );
+                  },
+                })}
+              />
+              <button
+                type="button"
+                class={clsx('btn btn-outline-secondary', !currentArchiveDate && 'disabled')}
+                onClick={handleAddWeek}
+              >
+                +1 week
+              </button>
+            </div>
             {errors.archive_date && (
               <div class="text-danger small">{String(errors.archive_date.message)}</div>
             )}
             <small class="text-muted">Current course archive date: {currentArchiveText}</small>
           </div>
-          {errors.root?.serverError && (
-            <div class="alert alert-danger" role="alert">
-              {errors.root.serverError.message}
-            </div>
+          {errorMessage && (
+            <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
+              {errorMessage}
+            </Alert>
           )}
           <div class="mb-0">
             <label class="form-label" for="ext-uids">
@@ -119,7 +167,7 @@ function ExtensionModal({
               class="form-control"
               rows={5}
               placeholder="One UID per line, or comma/space separated"
-              {...register('uids', { required: 'UIDs are required' })}
+              {...register('uids', { validate: validateEmails })}
             />
             {errors.uids && <div class="text-danger small">{String(errors.uids.message)}</div>}
           </div>
@@ -133,7 +181,7 @@ function ExtensionModal({
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={isSubmitting || !isValid}>
+          <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
             Save
           </button>
         </Modal.Footer>
