@@ -28,8 +28,7 @@ DISPLAY_SIMPLIFIED_EXPRESSION_DEFAULT = True
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 ALLOW_TRIG_FUNCTIONS_DEFAULT = True
 SIZE_DEFAULT = 35
-SHOW_FORMULA_EDITOR_DEFAULT = True
-SHOW_FORMULA_EDITOR_BUTTONS_DEFAULT = True
+SHOW_FORMULA_EDITOR_DEFAULT = False
 SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
@@ -53,7 +52,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-trig-functions",
         "size",
         "formula-editor",
-        "show-formula-editor-buttons",
         "show-help-text",
         "allow-blank",
         "blank-value",
@@ -213,9 +211,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
-    formula_editor_buttons = pl.get_boolean_attrib(
-        element, "show-formula-editor-buttons", SHOW_FORMULA_EDITOR_BUTTONS_DEFAULT
-    )
     raw_submitted_answer_latex = data["raw_submitted_answers"].get(
         name + "-latex", None
     )
@@ -249,7 +244,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             display.value: True,
             "formula_editor": formula_editor,
-            "formula_editor_buttons": formula_editor_buttons,
             "custom_functions": ",".join(custom_functions),
         }
 
@@ -270,7 +264,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
             "raw_submitted_answer_latex": raw_submitted_answer_latex,
             "formula_editor": formula_editor,
-            "formula_editor_buttons": formula_editor_buttons,
             "custom_functions": ",".join(custom_functions),
             "allow_trig": allow_trig,
             display.value: True,
@@ -352,19 +345,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     submitted_answer = data["submitted_answers"].get(name, None)
     if formula_editor:
-        a_sub, error_msg = format_formula_editor_submission_for_sympy(
+        a_sub = format_formula_editor_submission_for_sympy(
             submitted_answer,
             allow_trig,
             variables,
             custom_functions,
         )
     else:
-        a_sub, error_msg = format_submission_for_sympy(submitted_answer)
-
-    if error_msg is not None:
-        data["format_errors"][name] = error_msg
-        data["submitted_answers"][name] = None
-        return
+        a_sub = submitted_answer
 
     if a_sub is None:
         data["format_errors"][name] = "No submitted answer."
@@ -433,55 +421,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
 
 
-def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
-    """
-    Format submission to be compatible with SymPy.
-
-    Converts absolute value bars to abs() function calls, handling nested cases.
-
-    Examples:
-        "|x|" becomes "abs(x)"
-        "||x|+y|" becomes "abs(abs(x)+y)"
-
-    Args:
-        sub: The text submission to format
-
-    Returns:
-        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
-    """
-    original_sub = sub
-    if sub is None:
-        return None, None
-
-    while True:
-        # Find matches of |...| where:
-        # when ignoring spaces, it either:
-        # - starts with letter/number/opening paren and ends with letter/number/closing paren
-        # - is a single leter/number
-        match = re.search(
-            r"(\|\s*[a-zA-Z0-9(]([^|]*[a-zA-Z0-9)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)", sub
-        )
-        if not match:
-            break
-
-        content = match.group(0)[1:-1]  # Strip the bars
-        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
-
-    if "|" in sub:
-        return (
-            None,
-            f"The absolute value bars in your answer are mismatched or ambiguous: {original_sub}.",
-        )
-
-    return sub, None
-
-
 def format_formula_editor_submission_for_sympy(
     sub: str | None,
     allow_trig: bool,
     variables: list[str],
     custom_functions: list[str],
-) -> tuple[str | None, str | None]:
+) -> str | None:
     """
     Format raw formula editor input to be compatible with SymPy.
 
@@ -497,10 +442,10 @@ def format_formula_editor_submission_for_sympy(
         custom_functions: List of custom function names
 
     Returns:
-        A tuple of (Formatted text ready for SymPy parsing, or None if input is None, and an error message if there is an error)
+        Formatted text ready for SymPy parsing, or None if input is None
     """
     if sub is None:
-        return None, None
+        return None
 
     # Remove invisible LaTeX formatting operators
     text = sub.replace("{:", "").replace(":}", "")
@@ -515,7 +460,7 @@ def format_formula_editor_submission_for_sympy(
     # but preserve tokens like "f2" that are custom function names
     text = _add_multiplication_spaces(text, known_tokens)
 
-    return format_submission_for_sympy(text)
+    return text
 
 
 def _build_known_tokens(

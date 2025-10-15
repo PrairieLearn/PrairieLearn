@@ -274,34 +274,6 @@
       },
       { capture: true },
     );
-
-    // Workaround for glitchy size-based menu button show/hide behavior
-    if (!mf.getAttribute('read-only')) {
-      const resizeObserver = new ResizeObserver((_) => {
-        mf.toggleAttribute('hide-menu', mf.offsetWidth < 160);
-      });
-      resizeObserver.observe(mf);
-    }
-
-    // We can't attach custom CSS with `pl-symbolic-input.css` to points other than ::part from the main page since it lives inside a shadow DOM
-    const customCSS = new CSSStyleSheet();
-    customCSS.replaceSync(`
-    .ML__content-placeholder .ML__text {
-      background: inherit;
-    }
-    @media (pointer: coarse) {
-      .ML__virtual-keyboard-toggle, .ML__menu-toggle {
-        min-width: 0px;
-        min-height: 0px;
-      }
-    }
-
-    :host(.no-buttons) .ML__virtual-keyboard-toggle,
-    :host(.no-buttons) .ML__menu-toggle {
-      display: none !important;
-    }
-  `);
-    mf.shadowRoot.adoptedStyleSheets.push(customCSS);
   };
 
   /**

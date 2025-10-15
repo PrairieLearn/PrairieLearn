@@ -24,18 +24,15 @@ math-field.read-only {
   border-radius: 4px;
 }
 
-math-field.read-only::part(menu-toggle) {
-  display: none !important;
-}
-
 .pl-symbolic-input-input {
   height: auto;
 }
 
+math-field::part(menu-toggle) {
+  display: none;
+}
+
 @media (pointer: coarse) {
-  math-field::part(menu-toggle) {
-    display: none;
-  }
   math-field::part(virtual-keyboard-toggle) {
     display: none;
   }
@@ -59,17 +56,8 @@ math-field::part(content) {
 }
 
 /* Ensure that the tooltips appear above any bootstrap elements */
-math-field::part(virtual-keyboard-toggle),
-math-field::part(menu-toggle) {
+math-field::part(virtual-keyboard-toggle) {
   z-index: 3;
-}
-
-math-field:not([hide-menu])::part(menu-toggle) {
-  display: inherit;
-}
-
-math-field[hide-menu]::part(menu-toggle) {
-  display: none;
 }
 
 .form-control.is-invalid.no-validation-icon {

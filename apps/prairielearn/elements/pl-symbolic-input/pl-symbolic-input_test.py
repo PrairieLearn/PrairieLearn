@@ -6,26 +6,6 @@ symbolic_input = importlib.import_module("pl-symbolic-input")
 
 
 @pytest.mark.parametrize(
-    ("sub", "expected"),
-    [
-        ("|x|", "abs(x)"),
-        ("||x|+y|", "abs(abs(x)+y)"),
-        ("|a| + |b|", "abs(a) + abs(b)"),
-        ("|||x|||", "abs(abs(abs(x)))"),
-        ("x+y", "x+y"),
-        ("|x+2|", "abs(x+2)"),
-        ("|x + |y||", "abs(x + abs(y))"),
-        ("|x+|x+1+2+3+4||", "abs(x+abs(x+1+2+3+4))"),
-        ("|x+|x+1+2+3+4 ||", "abs(x+abs(x+1+2+3+4 ))"),
-        ("", ""),
-    ],
-)
-def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> None:
-    out = symbolic_input.format_submission_for_sympy(sub)
-    assert out == expected
-
-
-@pytest.mark.parametrize(
     ("sub", "allow_trig", "variables", "custom_functions", "expected"),
     [
         # Trig functions
@@ -51,7 +31,7 @@ def test_format_submission_for_sympy_absolute_value(sub: str, expected: str) -> 
         ("|x + 1|", False, ["x"], [], "abs(x + 1)"),
     ],
 )
-def test_format_submission_for_sympy(
+def test_format_formula_editor_submission_for_sympy(
     sub: str,
     allow_trig: bool,
     variables: list[str],
