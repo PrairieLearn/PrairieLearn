@@ -605,7 +605,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        # DAG
         elif (
             grading_method is GradingMethodType.DAG
             and not order_blocks_options.is_multi
@@ -614,7 +613,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        # MGRAPH
         elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
             # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)

@@ -224,7 +224,7 @@ def test_solve_multigraph() -> None:
 
     # Contains a cycle and should fail.
     with pytest.raises(
-        ValueError, match=r"Cycle encountered druing collapse of multigraph."
+        ValueError, match=r"Cycle encountered during collapse of multigraph."
     ):
         solve_multigraph(problem_6_cycle, problem_6_final)
 

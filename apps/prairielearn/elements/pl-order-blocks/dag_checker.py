@@ -2,13 +2,14 @@ import itertools
 from collections import Counter
 from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
+from typing import TypeAlias, TypeGuard
 
 import networkx as nx
 
-ColoredEdge = dict[str, list[str]]
-Edge = list[str]
-Multigraph = dict[str, Edge | ColoredEdge]
-Dag = dict[str, Edge]
+ColoredEdge: TypeAlias = list[list[str]]
+Edge: TypeAlias = list[str]
+Multigraph: TypeAlias = dict[str, Edge | ColoredEdge]
+Dag: TypeAlias = dict[str, Edge]
 
 
 def validate_grouping(
@@ -204,10 +205,11 @@ def grade_multigraph(
     final: str,
     group_belonging: Mapping[
         str, str | None
-    ] = {},  # TODO: add grouping correctness for block groups grading
+    ] = {}, 
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))
+    print(collapsed_dags)
 
     graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
     for graph in graphs:
@@ -319,13 +321,9 @@ def lcs_partial_credit(
 
 
 def dfs_until(
-    halting_condition: Callable[[tuple[str, ColoredEdge | Edge]], bool],
     multigraph: Multigraph,
     start: str,
-) -> tuple[str | None, Dag]:
-    # ruff throws an error for sphinx style doc strings with exception raising
-    # this doc string has to be ignored until implemented
-    # currently a todo in https://github.com/astral-sh/ruff/issues/12434
+) -> tuple[tuple[str, ColoredEdge] | None, Dag]:
     """
     Depth-First searches a multigraph until a node meets some specified requirements and then halts
     searching and returns the node or the reason for halting.
@@ -337,6 +335,7 @@ def dfs_until(
     edges the DFS was able to reach before halting.
     :raises ValueError: If a cycle is found in the multigraph.
     """  # noqa: DOC501 (false positive)
+    # ruff throws an error for sphinx style doc strings: https://github.com/astral-sh/ruff/issues/12434
     stack: list[tuple[str, list[str]]] = []
     visited: list[str] = []
     traversed: Dag = {}
@@ -345,17 +344,15 @@ def dfs_until(
         curr, visited = stack.pop(0)
         visited.append(curr)
 
-        if halting_condition((curr, multigraph[curr])):
-            return curr, traversed
+        edges = multigraph[curr]
+        if _is_edges_colored(edges):
+            return (curr, edges), traversed
 
-        # this is being checked in the halting condition
-        traversed[curr] = multigraph[curr]  # type: ignore
-
-        for target in multigraph[curr]:
+        for target in edges:
             # this determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
-                raise ValueError("Cycle encountered druing collapse of multigraph.")
-            if target not in visited:
+                raise ValueError("Cycle encountered during collapse of multigraph.")
+            if target not in visited and target is str:
                 stack.insert(0, (target, deepcopy(visited)))
 
     return None, traversed
@@ -370,13 +367,12 @@ def collapse_multigraph(
     edges.
     :param final: the sink in the multigraph, necessary to know the sink so that we have
     a starting point for the DFS to search for DAGs through the multigraph.
-    :param path_names: a dictionary containing names of
     :yield dag: yields a "fully collapsed" DAG once a DAG has been found.
     """
-    collapsing_graphs = [(multigraph, "")]
+    collapsing_graphs: list[Multigraph] = [multigraph]
     while collapsing_graphs:
-        graph, linked_color = collapsing_graphs.pop(0)
-        reason, dag = dfs_until(_is_edges_colored, graph, final)
+        graph = collapsing_graphs.pop(0)
+        reason, dag = dfs_until(graph, final)
 
         # DFS halted because source was reached
         if reason is None:
@@ -384,16 +380,19 @@ def collapse_multigraph(
             continue
 
         # DFS halted for _is_edges_colored, split graph into their respective partially collapsed graphs
-        for color, edges in graph[reason].items():  # type: ignore
-            if color.startswith("*") or linked_color in (color, ""):
-                partially_collapsed = deepcopy(graph)
-                partially_collapsed[reason] = edges
+        node, edges = reason
+        for split in edges:
+            partially_collapsed = deepcopy(graph)
+            partially_collapsed[node] = split
 
-                # Either linked_color is the same or it is assigned once here
-                collapsing_graphs.append((partially_collapsed, color))
+            # Either linked_color is the same or it is assigned once here
+            collapsing_graphs.append(partially_collapsed)
 
 
-def _is_edges_colored(value: tuple[str, Edge | ColoredEdge]) -> bool:
+def _is_edges_colored(edges: Edge | ColoredEdge) -> TypeGuard[ColoredEdge]:
     """a halting condition function for dfs_until, used to check for colored edges."""
-    _, edges = value
-    return bool(edges and isinstance(edges, dict))
+    for edge in edges:
+        if not isinstance(edge, list):
+            return False
+
+    return True

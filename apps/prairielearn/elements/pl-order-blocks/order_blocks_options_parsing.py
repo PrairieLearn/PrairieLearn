@@ -98,26 +98,25 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, ColoredEdge | Edge, bool | None]:
+) -> tuple[str, list | list[list], bool | None]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
-    final = pl.get_boolean_attrib(html_tag, "final", None)
-    match "|" in depends:
-        case True:
-            edges = {}
-            for i, split in enumerate(depends.split("|")):
-                if linked_color := re.match(r"(\w+):\s*(\w+(,\w+)*)", split):
-                    edges[linked_color[1]] = [
-                        tag.strip() for tag in linked_color[2].split(",")
-                    ]
-                else:
-                    # assign colors by index prefixed with a '*' which is a reserved character
-                    color = "*" + f"{i}"
-                    edges[color] = [edge.strip() for edge in split.split(",")]
-            return tag, edges, final
-        case False:
-            tag, edges = get_graph_info(html_tag)
-            return tag, edges, final
+    final = pl.get_boolean_attrib(html_tag, "final", False)
+    has_colors = "|" in depends
+    paths: dict[str, str] = {}
+    for i, name in enumerate(re.findall(r"\w+:", depends)):
+        paths[tag + str(i)] = name
+
+    depends = re.sub(r"\w+:", "", depends)
+
+    if has_colors:
+        depends = [
+            [tag.strip() for tag in color.split(",") if color != ""]
+            for color in depends.split("|")
+        ]
+    else:
+        depends = [tag.strip() for tag in depends.split(",")] if depends else []
+    return tag, depends, final
 
 
 class OrderBlocksOptions:
@@ -224,12 +223,16 @@ class OrderBlocksOptions:
 
         # Check that if it is a multigraph to ensure the final tag exists
         if self.is_multi:
+            has_final = False
+            seen_final = False
             for options in self.answer_options:
-                if options.final:
-                    return
-            raise ValueError(
-                "Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question."
-            )
+                seen_final = seen_final or options.final
+                has_final = (seen_final and has_final) ^ options.final
+
+            if not has_final:
+                raise ValueError(
+                    "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
+                )
 
     def _validate_order_blocks_options(self) -> None:
         if (
@@ -353,10 +356,9 @@ class AnswerOptions:
         self._check_options(html_element, order_block_options.grading_method)
         if order_block_options.is_multi:
             self.tag, self.depends, self.final = get_multigraph_info(html_element)
-            self.final = pl.get_boolean_attrib(html_element, "final", False)
         else:
             self.tag, self.depends = get_graph_info(html_element)
-            self.final = None
+            self.final = False
         self.correct = pl.get_boolean_attrib(
             html_element, "correct", ANSWER_CORRECT_DEFAULT
         )

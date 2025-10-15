@@ -282,9 +282,42 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
             [
                 {"tag": "1", "depends": r""},
                 {"tag": "2", "depends": r"1"},
+                {"tag": "3", "depends": r"1|2", "final": True},
+            ],
+            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+        ),
+    ],
+)
+def test_valid_final_tag(
+    options: dict, answer_options_list: list[dict], error: str
+) -> None:
+    """Tests two final tags in pl-answer-tag while using multigraph features"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_block_options = OrderBlocksOptions(html_element)
+    assert_answer_options(order_block_options, answer_options_list)
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+                "weight": 2,
+                "indentation": False,
+                "partial-credit": "lcs",
+            },
+            [
+                {"tag": "1", "depends": r""},
+                {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2"},
             ],
-            "Use of optional lines requires the 'final' attribute on the last <pl-answer> line in the question.",
+            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
         ),
     ],
 )
@@ -292,6 +325,40 @@ def test_final_tag_failure(
     options: dict, answer_options_list: list[dict], error: str
 ) -> None:
     """Tests missing final tag in pl-answer-tag while using multigraph features"""
+    tags_html = "\n".join(
+        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
+    )
+    question = build_tag("pl-order-blocks", options, tags_html)
+    html_element = lxml.html.fromstring(question)
+    order_blocks_options = OrderBlocksOptions(html_element)
+    with pytest.raises(ValueError, match=error):
+        order_blocks_options.validate()
+
+
+@pytest.mark.parametrize(
+    ("options", "answer_options_list", "error"),
+    [
+        (
+            {
+                "answers-name": "test",
+                "grading-method": "dag",
+                "weight": 2,
+                "indentation": False,
+                "partial-credit": "lcs",
+            },
+            [
+                {"tag": "1", "depends": r""},
+                {"tag": "2", "depends": r"1", "final": True},
+                {"tag": "3", "depends": r"1|2", "final": True},
+            ],
+            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+        ),
+    ],
+)
+def test_multiple_final_tag_failure(
+    options: dict, answer_options_list: list[dict], error: str
+) -> None:
+    """Tests two final tags in pl-answer-tag while using multigraph features"""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )
