@@ -1076,6 +1076,7 @@ export class CourseInstanceCopyEditor extends Editor {
         // such as ordering the two courses by `id` and locking in that order.
         const { questionPath, qid } = await copyQuestion({
           course: this.course,
+          from_course: this.from_course,
           from_path,
           from_qid,
           uuid,
@@ -1527,15 +1528,12 @@ export class QuestionAddEditor extends Editor {
 
       debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
 
-      // When copying from example course templates, skip README.md files at the root.
-      // They are specific to the template and will quickly drift from the copied question.
-      const shouldSkipReadme =
-        this.template_source === 'example' && this.template_qid.startsWith('template/');
-
       await copyQuestionFiles({
         fromPath,
         toPath: newQuestionPath,
-        skipTemplateReadme: shouldSkipReadme,
+        // When copying from example course templates, skip README.md files at the root.
+        // They are specific to the template and will quickly drift from the copied question.
+        skipReadme: this.template_source === 'example' && this.template_qid.startsWith('template/'),
       });
 
       debug('Read info.json');
@@ -1842,8 +1840,9 @@ export class QuestionRenameEditor extends Editor {
 }
 
 export class QuestionCopyEditor extends Editor {
+  private from_course: Course;
+  private from_course_label: string;
   private from_qid: string;
-  private from_course: string;
   private from_path: string;
   private is_transfer: boolean;
 
@@ -1851,25 +1850,26 @@ export class QuestionCopyEditor extends Editor {
 
   constructor(
     params: BaseEditorOptions & {
+      from_course: Course;
       from_qid: string;
-      from_course_short_name: Course['short_name'];
       from_path: string;
       is_transfer: boolean;
     },
   ) {
-    const { from_qid, from_course_short_name, from_path, is_transfer } = params;
+    const { from_qid, from_course, from_path, is_transfer } = params;
 
-    const from_course =
-      from_course_short_name == null ? 'unknown course' : `course ${from_course_short_name}`;
+    const from_course_label =
+      from_course.short_name == null ? 'unknown course' : `course ${from_course.short_name}`;
 
     super({
       ...params,
-      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course}` : ''}`,
+      description: `Copy question ${from_qid}${is_transfer ? ` from ${from_course_label}` : ''}`,
     });
 
+    this.from_course = from_course;
+    this.from_course_label = from_course_label;
     this.from_qid = from_qid;
     this.from_path = from_path;
-    this.from_course = from_course;
     this.is_transfer = is_transfer;
 
     this.uuid = crypto.randomUUID();
@@ -1880,6 +1880,7 @@ export class QuestionCopyEditor extends Editor {
 
     const { questionPath, qid } = await copyQuestion({
       course: this.course,
+      from_course: this.from_course,
       from_path: this.from_path,
       from_qid: this.from_qid,
       uuid: this.uuid,
@@ -1892,7 +1893,7 @@ export class QuestionCopyEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course})` : ''} to ${qid}`,
+      commitMessage: `copy question ${this.from_qid}${this.is_transfer ? ` (from ${this.from_course_label})` : ''} to ${qid}`,
     };
   }
 }
@@ -1917,18 +1918,19 @@ async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
  * Copy question files from one location to another, optionally skipping README.md
  * files at the root of example course template questions.
  *
- * @param fromPath - Source directory path
- * @param toPath - Destination directory path
- * @param skipTemplateReadme - If true, skip README.md at the root of the source directory
+ * @param options
+ * @param options.fromPath - Source directory path
+ * @param options.toPath - Destination directory path
+ * @param options.skipReadme - If true, skip copying README.md at the root of the source directory
  */
 async function copyQuestionFiles({
   fromPath,
   toPath,
-  skipTemplateReadme,
+  skipReadme,
 }: {
   fromPath: string;
   toPath: string;
-  skipTemplateReadme: boolean;
+  skipReadme: boolean;
 }): Promise<void> {
   await fs.copy(fromPath, toPath, {
     overwrite: false,
@@ -1936,7 +1938,7 @@ async function copyQuestionFiles({
     filter: (src: string) => {
       // When copying from example course templates, skip README.md files at the root.
       // They are specific to the template and will quickly drift from the copied question.
-      if (skipTemplateReadme && src === path.join(fromPath, 'README.md')) {
+      if (skipReadme && src === path.join(fromPath, 'README.md')) {
         return false;
       }
       return true;
@@ -1946,6 +1948,7 @@ async function copyQuestionFiles({
 
 async function copyQuestion({
   course,
+  from_course,
   from_path,
   from_qid,
   uuid,
@@ -1953,6 +1956,7 @@ async function copyQuestion({
   existingQids: oldShortNames,
 }: {
   course: Course;
+  from_course: Course;
   from_path: string;
   from_qid: string;
   uuid: string;
@@ -1980,15 +1984,12 @@ async function copyQuestion({
 
   debug(`Copy question from ${fromPath} to ${toPath}`);
 
-  // When copying from example course templates, skip README.md files at the root.
-  // They are specific to the template and will quickly drift from the copied question.
-  const isFromExampleCourseTemplate =
-    fromPath.includes(EXAMPLE_COURSE_PATH) && from_qid.startsWith('template/');
-
   await copyQuestionFiles({
     fromPath,
     toPath,
-    skipTemplateReadme: isFromExampleCourseTemplate,
+    // When copying from example course templates, skip README.md files at the root.
+    // They are specific to the template and will quickly drift from the copied question.
+    skipReadme: from_course.path === EXAMPLE_COURSE_PATH && from_qid.startsWith('template/'),
   });
 
   debug('Read info.json');
