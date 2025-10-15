@@ -91,7 +91,6 @@ function ExtensionModal({
               {...register('archive_date', {
                 required: 'Archive date is required',
                 validate: (value) => {
-                  if (mode === 'add') return true;
                   if (!mainArchiveDate) return true;
                   const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
                   return (

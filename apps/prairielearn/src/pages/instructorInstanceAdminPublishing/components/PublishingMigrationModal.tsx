@@ -15,39 +15,17 @@ export function PublishingMigrationModal({
   origHash,
 }: PublishingMigrationModalProps) {
   const [showMigrationModal, setShowMigrationModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Attempt migration with the provided access rules
   const migrationResult = migrateAccessRuleJsonToPublishingConfiguration(accessRules);
 
-  const handleConfirm = async () => {
-    if (!migrationResult.success) return;
-
-    setIsSubmitting(true);
-    const requestBody = {
-      __csrf_token: csrfToken,
-      __action: 'migrate_access_rules',
-      orig_hash: origHash,
-    };
-
-    const response = await fetch(window.location.pathname, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (response.ok) {
-      setShowMigrationModal(false);
-      window.location.reload();
-    } else {
-      setIsSubmitting(false);
-    }
-  };
-
   return (
     <>
+      <form id="migration-form" method="POST" class="d-none">
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        <input type="hidden" name="__action" value="migrate_access_rules" />
+        <input type="hidden" name="orig_hash" value={origHash} />
+      </form>
       <button
         type="button"
         class="btn btn-outline-light"
@@ -107,13 +85,8 @@ export function PublishingMigrationModal({
                   Cancel
                 </button>
                 {migrationResult.success && (
-                  <button
-                    type="button"
-                    class="btn btn-primary"
-                    disabled={isSubmitting}
-                    onClick={handleConfirm}
-                  >
-                    {isSubmitting ? 'Migrating...' : 'Confirm Migration'}
+                  <button type="submit" class="btn btn-primary" form="migration-form">
+                    Confirm Migration
                   </button>
                 )}
               </div>

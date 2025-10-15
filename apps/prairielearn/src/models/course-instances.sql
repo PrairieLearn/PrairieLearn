@@ -82,8 +82,8 @@ WHERE
     OR c.example_course IS TRUE
   )
 ORDER BY
-  d.start_date DESC NULLS LAST,
-  d.end_date DESC NULLS LAST,
+  d.access_start_date DESC NULLS LAST,
+  d.access_end_date DESC NULLS LAST,
   ci.id DESC;
 
 -- BLOCK select_users_with_course_instance_access

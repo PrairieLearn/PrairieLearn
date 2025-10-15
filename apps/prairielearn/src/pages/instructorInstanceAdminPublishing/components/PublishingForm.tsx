@@ -96,6 +96,7 @@ export function PublishingForm({
     handleSubmit,
     watch,
     setValue,
+    trigger,
     formState: { errors },
   } = useForm<PublishingFormValues>({
     mode: 'onChange',
@@ -218,12 +219,14 @@ export function PublishingForm({
     }
   };
 
-  const handleAddWeek = (field: 'publishDate' | 'archiveDate') => {
+  const handleAddWeek = async (field: 'publishDate' | 'archiveDate') => {
     const currentValue = field === 'publishDate' ? publishDate : archiveDate;
     if (currentValue) {
       const currentDate = Temporal.PlainDateTime.from(currentValue);
       const newValue = currentDate.add({ weeks: 1 });
       setValue(field, newValue.toString());
+      await trigger('publishDate');
+      await trigger('archiveDate');
     }
   };
 
@@ -391,6 +394,7 @@ export function PublishingForm({
                         disabled={!canEdit}
                         {...register('publishDate', {
                           validate: validatePublishDate,
+                          deps: ['archiveDate'],
                         })}
                       />
                       <span class="input-group-text">{courseInstance.display_timezone}</span>
