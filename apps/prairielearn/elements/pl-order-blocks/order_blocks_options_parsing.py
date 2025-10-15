@@ -169,7 +169,7 @@ class OrderBlocksOptions:
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
         self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
-        self.is_multi = is_multigraph(html_element)
+        self.is_optional = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
         self.answer_options = collect_answer_options(html_element, self)
@@ -222,7 +222,7 @@ class OrderBlocksOptions:
         self._validate_answer_options()
 
         # Check that if it is a multigraph to ensure the final tag exists
-        if self.is_multi:
+        if self.is_optional:
             has_final = False
             seen_final = False
             for options in self.answer_options:
@@ -354,7 +354,7 @@ class AnswerOptions:
         order_block_options: OrderBlocksOptions,
     ) -> None:
         self._check_options(html_element, order_block_options.grading_method)
-        if order_block_options.is_multi:
+        if order_block_options.is_optional:
             self.tag, self.depends, self.final = get_multigraph_info(html_element)
         else:
             self.tag, self.depends = get_graph_info(html_element)

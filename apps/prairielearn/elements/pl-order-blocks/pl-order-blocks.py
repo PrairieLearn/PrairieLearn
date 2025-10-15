@@ -66,9 +66,6 @@ FIRST_WRONG_FEEDBACK = {
 }
 
 
-# This needs to be added becuase depends graph cannot be of type
-# list[list[str]] becuase this function can only be called if
-# order_block_options.is_multi is false
 @no_type_check
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
@@ -217,12 +214,12 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     # because the depends graph will be missing nodes in order to collapse the multigraph
     if (
         data_copy["partial_scores"][order_blocks_options.answers_name]["score"] != 1
-        and not order_blocks_options.is_multi
+        and not order_blocks_options.is_optional
     ):
         data["correct_answers"][order_blocks_options.answers_name] = solve_problem(
             correct_answers,
             order_blocks_options.grading_method,
-            order_blocks_options.is_multi,
+            order_blocks_options.is_optional,
         )
 
 
@@ -243,7 +240,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     inline = order_blocks_options.inline
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
-    is_multi = order_blocks_options.is_multi
+    is_multi = order_blocks_options.is_optional
 
     block_formatting = (
         "pl-order-blocks-code"
@@ -413,7 +410,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             }
             for solution in (
                 solve_problem(correct_answers, grading_method, is_multi)
-                if order_blocks_options.is_multi
+                if order_blocks_options.is_optional
                 else correct_answers
             )
         ]
@@ -607,13 +604,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         elif (
             grading_method is GradingMethodType.DAG
-            and not order_blocks_options.is_multi
+            and not order_blocks_options.is_optional
         ):
             depends_graph, group_belonging = extract_dag(true_answer_list)
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif grading_method is GradingMethodType.DAG and order_blocks_options.is_multi:
+        elif grading_method is GradingMethodType.DAG and order_blocks_options.is_optional:
             # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)
 
@@ -710,7 +707,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     answer_name = order_block_options.answers_name
     answer_name_field = answer_name + "-input"
     correct_answers = data["correct_answers"][answer_name]
-    is_multi = order_block_options.is_multi
+    is_multi = order_block_options.is_optional
 
     # Right now invalid input must mean an empty response. Because user input is only
     # through drag and drop, there is no other way for their to be invalid input. This
@@ -724,7 +721,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif data["test_type"] == "correct":
         answer = (
             solve_problem(deepcopy(correct_answers), grading_method, is_multi)
-            if order_block_options.is_multi
+            if order_block_options.is_optional
             else deepcopy(correct_answers)
         )
         data["raw_submitted_answers"][answer_name_field] = json.dumps(answer)
@@ -739,7 +736,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif data["test_type"] == "incorrect":
         answer = (
             solve_problem(deepcopy(correct_answers), grading_method, is_multi)
-            if order_block_options.is_multi
+            if order_block_options.is_optional
             else deepcopy(correct_answers)
         )
         answer.pop(0)
