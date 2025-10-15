@@ -156,7 +156,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # appearing in assessment instance logs.
     #
     # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
-    # Popping file_name ensures backwards compatibility for older submissions that saved the file to
+    # Popping file_name ensures that we update older submissions that saved the file to
     # submitted_answers[file_name].
 
     data["submitted_answers"].pop(file_name, None)
