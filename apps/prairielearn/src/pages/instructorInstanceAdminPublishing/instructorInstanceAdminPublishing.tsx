@@ -40,10 +40,14 @@ router.get(
     );
 
     const {
-      authz_data: { has_course_instance_permission_edit: hasCourseInstancePermissionEdit },
+      authz_data: {
+        has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
+        has_course_instance_permission_view: hasCourseInstancePermissionView,
+      },
     } = getPageContext(res.locals);
 
     assert(hasCourseInstancePermissionEdit !== undefined);
+    assert(hasCourseInstancePermissionView !== undefined);
     const { course_instance: courseInstance } = getCourseInstanceContext(res.locals, 'instructor');
 
     // Calculate orig_hash for the infoCourseInstance.json file
@@ -66,8 +70,6 @@ router.get(
       { course_instance_id: res.locals.course_instance.id },
       CourseInstancePublishingRuleSchema,
     );
-
-    const hasAccessRules = accessRules.length > 0;
 
     res.send(
       PageLayout({
@@ -93,7 +95,8 @@ router.get(
               accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
-              hasAccessRules={hasAccessRules}
+              hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+              accessRules={accessRules}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
             />
