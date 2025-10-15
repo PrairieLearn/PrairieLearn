@@ -195,7 +195,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
 
-    if len(str(element.text)) == 0 and input_param_name is None and source_file_name is None:
+    if (
+        len(str(element.text)) == 0
+        and input_param_name is None
+        and source_file_name is None
+    ):
         raise ValueError(
             "No graph source given! Must either define graph in HTML, provide source in params, or use source-file-name attribute."
         )

@@ -44,7 +44,9 @@ def test_prepare_with_source_file_name_and_content_error() -> None:
     }
 
     # Create element HTML with both source-file-name and content
-    element_html = '<pl-graph source-file-name="test.dot">digraph G { A -> B }</pl-graph>'
+    element_html = (
+        '<pl-graph source-file-name="test.dot">digraph G { A -> B }</pl-graph>'
+    )
 
     # Verify that prepare raises an error
     with pytest.raises(ValueError, match="Existing graph content cannot be added"):
