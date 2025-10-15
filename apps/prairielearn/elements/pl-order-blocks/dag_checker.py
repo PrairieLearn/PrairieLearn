@@ -348,11 +348,12 @@ def dfs_until(
         if _is_edges_colored(edges):
             return (curr, edges), traversed
 
+        traversed[curr] = edges
         for target in edges:
             # this determines if the proposed target edge is a back edge if so it contains a cycle
             if target in visited and visited.index(curr) >= visited.index(target):
                 raise ValueError("Cycle encountered during collapse of multigraph.")
-            if target not in visited and target is str:
+            if target not in visited:
                 stack.insert(0, (target, deepcopy(visited)))
 
     return None, traversed
@@ -392,7 +393,7 @@ def collapse_multigraph(
 def _is_edges_colored(edges: Edge | ColoredEdge) -> TypeGuard[ColoredEdge]:
     """a halting condition function for dfs_until, used to check for colored edges."""
     for edge in edges:
-        if not isinstance(edge, list):
-            return False
+        if isinstance(edge, list):
+            return True
 
-    return True
+    return False
