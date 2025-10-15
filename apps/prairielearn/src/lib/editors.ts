@@ -1526,7 +1526,22 @@ export class QuestionAddEditor extends Editor {
       }
 
       debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
-      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
+
+      // When copying from example course templates, skip README.md files.
+      // They are specific to the template and will quickly drift from the copied question.
+      const shouldSkipReadme =
+        this.template_source === 'example' && this.template_qid.startsWith('template/');
+
+      await fs.copy(fromPath, newQuestionPath, {
+        overwrite: false,
+        errorOnExist: true,
+        filter: (src: string) => {
+          if (shouldSkipReadme && path.basename(src) === 'README.md') {
+            return false;
+          }
+          return true;
+        },
+      });
 
       debug('Read info.json');
       const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
@@ -1938,7 +1953,22 @@ async function copyQuestion({
   const toPath = questionPath;
 
   debug(`Copy question from ${fromPath} to ${toPath}`);
-  await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+  // When copying from example course templates, skip README.md files.
+  // They are specific to the template and will quickly drift from the copied question.
+  const isFromExampleCourseTemplate =
+    fromPath.includes(EXAMPLE_COURSE_PATH) && from_qid.startsWith('template/');
+
+  await fs.copy(fromPath, toPath, {
+    overwrite: false,
+    errorOnExist: true,
+    filter: (src: string) => {
+      if (isFromExampleCourseTemplate && path.basename(src) === 'README.md') {
+        return false;
+      }
+      return true;
+    },
+  });
 
   debug('Read info.json');
   const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
