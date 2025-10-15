@@ -276,8 +276,6 @@ export async function aiGrade({
         rubric_items,
       });
 
-      return false;
-
       // If the submission contains images, prompt the model to transcribe any relevant information
       // out of the image.
       const explanationDescription = run(() => {

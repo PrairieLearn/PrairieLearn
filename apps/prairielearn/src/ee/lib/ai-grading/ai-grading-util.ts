@@ -256,8 +256,6 @@ export function generateSubmissionMessage({
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
 
-  console.log('submission_text', submission_text)
-
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
@@ -267,10 +265,7 @@ export function generateSubmissionMessage({
     .contents()
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-      console.log($submission_html(node).toString());
-      console.log($submission_html(node).data());
       if (imageCaptureUUID) {
-        console.log('Image capture node')
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           content.push({
@@ -293,9 +288,6 @@ export function generateSubmissionMessage({
           return options?.submitted_file_name;
         });
 
-        console.log('Submitted answer', submitted_answer);
-        console.log('File name', fileName);
-
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
@@ -310,7 +302,8 @@ export function generateSubmissionMessage({
 
         if (fileData) {
           // New style, submitted_answer["_files"] contains the submitted base-64 encoded image URL for the image capture.
-          image_url = fileData.contents;
+          // fileData.contents does not contain the MIME type header, so we add it.
+          image_url = `data:image/jpeg;base64,${fileData.contents}`;
         } else if (submitted_answer[fileName]) {
           // Old style, submitted_answer[fileName] contains the base-64 encoded image URL for the image capture.
           image_url = submitted_answer[fileName];
@@ -321,7 +314,6 @@ export function generateSubmissionMessage({
             type: 'input_text',
             text: `Image capture with ${fileName} was not captured.`,
           });
-          return;
         }
 
         content.push({
@@ -330,7 +322,6 @@ export function generateSubmissionMessage({
           detail: 'auto',
         });
       } else {
-        console.log('Text node')
         submissionTextSegment += $submission_html(node).text();
       }
     });
@@ -341,8 +332,6 @@ export function generateSubmissionMessage({
       text: submissionTextSegment.trim(),
     });
   }
-
-  console.log('content', content);
 
   return {
     role: 'user',
