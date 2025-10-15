@@ -256,6 +256,8 @@ export function generateSubmissionMessage({
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
 
+  console.log('submission_text', submission_text)
+
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
@@ -265,7 +267,10 @@ export function generateSubmissionMessage({
     .contents()
     .each((_, node) => {
       const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      console.log($submission_html(node).toString());
+      console.log($submission_html(node).data());
       if (imageCaptureUUID) {
+        console.log('Image capture node')
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           content.push({
@@ -287,6 +292,9 @@ export function generateSubmissionMessage({
 
           return options?.submitted_file_name;
         });
+
+        console.log('Submitted answer', submitted_answer);
+        console.log('File name', fileName);
 
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
@@ -322,6 +330,7 @@ export function generateSubmissionMessage({
           detail: 'auto',
         });
       } else {
+        console.log('Text node')
         submissionTextSegment += $submission_html(node).text();
       }
     });
@@ -332,6 +341,8 @@ export function generateSubmissionMessage({
       text: submissionTextSegment.trim(),
     });
   }
+
+  console.log('content', content);
 
   return {
     role: 'user',
