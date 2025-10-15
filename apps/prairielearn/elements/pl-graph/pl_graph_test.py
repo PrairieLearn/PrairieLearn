@@ -25,7 +25,7 @@ def test_render_with_source_file_name() -> None:
         }
 
         # Create element HTML with source-file-name
-        element_html = f'<pl-graph source-file-name="test.dot"></pl-graph>'
+        element_html = '<pl-graph source-file-name="test.dot"></pl-graph>'
 
         # Render the element
         result = graph.render(element_html, data)

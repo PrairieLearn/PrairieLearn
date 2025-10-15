@@ -1,5 +1,5 @@
-# Example of record-based nodes
-# Reference: https://graphviz.org/doc/info/shapes.html#record
+// Example of record-based nodes
+// Reference: https://graphviz.org/doc/info/shapes.html#record
 digraph structs {
     node [shape=record];
     struct1 [label="<f0> left|<f1> middle|<f2> right"];
