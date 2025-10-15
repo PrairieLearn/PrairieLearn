@@ -876,7 +876,7 @@ export function RubricRow({
         >
           <i class="fas fa-trash text-danger" />
         </button>
-        {item.id && <input type="hidden" name="id" value={item.id} />}
+        {item.id && <input type="hidden" name="id" value={`rubric_item[${item.id}][id]`} />}
       </td>
 
       <td class="align-middle">
