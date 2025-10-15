@@ -21,7 +21,6 @@ import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../.
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -261,7 +260,6 @@ export function InstanceQuestion({
         </div>
       </div>
     `,
-    postContent: RubricSettingsModal({ resLocals }),
   });
 }
 

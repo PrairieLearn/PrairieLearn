@@ -83,7 +83,7 @@ window.resetInstructorGradingPanel = function () {
 
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
     button.addEventListener('click', function () {
-      $('.js-rubric-settings-modal').modal('show');
+      // Decide we should remove this or use this to show the component
     }),
   );
 
