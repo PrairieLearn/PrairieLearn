@@ -45,6 +45,9 @@
     const standardMenuItems = new Set(['cut', 'copy', 'paste', 'select-all']);
     const endMenuItems = mf.menuItems.filter((item) => standardMenuItems.has(item.id));
 
+    // If the allow-trig attribute is set, basic trig functions are added to the virtual keyboard
+    const allowTrig = mf.getAttribute('allow-trig');
+
     mf.menuItems = [
       {
         id: 'fraction',
@@ -82,17 +85,7 @@
           [
             { class: 'small', latex: '{#@}^{#?}', width: 1 },
             { class: 'small', latex: '{#@}^{2}', width: 1 },
-            {
-              class: 'small',
-              latex: '\\sin',
-              insert: '\\sin({#0})',
-              width: 1,
-              variants: [
-                { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
-                { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
-                { class: 'small', latex: '\\mathrm{asinh}', insert: '\\operatorname{asinh}({#0})' },
-              ],
-            },
+            { class: 'small', latex: '\\frac{#@}{#0}', width: 1.3 },
             '[separator]',
             '7',
             '8',
@@ -104,19 +97,14 @@
             '\\pi',
           ],
           [
-            { class: 'small', latex: '\\frac{#@}{#0}', width: 1.3 },
-            { class: 'small', latex: '\\sqrt', insert: '\\sqrt{(#0)}', width: 1 },
+            { class: 'small', latex: '\\sqrt', insert: '\\sqrt{#0}', width: 1 },
             {
               class: 'small',
-              latex: '\\cos',
-              insert: '\\cos({#0})',
-              width: 1,
-              variants: [
-                { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
-                { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
-                { class: 'small', latex: '\\mathrm{acosh}', insert: '\\operatorname{acosh}({#0})' },
-              ],
+              latex: '\\ln',
+              insert: '\\ln({#0})',
+              variants: [{ class: 'small', latex: '\\log', insert: '\\log({#0})' }],
             },
+            { class: 'small', latex: '!', width: 1 },
             '[separator]',
             '4',
             '5',
@@ -128,29 +116,9 @@
             '=',
           ],
           [
-            { class: 'small', latex: '!', width: 1 },
-            {
-              class: 'small',
-              latex: '\\ln',
-              insert: '\\ln({#0})',
-              variants: [{ class: 'small', latex: '\\log', insert: '\\log({#0})' }],
-            },
-            {
-              class: 'small',
-              latex: '\\tan',
-              insert: '\\tan({#0})',
-              width: 1,
-              variants: [
-                { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
-                { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
-                { class: 'small', latex: '\\mathrm{atanh}', insert: '\\operatorname{atanh}({#0})' },
-                {
-                  class: 'small',
-                  latex: '\\mathrm{arctan2}',
-                  insert: '\\operatorname{arctan2}({#0})',
-                },
-              ],
-            },
+            { class: 'small', latex: '|#0|', insert: '\\abs({#0})' },
+            { class: 'small', latex: '\\min', insert: '\\min({#0})' },
+            { class: 'small', latex: '\\max', insert: '\\max({#0})' },
             '[separator]',
             '1',
             '2',
@@ -166,9 +134,62 @@
             },
           ],
           [
-            { class: 'small', latex: '\\min', insert: '\\min({#0})' },
-            { class: 'small', latex: '\\max', insert: '\\max({#0})' },
-            { class: 'small', latex: '|#0|', insert: '|{#0}|' },
+            allowTrig
+              ? {
+                  class: 'small',
+                  latex: '\\sin',
+                  insert: '\\sin({#0})',
+                  width: 1,
+                  variants: [
+                    { class: 'small', latex: '\\csc', insert: '\\csc({#0})' },
+                    { class: 'small', latex: '\\arcsin', insert: '\\arcsin({#0})' },
+                    {
+                      class: 'small',
+                      latex: '\\mathrm{asinh}',
+                      insert: '\\operatorname{asinh}({#0})',
+                    },
+                  ],
+                }
+              : '[separator]',
+            allowTrig
+              ? {
+                  class: 'small',
+                  latex: '\\cos',
+                  insert: '\\cos({#0})',
+                  width: 1,
+                  variants: [
+                    { class: 'small', latex: '\\sec', insert: '\\sec({#0})' },
+                    { class: 'small', latex: '\\arccos', insert: '\\arccos({#0})' },
+                    {
+                      class: 'small',
+                      latex: '\\mathrm{acosh}',
+                      insert: '\\operatorname{acosh}({#0})',
+                    },
+                  ],
+                }
+              : '[separator]',
+            allowTrig
+              ? {
+                  class: 'small',
+                  latex: '\\tan',
+                  insert: '\\tan({#0})',
+                  width: 1,
+                  variants: [
+                    { class: 'small', latex: '\\cot', insert: '\\cot({#0})' },
+                    { class: 'small', latex: '\\arctan', insert: '\\arctan({#0})' },
+                    {
+                      class: 'small',
+                      latex: '\\mathrm{atanh}',
+                      insert: '\\operatorname{atanh}({#0})',
+                    },
+                    {
+                      class: 'small',
+                      latex: '\\mathrm{arctan2}',
+                      insert: '\\operatorname{arctan2}({#0})',
+                    },
+                  ],
+                }
+              : '[separator]',
             '[separator]',
             { label: '0', width: 2 },
             '.',
@@ -231,6 +252,13 @@
       },
       '*': {
         value: '\\cdot',
+      },
+      '|': {
+        value: '\\abs{#0}',
+      },
+      // Prevent double | key presses being replaced by absabs
+      '||': {
+        value: '\\abs{#0}',
       },
       sqrt: {
         value: '\\sqrt{#0}',
@@ -312,9 +340,9 @@
   };
 
   /**
-   * Initialize list of allowed function names for a <math-field> element. The list is determined by
-   * the allow-trig and custom-functions attributes and each allowed function is added as a "macro" to
-   * automatically replace individual letters with well-formatted, atomic function name blocks.
+   * Initialize list of allowed function names for a <math-field> element. The list is filled with default
+   * functions and those specified in the custom-functions attribute. Each allowed function is added as a
+   *  "macro" to automatically replace individual letters with well-formatted, atomic function name blocks.
    *
    * @param {HTMLElement} mf The <math-field> element to initialize
    */
