@@ -1666,7 +1666,7 @@ def generate(data):
 
 Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported. The currently used Graphviz version is 2.44.0.
 
-The `source-file-name` attribute is particularly useful when working with graphs that contain special characters like angle brackets (`<>`), which are used in [record-based nodes](https://graphviz.org/doc/info/shapes.html#record) but can interfere with HTML parsing. By placing the graph content in an external file, you can avoid the need to escape these characters.
+The `source-file-name` attribute is particularly useful when working with static graphs that contain special characters like angle brackets (`<>`), which are used in <a href="https://graphviz.org/doc/info/shapes.html#record">record-based nodes</a> but can interfere with HTML parsing. By placing the graph content in an external file, you can avoid the need to escape these characters.
 
 #### Example implementations
 
