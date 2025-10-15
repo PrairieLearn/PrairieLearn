@@ -177,7 +177,10 @@ export function PublishingExtensions({
     setModalDefaults({
       name: '',
       archive_date: courseInstance.publishing_archive_date
-        ? DateToPlainDateTimeString(courseInstance.publishing_archive_date, courseInstance.display_timezone)
+        ? DateToPlainDateTimeString(
+            courseInstance.publishing_archive_date,
+            courseInstance.display_timezone,
+          )
         : '',
       uids: '',
     });
@@ -189,7 +192,10 @@ export function PublishingExtensions({
     setEditExtensionId(extension.id);
     setModalDefaults({
       name: extension.name ?? '',
-      archive_date: DateToPlainDateTimeString(extension.archive_date, courseInstance.display_timezone),
+      archive_date: DateToPlainDateTimeString(
+        extension.archive_date,
+        courseInstance.display_timezone,
+      ),
       uids: extension.user_data
         .map((u) => u.uid)
         .sort()

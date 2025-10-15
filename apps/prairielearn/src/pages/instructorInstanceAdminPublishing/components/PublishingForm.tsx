@@ -2,13 +2,18 @@ import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
+import { Alert } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { DateToPlainDateTimeString, nowDateInTimezone, plainDateTimeStringToDate } from '../utils/dateUtils.js';
+import {
+  DateToPlainDateTimeString,
+  nowDateInTimezone,
+  plainDateTimeStringToDate,
+} from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
@@ -64,6 +69,7 @@ export function PublishingForm({
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
 }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const originalPublishDate = courseInstance.publishing_publish_date;
   const originalArchiveDate = courseInstance.publishing_archive_date;
@@ -77,8 +83,12 @@ export function PublishingForm({
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(currentStatus);
 
   const defaultValues: PublishingFormValues = {
-    publishDate: originalPublishDate ? DateToPlainDateTimeString(originalPublishDate, courseInstance.display_timezone) : '',
-    archiveDate: originalArchiveDate ? DateToPlainDateTimeString(originalArchiveDate, courseInstance.display_timezone) : '',
+    publishDate: originalPublishDate
+      ? DateToPlainDateTimeString(originalPublishDate, courseInstance.display_timezone)
+      : '',
+    archiveDate: originalArchiveDate
+      ? DateToPlainDateTimeString(originalArchiveDate, courseInstance.display_timezone)
+      : '',
   };
 
   const {
@@ -193,13 +203,16 @@ export function PublishingForm({
 
       if (response.ok) {
         window.location.reload();
-      } else {
-        throw new Error('Failed to update access control');
+        return;
+      }
+
+      const errorData = await response.json();
+      if (errorData.message) {
+        setErrorMessage(errorData.message);
       }
     } catch (error) {
       console.error('Error updating access control:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to update access control. Please try again.');
+      setErrorMessage('Failed to update access control. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -261,6 +274,11 @@ export function PublishingForm({
 
   return (
     <>
+      {errorMessage && (
+        <Alert variant="danger" dismissible onClose={() => setErrorMessage(null)}>
+          {errorMessage}
+        </Alert>
+      )}
       <div class="mb-4">
         <h4 class="mb-4">Publishing</h4>
 

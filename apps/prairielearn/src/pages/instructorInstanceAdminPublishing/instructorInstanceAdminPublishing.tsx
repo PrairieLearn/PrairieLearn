@@ -61,6 +61,14 @@ router.get(
       ).toString();
     }
 
+    const accessRules = await queryRows(
+      sql.course_instance_access_rules,
+      { course_instance_id: res.locals.course_instance.id },
+      CourseInstancePublishingRuleSchema,
+    );
+
+    const hasAccessRules = accessRules.length > 0;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -85,6 +93,7 @@ router.get(
               accessControlExtensions={accessControlExtensions}
               courseInstance={courseInstance}
               hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
+              hasAccessRules={hasAccessRules}
               csrfToken={res.locals.__csrf_token}
               origHash={origHash}
             />
@@ -107,230 +116,256 @@ router.post(
     }
 
     if (req.body.__action === 'update_access_control') {
-      // Validate that we're not mixing systems
-      const accessRules = await queryRows(
-        sql.course_instance_access_rules,
-        { course_instance_id: res.locals.course_instance.id },
-        CourseInstancePublishingRuleSchema,
-      );
-
-      if (accessRules.length > 0) {
-        throw new error.HttpStatusError(
-          400,
-          'Cannot update access control when legacy allowAccess rules are present',
-        );
-      }
-
-      // Read the existing infoCourseInstance.json file
-      const infoCourseInstancePath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'infoCourseInstance.json',
-      );
-
-      if (!(await fs.pathExists(infoCourseInstancePath))) {
-        throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
-      }
-
-      const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
-        await fs.readFile(infoCourseInstancePath, 'utf8'),
-      );
-
-      const parsedBody = z
-        .object({
-          accessControl: z.object({
-            publishDate: z.string().nullable(),
-            archiveDate: z.string().nullable(),
-          }),
-        })
-        .parse(req.body);
-
-      // Update the publishing settings
-      const resolvedPublishing = {
-        publishDate: propertyValueWithDefault(
-          courseInstanceInfo.publishing?.publishDate,
-          parsedBody.accessControl.publishDate,
-          (v: string | null) => v === null || v === '',
-        ),
-        archiveDate: propertyValueWithDefault(
-          courseInstanceInfo.publishing?.archiveDate,
-          parsedBody.accessControl.archiveDate,
-          (v: string | null) => v === null || v === '',
-        ),
-      };
-      const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
-      if (!hasPublishing) {
-        courseInstanceInfo.publishing = undefined;
-      } else {
-        courseInstanceInfo.publishing = resolvedPublishing;
-      }
-
-      // Format and write the updated JSON
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
-
-      // JSON file has been formatted and is ready to be written
-      const paths = getPaths(undefined, res.locals);
-      const editor = new FileModifyEditor({
-        locals: res.locals as any,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: infoCourseInstancePath,
-        editContents: b64EncodeUnicode(formattedJson),
-        origHash: req.body.orig_hash,
-      });
-
-      const serverJob = await editor.prepareServerJob();
       try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        return;
-      }
+        // Validate that we're not mixing systems
+        const accessRules = await queryRows(
+          sql.course_instance_access_rules,
+          { course_instance_id: res.locals.course_instance.id },
+          CourseInstancePublishingRuleSchema,
+        );
 
-      flash('success', 'Access control settings updated successfully');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'add_extension') {
-      const EmailsSchema = z
-        .array(z.string().trim().email())
-        .min(1, 'At least one UID is required');
-      const AddExtensionSchema = z.object({
-        __action: z.literal('add_extension'),
-        name: z
-          .string()
-          .trim()
-          .optional()
-          .transform((v) => (v === '' || v === undefined ? null : v)),
-        archive_date: z.string().trim().min(1, 'Archive date is required'),
-        uids: z.preprocess(
-          (val) =>
-            typeof val === 'string'
-              ? val
-                  .split(/[\n,\s]+/)
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0)
-              : val,
-          EmailsSchema,
-        ),
-      });
-      const body = AddExtensionSchema.parse(req.body);
+        if (accessRules.length > 0) {
+          res.status(400).json({
+            message: 'Cannot update access control when legacy allowAccess rules are present',
+          });
+          return;
+        }
 
-      const enrollments = await getEnrollmentsByUidsInCourseInstance({
-        uids: body.uids,
-        course_instance_id: res.locals.course_instance.id,
-      });
+        // Read the existing infoCourseInstance.json file
+        const infoCourseInstancePath = path.join(
+          res.locals.course.path,
+          'courseInstances',
+          res.locals.course_instance.short_name,
+          'infoCourseInstance.json',
+        );
 
-      if (enrollments.length === 0) {
-        throw new error.HttpStatusError(400, 'No enrollments found for any of the provided UIDs');
-      }
+        if (!(await fs.pathExists(infoCourseInstancePath))) {
+          res.status(400).json({ message: 'infoCourseInstance.json does not exist' });
+          return;
+        }
 
-      const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
+        const courseInstanceInfo: CourseInstanceJsonInput = JSON.parse(
+          await fs.readFile(infoCourseInstancePath, 'utf8'),
+        );
 
-      await createPublishingExtensionWithEnrollments({
-        course_instance_id: res.locals.course_instance.id,
-        name: body.name ?? null,
-        archive_date: new Date(body.archive_date),
-        enrollment_ids: enrollmentIds,
-      });
+        const parsedBody = z
+          .object({
+            accessControl: z.object({
+              publishDate: z.string().nullable(),
+              archiveDate: z.string().nullable(),
+            }),
+          })
+          .parse(req.body);
 
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'delete_extension') {
-      const extension_id = req.body.extension_id;
+        // Update the publishing settings
+        const resolvedPublishing = {
+          publishDate: propertyValueWithDefault(
+            courseInstanceInfo.publishing?.publishDate,
+            parsedBody.accessControl.publishDate,
+            (v: string | null) => v === null || v === '',
+          ),
+          archiveDate: propertyValueWithDefault(
+            courseInstanceInfo.publishing?.archiveDate,
+            parsedBody.accessControl.archiveDate,
+            (v: string | null) => v === null || v === '',
+          ),
+        };
+        const hasPublishing = Object.values(resolvedPublishing).some((v) => v !== undefined);
+        if (!hasPublishing) {
+          courseInstanceInfo.publishing = undefined;
+        } else {
+          courseInstanceInfo.publishing = resolvedPublishing;
+        }
 
-      await deletePublishingExtension({
-        extension_id,
-        course_instance_id: res.locals.course_instance.id,
-      });
+        // Format and write the updated JSON
+        const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
-      res.status(200).json({ success: true });
-      return;
-    } else if (req.body.__action === 'edit_extension') {
-      const EmailsSchema = z
-        .array(z.string().trim().email())
-        .min(1, 'At least one UID is required');
-      const EditExtensionSchema = z.object({
-        __action: z.literal('edit_extension'),
-        extension_id: z.string().trim().min(1),
-        name: z
-          .string()
-          .trim()
-          .optional()
-          .transform((v) => (v === '' || v === undefined ? null : v)),
-        archive_date: z.string().trim().optional().default(''),
-        uids: z.preprocess(
-          (val) =>
-            typeof val === 'string'
-              ? val
-                  .split(/[\n,\s]+/)
-                  .map((s) => s.trim())
-                  .filter((s) => s.length > 0)
-              : val,
-          EmailsSchema,
-        ),
-      });
-      const body = EditExtensionSchema.parse(req.body);
-
-      await runInTransactionAsync(async () => {
-        // Update extension metadata
-        await execute(sql.update_extension, {
-          extension_id: body.extension_id,
-          name: body.name ?? '',
-          archive_date: body.archive_date,
-          course_instance_id: res.locals.course_instance.id,
+        // JSON file has been formatted and is ready to be written
+        const paths = getPaths(undefined, res.locals);
+        const editor = new FileModifyEditor({
+          locals: res.locals as any,
+          container: {
+            rootPath: paths.rootPath,
+            invalidRootPaths: paths.invalidRootPaths,
+          },
+          filePath: infoCourseInstancePath,
+          editContents: b64EncodeUnicode(formattedJson),
+          origHash: req.body.orig_hash,
         });
 
-        // Desired enrollments for provided UIDs
-        const desiredEnrollments = await getEnrollmentsByUidsInCourseInstance({
+        const serverJob = await editor.prepareServerJob();
+        try {
+          await editor.executeWithServerJob(serverJob);
+        } catch {
+          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          return;
+        }
+
+        flash('success', 'Access control settings updated successfully');
+        res.redirect(req.originalUrl);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to update access control';
+        res.status(400).json({ message });
+        return;
+      }
+    } else if (req.body.__action === 'add_extension') {
+      try {
+        const EmailsSchema = z
+          .array(z.string().trim().email())
+          .min(1, 'At least one UID is required');
+        const AddExtensionSchema = z.object({
+          __action: z.literal('add_extension'),
+          name: z
+            .string()
+            .trim()
+            .optional()
+            .transform((v) => (v === '' || v === undefined ? null : v)),
+          archive_date: z.string().trim().min(1, 'Archive date is required'),
+          uids: z.preprocess(
+            (val) =>
+              typeof val === 'string'
+                ? val
+                    .split(/[\n,\s]+/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0)
+                : val,
+            EmailsSchema,
+          ),
+        });
+        const body = AddExtensionSchema.parse(req.body);
+
+        const enrollments = await getEnrollmentsByUidsInCourseInstance({
           uids: body.uids,
           course_instance_id: res.locals.course_instance.id,
         });
 
-        if (desiredEnrollments.length === 0) {
-          throw new error.HttpStatusError(400, 'No enrollments found for provided UIDs');
+        if (enrollments.length === 0) {
+          res.status(400).json({ message: 'No enrollments found for any of the provided UIDs' });
+          return;
         }
 
-        const desiredEnrollmentIds = new Set(desiredEnrollments.map((e) => e.id));
+        const enrollmentIds = enrollments.map((enrollment) => enrollment.id);
 
-        // Current enrollments on this extension
-        const extensions = await selectPublishingExtensionsWithUsersByCourseInstance(
-          res.locals.course_instance.id,
-        );
-        const current = extensions.find((e) => e.id === body.extension_id);
-        const currentEnrollmentIds = new Set(
-          (current?.user_data ?? []).map((u) => u.enrollment_id),
-        );
+        await createPublishingExtensionWithEnrollments({
+          course_instance_id: res.locals.course_instance.id,
+          name: body.name ?? null,
+          archive_date: new Date(body.archive_date),
+          enrollment_ids: enrollmentIds,
+        });
 
-        // Compute diffs
-        const toAdd: string[] = [];
-        for (const id of desiredEnrollmentIds) {
-          if (!currentEnrollmentIds.has(id)) toAdd.push(id);
-        }
-        const toRemove: string[] = [];
-        for (const id of currentEnrollmentIds) {
-          if (!desiredEnrollmentIds.has(id)) toRemove.push(id);
-        }
+        res.status(200).json({ success: true });
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to add extension';
+        res.status(400).json({ message });
+        return;
+      }
+    } else if (req.body.__action === 'delete_extension') {
+      try {
+        const extension_id = req.body.extension_id;
 
-        // Apply removals
-        for (const enrollment_id of toRemove) {
-          await execute(sql.remove_student_from_extension, {
+        await deletePublishingExtension({
+          extension_id,
+          course_instance_id: res.locals.course_instance.id,
+        });
+
+        res.status(200).json({ success: true });
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to delete extension';
+        res.status(400).json({ message });
+        return;
+      }
+    } else if (req.body.__action === 'edit_extension') {
+      try {
+        const EmailsSchema = z
+          .array(z.string().trim().email())
+          .min(1, 'At least one UID is required');
+        const EditExtensionSchema = z.object({
+          __action: z.literal('edit_extension'),
+          extension_id: z.string().trim().min(1),
+          name: z
+            .string()
+            .trim()
+            .optional()
+            .transform((v) => (v === '' || v === undefined ? null : v)),
+          archive_date: z.string().trim().optional().default(''),
+          uids: z.preprocess(
+            (val) =>
+              typeof val === 'string'
+                ? val
+                    .split(/[\n,\s]+/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0)
+                : val,
+            EmailsSchema,
+          ),
+        });
+        const body = EditExtensionSchema.parse(req.body);
+
+        await runInTransactionAsync(async () => {
+          // Update extension metadata
+          await execute(sql.update_extension, {
             extension_id: body.extension_id,
-            enrollment_id,
+            name: body.name ?? '',
+            archive_date: body.archive_date,
+            course_instance_id: res.locals.course_instance.id,
           });
-        }
-        // Apply additions
-        for (const enrollment_id of toAdd) {
-          await execute(sql.add_user_to_extension, {
-            extension_id: body.extension_id,
-            enrollment_id,
-          });
-        }
-      });
 
-      res.status(200).json({ success: true });
-      return;
+          // Desired enrollments for provided UIDs
+          const desiredEnrollments = await getEnrollmentsByUidsInCourseInstance({
+            uids: body.uids,
+            course_instance_id: res.locals.course_instance.id,
+          });
+
+          if (desiredEnrollments.length === 0) {
+            throw new Error('No enrollments found for provided UIDs');
+          }
+
+          const desiredEnrollmentIds = new Set(desiredEnrollments.map((e) => e.id));
+
+          // Current enrollments on this extension
+          const extensions = await selectPublishingExtensionsWithUsersByCourseInstance(
+            res.locals.course_instance.id,
+          );
+          const current = extensions.find((e) => e.id === body.extension_id);
+          const currentEnrollmentIds = new Set(
+            (current?.user_data ?? []).map((u) => u.enrollment_id),
+          );
+
+          // Compute diffs
+          const toAdd: string[] = [];
+          for (const id of desiredEnrollmentIds) {
+            if (!currentEnrollmentIds.has(id)) toAdd.push(id);
+          }
+          const toRemove: string[] = [];
+          for (const id of currentEnrollmentIds) {
+            if (!desiredEnrollmentIds.has(id)) toRemove.push(id);
+          }
+
+          // Apply removals
+          for (const enrollment_id of toRemove) {
+            await execute(sql.remove_student_from_extension, {
+              extension_id: body.extension_id,
+              enrollment_id,
+            });
+          }
+          // Apply additions
+          for (const enrollment_id of toAdd) {
+            await execute(sql.add_user_to_extension, {
+              extension_id: body.extension_id,
+              enrollment_id,
+            });
+          }
+        });
+
+        res.status(200).json({ success: true });
+        return;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to edit extension';
+        res.status(400).json({ message });
+        return;
+      }
     } else {
       throw new error.HttpStatusError(400, 'Unknown action');
     }

@@ -9,11 +9,13 @@ export function InstructorInstanceAdminPublishing({
   accessControlExtensions,
   courseInstance,
   hasCourseInstancePermissionEdit,
+  hasAccessRules,
   csrfToken,
   origHash,
 }: {
   courseInstance: StaffCourseInstance;
   hasCourseInstancePermissionEdit: boolean;
+  hasAccessRules: boolean;
   accessControlExtensions: CourseInstancePublishingExtensionWithUsers[];
   csrfToken: string;
   origHash: string;
@@ -23,7 +25,7 @@ export function InstructorInstanceAdminPublishing({
       <Hydrate>
         <PublishingForm
           courseInstance={courseInstance}
-          hasAccessRules={false}
+          hasAccessRules={hasAccessRules}
           canEdit={hasCourseInstancePermissionEdit}
           csrfToken={csrfToken}
           origHash={origHash}
