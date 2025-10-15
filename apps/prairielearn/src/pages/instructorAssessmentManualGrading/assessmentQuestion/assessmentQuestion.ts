@@ -53,6 +53,21 @@ router.get(
       assessmentQuestionId: res.locals.assessment_question.id,
     });
 
+    // Fetch instance questions for initial render
+    const instance_questions = await queryRows(
+      sql.select_instance_questions_manual_grading,
+      {
+        assessment_id: (res.locals as any).assessment.id,
+        assessment_question_id: res.locals.assessment_question.id,
+      },
+      InstanceQuestionRowSchema,
+    );
+
+    const instanceQuestions = await fillInstanceQuestionColumns(
+      instance_questions,
+      res.locals.assessment_question,
+    );
+
     res.send(
       AssessmentQuestion({
         resLocals: res.locals,
@@ -65,6 +80,8 @@ router.get(
             : null,
         instanceQuestionGroups,
         rubric_data,
+        instanceQuestions,
+        req,
       }),
     );
   }),

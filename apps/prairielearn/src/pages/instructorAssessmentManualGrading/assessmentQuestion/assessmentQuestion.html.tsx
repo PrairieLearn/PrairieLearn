@@ -1,4 +1,3 @@
-import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import { hydrateHtml } from '@prairielearn/preact/server';
@@ -10,15 +9,13 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { RubricSettings } from '../../../components/RubricSettings.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import {
-  compiledScriptTag,
-  compiledStylesheetTag,
-  nodeModulesAssetPath,
-} from '../../../lib/assets.js';
-import type { InstanceQuestionGroup, User } from '../../../lib/db-types.js';
+import { compiledStylesheetTag } from '../../../lib/assets.js';
+import type { AssessmentQuestion, InstanceQuestionGroup, User } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
+import { getUrl } from '../../../lib/url.js';
 
-import { type InstanceQuestionTableData } from './assessmentQuestion.types.js';
+import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import AssessmentQuestionManualGrading from './assessmentQuestionTable.js';
 
 export function AssessmentQuestion({
   resLocals,
@@ -28,6 +25,8 @@ export function AssessmentQuestion({
   aiGradingStats,
   instanceQuestionGroups,
   rubric_data,
+  instanceQuestions,
+  req,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
@@ -36,6 +35,8 @@ export function AssessmentQuestion({
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups: InstanceQuestionGroup[];
   rubric_data: RubricData | null;
+  instanceQuestions: InstanceQuestionRowWithAIGradingStats[];
+  req: any;
 }) {
   const {
     number_in_alternative_group,
@@ -50,6 +51,8 @@ export function AssessmentQuestion({
     course,
   } = resLocals;
 
+  const search = getUrl(req).search;
+
   return PageLayout({
     resLocals,
     pageTitle: 'Manual Grading',
@@ -60,38 +63,10 @@ export function AssessmentQuestion({
     },
     options: {
       fullWidth: true,
+      fullHeight: true,
       pageNote: `Question ${number_in_alternative_group}`,
     },
-    headContent: html`
-      <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
-        from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
-      <script src="${nodeModulesAssetPath('bootstrap-table/dist/bootstrap-table.min.js')}"></script>
-      <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js',
-        )}"></script>
-      <script src="${nodeModulesAssetPath(
-          'bootstrap-table/dist/extensions/filter-control/bootstrap-table-filter-control.min.js',
-        )}"></script>
-
-      ${compiledScriptTag('bootstrap-table-sticky-header.js')}
-      ${compiledScriptTag('instructorAssessmentManualGradingAssessmentQuestionClient.ts')}
-      ${compiledStylesheetTag('instructorAssessmentManualGradingAssessmentQuestion.css')}
-      ${EncodedData<InstanceQuestionTableData>(
-        {
-          hasCourseInstancePermissionEdit: !!authz_data.has_course_instance_permission_edit,
-          urlPrefix,
-          instancesUrl: `${urlPrefix}/assessment/${assessment.id}/manual_grading/assessment_question/${assessment_question.id}/instances.json`,
-          maxPoints: assessment_question.max_points,
-          groupWork: assessment.group_work,
-          maxAutoPoints: assessment_question.max_auto_points,
-          csrfToken: __csrf_token,
-          aiGradingMode,
-          rubric_data,
-          instanceQuestionGroups,
-        },
-        'instance-question-table-data',
-      )}
-    `,
+    headContent: html` ${compiledStylesheetTag('tanstackTable.css')} `,
     content: html`
       ${renderHtml(
         <AssessmentSyncErrorsAndWarnings
@@ -173,180 +148,27 @@ export function AssessmentQuestion({
         )}
       </div>
 
-      <form name="grading-form" method="POST">
-        <input type="hidden" name="__action" value="batch_action" />
-        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-        <div class="card mb-4">
-          <div
-            class="card-header bg-primary text-white d-flex justify-content-between align-items-center gap-2"
-          >
-            <h1>Student instance questions</h1>
-            <div class="d-flex flex-row gap-2">
-              ${aiGradingEnabled && aiGradingMode
-                ? html`
-                    <div class="dropdown">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-light dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                        name="ai-grading"
-                      >
-                        <i class="bi bi-stars" aria-hidden="true"></i> AI grading
-                      </button>
-                      <div class="dropdown-menu dropdown-menu-end">
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          onclick="$('#ai-grading-graded').submit();"
-                        >
-                          Grade all human-graded
-                        </button>
-                        <button
-                          class="dropdown-item grading-tag-button"
-                          type="submit"
-                          name="batch_action"
-                          value="ai_grade_assessment_selected"
-                        >
-                          Grade selected
-                        </button>
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          onclick="$('#ai-grading-all').submit();"
-                        >
-                          Grade all
-                        </button>
-
-                        <hr class="dropdown-divider" />
-
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#delete-all-ai-grading-jobs-modal"
-                        >
-                          Delete all AI grading results
-                        </button>
-                      </div>
-                    </div>
-                    <div class="dropdown">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-light dropdown-toggle"
-                        data-bs-toggle="dropdown"
-                        name="ai-instance-question-grouping"
-                      >
-                        <i class="bi bi-stars" aria-hidden="true"></i> AI submission grouping
-                      </button>
-                      <div class="dropdown-menu dropdown-menu-end">
-                        <button
-                          class="dropdown-item grading-tag-button"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#group-confirmation-modal-selected"
-                        >
-                          Group selected submissions
-                        </button>
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#group-confirmation-modal-all"
-                        >
-                          Group all submissions
-                        </button>
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#group-confirmation-modal-ungrouped"
-                        >
-                          Group ungrouped submissions
-                        </button>
-
-                        <hr class="dropdown-divider" />
-
-                        <button
-                          class="dropdown-item"
-                          type="button"
-                          data-bs-toggle="modal"
-                          data-bs-target="#delete-all-ai-instance-question-grouping-results-modal"
-                        >
-                          Delete all AI groupings
-                        </button>
-                      </div>
-                    </div>
-                  `
-                : html`
-                    <div class="dropdown">
-                      <button
-                        type="button"
-                        class="btn btn-sm btn-light dropdown-toggle grading-tag-button"
-                        data-bs-toggle="dropdown"
-                        name="status"
-                        disabled
-                      >
-                        <i class="fas fa-tags"></i> Tag for grading
-                      </button>
-                      <div class="dropdown-menu dropdown-menu-end">
-                        <div class="dropdown-header">Assign for grading</div>
-                        ${courseStaff.map(
-                          (grader) => html`
-                            <button
-                              class="dropdown-item"
-                              type="submit"
-                              name="batch_action_data"
-                              value="${JSON.stringify({
-                                requires_manual_grading: true,
-                                assigned_grader: grader.user_id,
-                              })}"
-                            >
-                              <i class="fas fa-user-tag"></i>
-                              Assign to: ${grader.name || ''} (${grader.uid})
-                            </button>
-                          `,
-                        )}
-                        <button
-                          class="dropdown-item"
-                          type="submit"
-                          name="batch_action_data"
-                          value="${JSON.stringify({ assigned_grader: null })}"
-                        >
-                          <i class="fas fa-user-slash"></i>
-                          Remove grader assignment
-                        </button>
-                        <div class="dropdown-divider"></div>
-                        <button
-                          class="dropdown-item"
-                          type="submit"
-                          name="batch_action_data"
-                          value="${JSON.stringify({ requires_manual_grading: true })}"
-                        >
-                          <i class="fas fa-tag"></i>
-                          Tag as required grading
-                        </button>
-                        <button
-                          class="dropdown-item"
-                          type="submit"
-                          name="batch_action_data"
-                          value="${JSON.stringify({ requires_manual_grading: false })}"
-                        >
-                          <i class="fas fa-check-square"></i>
-                          Tag as graded
-                        </button>
-                      </div>
-                    </div>
-                  `}
-            </div>
-          </div>
-          <table id="grading-table" aria-label="Instance questions for manual grading"></table>
-        </div>
-        ${GroupInfoModal({
-          modalFor: 'selected',
-          numOpenInstances: num_open_instances,
-          csrfToken: __csrf_token,
-        })}
-      </form>
+      ${hydrateHtml(
+        <AssessmentQuestionManualGrading
+          authzData={authz_data}
+          search={search}
+          instanceQuestions={instanceQuestions}
+          course={course}
+          courseInstance={course_instance}
+          urlPrefix={urlPrefix}
+          csrfToken={__csrf_token}
+          assessmentId={assessment.id}
+          assessmentQuestionId={assessment_question.id}
+          assessmentQuestion={assessment_question as AssessmentQuestion}
+          questionQid={question.qid}
+          aiGradingMode={aiGradingMode}
+          groupWork={assessment.group_work}
+          rubricData={rubric_data}
+          instanceQuestionGroups={instanceQuestionGroups}
+          courseStaff={courseStaff}
+          isDevMode={process.env.NODE_ENV === 'development'}
+        />,
+      )}
     `,
     postContent: [
       GradingConflictModal(),
