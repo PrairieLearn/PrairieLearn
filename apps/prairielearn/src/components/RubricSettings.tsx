@@ -876,13 +876,37 @@ export function RubricRow({
         >
           <i class="fas fa-trash text-danger" />
         </button>
-        {item.id && <input type="hidden" name="id" value={`rubric_item[${item.id}][id]`} />}
+        {item.id && (
+          <>
+            <input type="hidden" name={`rubric_item[${item.id}][id]`} value={item.id} />
+            <input type="hidden" name={`rubric_item[${item.id}][points]`} value={item.points} />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.id}][description]`}
+              value={item.description}
+            />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.id}][explanation]`}
+              value={item.explanation ?? undefined}
+            />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.id}][grader_note]`}
+              value={item.grader_note ?? undefined}
+            />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.id}][always_show_to_students]`}
+              value={item.always_show_to_students ? 'true' : 'false'}
+            />
+          </>
+        )}
       </td>
 
       <td class="align-middle">
         <input
           type="number"
-          name={item.id ? `rubric_item[${item.id}][points]` : undefined}
           class="form-control"
           style="width:5rem"
           step="any"
@@ -896,7 +920,6 @@ export function RubricRow({
       <td class="align-middle">
         <input
           type="text"
-          name={item.id ? `rubric_item[${item.id}][description]` : undefined}
           class="form-control"
           maxLength={100}
           style="min-width:15rem"
@@ -910,7 +933,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          name={item.id ? `rubric_item[${item.id}][explanation]` : undefined}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
@@ -923,7 +945,6 @@ export function RubricRow({
       <td class="align-middle">
         <textarea
           class="form-control"
-          name={item.id ? `rubric_item[${item.id}][grader_note]` : undefined}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
@@ -939,7 +960,6 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              name={item.id ? `rubric_item[${item.id}][always_show_to_students]` : undefined}
               checked={item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
