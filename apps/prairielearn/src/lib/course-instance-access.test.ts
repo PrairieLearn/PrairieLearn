@@ -277,7 +277,6 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "extensions": [],
         "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
@@ -338,17 +337,6 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "extensions": [
-          {
-            "archive_date": "2024-07-01T00:00:00",
-            "enabled": true,
-            "name": "Test comment",
-            "uids": [
-              "user1@example.com",
-              "user2@example.com",
-            ],
-          },
-        ],
         "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
@@ -376,16 +364,6 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "extensions": [
-          {
-            "archive_date": "2024-07-01T00:00:00",
-            "enabled": true,
-            "name": null,
-            "uids": [
-              "user1@example.com",
-            ],
-          },
-        ],
         "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",
@@ -432,7 +410,6 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "extensions": [],
         "publishingConfiguration": {
           "archiveDate": "2024-07-01T00:00:00",
           "publishDate": "2024-05-01T00:00:00",

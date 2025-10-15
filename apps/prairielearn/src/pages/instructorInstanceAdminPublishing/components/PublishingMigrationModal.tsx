@@ -24,32 +24,24 @@ export function PublishingMigrationModal({
     if (!migrationResult.success) return;
 
     setIsSubmitting(true);
-    try {
-      const requestBody = {
-        __csrf_token: csrfToken,
-        __action: 'migrate_access_rules',
-        orig_hash: origHash,
-      };
+    const requestBody = {
+      __csrf_token: csrfToken,
+      __action: 'migrate_access_rules',
+      orig_hash: origHash,
+    };
 
-      const response = await fetch(window.location.pathname, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
-      });
+    const response = await fetch(window.location.pathname, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
 
-      if (response.ok) {
-        setShowMigrationModal(false);
-        window.location.reload();
-      } else {
-        throw new Error('Failed to migrate access rules');
-      }
-    } catch (error) {
-      console.error('Error migrating access rules:', error);
-      // eslint-disable-next-line no-alert
-      alert('Failed to migrate access rules. Please try again.');
-    } finally {
+    if (response.ok) {
+      setShowMigrationModal(false);
+      window.location.reload();
+    } else {
       setIsSubmitting(false);
     }
   };

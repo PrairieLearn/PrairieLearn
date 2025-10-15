@@ -20,17 +20,9 @@ export interface CourseInstanceAccessParams {
   publishingExtensions: CourseInstancePublishingExtension[];
 }
 
-interface CourseInstancePublishingExtensionData {
-  enabled: boolean;
-  name: string | null;
-  archive_date: string | null;
-  uids: string[];
-}
-
 export interface PublishingConfigurationMigrationResult {
   success: true;
   publishingConfiguration: PublishingJson;
-  extensions: CourseInstancePublishingExtensionData[];
 }
 
 export interface PublishingConfigurationMigrationError {
@@ -160,31 +152,26 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
   // Make a deep copy of the access rules
   const accessRules = structuredClone(originalAccessRules);
 
-  // Must have exactly one rule
-  if (accessRules.length !== 1) {
-    return {
-      success: false,
-      error: `Expected exactly 1 access rule, but found ${accessRules.length}`,
-    };
-  }
-
   const rule = accessRules[0];
+  const startDates = accessRules
+    .map((rule) => rule.startDate)
+    .filter((date) => date != null)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const endDates = accessRules
+    .map((rule) => rule.endDate)
+    .filter((date) => date != null)
+    .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+  const earliestStartDate = startDates.length > 0 ? startDates[0] : null;
+  const latestEndDate = endDates.length > 0 ? endDates[endDates.length - 1] : null;
 
   // Must have both dates or neither
-  if (!rule.startDate && !rule.endDate) {
+  if (!earliestStartDate || !latestEndDate) {
     return {
       success: false,
-      error: 'Cannot migrate access rules without start or end dates.',
+      error:
+        'Cannot migrate access rules since there is no start or end date that can be inferred.',
     };
   }
-
-  if ((rule.startDate && !rule.endDate) || (!rule.startDate && rule.endDate)) {
-    return {
-      success: false,
-      error: 'Access rules must have both start and end dates, or neither.',
-    };
-  }
-
   // The timezone offset of dates before 1884 are a little funky (https://stackoverflow.com/a/60327839).
   // We will silently update the dates to the nearest valid date.
   if (rule.startDate && new Date(rule.startDate).getFullYear() < 1884) {
@@ -204,20 +191,8 @@ export function migrateAccessRuleJsonToPublishingConfiguration(
     archiveDate: rule.endDate,
   };
 
-  // Convert UID selectors to extensions
-  const extensions: CourseInstancePublishingExtensionData[] = [];
-  if (rule.uids && rule.uids.length > 0) {
-    extensions.push({
-      enabled: true,
-      name: typeof rule.comment === 'string' ? rule.comment : null,
-      archive_date: rule.endDate ?? null,
-      uids: rule.uids,
-    });
-  }
-
   return {
     success: true,
     publishingConfiguration,
-    extensions,
   };
 }
