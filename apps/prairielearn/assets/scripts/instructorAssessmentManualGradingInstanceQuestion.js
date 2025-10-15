@@ -235,30 +235,6 @@ function computePointsFromRubric(sourceInput = null) {
   updatePointsView(sourceInput);
 }
 
-// function enableRubricItemLongTextField(container) {
-//   const label = container.querySelector('label'); // May be null
-//   const button = container.querySelector('button');
-//   if (!container || !button) return;
-//   const input = document.createElement('textarea');
-//   input.classList.add('form-control');
-//   input.name = button.dataset.inputName;
-//   input.setAttribute('maxlength', 10000);
-//   input.textContent = button.dataset.currentValue || '';
-
-//   button.before(input);
-//   label?.remove();
-//   button.remove();
-//   input.focus();
-//   input.addEventListener('input', () => adjustHeightFromContent(input));
-//   adjustHeightFromContent(input);
-// }
-
-// function enableRubricItemLongTextFieldOnClick(event) {
-//   if (!(event.currentTarget instanceof HTMLElement)) return;
-//   const container = event.currentTarget.closest('td');
-//   enableRubricItemLongTextField(container);
-// }
-
 /**
  * Determines if the provided elements exist in the DOM. Throws an error if any element is missing.
  *
