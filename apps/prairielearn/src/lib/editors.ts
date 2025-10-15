@@ -1527,7 +1527,7 @@ export class QuestionAddEditor extends Editor {
 
       debug(`Copy question from ${fromPath} to ${newQuestionPath}`);
 
-      // When copying from example course templates, skip README.md files.
+      // When copying from example course templates, skip README.md files at the root.
       // They are specific to the template and will quickly drift from the copied question.
       const shouldSkipReadme =
         this.template_source === 'example' && this.template_qid.startsWith('template/');
@@ -1536,7 +1536,7 @@ export class QuestionAddEditor extends Editor {
         overwrite: false,
         errorOnExist: true,
         filter: (src: string) => {
-          if (shouldSkipReadme && path.basename(src) === 'README.md') {
+          if (shouldSkipReadme && src === path.join(fromPath, 'README.md')) {
             return false;
           }
           return true;
@@ -1954,7 +1954,7 @@ async function copyQuestion({
 
   debug(`Copy question from ${fromPath} to ${toPath}`);
 
-  // When copying from example course templates, skip README.md files.
+  // When copying from example course templates, skip README.md files at the root.
   // They are specific to the template and will quickly drift from the copied question.
   const isFromExampleCourseTemplate =
     fromPath.includes(EXAMPLE_COURSE_PATH) && from_qid.startsWith('template/');
@@ -1963,7 +1963,7 @@ async function copyQuestion({
     overwrite: false,
     errorOnExist: true,
     filter: (src: string) => {
-      if (isFromExampleCourseTemplate && path.basename(src) === 'README.md') {
+      if (isFromExampleCourseTemplate && src === path.join(fromPath, 'README.md')) {
         return false;
       }
       return true;
