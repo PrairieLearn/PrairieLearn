@@ -163,7 +163,6 @@ describe('Enroll page (non-enterprise)', () => {
 
 
 describe('Enrollment transitions', () => {
-  let originalIsEnterprise: boolean;
   let courseInstanceCode : string | null = null;
 
   const courseInstanceUrl = baseUrl + '/course_instance/1';
@@ -177,20 +176,12 @@ describe('Enrollment transitions', () => {
     assert.isNotNull(instance);
     courseInstanceCode = instance.enrollment_code;
 
-
-    // Ensure we're not in enterprise mode to avoid enterprise-specific checks
-    originalIsEnterprise = config.isEnterprise;
-    config.isEnterprise = false;
-
     // Set uid_regexp for the default institution to allow @example.com UIDs
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
   });
 
   afterAll(async function () {
     await helperServer.after();
-
-    // Restore original enterprise setting
-    config.isEnterprise = originalIsEnterprise;
   });
 
   it('does not allow user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
@@ -200,37 +191,36 @@ describe('Enrollment transitions', () => {
       selfEnrollmentUseEnrollmentCode: false,
     });
 
-    // Create user from same institution
-    const sameInstitutionUser = await getOrCreateUser({
+    const studentUser = await getOrCreateUser({
       uid: 'student@example.com',
-      name: 'Same Institution Student',
-      uin: 'same1',
+      name: 'Student',
+      uin: 'student1',
       email: 'student@example.com',
       institutionId: '1',
     });
 
     await withUser(
       {
-        uid: sameInstitutionUser.uid,
-        name: sameInstitutionUser.name,
-        uin: sameInstitutionUser.uin,
-        email: sameInstitutionUser.email,
+        uid: studentUser.uid,
+        name: studentUser.name,
+        uin: studentUser.uin,
+        email: studentUser.email,
       },
       async () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNull(initialEnrollment);
 
-        // Hit the assessments endpoint - this should trigger auto-enrollment
+        // Enroll user via the assessments endpoint
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 403);
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNull(finalEnrollment);
@@ -245,37 +235,36 @@ describe('Enrollment transitions', () => {
       selfEnrollmentUseEnrollmentCode: false,
     });
 
-    // Create user from same institution
-    const sameInstitutionUser = await getOrCreateUser({
+    const studentUser = await getOrCreateUser({
       uid: 'student@example.com',
-      name: 'Same Institution Student',
-      uin: 'same1',
+      name: 'Student',
+      uin: 'student1',
       email: 'student@example.com',
       institutionId: '1',
     });
 
     await withUser(
       {
-        uid: sameInstitutionUser.uid,
-        name: sameInstitutionUser.name,
-        uin: sameInstitutionUser.uin,
-        email: sameInstitutionUser.email,
+        uid: studentUser.uid,
+        name: studentUser.name,
+        uin: studentUser.uin,
+        email: studentUser.email,
       },
       async () => {
         // Check that user is not enrolled initially
         const initialEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNull(initialEnrollment);
 
-        // Hit the assessments endpoint - this should trigger auto-enrollment
+        // Enroll user via the assessments endpoint
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 200);
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNotNull(finalEnrollment);
@@ -344,7 +333,6 @@ describe('Enrollment transitions', () => {
       selfEnrollmentUseEnrollmentCode: false,
     });
 
-    // Create a blocked user
     const blockedUser = await getOrCreateUser({
       uid: 'blocked@example.com',
       name: 'Blocked Student',
@@ -353,7 +341,6 @@ describe('Enrollment transitions', () => {
       institutionId: '1',
     });
 
-    // Create a blocked enrollment for this user
     await execute(
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
        VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)`,
@@ -372,11 +359,10 @@ describe('Enrollment transitions', () => {
         email: blockedUser.email,
       },
       async () => {
-        // Hit the assessments endpoint - this should return 403 for blocked users
+        // Check that user got a 403 for blocked users
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 403);
 
-        // Check that user is still blocked
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           user_id: blockedUser.user_id,
           course_instance_id: '1',
@@ -394,30 +380,30 @@ describe('Enrollment transitions', () => {
       selfEnrollmentUseEnrollmentCode: true,
     });
 
-    // Create user from same institution
-    const sameInstitutionUser = await getOrCreateUser({
+    const studentUser = await getOrCreateUser({
       uid: 'student@example.com',
-      name: 'Same Institution Student',
-      uin: 'same1',
+      name: 'Student',
+      uin: 'student1',
       email: 'student@example.com',
       institutionId: '1',
     });
 
     await withUser(
       {
-        uid: sameInstitutionUser.uid,
-        name: sameInstitutionUser.name,
-        uin: sameInstitutionUser.uin,
-        email: sameInstitutionUser.email,
+        uid: studentUser.uid,
+        name: studentUser.name,
+        uin: studentUser.uin,
+        email: studentUser.email,
       },
       async () => {
+        // Check the user got redirected to the join page
         const response = await fetch(assessmentsUrl, { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/join'));
 
-        // Check that user is not enrolled
+        // Check that user is still not enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNull(finalEnrollment);
@@ -432,30 +418,30 @@ describe('Enrollment transitions', () => {
       selfEnrollmentUseEnrollmentCode: true,
     });
 
-    // Create user from same institution
-    const sameInstitutionUser = await getOrCreateUser({
+    const studentUser = await getOrCreateUser({
       uid: 'student@example.com',
-      name: 'Same Institution Student',
-      uin: 'same1',
+      name: 'Student',
+      uin: 'student1',
       email: 'student@example.com',
       institutionId: '1',
     });
 
     await withUser(
       {
-        uid: sameInstitutionUser.uid,
-        name: sameInstitutionUser.name,
-        uin: sameInstitutionUser.uin,
-        email: sameInstitutionUser.email,
+        uid: studentUser.uid,
+        name: studentUser.name,
+        uin: studentUser.uin,
+        email: studentUser.email,
       },
       async () => {
+        // Check the user got redirected to the assessments page
         const response = await fetch(siteUrl + getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }), { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/assessments'));
 
         // Check that user is now enrolled
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
-          user_id: sameInstitutionUser.user_id,
+          user_id: studentUser.user_id,
           course_instance_id: '1',
         });
         assert.isNotNull(finalEnrollment);
