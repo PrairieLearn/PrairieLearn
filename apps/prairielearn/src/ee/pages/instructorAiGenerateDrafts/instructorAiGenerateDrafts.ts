@@ -1,6 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -96,7 +96,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
@@ -126,7 +126,7 @@ router.post(
       }
 
       const result = await generateQuestion({
-        client,
+        openai,
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
         prompt: req.body.prompt,

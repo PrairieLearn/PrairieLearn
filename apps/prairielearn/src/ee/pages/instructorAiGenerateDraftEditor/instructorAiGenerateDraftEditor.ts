@@ -1,6 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -245,7 +245,7 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
@@ -288,7 +288,7 @@ router.post(
       }
 
       const result = await regenerateQuestion(
-        client,
+        openai,
         res.locals.course.id,
         res.locals.authn_user.user_id,
         prompts[0]?.user_prompt,

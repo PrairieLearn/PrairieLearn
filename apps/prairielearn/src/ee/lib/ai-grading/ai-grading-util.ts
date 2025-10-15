@@ -1,3 +1,4 @@
+import type { OpenAIProvider } from '@ai-sdk/openai';
 import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
@@ -340,7 +341,7 @@ export async function generateSubmissionEmbedding({
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  openai: OpenAI;
+  openai: OpenAIProvider;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);

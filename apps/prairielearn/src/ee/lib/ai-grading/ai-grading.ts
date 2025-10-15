@@ -3,7 +3,6 @@ import assert from 'node:assert';
 import { createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
-import { OpenAI } from 'openai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -82,7 +81,8 @@ export async function aiGrade({
   if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
-  const openai = new OpenAI({
+
+  const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
@@ -280,13 +280,8 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const openai2 = createOpenAI({
-          apiKey: config.aiGradingOpenAiApiKey!,
-          organization: config.aiGradingOpenAiOrganization!,
-        });
-
         const response = await generateObject({
-          model: openai2(AI_GRADING_OPENAI_MODEL),
+          model: openai(AI_GRADING_OPENAI_MODEL),
           schema: RubricGradingResultSchema,
           messages: input,
           providerOptions: {
@@ -412,13 +407,8 @@ export async function aiGrade({
             ),
         });
 
-        const openai2 = createOpenAI({
-          apiKey: config.aiGradingOpenAiApiKey!,
-          organization: config.aiGradingOpenAiOrganization!,
-        });
-
         const response = await generateObject({
-          model: openai2(AI_GRADING_OPENAI_MODEL),
+          model: openai(AI_GRADING_OPENAI_MODEL),
           schema: GradingResultSchema,
           messages: input,
           providerOptions: {

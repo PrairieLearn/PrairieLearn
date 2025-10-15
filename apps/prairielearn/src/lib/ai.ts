@@ -1,5 +1,4 @@
 import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
-import type OpenAI from 'openai';
 
 import { config } from './config.js';
 
@@ -20,10 +19,10 @@ export function logResponseUsage({
   response,
   logger,
 }: {
-  response: OpenAI.Responses.Response | GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   logger: { info: (msg: string) => void };
 }) {
-  const usage = normalizeUsage(response.usage ?? emptyUsage());
+  const usage = response.usage;
   logger.info(`Input tokens: ${usage.inputTokens ?? 0}`);
   logger.info(`  Cached input tokens: ${usage.cachedInputTokens ?? 0}`);
   logger.info(`Output tokens: ${usage.outputTokens ?? 0}`);
@@ -31,33 +30,17 @@ export function logResponseUsage({
   logger.info(`Total tokens: ${usage.totalTokens ?? 0}`);
 }
 
-function normalizeUsage(
-  usage: OpenAI.Responses.ResponseUsage | LanguageModelUsage,
-): LanguageModelUsage {
-  if ('inputTokens' in usage) return usage;
-
-  return {
-    inputTokens: usage.input_tokens,
-    cachedInputTokens: usage.input_tokens_details.cached_tokens,
-    outputTokens: usage.output_tokens,
-    reasoningTokens: usage.output_tokens_details.reasoning_tokens,
-    totalTokens: usage.total_tokens,
-  };
-}
-
 /**
  * Compute the cost of an OpenAI response, in US dollars.
  */
 export function calculateResponseCost({
   model,
-  usage: rawUsage,
+  usage,
 }: {
   model: keyof (typeof config)['costPerMillionTokens'];
-  usage?: OpenAI.Responses.ResponseUsage | LanguageModelUsage;
+  usage?: LanguageModelUsage;
 }): number {
-  if (!rawUsage) return 0;
-
-  const usage = normalizeUsage(rawUsage);
+  if (!usage) return 0;
 
   const modelPricing = config.costPerMillionTokens[model];
 

@@ -310,7 +310,7 @@ export async function addCompletionCostToIntervalUsage({
   intervalCost,
 }: {
   userId: number;
-  usage: OpenAI.Responses.ResponseUsage | undefined;
+  usage: LanguageModelUsage | undefined;
   intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
