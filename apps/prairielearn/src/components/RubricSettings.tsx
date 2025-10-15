@@ -14,6 +14,7 @@ type RubricItemData = Partial<
 declare global {
   interface Window {
     resetInstructorGradingPanel: () => any;
+    mathjaxTypeset: () => Promise<any>;
   }
 }
 
@@ -413,7 +414,7 @@ export function RubricSettings({
           input.value = oldCsrfToken;
         });
         window.resetInstructorGradingPanel();
-        // Mathjax typeset?
+        await window.mathjaxTypeset();
       }
       const rubricData = data.rubric_data as RubricData | null;
       const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
