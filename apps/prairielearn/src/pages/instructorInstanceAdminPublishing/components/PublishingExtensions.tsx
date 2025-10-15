@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Alert, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
+import z from 'zod';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 
@@ -70,11 +71,6 @@ function ExtensionModal({
   };
 
   const validateEmails = (value: string) => {
-    if (!value.trim()) {
-      return 'UIDs are required';
-    }
-
-    // Parse UIDs from the textarea (support both line-separated and comma/space-separated)
     const uids = value
       .split(/[\n,]+/)
       .map((uid) => uid.trim())
@@ -84,9 +80,7 @@ function ExtensionModal({
       return 'At least one UID is required';
     }
 
-    // Email validation regex
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const invalidEmails = uids.filter((uid) => !emailRegex.test(uid));
+    const invalidEmails = uids.filter((uid) => z.string().email().safeParse(uid).success);
 
     if (invalidEmails.length > 0) {
       return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
