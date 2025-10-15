@@ -296,17 +296,24 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        let image_url: string;
-
-        const fileData = submitted_answer._files.find((file) => file.name === fileName);
+        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
 
         if (fileData) {
-          // New style, submitted_answer["_files"] contains the submitted base-64 encoded image URL for the image capture.
-          // fileData.contents does not contain the MIME type header, so we add it.
-          image_url = `data:image/jpeg;base64,${fileData.contents}`;
+          // In the current version of image capture, submitted_answer["_files"] contains the submitted base-64 encoded URL
+          // of the image capture. Also, fileData.contents does not contain the MIME type header, so we add it.
+          content.push({
+            type: 'input_image',
+            image_url: `data:image/jpeg;base64,${fileData.contents}`,
+            detail: 'auto',
+          });
         } else if (submitted_answer[fileName]) {
-          // Old style, submitted_answer[fileName] contains the base-64 encoded image URL for the image capture.
-          image_url = submitted_answer[fileName];
+          // Backwards compatibility for older submissions, where submitted_answer[fileName] contains the base-64 encoded image URL
+          // for the image capture.
+          content.push({
+            type: 'input_image',
+            image_url: submitted_answer[fileName],
+            detail: 'auto',
+          });
         } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
@@ -314,13 +321,8 @@ export function generateSubmissionMessage({
             type: 'input_text',
             text: `Image capture with ${fileName} was not captured.`,
           });
+          return;
         }
-
-        content.push({
-          type: 'input_image',
-          image_url,
-          detail: 'auto',
-        });
       } else {
         submissionTextSegment += $submission_html(node).text();
       }

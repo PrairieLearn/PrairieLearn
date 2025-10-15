@@ -149,9 +149,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     pl.add_submitted_file(data, file_name, b64_payload)
 
-    # We will store the files in the submitted_answer["_files"] key,
-    # so delete the original submitted answer format to avoid
-    # duplication
+    # Originally, the image file was stored directly in submitted_answers.
+    # We remove file_name from submitted_answers to avoid duplication,
+    # since add_submitted_file stores the file in both submitted_answers["_files"]
+    # and submitted_answers[file_name], and also for backwards compatibility
+    # for submissions that saved the file to submitted_answers[file_name].
+
     data["submitted_answers"].pop(file_name, None)
 
 
