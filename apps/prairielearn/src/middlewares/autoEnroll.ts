@@ -30,8 +30,10 @@ export default asyncHandler(async (req, res, next) => {
 
   // If the user is not enrolled, and self-enrollment is allowed, then they can enroll.
   // If the user is enrolled and is invited/rejected/joined/removed, then they can join.
-  const canEnroll = ((selfEnrollmentAllowed && existingEnrollment == null) ||
-    (existingEnrollment != null && ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)));
+  const canEnroll =
+    (selfEnrollmentAllowed && existingEnrollment == null) ||
+    (existingEnrollment != null &&
+      ['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status));
 
   if (
     idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&

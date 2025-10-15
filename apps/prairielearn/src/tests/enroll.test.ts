@@ -6,11 +6,19 @@ import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
-import { selectOptionalEnrollmentByPendingUid, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
+import {
+  selectOptionalEnrollmentByPendingUid,
+  selectOptionalEnrollmentByUserId,
+} from '../models/enrollment.js';
 
 import * as helperCourse from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-import { deleteEnrollmentsInCourseInstance, getOrCreateUser, updateCourseInstanceSettings, withUser } from './utils/auth.js';
+import {
+  deleteEnrollmentsInCourseInstance,
+  getOrCreateUser,
+  updateCourseInstanceSettings,
+  withUser,
+} from './utils/auth.js';
 import { enrollUser, unenrollUser } from './utils/enrollments.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -161,9 +169,8 @@ describe('Enroll page (non-enterprise)', () => {
   });
 });
 
-
 describe('Enrollment transitions', () => {
-  let courseInstanceCode : string | null = null;
+  let courseInstanceCode: string | null = null;
 
   const courseInstanceUrl = baseUrl + '/course_instance/1';
   const assessmentsUrl = courseInstanceUrl + '/assessments';
@@ -172,7 +179,7 @@ describe('Enrollment transitions', () => {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
 
-    const instance = await selectOptionalCourseInstanceById('1')
+    const instance = await selectOptionalCourseInstanceById('1');
     assert.isNotNull(instance);
     courseInstanceCode = instance.enrollment_code;
 
@@ -224,7 +231,7 @@ describe('Enrollment transitions', () => {
           course_instance_id: '1',
         });
         assert.isNull(finalEnrollment);
-      }
+      },
     );
   });
 
@@ -269,7 +276,7 @@ describe('Enrollment transitions', () => {
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
-      }
+      },
     );
   });
 
@@ -294,7 +301,7 @@ describe('Enrollment transitions', () => {
       {
         course_instance_id: '1',
         pending_uid: invitedUser.uid,
-      }
+      },
     );
 
     await withUser(
@@ -322,7 +329,7 @@ describe('Enrollment transitions', () => {
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
         assert.isNull(finalEnrollment.pending_uid);
-      }
+      },
     );
   });
 
@@ -348,7 +355,7 @@ describe('Enrollment transitions', () => {
         user_id: blockedUser.user_id,
         course_instance_id: '1',
         first_joined_at: new Date(),
-      }
+      },
     );
 
     await withUser(
@@ -369,7 +376,7 @@ describe('Enrollment transitions', () => {
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'blocked');
-      }
+      },
     );
   });
 
@@ -407,7 +414,7 @@ describe('Enrollment transitions', () => {
           course_instance_id: '1',
         });
         assert.isNull(finalEnrollment);
-      }
+      },
     );
   });
 
@@ -435,7 +442,14 @@ describe('Enrollment transitions', () => {
       },
       async () => {
         // Check the user got redirected to the assessments page
-        const response = await fetch(siteUrl + getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }), { redirect: 'manual' });
+        const response = await fetch(
+          siteUrl +
+            getSelfEnrollmentLinkUrl({
+              courseInstanceId: '1',
+              enrollmentCode: courseInstanceCode!,
+            }),
+          { redirect: 'manual' },
+        );
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/assessments'));
 
@@ -446,7 +460,7 @@ describe('Enrollment transitions', () => {
         });
         assert.isNotNull(finalEnrollment);
         assert.equal(finalEnrollment.status, 'joined');
-      }
+      },
     );
   });
 });
