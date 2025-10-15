@@ -1,0 +1,1 @@
+This question is a simple true/false question with a fixed prompt, fixed correct answer, and fixed answer order. It uses the `order="fixed"` option of `<pl-multiple-choice>` to ensure that the "True" option always appears first. Since there is no randomization, it is marked as `singleVariant: true` in the `info.json` file.
