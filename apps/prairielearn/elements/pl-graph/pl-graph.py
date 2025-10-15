@@ -1,3 +1,4 @@
+import os
 import re
 import warnings
 
@@ -19,6 +20,8 @@ WEIGHTS_PRESENTATION_TYPE_DEFAULT = "f"
 NEGATIVE_WEIGHTS_DEFAULT = False
 DIRECTED_DEFAULT = True
 LOG_WARNINGS_DEFAULT = True
+SOURCE_FILE_NAME_DEFAULT = None
+DIRECTORY_DEFAULT = "."
 XML_DECLARATION = r"<\?xml[^>\?]*\?>"
 DOCTYPE_DECLARATION = r"<!DOCTYPE svg [^>]*>"
 
@@ -137,6 +140,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "params-type",
         "negative-weights",
         "log-warnings",
+        "source-file-name",
+        "directory",
     ]
 
     # Load attributes from extensions if they have any
@@ -147,6 +152,18 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=optional_attribs)
+
+    source_file_name = pl.get_string_attrib(
+        element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
+    )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise ValueError(
+            'Existing graph content cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -173,9 +190,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     input_type = pl.get_string_attrib(element, "params-type", PARAMS_TYPE_DEFAULT)
 
-    if len(str(element.text)) == 0 and input_param_name is None:
+    source_file_name = pl.get_string_attrib(
+        element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
+    )
+    directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
+
+    if len(str(element.text)) == 0 and input_param_name is None and source_file_name is None:
         raise ValueError(
-            "No graph source given! Must either define graph in HTML or provide source in params."
+            "No graph source given! Must either define graph in HTML, provide source in params, or use source-file-name attribute."
         )
 
     if input_param_name is not None:
@@ -183,6 +205,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             graphviz_data = matrix_backends[input_type](element, data)
         else:
             raise ValueError(f'Unknown graph type "{input_type}".')
+    elif source_file_name is not None:
+        # Read the contents from a file
+        if directory == "serverFilesCourse":
+            base_path = data["options"]["server_files_course_path"]
+        elif directory == "clientFilesCourse":
+            base_path = data["options"]["client_files_course_path"]
+        else:
+            base_path = os.path.join(data["options"]["question_path"], directory)
+        file_path = os.path.join(base_path, source_file_name)
+        if not os.path.exists(file_path):
+            raise ValueError(f'Unknown file path: "{file_path}".')
+
+        with open(file_path) as f:
+            graphviz_data = f.read()
     else:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are

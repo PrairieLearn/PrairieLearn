@@ -159,3 +159,28 @@ data['params']['random-graph'] = pl.to_json(random_graph)
     </pl-question-panel>
     <pl-graph params-type="networkx" params-name="color-graph"></pl-graph>
 </pl-card>
+
+<pl-card>
+    <pl-question-panel>
+        <p>The <code>source-file-name</code> attribute allows loading graph content from an external file. This is particularly useful for graphs with complex DOT syntax, such as record-based nodes that use angle brackets <code>&lt;&gt;</code>, which can cause issues when embedded directly in HTML.</p>
+
+<pl-code language="html">
+&lt;pl-graph source-file-name="record-graph.dot"&gt;&lt;/pl-graph&gt;
+</pl-code>
+
+        <p>The file <code>record-graph.dot</code> contains:</p>
+
+<pl-code language="graphviz">
+digraph structs {
+    node [shape=record];
+    struct1 [label="&lt;f0&gt; left|&lt;f1&gt; middle|&lt;f2&gt; right"];
+    struct2 [label="&lt;f0&gt; one|&lt;f1&gt; two"];
+    struct3 [label="hello\nworld |{ b |{c|&lt;here&gt; d|e}| f}| g | h"];
+    struct1:f1 -&gt; struct2:f0;
+    struct1:f2 -&gt; struct3:here;
+}
+</pl-code>
+
+    </pl-question-panel>
+    <pl-graph source-file-name="record-graph.dot"></pl-graph>
+</pl-card>
