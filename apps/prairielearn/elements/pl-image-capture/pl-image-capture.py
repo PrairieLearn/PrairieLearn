@@ -150,13 +150,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             return
 
-    # We store the captured base64-encoded image data in _files
-    # to prevent it from appearing in assessment instance logs.
     pl.add_submitted_file(data, file_name, b64_payload)
 
-    # We then remove the captured image from submitted_answers. Also, in older versions of image capture,
-    # the image file was stored directly in submitted_answers. Popping file_name ensures backwards
-    # compatibility for older submissions that saved the file to submitted_answers[file_name]
+    # We remove the captured image from submitted_answers to prevent it from
+    # appearing in assessment instance logs.
+    #
+    # Also, in older versions of image capture, the image file was stored directly in submitted_answers.
+    # Popping file_name ensures backwards compatibility for older submissions that saved the file to
+    # submitted_answers[file_name].
+
     data["submitted_answers"].pop(file_name, None)
 
 
