@@ -106,6 +106,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name")
 
+    # On submission, the captured image is stored directly in submitted_answers.
+    # Later, we will move the image to submitted_answers["_files"], and pop
+    # submitted_answers[file_name].
     submitted_file_content = data["submitted_answers"].get(file_name)
 
     if not submitted_file_content:
@@ -147,14 +150,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             return
 
+    # We store the captured base64-encoded image data in _files
+    # to prevent it from appearing in assessment instance logs.
     pl.add_submitted_file(data, file_name, b64_payload)
 
-    # Originally, the image file was stored directly in submitted_answers.
-    # We remove file_name from submitted_answers to avoid duplication,
-    # since add_submitted_file stores the file in both submitted_answers["_files"]
-    # and submitted_answers[file_name], and also for backwards compatibility
-    # for submissions that saved the file to submitted_answers[file_name].
-
+    # We then remove the captured image from submitted_answers. Also, in older versions of image capture,
+    # the image file was stored directly in submitted_answers. Popping file_name ensures backwards
+    # compatibility for older submissions that saved the file to submitted_answers[file_name]
     data["submitted_answers"].pop(file_name, None)
 
 

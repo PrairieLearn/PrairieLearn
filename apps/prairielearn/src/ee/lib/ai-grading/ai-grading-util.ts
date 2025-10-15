@@ -299,19 +299,10 @@ export function generateSubmissionMessage({
         const fileData = submitted_answer._files?.find((file) => file.name === fileName);
 
         if (fileData) {
-          // In the current version of image capture, submitted_answer["_files"] contains the submitted base-64 encoded URL
-          // of the image capture. Also, fileData.contents does not contain the MIME type header, so we add it.
+          // fileData.contents does not contain the MIME type header, so we add it.
           content.push({
             type: 'input_image',
             image_url: `data:image/jpeg;base64,${fileData.contents}`,
-            detail: 'auto',
-          });
-        } else if (submitted_answer[fileName]) {
-          // Backwards compatibility for older submissions, where submitted_answer[fileName] contains the base-64 encoded image URL
-          // for the image capture.
-          content.push({
-            type: 'input_image',
-            image_url: submitted_answer[fileName],
             detail: 'auto',
           });
         } else {
