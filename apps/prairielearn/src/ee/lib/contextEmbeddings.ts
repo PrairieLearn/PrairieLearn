@@ -1,8 +1,9 @@
 import * as path from 'path';
 
+import type { OpenAIProvider } from '@ai-sdk/openai';
+import { embed } from 'ai';
 import fs from 'fs-extra';
 import klaw from 'klaw';
-import { type OpenAI } from 'openai';
 
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
@@ -38,33 +39,40 @@ export function openAiUserFromAuthn(authnUserId: string): string {
 /**
  * Converts text to a semantic embedding.
  *
- * @param client The OpenAI client to use.
+ * @param openai The OpenAI provider to use.
  * @param text The document text to embed.
  * @param openAiUser The OpenAI userstring requesting the embeddng.
  * @returns The resultant document embedding.
  */
-export async function createEmbedding(client: OpenAI, text: string, openAiUser: string) {
-  const embedding = await client.embeddings.create({
-    input: text,
-    model: 'text-embedding-3-small',
-    encoding_format: 'float',
-    user: openAiUser,
+export async function createEmbedding(
+  openai: OpenAIProvider,
+  text: string,
+  openAiUser: string,
+): Promise<number[]> {
+  const { embedding } = await embed({
+    model: openai.textEmbeddingModel('text-embedding-3-small'),
+    value: text,
+    providerOptions: {
+      openai: {
+        user: openAiUser,
+      },
+    },
   });
 
-  return embedding.data[0].embedding;
+  return embedding;
 }
 
 /**
  * Inserts a document chunk into the vectorstore.
  *
- * @param client The OpenAI client to use.
+ * @param openai The OpenAI provider to use.
  * @param filepath The filepath of the document to add.
  * @param doc The document chunk to add.
  * @param job The server job calling this function.
  * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
  */
 async function insertDocumentChunk(
-  client: OpenAI,
+  openai: OpenAIProvider,
   filepath: string,
   doc: DocumentChunk,
   job: ServerJob,
@@ -82,7 +90,7 @@ async function insertDocumentChunk(
   }
 
   job.info(`Inserting chunk for ${filepath} (${doc.chunkId}) into the database.`);
-  const embedding = await createEmbedding(client, doc.text, openAiUser);
+  const embedding = await createEmbedding(openai, doc.text, openAiUser);
   await execute(sql.insert_embedding, {
     doc_path: filepath,
     doc_text: doc.text,
@@ -94,11 +102,11 @@ async function insertDocumentChunk(
 /**
  * Creates a job to synchronize predefined context (consisting of example course questions + element docs) with the vectorstore.
  *
- * @param client The OpenAI client to use.
+ * @param client The OpenAI provider to use.
  * @param authnUserId The OpenAI userstring of the user requesting the sync.
  * @returns The job ID of the synchronization job.
  */
-export async function syncContextDocuments(client: OpenAI, authnUserId: string) {
+export async function syncContextDocuments(client: OpenAIProvider, authnUserId: string) {
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',

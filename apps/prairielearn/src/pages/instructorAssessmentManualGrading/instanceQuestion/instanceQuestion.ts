@@ -56,7 +56,7 @@ async function prepareLocalsForRender(
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
-  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submissions or even create a new one. We don't want that behavior, so we select the last
   // submission and pass it along to getAndRenderVariant explicitly.
   const variant_with_submission_id = await sqldb.queryOptionalRow(
     sql.select_variant_with_last_submission,
@@ -172,12 +172,12 @@ router.get(
         // time, the explanation wasn't included in the completion at all, so it
         // may legitimately be missing.
         //
-        // The responses API changed the format here. We'll need to handle both the
-        // old and new formats.
+        // We need to handle multiple response formats, which are documented below.
         const explanation = run(() => {
           const completion = ai_grading_job_data.completion;
           if (!completion) return null;
 
+          // OpenAI chat completion format
           if (completion.choices) {
             const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
             if (typeof explanation !== 'string') return null;
@@ -185,8 +185,17 @@ router.get(
             return explanation.trim() || null;
           }
 
+          // OpenAI response format
           if (completion.output_parsed) {
             const explanation = completion?.output_parsed?.explanation;
+            if (typeof explanation !== 'string') return null;
+
+            return explanation.trim() || null;
+          }
+
+          // `ai` package format
+          if (completion.object) {
+            const explanation = completion?.object?.explanation;
             if (typeof explanation !== 'string') return null;
 
             return explanation.trim() || null;

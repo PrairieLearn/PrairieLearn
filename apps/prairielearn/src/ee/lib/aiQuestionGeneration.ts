@@ -1,3 +1,5 @@
+import type { OpenAIProvider } from '@ai-sdk/openai';
+import { type GenerateTextResult, type LanguageModelUsage, generateText } from 'ai';
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
@@ -141,19 +143,19 @@ async function checkRender(
 /**
  * Builds the context string, consisting of relevant documents.
  *
- * @param client The OpenAI client to use.
+ * @param openai The OpenAI provider to use.
  * @param prompt The user's question generation prompt.
  * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
 export async function makeContext(
-  client: OpenAI,
+  openai: OpenAIProvider,
   prompt: string,
   mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
-  const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
+  const embedding = await createEmbedding(openai, prompt, openAiUserFromAuthn(authnUserId));
 
   // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
@@ -210,10 +212,10 @@ export async function makeContext(
  * @param job The job whose data we want to extract into.
  */
 function extractFromResponse(
-  response: OpenAI.Responses.Response,
+  response: GenerateTextResult<any, any>,
   job: ServerJob,
 ): { html?: string; python?: string } {
-  const completionText = response.output_text;
+  const completionText = response.text;
 
   job.info(`${chalk.bold('Completion:')}\n\n${completionText}\n`);
 
@@ -327,23 +329,23 @@ export async function addCompletionCostToIntervalUsage({
 /**
  * Generates the HTML and Python code for a new question using an LLM.
  * @param params
- * @param params.client The OpenAI client to use.
+ * @param params.openai The OpenAI provider to use.
  * @param params.courseId The ID of the current course.
  * @param params.authnUserId The authenticated user's ID.
  * @param params.prompt The prompt for how to generate a question.
  * @param params.userId The ID of the generating/saving user.
- * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
-  client,
+  openai,
   courseId,
   authnUserId,
   prompt,
   userId,
   hasCoursePermissionEdit,
 }: {
-  client: OpenAI;
+  openai: OpenAIProvider;
   courseId: string;
   authnUserId: string;
   prompt: string;
@@ -363,7 +365,7 @@ export async function generateQuestion({
    * Usage details for prompt tokens. If auto-regeneration was triggered,
    * includes sum across all prompts.
    */
-  usage: OpenAI.Responses.ResponseUsage;
+  usage: LanguageModelUsage;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -375,7 +377,7 @@ export async function generateQuestion({
   let usage = emptyUsage();
 
   const jobData = await serverJob.execute(async (job) => {
-    const context = await makeContext(client, prompt, [], authnUserId);
+    const context = await makeContext(openai, prompt, [], authnUserId);
 
     const instructions = formatPrompt([
       promptPreamble(context),
@@ -401,11 +403,15 @@ export async function generateQuestion({
     job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
     job.info(`\n\n${chalk.bold('Prompt:')}\n\n${prompt}`);
 
-    const response = await client.responses.create({
-      model: QUESTION_GENERATION_OPENAI_MODEL,
-      instructions,
-      input: prompt,
-      safety_identifier: openAiUserFromAuthn(authnUserId),
+    const response = await generateText({
+      model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+      system: instructions,
+      prompt,
+      providerOptions: {
+        openai: {
+          safety_identifier: openAiUserFromAuthn(authnUserId),
+        },
+      },
     });
 
     const results = extractFromResponse(response, job);
@@ -455,7 +461,7 @@ export async function generateQuestion({
         prompt_type: 'initial',
         user_prompt: prompt,
         system_prompt: instructions,
-        response: response.output_text,
+        response: response.text,
         html: results.html,
         python: results.python,
         errors,
@@ -489,7 +495,7 @@ export async function generateQuestion({
     if (errors.length > 0 && typeof job.data.questionQid === 'string') {
       const { usage: newUsage } = await regenInternal({
         job,
-        client,
+        openai,
         authnUserId,
         originalPrompt: prompt,
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
@@ -509,8 +515,8 @@ export async function generateQuestion({
       usage = mergeUsage(usage, newUsage);
     }
 
-    job.data.promptTokens = usage.input_tokens;
-    job.data.completionTokens = usage.output_tokens;
+    job.data.promptTokens = usage.inputTokens;
+    job.data.completionTokens = usage.outputTokens;
     job.data.usage = usage;
   });
 
@@ -543,7 +549,7 @@ function traverseForTagNames(ast: any): Set<string> {
  * Revises a question using the LLM based on user input.
  * @param params
  * @param params.job The server job to use.
- * @param params.client The OpenAI client to use.
+ * @param params.openai The OpenAI provider to use.
  * @param params.authnUserId The authenticated user's ID.
  * @param params.originalPrompt The prompt creating the original generation.
  * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
@@ -560,7 +566,7 @@ function traverseForTagNames(ast: any): Set<string> {
  */
 async function regenInternal({
   job,
-  client,
+  openai,
   authnUserId,
   originalPrompt,
   revisionPrompt,
@@ -576,7 +582,7 @@ async function regenInternal({
   jobSequenceId,
 }: {
   job: ServerJob;
-  client: OpenAI;
+  openai: OpenAIProvider;
   authnUserId: string;
   originalPrompt: string;
   revisionPrompt: string;
@@ -590,14 +596,14 @@ async function regenInternal({
   userId: string;
   hasCoursePermissionEdit: boolean;
   jobSequenceId: string;
-}): Promise<{ usage: OpenAI.Responses.ResponseUsage | undefined }> {
+}): Promise<{ usage: LanguageModelUsage | undefined }> {
   let tags: string[] = [];
   if (originalHTML) {
     const ast = parse5.parseFragment(originalHTML);
     tags = Array.from(traverseForTagNames(ast));
   }
 
-  const context = await makeContext(client, originalPrompt, tags, authnUserId);
+  const context = await makeContext(openai, originalPrompt, tags, authnUserId);
 
   const instructions = formatPrompt([
     promptPreamble(context),
@@ -620,11 +626,15 @@ async function regenInternal({
   job.info(`${chalk.bold('Instructions:')}\n\n${instructions}`);
   job.info(`${chalk.bold('Revision prompt:')}\n\n${revisionPrompt}`);
 
-  const response = await client.responses.create({
-    model: QUESTION_GENERATION_OPENAI_MODEL,
-    instructions,
-    input: revisionPrompt,
-    safety_identifier: openAiUserFromAuthn(authnUserId),
+  const response = await generateText({
+    model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+    system: instructions,
+    prompt: revisionPrompt,
+    providerOptions: {
+      openai: {
+        safety_identifier: openAiUserFromAuthn(authnUserId),
+      },
+    },
   });
 
   const results = extractFromResponse(response, job);
@@ -646,7 +656,7 @@ async function regenInternal({
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
       system_prompt: instructions,
-      response: response.output_text,
+      response: response.text,
       html,
       python,
       errors,
@@ -698,7 +708,7 @@ async function regenInternal({
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
     const { usage: newUsage } = await regenInternal({
       job,
-      client,
+      openai,
       authnUserId,
       originalPrompt,
       revisionPrompt: auto_revisionPrompt,
@@ -724,7 +734,7 @@ async function regenInternal({
 /**
  * Revises a question using the LLM based on user input.
  *
- * @param client The OpenAI client to use.
+ * @param openai The OpenAI provider to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
  * @param originalPrompt The prompt creating the original generation.
@@ -737,7 +747,7 @@ async function regenInternal({
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function regenerateQuestion(
-  client: OpenAI,
+  openai: OpenAIProvider,
   courseId: string,
   authnUserId: string,
   originalPrompt: string,
@@ -751,7 +761,7 @@ export async function regenerateQuestion(
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
-  usage: OpenAI.Responses.ResponseUsage | undefined;
+  usage: LanguageModelUsage | undefined;
 }> {
   const serverJob = await createServerJob({
     courseId,
@@ -768,7 +778,7 @@ export async function regenerateQuestion(
     job.data.questionQid = questionQid;
     const { usage: newUsage } = await regenInternal({
       job,
-      client,
+      openai,
       authnUserId,
       originalPrompt,
       revisionPrompt,
@@ -786,8 +796,8 @@ export async function regenerateQuestion(
 
     usage = mergeUsage(usage, newUsage);
 
-    job.data.promptTokens = usage.input_tokens;
-    job.data.completionTokens = usage.output_tokens;
+    job.data.promptTokens = usage.inputTokens;
+    job.data.completionTokens = usage.outputTokens;
     job.data.usage = usage;
   });
 

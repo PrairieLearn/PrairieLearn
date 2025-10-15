@@ -1,9 +1,10 @@
 import path from 'node:path';
 
+import type { OpenAIProvider } from '@ai-sdk/openai';
+import { generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { type OpenAI } from 'openai';
-import { zodTextFormat } from 'openai/helpers/zod';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
@@ -166,10 +167,10 @@ const QuestionGenerationEvaluationSchema = z.object({
 type QuestionGenerationEvaluation = z.infer<typeof QuestionGenerationEvaluationSchema>;
 
 export async function benchmarkAiQuestionGeneration({
-  client,
+  openai,
   authnUserId,
 }: {
-  client: OpenAI;
+  openai: OpenAIProvider;
   authnUserId: string;
 }): Promise<string> {
   // Safety check: for now, we really only want this to run in dev mode.
@@ -238,7 +239,7 @@ export async function benchmarkAiQuestionGeneration({
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
       const result = await generateQuestion({
-        client,
+        openai,
         courseId: course.id,
         authnUserId,
         prompt: benchmark.prompt,
@@ -275,7 +276,7 @@ export async function benchmarkAiQuestionGeneration({
       }
 
       const evaluationResult = await evaluateGeneratedQuestion({
-        client,
+        openai,
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
@@ -315,13 +316,13 @@ export async function benchmarkAiQuestionGeneration({
 }
 
 async function evaluateGeneratedQuestion({
-  client,
+  openai,
   originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
-  client: OpenAI;
+  openai: OpenAIProvider;
   originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
@@ -374,17 +375,17 @@ async function evaluateGeneratedQuestion({
     generatedQuestion.push('', 'No Python file was generated.');
   }
 
-  const response = await client.responses.parse({
-    model: MODEL_NAME,
-    instructions: systemPrompt,
-    input: generatedQuestion.join('\n'),
-    text: {
-      format: zodTextFormat(QuestionGenerationEvaluationSchema, 'question_generation_evaluation'),
-    },
-    reasoning: {
-      effort: 'low',
+  const response = await generateObject({
+    model: openai(MODEL_NAME),
+    system: systemPrompt,
+    prompt: generatedQuestion.join('\n'),
+    schema: QuestionGenerationEvaluationSchema,
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+      },
     },
   });
 
-  return response.output_parsed;
+  return response.object;
 }

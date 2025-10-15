@@ -1,6 +1,6 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
@@ -52,13 +52,13 @@ router.post(
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
-      const client = new OpenAI({
+      const openai = createOpenAI({
         apiKey: config.aiQuestionGenerationOpenAiApiKey,
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
-      const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
+      const jobSequenceId = await syncContextDocuments(openai, res.locals.authn_user.user_id);
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute
@@ -71,7 +71,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
       }
 
-      const client = new OpenAI({
+      const openai = createOpenAI({
         apiKey: config.aiQuestionGenerationOpenAiApiKey,
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
@@ -80,8 +80,8 @@ router.post(
         '../../ee/lib/ai-question-generation-benchmark.js'
       );
       const jobSequenceId = await benchmarkAiQuestionGeneration({
-        client,
         authnUserId: res.locals.authn_user.user_id,
+        openai,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
     } else {

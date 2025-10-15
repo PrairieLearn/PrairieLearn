@@ -1,11 +1,6 @@
+import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
 import { type OpenAI } from 'openai';
-import type {
-  ParsedResponse,
-  ResponseInput,
-  ResponseInputItem,
-  ResponseInputMessageContentList,
-} from 'openai/resources/responses/responses';
 import { z } from 'zod';
 
 import {
@@ -75,14 +70,14 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-}): Promise<ResponseInput> {
-  const input: ResponseInput = [];
+}): Promise<ModelMessage[]> {
+  const input: ModelMessage[] = [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
     input.push(
       {
-        role: 'developer',
+        role: 'system',
         content: formatPrompt([
           [
             "You are an instructor for a course, and you are grading a student's response to a question.",
@@ -113,7 +108,7 @@ export async function generatePrompt({
     );
   } else {
     input.push({
-      role: 'developer',
+      role: 'system',
       content: formatPrompt([
         "You are an instructor for a course, and you are grading a student's response to a question.",
         'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
@@ -126,7 +121,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'developer',
+      role: 'system',
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -138,7 +133,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: 'developer',
+        role: 'system',
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -151,13 +146,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({
-        role: 'developer',
+        role: 'system',
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: 'developer',
+        role: 'system',
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -214,7 +209,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'developer',
+      role: 'system',
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -222,7 +217,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: 'developer',
+      role: 'system',
       content: 'Please grade the submission according to the above instructions.',
     },
   );
@@ -250,8 +245,8 @@ export function generateSubmissionMessage({
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-}): ResponseInputItem {
-  const content: ResponseInputMessageContentList = [];
+}): ModelMessage {
+  const content: UserContent = [];
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
   // to the message content to construct an AI-readable version of the submission.
@@ -269,7 +264,7 @@ export function generateSubmissionMessage({
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
           content.push({
-            type: 'input_text',
+            type: 'text',
             text: submissionTextSegment.trim(),
           });
           submissionTextSegment = '';
@@ -301,16 +296,20 @@ export function generateSubmissionMessage({
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
           content.push({
-            type: 'input_text',
+            type: 'text',
             text: `Image capture with ${fileName} was not captured.`,
           });
           return;
         }
 
         content.push({
-          type: 'input_image',
-          image_url: submitted_answer[fileName],
-          detail: 'auto',
+          type: 'image',
+          image: submitted_answer[fileName],
+          providerOptions: {
+            openai: {
+              detail: 'auto',
+            },
+          },
         });
       } else {
         submissionTextSegment += $submission_html(node).text();
@@ -319,7 +318,7 @@ export function generateSubmissionMessage({
 
   if (submissionTextSegment) {
     content.push({
-      type: 'input_text',
+      type: 'text',
       text: submissionTextSegment.trim(),
     });
   }
@@ -447,8 +446,8 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
-  prompt: ResponseInput;
-  response: ParsedResponse<any>;
+  prompt: ModelMessage[];
+  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -458,8 +457,8 @@ export async function insertAiGradingJob({
     prompt: JSON.stringify(prompt),
     completion: response,
     model: AI_GRADING_OPENAI_MODEL,
-    prompt_tokens: response.usage?.input_tokens ?? 0,
-    completion_tokens: response.usage?.output_tokens ?? 0,
+    prompt_tokens: response.usage.inputTokens ?? 0,
+    completion_tokens: response.usage.outputTokens ?? 0,
     cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
     course_id,
     course_instance_id,
