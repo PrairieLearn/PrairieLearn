@@ -1532,15 +1532,10 @@ export class QuestionAddEditor extends Editor {
       const shouldSkipReadme =
         this.template_source === 'example' && this.template_qid.startsWith('template/');
 
-      await fs.copy(fromPath, newQuestionPath, {
-        overwrite: false,
-        errorOnExist: true,
-        filter: (src: string) => {
-          if (shouldSkipReadme && src === path.join(fromPath, 'README.md')) {
-            return false;
-          }
-          return true;
-        },
+      await copyQuestionFiles({
+        fromPath,
+        toPath: newQuestionPath,
+        skipTemplateReadme: shouldSkipReadme,
       });
 
       debug('Read info.json');
@@ -1918,6 +1913,37 @@ async function selectQuestionUuidsForCourse(course: Course): Promise<string[]> {
   );
 }
 
+/**
+ * Copy question files from one location to another, optionally skipping README.md
+ * files at the root of example course template questions.
+ *
+ * @param fromPath - Source directory path
+ * @param toPath - Destination directory path
+ * @param skipTemplateReadme - If true, skip README.md at the root of the source directory
+ */
+async function copyQuestionFiles({
+  fromPath,
+  toPath,
+  skipTemplateReadme,
+}: {
+  fromPath: string;
+  toPath: string;
+  skipTemplateReadme: boolean;
+}): Promise<void> {
+  await fs.copy(fromPath, toPath, {
+    overwrite: false,
+    errorOnExist: true,
+    filter: (src: string) => {
+      // When copying from example course templates, skip README.md files at the root.
+      // They are specific to the template and will quickly drift from the copied question.
+      if (skipTemplateReadme && src === path.join(fromPath, 'README.md')) {
+        return false;
+      }
+      return true;
+    },
+  });
+}
+
 async function copyQuestion({
   course,
   from_path,
@@ -1959,15 +1985,10 @@ async function copyQuestion({
   const isFromExampleCourseTemplate =
     fromPath.includes(EXAMPLE_COURSE_PATH) && from_qid.startsWith('template/');
 
-  await fs.copy(fromPath, toPath, {
-    overwrite: false,
-    errorOnExist: true,
-    filter: (src: string) => {
-      if (isFromExampleCourseTemplate && src === path.join(fromPath, 'README.md')) {
-        return false;
-      }
-      return true;
-    },
+  await copyQuestionFiles({
+    fromPath,
+    toPath,
+    skipTemplateReadme: isFromExampleCourseTemplate,
   });
 
   debug('Read info.json');
