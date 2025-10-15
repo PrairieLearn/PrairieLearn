@@ -8,7 +8,7 @@ import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { nowDateInTimezone, parseDateTimeLocalString } from '../utils/dateUtils.js';
+import { DateToPlainDateTimeString, nowDateInTimezone, plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
 
@@ -77,8 +77,8 @@ export function PublishingForm({
   const [selectedStatus, setSelectedStatus] = useState<PublishingStatus>(currentStatus);
 
   const defaultValues: PublishingFormValues = {
-    publishDate: originalPublishDate ? originalPublishDate.toString() : '',
-    archiveDate: originalArchiveDate ? originalArchiveDate.toString() : '',
+    publishDate: originalPublishDate ? DateToPlainDateTimeString(originalPublishDate, courseInstance.display_timezone) : '',
+    archiveDate: originalArchiveDate ? DateToPlainDateTimeString(originalArchiveDate, courseInstance.display_timezone) : '',
   };
 
   const {
@@ -221,8 +221,8 @@ export function PublishingForm({
         return 'Publish date is required for scheduled publishing';
       }
       // Check if publish date is in the future
-      const publishDateTime = parseDateTimeLocalString(value, courseInstance.display_timezone);
-      if (publishDateTime <= new Date()) {
+      const publishDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
+      if (publishDateTime <= nowDateInTimezone(courseInstance.display_timezone)) {
         return 'Publish date must be in the future for scheduled publishing';
       }
     }
@@ -236,11 +236,11 @@ export function PublishingForm({
       }
       // Check if archive date is after publish date
       if (publishDate && value) {
-        const publishDateTime = parseDateTimeLocalString(
+        const publishDateTime = plainDateTimeStringToDate(
           publishDate,
           courseInstance.display_timezone,
         );
-        const archiveDateTime = parseDateTimeLocalString(value, courseInstance.display_timezone);
+        const archiveDateTime = plainDateTimeStringToDate(value, courseInstance.display_timezone);
         if (archiveDateTime <= publishDateTime) {
           return 'Archive date must be after publish date';
         }
@@ -445,8 +445,8 @@ export function PublishingForm({
                 <div class="ms-4 mt-1 small text-muted">
                   The course{' '}
                   {currentStatus === 'published'
-                    ? parseDateTimeLocalString(publishDate, courseInstance.display_timezone) <=
-                      new Date()
+                    ? plainDateTimeStringToDate(publishDate, courseInstance.display_timezone) <=
+                      nowDateInTimezone(courseInstance.display_timezone)
                       ? 'was'
                       : 'will be'
                     : 'will be'}{' '}

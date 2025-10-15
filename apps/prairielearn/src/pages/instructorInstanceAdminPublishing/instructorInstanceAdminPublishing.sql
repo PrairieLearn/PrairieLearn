@@ -13,6 +13,7 @@ DELETE FROM course_instance_publishing_enrollment_extensions
 WHERE
   course_instance_publishing_extension_id = $extension_id
   AND enrollment_id = $enrollment_id;
+
 -- BLOCK update_extension
 UPDATE course_instance_publishing_extensions
 SET

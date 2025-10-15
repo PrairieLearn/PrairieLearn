@@ -7,7 +7,7 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type CourseInstancePublishingExtensionWithUsers } from '../../../models/course-instance-publishing-extensions.types.js';
-import { parseDateTimeLocalString } from '../utils/dateUtils.js';
+import { DateToPlainDateTimeString, plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 interface PublishingExtensionsProps {
   courseInstance: StaffCourseInstance;
@@ -93,7 +93,7 @@ function ExtensionModal({
                 validate: (value) => {
                   if (mode === 'add') return true;
                   if (!mainArchiveDate) return true;
-                  const enteredDate = parseDateTimeLocalString(value, courseInstanceTimezone);
+                  const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
                   return (
                     enteredDate > mainArchiveDate ||
                     'Archive date must be after the course archive date'
@@ -177,7 +177,7 @@ export function PublishingExtensions({
     setModalDefaults({
       name: '',
       archive_date: courseInstance.publishing_archive_date
-        ? courseInstance.publishing_archive_date.toString()
+        ? DateToPlainDateTimeString(courseInstance.publishing_archive_date, courseInstance.display_timezone)
         : '',
       uids: '',
     });
@@ -189,7 +189,7 @@ export function PublishingExtensions({
     setEditExtensionId(extension.id);
     setModalDefaults({
       name: extension.name ?? '',
-      archive_date: extension.archive_date.toString(),
+      archive_date: DateToPlainDateTimeString(extension.archive_date, courseInstance.display_timezone),
       uids: extension.user_data
         .map((u) => u.uid)
         .sort()
