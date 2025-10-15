@@ -83,7 +83,8 @@ window.resetInstructorGradingPanel = function () {
 
   document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
     button.addEventListener('click', function () {
-      // Decide we should remove this or use this to show the component
+      const toggleBtn = document.querySelector('[data-bs-target="#rubric-setting"]');
+      toggleBtn?.click();
     }),
   );
 

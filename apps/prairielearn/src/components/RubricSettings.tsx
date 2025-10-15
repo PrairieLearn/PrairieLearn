@@ -459,7 +459,7 @@ export function RubricSettings({
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
           aria-expanded="false"
-          aria-controls="#rubric-setting"
+          aria-controls="rubric-setting"
         >
           <i class="fa fa-angle-up ms-1 expand-icon" />
         </button>
