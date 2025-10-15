@@ -651,23 +651,11 @@ export async function tuneRubric({
   }
 
   const rubric_items = await selectRubricForGrading(assessment_question.id);
-  const rubricItemsJSON = rubric_items.map((item) => ({
-    id: item.id,
-    description: item.description,
-    explanation: item.explanation,
-    grader_note: item.grader_note,
-    points: item.points,
-  }));
-
   const question_course = await getQuestionCourse(question, course);
-  const gradingJobMapping = await selectGradingJobsInfo(selectedInstanceQuestions);
 
-  for (const rubricItemId in aiGradingsForEachRubricItem) {
-
-
+  await async.forEachLimit(Object.keys(aiGradingsForEachRubricItem), 20, async (rubricItemId) => {
     const rubricItem = rubric_items.find((item) => item.id.toString() === rubricItemId);
 
-    let questionPromptAdded = false;
     const input: ResponseInput = [
       {
         role: 'developer',
@@ -679,7 +667,6 @@ export async function tuneRubric({
           'Return the adjusted rubric item as a JSON array of objects, each containing:',
           [
             '- id: The rubric item’s original ID (do not change it).',
-            '- description: The improved rubric description.',
             '- explanation: The clarified explanation for the rubric item.',
             '- grader_note: The improved grader note, giving guidance for consistent grading.',
           ]
@@ -689,7 +676,7 @@ export async function tuneRubric({
     const firstInstanceQuestionId = aiGradingsForEachRubricItem[rubricItemId].incorrectlySelected[0] ?? aiGradingsForEachRubricItem[rubricItemId].incorrectlyDeselected[0];
 
     if (!firstInstanceQuestionId) {
-      continue;
+      return;
     }
 
     const instanceQuestion = instanceQuestionsById[firstInstanceQuestionId];
@@ -732,7 +719,6 @@ export async function tuneRubric({
       role: 'user',
       content: JSON.stringify(rubricItem, null, 2)
     })
-    questionPromptAdded = true
     
     if (aiGradingsForEachRubricItem[rubricItemId].incorrectlySelected.length > 0) {
       input.push({
@@ -827,13 +813,10 @@ export async function tuneRubric({
       rubric_item: 
         z.object({
           id: z.string(),
-          description: z.string(),
           explanation: z.string(),
           grader_note: z.string(),
         }),
     });
-
-    console.log('input', input);
 
     const response = await openai.responses.parse({
       model: 'gpt-5',
@@ -854,17 +837,11 @@ export async function tuneRubric({
     if (!generatedRubricItem) {
       throw new Error('No rubric item returned by AI.');
     }
-
-    console.log('Original rubric item', rubricItem);
-
-    console.log('generatedRubricItem', generatedRubricItem);
-
     await executeRow(sql.update_rubric_item, {
       id: generatedRubricItem.id,
       rubric_id: assessment_question.manual_rubric_id,
-      description: generatedRubricItem.description,
       explanation: generatedRubricItem.explanation,
       grader_note: generatedRubricItem.grader_note,
     }); 
-  }
+  });
 }

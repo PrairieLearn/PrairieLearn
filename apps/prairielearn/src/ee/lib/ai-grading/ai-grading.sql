@@ -33,7 +33,6 @@ RETURNING
 -- BLOCK update_rubric_item
 UPDATE rubric_items
 SET
-  description = $description,
   explanation = $explanation,
   grader_note = $grader_note
 WHERE
