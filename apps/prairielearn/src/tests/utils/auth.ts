@@ -91,20 +91,17 @@ export async function updateCourseInstanceSettings(
   options: {
     selfEnrollmentEnabled: boolean;
     selfEnrollmentUseEnrollmentCode: boolean;
-    enrollmentCode: string;
   },
 ) {
   await execute(
     `UPDATE course_instances 
      SET self_enrollment_enabled = $self_enrollment_enabled,
-         self_enrollment_use_enrollment_code = $self_enrollment_use_enrollment_code,
-         enrollment_code = $enrollment_code
+         self_enrollment_use_enrollment_code = $self_enrollment_use_enrollment_code
      WHERE id = $course_instance_id`,
     {
       course_instance_id: courseInstanceId,
       self_enrollment_enabled: options.selfEnrollmentEnabled,
       self_enrollment_use_enrollment_code: options.selfEnrollmentUseEnrollmentCode,
-      enrollment_code: options.enrollmentCode,
     },
   );
 }

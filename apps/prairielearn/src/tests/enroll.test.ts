@@ -2,8 +2,10 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute } from '@prairielearn/postgres';
 
+import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectOptionalEnrollmentByPendingUid, selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 
 import * as helperCourse from './helperCourse.js';
@@ -162,6 +164,7 @@ describe('Enroll page (non-enterprise)', () => {
 
 describe('autoEnroll middleware with institution restrictions', () => {
   let originalIsEnterprise: boolean;
+  let courseInstanceCode : string | null = null;
 
   const courseInstanceUrl = baseUrl + '/course_instance/1';
   const assessmentsUrl = courseInstanceUrl + '/assessments';
@@ -169,6 +172,11 @@ describe('autoEnroll middleware with institution restrictions', () => {
   beforeAll(async function () {
     await helperServer.before()();
     await helperCourse.syncCourse(EXAMPLE_COURSE_PATH);
+
+    const instance = await selectOptionalCourseInstanceById('1')
+    assert.isNotNull(instance);
+    courseInstanceCode = instance.enrollment_code;
+
 
     // Ensure we're not in enterprise mode to avoid enterprise-specific checks
     originalIsEnterprise = config.isEnterprise;
@@ -185,12 +193,56 @@ describe('autoEnroll middleware with institution restrictions', () => {
     config.isEnterprise = originalIsEnterprise;
   });
 
+  it('does not allow user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+    });
+
+    // Create user from same institution
+    const sameInstitutionUser = await getOrCreateUser({
+      uid: 'student@example.com',
+      name: 'Same Institution Student',
+      uin: 'same1',
+      email: 'student@example.com',
+      institutionId: '1',
+    });
+
+    await withUser(
+      {
+        uid: sameInstitutionUser.uid,
+        name: sameInstitutionUser.name,
+        uin: sameInstitutionUser.uin,
+        email: sameInstitutionUser.email,
+      },
+      async () => {
+        // Check that user is not enrolled initially
+        const initialEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNull(initialEnrollment);
+
+        // Hit the assessments endpoint - this should trigger auto-enrollment
+        const response = await fetch(assessmentsUrl);
+        assert.equal(response.status, 403);
+
+        // Check that user is now enrolled
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNull(finalEnrollment);
+      }
+    );
+  });
+
   it('allows user to self-enroll via the assessments endpoint when self-enrollment is enabled', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: false,
-      enrollmentCode: '',
     });
 
     // Create user from same institution
@@ -237,10 +289,8 @@ describe('autoEnroll middleware with institution restrictions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: false,
       selfEnrollmentUseEnrollmentCode: false,
-      enrollmentCode: '',
     });
 
-    // Create user from same institution
     const invitedUser = await getOrCreateUser({
       uid: 'invited@example.com',
       name: 'Invited Student',
@@ -249,7 +299,6 @@ describe('autoEnroll middleware with institution restrictions', () => {
       institutionId: '1',
     });
 
-    // Create an invited enrollment for this user
     await execute(
       `INSERT INTO enrollments (course_instance_id, status, pending_uid)
        VALUES ($course_instance_id, 'invited', $pending_uid)`,
@@ -274,11 +323,9 @@ describe('autoEnroll middleware with institution restrictions', () => {
         assert.isNotNull(initialEnrollment);
         assert.equal(initialEnrollment.status, 'invited');
 
-        // Hit the assessments endpoint - this should convert invited enrollment to joined
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 200);
 
-        // Check that user is now enrolled (invited enrollment should be converted to joined)
         const finalEnrollment = await selectOptionalEnrollmentByUserId({
           user_id: invitedUser.user_id,
           course_instance_id: '1',
@@ -295,7 +342,6 @@ describe('autoEnroll middleware with institution restrictions', () => {
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: false,
-      enrollmentCode: '',
     });
 
     // Create a blocked user
@@ -333,12 +379,11 @@ describe('autoEnroll middleware with institution restrictions', () => {
     );
   });
 
-  it('redirects to join page when enrollment code is required and user hits join URL', async () => {
+  it('redirects to join page when enrollment code is required and user goes to assessments endpoint', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: true,
-      enrollmentCode: 'TEST123',
     });
 
     // Create user from same institution
@@ -358,7 +403,6 @@ describe('autoEnroll middleware with institution restrictions', () => {
         email: sameInstitutionUser.email,
       },
       async () => {
-        // Hit the assessments endpoint - this should redirect to the join page due to enrollment code requirement
         const response = await fetch(assessmentsUrl, { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/join'));
@@ -366,12 +410,11 @@ describe('autoEnroll middleware with institution restrictions', () => {
     );
   });
 
-  it('redirects to join page when enrollment code is required and user goes to correct URL', async () => {
+  it('redirects to assessments page when enrollment code is required and user goes to self-enrollment link', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
       selfEnrollmentUseEnrollmentCode: true,
-      enrollmentCode: 'TEST123',
     });
 
     // Create user from same institution
@@ -391,10 +434,9 @@ describe('autoEnroll middleware with institution restrictions', () => {
         email: sameInstitutionUser.email,
       },
       async () => {
-        // Hit the assessments endpoint - this should redirect to join page
-        const response = await fetch(assessmentsUrl, { redirect: 'manual' });
+        const response = await fetch(getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }));
         assert.equal(response.status, 302);
-        assert.isTrue(response.headers.get('location')?.includes('/join'));
+        assert.isTrue(response.headers.get('location')?.includes('/assessments'));
       }
     );
   });
