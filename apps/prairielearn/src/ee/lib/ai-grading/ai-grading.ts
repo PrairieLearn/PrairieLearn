@@ -267,6 +267,9 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
+      logger.info('submitted answer');
+      logger.info(JSON.stringify(submission.submitted_answer));
+
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,

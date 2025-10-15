@@ -288,7 +288,6 @@ export function generateSubmissionMessage({
           return options?.submitted_file_name;
         });
 
-        // `submitted_answer` contains the base-64 encoded image URL for the image capture.
         if (!submitted_answer) {
           throw new Error('No submitted answers found.');
         }
@@ -297,7 +296,17 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        if (!submitted_answer[fileName]) {
+        let image_url: string;
+
+        const fileData = submitted_answer._files.find((file) => file.name === fileName);
+
+        if (fileData) {
+          // New style, submitted_answer["_files"] contains the submitted base-64 encoded image URL for the image capture.
+          image_url = fileData.contents;
+        } else if (submitted_answer[fileName]) {
+          // Old style, submitted_answer[fileName] contains the base-64 encoded image URL for the image capture.
+          image_url = submitted_answer[fileName];
+        } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
           content.push({
@@ -309,7 +318,7 @@ export function generateSubmissionMessage({
 
         content.push({
           type: 'input_image',
-          image_url: submitted_answer[fileName],
+          image_url,
           detail: 'auto',
         });
       } else {
