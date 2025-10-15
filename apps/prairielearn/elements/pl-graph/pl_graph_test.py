@@ -21,7 +21,8 @@ def test_render_with_source_file_name() -> None:
                 "question_path": tmpdir,
                 "server_files_course_path": "",
                 "client_files_course_path": "",
-            }
+            },
+            "extensions": [],
         }
 
         # Create element HTML with source-file-name
@@ -40,7 +41,8 @@ def test_prepare_with_source_file_name_and_content_error() -> None:
     data = {
         "options": {
             "question_path": ".",
-        }
+        },
+        "extensions": [],
     }
 
     # Create element HTML with both source-file-name and content
@@ -60,7 +62,8 @@ def test_render_missing_file_error() -> None:
             "question_path": "/tmp/nonexistent",
             "server_files_course_path": "",
             "client_files_course_path": "",
-        }
+        },
+        "extensions": [],
     }
 
     element_html = '<pl-graph source-file-name="missing.dot"></pl-graph>'
