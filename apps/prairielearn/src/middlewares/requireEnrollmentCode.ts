@@ -40,6 +40,7 @@ export default asyncHandler(async (req, res, next) => {
     new Date() < courseInstance.self_enrollment_enabled_before_date;
 
   if (!selfEnrollmentAllowed) {
+    // TODO: Show nice error page
     next();
     return;
   }
@@ -66,9 +67,10 @@ export default asyncHandler(async (req, res, next) => {
     next();
     return;
   }
-
+  
   // If user is blocked, don't redirect them to enrollment code page
   if (existingEnrollment && existingEnrollment.status === 'blocked') {
+    // TODO: Show nice error page
     next();
     return;
   }
