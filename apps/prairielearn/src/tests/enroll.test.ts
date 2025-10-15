@@ -375,6 +375,14 @@ describe('Enrollment transitions', () => {
         // Hit the assessments endpoint - this should return 403 for blocked users
         const response = await fetch(assessmentsUrl);
         assert.equal(response.status, 403);
+
+        // Check that user is still blocked
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: blockedUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.status, 'blocked');
       }
     );
   });
@@ -406,11 +414,18 @@ describe('Enrollment transitions', () => {
         const response = await fetch(assessmentsUrl, { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/join'));
+
+        // Check that user is not enrolled
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNull(finalEnrollment);
       }
     );
   });
 
-  it('redirects to assessments page when enrollment code is required and user goes to self-enrollment link', async () => {
+  it('redirects and enrolls user when enrollment code is required and user goes to self-enrollment link', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
@@ -437,6 +452,14 @@ describe('Enrollment transitions', () => {
         const response = await fetch(siteUrl + getSelfEnrollmentLinkUrl({ courseInstanceId: '1', enrollmentCode: courseInstanceCode! }), { redirect: 'manual' });
         assert.equal(response.status, 302);
         assert.isTrue(response.headers.get('location')?.includes('/assessments'));
+
+        // Check that user is now enrolled
+        const finalEnrollment = await selectOptionalEnrollmentByUserId({
+          user_id: sameInstitutionUser.user_id,
+          course_instance_id: '1',
+        });
+        assert.isNotNull(finalEnrollment);
+        assert.equal(finalEnrollment.status, 'joined');
       }
     );
   });
