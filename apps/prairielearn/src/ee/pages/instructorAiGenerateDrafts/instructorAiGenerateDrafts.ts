@@ -126,7 +126,8 @@ router.post(
       }
 
       const result = await generateQuestion({
-        openai,
+        model: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
         authnUserId: res.locals.authn_user.user_id,
         prompt: req.body.prompt,

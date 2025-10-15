@@ -1,7 +1,7 @@
 import path from 'node:path';
 
 import type { OpenAIProvider } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { type LanguageModel, generateObject } from 'ai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
@@ -17,7 +17,7 @@ import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 
-import { generateQuestion } from './aiQuestionGeneration.js';
+import { QUESTION_GENERATION_OPENAI_MODEL, generateQuestion } from './aiQuestionGeneration.js';
 
 const sql = loadSqlEquiv(import.meta.filename);
 
@@ -239,7 +239,8 @@ export async function benchmarkAiQuestionGeneration({
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
       const result = await generateQuestion({
-        openai,
+        model: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: course.id,
         authnUserId,
         prompt: benchmark.prompt,
@@ -276,7 +277,7 @@ export async function benchmarkAiQuestionGeneration({
       }
 
       const evaluationResult = await evaluateGeneratedQuestion({
-        openai,
+        model: openai.responses(MODEL_NAME),
         originalSystemPrompt: prompts[0].system_prompt,
         userPrompt: prompts[0].user_prompt,
         html: result.htmlResult ?? '',
@@ -316,13 +317,13 @@ export async function benchmarkAiQuestionGeneration({
 }
 
 async function evaluateGeneratedQuestion({
-  openai,
+  model,
   originalSystemPrompt,
   userPrompt,
   html,
   python,
 }: {
-  openai: OpenAIProvider;
+  model: LanguageModel;
   originalSystemPrompt: string | null;
   userPrompt: string;
   html: string;
@@ -376,7 +377,7 @@ async function evaluateGeneratedQuestion({
   }
 
   const response = await generateObject({
-    model: openai(MODEL_NAME),
+    model,
     system: systemPrompt,
     prompt: generatedQuestion.join('\n'),
     schema: QuestionGenerationEvaluationSchema,

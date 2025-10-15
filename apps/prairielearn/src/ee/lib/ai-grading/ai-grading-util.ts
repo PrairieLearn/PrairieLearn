@@ -1,5 +1,10 @@
-import type { OpenAIProvider } from '@ai-sdk/openai';
-import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
+import type {
+  EmbeddingModel,
+  GenerateObjectResult,
+  GenerateTextResult,
+  ModelMessage,
+  UserContent,
+} from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
@@ -334,13 +339,13 @@ export async function generateSubmissionEmbedding({
   question,
   instance_question,
   urlPrefix,
-  openai,
+  model,
 }: {
   question: Question;
   course: Course;
   instance_question: InstanceQuestion;
   urlPrefix: string;
-  openai: OpenAIProvider;
+  model: EmbeddingModel;
 }): Promise<SubmissionGradingContextEmbedding> {
   const question_course = await getQuestionCourse(question, course);
   const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
@@ -359,7 +364,7 @@ export async function generateSubmissionEmbedding({
     locals,
   );
   const submission_text = render_submission_results.data.submissionHtmls[0];
-  const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
+  const embedding = await createEmbedding(model, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,

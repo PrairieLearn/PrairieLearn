@@ -287,18 +287,19 @@ router.post(
         return;
       }
 
-      const result = await regenerateQuestion(
-        openai,
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-        prompts[0]?.user_prompt,
-        req.body.prompt,
-        prompts[prompts.length - 1].html || '',
-        prompts[prompts.length - 1].python || '',
-        question.qid,
-        res.locals.authn_user.user_id,
-        res.locals.authz_data.has_course_permission_edit,
-      );
+      const result = await regenerateQuestion({
+        model: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
+        courseId: res.locals.course.id,
+        authnUserId: res.locals.authn_user.user_id,
+        originalPrompt: prompts[0]?.user_prompt,
+        revisionPrompt: req.body.prompt,
+        originalHTML: prompts[prompts.length - 1].html || '',
+        originalPython: prompts[prompts.length - 1].python || '',
+        questionQid: question.qid,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      });
 
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.user_id,

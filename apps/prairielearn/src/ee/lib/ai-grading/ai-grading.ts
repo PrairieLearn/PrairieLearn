@@ -86,6 +86,8 @@ export async function aiGrade({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
   });
+  const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
+  const model = openai.responses(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -123,7 +125,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          openai,
+          model: embeddingModel,
         });
         newEmbeddingsCount++;
       }
@@ -199,7 +201,7 @@ export async function aiGrade({
           question,
           instance_question,
           urlPrefix,
-          openai,
+          model: embeddingModel,
         });
       }
       const submission_text = submission_embedding.submission_text;
@@ -281,7 +283,7 @@ export async function aiGrade({
         });
 
         const response = await generateObject({
-          model: openai(AI_GRADING_OPENAI_MODEL),
+          model,
           schema: RubricGradingResultSchema,
           messages: input,
           providerOptions: {
@@ -408,7 +410,7 @@ export async function aiGrade({
         });
 
         const response = await generateObject({
-          model: openai(AI_GRADING_OPENAI_MODEL),
+          model,
           schema: GradingResultSchema,
           messages: input,
           providerOptions: {

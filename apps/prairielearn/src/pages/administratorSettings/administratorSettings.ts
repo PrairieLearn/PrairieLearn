@@ -58,7 +58,10 @@ router.post(
       });
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
-      const jobSequenceId = await syncContextDocuments(openai, res.locals.authn_user.user_id);
+      const jobSequenceId = await syncContextDocuments(
+        openai.textEmbeddingModel('text-embedding-3-small'),
+        res.locals.authn_user.user_id,
+      );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
       // We intentionally only enable this in dev mode since it could pollute

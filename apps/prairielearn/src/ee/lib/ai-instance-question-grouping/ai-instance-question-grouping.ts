@@ -122,7 +122,7 @@ async function aiEvaluateStudentResponse({
   ];
 
   const response = await generateObject({
-    model: openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL),
+    model: openai.responses(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL),
     schema: z.object({
       correct: z.boolean().describe('Whether or not the student submission is correct.'),
     }),
