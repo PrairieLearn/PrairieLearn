@@ -1,4 +1,5 @@
 import random
+import re
 from enum import Enum
 
 import chevron
@@ -322,6 +323,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     a_sub = data["submitted_answers"].get(name, None)
     if allow_blank and a_sub is not None and a_sub.strip() == "":
         a_sub = blank_value
+
+    # Pre-processing to make submission parseable by SymPy
+    a_sub, error_msg = format_submission_for_sympy(a_sub)
+    if error_msg is not None:
+        data["format_errors"][name] = error_msg
+        data["submitted_answers"][name] = None
+        return
+
     if not a_sub:
         data["format_errors"][name] = "No submitted answer."
         data["submitted_answers"][name] = None
@@ -376,6 +385,49 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed)}$$"
         )
         data["submitted_answers"][name] = None
+
+
+def format_submission_for_sympy(sub: str | None) -> tuple[str | None, str | None]:
+    """
+    Format submission to be compatible with SymPy.
+
+    Converts absolute value bars to abs() function calls, handling nested cases.
+
+    Examples:
+        "|x|" becomes "abs(x)"
+        "||x|+y|" becomes "abs(abs(x)+y)"
+
+    Args:
+        sub: The text submission to format
+
+    Returns:
+        A tuple of (Formatted text with absolute value bars replaced by abs() calls, or None if input is None, and an error message if there is an error)
+    """
+    original_sub = sub
+    if sub is None:
+        return None, None
+
+    while True:
+        # Find matches of |...| where:
+        # when ignoring spaces, it either:
+        # - starts with letter/number/opening paren and ends with letter/number/closing paren
+        # - is a single leter/number
+        match = re.search(
+            r"(\|\s*[a-zA-Z0-9(]([^|]*[a-zA-Z0-9)])\s*\|)|(\|\s*[a-zA-Z0-9]\s*\|)", sub
+        )
+        if not match:
+            break
+
+        content = match.group(0)[1:-1]  # Strip the bars
+        sub = sub[: match.start()] + f"abs({content})" + sub[match.end() :]
+
+    if "|" in sub:
+        return (
+            None,
+            f"The absolute value bars in your answer are mismatched or ambiguous: {original_sub}.",
+        )
+
+    return sub, None
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
