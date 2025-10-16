@@ -292,10 +292,7 @@ class OrderBlocksOptions:
                     'Block groups only supported in the "dag" grading mode.'
                 )
 
-            if (
-                self.is_optional
-                and answer_options.group_info["tag"] is not None
-            ):
+            if self.is_optional and answer_options.group_info["tag"] is not None:
                 raise ValueError(
                     "Block groups not supported with the optional-lines feature."
                 )

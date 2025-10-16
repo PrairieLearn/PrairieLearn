@@ -291,7 +291,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
 def test_valid_final_tag(
     options: dict, answer_options_list: list[dict], error: str
 ) -> None:
-    """Tests two final tags in pl-answer-tag while using multigraph features"""
+    """Tests two valid final tag parsing."""
     tags_html = "\n".join(
         build_tag("pl-answer", answer_options) for answer_options in answer_options_list
     )

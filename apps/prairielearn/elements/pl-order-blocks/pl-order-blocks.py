@@ -16,6 +16,8 @@ from dag_checker import (
     lcs_partial_credit,
     solve_dag,
     solve_multigraph,
+    Edges,
+    ColoredEdges
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
@@ -38,7 +40,7 @@ class OrderBlocksAnswerData(TypedDict):
     index: int
     tag: str
     distractor_for: str | None
-    depends: list[str] | dict[str, list[str]]  # only used with DAG grader
+    depends: Edges | ColoredEdges  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: str | None
@@ -610,7 +612,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif grading_method is GradingMethodType.DAG and order_blocks_options.is_optional:
+        elif (
+            grading_method is GradingMethodType.DAG and order_blocks_options.is_optional
+        ):
             # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)
 
