@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 
+import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
 import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
@@ -85,8 +86,8 @@ router.post(
       );
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        generationModel: openai.responses(QUESTION_GENERATION_OPENAI_MODEL),
-        evaluationModel: openai.responses('gpt-5-2025-08-07'),
+        generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        evaluationModel: openai(QUESTION_BENCHMARKING_OPENAI_MODEL),
         authnUserId: res.locals.authn_user.user_id,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);

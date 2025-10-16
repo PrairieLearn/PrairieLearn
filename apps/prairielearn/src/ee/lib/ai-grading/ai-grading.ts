@@ -87,7 +87,7 @@ export async function aiGrade({
     organization: config.aiGradingOpenAiOrganization,
   });
   const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
-  const model = openai.responses(AI_GRADING_OPENAI_MODEL);
+  const model = openai(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -422,9 +422,9 @@ export async function aiGrade({
                 assessment_question_id: assessment_question.id.toString(),
                 instance_question_id: instance_question.id.toString(),
               },
-              prompt_cache_key: `assessment_question_${assessment_question.id}`,
-              safety_identifier: `course_${course.id}`,
-            },
+              promptCacheKey: `assessment_question_${assessment_question.id}`,
+              safetyIdentifier: `course_${course.id}`,
+            } satisfies OpenAIChatLanguageModelOptions,
           },
         });
         try {
