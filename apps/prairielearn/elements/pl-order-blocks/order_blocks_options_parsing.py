@@ -220,10 +220,14 @@ class OrderBlocksOptions:
         # Check that if it is a multigraph to ensure the final tag exists
         if self.is_optional:
             has_final = False
-            seen_final = False
             for options in self.answer_options:
-                seen_final = seen_final or options.final
-                has_final = (seen_final and has_final) ^ options.final
+                if options.final and not has_final:
+                    has_final = True
+                if options.final and has_final:
+                    raise ValueError(
+                        "Two final 'final' attributes are not allowed."
+                    )
+
 
             if not has_final:
                 raise ValueError(
