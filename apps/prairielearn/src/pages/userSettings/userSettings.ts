@@ -42,7 +42,7 @@ router.get(
 
     // Now that we've rendered these tokens, remove any tokens from the DB
     if (newAccessTokens.length > 0) {
-      await sqldb.queryAsync(sql.clear_tokens_for_user, {
+      await sqldb.execute(sql.clear_tokens_for_user, {
         user_id: authn_user.user_id,
       });
     }
@@ -110,7 +110,7 @@ router.post(
       const token = uuidv4();
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-      await sqldb.queryAsync(sql.insert_access_token, {
+      await sqldb.execute(sql.insert_access_token, {
         user_id: res.locals.authn_user.user_id,
         name,
         // The token will only be persisted until the next page render.
@@ -120,7 +120,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
-      await sqldb.queryAsync(sql.delete_access_token, {
+      await sqldb.execute(sql.delete_access_token, {
         token_id: req.body.token_id,
         user_id: res.locals.authn_user.user_id,
       });

@@ -15,8 +15,10 @@ import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { assertNever } from '../../../lib/types.js';
 import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
 
+import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -69,8 +71,8 @@ export function InstructorAssessmentQuestionsTable({
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const handleResetButtonClick = (questionId: string) => {
-    setResetAssessmentQuestionId(questionId);
+  const handleResetButtonClick = (assessmentQuestionId: string) => {
+    setResetAssessmentQuestionId(assessmentQuestionId);
     setShowResetModal(true);
   };
 
@@ -93,13 +95,15 @@ export function InstructorAssessmentQuestionsTable({
     init_points: number | null;
   }) {
     if (max_auto_points || !max_manual_points) {
-      if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points])
-          .map((p) => (p ?? 0) - (max_manual_points ?? 0))
-          .join(',');
-      }
-      if (assessmentType === 'Homework') {
-        return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+      switch (assessmentType) {
+        case 'Exam':
+          return (points_list || [max_manual_points])
+            .map((p) => (p ?? 0) - (max_manual_points ?? 0))
+            .join(',');
+        case 'Homework':
+          return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+        default:
+          assertNever(assessmentType);
       }
     } else {
       return '—';
@@ -149,7 +153,7 @@ export function InstructorAssessmentQuestionsTable({
                         />
                         <IssueBadge
                           urlPrefix={urlPrefix}
-                          count={questionRow.open_issue_count ?? 0}
+                          count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />
                       </td>
@@ -256,12 +260,16 @@ export function InstructorAssessmentQuestionsTable({
           </table>
         </div>
       </div>
-      <ResetQuestionVariantsModal
-        csrfToken={csrfToken}
-        assessmentQuestionId={resetAssessmentQuestionId}
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-      />
+      {assessmentType === 'Homework' ? (
+        <ResetQuestionVariantsModal
+          csrfToken={csrfToken}
+          assessmentQuestionId={resetAssessmentQuestionId}
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+        />
+      ) : (
+        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+      )}
     </>
   );
 }

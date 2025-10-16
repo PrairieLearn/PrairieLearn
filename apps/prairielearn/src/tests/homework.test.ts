@@ -1188,7 +1188,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
   describe('regrading', function () {
     describe('change max_points', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_max_points, []);
+        await sqldb.execute(sql.update_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);

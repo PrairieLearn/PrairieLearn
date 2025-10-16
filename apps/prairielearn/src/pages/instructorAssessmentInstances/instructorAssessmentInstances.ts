@@ -58,18 +58,16 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
       await checkBelongs(assessment_instance_id, assessment_id);
-      const requireOpen = true;
-      const close = true;
-      const overrideGradeRate = true;
-      await gradeAssessmentInstance(
+      await gradeAssessmentInstance({
         assessment_instance_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        close,
-        overrideGradeRate,
-        null, // client_fingerprint_id
-      );
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+        client_fingerprint_id: null,
+      });
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
@@ -82,15 +80,14 @@ router.post(
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
-      const close = req.body.__action === 'close_all';
-      const overrideGradeRate = true;
-      const job_sequence_id = await gradeAllAssessmentInstances(
+      const job_sequence_id = await gradeAllAssessmentInstances({
         assessment_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        close,
-        overrideGradeRate,
-      );
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        close: req.body.__action === 'close_all',
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
       await deleteAllAssessmentInstancesForAssessment(
@@ -137,7 +134,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit, params);
+      await sqldb.execute(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'set_time_limit_all') {
       const params = {
@@ -168,7 +165,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit_all, params);
+      await sqldb.execute(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

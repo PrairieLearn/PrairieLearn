@@ -1,8 +1,8 @@
+import assert from 'node:assert';
 import * as url from 'node:url';
 import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -18,6 +18,7 @@ import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getSearchParams } from '../../lib/url.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
@@ -28,7 +29,7 @@ const router = Router();
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
@@ -47,7 +48,7 @@ router.post(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     const manualGradingPreviewEnabled = req.query.manual_grading_preview === 'true';
     const aiGradingPreviewEnabled = aiGradingEnabled && req.query.ai_grading_preview === 'true';
@@ -62,7 +63,7 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals);
     await logPageView('instructorQuestionPreview', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
       course: res.locals.course,
@@ -126,6 +127,7 @@ router.get(
     // We must read the README from the course's runtime directory to handle
     // the case where this process is a chunk consumer.
     const coursePath = getRuntimeDirectoryForCourse(question_course);
+    assert(res.locals.question.qid !== null, 'question.qid is null');
     const questionReadmePath = path.join(
       path.join(coursePath, 'questions', res.locals.question.qid, 'README.md'),
     );
@@ -157,7 +159,7 @@ router.get(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
     // As with the normal route, we need to respect the `manual_grading_preview`
@@ -169,6 +171,8 @@ router.get(
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
       question_id: res.locals.question.id,
+      // TODO: The types are wrong for typedAsyncHandler. See https://github.com/PrairieLearn/PrairieLearn/pull/12620
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       course_instance_id: res.locals.course_instance?.id,
       authz_data: res.locals.authz_data,
       authn_user: res.locals.authn_user,

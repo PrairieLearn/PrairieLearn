@@ -99,11 +99,11 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(res.status, 200);
     });
     it('should create the correct group configuration', async () => {
-      const result = await sqldb.queryAsync(sql.select_group_users, {
+      const rowCount = await sqldb.execute(sql.select_group_users, {
         assessment_id: locals.assessment_id,
         group_name: 'testgroup',
       });
-      assert.equal(result.rowCount, 3);
+      assert.equal(rowCount, 3);
     });
   });
 

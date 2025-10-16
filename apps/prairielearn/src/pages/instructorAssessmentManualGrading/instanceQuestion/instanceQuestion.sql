@@ -77,11 +77,33 @@ SELECT
 FROM
   updated_issues AS i;
 
+-- BLOCK select_instance_question_ids_in_group
+SELECT
+  iq.id AS instance_question_id,
+  s.id AS submission_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  COALESCE(
+    iq.manual_instance_question_group_id,
+    iq.ai_instance_question_group_id
+  ) = $selected_instance_question_group_id
+  AND ai.assessment_id = $assessment_id
+  -- If skipping graded submissions, only include instance questions that require manual grading. 
+  AND (
+    NOT $skip_graded_submissions
+    OR iq.requires_manual_grading
+  );
+
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT
   gj.id,
   gj.manual_rubric_grading_id,
-  agj.prompt
+  agj.prompt,
+  agj.completion
 FROM
   grading_jobs AS gj
   LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)

@@ -12,6 +12,7 @@ import * as chunks from '../chunks.js';
 import { config } from '../config.js';
 import { type Course } from '../db-types.js';
 import * as load from '../load.js';
+import { assertNever } from '../types.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
@@ -66,18 +67,19 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
         };
 
         const codeCaller = await run(async () => {
-          if (workersExecutionMode === 'container') {
-            return await CodeCallerContainer.create(codeCallerOptions);
-          } else if (workersExecutionMode === 'native') {
-            return await CodeCallerNative.create({
-              ...codeCallerOptions,
-              pythonVenvSearchPaths: config.pythonVenvSearchPaths,
-              errorLogger: logger.error.bind(logger),
-              // We can only drop privileges if this code caller is running in a container.
-              dropPrivileges: false,
-            });
-          } else {
-            throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
+          switch (workersExecutionMode) {
+            case 'container':
+              return await CodeCallerContainer.create(codeCallerOptions);
+            case 'native':
+              return await CodeCallerNative.create({
+                ...codeCallerOptions,
+                pythonVenvSearchPaths: config.pythonVenvSearchPaths,
+                errorLogger: logger.error.bind(logger),
+                // We can only drop privileges if this code caller is running in a container.
+                dropPrivileges: false,
+              });
+            default:
+              assertNever(workersExecutionMode);
           }
         });
 

@@ -128,8 +128,8 @@ FROM
   JOIN users AS u ON (u.user_id = cai.user_id)
   LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
 ORDER BY
-  cai.user_id,
-  cai.assessment_id,
+  cai.user_id ASC,
+  cai.assessment_id ASC,
   cai.score_perc DESC,
   cai.id DESC;
 
