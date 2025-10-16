@@ -122,6 +122,7 @@ router.get(
           record.uin,
           record.user_name,
           record.role,
+          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
           ...assessments.map((a) => record.scores[a.assessment_id]?.score_perc ?? null),
         ],
       });

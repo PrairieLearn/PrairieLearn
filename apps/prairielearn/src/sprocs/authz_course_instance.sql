@@ -71,7 +71,8 @@ BEGIN
             enrollments AS e
         WHERE
             e.user_id = authz_course_instance.user_id
-            AND e.course_instance_id = authz_course_instance.course_instance_id;
+            AND e.course_instance_id = authz_course_instance.course_instance_id
+            AND e.status = 'joined';
 
         has_student_access_with_enrollment := FOUND;
 

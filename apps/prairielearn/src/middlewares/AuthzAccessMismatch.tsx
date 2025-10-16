@@ -131,6 +131,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
     </table>
   );
 }
+
 function clearEffectiveUserCookies() {
   removeCookieClient(['pl_requested_uid', 'pl2_requested_uid']);
   removeCookieClient(['pl_requested_course_role', 'pl2_requested_course_role']);
@@ -143,6 +144,25 @@ function clearEffectiveUserCookies() {
 function formatUser(user: StaffUser) {
   if (!user.name) return user.uid;
   return `${user.name} (${user.uid})`;
+}
+
+function getPermissionDescription(permissionKeys: CheckablePermissionKeys[]): string {
+  const descriptions = permissionKeys.map((key) => {
+    const permission = PERMISSIONS_META.find((p) => p.key === key);
+    return permission?.label.toLowerCase() || key.toString().replaceAll('_', ' ');
+  });
+
+  if (descriptions.length === 1) {
+    return descriptions[0];
+  } else if (descriptions.length === 2) {
+    return descriptions.join(' or ');
+  } else {
+    return descriptions.slice(0, -1).join(', ') + ', or ' + descriptions.at(-1);
+  }
+}
+
+export function getErrorExplanation(permissionKeys: CheckablePermissionKeys[]): string {
+  return `This page requires ${getPermissionDescription(permissionKeys)} permissions.`;
 }
 
 export function AuthzAccessMismatch({
@@ -192,7 +212,7 @@ export function AuthzAccessMismatch({
           <h1>Effective user has insufficient access</h1>
         </div>
         <div class="card-body">
-          <p>{errorExplanation}</p>
+          <p>{errorExplanation ?? getErrorExplanation(oneOfPermissionKeys)}</p>
           {hasEffectiveUser ? (
             <p>
               The current effective user {authzUser && <strong>{formatUser(authzUser)}</strong>}{' '}

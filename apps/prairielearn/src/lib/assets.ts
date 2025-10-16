@@ -6,7 +6,6 @@ import * as path from 'node:path';
 
 import express, { Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
-import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
 import { type HtmlSafeString } from '@prairielearn/html';
@@ -135,7 +134,7 @@ function getNodeModulesAssetHash(assetPath: string): string {
     // a repeatable hash that would cause the browser to cache the asset. This
     // is because we want to be able to change them without changing the package
     // version number.
-    return uuid();
+    return crypto.randomUUID();
   }
 
   // Reading files synchronously and computing cryptographic hashes are both

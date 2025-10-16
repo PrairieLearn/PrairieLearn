@@ -5,6 +5,8 @@ import lxml.html
 import prairielearn as pl
 from lxml.etree import _Comment
 
+from dag_checker import Edges, ColoredEdges
+
 
 class GroupInfo(TypedDict):
     tag: str | None
@@ -87,7 +89,7 @@ def is_multigraph(element: lxml.html.HtmlElement) -> bool:
 
 def get_graph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, list[str]]:
+) -> tuple[str, Edges]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     depends = [tag.strip() for tag in depends.split(",")] if depends else []
@@ -96,7 +98,7 @@ def get_graph_info(
 
 def get_multigraph_info(
     html_tag: lxml.html.HtmlElement,
-) -> tuple[str, list | list[list], bool | None]:
+) -> tuple[str, Edges | ColoredEdges, bool | None]:
     tag = pl.get_string_attrib(html_tag, "tag", pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", False)
@@ -115,7 +117,172 @@ def get_multigraph_info(
     return tag, depends, final
 
 
+class AnswerOptions:
+    """
+    Collects and validates <pl-answer> tag options
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
+    """
+
+    tag: str
+    depends: list[str]
+    correct: bool
+    ranking: int
+    indent: int | None
+    distractor_for: str | None
+    distractor_feedback: str | None
+    ordering_feedback: str | None
+    inner_html: str
+    group_info: GroupInfo
+    final: bool
+
+    def __init__(
+        self,
+        html_element: lxml.html.HtmlElement,
+        group_info: GroupInfo,
+        grading_method: GradingMethodType,
+        has_optional_lines: bool
+    ) -> None:
+        self._check_options(html_element, grading_method)
+        if has_optional_lines:
+            self.tag, self.depends, self.final = get_multigraph_info(html_element)
+        else:
+            self.tag, self.depends = get_graph_info(html_element)
+            self.final = False
+        self.correct = pl.get_boolean_attrib(
+            html_element, "correct", ANSWER_CORRECT_DEFAULT
+        )
+        self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
+        self.indent = pl.get_integer_attrib(
+            html_element, "indent", ANSWER_INDENT_DEFAULT
+        )
+        self.distractor_for = pl.get_string_attrib(
+            html_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
+        )
+        self.distractor_feedback = pl.get_string_attrib(
+            html_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
+        )
+        self.ordering_feedback = pl.get_string_attrib(
+            html_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
+        )
+        self.inner_html = pl.inner_html(html_element)
+        self.group_info = group_info
+
+    def _check_options(
+        self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
+    ) -> None:
+        if html_element.tag != "pl-answer":
+            raise ValueError(
+                """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
+                    Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+            )
+
+        if grading_method is GradingMethodType.EXTERNAL:
+            pl.check_attribs(
+                html_element, required_attribs=[], optional_attribs=["correct"]
+            )
+        elif grading_method in [
+            GradingMethodType.UNORDERED,
+            GradingMethodType.ORDERED,
+        ]:
+            pl.check_attribs(
+                html_element,
+                required_attribs=[],
+                optional_attribs=["correct", "indent", "distractor-feedback"],
+            )
+        elif grading_method is GradingMethodType.RANKING:
+            pl.check_attribs(
+                html_element,
+                required_attribs=[],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "ranking",
+                    "indent",
+                    "distractor-feedback",
+                    "distractor-for",
+                    "ordering-feedback",
+                ],
+            )
+        elif grading_method is GradingMethodType.DAG:
+            pl.check_attribs(
+                html_element,
+                required_attribs=[],
+                optional_attribs=[
+                    "correct",
+                    "tag",
+                    "depends",
+                    "comment",
+                    "indent",
+                    "distractor-feedback",
+                    "distractor-for",
+                    "ordering-feedback",
+                    "final",
+                ],
+            )
+
+
+def collect_answer_options(
+    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
+) -> list[AnswerOptions]:
+    answer_options = []
+    for inner_element in html_element:
+        if isinstance(inner_element, _Comment):
+            continue
+
+        match inner_element.tag:
+            case "pl-block-group":
+                group_tag, group_depends = get_graph_info(inner_element)
+                for answer_element in inner_element:
+                    if isinstance(answer_element, _Comment):
+                        continue
+                    options = AnswerOptions(
+                        answer_element,
+                        {"tag": group_tag, "depends": group_depends},
+                        order_blocks_options.grading_method,
+                        order_blocks_options.has_optional_lines,
+                    )
+                    answer_options.append(options)
+            case "pl-answer":
+                options = AnswerOptions(
+                    inner_element, {"tag": None, "depends": None}, order_blocks_options.grading_method, order_blocks_options.has_optional_lines
+                )
+                answer_options.append(options)
+            case _:
+                raise ValueError(
+                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
+                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
+                )
+
+    return answer_options
+
 class OrderBlocksOptions:
+    """
+    Collects and validates <pl-order-block> question options.
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element)
+    """
+
+    answers_name: str
+    weight: int
+    grading_method: GradingMethodType
+    allow_blank: bool
+    file_name: str
+    source_blocks_order: SourceBlocksOrderType
+    indentation: bool
+    source_header: str
+    solution_header: str
+    solution_placement: SolutionPlacementType
+    max_indent: int
+    partial_credit: PartialCreditType
+    feedback: FeedbackType
+    format: FormatType
+    code_language: str | None
+    inline: bool
+    answer_options: list[AnswerOptions]
+    correct_answers: list[AnswerOptions]
+    incorrect_answers: list[AnswerOptions]
+    max_incorrect: int
+    min_incorrect: int
+
     def __init__(self, html_element: lxml.html.HtmlElement) -> None:
         self._check_options(html_element)
         self.answers_name = pl.get_string_attrib(html_element, "answers-name")
@@ -345,123 +512,3 @@ class OrderBlocksOptions:
                     + answer_options.inner_html
                     + "</pl-code>"
                 )
-
-
-class AnswerOptions:
-    def __init__(
-        self,
-        html_element: lxml.html.HtmlElement,
-        group_info: GroupInfo,
-        order_block_options: OrderBlocksOptions,
-    ) -> None:
-        self._check_options(html_element, order_block_options.grading_method)
-        if order_block_options.has_optional_lines:
-            self.tag, self.depends, self.final = get_multigraph_info(html_element)
-        else:
-            self.tag, self.depends = get_graph_info(html_element)
-            self.final = False
-        self.correct = pl.get_boolean_attrib(
-            html_element, "correct", ANSWER_CORRECT_DEFAULT
-        )
-        self.ranking = pl.get_integer_attrib(html_element, "ranking", -1)
-        self.indent = pl.get_integer_attrib(
-            html_element, "indent", ANSWER_INDENT_DEFAULT
-        )
-        self.distractor_for = pl.get_string_attrib(
-            html_element, "distractor-for", DISTRACTOR_FOR_DEFAULT
-        )
-        self.distractor_feedback = pl.get_string_attrib(
-            html_element, "distractor-feedback", DISTRACTOR_FEEDBACK_DEFAULT
-        )
-        self.ordering_feedback = pl.get_string_attrib(
-            html_element, "ordering-feedback", ORDERING_FEEDBACK_DEFAULT
-        )
-        self.inner_html = pl.inner_html(html_element)
-        self.group_info = group_info
-
-    def _check_options(
-        self, html_element: lxml.html.HtmlElement, grading_method: GradingMethodType
-    ) -> None:
-        if html_element.tag != "pl-answer":
-            raise ValueError(
-                """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                    Any html tags nested inside <pl-block-group> must be <pl-answer>"""
-            )
-
-        if grading_method is GradingMethodType.EXTERNAL:
-            pl.check_attribs(
-                html_element, required_attribs=[], optional_attribs=["correct"]
-            )
-        elif grading_method in [
-            GradingMethodType.UNORDERED,
-            GradingMethodType.ORDERED,
-        ]:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=["correct", "indent", "distractor-feedback"],
-            )
-        elif grading_method is GradingMethodType.RANKING:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "tag",
-                    "ranking",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                ],
-            )
-        elif grading_method is GradingMethodType.DAG:
-            pl.check_attribs(
-                html_element,
-                required_attribs=[],
-                optional_attribs=[
-                    "correct",
-                    "tag",
-                    "depends",
-                    "comment",
-                    "indent",
-                    "distractor-feedback",
-                    "distractor-for",
-                    "ordering-feedback",
-                    "final",
-                ],
-            )
-
-
-def collect_answer_options(
-    html_element: lxml.html.HtmlElement, order_blocks_options: OrderBlocksOptions
-) -> list[AnswerOptions]:
-    answer_options = []
-    for inner_element in html_element:
-        if isinstance(inner_element, _Comment):
-            continue
-
-        match inner_element.tag:
-            case "pl-block-group":
-                group_tag, group_depends = get_graph_info(inner_element)
-                for answer_element in inner_element:
-                    if isinstance(answer_element, _Comment):
-                        continue
-                    options = AnswerOptions(
-                        answer_element,
-                        {"tag": group_tag, "depends": group_depends},
-                        order_blocks_options,
-                    )
-                    answer_options.append(options)
-            case "pl-answer":
-                options = AnswerOptions(
-                    inner_element, {"tag": None, "depends": None}, order_blocks_options
-                )
-                answer_options.append(options)
-            case _:
-                raise ValueError(
-                    """Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>.
-                        Any html tags nested inside <pl-block-group> must be <pl-answer>"""
-                )
-
-    return answer_options

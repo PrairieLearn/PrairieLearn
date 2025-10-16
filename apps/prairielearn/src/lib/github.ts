@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import { Octokit } from '@octokit/rest';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
@@ -161,7 +160,7 @@ export async function createCourseRepoJob(
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
     const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
 
-    infoCourse.uuid = uuidv4();
+    infoCourse.uuid = crypto.randomUUID();
     infoCourse.name = options.short_name;
     infoCourse.title = options.title;
     infoCourse.timezone = options.display_timezone;
