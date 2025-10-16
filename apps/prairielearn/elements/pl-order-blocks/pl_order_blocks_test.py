@@ -7,9 +7,9 @@ def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
     newline = "\n"
     return f"""<{tag_name}
         {newline.join(f'{n}="{v}"' for (n, v) in options.items())}
-    >
-    {inner_html}
-</{tag_name}>"""
+        >
+            {inner_html}
+        </{tag_name}>"""
 
 
 def assert_order_blocks_options(

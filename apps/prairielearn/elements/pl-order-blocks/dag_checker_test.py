@@ -198,16 +198,16 @@ problem_6_valid_2: Multigraph = {
 }
 
 
-def test_solve_multigraph():
+def test_solve_multigraph() -> None:
     problem_4_solutions = solve_multigraph(problem_4_valid_1, problem_4_final)
     for solution in problem_4_solutions:
         assert (
             len(solution)
-            == grade_multigraph(solution, problem_4_valid_1, problem_4_final, {})[0]
+            == grade_multigraph(solution, problem_4_valid_1, problem_4_final)[0]
         )
 
     # Contains a cycle and should fail.
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match=r"Cycle encountered during collapse of multigraph."):
         solve_multigraph(problem_5_invalid_1, problem_5_final)
 
     problem_7_solutions = solve_multigraph(problem_6_valid_2, problem_6_final)
@@ -215,5 +215,5 @@ def test_solve_multigraph():
         assert (
             len(solution)
             == grade_multigraph(
-                solution, problem_6_valid_2, problem_6_final, {})[0]
+                solution, problem_6_valid_2, problem_6_final)[0]
         )

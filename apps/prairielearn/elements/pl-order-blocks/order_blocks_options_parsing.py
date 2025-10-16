@@ -1,10 +1,8 @@
-import re
 from enum import Enum
 from typing import TypedDict
 
 import lxml.html
 import prairielearn as pl
-from dag_checker import ColoredEdges, Edges
 from lxml.etree import _Comment
 
 
@@ -103,11 +101,9 @@ def get_multigraph_info(
     depends = pl.get_string_attrib(html_tag, "depends", "")
     final = pl.get_boolean_attrib(html_tag, "final", False)
     has_colors = "|" in depends
-    paths: dict[str, str] = {}
-    for i, name in enumerate(re.findall(r"\w+:", depends)):
-        paths[tag + str(i)] = name
 
-    depends = re.sub(r"\w+:", "", depends)
+    if ":" in depends:
+        raise ValueError("The linked options feature is currently unavailable.")
 
     if has_colors:
         depends = [
@@ -294,6 +290,14 @@ class OrderBlocksOptions:
             ):
                 raise ValueError(
                     'Block groups only supported in the "dag" grading mode.'
+                )
+
+            if (
+                self.is_optional
+                and answer_options.group_info["tag"] is not None
+            ):
+                raise ValueError(
+                    "Block groups not supported with the optional-lines feature."
                 )
 
             if self.indentation is False and answer_options.indent is not None:

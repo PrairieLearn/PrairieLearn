@@ -1,10 +1,11 @@
 import itertools
 from collections import Counter
-from collections.abc import Callable, Generator, Iterable, Mapping, Sequence
+from collections.abc import Generator, Iterable, Mapping, Sequence
 from copy import deepcopy
-from typing import TypeAlias, TypeGuard
+from typing import TypeAlias
 
 import networkx as nx
+from typing_extensions import TypeIs
 
 ColoredEdges: TypeAlias = list[list[str]]
 Edges: TypeAlias = list[str]
@@ -203,14 +204,11 @@ def grade_multigraph(
     submission: list[str],
     multigraph: Multigraph,
     final: str,
-    group_belonging: Mapping[
-        str, str | None
-    ] = {}, 
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
     collapsed_dags = list(collapse_multigraph(multigraph, final))
 
-    graphs = [dag_to_nx(graph, group_belonging) for graph in collapsed_dags]
+    graphs = [dag_to_nx(graph, {}) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
         top_sort_correctness.append(check_topological_sorting(sub, graph))
@@ -344,17 +342,17 @@ def dfs_until(
         visited.append(curr)
 
         edges = multigraph[curr]
+
         if _is_edges_colored(edges):
             return (curr, edges), traversed
 
-        if _is_edges_uncolored(edges):
-            traversed[curr] = edges
-            for target in edges:
-                # this determines if the proposed target edge is a back edge if so it contains a cycle
-                if target in visited and visited.index(curr) >= visited.index(target):
-                    raise ValueError("Cycle encountered during collapse of multigraph.")
-                if target not in visited:
-                    stack.insert(0, (target, deepcopy(visited)))
+        traversed[curr] = edges
+        for target in edges:
+            # this determines if the proposed target edge is a back edge if so it contains a cycle
+            if target in visited and visited.index(curr) >= visited.index(target):
+                raise ValueError("Cycle encountered during collapse of multigraph.")
+            if target not in visited:
+                stack.insert(0, (target, deepcopy(visited)))
 
     return None, traversed
 
@@ -391,19 +389,6 @@ def collapse_multigraph(
             collapsing_graphs.append(partially_collapsed)
 
 
-def _is_edges_colored(edges: Edges | ColoredEdges) -> TypeGuard[ColoredEdges]:
+def _is_edges_colored(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
     """a halting condition function for dfs_until, used to check for colored edges."""
-    for edge in edges:
-        if isinstance(edge, list):
-            return True
-
-    return False
-
-
-def _is_edges_uncolored(edges: Edges | ColoredEdges) -> TypeGuard[Edges]:
-    """a halting condition function for dfs_until, used to check for colored edges."""
-    for edge in edges:
-        if isinstance(edge, str):
-            return True
-
-    return False
+    return any(isinstance(edge, list) for edge in edges)
