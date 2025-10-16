@@ -18,6 +18,17 @@ declare global {
   }
 }
 
+function b64EncodeUnicode(str: string) {
+  // first we use encodeURIComponent to get percent-encoded UTF-8,
+  // then we convert the percent encodings into raw bytes which
+  // can be fed into btoa.
+  return btoa(
+    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
+      return String.fromCharCode(Number(`0x${p1}`));
+    }),
+  );
+}
+
 export function RubricSettings({
   assessmentQuestion,
   rubricData,
@@ -889,12 +900,12 @@ export function RubricRow({
             <input
               type="hidden"
               name={`rubric_item[${item.id}][explanation]`}
-              value={btoa(item.explanation ?? '')}
+              value={b64EncodeUnicode(item.explanation ?? '')}
             />
             <input
               type="hidden"
               name={`rubric_item[${item.id}][grader_note]`}
-              value={btoa(item.grader_note ?? '')}
+              value={b64EncodeUnicode(item.grader_note ?? '')}
             />
             <input
               type="hidden"

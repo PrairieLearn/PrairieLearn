@@ -65,6 +65,17 @@ const mockStaff: MockUser[] = [
 const assessmentTitle = 'Homework for Internal, External, Manual grading methods';
 const manualGradingQuestionTitle = 'Manual Grading: Fibonacci function, file upload';
 
+function b64EncodeUnicode(str: string) {
+  // first we use encodeURIComponent to get percent-encoded UTF-8,
+  // then we convert the percent encodings into raw bytes which
+  // can be fed into btoa.
+  return btoa(
+    encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
+      return String.fromCharCode(Number(`0x${p1}`));
+    }),
+  );
+}
+
 /**
  * @param user student or instructor user to load page by
  * @returns "Homework for Internal, External, Manual grading methods" page text
@@ -323,9 +334,9 @@ function checkSettingsResults(
       const description = form.find(`[name="rubric_item[${item.id}][description]"]`);
       assert.equal(description.val(), item.description);
       const explanation = form.find(`[name="rubric_item[${item.id}][explanation]"]`);
-      assert.equal(explanation.val() ?? '', btoa(item.explanation ?? ''));
+      assert.equal(explanation.val() ?? '', b64EncodeUnicode(item.explanation ?? ''));
       const graderNote = form.find(`[name="rubric_item[${item.id}][grader_note]"]`);
-      assert.equal(graderNote.val() ?? '', btoa(item.grader_note ?? ''));
+      assert.equal(graderNote.val() ?? '', b64EncodeUnicode(item.grader_note ?? ''));
       const always_show_to_students = form.find(
         `[name="rubric_item[${item.id}][always_show_to_students]"]`,
       );
