@@ -1,11 +1,12 @@
 import { Temporal } from '@js-temporal/polyfill';
 
+import { selectPublishingExtensionsByEnrollmentId } from '../models/course-instance-publishing-extensions.js';
 import { type AccessRuleJson, type PublishingJson } from '../schemas/infoCourseInstance.js';
 
 import {
   type CourseInstance,
-  type CourseInstancePublishingExtension,
   type CourseInstancePublishingRule,
+  type Enrollment,
   type EnumCourseInstanceRole,
   type EnumCourseRole,
   type EnumMode,
@@ -17,7 +18,7 @@ export interface CourseInstanceAccessParams {
   course_role: EnumCourseRole;
   mode_reason: EnumModeReason;
   mode: EnumMode;
-  publishingExtensions: CourseInstancePublishingExtension[];
+  enrollment: Enrollment | null;
 }
 
 export interface PublishingConfigurationMigrationResult {
@@ -38,19 +39,20 @@ export type PublishingConfigurationMigrationResponse =
  * Evaluates whether a user can access a course instance based on the course instance's
  * access control settings and the user's authorization context.
  */
-export function evaluateCourseInstanceAccess(
+export async function evaluateCourseInstanceAccess(
   courseInstance: CourseInstance,
   params: CourseInstanceAccessParams,
   // This is done like this for testing purposes.
   currentDate: Date = new Date(),
-):
+): Promise<
   | {
       hasAccess: true;
     }
   | {
       hasAccess: false;
       reason: string;
-    } {
+    }
+> {
   // Staff with course or course instance roles always have access
   if (params.course_role !== 'None' || params.course_instance_role !== 'None') {
     return { hasAccess: true };
@@ -82,10 +84,12 @@ export function evaluateCourseInstanceAccess(
     };
   }
 
-  // Consider the latest enabled extensions.
-  const possibleArchiveDates = params.publishingExtensions.map(
-    (extension) => extension.archive_date,
-  );
+  // Consider the latest enabled extensions for the enrollment.
+  const publishingExtensions = params.enrollment
+    ? await selectPublishingExtensionsByEnrollmentId(params.enrollment.id)
+    : [];
+
+  const possibleArchiveDates = publishingExtensions.map((extension) => extension.archive_date);
 
   if (possibleArchiveDates.length > 0) {
     const sortedPossibleArchiveDates = possibleArchiveDates.sort((a, b) => {

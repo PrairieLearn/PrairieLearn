@@ -1,4 +1,4 @@
-import { assert, describe, expect, it } from 'vitest';
+import { assert, describe, expect, it, vi } from 'vitest';
 
 import {
   type CourseInstanceAccessParams,
@@ -6,7 +6,16 @@ import {
   evaluateCourseInstanceAccess,
   migrateAccessRuleJsonToPublishingConfiguration,
 } from './course-instance-access.js';
-import { type CourseInstance, type CourseInstancePublishingRule } from './db-types.js';
+import {
+  type CourseInstance,
+  type CourseInstancePublishingRule,
+  type Enrollment,
+} from './db-types.js';
+
+// Mock the publishing extensions function
+vi.mock('../models/course-instance-publishing-extensions.js', () => ({
+  selectPublishingExtensionsByEnrollmentId: vi.fn().mockResolvedValue([]),
+}));
 
 function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): CourseInstance {
   return {
@@ -37,6 +46,24 @@ function createMockCourseInstance(overrides: Partial<CourseInstance> = {}): Cour
   };
 }
 
+function _createMockEnrollment(overrides: Partial<Enrollment> = {}): Enrollment {
+  return {
+    id: '1',
+    course_instance_id: '1',
+    user_id: '1',
+    created_at: new Date(),
+    first_joined_at: new Date(),
+    lti_managed: false,
+    pending_lti13_email: null,
+    pending_lti13_instance_id: null,
+    pending_lti13_name: null,
+    pending_lti13_sub: null,
+    pending_uid: null,
+    status: 'joined',
+    ...overrides,
+  };
+}
+
 function createMockParams(
   overrides: Partial<CourseInstanceAccessParams> = {},
 ): CourseInstanceAccessParams {
@@ -45,50 +72,50 @@ function createMockParams(
     mode: 'Public',
     course_instance_role: 'None',
     course_role: 'None',
-    publishingExtensions: [],
+    enrollment: null,
     ...overrides,
   };
 }
 
 describe('evaluateCourseInstanceAccess', () => {
-  it('allows access for staff with course roles', () => {
+  it('allows access for staff with course roles', async () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_role: 'Editor' });
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isTrue(result.hasAccess);
   });
 
-  it('allows access for staff with course instance roles', () => {
+  it('allows access for staff with course instance roles', async () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_instance_role: 'Student Data Viewer' });
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isTrue(result.hasAccess);
   });
 
-  it('allows access for course owners', () => {
+  it('allows access for course owners', async () => {
     const courseInstance = createMockCourseInstance();
     const params = createMockParams({ course_role: 'Owner' });
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isTrue(result.hasAccess);
   });
 
-  it('denies access when course instance is not published', () => {
+  it('denies access when course instance is not published', async () => {
     const courseInstance = createMockCourseInstance({});
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not published');
   });
 
-  it('denies access when published start date is enabled and current date is before start date', () => {
+  it('denies access when published start date is enabled and current date is before start date', async () => {
     const publishDate = new Date('2024-06-01T00:00:00Z');
     const currentDate = new Date('2024-05-01T00:00:00Z');
 
@@ -97,13 +124,13 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');
   });
 
-  it('denies access when current date is after published end date', () => {
+  it('denies access when current date is after published end date', async () => {
     const publishDate = new Date('2024-04-01T00:00:00Z');
     const archiveDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
@@ -114,13 +141,13 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance has been archived');
   });
 
-  it('combines start and end date restrictions correctly', () => {
+  it('combines start and end date restrictions correctly', async () => {
     const publishDate = new Date('2024-05-01T00:00:00Z');
     const archiveDate = new Date('2024-07-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
@@ -131,12 +158,12 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isTrue(result.hasAccess);
   });
 
-  it('prioritizes start date restriction over end date restriction', () => {
+  it('prioritizes start date restriction over end date restriction', async () => {
     const publishDate = new Date('2024-07-01T00:00:00Z');
     const archiveDate = new Date('2024-05-01T00:00:00Z');
     const currentDate = new Date('2024-06-01T00:00:00Z');
@@ -147,31 +174,31 @@ describe('evaluateCourseInstanceAccess', () => {
     });
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params, currentDate);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params, currentDate);
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');
   });
 
-  it('staff bypass all restrictions even when course instance is not published', () => {
+  it('staff bypass all restrictions even when course instance is not published', async () => {
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: new Date('2024-07-01T00:00:00Z'),
       publishing_archive_date: new Date('2024-05-01T00:00:00Z'),
     });
     const params = createMockParams({ course_role: 'Viewer' });
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isTrue(result.hasAccess);
   });
 
-  it('uses current date when no date is provided', () => {
+  it('uses current date when no date is provided', async () => {
     const courseInstance = createMockCourseInstance({
       publishing_publish_date: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
     });
     const params = createMockParams();
 
-    const result = evaluateCourseInstanceAccess(courseInstance, params);
+    const result = await evaluateCourseInstanceAccess(courseInstance, params);
 
     assert.isFalse(result.hasAccess);
     assert.equal(result.reason, 'Course instance is not yet published');
@@ -295,7 +322,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "error": "Expected exactly 1 access rule, but found 0",
+        "error": "Cannot migrate access rules since there is no start or end date that can be inferred.",
         "success": false,
       }
     `);
@@ -313,7 +340,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "error": "Expected exactly 1 access rule, but found 2",
+        "error": "Cannot migrate access rules since there is no start or end date that can be inferred.",
         "success": false,
       }
     `);
@@ -387,7 +414,7 @@ describe('migrateAccessRulesToPublishingConfiguration (using convertAccessRuleTo
 
     expect(result).toMatchInlineSnapshot(`
       {
-        "error": "Cannot migrate access rules without start or end dates.",
+        "error": "Cannot migrate access rules since there is no start or end date that can be inferred.",
         "success": false,
       }
     `);
