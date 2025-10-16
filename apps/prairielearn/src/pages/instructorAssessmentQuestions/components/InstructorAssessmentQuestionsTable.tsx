@@ -700,7 +700,7 @@ export function InstructorAssessmentQuestionsTable({
     setSelectedQuestionDisplayName('');
     setSelectedQuestionPosition({
       zoneNumber,
-      alternativeGroupNumber: mappedQuestions[zoneNumber - 1].questions.length,
+      alternativeGroupNumber: mappedQuestions[zoneNumber - 1].questions.length + 1,
     });
     setAddQuestion(true);
     setShowEditModal(true);
@@ -811,6 +811,13 @@ export function InstructorAssessmentQuestionsTable({
       if (!zone) return prevZones;
 
       const question = zone.questions[alternativeGroupNumber - 1];
+
+      // If we're adding a new question (question doesn't exist yet)
+      if (!question && addQuestion) {
+        zone.questions.push(updatedQuestion);
+        return newZones;
+      }
+
       if (!question) return prevZones;
 
       // Check if we're editing an alternative or the alternative group itself
@@ -831,7 +838,7 @@ export function InstructorAssessmentQuestionsTable({
 
       return newZones;
     });
-
+    console.log(mappedQuestions);
     handleCloseEditModal();
   };
 

@@ -20,7 +20,8 @@
         { "id": "downloadFile", "points": 2, "maxPoints": 10 },
         { "id": "differentiatePolynomial", "points": 2, "maxPoints": 10 },
         { "id": "subfolder/nestedQuestion", "points": 2, "maxPoints": 10 },
-        { "id": "workspace", "points": 2, "maxPoints": 10 }
+        { "id": "workspace", "points": 2, "maxPoints": 10 },
+        { "id": "addNumbers", "autoPoints": 5, "maxAutoPoints": 15 }
       ]
     }
   ]
