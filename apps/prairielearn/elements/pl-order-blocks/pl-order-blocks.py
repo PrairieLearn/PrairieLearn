@@ -619,8 +619,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         ):
             # extract multigraph from all blocks not just those in correct_answer
             depends_multigraph, final = extract_multigraph(true_answer_list)
-
-            # TODO: add group belonging support for group blocks
             num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
                 submission, depends_multigraph, final
             )
